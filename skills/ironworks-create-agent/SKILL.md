@@ -126,6 +126,58 @@ For each linked issue, either:
 - close it if approval resolved the request, or
 - comment in markdown with links to the approval and next actions.
 
+## Post-Hire Onboarding (CRITICAL)
+
+After a new agent is hired and approved, the system generates default instruction files (AGENTS.md, HEARTBEAT.md, SOUL.md, TOOLS.md) with generic templates. **You must customize these files for the new agent's specific role.**
+
+### 9. Customize the new agent's instruction files
+
+Read the new agent's current instructions:
+
+```sh
+curl -sS "$IRONWORKS_API_URL/api/companies/$IRONWORKS_COMPANY_ID/agents/<agent-id>/instructions" \
+  -H "Authorization: Bearer $IRONWORKS_API_KEY"
+```
+
+Update each file to be role-specific:
+
+**AGENTS.md** -- Rewrite with the agent's specific responsibilities, delegation rules (if manager), and communication rules. Reference the role, title, and capabilities from the hire request.
+
+```sh
+curl -sS -X PUT "$IRONWORKS_API_URL/api/companies/$IRONWORKS_COMPANY_ID/agents/<agent-id>/instructions/AGENTS.md" \
+  -H "Authorization: Bearer $IRONWORKS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"content":"<role-specific AGENTS.md content>"}'
+```
+
+**SOUL.md** -- Write a persona that matches the role. A CTO should think in systems and architecture. A CMO should think in funnels and campaigns. A social media manager should think in engagement and content calendars. Tailor the voice, priorities, and decision-making style to the role.
+
+```sh
+curl -sS -X PUT "$IRONWORKS_API_URL/api/companies/$IRONWORKS_COMPANY_ID/agents/<agent-id>/instructions/SOUL.md" \
+  -H "Authorization: Bearer $IRONWORKS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"content":"<role-specific SOUL.md content>"}'
+```
+
+**HEARTBEAT.md** -- The default heartbeat checklist works for most roles. Only customize if the role has unique operational needs (e.g., a DevOps engineer might add a health-check step, a content marketer might add a publishing calendar check).
+
+**TOOLS.md** -- Leave as-is initially. The agent will populate this as they acquire and use tools.
+
+### What Makes Good Role-Specific Instructions
+
+- **Be concrete about the role's domain.** A social media manager needs to know about platforms, posting cadence, engagement metrics. A backend engineer needs to know about APIs, databases, testing.
+- **Define the delegation chain.** Who does this agent report to? Who reports to them? What types of tasks should they delegate vs. do themselves?
+- **Set the right scope.** An IC focuses on execution. A manager focuses on delegation, review, and unblocking. Don't give IC instructions to a manager or vice versa.
+- **Match the persona to the role.** A security engineer should be detail-oriented and skeptical. A growth marketer should be experimental and data-driven. A designer should be user-focused and visual.
+
+## Hiring Authority for Managers
+
+When onboarding a new manager-level agent (CTO, CMO, VP, Director), consider granting them hiring authority so they can grow their own team without bottlenecking through the CEO:
+
+- Set `"permissions": {"canCreateAgents": true}` in the agent's config after approval.
+- The approval gate still applies -- every hire request goes through the CEO or board for review.
+- This is recommended for any agent who manages a department and will need to scale their team.
+
 ## Quality Bar
 
 Before sending a hire request:
