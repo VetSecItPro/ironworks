@@ -1,15 +1,148 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import {
+  CheckCircle2,
+  Circle,
+  Clock,
+  Loader2,
+  Plus,
+  ShieldAlert,
+  Target,
+  Users,
+} from "lucide-react";
+import type { Goal } from "@ironworksai/shared";
 import { goalsApi } from "../api/goals";
+import { goalProgressApi, type GoalProgressItem } from "../api/goalProgress";
 import { useCompany } from "../context/CompanyContext";
 import { useDialog } from "../context/DialogContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { queryKeys } from "../lib/queryKeys";
-import { GoalTree } from "../components/GoalTree";
+import { cn } from "../lib/utils";
 import { EmptyState } from "../components/EmptyState";
 import { PageSkeleton } from "../components/PageSkeleton";
+import { StatusBadge } from "../components/StatusBadge";
 import { Button } from "@/components/ui/button";
-import { Target, Plus } from "lucide-react";
+import { Link } from "@/lib/router";
+
+/* ------------------------------------------------------------------ */
+/*  Progress Bar                                                       */
+/* ------------------------------------------------------------------ */
+
+function ProgressBar({ percent, size = "md" }: { percent: number; size?: "sm" | "md" }) {
+  const clamped = Math.min(100, Math.max(0, percent));
+  return (
+    <div className={cn("w-full bg-muted rounded-full overflow-hidden", size === "sm" ? "h-1.5" : "h-2")}>
+      <div
+        className={cn(
+          "h-full rounded-full transition-[width] duration-300",
+          clamped === 100
+            ? "bg-emerald-500"
+            : clamped > 50
+              ? "bg-blue-500"
+              : clamped > 0
+                ? "bg-amber-500"
+                : "bg-muted",
+        )}
+        style={{ width: `${clamped}%` }}
+      />
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Goal Card                                                          */
+/* ------------------------------------------------------------------ */
+
+function GoalCard({
+  goal,
+  progress,
+  children,
+}: {
+  goal: Goal;
+  progress?: GoalProgressItem | null;
+  children?: Goal[];
+}) {
+  const totalIssues = progress?.totalIssues ?? 0;
+  const completed = progress?.completedIssues ?? 0;
+  const inProgress = progress?.inProgressIssues ?? 0;
+  const blocked = progress?.blockedIssues ?? 0;
+  const percent = progress?.progressPercent ?? 0;
+
+  return (
+    <Link
+      to={`/goals/${goal.id}`}
+      className="block border border-border rounded-lg p-4 hover:bg-accent/30 transition-colors"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold truncate">{goal.title}</h3>
+            <StatusBadge status={goal.status} />
+          </div>
+          {goal.description && (
+            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{goal.description}</p>
+          )}
+        </div>
+        {totalIssues > 0 && (
+          <div className="text-right shrink-0">
+            <span className="text-lg font-semibold tabular-nums">{Math.round(percent)}%</span>
+            <div className="text-[10px] text-muted-foreground">{completed}/{totalIssues} done</div>
+          </div>
+        )}
+      </div>
+
+      {/* Progress bar */}
+      {totalIssues > 0 && (
+        <div className="mt-3">
+          <ProgressBar percent={percent} />
+          <div className="flex items-center gap-3 mt-2 text-[11px] text-muted-foreground">
+            {completed > 0 && (
+              <span className="flex items-center gap-1">
+                <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                {completed} done
+              </span>
+            )}
+            {inProgress > 0 && (
+              <span className="flex items-center gap-1">
+                <Loader2 className="h-3 w-3 text-blue-500" />
+                {inProgress} active
+              </span>
+            )}
+            {blocked > 0 && (
+              <span className="flex items-center gap-1">
+                <ShieldAlert className="h-3 w-3 text-red-500" />
+                {blocked} blocked
+              </span>
+            )}
+            {totalIssues - completed - inProgress - blocked > 0 && (
+              <span className="flex items-center gap-1">
+                <Circle className="h-3 w-3" />
+                {totalIssues - completed - inProgress - blocked} pending
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {totalIssues === 0 && (
+        <div className="mt-2 text-xs text-muted-foreground italic">
+          No tasks yet — click to add issues or run a playbook
+        </div>
+      )}
+
+      {/* Sub-goals indicator */}
+      {children && children.length > 0 && (
+        <div className="mt-2 pt-2 border-t border-border/50 text-[11px] text-muted-foreground">
+          {children.length} sub-goal{children.length !== 1 ? "s" : ""}
+        </div>
+      )}
+    </Link>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Main Goals Page                                                    */
+/* ------------------------------------------------------------------ */
 
 export function Goals() {
   const { selectedCompanyId } = useCompany();
@@ -26,6 +159,44 @@ export function Goals() {
     enabled: !!selectedCompanyId,
   });
 
+  // Fetch progress for all goals
+  const { data: progressData } = useQuery({
+    queryKey: ["goals", "progress", selectedCompanyId],
+    queryFn: () => goalProgressApi.batch(selectedCompanyId!),
+    enabled: !!selectedCompanyId && !!goals && goals.length > 0,
+  });
+
+  const progressMap = useMemo(() => {
+    const map = new Map<string, GoalProgressItem>();
+    for (const p of progressData ?? []) {
+      map.set(p.goalId, p);
+    }
+    return map;
+  }, [progressData]);
+
+  // Organize goals: root goals (no parent) at top, sub-goals nested
+  const rootGoals = useMemo(
+    () => (goals ?? []).filter((g) => !g.parentId),
+    [goals],
+  );
+
+  const childrenMap = useMemo(() => {
+    const map = new Map<string, Goal[]>();
+    for (const g of goals ?? []) {
+      if (g.parentId) {
+        const children = map.get(g.parentId) ?? [];
+        children.push(g);
+        map.set(g.parentId, children);
+      }
+    }
+    return map;
+  }, [goals]);
+
+  // Summary stats
+  const totalGoals = goals?.length ?? 0;
+  const activeGoals = (goals ?? []).filter((g) => g.status === "active").length;
+  const achievedGoals = (goals ?? []).filter((g) => g.status === "achieved").length;
+
   if (!selectedCompanyId) {
     return <EmptyState icon={Target} message="Select a company to view goals." />;
   }
@@ -35,28 +206,47 @@ export function Goals() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Goals</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {totalGoals === 0
+              ? "Define what your team is working toward."
+              : `${activeGoals} active · ${achievedGoals} achieved · ${totalGoals} total`}
+          </p>
+        </div>
+        <Button size="sm" onClick={() => openNewGoal()}>
+          <Plus className="h-3.5 w-3.5 mr-1.5" />
+          Create Goal
+        </Button>
+      </div>
+
       {error && <p className="text-sm text-destructive">{error.message}</p>}
 
-      {goals && goals.length === 0 && (
+      {/* Empty state */}
+      {totalGoals === 0 && (
         <EmptyState
           icon={Target}
-          message="No goals yet."
-          action="Add Goal"
+          message="No goals yet. Create a goal to start tracking what your agents are working toward."
+          action="Create Goal"
           onAction={() => openNewGoal()}
         />
       )}
 
-      {goals && goals.length > 0 && (
-        <>
-          <div className="flex items-center justify-start">
-            <Button size="sm" variant="outline" onClick={() => openNewGoal()}>
-              <Plus className="h-3.5 w-3.5 mr-1.5" />
-              New Goal
-            </Button>
-          </div>
-          <GoalTree goals={goals} goalLink={(goal) => `/goals/${goal.id}`} />
-        </>
+      {/* Goal cards */}
+      {rootGoals.length > 0 && (
+        <div className="space-y-3">
+          {rootGoals.map((goal) => (
+            <GoalCard
+              key={goal.id}
+              goal={goal}
+              progress={progressMap.get(goal.id)}
+              children={childrenMap.get(goal.id)}
+            />
+          ))}
+        </div>
       )}
     </div>
   );

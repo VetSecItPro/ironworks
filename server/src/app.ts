@@ -33,6 +33,8 @@ import { playbookRoutes } from "./routes/playbooks.js";
 import { teamTemplateRoutes } from "./routes/team-templates.js";
 import { aiGenerateRoutes } from "./routes/ai-generate.js";
 import { privacyRoutes, startRetentionScheduler } from "./routes/privacy.js";
+import { goalStatsRoutes } from "./routes/goal-stats.js";
+import { aiGoalBreakdownRoutes } from "./routes/ai-goal-breakdown.js";
 import { pluginRoutes } from "./routes/plugins.js";
 import { pluginUiStaticRoutes } from "./routes/plugin-ui-static.js";
 import { applyUiBranding } from "./ui-branding.js";
@@ -165,6 +167,8 @@ export async function createApp(
   api.use(teamTemplateRoutes(db));
   api.use(aiGenerateRoutes(db));
   api.use(privacyRoutes(db));
+  api.use(goalStatsRoutes(db));
+  api.use(aiGoalBreakdownRoutes(db));
 
   // Start daily data retention cleanup
   startRetentionScheduler(db);

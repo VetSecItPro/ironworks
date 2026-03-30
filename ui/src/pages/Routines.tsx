@@ -227,18 +227,16 @@ export function Routines() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Routines
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Recurring work definitions that materialize into auditable execution issues.
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Routines</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Scheduled recurring tasks that run automatically on a cadence.
           </p>
         </div>
-        <Button onClick={() => setComposerOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create routine
+        <Button size="sm" onClick={() => setComposerOpen(true)}>
+          <Plus className="h-3.5 w-3.5 mr-1.5" />
+          Create Routine
         </Button>
       </div>
 

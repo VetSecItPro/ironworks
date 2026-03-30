@@ -6,15 +6,18 @@ import { agentsApi } from "../api/agents";
 import { projectsApi } from "../api/projects";
 import { heartbeatsApi } from "../api/heartbeats";
 import { useCompany } from "../context/CompanyContext";
+import { useDialog } from "../context/DialogContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { queryKeys } from "../lib/queryKeys";
 import { createIssueDetailLocationState } from "../lib/issueDetailBreadcrumb";
 import { EmptyState } from "../components/EmptyState";
 import { IssuesList } from "../components/IssuesList";
-import { CircleDot } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CircleDot, Plus } from "lucide-react";
 
 export function Issues() {
   const { selectedCompanyId } = useCompany();
+  const { openNewIssue } = useDialog();
   const { setBreadcrumbs } = useBreadcrumbs();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -96,21 +99,44 @@ export function Issues() {
     return <EmptyState icon={CircleDot} message="Select a company to view issues." />;
   }
 
+  const totalIssues = issues?.length ?? 0;
+  const activeIssues = (issues ?? []).filter((i) => i.status === "in_progress").length;
+  const doneIssues = (issues ?? []).filter((i) => i.status === "done").length;
+
   return (
-    <IssuesList
-      issues={issues ?? []}
-      isLoading={isLoading}
-      error={error as Error | null}
-      agents={agents}
-      projects={projects}
-      liveIssueIds={liveIssueIds}
-      viewStateKey="ironworks:issues-view"
-      issueLinkState={issueLinkState}
-      initialAssignees={searchParams.get("assignee") ? [searchParams.get("assignee")!] : undefined}
-      initialSearch={initialSearch}
-      onSearchChange={handleSearchChange}
-      onUpdateIssue={(id, data) => updateIssue.mutate({ id, data })}
-      searchFilters={participantAgentId ? { participantAgentId } : undefined}
-    />
+    <div className="space-y-4">
+      {/* Consistent header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Issues</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {totalIssues === 0
+              ? "Tasks assigned to your agents."
+              : `${activeIssues} active · ${doneIssues} done · ${totalIssues} total`}
+          </p>
+        </div>
+        <Button size="sm" onClick={() => openNewIssue()}>
+          <Plus className="h-3.5 w-3.5 mr-1.5" />
+          New Issue
+        </Button>
+      </div>
+
+      {/* Issues list */}
+      <IssuesList
+        issues={issues ?? []}
+        isLoading={isLoading}
+        error={error as Error | null}
+        agents={agents}
+        projects={projects}
+        liveIssueIds={liveIssueIds}
+        viewStateKey="ironworks:issues-view"
+        issueLinkState={issueLinkState}
+        initialAssignees={searchParams.get("assignee") ? [searchParams.get("assignee")!] : undefined}
+        initialSearch={initialSearch}
+        onSearchChange={handleSearchChange}
+        onUpdateIssue={(id, data) => updateIssue.mutate({ id, data })}
+        searchFilters={participantAgentId ? { participantAgentId } : undefined}
+      />
+    </div>
   );
 }
