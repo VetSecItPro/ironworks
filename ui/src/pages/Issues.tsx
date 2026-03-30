@@ -110,10 +110,13 @@ export function Issues() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Issues</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {totalIssues === 0
-              ? "Tasks assigned to your agents."
-              : `${activeIssues} active · ${doneIssues} done · ${totalIssues} total`}
+            Track and manage tasks across your AI workforce.
           </p>
+          {totalIssues > 0 && (
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {activeIssues} active · {doneIssues} done · {totalIssues} total
+            </p>
+          )}
         </div>
         <Button size="sm" onClick={() => openNewIssue()}>
           <Plus className="h-3.5 w-3.5 mr-1.5" />

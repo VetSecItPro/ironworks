@@ -1044,31 +1044,34 @@ export function CompanySkills() {
         </DialogContent>
       </Dialog>
 
-      <div className="grid min-h-[calc(100vh-12rem)] gap-0 xl:grid-cols-[19rem_minmax(0,1fr)]">
+      {/* Page header */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Skills</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Reusable capabilities and tools available to your agents.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => scanProjects.mutate()}
+            disabled={scanProjects.isPending}
+          >
+            <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", scanProjects.isPending && "animate-spin")} />
+            Scan
+          </Button>
+          <Button size="sm" onClick={() => setCreateOpen((value) => !value)}>
+            <Plus className="h-3.5 w-3.5 mr-1.5" />
+            Add Skill
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid min-h-[calc(100vh-16rem)] gap-0 xl:grid-cols-[19rem_minmax(0,1fr)]">
         <aside className="border-r border-border">
           <div className="border-b border-border px-4 py-3">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <h1 className="text-base font-semibold">Skills</h1>
-                <p className="text-xs text-muted-foreground">
-                  {skillsQuery.data?.length ?? 0} available
-                </p>
-              </div>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={() => scanProjects.mutate()}
-                  disabled={scanProjects.isPending}
-                  title="Scan project workspaces for skills"
-                >
-                  <RefreshCw className={cn("h-4 w-4", scanProjects.isPending && "animate-spin")} />
-                </Button>
-                <Button variant="ghost" size="icon-sm" onClick={() => setCreateOpen((value) => !value)}>
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
 
             <div className="mt-3 flex items-center gap-2 border-b border-border pb-2">
               <Search className="h-4 w-4 text-muted-foreground" />

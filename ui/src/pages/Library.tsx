@@ -483,30 +483,33 @@ export function Library() {
   if (!selectedCompanyId) return null;
 
   return (
-    <div className="flex h-[calc(100vh-3rem)] overflow-hidden">
+    <div className="flex flex-col h-[calc(100vh-3rem)] overflow-hidden">
+      {/* Page header */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Library</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Documents, reports, and files created by your agents.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <LibrarySettingsButton />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => scanMutation.mutate()}
+            disabled={scanMutation.isPending}
+          >
+            <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", scanMutation.isPending && "animate-spin")} />
+            Scan
+          </Button>
+        </div>
+      </div>
+
+      {/* Two-pane content */}
+      <div className="flex flex-1 min-h-0 overflow-hidden">
       {/* Left pane: File tree */}
       <div className="w-72 shrink-0 border-r border-border flex flex-col bg-background">
-        {/* Header */}
-        <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border shrink-0">
-          <BookOpen className="h-4 w-4 text-muted-foreground shrink-0" />
-          <span className="text-sm font-semibold flex-1">Library</span>
-          <LibrarySettingsButton />
-          <Tooltip delayDuration={300}>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="shrink-0"
-                onClick={() => scanMutation.mutate()}
-                disabled={scanMutation.isPending}
-              >
-                <RefreshCw className={cn("h-3.5 w-3.5", scanMutation.isPending && "animate-spin")} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent className="text-xs">Scan & register all files</TooltipContent>
-          </Tooltip>
-        </div>
-
         {/* Search */}
         <div className="px-2 py-2 border-b border-border shrink-0">
           <form
@@ -647,6 +650,7 @@ export function Library() {
             </Button>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

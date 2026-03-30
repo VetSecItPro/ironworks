@@ -212,10 +212,13 @@ export function Goals() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Goals</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {totalGoals === 0
-              ? "Define what your team is working toward."
-              : `${activeGoals} active · ${achievedGoals} achieved · ${totalGoals} total`}
+            Set objectives and track progress as your agents deliver results.
           </p>
+          {totalGoals > 0 && (
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {activeGoals} active · {achievedGoals} achieved · {totalGoals} total
+            </p>
+          )}
         </div>
         <Button size="sm" onClick={() => openNewGoal()}>
           <Plus className="h-3.5 w-3.5 mr-1.5" />

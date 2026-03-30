@@ -337,25 +337,34 @@ export function Playbooks() {
 
   if (!selectedCompanyId) return null;
 
+  const totalPlaybooks = filteredPlaybooks.length;
+
   return (
-    <div className="flex h-[calc(100vh-3rem)] overflow-hidden">
+    <div className="flex flex-col h-[calc(100vh-3rem)] overflow-hidden">
+      {/* Page header — matches Goals, Issues, Routines */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Playbooks</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Multi-agent workflows you can run with one click.
+          </p>
+          {totalPlaybooks > 0 && (
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {totalPlaybooks} playbook{totalPlaybooks !== 1 ? "s" : ""} available
+            </p>
+          )}
+        </div>
+        <Button size="sm" onClick={() => setShowNewDialog(true)}>
+          <Plus className="h-3.5 w-3.5 mr-1.5" />
+          Create Playbook
+        </Button>
+      </div>
+
+      {/* Two-pane content */}
+      <div className="flex flex-1 min-h-0 overflow-hidden">
       {/* Left pane: Playbook list */}
       <div className="w-80 shrink-0 border-r border-border flex flex-col bg-background">
-        <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border shrink-0">
-          <BookTemplate className="h-4 w-4 text-muted-foreground shrink-0" />
-          <span className="text-sm font-semibold flex-1">Playbooks</span>
-          <Button
-            variant="default"
-            size="xs"
-            className="shrink-0"
-            onClick={() => setShowNewDialog(true)}
-          >
-            <Plus className="h-3 w-3 mr-1" />
-            Create
-          </Button>
-        </div>
-
-        <div className="px-2 py-2 border-b border-border shrink-0">
+        <div className="flex items-center gap-2 px-3 py-2 border-b border-border shrink-0">
           <Input
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
@@ -363,6 +372,7 @@ export function Playbooks() {
             className="h-7 text-xs"
           />
         </div>
+
 
         <ScrollArea className="flex-1 min-h-0">
           {isLoading ? (
@@ -429,6 +439,8 @@ export function Playbooks() {
             )}
           </div>
         )}
+      </div>
+
       </div>
 
       <NewPlaybookDialog
