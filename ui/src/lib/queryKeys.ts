@@ -127,6 +127,19 @@ export const queryKeys = {
   skills: {
     available: ["skills", "available"] as const,
   },
+  playbooks: {
+    list: (companyId: string) => ["playbooks", companyId] as const,
+    detail: (companyId: string, playbookId: string) =>
+      ["playbooks", companyId, playbookId] as const,
+  },
+  library: {
+    tree: (companyId: string, dirPath: string) =>
+      ["library", companyId, "tree", dirPath] as const,
+    file: (companyId: string, filePath: string) =>
+      ["library", companyId, "file", filePath] as const,
+    search: (companyId: string, query: string) =>
+      ["library", companyId, "search", query] as const,
+  },
   plugins: {
     all: ["plugins"] as const,
     examples: ["plugins", "examples"] as const,

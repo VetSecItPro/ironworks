@@ -33,6 +33,7 @@ import { parseCron, validateCron } from "./cron.js";
 import { heartbeatService } from "./heartbeat.js";
 import { queueIssueAssignmentWakeup, type IssueAssignmentWakeupDeps } from "./issue-assignment-wakeup.js";
 import { logActivity } from "./activity-log.js";
+import { playbookExecutionService } from "./playbook-execution.js";
 
 const OPEN_ISSUE_STATUSES = ["backlog", "todo", "in_progress", "in_review", "blocked"];
 const LIVE_HEARTBEAT_RUN_STATUSES = ["queued", "running"];
@@ -560,6 +561,37 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
       const nextRunAt = input.trigger?.kind === "schedule" && input.trigger.cronExpression && input.trigger.timezone
         ? nextCronTickInTimeZone(input.trigger.cronExpression, input.trigger.timezone, triggeredAt)
         : undefined;
+
+      // If routine has a linked playbook, run it instead of creating a single issue
+      if (input.routine.playbookId) {
+        try {
+          const playbookExec = playbookExecutionService(txDb);
+          const pbResult = await playbookExec.runPlaybook({
+            companyId: input.routine.companyId,
+            playbookId: input.routine.playbookId,
+            triggeredBy: `routine:${input.routine.id}`,
+            projectId: input.routine.projectId,
+            name: input.routine.title,
+          });
+          const updated = await finalizeRun(createdRun.id, {
+            status: "issue_created",
+            linkedIssueId: null,
+          }, txDb);
+          await updateRoutineTouchedState({
+            routineId: input.routine.id,
+            triggerId: input.trigger?.id ?? null,
+            triggeredAt,
+            status: "issue_created",
+            issueId: null,
+            nextRunAt,
+          }, txDb);
+          return updated ?? createdRun;
+        } catch (pbErr) {
+          logger.error({ err: pbErr, routineId: input.routine.id }, "playbook execution from routine failed");
+          await finalizeRun(createdRun.id, { status: "failed", completedAt: new Date() }, txDb);
+          return createdRun;
+        }
+      }
 
       let createdIssue: Awaited<ReturnType<typeof issueSvc.create>> | null = null;
       try {

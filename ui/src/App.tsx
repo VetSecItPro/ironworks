@@ -25,6 +25,11 @@ import { Activity } from "./pages/Activity";
 import { Inbox } from "./pages/Inbox";
 import { CompanySettings } from "./pages/CompanySettings";
 import { CompanySkills } from "./pages/CompanySkills";
+import { Library } from "./pages/Library";
+import { Playbooks } from "./pages/Playbooks";
+import { CookieConsentBanner } from "./components/CookieConsent";
+import { PrivacySettings } from "./pages/PrivacySettings";
+import { PrivacyPolicy } from "./pages/PrivacyPolicy";
 import { CompanyExport } from "./pages/CompanyExport";
 import { CompanyImport } from "./pages/CompanyImport";
 import { DesignGuide } from "./pages/DesignGuide";
@@ -126,6 +131,9 @@ function boardRoutes() {
       <Route path="company/export/*" element={<CompanyExport />} />
       <Route path="company/import" element={<CompanyImport />} />
       <Route path="skills/*" element={<CompanySkills />} />
+      <Route path="library" element={<Library />} />
+      <Route path="playbooks" element={<Playbooks />} />
+      <Route path="privacy-settings" element={<PrivacySettings />} />
       <Route path="settings" element={<LegacySettingsRedirect />} />
       <Route path="settings/*" element={<LegacySettingsRedirect />} />
       <Route path="plugins/:pluginId" element={<PluginPage />} />
@@ -302,6 +310,7 @@ export function App() {
   return (
     <>
       <Routes>
+        <Route path="privacy" element={<PrivacyPolicy />} />
         <Route path="auth" element={<AuthPage />} />
         <Route path="board-claim/:token" element={<BoardClaimPage />} />
         <Route path="cli-auth/:id" element={<CliAuthPage />} />
@@ -338,6 +347,8 @@ export function App() {
           <Route path="projects/:projectId/issues" element={<UnprefixedBoardRedirect />} />
           <Route path="projects/:projectId/issues/:filter" element={<UnprefixedBoardRedirect />} />
           <Route path="projects/:projectId/configuration" element={<UnprefixedBoardRedirect />} />
+          <Route path="library" element={<UnprefixedBoardRedirect />} />
+          <Route path="playbooks" element={<UnprefixedBoardRedirect />} />
           <Route path="tests/ux/runs" element={<UnprefixedBoardRedirect />} />
           <Route path=":companyPrefix" element={<Layout />}>
             {boardRoutes()}
@@ -346,6 +357,7 @@ export function App() {
         </Route>
       </Routes>
       <OnboardingWizard />
+      <CookieConsentBanner />
     </>
   );
 }

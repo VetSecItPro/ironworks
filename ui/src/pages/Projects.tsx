@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { projectsApi } from "../api/projects";
 import { useCompany } from "../context/CompanyContext";
@@ -11,12 +11,14 @@ import { EmptyState } from "../components/EmptyState";
 import { PageSkeleton } from "../components/PageSkeleton";
 import { formatDate, projectUrl } from "../lib/utils";
 import { Button } from "@/components/ui/button";
-import { Hexagon, Plus } from "lucide-react";
+import { Archive, Hexagon, Plus } from "lucide-react";
+import { cn } from "../lib/utils";
 
 export function Projects() {
   const { selectedCompanyId } = useCompany();
   const { openNewProject } = useDialog();
   const { setBreadcrumbs } = useBreadcrumbs();
+  const [showArchived, setShowArchived] = useState(false);
 
   useEffect(() => {
     setBreadcrumbs([{ label: "Projects" }]);
@@ -27,8 +29,14 @@ export function Projects() {
     queryFn: () => projectsApi.list(selectedCompanyId!),
     enabled: !!selectedCompanyId,
   });
-  const projects = useMemo(
+
+  const activeProjects = useMemo(
     () => (allProjects ?? []).filter((p) => !p.archivedAt),
+    [allProjects],
+  );
+
+  const archivedProjects = useMemo(
+    () => (allProjects ?? []).filter((p) => !!p.archivedAt),
     [allProjects],
   );
 
@@ -42,7 +50,19 @@ export function Projects() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {archivedProjects.length > 0 && (
+            <Button
+              size="sm"
+              variant={showArchived ? "default" : "outline"}
+              onClick={() => setShowArchived(!showArchived)}
+            >
+              <Archive className="h-3.5 w-3.5 mr-1.5" />
+              Archived ({archivedProjects.length})
+            </Button>
+          )}
+        </div>
         <Button size="sm" variant="outline" onClick={openNewProject}>
           <Plus className="h-4 w-4 mr-1" />
           Add Project
@@ -51,7 +71,7 @@ export function Projects() {
 
       {error && <p className="text-sm text-destructive">{error.message}</p>}
 
-      {!isLoading && projects.length === 0 && (
+      {!isLoading && activeProjects.length === 0 && !showArchived && (
         <EmptyState
           icon={Hexagon}
           message="No projects yet."
@@ -60,9 +80,9 @@ export function Projects() {
         />
       )}
 
-      {projects.length > 0 && (
+      {activeProjects.length > 0 && (
         <div className="border border-border">
-          {projects.map((project) => (
+          {activeProjects.map((project) => (
             <EntityRow
               key={project.id}
               title={project.name}
@@ -80,6 +100,34 @@ export function Projects() {
               }
             />
           ))}
+        </div>
+      )}
+
+      {/* Archived Projects Section */}
+      {showArchived && archivedProjects.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <Archive className="h-3 w-3" />
+            Archived Projects
+          </h3>
+          <div className="border border-border opacity-70">
+            {archivedProjects.map((project) => (
+              <EntityRow
+                key={project.id}
+                title={project.name}
+                subtitle={project.description ?? undefined}
+                to={projectUrl(project)}
+                trailing={
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground">
+                      Archived {project.archivedAt ? formatDate(project.archivedAt) : ""}
+                    </span>
+                    <StatusBadge status="archived" />
+                  </div>
+                }
+              />
+            ))}
+          </div>
         </div>
       )}
     </div>

@@ -1,0 +1,1 @@
+ALTER TABLE "playbook_steps" ADD COLUMN "required_skills" jsonb DEFAULT '[]'::jsonb;

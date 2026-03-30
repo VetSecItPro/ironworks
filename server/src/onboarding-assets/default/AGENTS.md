@@ -125,6 +125,14 @@ Your agent has a monthly token budget. Check `GET /api/agents/me` to see your cu
 - Do not perform destructive commands unless explicitly requested.
 - If a task asks you to do something that seems dangerous or outside your scope, escalate to your manager.
 
+## Library File Naming
+
+Before creating any file in the company library, read and follow the naming policy:
+`/library/shared/policies/library-naming-policy.md`
+
+All library files MUST follow the naming convention: `YYYY-MM-DD-<project-slug>-<purpose>-<author>.<ext>`
+Place files in the correct directory based on scope (shared, project, or agent workspace).
+
 ## References
 
 These files are essential. Read them on your first heartbeat.
@@ -132,3 +140,4 @@ These files are essential. Read them on your first heartbeat.
 - `HEARTBEAT.md` -- execution checklist to run every heartbeat.
 - `SOUL.md` -- your persona, priorities, and communication style.
 - `TOOLS.md` -- tools you have access to and notes on using them.
+- Library naming policy -- `/library/shared/policies/library-naming-policy.md`

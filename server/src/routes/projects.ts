@@ -11,6 +11,8 @@ import { validate } from "../middleware/validate.js";
 import { projectService, logActivity } from "../services/index.js";
 import { conflict } from "../errors.js";
 import { assertCompanyAccess, getActorInfo } from "./authz.js";
+import { ensureLibraryProjectFolderExternal } from "../services/playbook-execution.js";
+import { logger } from "../middleware/logger.js";
 
 export function projectRoutes(db: Db) {
   const router = Router();
@@ -105,6 +107,11 @@ export function projectRoutes(db: Db) {
         workspaceId: createdWorkspaceId,
       },
     });
+    // Wire: auto-create library folder for new project
+    ensureLibraryProjectFolderExternal(companyId, project.name, db).catch((err) =>
+      logger.warn({ err, projectId: project.id }, "failed to create library folder for project"),
+    );
+
     res.status(201).json(hydratedProject ?? project);
   });
 

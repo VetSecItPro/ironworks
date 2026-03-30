@@ -36,6 +36,8 @@ import { assertCompanyAccess, getActorInfo } from "./authz.js";
 import { shouldWakeAssigneeOnCheckout } from "./issues-checkout-wakeup.js";
 import { isAllowedContentType, MAX_ATTACHMENT_BYTES } from "../attachment-types.js";
 import { queueIssueAssignmentWakeup } from "../services/issue-assignment-wakeup.js";
+import { playbookExecutionService } from "../services/playbook-execution.js";
+import { recalculateGoalProgress } from "../services/goal-progress.js";
 
 const MAX_ISSUE_COMMENT_LIMIT = 500;
 
@@ -44,6 +46,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
   const svc = issueService(db);
   const access = accessService(db);
   const heartbeat = heartbeatService(db);
+  const playbookExec = playbookExecutionService(db);
   const agentsSvc = agentService(db);
   const projectsSvc = projectService(db);
   const goalsSvc = goalService(db);
@@ -1092,6 +1095,20 @@ export function issueRoutes(db: Db, storage: StorageService) {
         heartbeat
           .wakeup(agentId, wakeup)
           .catch((err) => logger.warn({ err, issueId: issue.id, agentId }, "failed to wake agent on issue update"));
+      }
+
+      // Playbook dependency resolution: when an issue is marked done, unblock downstream steps
+      if (issue.status === "done" && existing.status !== "done") {
+        playbookExec.onIssueCompleted(issue.id).catch((err) =>
+          logger.warn({ err, issueId: issue.id }, "playbook dependency resolution failed"),
+        );
+      }
+
+      // Goal progress: recalculate goal status when issues change status
+      if (issue.goalId && issue.status !== existing.status) {
+        recalculateGoalProgress(db, issue.goalId).catch((err) =>
+          logger.warn({ err, goalId: issue.goalId }, "goal progress recalculation failed"),
+        );
       }
     })();
 

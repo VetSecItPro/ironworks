@@ -56,3 +56,7 @@ export { pluginEntities } from "./plugin_entities.js";
 export { pluginJobs, pluginJobRuns } from "./plugin_jobs.js";
 export { pluginWebhookDeliveries } from "./plugin_webhooks.js";
 export { pluginLogs } from "./plugin_logs.js";
+export { libraryFiles } from "./library_files.js";
+export { libraryFileEvents } from "./library_file_events.js";
+export { playbooks, playbookSteps } from "./playbooks.js";
+export { playbookRuns, playbookRunSteps } from "./playbook_runs.js";

@@ -15,6 +15,7 @@ import { companySecrets } from "./company_secrets.js";
 import { issues } from "./issues.js";
 import { projects } from "./projects.js";
 import { goals } from "./goals.js";
+import { playbooks } from "./playbooks.js";
 
 export const routines = pgTable(
   "routines",
@@ -24,6 +25,8 @@ export const routines = pgTable(
     projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
     goalId: uuid("goal_id").references(() => goals.id, { onDelete: "set null" }),
     parentIssueId: uuid("parent_issue_id").references(() => issues.id, { onDelete: "set null" }),
+    /** If set, running this routine triggers a playbook instead of creating a single issue. */
+    playbookId: uuid("playbook_id").references(() => playbooks.id, { onDelete: "set null" }),
     title: text("title").notNull(),
     description: text("description"),
     assigneeAgentId: uuid("assignee_agent_id").notNull().references(() => agents.id),

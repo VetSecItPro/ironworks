@@ -12,6 +12,7 @@ import {
   providerDisplayName,
   quotaSourceDisplayName,
 } from "@/lib/utils";
+import { totalEquivalentSpendCents, equivalentSpendCents } from "@/lib/equivalent-spend";
 
 // ordered display labels for rolling-window rows
 const ROLLING_WINDOWS = ["5h", "24h", "7d"] as const;
@@ -78,6 +79,14 @@ export function ProviderQuotaCard({
       totalSubOutputTokens: subOutputTokens,
       totalSubTokens: subTokens,
       subSharePct: allTokens > 0 ? (subTokens / allTokens) * 100 : 0,
+      equivalentCents: totalEquivalentSpendCents(
+        rows.map((r) => ({
+          model: r.model,
+          inputTokens: r.inputTokens + r.subscriptionInputTokens,
+          cachedInputTokens: r.cachedInputTokens + r.subscriptionCachedInputTokens,
+          outputTokens: r.outputTokens + r.subscriptionOutputTokens,
+        })),
+      ),
     };
   }, [rows]);
 
@@ -92,7 +101,10 @@ export function ProviderQuotaCard({
     totalSubOutputTokens,
     totalSubTokens,
     subSharePct,
+    equivalentCents,
   } = totals;
+
+  const isSubscriptionOnly = totalCostCents === 0 && totalTokens > 0;
 
   // budget bars: use this provider's own spend vs its pro-rata share of budget
   // pro-rata: if a provider is 40% of total spend, it gets 40% of the budget allocated.
@@ -136,6 +148,13 @@ export function ProviderQuotaCard({
           <div className="min-w-0">
             <CardTitle className="text-sm font-semibold">
               {providerDisplayName(provider)}
+              {isSubscriptionOnly ? (
+                <span className="ml-1.5 text-[10px] font-medium text-blue-500 bg-blue-500/10 px-1.5 py-0.5 rounded-full">Subscription</span>
+              ) : (totalSubRuns > 0 || totalSubTokens > 0) && (totalApiRuns > 0 || totalCostCents > 0) ? (
+                <span className="ml-1.5 text-[10px] font-medium text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded-full">Mixed</span>
+              ) : totalApiRuns > 0 || totalCostCents > 0 ? (
+                <span className="ml-1.5 text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">API</span>
+              ) : null}
             </CardTitle>
             <CardDescription className="text-xs mt-0.5">
               <span className="font-mono">{formatTokens(totalInputTokens)}</span> in
@@ -152,9 +171,20 @@ export function ProviderQuotaCard({
               )}
             </CardDescription>
           </div>
-          <span className="text-xl font-bold tabular-nums shrink-0">
-            {formatCents(totalCostCents)}
-          </span>
+          <div className="text-right shrink-0">
+            {isSubscriptionOnly ? (
+              <>
+                <span className="text-xl font-bold tabular-nums text-blue-500">
+                  ~{formatCents(equivalentCents)}
+                </span>
+                <div className="text-[10px] text-muted-foreground mt-0.5">equivalent spend</div>
+              </>
+            ) : (
+              <span className="text-xl font-bold tabular-nums">
+                {formatCents(totalCostCents)}
+              </span>
+            )}
+          </div>
         </div>
       </CardHeader>
 
@@ -201,7 +231,11 @@ export function ProviderQuotaCard({
                         <span className="text-muted-foreground font-mono flex-1">
                           {formatTokens(tokens)} tok
                         </span>
-                        <span className="font-medium tabular-nums">{formatCents(cents)}</span>
+                        {cents === 0 && tokens > 0 ? (
+                          <span className="font-medium tabular-nums text-blue-500">~{formatCents(equivalentCents > 0 ? Math.round(equivalentCents * (tokens / Math.max(1, totalTokens + totalSubTokens))) : 0)}</span>
+                        ) : (
+                          <span className="font-medium tabular-nums">{formatCents(cents)}</span>
+                        )}
                       </div>
                       <div className="h-2 w-full border border-border overflow-hidden">
                         <div
@@ -280,7 +314,13 @@ export function ProviderQuotaCard({
                         <span className="text-muted-foreground">
                           {formatTokens(rowTokens)} tok
                         </span>
-                        <span className="font-medium">{formatCents(row.costCents)}</span>
+                        {row.costCents === 0 && rowTokens > 0 ? (
+                          <span className="font-medium text-blue-500">
+                            ~{formatCents(equivalentSpendCents(row.model, row.inputTokens, row.cachedInputTokens, row.outputTokens))}
+                          </span>
+                        ) : (
+                          <span className="font-medium">{formatCents(row.costCents)}</span>
+                        )}
                       </div>
                     </div>
                     {/* token share bar */}

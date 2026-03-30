@@ -15,7 +15,25 @@ Confirm your id, role, budget, and chainOfCommand. Check environment variables:
 - `IRONWORKS_WAKE_COMMENT_ID` -- if set, someone @-mentioned you in this comment. Read and respond.
 - `IRONWORKS_APPROVAL_ID` -- if set, an approval decision was made. Follow up.
 
-## 2. Team Status Check (managers only)
+## 2. Resume from Checkpoint (if exists)
+
+Check if a checkpoint exists from your previous heartbeat:
+
+```bash
+cat "$AGENT_HOME/.checkpoint.json" 2>/dev/null
+```
+
+If the file exists:
+- Read the `task_id` — this is the task you were working on. Prioritize it.
+- Read `phase` and `next_step` — continue from exactly where you left off.
+- Read `decisions` — these are decisions you already made. Don't re-make them.
+- Read `files_created` — these files already exist. Don't recreate them.
+- Read `blockers` — if still blocked, check if the blocker has been resolved.
+- After successfully resuming and completing (or re-checkpointing), delete the old checkpoint.
+
+If no checkpoint exists, proceed normally from step 3.
+
+## 3. Team Status Check (managers only)
 
 If you have direct reports, check their daily files -- but only if they've changed since your last heartbeat. Don't waste tokens re-reading unchanged files.
 
@@ -32,7 +50,7 @@ If modified since your last heartbeat, scan for:
 
 Skip files that haven't changed. This keeps your heartbeat efficient while still catching issues early.
 
-## 3. Local Planning Check
+## 4. Local Planning Check
 
 1. Read today's plan from `$AGENT_HOME/memory/YYYY-MM-DD.md` under "## Today's Plan".
 2. Review each planned item: what's completed, what's blocked, what's next.
@@ -40,7 +58,7 @@ Skip files that haven't changed. This keeps your heartbeat efficient while still
 4. For any blockers, resolve them yourself or escalate to your manager.
 5. Record progress updates in the daily notes as you work.
 
-## 4. Approval Follow-Up
+## 5. Approval Follow-Up
 
 If `IRONWORKS_APPROVAL_ID` is set:
 
@@ -53,7 +71,7 @@ GET /api/approvals/{approvalId}/issues
 - If approved: close resolved issues, comment with next steps on open ones.
 - If rejected: read the feedback, adjust your approach, resubmit if appropriate.
 
-## 5. Get Assignments
+## 6. Get Assignments
 
 ```sh
 GET /api/agents/me/inbox-lite
@@ -63,7 +81,7 @@ GET /api/agents/me/inbox-lite
 - Skip `blocked` unless you can unblock it right now.
 - If `IRONWORKS_TASK_ID` is set and assigned to you, prioritize that task above all others.
 
-## 6. Checkout and Work
+## 7. Checkout and Work
 
 For each task you're going to work on:
 
@@ -82,7 +100,7 @@ PATCH /api/issues/{id}
 
 Update the status (`in_progress`, `in_review`, `done`, `blocked`) and add a comment explaining what you did.
 
-## 7. Delegation (if you manage others)
+## 8. Delegation (if you manage others)
 
 When delegating work:
 
@@ -95,7 +113,7 @@ POST /api/companies/{companyId}/issues
 - Include clear context in the description so the assignee can work independently.
 - Comment on your parent task noting who you delegated to and why.
 
-## 8. Fact Extraction and Daily Notes
+## 9. Fact Extraction and Daily Notes
 
 At the end of your work:
 
@@ -103,7 +121,35 @@ At the end of your work:
 2. **Knowledge graph**: If you learned something durable (a fact about the project, a decision that affects future work, a pattern worth remembering), write it to `$AGENT_HOME/life/`.
 3. **Self-improvement**: Under "## Lessons Learned" note what went well and what you'd do differently. If you find a recurring pattern, document it as a process in your knowledge graph.
 
-## 9. Exit
+## 10. Checkpoint (before exiting)
+
+If you have `in_progress` work that will continue on your next heartbeat, write a checkpoint file so you can resume without losing context:
+
+```bash
+# Write to $AGENT_HOME/.checkpoint.json
+cat > "$AGENT_HOME/.checkpoint.json" << 'CHECKPOINT'
+{
+  "task_id": "<current task ID>",
+  "task_identifier": "<e.g. STE-42>",
+  "phase": "<what stage you're in: planning|implementing|testing|reviewing>",
+  "decisions": [
+    "<key decision 1 and why>",
+    "<key decision 2 and why>"
+  ],
+  "files_created": ["<list of files you created or modified>"],
+  "next_step": "<exactly what to do next when you wake up>",
+  "blockers": "<null or description of what's blocking>",
+  "context": "<any critical context that would be lost between sessions>"
+}
+CHECKPOINT
+```
+
+If you completed all your work and have nothing in progress, delete the checkpoint:
+```bash
+rm -f "$AGENT_HOME/.checkpoint.json"
+```
+
+## 11. Exit
 
 - Comment on any `in_progress` work before exiting -- never leave a task silently mid-work.
 - If you have nothing to do (empty inbox, no mentions), exit cleanly without burning tokens.

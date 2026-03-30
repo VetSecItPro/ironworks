@@ -1,5 +1,6 @@
 import { ChangeEvent, useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@/lib/router";
 import { useCompany } from "../context/CompanyContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { useToast } from "../context/ToastContext";
@@ -541,6 +542,18 @@ export function CompanySettings() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Privacy & Data Link */}
+      <div className="py-6 border-t border-border">
+        <Link
+          to="/privacy-settings"
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Settings className="h-4 w-4" />
+          Privacy & Data Settings
+          <span className="text-xs text-muted-foreground ml-1">— Data export, erasure, retention policies</span>
+        </Link>
       </div>
     </div>
   );

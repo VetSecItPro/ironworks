@@ -49,6 +49,7 @@ import { redactEventPayload } from "../redaction.js";
 import { redactCurrentUserValue } from "../log-redaction.js";
 import { renderOrgChartSvg, renderOrgChartPng, type OrgNode, type OrgChartStyle, ORG_CHART_STYLES } from "./org-chart-svg.js";
 import { instanceSettingsService } from "../services/instance-settings.js";
+import { ensureLibraryAgentFolder } from "../services/playbook-execution.js";
 import { runClaudeLogin } from "@ironworksai/adapter-claude-local/server";
 import {
   DEFAULT_CODEX_LOCAL_BYPASS_APPROVALS_AND_SANDBOX,
@@ -1387,6 +1388,9 @@ export function agentRoutes(db: Db) {
         actor.actorType === "user" ? actor.actorId : null,
       );
     }
+
+    // Wire: auto-create library folder for new agent
+    ensureLibraryAgentFolder(companyId, agent.name, db).catch(() => {});
 
     res.status(201).json(agent);
   });

@@ -9,7 +9,7 @@ import type {
   FinanceEvent,
   QuotaWindow,
 } from "@ironworksai/shared";
-import { ArrowDownLeft, ArrowUpRight, ChevronDown, ChevronRight, Coins, DollarSign, ReceiptText } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, ChevronDown, ChevronRight, Coins, CreditCard, DollarSign, Download, FolderKanban, Plus, ReceiptText } from "lucide-react";
 import { budgetsApi } from "../api/budgets";
 import { costsApi } from "../api/costs";
 import { BillerSpendCard } from "../components/BillerSpendCard";
@@ -32,6 +32,9 @@ import { billingTypeDisplayName, cn, formatCents, formatTokens, providerDisplayN
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { NewFinanceEventDialog } from "../components/NewFinanceEventDialog";
+import { NewBudgetDialog } from "../components/NewBudgetDialog";
+import { totalEquivalentSpendCents as totalEquivSpend } from "../lib/equivalent-spend";
 
 const NO_COMPANY = "__none__";
 
@@ -47,11 +50,19 @@ function currentWeekRange(): { from: string; to: string } {
 function ProviderTabLabel({ provider, rows }: { provider: string; rows: CostByProviderModel[] }) {
   const totalTokens = rows.reduce((sum, row) => sum + row.inputTokens + row.cachedInputTokens + row.outputTokens, 0);
   const totalCost = rows.reduce((sum, row) => sum + row.costCents, 0);
+  const isSubOnly = totalCost === 0 && totalTokens > 0;
+  const equivCents = isSubOnly
+    ? totalEquivSpend(rows.map((r) => ({ model: r.model, inputTokens: r.inputTokens, cachedInputTokens: r.cachedInputTokens, outputTokens: r.outputTokens })))
+    : 0;
   return (
     <span className="flex items-center gap-1.5">
       <span>{providerDisplayName(provider)}</span>
       <span className="font-mono text-xs text-muted-foreground">{formatTokens(totalTokens)}</span>
-      <span className="text-xs text-muted-foreground">{formatCents(totalCost)}</span>
+      {isSubOnly ? (
+        <span className="text-xs text-blue-500">~{formatCents(equivCents)}</span>
+      ) : (
+        <span className="text-xs text-muted-foreground">{formatCents(totalCost)}</span>
+      )}
     </span>
   );
 }
@@ -73,14 +84,23 @@ function MetricTile({
   value,
   subtitle,
   icon: Icon,
+  onClick,
 }: {
   label: string;
   value: string;
   subtitle: string;
   icon: ComponentType<{ className?: string }>;
+  onClick?: () => void;
 }) {
+  const Wrapper = onClick ? "button" : "div";
   return (
-    <div className="border border-border p-4">
+    <Wrapper
+      className={cn(
+        "border border-border p-4 text-left transition-colors",
+        onClick && "cursor-pointer hover:bg-accent/50 hover:border-foreground/20",
+      )}
+      onClick={onClick}
+    >
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <div className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">{label}</div>
@@ -91,7 +111,7 @@ function MetricTile({
           <Icon className="h-4 w-4 text-muted-foreground" />
         </div>
       </div>
-    </div>
+    </Wrapper>
   );
 }
 
@@ -151,9 +171,11 @@ export function Costs() {
   const { setBreadcrumbs } = useBreadcrumbs();
   const queryClient = useQueryClient();
 
-  const [mainTab, setMainTab] = useState<"overview" | "budgets" | "providers" | "billers" | "finance">("overview");
+  const [mainTab, setMainTab] = useState<"overview" | "budgets" | "providers" | "billers" | "finance" | "projects">("overview");
   const [activeProvider, setActiveProvider] = useState("all");
   const [activeBiller, setActiveBiller] = useState("all");
+  const [showNewFinanceEvent, setShowNewFinanceEvent] = useState(false);
+  const [showNewBudget, setShowNewBudget] = useState(false);
 
   const {
     preset,
@@ -223,6 +245,18 @@ export function Costs() {
     onSuccess: invalidateBudgetViews,
   });
 
+  const financeEventMutation = useMutation({
+    mutationFn: (event: Parameters<typeof costsApi.createFinanceEvent>[1]) =>
+      costsApi.createFinanceEvent(companyId, event),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.financeSummary(companyId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.financeByBiller(companyId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.financeByKind(companyId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.financeEvents(companyId) });
+      setShowNewFinanceEvent(false);
+    },
+  });
+
   const incidentMutation = useMutation({
     mutationFn: (input: { incidentId: string; action: "keep_paused" | "raise_budget_and_resume"; amount?: number }) =>
       budgetsApi.resolveIncident(companyId, input.incidentId, input),
@@ -266,6 +300,20 @@ export function Costs() {
   useEffect(() => {
     setExpandedAgents(new Set());
   }, [companyId, from, to]);
+
+  // Equivalent spend calculation
+  const { data: equivalentSpend } = useQuery({
+    queryKey: ["equivalent-spend", companyId, from, to],
+    queryFn: () => costsApi.equivalentSpend(companyId, from || undefined, to || undefined),
+    enabled: !!selectedCompanyId && customReady,
+  });
+
+  // Project detail for Projects tab
+  const { data: projectDetailCosts } = useQuery({
+    queryKey: ["project-detail-costs", companyId, from, to],
+    queryFn: () => costsApi.byProjectDetail(companyId, from || undefined, to || undefined),
+    enabled: !!selectedCompanyId && customReady && mainTab === "projects",
+  });
 
   function toggleAgent(agentId: string) {
     setExpandedAgents((prev) => {
@@ -459,6 +507,14 @@ export function Costs() {
       (sum, provider) => sum + (byProvider.get(provider)?.reduce((acc, row) => acc + row.costCents, 0) ?? 0),
       0,
     );
+    // Calculate equivalent spend for the "All" tab when some providers are subscription
+    const allEquiv = allCents === 0 && allTokens > 0
+      ? providerKeys.reduce((sum, p) => {
+          const pRows = byProvider.get(p) ?? [];
+          return sum + totalEquivSpend(pRows.map((r) => ({ model: r.model, inputTokens: r.inputTokens, cachedInputTokens: r.cachedInputTokens, outputTokens: r.outputTokens })));
+        }, 0)
+      : 0;
+
     return [
       {
         value: "all",
@@ -468,7 +524,11 @@ export function Costs() {
             {providerKeys.length > 0 ? (
               <>
                 <span className="font-mono text-xs text-muted-foreground">{formatTokens(allTokens)}</span>
-                <span className="text-xs text-muted-foreground">{formatCents(allCents)}</span>
+                {allCents === 0 && allEquiv > 0 ? (
+                  <span className="text-xs text-blue-500">~{formatCents(allEquiv)}</span>
+                ) : (
+                  <span className="text-xs text-muted-foreground">{formatCents(allCents)}</span>
+                )}
               </>
             ) : null}
           </span>
@@ -579,12 +639,26 @@ export function Costs() {
             </div>
           ) : null}
 
+          {/* Equivalent spend banner for subscription users */}
+          {equivalentSpend && equivalentSpend.billingMode !== "none" && equivalentSpend.billingMode !== "api" && (
+            <div className="flex items-center gap-3 p-3 rounded-lg border border-blue-500/20 bg-blue-500/5 text-sm">
+              <CreditCard className="h-4 w-4 text-blue-500 shrink-0" />
+              <span className="text-muted-foreground">
+                {equivalentSpend.billingMode === "subscription" ? "Subscription covers all usage." : "Mixed billing."}{" "}
+                <span className="font-medium text-foreground">
+                  Equivalent API spend: {formatCents(equivalentSpend.totalEquivalentCents)}
+                </span>
+              </span>
+            </div>
+          )}
+
           <div className="grid gap-3 lg:grid-cols-4">
             <MetricTile
               label="Inference spend"
               value={formatCents(spendData?.summary.spendCents ?? 0)}
               subtitle={`${formatTokens(inferenceTokenTotal)} tokens across request-scoped events`}
               icon={DollarSign}
+              onClick={() => setMainTab("providers")}
             />
             <MetricTile
               label="Budget"
@@ -601,18 +675,21 @@ export function Costs() {
                     : "No monthly cap configured"
               }
               icon={Coins}
+              onClick={() => setMainTab("budgets")}
             />
             <MetricTile
               label="Finance net"
               value={formatCents(financeData?.summary.netCents ?? 0)}
               subtitle={`${formatCents(financeData?.summary.debitCents ?? 0)} debits · ${formatCents(financeData?.summary.creditCents ?? 0)} credits`}
               icon={ReceiptText}
+              onClick={() => setMainTab("finance")}
             />
             <MetricTile
               label="Finance events"
               value={String(financeData?.summary.eventCount ?? 0)}
               subtitle={`${formatCents(financeData?.summary.estimatedDebitCents ?? 0)} estimated in range`}
               icon={ArrowUpRight}
+              onClick={() => setMainTab("finance")}
             />
           </div>
       </div>
@@ -620,8 +697,9 @@ export function Costs() {
       <Tabs value={mainTab} onValueChange={(value) => setMainTab(value as typeof mainTab)}>
         <TabsList variant="line" className="justify-start">
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="projects">Projects</TabsTrigger>
           <TabsTrigger value="budgets">Budgets</TabsTrigger>
-          <TabsTrigger value="providers">Providers</TabsTrigger>
+          <TabsTrigger value="providers">AI Providers</TabsTrigger>
           <TabsTrigger value="billers">Billers</TabsTrigger>
           <TabsTrigger value="finance">Finance</TabsTrigger>
         </TabsList>
@@ -654,39 +732,38 @@ export function Costs() {
                 </div>
               ) : null}
 
-              <div className="grid gap-4 xl:grid-cols-[1.3fr,1fr]">
+              <div className="grid gap-4 xl:grid-cols-3">
+                {/* Inference Ledger */}
                 <Card>
                   <CardHeader className="px-5 pt-5 pb-2">
-                    <CardTitle className="text-base">Inference ledger</CardTitle>
-                    <CardDescription>
-                      Request-scoped inference spend for the selected period.
-                    </CardDescription>
+                    <CardTitle className="text-base">Inference Ledger</CardTitle>
+                    <CardDescription>Total API and subscription spend across all agent runs.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4 px-5 pb-5 pt-2">
-                    <div className="flex flex-wrap items-end justify-between gap-3">
+                    <div className="flex items-end justify-between gap-3">
                       <div>
                         <div className="text-3xl font-semibold tabular-nums">
                           {formatCents(spendData?.summary.spendCents ?? 0)}
                         </div>
-                        <div className="mt-1 text-sm text-muted-foreground">
+                        <div className="mt-1 text-xs text-muted-foreground">
                           {spendData?.summary.budgetCents && spendData.summary.budgetCents > 0
-                            ? `Budget ${formatCents(spendData.summary.budgetCents)}`
-                            : "Unlimited budget"}
+                            ? `of ${formatCents(spendData.summary.budgetCents)} monthly budget`
+                            : "No budget cap configured"}
                         </div>
                       </div>
-                      <div className="border border-border px-4 py-3 text-right">
-                        <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">usage</div>
-                        <div className="mt-1 text-lg font-medium tabular-nums">
+                      <div className="text-right">
+                        <div className="text-xl font-semibold tabular-nums">
                           {formatTokens(inferenceTokenTotal)}
                         </div>
+                        <div className="text-xs text-muted-foreground">tokens used</div>
                       </div>
                     </div>
                     {spendData?.summary.budgetCents && spendData.summary.budgetCents > 0 ? (
-                      <div className="space-y-2">
-                        <div className="h-2 overflow-hidden bg-muted">
+                      <div className="space-y-1.5">
+                        <div className="h-2 overflow-hidden bg-muted rounded-full">
                           <div
                             className={cn(
-                              "h-full transition-[width,background-color] duration-150",
+                              "h-full transition-[width,background-color] duration-150 rounded-full",
                               spendData.summary.utilizationPercent > 90
                                 ? "bg-red-400"
                                 : spendData.summary.utilizationPercent > 70
@@ -697,26 +774,92 @@ export function Costs() {
                           />
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {spendData.summary.utilizationPercent}% of monthly budget consumed in this range.
+                          {spendData.summary.utilizationPercent}% of monthly budget consumed
                         </div>
                       </div>
                     ) : null}
+                    {equivalentSpend && equivalentSpend.subscriptionEquivalentCents > 0 && (
+                      <div className="pt-2 border-t border-border space-y-1.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">API spend (billed)</span>
+                          <span className="font-mono font-medium">{formatCents(equivalentSpend.actualSpendCents)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">Subscription value (covered)</span>
+                          <span className="font-mono font-medium text-blue-500">{formatCents(equivalentSpend.subscriptionEquivalentCents)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs pt-1 border-t border-border/50">
+                          <span className="font-medium">Total compute value</span>
+                          <span className="font-mono font-semibold">{formatCents(equivalentSpend.totalEquivalentCents)}</span>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
-                <FinanceSummaryCard
-                  debitCents={financeData?.summary.debitCents ?? 0}
-                  creditCents={financeData?.summary.creditCents ?? 0}
-                  netCents={financeData?.summary.netCents ?? 0}
-                  estimatedDebitCents={financeData?.summary.estimatedDebitCents ?? 0}
-                  eventCount={financeData?.summary.eventCount ?? 0}
-                />
-              </div>
-
-              <div className="grid gap-4 xl:grid-cols-[1.25fr,0.95fr]">
+                {/* Finance Ledger */}
                 <Card>
                   <CardHeader className="px-5 pt-5 pb-2">
-                    <CardTitle className="text-base">By agent</CardTitle>
+                    <CardTitle className="text-base">Finance Ledger</CardTitle>
+                    <CardDescription>Account-level charges, credits, and platform fees.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="px-5 pb-5 pt-2">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="border border-border rounded-lg p-3">
+                        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Debits</div>
+                        <div className="text-xl font-semibold tabular-nums mt-1">{formatCents(financeData?.summary.debitCents ?? 0)}</div>
+                      </div>
+                      <div className="border border-border rounded-lg p-3">
+                        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Credits</div>
+                        <div className="text-xl font-semibold tabular-nums mt-1">{formatCents(financeData?.summary.creditCents ?? 0)}</div>
+                      </div>
+                      <div className="border border-border rounded-lg p-3">
+                        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Net</div>
+                        <div className="text-xl font-semibold tabular-nums mt-1">{formatCents(financeData?.summary.netCents ?? 0)}</div>
+                      </div>
+                      <div className="border border-border rounded-lg p-3">
+                        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Estimated</div>
+                        <div className="text-xl font-semibold tabular-nums mt-1">{formatCents(financeData?.summary.estimatedDebitCents ?? 0)}</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Recent Events */}
+                <Card>
+                  <CardHeader className="px-5 pt-5 pb-2">
+                    <CardTitle className="text-base">Recent Events</CardTitle>
+                    <CardDescription>Latest financial activity and charges.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="px-5 pb-5 pt-2">
+                    {topFinanceEvents.length === 0 ? (
+                      <p className="text-sm text-muted-foreground py-4">No finance events yet.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {topFinanceEvents.slice(0, 5).map((event) => (
+                          <div key={event.id} className="flex items-center justify-between text-sm border-b border-border pb-2 last:border-0">
+                            <div className="min-w-0">
+                              <div className="text-xs font-medium truncate">{event.description ?? event.eventKind}</div>
+                              <div className="text-[10px] text-muted-foreground">{event.biller}</div>
+                            </div>
+                            <span className={cn(
+                              "font-mono text-sm shrink-0 ml-2",
+                              event.direction === "credit" ? "text-emerald-500" : "",
+                            )}>
+                              {event.direction === "credit" ? "+" : "-"}{formatCents(event.amountCents)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid gap-4 xl:grid-cols-2">
+                <Card>
+                  <CardHeader className="px-5 pt-5 pb-2">
+                    <CardTitle className="text-base">By Agent</CardTitle>
                     <CardDescription>What each agent consumed in the selected period.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-2 px-5 pb-5 pt-2">
@@ -801,37 +944,61 @@ export function Costs() {
                   </CardContent>
                 </Card>
 
-                <div className="space-y-4">
-                  <Card>
-                    <CardHeader className="px-5 pt-5 pb-2">
-                      <CardTitle className="text-base">By project</CardTitle>
-                      <CardDescription>Run costs attributed through project-linked issues.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-2 px-5 pb-5 pt-2">
-                      {(spendData?.byProject.length ?? 0) === 0 ? (
-                        <p className="text-sm text-muted-foreground">No project-attributed run costs yet.</p>
-                      ) : (
-                        spendData?.byProject.map((row, index) => (
-                          <div
-                            key={row.projectId ?? `unattributed-${index}`}
-                            className="flex items-center justify-between gap-3 border border-border px-3 py-2 text-sm"
-                          >
-                            <span className="truncate">{row.projectName ?? row.projectId ?? "Unattributed"}</span>
-                            <span className="font-medium tabular-nums">{formatCents(row.costCents)}</span>
+                <Card className="flex flex-col">
+                  <CardHeader className="px-5 pt-5 pb-2">
+                    <CardTitle className="text-base">By Project</CardTitle>
+                    <CardDescription>Run costs attributed through project-linked issues.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-2 px-5 pb-5 pt-2 flex-1">
+                    {(spendData?.byProject.length ?? 0) === 0 ? (
+                      <p className="text-sm text-muted-foreground">No project-attributed run costs yet.</p>
+                    ) : (
+                      spendData?.byProject.map((row, index) => (
+                        <div
+                          key={row.projectId ?? `unattributed-${index}`}
+                          className="flex items-center justify-between gap-3 border border-border rounded-lg px-4 py-3 text-sm"
+                        >
+                          <span className="truncate font-medium">{row.projectName ?? row.projectId ?? "Unattributed"}</span>
+                          <div className="text-right shrink-0">
+                            <div className="font-semibold tabular-nums">{formatCents(row.costCents)}</div>
+                            <div className="text-[10px] text-muted-foreground">
+                              {formatTokens(row.inputTokens + row.outputTokens)} tokens
+                            </div>
                           </div>
-                        ))
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  <FinanceTimelineCard rows={topFinanceEvents.slice(0, 6)} emptyMessage="No finance events yet. Add account-level charges once biller invoices or credits land." />
-                </div>
+                        </div>
+                      ))
+                    )}
+                  </CardContent>
+                </Card>
               </div>
             </>
           )}
         </TabsContent>
 
         <TabsContent value="budgets" className="mt-4 space-y-4">
+          {/* Budget header with New Budget button */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">Budget Control</h2>
+              <p className="text-sm text-muted-foreground">Set spend limits for agents, projects, or the entire company.</p>
+            </div>
+            <Button size="sm" onClick={() => setShowNewBudget(true)}>
+              <Plus className="h-3.5 w-3.5 mr-1.5" />
+              Set Budget
+            </Button>
+          </div>
+
+          <NewBudgetDialog
+            open={showNewBudget}
+            onOpenChange={setShowNewBudget}
+            onSubmit={(policy) => {
+              policyMutation.mutate(policy, {
+                onSuccess: () => setShowNewBudget(false),
+              });
+            }}
+            isPending={policyMutation.isPending}
+          />
+
           {budgetLoading ? (
             <PageSkeleton variant="costs" />
           ) : budgetError ? (
@@ -840,7 +1007,7 @@ export function Costs() {
             <>
               <Card className="border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))]">
                 <CardHeader className="px-5 pt-5 pb-3">
-                  <CardTitle className="text-base">Budget control plane</CardTitle>
+                  <CardTitle className="text-base">Status</CardTitle>
                   <CardDescription>
                     Hard-stop spend limits for agents and projects. Provider subscription quota stays separate and appears under Providers.
                   </CardDescription>
@@ -1057,6 +1224,25 @@ export function Costs() {
         </TabsContent>
 
         <TabsContent value="finance" className="mt-4 space-y-4">
+          {/* New Finance Event button */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">Finance Ledger</h2>
+              <p className="text-sm text-muted-foreground">Record payments, charges, credits, and adjustments.</p>
+            </div>
+            <Button size="sm" onClick={() => setShowNewFinanceEvent(true)}>
+              <Plus className="h-3.5 w-3.5 mr-1.5" />
+              New Event
+            </Button>
+          </div>
+
+          <NewFinanceEventDialog
+            open={showNewFinanceEvent}
+            onOpenChange={setShowNewFinanceEvent}
+            onSubmit={(event) => financeEventMutation.mutate(event)}
+            isPending={financeEventMutation.isPending}
+          />
+
           {showCustomPrompt ? (
             <p className="text-sm text-muted-foreground">Select a start and end date to load data.</p>
           ) : financeLoading ? (
@@ -1094,6 +1280,106 @@ export function Costs() {
                 <FinanceKindCard rows={financeData?.byKind ?? []} />
               </div>
             </>
+          )}
+        </TabsContent>
+
+        {/* ─── Projects Tab ─────────────────────────────────────── */}
+        <TabsContent value="projects" className="mt-4 space-y-4">
+          {/* Billing mode banner */}
+          {equivalentSpend && equivalentSpend.billingMode !== "none" && (
+            <div className={cn(
+              "flex items-center gap-3 p-3 rounded-lg border text-sm",
+              equivalentSpend.billingMode === "subscription"
+                ? "border-blue-500/30 bg-blue-500/5 text-blue-700 dark:text-blue-300"
+                : equivalentSpend.billingMode === "mixed"
+                  ? "border-amber-500/30 bg-amber-500/5 text-amber-700 dark:text-amber-300"
+                  : "border-border bg-muted/30",
+            )}>
+              <CreditCard className="h-4 w-4 shrink-0" />
+              <div className="flex-1">
+                <span className="font-medium">
+                  {equivalentSpend.billingMode === "subscription"
+                    ? "Subscription-based billing"
+                    : equivalentSpend.billingMode === "mixed"
+                      ? "Mixed billing (subscription + API)"
+                      : "API-metered billing"}
+                </span>
+                <span className="text-xs ml-2 opacity-80">
+                  {equivalentSpend.note}
+                </span>
+              </div>
+              {equivalentSpend.subscriptionEquivalentCents > 0 && (
+                <div className="text-right shrink-0">
+                  <div className="text-xs opacity-70">Equivalent API spend</div>
+                  <div className="font-mono font-semibold">
+                    {formatCents(equivalentSpend.totalEquivalentCents)}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Per-project cards */}
+          {(projectDetailCosts?.length ?? 0) === 0 ? (
+            <EmptyState icon={FolderKanban} message="No project costs recorded yet." />
+          ) : (
+            <div className="space-y-3">
+              {projectDetailCosts?.map((project) => (
+                <Card key={project.projectId}>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base">{project.projectName ?? "Unknown project"}</CardTitle>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="xs"
+                          onClick={() => {
+                            const url = costsApi.projectExportUrl(
+                              companyId,
+                              project.projectId ?? "",
+                              from || undefined,
+                              to || undefined,
+                            );
+                            window.open(url, "_blank");
+                          }}
+                        >
+                          <Download className="h-3 w-3 mr-1" />
+                          Export CSV
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div>
+                        <div className="text-xs text-muted-foreground">Actual Spend</div>
+                        <div className="text-lg font-mono font-semibold">
+                          {formatCents(project.costCents)}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground">Equivalent Spend</div>
+                        <div className="text-lg font-mono font-semibold text-blue-600 dark:text-blue-400">
+                          {formatCents(project.equivalentSpendCents)}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground">Input Tokens</div>
+                        <div className="text-sm font-mono">
+                          {formatTokens(project.inputTokens)}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground">Output Tokens</div>
+                        <div className="text-sm font-mono">
+                          {formatTokens(project.outputTokens)}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           )}
         </TabsContent>
       </Tabs>

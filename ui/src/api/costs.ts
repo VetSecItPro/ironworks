@@ -47,7 +47,41 @@ export const costsApi = {
     api.get<CostWindowSpendRow[]>(`/companies/${companyId}/costs/window-spend`),
   quotaWindows: (companyId: string) =>
     api.get<ProviderQuotaResult[]>(`/companies/${companyId}/costs/quota-windows`),
+
+  createFinanceEvent: (companyId: string, event: {
+    eventKind: string;
+    direction: "debit" | "credit";
+    biller: string;
+    provider?: string;
+    amountCents: number;
+    currency: string;
+    description: string;
+    occurredAt: string;
+  }) => api.post<unknown>(`/companies/${companyId}/finance-events`, event),
+
+  equivalentSpend: (companyId: string, from?: string, to?: string) =>
+    api.get<EquivalentSpendResult>(`/companies/${companyId}/costs/equivalent-spend${dateParams(from, to)}`),
+
+  byProjectDetail: (companyId: string, from?: string, to?: string) =>
+    api.get<CostByProjectDetail[]>(`/companies/${companyId}/costs/by-project-detail${dateParams(from, to)}`),
+
+  projectExportUrl: (companyId: string, projectId: string, from?: string, to?: string) =>
+    `/api/companies/${companyId}/costs/project-export?projectId=${encodeURIComponent(projectId)}${from ? `&from=${encodeURIComponent(from)}` : ""}${to ? `&to=${encodeURIComponent(to)}` : ""}`,
 };
+
+export interface EquivalentSpendResult {
+  billingMode: "subscription" | "api" | "mixed" | "none";
+  actualSpendCents: number;
+  subscriptionEquivalentCents: number;
+  totalEquivalentCents: number;
+  subscriptionTokens: { input: number; cachedInput: number; output: number };
+  apiTokens: { input: number; cachedInput: number; output: number };
+  note: string;
+}
+
+export interface CostByProjectDetail extends CostByProject {
+  equivalentSpendCents: number;
+}
 
 function dateParamsWithLimit(from?: string, to?: string, limit?: number): string {
   const params = new URLSearchParams();

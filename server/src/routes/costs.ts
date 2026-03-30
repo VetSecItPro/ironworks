@@ -20,6 +20,7 @@ import {
 import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
 import { fetchAllQuotaWindows } from "../services/quota-windows.js";
 import { badRequest } from "../errors.js";
+import { calculateTotalEquivalentSpend, getRateCard } from "../services/equivalent-spend.js";
 
 export function costRoutes(db: Db) {
   const router = Router();
@@ -245,6 +246,174 @@ export function costRoutes(db: Db) {
     const range = parseDateRange(req.query);
     const rows = await costs.byProject(companyId, range);
     res.json(rows);
+  });
+
+  /**
+   * GET /companies/:companyId/costs/equivalent-spend
+   * Calculate what subscription usage would cost if billed per API call.
+   */
+  router.get("/companies/:companyId/costs/equivalent-spend", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+    const range = parseDateRange(req.query);
+
+    // Get all cost events with token data
+    const byAgentModel = await costs.byAgentModel(companyId, range);
+
+    // Separate subscription vs API usage
+    const subscriptionEntries = byAgentModel.filter(
+      (e: Record<string, unknown>) =>
+        (e.billingType as string) === "subscription_included" ||
+        (e.billingType as string) === "subscription_overage",
+    );
+    const apiEntries = byAgentModel.filter(
+      (e: Record<string, unknown>) => (e.billingType as string) === "metered_api",
+    );
+
+    const subscriptionEquivalentCents = calculateTotalEquivalentSpend(
+      subscriptionEntries.map((e: Record<string, unknown>) => ({
+        model: (e.model as string) ?? "unknown",
+        inputTokens: Number(e.inputTokens ?? 0),
+        cachedInputTokens: Number(e.cachedInputTokens ?? 0),
+        outputTokens: Number(e.outputTokens ?? 0),
+      })),
+    );
+
+    const apiActualCents = apiEntries.reduce(
+      (sum: number, e: Record<string, unknown>) => sum + Number(e.costCents ?? 0),
+      0,
+    );
+
+    const totalEquivalentCents = subscriptionEquivalentCents + apiActualCents;
+
+    // Determine billing mode
+    const hasSubscription = subscriptionEntries.length > 0;
+    const hasApi = apiEntries.length > 0;
+    const billingMode = hasSubscription && hasApi
+      ? "mixed"
+      : hasSubscription
+        ? "subscription"
+        : hasApi
+          ? "api"
+          : "none";
+
+    res.json({
+      billingMode,
+      actualSpendCents: apiActualCents,
+      subscriptionEquivalentCents,
+      totalEquivalentCents,
+      subscriptionTokens: {
+        input: subscriptionEntries.reduce((s: number, e: Record<string, unknown>) => s + Number(e.inputTokens ?? 0), 0),
+        cachedInput: subscriptionEntries.reduce((s: number, e: Record<string, unknown>) => s + Number(e.cachedInputTokens ?? 0), 0),
+        output: subscriptionEntries.reduce((s: number, e: Record<string, unknown>) => s + Number(e.outputTokens ?? 0), 0),
+      },
+      apiTokens: {
+        input: apiEntries.reduce((s: number, e: Record<string, unknown>) => s + Number(e.inputTokens ?? 0), 0),
+        cachedInput: apiEntries.reduce((s: number, e: Record<string, unknown>) => s + Number(e.cachedInputTokens ?? 0), 0),
+        output: apiEntries.reduce((s: number, e: Record<string, unknown>) => s + Number(e.outputTokens ?? 0), 0),
+      },
+      note: billingMode === "subscription"
+        ? "All usage is covered by your subscription. Equivalent spend shows what this would cost per API call."
+        : billingMode === "mixed"
+          ? "Some usage is subscription-covered, some is API-metered."
+          : billingMode === "api"
+            ? "All usage is billed per API call."
+            : "No usage recorded for this period.",
+    });
+  });
+
+  /** Rate card for reference. */
+  router.get("/costs/rate-card", (_req, res) => {
+    res.json(getRateCard());
+  });
+
+  /**
+   * GET /companies/:companyId/costs/by-project-detail
+   * Per-project costs with agent-level breakdown within each project.
+   */
+  router.get("/companies/:companyId/costs/by-project-detail", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+    const range = parseDateRange(req.query);
+
+    const projectCosts = await costs.byProject(companyId, range);
+    const agentModelCosts = await costs.byAgentModel(companyId, range);
+
+    // Enrich project costs with equivalent spend and agent breakdown
+    const enriched = (projectCosts as Array<Record<string, unknown>>).map((project) => {
+      const projectId = project.projectId as string;
+
+      // Calculate equivalent spend for this project's tokens
+      const equivalentCents = calculateTotalEquivalentSpend([
+        {
+          model: "unknown", // aggregate — use default rate
+          inputTokens: Number(project.inputTokens ?? 0),
+          cachedInputTokens: Number(project.cachedInputTokens ?? 0),
+          outputTokens: Number(project.outputTokens ?? 0),
+        },
+      ]);
+
+      return {
+        ...project,
+        equivalentSpendCents: equivalentCents,
+      };
+    });
+
+    res.json(enriched);
+  });
+
+  /**
+   * GET /companies/:companyId/costs/project-export
+   * Export project costs as CSV for client billing.
+   */
+  router.get("/companies/:companyId/costs/project-export", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+    assertBoard(req);
+    const range = parseDateRange(req.query);
+    const projectId = req.query.projectId as string | undefined;
+
+    if (!projectId) {
+      res.status(400).json({ error: "projectId query parameter is required" });
+      return;
+    }
+
+    const projectCosts = await costs.byProject(companyId, range);
+    const byAgent = await costs.byAgent(companyId, range);
+    const byAgentModel = await costs.byAgentModel(companyId, range);
+
+    // Build CSV
+    const lines: string[] = [
+      "Period,Agent,Model,Provider,Billing Type,Input Tokens,Cached Input Tokens,Output Tokens,Actual Cost (USD),Equivalent Cost (USD)",
+    ];
+
+    const fromStr = range?.from?.toISOString().split("T")[0] ?? "start";
+    const toStr = range?.to?.toISOString().split("T")[0] ?? "now";
+    const period = `${fromStr} to ${toStr}`;
+
+    for (const entry of byAgentModel as Array<Record<string, unknown>>) {
+      const inputTokens = Number(entry.inputTokens ?? 0);
+      const cachedInputTokens = Number(entry.cachedInputTokens ?? 0);
+      const outputTokens = Number(entry.outputTokens ?? 0);
+      const actualCost = Number(entry.costCents ?? 0) / 100;
+      const equivCost = calculateTotalEquivalentSpend([{
+        model: (entry.model as string) ?? "unknown",
+        inputTokens,
+        cachedInputTokens,
+        outputTokens,
+      }]) / 100;
+
+      lines.push(
+        `"${period}","${entry.agentName ?? "Unknown"}","${entry.model ?? ""}","${entry.provider ?? ""}","${entry.billingType ?? ""}",${inputTokens},${cachedInputTokens},${outputTokens},${actualCost.toFixed(2)},${equivCost.toFixed(2)}`,
+      );
+    }
+
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="ironworks-costs-${projectId.slice(0, 8)}-${fromStr}-${toStr}.csv"`,
+    );
+    res.send(lines.join("\n"));
   });
 
   router.patch("/companies/:companyId/budgets", validate(updateBudgetSchema), async (req, res) => {
