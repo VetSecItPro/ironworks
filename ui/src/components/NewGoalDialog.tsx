@@ -4,6 +4,8 @@ import { GOAL_STATUSES, GOAL_LEVELS } from "@ironworksai/shared";
 import { useDialog } from "../context/DialogContext";
 import { useCompany } from "../context/CompanyContext";
 import { goalsApi } from "../api/goals";
+import { projectsApi } from "../api/projects";
+import { agentsApi } from "../api/agents";
 import { assetsApi } from "../api/assets";
 import { queryKeys } from "../lib/queryKeys";
 import {
@@ -21,6 +23,8 @@ import {
   Minimize2,
   Target,
   Layers,
+  FolderKanban,
+  Users,
 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { MarkdownEditor, type MarkdownEditorRef } from "./MarkdownEditor";
@@ -42,11 +46,15 @@ export function NewGoalDialog() {
   const [status, setStatus] = useState("planned");
   const [level, setLevel] = useState("task");
   const [parentId, setParentId] = useState("");
+  const [projectId, setProjectId] = useState("");
+  const [ownerAgentId, setOwnerAgentId] = useState("");
   const [expanded, setExpanded] = useState(false);
 
   const [statusOpen, setStatusOpen] = useState(false);
   const [levelOpen, setLevelOpen] = useState(false);
   const [parentOpen, setParentOpen] = useState(false);
+  const [projectOpen, setProjectOpen] = useState(false);
+  const [agentOpen, setAgentOpen] = useState(false);
   const descriptionEditorRef = useRef<MarkdownEditorRef>(null);
 
   // Apply defaults when dialog opens
@@ -55,6 +63,18 @@ export function NewGoalDialog() {
   const { data: goals } = useQuery({
     queryKey: queryKeys.goals.list(selectedCompanyId!),
     queryFn: () => goalsApi.list(selectedCompanyId!),
+    enabled: !!selectedCompanyId && newGoalOpen,
+  });
+
+  const { data: projectsList } = useQuery({
+    queryKey: queryKeys.projects.list(selectedCompanyId!),
+    queryFn: () => projectsApi.list(selectedCompanyId!),
+    enabled: !!selectedCompanyId && newGoalOpen,
+  });
+
+  const { data: agentsList } = useQuery({
+    queryKey: queryKeys.agents.list(selectedCompanyId!),
+    queryFn: () => agentsApi.list(selectedCompanyId!),
     enabled: !!selectedCompanyId && newGoalOpen,
   });
 
@@ -81,6 +101,8 @@ export function NewGoalDialog() {
     setStatus("planned");
     setLevel("task");
     setParentId("");
+    setProjectId("");
+    setOwnerAgentId("");
     setExpanded(false);
   }
 
@@ -92,6 +114,8 @@ export function NewGoalDialog() {
       status,
       level,
       ...(appliedParentId ? { parentId: appliedParentId } : {}),
+      ...(projectId ? { projectId } : {}),
+      ...(ownerAgentId ? { ownerAgentId } : {}),
     });
   }
 
@@ -103,6 +127,8 @@ export function NewGoalDialog() {
   }
 
   const currentParent = (goals ?? []).find((g) => g.id === appliedParentId);
+  const currentProject = (projectsList ?? []).find((p) => p.id === projectId);
+  const currentAgent = (agentsList ?? []).find((a) => a.id === ownerAgentId);
 
   return (
     <Dialog
@@ -260,6 +286,72 @@ export function NewGoalDialog() {
                   onClick={() => { setParentId(g.id); setParentOpen(false); }}
                 >
                   {g.title}
+                </button>
+              ))}
+            </PopoverContent>
+          </Popover>
+
+          {/* Project */}
+          <Popover open={projectOpen} onOpenChange={setProjectOpen}>
+            <PopoverTrigger asChild>
+              <button className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/50 transition-colors">
+                <FolderKanban className="h-3 w-3 text-muted-foreground" />
+                {currentProject ? currentProject.name : "Project"}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-48 p-1" align="start">
+              <button
+                className={cn(
+                  "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",
+                  !projectId && "bg-accent"
+                )}
+                onClick={() => { setProjectId(""); setProjectOpen(false); }}
+              >
+                No project
+              </button>
+              {(projectsList ?? []).map((p) => (
+                <button
+                  key={p.id}
+                  className={cn(
+                    "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50 truncate",
+                    p.id === projectId && "bg-accent"
+                  )}
+                  onClick={() => { setProjectId(p.id); setProjectOpen(false); }}
+                >
+                  {p.name}
+                </button>
+              ))}
+            </PopoverContent>
+          </Popover>
+
+          {/* Owner agent */}
+          <Popover open={agentOpen} onOpenChange={setAgentOpen}>
+            <PopoverTrigger asChild>
+              <button className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/50 transition-colors">
+                <Users className="h-3 w-3 text-muted-foreground" />
+                {currentAgent ? currentAgent.name : "Owner agent"}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-48 p-1" align="start">
+              <button
+                className={cn(
+                  "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",
+                  !ownerAgentId && "bg-accent"
+                )}
+                onClick={() => { setOwnerAgentId(""); setAgentOpen(false); }}
+              >
+                No owner
+              </button>
+              {(agentsList ?? []).map((a) => (
+                <button
+                  key={a.id}
+                  className={cn(
+                    "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50 truncate",
+                    a.id === ownerAgentId && "bg-accent"
+                  )}
+                  onClick={() => { setOwnerAgentId(a.id); setAgentOpen(false); }}
+                >
+                  {a.name}
                 </button>
               ))}
             </PopoverContent>
