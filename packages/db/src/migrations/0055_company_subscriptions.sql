@@ -1,8 +1,8 @@
 CREATE TABLE IF NOT EXISTS "company_subscriptions" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
   "company_id" uuid NOT NULL REFERENCES "companies"("id"),
-  "stripe_customer_id" text,
-  "stripe_subscription_id" text,
+  "polar_customer_id" text,
+  "polar_subscription_id" text,
   "plan_tier" text DEFAULT 'free' NOT NULL,
   "status" text DEFAULT 'free' NOT NULL,
   "current_period_start" timestamp with time zone,
