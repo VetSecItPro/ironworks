@@ -1,9 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "@/lib/router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { goalsApi } from "../api/goals";
+import { issuesApi } from "../api/issues";
 import { projectsApi } from "../api/projects";
 import { assetsApi } from "../api/assets";
+import { goalProgressApi } from "../api/goalProgress";
 import { usePanel } from "../context/PanelContext";
 import { useCompany } from "../context/CompanyContext";
 import { useDialog } from "../context/DialogContext";
@@ -18,8 +20,9 @@ import { PageSkeleton } from "../components/PageSkeleton";
 import { projectUrl } from "../lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus } from "lucide-react";
-import type { Goal, Project } from "@ironworksai/shared";
+import { CheckCircle2, Circle, Loader2, PanelRightClose, PanelRightOpen, Plus, ShieldAlert } from "lucide-react";
+import { cn } from "../lib/utils";
+import type { Goal, Issue, Project } from "@ironworksai/shared";
 
 export function GoalDetail() {
   const { goalId } = useParams<{ goalId: string }>();
@@ -28,6 +31,9 @@ export function GoalDetail() {
   const { openPanel, closePanel } = usePanel();
   const { setBreadcrumbs } = useBreadcrumbs();
   const queryClient = useQueryClient();
+  const [twoPane, setTwoPane] = useState(() => {
+    try { return localStorage.getItem("ironworks:goal-two-pane") === "true"; } catch { return false; }
+  });
 
   const {
     data: goal,
@@ -50,6 +56,22 @@ export function GoalDetail() {
     queryKey: queryKeys.projects.list(resolvedCompanyId!),
     queryFn: () => projectsApi.list(resolvedCompanyId!),
     enabled: !!resolvedCompanyId
+  });
+
+  // Issues linked to this goal
+  const { data: allIssues } = useQuery({
+    queryKey: queryKeys.issues.list(resolvedCompanyId!),
+    queryFn: () => issuesApi.list(resolvedCompanyId!),
+    enabled: !!resolvedCompanyId,
+  });
+
+  const goalIssues = (allIssues ?? []).filter((i: Issue) => i.goalId === goalId);
+
+  // Goal progress stats
+  const { data: progress } = useQuery({
+    queryKey: ["goals", "progress-detail", goalId],
+    queryFn: () => goalProgressApi.detail(goalId!),
+    enabled: !!goalId,
   });
 
   useEffect(() => {
@@ -99,6 +121,10 @@ export function GoalDetail() {
   }, [setBreadcrumbs, goal, goalId]);
 
   useEffect(() => {
+    if (twoPane) {
+      closePanel();
+      return;
+    }
     if (goal) {
       openPanel(
         <GoalProperties
@@ -108,13 +134,22 @@ export function GoalDetail() {
       );
     }
     return () => closePanel();
-  }, [goal]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [goal, twoPane]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const toggleTwoPane = () => {
+    setTwoPane((prev) => {
+      const next = !prev;
+      try { localStorage.setItem("ironworks:goal-two-pane", String(next)); } catch {}
+      return next;
+    });
+  };
 
   if (isLoading) return <PageSkeleton variant="detail" />;
   if (error) return <p className="text-sm text-destructive">{error.message}</p>;
   if (!goal) return null;
 
   return (
+    <div className={cn(twoPane ? "grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6" : "")}>
     <div className="space-y-6">
       <div className="space-y-3">
         <div className="flex items-center gap-2">
@@ -122,6 +157,13 @@ export function GoalDetail() {
             {goal.level}
           </span>
           <StatusBadge status={goal.status} />
+          <button
+            onClick={toggleTwoPane}
+            className="ml-auto hidden text-muted-foreground hover:text-foreground transition-colors lg:inline-flex"
+            title={twoPane ? "Hide properties panel" : "Show properties panel"}
+          >
+            {twoPane ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+          </button>
         </div>
 
         <InlineEditor
@@ -145,8 +187,44 @@ export function GoalDetail() {
         />
       </div>
 
-      <Tabs defaultValue="children">
+      {/* Progress bar */}
+      {progress && progress.totalIssues > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Progress</span>
+            <span className="font-medium">{progress.completedIssues}/{progress.totalIssues} issues done ({progress.progressPercent}%)</span>
+          </div>
+          <div className="h-2 bg-muted rounded-full overflow-hidden">
+            <div
+              className={cn(
+                "h-full rounded-full transition-[width] duration-300",
+                progress.progressPercent === 100 ? "bg-emerald-500" : progress.progressPercent > 50 ? "bg-blue-500" : "bg-amber-500",
+              )}
+              style={{ width: `${progress.progressPercent}%` }}
+            />
+          </div>
+          <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+            {progress.completedIssues > 0 && (
+              <span className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-emerald-500" />{progress.completedIssues} done</span>
+            )}
+            {progress.inProgressIssues > 0 && (
+              <span className="flex items-center gap-1"><Loader2 className="h-3 w-3 text-blue-500" />{progress.inProgressIssues} active</span>
+            )}
+            {progress.blockedIssues > 0 && (
+              <span className="flex items-center gap-1"><ShieldAlert className="h-3 w-3 text-red-500" />{progress.blockedIssues} blocked</span>
+            )}
+            {progress.todoIssues > 0 && (
+              <span className="flex items-center gap-1"><Circle className="h-3 w-3" />{progress.todoIssues} pending</span>
+            )}
+          </div>
+        </div>
+      )}
+
+      <Tabs defaultValue={goalIssues.length > 0 ? "issues" : "children"}>
         <TabsList>
+          <TabsTrigger value="issues">
+            Issues ({goalIssues.length})
+          </TabsTrigger>
           <TabsTrigger value="children">
             Sub-Goals ({childGoals.length})
           </TabsTrigger>
@@ -154,6 +232,28 @@ export function GoalDetail() {
             Projects ({linkedProjects.length})
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="issues" className="mt-4 space-y-3">
+          {goalIssues.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No issues linked to this goal yet.</p>
+          ) : (
+            <div className="border border-border rounded-lg divide-y divide-border">
+              {goalIssues.map((issue: Issue) => (
+                <EntityRow
+                  key={issue.id}
+                  title={issue.title}
+                  subtitle={issue.identifier ?? undefined}
+                  to={`/issues/${issue.identifier ?? issue.id}`}
+                  trailing={
+                    <div className="flex items-center gap-2">
+                      <StatusBadge status={issue.status} />
+                    </div>
+                  }
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
 
         <TabsContent value="children" className="mt-4 space-y-3">
           <div className="flex items-center justify-start">
@@ -191,6 +291,15 @@ export function GoalDetail() {
           )}
         </TabsContent>
       </Tabs>
+    </div>
+    {twoPane && (
+      <div className="hidden lg:block border border-border rounded-lg p-4 h-fit sticky top-4">
+        <GoalProperties
+          goal={goal}
+          onUpdate={(data) => updateGoal.mutate(data)}
+        />
+      </div>
+    )}
     </div>
   );
 }

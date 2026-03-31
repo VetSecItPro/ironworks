@@ -4,6 +4,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { issuesApi } from "../api/issues";
 import { agentsApi } from "../api/agents";
 import { projectsApi } from "../api/projects";
+import { goalsApi } from "../api/goals";
+import { routinesApi } from "../api/routines";
 import { heartbeatsApi } from "../api/heartbeats";
 import { useCompany } from "../context/CompanyContext";
 import { useDialog } from "../context/DialogContext";
@@ -50,6 +52,18 @@ export function Issues() {
   const { data: projects } = useQuery({
     queryKey: queryKeys.projects.list(selectedCompanyId!),
     queryFn: () => projectsApi.list(selectedCompanyId!),
+    enabled: !!selectedCompanyId,
+  });
+
+  const { data: goalsList } = useQuery({
+    queryKey: queryKeys.goals.list(selectedCompanyId!),
+    queryFn: () => goalsApi.list(selectedCompanyId!),
+    enabled: !!selectedCompanyId,
+  });
+
+  const { data: routinesList } = useQuery({
+    queryKey: queryKeys.routines.list(selectedCompanyId!),
+    queryFn: () => routinesApi.list(selectedCompanyId!),
     enabled: !!selectedCompanyId,
   });
 
@@ -131,6 +145,8 @@ export function Issues() {
         error={error as Error | null}
         agents={agents}
         projects={projects}
+        goals={goalsList}
+        routines={routinesList}
         liveIssueIds={liveIssueIds}
         viewStateKey="ironworks:issues-view"
         issueLinkState={issueLinkState}

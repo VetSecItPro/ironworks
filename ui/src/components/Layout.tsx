@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, Moon, Settings, Sun } from "lucide-react";
+import { Moon, Settings, Sun } from "lucide-react";
 import { Link, Outlet, useLocation, useNavigate, useParams } from "@/lib/router";
 import { CookieSettingsLink } from "./CookieConsent";
 import { CompanyRail } from "./CompanyRail";
@@ -34,7 +34,6 @@ import { queryKeys } from "../lib/queryKeys";
 import { cn } from "../lib/utils";
 import { NotFoundPage } from "../pages/NotFound";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 const INSTANCE_SETTINGS_MEMORY_KEY = "ironworks.lastInstanceSettingsPath";
 
@@ -295,50 +294,6 @@ export function Layout() {
               <CompanyRail />
               {isInstanceSettingsRoute ? <InstanceSidebar /> : <Sidebar />}
             </div>
-            <div className="border-t border-r border-border px-3 py-2 bg-background">
-              <div className="flex items-center gap-1">
-                <a
-                  href="https://docs.PLACEHOLDER_IRONWORKS_DOT_ING/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium transition-colors text-foreground/80 hover:bg-accent/50 hover:text-foreground flex-1 min-w-0"
-                >
-                  <BookOpen className="h-4 w-4 shrink-0" />
-                  <span className="truncate">Documentation</span>
-                </a>
-                {health?.version && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="px-2 text-xs text-muted-foreground shrink-0 cursor-default">v</span>
-                    </TooltipTrigger>
-                    <TooltipContent>v{health.version}</TooltipContent>
-                  </Tooltip>
-                )}
-                <Button variant="ghost" size="icon-sm" className="text-muted-foreground shrink-0" asChild>
-                  <Link
-                    to={instanceSettingsTarget}
-                    aria-label="Instance settings"
-                    title="Instance settings"
-                    onClick={() => {
-                      if (isMobile) setSidebarOpen(false);
-                    }}
-                  >
-                    <Settings className="h-4 w-4" />
-                  </Link>
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  className="text-muted-foreground shrink-0"
-                  onClick={toggleTheme}
-                  aria-label={`Switch to ${nextTheme} mode`}
-                  title={`Switch to ${nextTheme} mode`}
-                >
-                  {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                </Button>
-              </div>
-            </div>
           </div>
         ) : (
           <div className="flex h-full flex-col shrink-0">
@@ -351,50 +306,6 @@ export function Layout() {
                 )}
               >
                 {isInstanceSettingsRoute ? <InstanceSidebar /> : <Sidebar />}
-              </div>
-            </div>
-            <div className="border-t border-r border-border px-3 py-2">
-              <div className="flex items-center gap-1">
-                <a
-                  href="https://docs.PLACEHOLDER_IRONWORKS_DOT_ING/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2.5 px-3 py-2 text-[13px] font-medium transition-colors text-foreground/80 hover:bg-accent/50 hover:text-foreground flex-1 min-w-0"
-                >
-                  <BookOpen className="h-4 w-4 shrink-0" />
-                  <span className="truncate">Documentation</span>
-                </a>
-                {health?.version && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span className="px-2 text-xs text-muted-foreground shrink-0 cursor-default">v</span>
-                    </TooltipTrigger>
-                    <TooltipContent>v{health.version}</TooltipContent>
-                  </Tooltip>
-                )}
-                <Button variant="ghost" size="icon-sm" className="text-muted-foreground shrink-0" asChild>
-                  <Link
-                    to={instanceSettingsTarget}
-                    aria-label="Instance settings"
-                    title="Instance settings"
-                    onClick={() => {
-                      if (isMobile) setSidebarOpen(false);
-                    }}
-                  >
-                    <Settings className="h-4 w-4" />
-                  </Link>
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  className="text-muted-foreground shrink-0"
-                  onClick={toggleTheme}
-                  aria-label={`Switch to ${nextTheme} mode`}
-                  title={`Switch to ${nextTheme} mode`}
-                >
-                  {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                </Button>
               </div>
             </div>
           </div>
@@ -428,11 +339,32 @@ export function Layout() {
             </main>
             <PropertiesPanel />
           </div>
-          <footer className="flex items-center justify-between px-4 py-2 border-t border-border text-xs text-muted-foreground shrink-0">
+          <footer className="flex items-center justify-between px-4 py-1.5 border-t border-border text-xs text-muted-foreground shrink-0">
             <span>Ironworks by Steel Motion LLC</span>
-            <div className="flex items-center gap-4">
-              <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
+            <div className="flex items-center gap-2">
+              <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
               <CookieSettingsLink />
+              <span className="text-border">|</span>
+              <Button variant="ghost" size="icon-xs" className="text-muted-foreground" asChild>
+                <Link
+                  to={instanceSettingsTarget}
+                  aria-label="Settings"
+                  title="Settings"
+                >
+                  <Settings className="h-3.5 w-3.5" />
+                </Link>
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                className="text-muted-foreground"
+                onClick={toggleTheme}
+                aria-label={`Switch to ${nextTheme} mode`}
+                title={`Switch to ${nextTheme} mode`}
+              >
+                {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+              </Button>
             </div>
           </footer>
         </div>

@@ -78,6 +78,16 @@ function GoalCard({
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-semibold truncate">{goal.title}</h3>
             <StatusBadge status={goal.status} />
+            {(goal as Goal & { targetDate?: string | null }).targetDate && (
+              <span className={cn(
+                "text-[10px] px-1.5 py-0.5 rounded-full shrink-0",
+                new Date((goal as Goal & { targetDate?: string | null }).targetDate!) < new Date()
+                  ? "bg-red-500/10 text-red-600 dark:text-red-400"
+                  : "bg-muted text-muted-foreground",
+              )}>
+                {new Date((goal as Goal & { targetDate?: string | null }).targetDate!).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+              </span>
+            )}
           </div>
           {goal.description && (
             <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{goal.description}</p>
@@ -230,12 +240,21 @@ export function Goals() {
 
       {/* Empty state */}
       {totalGoals === 0 && (
-        <EmptyState
-          icon={Target}
-          message="No goals yet. Create a goal to start tracking what your agents are working toward."
-          action="Create Goal"
-          onAction={() => openNewGoal()}
-        />
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="bg-muted/50 p-4 mb-4 rounded-full">
+            <Target className="h-10 w-10 text-muted-foreground/50" />
+          </div>
+          <h3 className="text-sm font-medium mb-1">No goals yet</h3>
+          <p className="text-xs text-muted-foreground max-w-sm mb-4">
+            Goals track what your agents are working toward. Create a goal, then add issues or run a playbook to break it into tasks.
+          </p>
+          <div className="flex items-center gap-2">
+            <Button size="sm" onClick={() => openNewGoal()}>
+              <Plus className="h-3.5 w-3.5 mr-1.5" />
+              Create Goal
+            </Button>
+          </div>
+        </div>
       )}
 
       {/* Goal cards */}
