@@ -5,6 +5,7 @@ import { useCompany } from "../context/CompanyContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { queryKeys } from "../lib/queryKeys";
 import { EmptyState } from "../components/EmptyState";
+import { MarkdownBody } from "../components/MarkdownBody";
 import { PageSkeleton } from "../components/PageSkeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,53 +27,6 @@ import {
 } from "lucide-react";
 
 const KB_QUERY_KEY = (companyId: string) => ["knowledge", companyId] as const;
-
-/* ── Cross-link renderer ── */
-
-function renderBodyWithLinks(body: string, pages: KnowledgePage[], onNavigate: (slug: string) => void) {
-  // Replace [[Page Name]] with clickable links
-  const parts = body.split(/(\[\[[^\]]+\]\])/g);
-  return parts.map((part, i) => {
-    const match = part.match(/^\[\[([^\]]+)\]\]$/);
-    if (!match) return part;
-    const linkTitle = match[1];
-    const linkedPage = pages.find(
-      (p) => p.title.toLowerCase() === linkTitle.toLowerCase() || p.slug === linkTitle.toLowerCase().replace(/\s+/g, "-"),
-    );
-    if (linkedPage) {
-      return (
-        <button
-          key={i}
-          className="text-blue-400 hover:text-blue-300 underline underline-offset-2 cursor-pointer"
-          onClick={(e) => { e.preventDefault(); onNavigate(linkedPage.slug); }}
-        >
-          {linkTitle}
-        </button>
-      );
-    }
-    return <span key={i} className="text-red-400/60" title="Page not found">{part}</span>;
-  });
-}
-
-/* ── Simple markdown renderer ── */
-
-function MarkdownView({ body, pages, onNavigate }: { body: string; pages: KnowledgePage[]; onNavigate: (slug: string) => void }) {
-  // Split into lines, render cross-links within each line
-  const lines = body.split("\n");
-  return (
-    <div className="prose prose-sm dark:prose-invert max-w-none">
-      {lines.map((line, i) => {
-        if (line.startsWith("# ")) return <h1 key={i} className="text-xl font-bold mt-6 mb-2">{renderBodyWithLinks(line.slice(2), pages, onNavigate)}</h1>;
-        if (line.startsWith("## ")) return <h2 key={i} className="text-lg font-semibold mt-5 mb-2">{renderBodyWithLinks(line.slice(3), pages, onNavigate)}</h2>;
-        if (line.startsWith("### ")) return <h3 key={i} className="text-base font-semibold mt-4 mb-1">{renderBodyWithLinks(line.slice(4), pages, onNavigate)}</h3>;
-        if (line.startsWith("- ") || line.startsWith("* ")) return <li key={i} className="ml-4">{renderBodyWithLinks(line.slice(2), pages, onNavigate)}</li>;
-        if (line.startsWith("---")) return <hr key={i} className="my-4 border-border" />;
-        if (line.trim() === "") return <div key={i} className="h-2" />;
-        return <p key={i} className="mb-1">{renderBodyWithLinks(line, pages, onNavigate)}</p>;
-      })}
-    </div>
-  );
-}
 
 /* ── Main component ── */
 
@@ -347,7 +301,7 @@ export function KnowledgeBase() {
                 />
               ) : (
                 <div className="p-4">
-                  <MarkdownView body={selectedPage.body} pages={pages ?? []} onNavigate={navigateToSlug} />
+                  <MarkdownBody>{selectedPage.body}</MarkdownBody>
                 </div>
               )}
             </div>
