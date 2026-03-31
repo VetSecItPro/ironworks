@@ -1,12 +1,12 @@
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-type PlanTier = "free" | "starter" | "growth" | "business";
+import type { PlanTier } from "@/api/billing";
 
 interface PricingTier {
   tier: PlanTier;
   label: string;
   priceMonthly: number; // cents
+  subtitle?: string;
   features: string[];
   projects: string;
   storage: string;
@@ -17,9 +17,10 @@ interface PricingTier {
 
 const TIERS: PricingTier[] = [
   {
-    tier: "free",
-    label: "Free",
+    tier: "trial",
+    label: "14-Day Trial",
     priceMonthly: 0,
+    subtitle: "No credit card required",
     projects: "1 project",
     storage: "500 MB",
     companies: "1 company",
@@ -106,7 +107,7 @@ interface PricingTableProps {
   loading?: boolean;
 }
 
-export function PricingTable({ currentTier = "free", onSelectTier, loading }: PricingTableProps) {
+export function PricingTable({ currentTier = "trial", onSelectTier, loading }: PricingTableProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {TIERS.map((tier) => {
@@ -140,6 +141,9 @@ export function PricingTable({ currentTier = "free", onSelectTier, loading }: Pr
                 <span className="text-3xl font-bold">{formatPrice(tier.priceMonthly)}</span>
                 <span className="text-muted-foreground text-sm">/month</span>
               </div>
+              {tier.subtitle && (
+                <p className="text-xs text-muted-foreground mt-1">{tier.subtitle}</p>
+              )}
             </div>
 
             <ul className="flex-1 space-y-2 mb-5">
@@ -154,7 +158,7 @@ export function PricingTable({ currentTier = "free", onSelectTier, loading }: Pr
             {onSelectTier && (
               <Button
                 variant={isCurrent ? "outline" : isUpgrade ? "default" : "outline"}
-                disabled={isCurrent || tier.tier === "free" || loading}
+                disabled={isCurrent || tier.tier === "trial" || loading}
                 onClick={() => onSelectTier(tier.tier)}
                 className="w-full"
               >

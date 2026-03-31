@@ -22,8 +22,8 @@ import { logger } from "../middleware/logger.js";
 // Plan tier definitions
 // ---------------------------------------------------------------------------
 
-export type PlanTier = "free" | "starter" | "growth" | "business";
-export type SubscriptionStatus = "free" | "active" | "past_due" | "cancelled" | "trialing" | "incomplete";
+export type PlanTier = "trial" | "starter" | "growth" | "business";
+export type SubscriptionStatus = "trialing" | "active" | "past_due" | "cancelled" | "incomplete";
 
 export interface PlanDefinition {
   productId: string | undefined;
@@ -37,7 +37,7 @@ export interface PlanDefinition {
 }
 
 export const PLAN_DEFINITIONS: Record<PlanTier, PlanDefinition> = {
-  free: {
+  trial: {
     productId: undefined,
     projects: 1,
     storageGB: 0.5,
@@ -45,7 +45,7 @@ export const PLAN_DEFINITIONS: Record<PlanTier, PlanDefinition> = {
     playbookRuns: 5,
     kbPages: 5,
     priceMonthly: 0,
-    label: "Free",
+    label: "14-Day Trial",
   },
   starter: {
     productId: process.env.POLAR_STARTER_PRODUCT_ID,
@@ -138,6 +138,7 @@ export interface SubscriptionRecord {
   status: SubscriptionStatus;
   currentPeriodStart: Date | null;
   currentPeriodEnd: Date | null;
+  trialEndsAt: Date | null;
   cancelAtPeriodEnd: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -153,6 +154,7 @@ function rowToRecord(row: typeof companySubscriptions.$inferSelect): Subscriptio
     status: row.status as SubscriptionStatus,
     currentPeriodStart: row.currentPeriodStart,
     currentPeriodEnd: row.currentPeriodEnd,
+    trialEndsAt: row.trialEndsAt,
     cancelAtPeriodEnd: row.cancelAtPeriodEnd,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -189,9 +191,10 @@ export function billingService(db: Db) {
     const existing = await getSubscription(companyId);
     if (existing) return existing;
 
+    const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
     const rows = await db
       .insert(companySubscriptions)
-      .values({ companyId })
+      .values({ companyId, trialEndsAt })
       .onConflictDoNothing()
       .returning();
 
@@ -407,7 +410,7 @@ function mapPolarStatus(polarStatus: string): SubscriptionStatus {
     case "incomplete":
       return "incomplete";
     default:
-      return "active";
+      return "trialing";
   }
 }
 
