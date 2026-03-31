@@ -60,3 +60,4 @@ export { libraryFiles } from "./library_files.js";
 export { libraryFileEvents } from "./library_file_events.js";
 export { playbooks, playbookSteps } from "./playbooks.js";
 export { playbookRuns, playbookRunSteps } from "./playbook_runs.js";
+export { knowledgePages, knowledgePageRevisions } from "./knowledge_pages.js";

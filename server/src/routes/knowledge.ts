@@ -1,0 +1,157 @@
+import { Router } from "express";
+import type { Db } from "@ironworksai/db";
+import { knowledgeService } from "../services/knowledge.js";
+import { logActivity } from "../services/activity-log.js";
+import { assertCompanyAccess, getActorInfo } from "./authz.js";
+
+function actorForService(actor: ReturnType<typeof getActorInfo>) {
+  return {
+    agentId: actor.agentId ?? undefined,
+    userId: actor.actorType === "user" ? actor.actorId : undefined,
+  };
+}
+
+export function knowledgeRoutes(db: Db) {
+  const router = Router();
+  const svc = knowledgeService(db);
+
+  // List all KB pages for a company
+  router.get("/companies/:companyId/knowledge", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+    const search = typeof req.query.q === "string" ? req.query.q : undefined;
+    const visibility = typeof req.query.visibility === "string" ? req.query.visibility : undefined;
+    const pages = await svc.list(companyId, { search, visibility });
+    res.json(pages);
+  });
+
+  // Get a single page by ID
+  router.get("/knowledge/:pageId", async (req, res) => {
+    const page = await svc.getById(req.params.pageId as string);
+    if (!page) { res.status(404).json({ error: "Page not found" }); return; }
+    assertCompanyAccess(req, page.companyId);
+    res.json(page);
+  });
+
+  // Get a page by slug
+  router.get("/companies/:companyId/knowledge/slug/:slug", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+    const page = await svc.getBySlug(companyId, req.params.slug as string);
+    if (!page) { res.status(404).json({ error: "Page not found" }); return; }
+    res.json(page);
+  });
+
+  // Create a new page
+  router.post("/companies/:companyId/knowledge", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+    const actor = getActorInfo(req);
+    const { title, body, visibility, projectId } = req.body;
+    if (!title || typeof title !== "string" || title.trim().length === 0) {
+      res.status(400).json({ error: "Title is required" }); return;
+    }
+    if (title.trim().length > 200) {
+      res.status(400).json({ error: "Title must be 200 characters or less" }); return;
+    }
+    const page = await svc.create(companyId, { title, body, visibility, projectId }, actorForService(actor));
+    await logActivity(db, {
+      companyId,
+      actorType: actor.actorType,
+      actorId: actor.actorId,
+      action: "knowledge.page_created",
+      entityType: "knowledge_page",
+      entityId: page.id,
+      details: { title: page.title, slug: page.slug },
+    });
+    res.status(201).json(page);
+  });
+
+  // Update a page
+  router.patch("/knowledge/:pageId", async (req, res) => {
+    const page = await svc.getById(req.params.pageId as string);
+    if (!page) { res.status(404).json({ error: "Page not found" }); return; }
+    assertCompanyAccess(req, page.companyId);
+    const actor = getActorInfo(req);
+    const { title, body, visibility, projectId, changeSummary } = req.body;
+    const updated = await svc.update(page.id, { title, body, visibility, projectId, changeSummary }, actorForService(actor));
+    await logActivity(db, {
+      companyId: page.companyId,
+      actorType: actor.actorType,
+      actorId: actor.actorId,
+      action: "knowledge.page_updated",
+      entityType: "knowledge_page",
+      entityId: page.id,
+      details: { title: updated.title, changeSummary },
+    });
+    res.json(updated);
+  });
+
+  // Delete a page
+  router.delete("/knowledge/:pageId", async (req, res) => {
+    const page = await svc.getById(req.params.pageId as string);
+    if (!page) { res.status(404).json({ error: "Page not found" }); return; }
+    assertCompanyAccess(req, page.companyId);
+    const actor = getActorInfo(req);
+    await svc.remove(page.id);
+    await logActivity(db, {
+      companyId: page.companyId,
+      actorType: actor.actorType,
+      actorId: actor.actorId,
+      action: "knowledge.page_deleted",
+      entityType: "knowledge_page",
+      entityId: page.id,
+      details: { title: page.title },
+    });
+    res.json({ ok: true });
+  });
+
+  // List revisions for a page
+  router.get("/knowledge/:pageId/revisions", async (req, res) => {
+    const page = await svc.getById(req.params.pageId as string);
+    if (!page) { res.status(404).json({ error: "Page not found" }); return; }
+    assertCompanyAccess(req, page.companyId);
+    const revisions = await svc.listRevisions(page.id);
+    res.json(revisions);
+  });
+
+  // Get a specific revision
+  router.get("/knowledge/:pageId/revisions/:revisionNumber", async (req, res) => {
+    const page = await svc.getById(req.params.pageId as string);
+    if (!page) { res.status(404).json({ error: "Page not found" }); return; }
+    assertCompanyAccess(req, page.companyId);
+    const rev = await svc.getRevision(page.id, parseInt(req.params.revisionNumber as string, 10));
+    if (!rev) { res.status(404).json({ error: "Revision not found" }); return; }
+    res.json(rev);
+  });
+
+  // Revert to a specific revision
+  router.post("/knowledge/:pageId/revisions/:revisionNumber/revert", async (req, res) => {
+    const page = await svc.getById(req.params.pageId as string);
+    if (!page) { res.status(404).json({ error: "Page not found" }); return; }
+    assertCompanyAccess(req, page.companyId);
+    const actor = getActorInfo(req);
+    const revNum = parseInt(req.params.revisionNumber as string, 10);
+    const updated = await svc.revertToRevision(page.id, revNum, actorForService(actor));
+    await logActivity(db, {
+      companyId: page.companyId,
+      actorType: actor.actorType,
+      actorId: actor.actorId,
+      action: "knowledge.page_reverted",
+      entityType: "knowledge_page",
+      entityId: page.id,
+      details: { title: updated.title, revertedToRevision: revNum },
+    });
+    res.json(updated);
+  });
+
+  // Seed default pages
+  router.post("/companies/:companyId/knowledge/seed", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+    const result = await svc.seedDefaults(companyId);
+    res.json(result);
+  });
+
+  return router;
+}

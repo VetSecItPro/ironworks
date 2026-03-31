@@ -20,6 +20,7 @@ import {
   playbookService,
   routineService,
 } from "../services/index.js";
+import { knowledgeService } from "../services/knowledge.js";
 import type { StorageService } from "../storage/types.js";
 import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
 
@@ -32,6 +33,7 @@ export function companyRoutes(db: Db, storage?: StorageService) {
   const budgets = budgetService(db);
   const playbooksvc = playbookService(db);
   const routinesvc = routineService(db);
+  const knowledgesvc = knowledgeService(db);
 
   async function assertCanUpdateBranding(req: Request, companyId: string) {
     assertCompanyAccess(req, companyId);
@@ -242,10 +244,11 @@ export function companyRoutes(db: Db, storage?: StorageService) {
         req.actor.userId ?? "board",
       );
     }
-    // Auto-seed default playbooks and routines for every new company
+    // Auto-seed default playbooks, routines, and knowledge base for every new company
     try {
       await playbooksvc.seedDefaults(company.id);
       await routinesvc.seedDefaults(company.id);
+      await knowledgesvc.seedDefaults(company.id);
     } catch {
       // Non-fatal — company is created even if seeding fails
     }

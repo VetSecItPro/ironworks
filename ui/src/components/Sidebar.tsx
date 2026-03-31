@@ -5,6 +5,7 @@ import {
   Target,
   LayoutDashboard,
   BookOpen,
+  BookText,
   BookTemplate,
   DollarSign,
   History,
@@ -107,6 +108,7 @@ export function Sidebar() {
           <SidebarNavItem to="/org" label="Org Chart" icon={Network} />
           <SidebarNavItem to="/skills" label="Skills" icon={Boxes} />
           <SidebarNavItem to="/library" label="Library" icon={BookOpen} />
+          <SidebarNavItem to="/knowledge" label="Knowledge Base" icon={BookText} />
           <SidebarNavItem to="/costs" label="Costs" icon={DollarSign} />
           <SidebarNavItem to="/performance" label="Agent Performance" icon={BarChart3} />
           <SidebarNavItem to="/activity" label="Company Activity" icon={History} />

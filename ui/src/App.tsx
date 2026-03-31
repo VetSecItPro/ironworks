@@ -23,6 +23,7 @@ import { ApprovalDetail } from "./pages/ApprovalDetail";
 import { Costs } from "./pages/Costs";
 import { Activity } from "./pages/Activity";
 import { AgentPerformance } from "./pages/AgentPerformance";
+import { KnowledgeBase } from "./pages/KnowledgeBase";
 import { Inbox } from "./pages/Inbox";
 import { CompanySettings } from "./pages/CompanySettings";
 import { CompanySkills } from "./pages/CompanySkills";
@@ -173,6 +174,7 @@ function boardRoutes() {
       <Route path="approvals/:approvalId" element={<ApprovalDetail />} />
       <Route path="costs" element={<Costs />} />
       <Route path="performance" element={<AgentPerformance />} />
+      <Route path="knowledge" element={<KnowledgeBase />} />
       <Route path="activity" element={<Activity />} />
       <Route path="inbox" element={<InboxRootRedirect />} />
       <Route path="inbox/mine" element={<Inbox />} />
@@ -352,6 +354,7 @@ export function App() {
           <Route path="library" element={<UnprefixedBoardRedirect />} />
           <Route path="playbooks" element={<UnprefixedBoardRedirect />} />
           <Route path="performance" element={<UnprefixedBoardRedirect />} />
+          <Route path="knowledge" element={<UnprefixedBoardRedirect />} />
           <Route path="tests/ux/runs" element={<UnprefixedBoardRedirect />} />
           <Route path=":companyPrefix" element={<Layout />}>
             {boardRoutes()}

@@ -6,6 +6,7 @@ import { issuesApi } from "../api/issues";
 import { costsApi } from "../api/costs";
 import { projectsApi } from "../api/projects";
 import { useCompany } from "../context/CompanyContext";
+import { useDialog } from "../context/DialogContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { queryKeys } from "../lib/queryKeys";
 import { formatCents, cn, agentUrl } from "../lib/utils";
@@ -172,6 +173,7 @@ type SortField = "rating" | "tasksDone" | "throughput" | "avgCloseH" | "costPerT
 
 export function AgentPerformance() {
   const { selectedCompanyId } = useCompany();
+  const { openNewIssue } = useDialog();
   const { setBreadcrumbs } = useBreadcrumbs();
   const [range, setRange] = useState<TimeRange>("30d");
   const [sortField, setSortField] = useState<SortField>("rating");
@@ -293,6 +295,7 @@ export function AgentPerformance() {
                   <SortHeader field="costPerTask" label="$/Task" current={sortField} dir={sortDir} onToggle={toggleSort} />
                   <SortHeader field="totalSpendCents" label="Total Spend" current={sortField} dir={sortDir} onToggle={toggleSort} />
                   <SortHeader field="completionRate" label="Completion" current={sortField} dir={sortDir} onToggle={toggleSort} />
+                  <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider w-20">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -339,6 +342,19 @@ export function AgentPerformance() {
                         </div>
                         <span className="text-xs text-muted-foreground tabular-nums w-8 text-right">{row.completionRate}%</span>
                       </div>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {(row.rating === "D" || row.rating === "F") && row.tasksDone > 0 ? (
+                        <button
+                          className="text-[10px] text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors"
+                          onClick={() => openNewIssue({
+                            title: `Performance Review: ${row.name} — rating ${row.rating}`,
+                            description: `## Performance Improvement Plan\n\n**Agent:** ${row.name}\n**Current Rating:** ${row.rating}\n**Cost/Task:** ${row.costPerTask !== null ? formatCents(Math.round(row.costPerTask)) : "N/A"}\n**Avg Close Time:** ${row.avgCloseH !== null ? `${row.avgCloseH.toFixed(1)}h` : "N/A"}\n**Completion Rate:** ${row.completionRate}%\n\n### Recommended Actions\n\n- [ ] Review SOUL.md and AGENTS.md for clarity\n- [ ] Check if assigned tasks match agent's role\n- [ ] Consider switching to a more cost-effective model\n- [ ] Simplify task instructions\n- [ ] Re-evaluate after 1 week`,
+                          })}
+                        >
+                          Create PIP
+                        </button>
+                      ) : null}
                     </td>
                   </tr>
                 ))}

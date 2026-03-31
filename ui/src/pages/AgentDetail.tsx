@@ -934,8 +934,14 @@ export function AgentDetail() {
               <button
                 className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50 text-destructive"
                 onClick={() => {
-                  agentAction.mutate("terminate");
-                  setMoreOpen(false);
+                  const openIssueCount = assignedIssues.filter((i) => i.status !== "done" && i.status !== "cancelled").length;
+                  const msg = openIssueCount > 0
+                    ? `This agent has ${openIssueCount} open issue(s) that will be orphaned. Reassign them from the Issues page after termination.\n\nTerminate ${agent?.name ?? "this agent"}?`
+                    : `Terminate ${agent?.name ?? "this agent"}? This cannot be undone.`;
+                  if (confirm(msg)) {
+                    agentAction.mutate("terminate");
+                    setMoreOpen(false);
+                  }
                 }}
               >
                 <Trash2 className="h-3 w-3" />

@@ -1,0 +1,63 @@
+import {
+  index,
+  integer,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
+import { agents } from "./agents.js";
+import { companies } from "./companies.js";
+import { projects } from "./projects.js";
+
+export const knowledgePages = pgTable(
+  "knowledge_pages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    companyId: uuid("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+    /** URL-safe slug, unique per company. */
+    slug: text("slug").notNull(),
+    title: text("title").notNull(),
+    /** Markdown body, max 100KB enforced at app layer. */
+    body: text("body").notNull().default(""),
+    /** company = visible to all, project = scoped to a project, private = only creator. */
+    visibility: text("visibility").notNull().default("company"),
+    /** Optional project scope when visibility = project. */
+    projectId: uuid("project_id").references(() => projects.id, { onDelete: "set null" }),
+    /** Current revision number (incremented on each edit). */
+    revisionNumber: integer("revision_number").notNull().default(1),
+    /** Is this a system-seeded page? */
+    isSeeded: text("is_seeded"),
+    createdByAgentId: uuid("created_by_agent_id").references(() => agents.id, { onDelete: "set null" }),
+    createdByUserId: text("created_by_user_id"),
+    updatedByAgentId: uuid("updated_by_agent_id").references(() => agents.id, { onDelete: "set null" }),
+    updatedByUserId: text("updated_by_user_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    companySlugUq: uniqueIndex("knowledge_pages_company_slug_uq").on(table.companyId, table.slug),
+    companyUpdatedIdx: index("knowledge_pages_company_updated_idx").on(table.companyId, table.updatedAt),
+    companyVisibilityIdx: index("knowledge_pages_company_visibility_idx").on(table.companyId, table.visibility),
+  }),
+);
+
+export const knowledgePageRevisions = pgTable(
+  "knowledge_page_revisions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    pageId: uuid("page_id").notNull().references(() => knowledgePages.id, { onDelete: "cascade" }),
+    companyId: uuid("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+    revisionNumber: integer("revision_number").notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    changeSummary: text("change_summary"),
+    editedByAgentId: uuid("edited_by_agent_id").references(() => agents.id, { onDelete: "set null" }),
+    editedByUserId: text("edited_by_user_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    pageRevisionIdx: index("knowledge_page_revisions_page_idx").on(table.pageId, table.revisionNumber),
+  }),
+);

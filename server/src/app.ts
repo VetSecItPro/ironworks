@@ -30,6 +30,7 @@ import { assetRoutes } from "./routes/assets.js";
 import { accessRoutes } from "./routes/access.js";
 import { libraryRoutes } from "./routes/library.js";
 import { playbookRoutes } from "./routes/playbooks.js";
+import { knowledgeRoutes } from "./routes/knowledge.js";
 import { teamTemplateRoutes } from "./routes/team-templates.js";
 import { aiGenerateRoutes } from "./routes/ai-generate.js";
 import { privacyRoutes, startRetentionScheduler } from "./routes/privacy.js";
@@ -164,6 +165,7 @@ export async function createApp(
   api.use(instanceSettingsRoutes(db));
   api.use(libraryRoutes(db));
   api.use(playbookRoutes(db));
+  api.use(knowledgeRoutes(db));
   api.use(teamTemplateRoutes(db));
   api.use(aiGenerateRoutes(db));
   api.use(privacyRoutes(db));
