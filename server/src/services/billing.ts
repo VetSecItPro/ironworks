@@ -8,7 +8,7 @@
  *   POLAR_ORGANIZATION_ID=org_...            # From Polar Dashboard -> Organization
  *   POLAR_STARTER_PRODUCT_ID=prod_...        # Create in Polar Dashboard -> Products
  *   POLAR_GROWTH_PRODUCT_ID=prod_...         # Create in Polar Dashboard -> Products
- *   POLAR_ENTERPRISE_PRODUCT_ID=prod_...     # Create in Polar Dashboard -> Products
+ *   POLAR_BUSINESS_PRODUCT_ID=prod_...       # Create in Polar Dashboard -> Products
  *   POLAR_WEBHOOK_SECRET=whsec_...           # From Polar Dashboard -> Webhooks
  */
 
@@ -22,7 +22,7 @@ import { logger } from "../middleware/logger.js";
 // Plan tier definitions
 // ---------------------------------------------------------------------------
 
-export type PlanTier = "free" | "starter" | "growth" | "enterprise";
+export type PlanTier = "free" | "starter" | "growth" | "business";
 export type SubscriptionStatus = "free" | "active" | "past_due" | "cancelled" | "trialing" | "incomplete";
 
 export interface PlanDefinition {
@@ -30,6 +30,8 @@ export interface PlanDefinition {
   projects: number; // -1 = unlimited
   storageGB: number;
   companies: number;
+  playbookRuns: number; // -1 = unlimited
+  kbPages: number; // -1 = unlimited
   priceMonthly: number; // cents
   label: string;
 }
@@ -37,35 +39,43 @@ export interface PlanDefinition {
 export const PLAN_DEFINITIONS: Record<PlanTier, PlanDefinition> = {
   free: {
     productId: undefined,
-    projects: 2,
-    storageGB: 1,
+    projects: 1,
+    storageGB: 0.5,
     companies: 1,
+    playbookRuns: 5,
+    kbPages: 5,
     priceMonthly: 0,
     label: "Free",
   },
   starter: {
     productId: process.env.POLAR_STARTER_PRODUCT_ID,
     projects: 5,
-    storageGB: 10,
+    storageGB: 5,
     companies: 1,
-    priceMonthly: 14900,
+    playbookRuns: 50,
+    kbPages: 50,
+    priceMonthly: 7900,
     label: "Starter",
   },
   growth: {
     productId: process.env.POLAR_GROWTH_PRODUCT_ID,
-    projects: -1,
-    storageGB: 25,
-    companies: 1,
-    priceMonthly: 49900,
+    projects: 25,
+    storageGB: 15,
+    companies: 2,
+    playbookRuns: -1,
+    kbPages: -1,
+    priceMonthly: 19900,
     label: "Growth",
   },
-  enterprise: {
-    productId: process.env.POLAR_ENTERPRISE_PRODUCT_ID,
+  business: {
+    productId: process.env.POLAR_BUSINESS_PRODUCT_ID,
     projects: -1,
     storageGB: 50,
     companies: 5,
-    priceMonthly: 149900,
-    label: "Enterprise",
+    playbookRuns: -1,
+    kbPages: -1,
+    priceMonthly: 59900,
+    label: "Business",
   },
 };
 

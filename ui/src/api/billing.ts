@@ -14,7 +14,7 @@ export interface SubscriptionRecord {
   companyId: string;
   polarCustomerId: string | null;
   polarSubscriptionId: string | null;
-  planTier: "free" | "starter" | "growth" | "enterprise";
+  planTier: "free" | "starter" | "growth" | "business";
   status: "free" | "active" | "past_due" | "cancelled" | "trialing" | "incomplete";
   currentPeriodStart: string | null;
   currentPeriodEnd: string | null;

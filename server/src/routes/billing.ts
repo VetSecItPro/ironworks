@@ -10,7 +10,7 @@ import { assertCompanyAccess } from "./authz.js";
 import { badRequest } from "../errors.js";
 import { logger } from "../middleware/logger.js";
 
-const VALID_TIERS: PlanTier[] = ["starter", "growth", "enterprise"];
+const VALID_TIERS: PlanTier[] = ["starter", "growth", "business"];
 
 export function billingRoutes(db: Db) {
   const router = Router();

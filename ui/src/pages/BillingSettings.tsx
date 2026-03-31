@@ -57,7 +57,7 @@ export function BillingSettings() {
     },
   });
 
-  async function handleSelectTier(tier: "free" | "starter" | "growth" | "enterprise") {
+  async function handleSelectTier(tier: "free" | "starter" | "growth" | "business") {
     if (!selectedCompanyId || tier === "free") return;
     setCheckoutLoading(true);
     try {
