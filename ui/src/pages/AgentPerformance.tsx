@@ -284,8 +284,8 @@ export function AgentPerformance() {
               <thead>
                 <tr className="border-b border-border bg-muted/30">
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Agent</th>
-                  <SortHeader field="rating" label="Rating" current={sortField} dir={sortDir} onToggle={toggleSort} />
-                  <SortHeader field="tasksDone" label="Done" current={sortField} dir={sortDir} onToggle={toggleSort} />
+                  <SortHeader field="rating" label="Rating" current={sortField} dir={sortDir} onToggle={toggleSort} align="center" />
+                  <SortHeader field="tasksDone" label="Done" current={sortField} dir={sortDir} onToggle={toggleSort} align="center" />
                   <SortHeader field="throughput" label="Tasks/Day" current={sortField} dir={sortDir} onToggle={toggleSort} />
                   <SortHeader field="avgCloseH" label="Avg Time" current={sortField} dir={sortDir} onToggle={toggleSort} />
                   <SortHeader field="costPerTask" label="$/Task" current={sortField} dir={sortDir} onToggle={toggleSort} />
@@ -301,12 +301,12 @@ export function AgentPerformance() {
                         <Identity name={row.name} size="sm" />
                       </Link>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 text-center">
                       <span className={cn("inline-flex items-center justify-center h-7 w-7 rounded-lg border text-xs font-bold", RATING_COLORS[row.rating])}>
                         {row.rating}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums">
+                    <td className="px-4 py-3 text-center tabular-nums">
                       {row.tasksDone}
                       {row.tasksInProgress > 0 && (
                         <span className="text-muted-foreground ml-1">+{row.tasksInProgress}</span>
@@ -649,15 +649,17 @@ function SortHeader({
   current,
   dir,
   onToggle,
+  align = "right",
 }: {
   field: SortField;
   label: string;
   current: SortField;
   dir: "asc" | "desc";
   onToggle: (field: SortField) => void;
+  align?: "left" | "center" | "right";
 }) {
   return (
-    <th className="px-4 py-3 text-right">
+    <th className={cn("px-4 py-3", align === "center" ? "text-center" : align === "left" ? "text-left" : "text-right")}>
       <button
         className={cn(
           "text-xs font-medium uppercase tracking-wider transition-colors",
