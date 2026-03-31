@@ -156,6 +156,11 @@ interface ProjectOption {
   name: string;
 }
 
+interface RoutineOption {
+  id: string;
+  title: string;
+}
+
 interface IssuesListProps {
   issues: Issue[];
   isLoading?: boolean;
@@ -163,6 +168,7 @@ interface IssuesListProps {
   agents?: Agent[];
   projects?: ProjectOption[];
   goals?: Array<{ id: string; title: string }>;
+  routines?: RoutineOption[];
   liveIssueIds?: Set<string>;
   projectId?: string;
   viewStateKey: string;
@@ -221,6 +227,7 @@ export function IssuesList({
   agents,
   projects,
   goals,
+  routines,
   liveIssueIds,
   projectId,
   viewStateKey,
@@ -251,6 +258,10 @@ export function IssuesList({
   const [assigneePickerIssueId, setAssigneePickerIssueId] = useState<string | null>(null);
   const [assigneeSearch, setAssigneeSearch] = useState("");
   const [issueSearch, setIssueSearch] = useState(initialSearch ?? "");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkAssigneeOpen, setBulkAssigneeOpen] = useState(false);
+  const [bulkStatusOpen, setBulkStatusOpen] = useState(false);
+  const [bulkAssigneeSearch, setBulkAssigneeSearch] = useState("");
   const normalizedIssueSearch = issueSearch.trim();
 
   useEffect(() => {
@@ -302,6 +313,11 @@ export function IssuesList({
     if (!id || !goals) return null;
     return goals.find((g) => g.id === id)?.title ?? null;
   }, [goals]);
+
+  const routineName = useCallback((id: string | null) => {
+    if (!id || !routines) return null;
+    return routines.find((r) => r.id === id)?.title ?? null;
+  }, [routines]);
 
   const filtered = useMemo(() => {
     const sourceIssues = normalizedIssueSearch.length > 0 ? searchedIssues : issues;
@@ -369,6 +385,35 @@ export function IssuesList({
     setAssigneePickerIssueId(null);
     setAssigneeSearch("");
   };
+
+  const toggleSelected = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const toggleSelectAll = useCallback(() => {
+    setSelectedIds((prev) =>
+      prev.size === filtered.length ? new Set() : new Set(filtered.map((i) => i.id)),
+    );
+  }, [filtered]);
+
+  const bulkUpdateStatus = useCallback((status: string) => {
+    for (const id of selectedIds) onUpdateIssue(id, { status });
+    setSelectedIds(new Set());
+    setBulkStatusOpen(false);
+  }, [selectedIds, onUpdateIssue]);
+
+  const bulkAssign = useCallback((assigneeAgentId: string | null, assigneeUserId: string | null = null) => {
+    for (const id of selectedIds) onUpdateIssue(id, { assigneeAgentId, assigneeUserId });
+    setSelectedIds(new Set());
+    setBulkAssigneeOpen(false);
+    setBulkAssigneeSearch("");
+  }, [selectedIds, onUpdateIssue]);
+
+  const selectionCount = selectedIds.size;
 
   return (
     <div className="space-y-4">
@@ -653,6 +698,71 @@ export function IssuesList({
         </div>
       </div>
 
+      {/* Bulk actions bar */}
+      {selectionCount > 0 && viewState.viewMode === "list" && (
+        <div className="flex items-center gap-2 rounded-lg border border-blue-500/30 bg-blue-500/5 px-3 py-2 text-sm">
+          <Checkbox
+            checked={selectionCount === filtered.length}
+            onCheckedChange={toggleSelectAll}
+          />
+          <span className="font-medium">{selectionCount} selected</span>
+          <div className="ml-auto flex items-center gap-1">
+            <Popover open={bulkStatusOpen} onOpenChange={setBulkStatusOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="text-xs h-7">Set status</Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-44 p-1" align="end">
+                {statusOrder.map((s) => (
+                  <button
+                    key={s}
+                    className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs hover:bg-accent/50"
+                    onClick={() => bulkUpdateStatus(s)}
+                  >
+                    <StatusIcon status={s} />
+                    <span>{statusLabel(s)}</span>
+                  </button>
+                ))}
+              </PopoverContent>
+            </Popover>
+            <Popover open={bulkAssigneeOpen} onOpenChange={(o) => { setBulkAssigneeOpen(o); if (!o) setBulkAssigneeSearch(""); }}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="text-xs h-7">Assign</Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56 p-1" align="end">
+                <input
+                  className="mb-1 w-full border-b border-border bg-transparent px-2 py-1.5 text-xs outline-none placeholder:text-muted-foreground/50"
+                  placeholder="Search assignees..."
+                  value={bulkAssigneeSearch}
+                  onChange={(e) => setBulkAssigneeSearch(e.target.value)}
+                  autoFocus
+                />
+                <div className="max-h-48 overflow-y-auto overscroll-contain">
+                  <button className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs hover:bg-accent/50" onClick={() => bulkAssign(null, null)}>
+                    No assignee
+                  </button>
+                  {currentUserId && (
+                    <button className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs hover:bg-accent/50" onClick={() => bulkAssign(null, currentUserId)}>
+                      <User className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      Me
+                    </button>
+                  )}
+                  {(agents ?? [])
+                    .filter((a) => !bulkAssigneeSearch.trim() || a.name.toLowerCase().includes(bulkAssigneeSearch.toLowerCase()))
+                    .map((agent) => (
+                      <button key={agent.id} className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-accent/50" onClick={() => bulkAssign(agent.id, null)}>
+                        <Identity name={agent.name} size="sm" className="min-w-0" />
+                      </button>
+                    ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+            <Button variant="ghost" size="sm" className="text-xs h-7 text-muted-foreground" onClick={() => setSelectedIds(new Set())}>
+              <X className="h-3 w-3 mr-1" />Clear
+            </Button>
+          </div>
+        </div>
+      )}
+
       {isLoading && <PageSkeleton variant="issues-list" />}
       {error && <p className="text-sm text-destructive">{error.message}</p>}
 
@@ -711,12 +821,19 @@ export function IssuesList({
                   issueLinkState={issueLinkState}
                   desktopLeadingSpacer
                   mobileLeading={(
-                    <span
+                    <span className="flex items-center gap-1.5"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
                       }}
                     >
+                      {selectionCount > 0 && (
+                        <Checkbox
+                          checked={selectedIds.has(issue.id)}
+                          onCheckedChange={() => toggleSelected(issue.id)}
+                          className="h-3.5 w-3.5"
+                        />
+                      )}
                       <StatusIcon
                         status={issue.status}
                         onChange={(s) => onUpdateIssue(issue.id, { status: s })}
@@ -726,12 +843,17 @@ export function IssuesList({
                   desktopMetaLeading={(
                     <>
                       <span
-                        className="hidden shrink-0 sm:inline-flex"
+                        className="hidden shrink-0 items-center gap-1.5 sm:inline-flex"
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
                         }}
                       >
+                        <Checkbox
+                          checked={selectedIds.has(issue.id)}
+                          onCheckedChange={() => toggleSelected(issue.id)}
+                          className="h-3.5 w-3.5"
+                        />
                         <StatusIcon
                           status={issue.status}
                           onChange={(s) => onUpdateIssue(issue.id, { status: s })}
@@ -763,10 +885,28 @@ export function IssuesList({
                           </span>
                         </span>
                       )}
-                      {issue.status === "blocked" && issue.description?.includes("Depends on:") && (
+                      {issue.originKind === "routine_execution" && issue.originId && (
                         <span className="hidden items-center md:flex">
-                          <span className="inline-flex items-center rounded-full bg-red-500/10 px-1.5 py-0.5 text-[10px] font-medium text-red-600 dark:text-red-400">
-                            Blocked
+                          <span className="inline-flex items-center rounded-full bg-violet-500/10 px-1.5 py-0.5 text-[10px] font-medium text-violet-600 dark:text-violet-400 truncate max-w-[140px]">
+                            {routineName(issue.originId) ?? "Playbook"}
+                          </span>
+                        </span>
+                      )}
+                      {issue.status === "blocked" && (
+                        <span className="hidden items-center md:flex">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 px-1.5 py-0.5 text-[10px] font-medium text-red-600 dark:text-red-400 truncate max-w-[180px]">
+                            {(() => {
+                              const depMatch = issue.description?.match(/Depends on:\s*(.+?)(?:\n|$)/i);
+                              if (depMatch) return `Blocked by: ${depMatch[1].trim()}`;
+                              return "Blocked";
+                            })()}
+                          </span>
+                        </span>
+                      )}
+                      {issue.parentId && (
+                        <span className="hidden items-center md:flex">
+                          <span className="inline-flex items-center rounded-full bg-sky-500/10 px-1.5 py-0.5 text-[10px] font-medium text-sky-600 dark:text-sky-400">
+                            Subtask
                           </span>
                         </span>
                       )}

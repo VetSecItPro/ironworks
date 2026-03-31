@@ -7,6 +7,7 @@ import { executionWorkspacesApi } from "../api/execution-workspaces";
 import { issuesApi } from "../api/issues";
 import { instanceSettingsApi } from "../api/instanceSettings";
 import { projectsApi } from "../api/projects";
+import { goalsApi } from "../api/goals";
 import { agentsApi } from "../api/agents";
 import { authApi } from "../api/auth";
 import { assetsApi } from "../api/assets";
@@ -66,6 +67,7 @@ interface IssueDraft {
   assigneeValue: string;
   assigneeId?: string;
   projectId: string;
+  goalId?: string;
   projectWorkspaceId?: string;
   assigneeModelOverride: string;
   assigneeThinkingEffort: string;
@@ -278,6 +280,7 @@ export function NewIssueDialog() {
   const [priority, setPriority] = useState("");
   const [assigneeValue, setAssigneeValue] = useState("");
   const [projectId, setProjectId] = useState("");
+  const [goalId, setGoalId] = useState("");
   const [projectWorkspaceId, setProjectWorkspaceId] = useState("");
   const [assigneeOptionsOpen, setAssigneeOptionsOpen] = useState(false);
   const [assigneeModelOverride, setAssigneeModelOverride] = useState("");
@@ -316,6 +319,12 @@ export function NewIssueDialog() {
     queryFn: () => projectsApi.list(effectiveCompanyId!),
     enabled: !!effectiveCompanyId && newIssueOpen,
   });
+  const { data: goals } = useQuery({
+    queryKey: queryKeys.goals.list(effectiveCompanyId!),
+    queryFn: () => goalsApi.list(effectiveCompanyId!),
+    enabled: !!effectiveCompanyId && newIssueOpen,
+  });
+
   const { data: reusableExecutionWorkspaces } = useQuery({
     queryKey: queryKeys.executionWorkspaces.list(effectiveCompanyId!, {
       projectId,
@@ -475,6 +484,7 @@ export function NewIssueDialog() {
       priority,
       assigneeValue,
       projectId,
+      goalId,
       projectWorkspaceId,
       assigneeModelOverride,
       assigneeThinkingEffort,
@@ -489,6 +499,7 @@ export function NewIssueDialog() {
     priority,
     assigneeValue,
     projectId,
+    goalId,
     projectWorkspaceId,
     assigneeModelOverride,
     assigneeThinkingEffort,
@@ -514,6 +525,7 @@ export function NewIssueDialog() {
       const defaultProjectId = newIssueDefaults.projectId ?? "";
       const defaultProject = orderedProjects.find((project) => project.id === defaultProjectId);
       setProjectId(defaultProjectId);
+      setGoalId(newIssueDefaults.goalId ?? "");
       setProjectWorkspaceId(defaultProjectWorkspaceIdForProject(defaultProject));
       setAssigneeValue(assigneeValueFromSelection(newIssueDefaults));
       setAssigneeModelOverride("");
@@ -535,6 +547,7 @@ export function NewIssueDialog() {
           : (draft.assigneeValue ?? draft.assigneeId ?? ""),
       );
       setProjectId(restoredProjectId);
+      setGoalId(newIssueDefaults.goalId ?? draft.goalId ?? "");
       setProjectWorkspaceId(draft.projectWorkspaceId ?? defaultProjectWorkspaceIdForProject(restoredProject));
       setAssigneeModelOverride(draft.assigneeModelOverride ?? "");
       setAssigneeThinkingEffort(draft.assigneeThinkingEffort ?? "");
@@ -551,6 +564,7 @@ export function NewIssueDialog() {
       setStatus(newIssueDefaults.status ?? "todo");
       setPriority(newIssueDefaults.priority ?? "");
       setProjectId(defaultProjectId);
+      setGoalId(newIssueDefaults.goalId ?? "");
       setProjectWorkspaceId(defaultProjectWorkspaceIdForProject(defaultProject));
       setAssigneeValue(assigneeValueFromSelection(newIssueDefaults));
       setAssigneeModelOverride("");
@@ -596,6 +610,7 @@ export function NewIssueDialog() {
     setPriority("");
     setAssigneeValue("");
     setProjectId("");
+    setGoalId("");
     setProjectWorkspaceId("");
     setAssigneeOptionsOpen(false);
     setAssigneeModelOverride("");
@@ -616,6 +631,7 @@ export function NewIssueDialog() {
     setDialogCompanyId(companyId);
     setAssigneeValue("");
     setProjectId("");
+    setGoalId("");
     setProjectWorkspaceId("");
     setAssigneeModelOverride("");
     setAssigneeThinkingEffort("");
@@ -663,6 +679,7 @@ export function NewIssueDialog() {
       ...(selectedAssigneeAgentId ? { assigneeAgentId: selectedAssigneeAgentId } : {}),
       ...(selectedAssigneeUserId ? { assigneeUserId: selectedAssigneeUserId } : {}),
       ...(projectId ? { projectId } : {}),
+      ...(goalId ? { goalId } : {}),
       ...(projectWorkspaceId ? { projectWorkspaceId } : {}),
       ...(assigneeAdapterOverrides ? { assigneeAdapterOverrides } : {}),
       ...(executionWorkspacePolicy?.enabled ? { executionWorkspacePreference: executionWorkspaceMode } : {}),
@@ -807,6 +824,19 @@ export function NewIssueDialog() {
         searchText: project.description ?? "",
       })),
     [orderedProjects],
+  );
+  const activeGoals = useMemo(
+    () => (goals ?? []).filter((g) => g.status !== "achieved" && g.status !== "cancelled"),
+    [goals],
+  );
+  const goalOptions = useMemo<InlineEntityOption[]>(
+    () =>
+      activeGoals.map((g) => ({
+        id: g.id,
+        label: g.title,
+        searchText: `${g.level} ${g.description ?? ""}`,
+      })),
+    [activeGoals],
   );
   const savedDraft = loadDraft();
   const hasSavedDraft = Boolean(savedDraft?.title.trim() || savedDraft?.description.trim());
@@ -1111,6 +1141,47 @@ export function NewIssueDialog() {
                   );
                 }}
               />
+              {goalOptions.length > 0 && (
+                <>
+                  <span>for</span>
+                  <InlineEntitySelector
+                    value={goalId}
+                    options={goalOptions}
+                    placeholder="Goal"
+                    disablePortal
+                    noneLabel="No goal"
+                    searchPlaceholder="Search goals..."
+                    emptyMessage="No goals found."
+                    onChange={setGoalId}
+                    onConfirm={() => {
+                      descriptionEditorRef.current?.focus();
+                    }}
+                    renderTriggerValue={(option) =>
+                      option ? (
+                        <>
+                          <span className="h-3.5 w-3.5 shrink-0 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                          </span>
+                          <span className="truncate">{option.label}</span>
+                        </>
+                      ) : (
+                        <span className="text-muted-foreground">Goal</span>
+                      )
+                    }
+                    renderOption={(option) => {
+                      if (!option.id) return <span className="truncate">{option.label}</span>;
+                      return (
+                        <>
+                          <span className="h-3.5 w-3.5 shrink-0 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                          </span>
+                          <span className="truncate">{option.label}</span>
+                        </>
+                      );
+                    }}
+                  />
+                </>
+              )}
             </div>
           </div>
         </div>

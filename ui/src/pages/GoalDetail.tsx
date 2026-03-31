@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "@/lib/router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { goalsApi } from "../api/goals";
@@ -20,7 +20,7 @@ import { PageSkeleton } from "../components/PageSkeleton";
 import { projectUrl } from "../lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle2, Circle, Loader2, Plus, ShieldAlert } from "lucide-react";
+import { CheckCircle2, Circle, Loader2, PanelRightClose, PanelRightOpen, Plus, ShieldAlert } from "lucide-react";
 import { cn } from "../lib/utils";
 import type { Goal, Issue, Project } from "@ironworksai/shared";
 
@@ -31,6 +31,9 @@ export function GoalDetail() {
   const { openPanel, closePanel } = usePanel();
   const { setBreadcrumbs } = useBreadcrumbs();
   const queryClient = useQueryClient();
+  const [twoPane, setTwoPane] = useState(() => {
+    try { return localStorage.getItem("ironworks:goal-two-pane") === "true"; } catch { return false; }
+  });
 
   const {
     data: goal,
@@ -118,6 +121,10 @@ export function GoalDetail() {
   }, [setBreadcrumbs, goal, goalId]);
 
   useEffect(() => {
+    if (twoPane) {
+      closePanel();
+      return;
+    }
     if (goal) {
       openPanel(
         <GoalProperties
@@ -127,13 +134,22 @@ export function GoalDetail() {
       );
     }
     return () => closePanel();
-  }, [goal]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [goal, twoPane]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const toggleTwoPane = () => {
+    setTwoPane((prev) => {
+      const next = !prev;
+      try { localStorage.setItem("ironworks:goal-two-pane", String(next)); } catch {}
+      return next;
+    });
+  };
 
   if (isLoading) return <PageSkeleton variant="detail" />;
   if (error) return <p className="text-sm text-destructive">{error.message}</p>;
   if (!goal) return null;
 
   return (
+    <div className={cn(twoPane ? "grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6" : "")}>
     <div className="space-y-6">
       <div className="space-y-3">
         <div className="flex items-center gap-2">
@@ -141,6 +157,13 @@ export function GoalDetail() {
             {goal.level}
           </span>
           <StatusBadge status={goal.status} />
+          <button
+            onClick={toggleTwoPane}
+            className="ml-auto hidden text-muted-foreground hover:text-foreground transition-colors lg:inline-flex"
+            title={twoPane ? "Hide properties panel" : "Show properties panel"}
+          >
+            {twoPane ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+          </button>
         </div>
 
         <InlineEditor
@@ -268,6 +291,15 @@ export function GoalDetail() {
           )}
         </TabsContent>
       </Tabs>
+    </div>
+    {twoPane && (
+      <div className="hidden lg:block border border-border rounded-lg p-4 h-fit sticky top-4">
+        <GoalProperties
+          goal={goal}
+          onUpdate={(data) => updateGoal.mutate(data)}
+        />
+      </div>
+    )}
     </div>
   );
 }
