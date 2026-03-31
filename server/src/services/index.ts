@@ -1,3 +1,4 @@
+export { billingService, verifyWebhookSignature, PLAN_DEFINITIONS, type PlanTier, type SubscriptionStatus, type PlanDefinition, type SubscriptionRecord } from "./billing.js";
 export { companyService } from "./companies.js";
 export { companySkillService } from "./company-skills.js";
 export { agentService, deduplicateAgentName } from "./agents.js";
