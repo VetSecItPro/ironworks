@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/tooltip";
 import type { Company } from "@ironworksai/shared";
 import { CompanyPatternIcon } from "./CompanyPatternIcon";
+import { useMeAccess } from "../hooks/useMeAccess";
 
 const ORDER_STORAGE_KEY = "ironworks.companyOrder";
 
@@ -156,6 +157,7 @@ function SortableCompanyItem({
 export function CompanyRail() {
   const { companies, selectedCompanyId, setSelectedCompanyId } = useCompany();
   const { openOnboarding } = useDialog();
+  const { isInstanceAdmin } = useMeAccess();
   const navigate = useNavigate();
   const location = useLocation();
   const isInstanceRoute = location.pathname.startsWith("/instance/");
@@ -303,26 +305,28 @@ export function CompanyRail() {
         </DndContext>
       </div>
 
-      {/* Separator before add button */}
-      <div className="w-8 h-px bg-border mx-auto shrink-0" />
-
-      {/* Add company button */}
-      <div className="flex items-center justify-center py-2 shrink-0">
-        <Tooltip delayDuration={300}>
-          <TooltipTrigger asChild>
-            <button
-              onClick={() => openOnboarding()}
-              className="flex items-center justify-center w-11 h-11 rounded-[22px] hover:rounded-[14px] border-2 border-dashed border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground transition-[border-color,color,border-radius] duration-150"
-              aria-label="Add company"
-            >
-              <Plus className="h-5 w-5" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="right" sideOffset={8}>
-            <p>Add company</p>
-          </TooltipContent>
-        </Tooltip>
-      </div>
+      {/* Separator before add button — only show for instance admins */}
+      {isInstanceAdmin && (
+        <>
+          <div className="w-8 h-px bg-border mx-auto shrink-0" />
+          <div className="flex items-center justify-center py-2 shrink-0">
+            <Tooltip delayDuration={300}>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => openOnboarding()}
+                  className="flex items-center justify-center w-11 h-11 rounded-[22px] hover:rounded-[14px] border-2 border-dashed border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground transition-[border-color,color,border-radius] duration-150"
+                  aria-label="Add company"
+                >
+                  <Plus className="h-5 w-5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" sideOffset={8}>
+                <p>Add company</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </>
+      )}
     </div>
   );
 }

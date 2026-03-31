@@ -34,6 +34,7 @@ import { queryKeys } from "../lib/queryKeys";
 import { cn } from "../lib/utils";
 import { NotFoundPage } from "../pages/NotFound";
 import { Button } from "@/components/ui/button";
+import { useMeAccess } from "../hooks/useMeAccess";
 
 const INSTANCE_SETTINGS_MEMORY_KEY = "ironworks.lastInstanceSettingsPath";
 
@@ -62,6 +63,7 @@ export function Layout() {
   const { companyPrefix } = useParams<{ companyPrefix: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const { isInstanceAdmin } = useMeAccess();
   const isInstanceSettingsRoute = location.pathname.startsWith("/instance/");
   const onboardingTriggered = useRef(false);
   const lastMainScrollTop = useRef(0);
@@ -348,16 +350,20 @@ export function Layout() {
               <Link to="/dpa" className="hover:text-foreground transition-colors">DPA</Link>
               <Link to="/sla" className="hover:text-foreground transition-colors">SLA</Link>
               <CookieSettingsLink />
-              <span className="text-border">|</span>
-              <Button variant="ghost" size="icon-xs" className="text-muted-foreground" asChild>
-                <Link
-                  to={instanceSettingsTarget}
-                  aria-label="Settings"
-                  title="Settings"
-                >
-                  <Settings className="h-3.5 w-3.5" />
-                </Link>
-              </Button>
+              {isInstanceAdmin && (
+                <>
+                  <span className="text-border">|</span>
+                  <Button variant="ghost" size="icon-xs" className="text-muted-foreground" asChild>
+                    <Link
+                      to={instanceSettingsTarget}
+                      aria-label="Settings"
+                      title="Settings"
+                    >
+                      <Settings className="h-3.5 w-3.5" />
+                    </Link>
+                  </Button>
+                </>
+              )}
               <Button
                 type="button"
                 variant="ghost"

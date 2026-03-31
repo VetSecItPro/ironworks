@@ -86,6 +86,11 @@ export const queryKeys = {
   auth: {
     session: ["auth", "session"] as const,
   },
+  meAccess: ["me", "access"] as const,
+  userInvites: {
+    list: (companyId: string) => ["user-invites", companyId] as const,
+    detail: (token: string) => ["user-invites", "detail", token] as const,
+  },
   instance: {
     generalSettings: ["instance", "general-settings"] as const,
     schedulerHeartbeats: ["instance", "scheduler-heartbeats"] as const,
