@@ -70,6 +70,66 @@ function PickerButton({
   );
 }
 
+interface AgentOption {
+  id: string;
+  name: string;
+}
+
+function AgentPickerButton({
+  current,
+  agents,
+  onChange,
+  children,
+}: {
+  current: string | null;
+  agents: AgentOption[];
+  onChange: (value: string | null) => void;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const filtered = search.trim()
+    ? agents.filter((a) => a.name.toLowerCase().includes(search.toLowerCase()))
+    : agents;
+  return (
+    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setSearch(""); }}>
+      <PopoverTrigger asChild>
+        <button className="cursor-pointer">{children}</button>
+      </PopoverTrigger>
+      <PopoverContent className="w-52 p-1" align="end">
+        <input
+          className="mb-1 w-full border-b border-border bg-transparent px-2 py-1.5 text-xs outline-none placeholder:text-muted-foreground/50"
+          placeholder="Search agents..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          autoFocus
+        />
+        <div className="max-h-48 overflow-y-auto overscroll-contain">
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn("w-full justify-start text-xs", !current && "bg-accent")}
+            onClick={() => { onChange(null); setOpen(false); }}
+          >
+            No owner
+          </Button>
+          {filtered.map((agent) => (
+            <Button
+              key={agent.id}
+              variant="ghost"
+              size="sm"
+              className={cn("w-full justify-start text-xs", agent.id === current && "bg-accent")}
+              onClick={() => { onChange(agent.id); setOpen(false); }}
+            >
+              {agent.name}
+            </Button>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export function GoalProperties({ goal, onUpdate }: GoalPropertiesProps) {
   const { selectedCompanyId } = useCompany();
 
@@ -125,7 +185,19 @@ export function GoalProperties({ goal, onUpdate }: GoalPropertiesProps) {
         </PropertyRow>
 
         <PropertyRow label="Owner">
-          {ownerAgent ? (
+          {onUpdate ? (
+            <AgentPickerButton
+              current={goal.ownerAgentId}
+              agents={agents ?? []}
+              onChange={(ownerAgentId) => onUpdate({ ownerAgentId })}
+            >
+              {ownerAgent ? (
+                <span className="text-sm hover:opacity-80 transition-opacity">{ownerAgent.name}</span>
+              ) : (
+                <span className="text-sm text-muted-foreground hover:opacity-80 transition-opacity">None</span>
+              )}
+            </AgentPickerButton>
+          ) : ownerAgent ? (
             <Link
               to={agentUrl(ownerAgent)}
               className="text-sm hover:underline"
