@@ -7,29 +7,39 @@ import { issuesApi } from "../api/issues";
 import { agentsApi } from "../api/agents";
 import { projectsApi } from "../api/projects";
 import { heartbeatsApi } from "../api/heartbeats";
+import { costsApi } from "../api/costs";
+import { goalProgressApi } from "../api/goalProgress";
 import { useCompany } from "../context/CompanyContext";
 import { useDialog } from "../context/DialogContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { queryKeys } from "../lib/queryKeys";
 import { MetricCard } from "../components/MetricCard";
 import { EmptyState } from "../components/EmptyState";
-import { StatusIcon } from "../components/StatusIcon";
-
 import { ActivityRow } from "../components/ActivityRow";
-import { Identity } from "../components/Identity";
-import { timeAgo } from "../lib/timeAgo";
 import { cn, formatCents } from "../lib/utils";
-import { Bot, CircleDot, DollarSign, ShieldCheck, LayoutDashboard, PauseCircle } from "lucide-react";
+import { AlertTriangle, Bot, CircleDot, DollarSign, ShieldCheck, Swords, PauseCircle } from "lucide-react";
 import { ActiveAgentsPanel } from "../components/ActiveAgentsPanel";
-import { ChartCard, RunActivityChart, PriorityChart, IssueStatusChart, SuccessRateChart } from "../components/ActivityCharts";
+import { ChartCard, PriorityChart, IssueStatusChart } from "../components/ActivityCharts";
 import { PageSkeleton } from "../components/PageSkeleton";
 import type { Agent, Issue } from "@ironworksai/shared";
 import { PluginSlotOutlet } from "@/plugins/slots";
 
-function getRecentIssues(issues: Issue[]): Issue[] {
-  return [...issues]
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+/* ── Activity noise filter ── */
+
+const FILTERED_EVENT_TYPES = new Set([
+  "cost_event_logged",
+  "cost_event",
+  "heartbeat_run_cost",
+]);
+
+function isActivityEventMeaningful(event: { action?: string; eventType?: string }): boolean {
+  const action = event.action ?? event.eventType ?? "";
+  if (FILTERED_EVENT_TYPES.has(action)) return false;
+  if (action.startsWith("cost_event")) return false;
+  return true;
 }
+
+/* ── Main component ── */
 
 export function Dashboard() {
   const { selectedCompanyId, companies } = useCompany();
@@ -47,7 +57,7 @@ export function Dashboard() {
   });
 
   useEffect(() => {
-    setBreadcrumbs([{ label: "Dashboard" }]);
+    setBreadcrumbs([{ label: "War Room" }]);
   }, [setBreadcrumbs]);
 
   const { data, isLoading, error } = useQuery({
@@ -80,13 +90,160 @@ export function Dashboard() {
     enabled: !!selectedCompanyId,
   });
 
-  const recentIssues = issues ? getRecentIssues(issues) : [];
-  const recentActivity = useMemo(() => (activity ?? []).slice(0, 10), [activity]);
+  const { data: windowSpend } = useQuery({
+    queryKey: queryKeys.usageWindowSpend(selectedCompanyId!),
+    queryFn: () => costsApi.windowSpend(selectedCompanyId!),
+    enabled: !!selectedCompanyId,
+    staleTime: 30_000,
+  });
+
+  const { data: costsByAgent } = useQuery({
+    queryKey: [...queryKeys.costs(selectedCompanyId!), "by-agent"],
+    queryFn: () => costsApi.byAgent(selectedCompanyId!),
+    enabled: !!selectedCompanyId,
+    staleTime: 30_000,
+  });
+
+  const { data: goalsProgress } = useQuery({
+    queryKey: ["goals", "progress", selectedCompanyId!],
+    queryFn: () => goalProgressApi.batch(selectedCompanyId!),
+    enabled: !!selectedCompanyId,
+    staleTime: 30_000,
+  });
+
+  /* ── Derived data ── */
+
+  const recentActivity = useMemo(
+    () => (activity ?? []).filter(isActivityEventMeaningful).slice(0, 10),
+    [activity],
+  );
+
+  // Blocked issues
+  const blockedIssues = useMemo(
+    () => (issues ?? []).filter((i) => i.status === "blocked"),
+    [issues],
+  );
+
+  // Failed runs (last 24h)
+  const failedRuns = useMemo(() => {
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+    return (runs ?? []).filter(
+      (r) => r.status === "failed" && new Date(r.createdAt).getTime() > cutoff,
+    );
+  }, [runs]);
+
+  const needsAttention = blockedIssues.length > 0 || failedRuns.length > 0;
+
+  // Today's spend from windowSpend (24h window)
+  const todaySpendCents = useMemo(() => {
+    if (!windowSpend) return 0;
+    return windowSpend
+      .filter((r) => r.window === "24h")
+      .reduce((sum, r) => sum + r.costCents, 0);
+  }, [windowSpend]);
+
+  const weekSpendCents = useMemo(() => {
+    if (!windowSpend) return 0;
+    return windowSpend
+      .filter((r) => r.window === "7d")
+      .reduce((sum, r) => sum + r.costCents, 0);
+  }, [windowSpend]);
+
+  const dailyAvgCents = weekSpendCents > 0 ? Math.round(weekSpendCents / 7) : 0;
+  const spendDeltaPercent = dailyAvgCents > 0
+    ? Math.round(((todaySpendCents - dailyAvgCents) / dailyAvgCents) * 100)
+    : 0;
+
+  // Agent efficiency: cost/task and avg close time
+  const agentEfficiency = useMemo(() => {
+    if (!costsByAgent || !issues) return [];
+    const completedByAgent = new Map<string, { count: number; totalMs: number }>();
+    for (const issue of issues) {
+      if (issue.status !== "done" || !issue.assigneeAgentId) continue;
+      const entry = completedByAgent.get(issue.assigneeAgentId) ?? { count: 0, totalMs: 0 };
+      entry.count++;
+      if (issue.startedAt && issue.completedAt) {
+        entry.totalMs += new Date(issue.completedAt).getTime() - new Date(issue.startedAt).getTime();
+      }
+      completedByAgent.set(issue.assigneeAgentId, entry);
+    }
+
+    return costsByAgent
+      .filter((c) => c.agentName && c.costCents > 0)
+      .map((c) => {
+        const completed = completedByAgent.get(c.agentId);
+        const taskCount = completed?.count ?? 0;
+        const costPerTask = taskCount > 0 ? c.costCents / taskCount : null;
+        const avgCloseH = taskCount > 0 && completed!.totalMs > 0
+          ? completed!.totalMs / taskCount / (1000 * 60 * 60)
+          : null;
+        return {
+          agentId: c.agentId,
+          name: c.agentName!,
+          costCents: c.costCents,
+          taskCount,
+          costPerTask,
+          avgCloseH,
+        };
+      })
+      .sort((a, b) => b.costCents - a.costCents)
+      .slice(0, 6);
+  }, [costsByAgent, issues]);
+
+  const teamAvgCostPerTask = useMemo(() => {
+    const withTasks = agentEfficiency.filter((a) => a.costPerTask !== null);
+    if (withTasks.length === 0) return null;
+    return withTasks.reduce((s, a) => s + a.costPerTask!, 0) / withTasks.length;
+  }, [agentEfficiency]);
+
+  const teamAvgCloseH = useMemo(() => {
+    const withTime = agentEfficiency.filter((a) => a.avgCloseH !== null);
+    if (withTime.length === 0) return null;
+    return withTime.reduce((s, a) => s + a.avgCloseH!, 0) / withTime.length;
+  }, [agentEfficiency]);
+
+  // Project activity breakdown
+  const projectActivity = useMemo(() => {
+    if (!issues || !projects) return [];
+    const countByProject = new Map<string, number>();
+    let noProject = 0;
+    for (const issue of issues) {
+      if (issue.status === "cancelled") continue;
+      if (issue.projectId) {
+        countByProject.set(issue.projectId, (countByProject.get(issue.projectId) ?? 0) + 1);
+      } else {
+        noProject++;
+      }
+    }
+    const total = [...countByProject.values()].reduce((s, v) => s + v, 0) + noProject;
+    if (total === 0) return [];
+
+    const entries = projects
+      .filter((p) => countByProject.has(p.id))
+      .map((p) => ({
+        id: p.id,
+        name: p.name,
+        color: p.color ?? "#6366f1",
+        count: countByProject.get(p.id)!,
+        percent: Math.round((countByProject.get(p.id)! / total) * 100),
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    return entries;
+  }, [issues, projects]);
+
+  const totalProjectIssues = projectActivity.reduce((s, p) => s + p.count, 0);
+
+  // Active goals
+  const activeGoals = useMemo(
+    () => (goalsProgress ?? []).filter((g) => g.status === "active" || g.status === "planned"),
+    [goalsProgress],
+  );
+
+  /* ── Activity animation ── */
 
   useEffect(() => {
-    for (const timer of activityAnimationTimersRef.current) {
-      window.clearTimeout(timer);
-    }
+    for (const timer of activityAnimationTimersRef.current) window.clearTimeout(timer);
     activityAnimationTimersRef.current = [];
     seenActivityIdsRef.current = new Set();
     hydratedActivityRef.current = false;
@@ -95,48 +252,27 @@ export function Dashboard() {
 
   useEffect(() => {
     if (recentActivity.length === 0) return;
-
     const seen = seenActivityIdsRef.current;
-    const currentIds = recentActivity.map((event) => event.id);
-
+    const currentIds = recentActivity.map((e) => e.id);
     if (!hydratedActivityRef.current) {
       for (const id of currentIds) seen.add(id);
       hydratedActivityRef.current = true;
       return;
     }
-
     const newIds = currentIds.filter((id) => !seen.has(id));
-    if (newIds.length === 0) {
-      for (const id of currentIds) seen.add(id);
-      return;
-    }
-
-    setAnimatedActivityIds((prev) => {
-      const next = new Set(prev);
-      for (const id of newIds) next.add(id);
-      return next;
-    });
-
+    if (newIds.length === 0) { for (const id of currentIds) seen.add(id); return; }
+    setAnimatedActivityIds((prev) => { const next = new Set(prev); for (const id of newIds) next.add(id); return next; });
     for (const id of newIds) seen.add(id);
-
     const timer = window.setTimeout(() => {
-      setAnimatedActivityIds((prev) => {
-        const next = new Set(prev);
-        for (const id of newIds) next.delete(id);
-        return next;
-      });
+      setAnimatedActivityIds((prev) => { const next = new Set(prev); for (const id of newIds) next.delete(id); return next; });
       activityAnimationTimersRef.current = activityAnimationTimersRef.current.filter((t) => t !== timer);
     }, 980);
     activityAnimationTimersRef.current.push(timer);
   }, [recentActivity]);
 
-  useEffect(() => {
-    return () => {
-      for (const timer of activityAnimationTimersRef.current) {
-        window.clearTimeout(timer);
-      }
-    };
-  }, []);
+  useEffect(() => () => { for (const t of activityAnimationTimersRef.current) window.clearTimeout(t); }, []);
+
+  /* ── Maps ── */
 
   const agentMap = useMemo(() => {
     const map = new Map<string, Agent>();
@@ -158,30 +294,23 @@ export function Dashboard() {
     return map;
   }, [issues]);
 
-  const agentName = (id: string | null) => {
-    if (!id || !agents) return null;
-    return agents.find((a) => a.id === id)?.name ?? null;
-  };
+  /* ── Empty states ── */
 
   if (!selectedCompanyId) {
     if (companies.length === 0) {
       return (
         <EmptyState
-          icon={LayoutDashboard}
+          icon={Swords}
           message="Welcome to Ironworks. Set up your first company and agent to get started."
           action="Get Started"
           onAction={openOnboarding}
         />
       );
     }
-    return (
-      <EmptyState icon={LayoutDashboard} message="Create or select a company to view the dashboard." />
-    );
+    return <EmptyState icon={Swords} message="Create or select a company to view the War Room." />;
   }
 
-  if (isLoading) {
-    return <PageSkeleton variant="dashboard" />;
-  }
+  if (isLoading) return <PageSkeleton variant="dashboard" />;
 
   const hasNoAgents = agents !== undefined && agents.length === 0;
 
@@ -193,9 +322,7 @@ export function Dashboard() {
         <div className="flex items-center justify-between gap-3 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 dark:border-amber-500/25 dark:bg-amber-950/60">
           <div className="flex items-center gap-2.5">
             <Bot className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
-            <p className="text-sm text-amber-900 dark:text-amber-100">
-              You have no agents.
-            </p>
+            <p className="text-sm text-amber-900 dark:text-amber-100">You have no agents.</p>
           </div>
           <button
             onClick={() => openOnboarding({ initialStep: 2, companyId: selectedCompanyId! })}
@@ -206,11 +333,13 @@ export function Dashboard() {
         </div>
       )}
 
+      {/* ── 1. AGENTS ── */}
       <ActiveAgentsPanel companyId={selectedCompanyId!} />
 
       {data && (
         <>
-          {data.budgets.activeIncidents > 0 ? (
+          {/* Budget incident banner */}
+          {data.budgets.activeIncidents > 0 && (
             <div className="flex items-start justify-between gap-3 rounded-xl border border-red-500/20 bg-[linear-gradient(180deg,rgba(255,80,80,0.12),rgba(255,255,255,0.02))] px-4 py-3">
               <div className="flex items-start gap-2.5">
                 <PauseCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-300" />
@@ -223,79 +352,242 @@ export function Dashboard() {
                   </p>
                 </div>
               </div>
-              <Link to="/costs" className="text-sm underline underline-offset-2 text-red-100">
-                Open budgets
-              </Link>
+              <Link to="/costs" className="text-sm underline underline-offset-2 text-red-100">Open budgets</Link>
             </div>
-          ) : null}
+          )}
 
+          {/* ── 2. STATS ROW ── */}
           <div className="grid grid-cols-2 xl:grid-cols-4 gap-1 sm:gap-2">
             <MetricCard
               icon={Bot}
               value={data.agents.active + data.agents.running + data.agents.paused + data.agents.error}
               label="Agents Enabled"
               to="/agents"
-              description={
-                <span>
-                  {data.agents.running} running{", "}
-                  {data.agents.paused} paused{", "}
-                  {data.agents.error} errors
-                </span>
-              }
+              description={<span>{data.agents.running} running, {data.agents.paused} paused, {data.agents.error} errors</span>}
             />
             <MetricCard
               icon={CircleDot}
               value={data.tasks.inProgress}
-              label="Tasks In Progress"
+              label="Tasks Active"
               to="/issues"
-              description={
-                <span>
-                  {data.tasks.open} open{", "}
-                  {data.tasks.blocked} blocked
-                </span>
-              }
+              description={<span>{data.tasks.open} open, {data.tasks.blocked} blocked</span>}
             />
             <MetricCard
               icon={DollarSign}
               value={formatCents(data.costs.monthSpendCents)}
               label="Month Spend"
               to="/costs"
-              description={
-                <span>
-                  {data.costs.monthBudgetCents > 0
-                    ? `${data.costs.monthUtilizationPercent}% of ${formatCents(data.costs.monthBudgetCents)} budget`
-                    : "Unlimited budget"}
-                </span>
-              }
+              description={<span>{data.costs.monthBudgetCents > 0 ? `${data.costs.monthUtilizationPercent}% of ${formatCents(data.costs.monthBudgetCents)} budget` : "Unlimited budget"}</span>}
             />
             <MetricCard
               icon={ShieldCheck}
               value={data.pendingApprovals + data.budgets.pendingApprovals}
               label="Pending Approvals"
               to="/approvals"
-              description={
-                <span>
-                  {data.budgets.pendingApprovals > 0
-                    ? `${data.budgets.pendingApprovals} budget overrides awaiting board review`
-                    : "Awaiting board review"}
-                </span>
-              }
+              description={<span>{data.budgets.pendingApprovals > 0 ? `${data.budgets.pendingApprovals} budget overrides awaiting board review` : "Awaiting board review"}</span>}
             />
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <ChartCard title="Run Activity" subtitle="Last 14 days">
-              <RunActivityChart runs={runs ?? []} />
-            </ChartCard>
-            <ChartCard title="Issues by Priority" subtitle="Last 14 days">
-              <PriorityChart issues={issues ?? []} />
-            </ChartCard>
-            <ChartCard title="Issues by Status" subtitle="Last 14 days">
-              <IssueStatusChart issues={issues ?? []} />
-            </ChartCard>
-            <ChartCard title="Success Rate" subtitle="Last 14 days">
-              <SuccessRateChart runs={runs ?? []} />
-            </ChartCard>
+          {/* ── 3. ATTENTION REQUIRED ── */}
+          {needsAttention && (
+            <div className="rounded-xl border border-red-500/20 bg-red-500/[0.04] p-4 space-y-2">
+              <h3 className="text-sm font-semibold uppercase tracking-wide flex items-center gap-2 text-red-400">
+                <AlertTriangle className="h-4 w-4" />
+                Attention Required
+              </h3>
+              <div className="space-y-1.5">
+                {blockedIssues.slice(0, 5).map((issue) => (
+                  <Link
+                    key={issue.id}
+                    to={`/issues/${issue.identifier ?? issue.id}`}
+                    className="flex items-center justify-between gap-2 rounded-lg border border-red-500/15 bg-red-500/[0.04] px-3 py-2 text-sm no-underline text-inherit hover:bg-red-500/10 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="h-2 w-2 shrink-0 rounded-full bg-red-500" />
+                      <span className="font-mono text-xs text-muted-foreground shrink-0">{issue.identifier ?? issue.id.slice(0, 8)}</span>
+                      <span className="truncate">{issue.title}</span>
+                    </div>
+                    <span className="text-xs text-red-400 shrink-0">Blocked</span>
+                  </Link>
+                ))}
+                {failedRuns.slice(0, 3).map((run) => (
+                  <Link
+                    key={run.id}
+                    to={`/agents/${run.agentId}/runs/${run.id}`}
+                    className="flex items-center justify-between gap-2 rounded-lg border border-amber-500/15 bg-amber-500/[0.04] px-3 py-2 text-sm no-underline text-inherit hover:bg-amber-500/10 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="h-2 w-2 shrink-0 rounded-full bg-amber-500" />
+                      <span className="truncate">Run failed — {agentMap.get(run.agentId)?.name ?? "Agent"}</span>
+                    </div>
+                    <span className="text-xs text-amber-400 shrink-0">View run</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── 4. METRICS ROW ── */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Today's Spend */}
+            <div className="rounded-xl border border-border p-4 space-y-3">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Today's Spend</h4>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold">{formatCents(todaySpendCents)}</span>
+                <span className="text-xs text-muted-foreground">today</span>
+              </div>
+              <div className="space-y-1.5 text-xs text-muted-foreground">
+                <div className="flex justify-between">
+                  <span>7-day avg</span>
+                  <span>{formatCents(dailyAvgCents)}/day</span>
+                </div>
+                {spendDeltaPercent !== 0 && (
+                  <div className="flex justify-between">
+                    <span>vs average</span>
+                    <span className={spendDeltaPercent > 20 ? "text-amber-400" : spendDeltaPercent < -20 ? "text-emerald-400" : ""}>
+                      {spendDeltaPercent > 0 ? "↑" : "↓"} {Math.abs(spendDeltaPercent)}%
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span>Week total</span>
+                  <span>{formatCents(weekSpendCents)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Month total</span>
+                  <span>{formatCents(data.costs.monthSpendCents)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Agent Efficiency */}
+            <div className="rounded-xl border border-border p-4 space-y-3">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Agent Efficiency</h4>
+              {agentEfficiency.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No agent cost data yet.</p>
+              ) : (
+                <>
+                  <div className="space-y-1">
+                    <div className="grid grid-cols-[1fr_60px_50px] gap-1 text-[10px] text-muted-foreground uppercase tracking-wider pb-1 border-b border-border/50">
+                      <span>Agent</span>
+                      <span className="text-right">$/task</span>
+                      <span className="text-right">Time</span>
+                    </div>
+                    {agentEfficiency.map((a) => (
+                      <div key={a.agentId} className="grid grid-cols-[1fr_60px_50px] gap-1 text-xs py-0.5">
+                        <span className="truncate">{a.name}</span>
+                        <span className="text-right text-muted-foreground">
+                          {a.costPerTask !== null ? formatCents(Math.round(a.costPerTask)) : "—"}
+                        </span>
+                        <span className="text-right text-muted-foreground">
+                          {a.avgCloseH !== null ? `${a.avgCloseH.toFixed(1)}h` : "—"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="border-t border-border/50 pt-2 space-y-1 text-xs text-muted-foreground">
+                    <div className="flex justify-between">
+                      <span>Team avg</span>
+                      <span>{teamAvgCostPerTask !== null ? `${formatCents(Math.round(teamAvgCostPerTask))}/task` : "—"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Avg close time</span>
+                      <span>{teamAvgCloseH !== null ? `${teamAvgCloseH.toFixed(1)}h` : "—"}</span>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Project Activity */}
+            <div className="rounded-xl border border-border p-4 space-y-3">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Project Activity</h4>
+              {projectActivity.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No project data yet.</p>
+              ) : (
+                <>
+                  <div className="space-y-2.5">
+                    {projectActivity.slice(0, 5).map((p) => (
+                      <div key={p.id} className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: p.color }} />
+                            <span className="truncate">{p.name}</span>
+                          </div>
+                          <span className="text-muted-foreground shrink-0">{p.percent}%</span>
+                        </div>
+                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-[width] duration-300"
+                            style={{ width: `${p.percent}%`, backgroundColor: p.color }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="border-t border-border/50 pt-2 text-xs text-muted-foreground">
+                    {totalProjectIssues} issues across {projectActivity.length} projects
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* ── 5. PROGRESS ROW ── */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Goals Progress */}
+            <div className="rounded-xl border border-border p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Goals Progress</h4>
+                <Link to="/goals" className="text-xs text-muted-foreground hover:text-foreground transition-colors">View all</Link>
+              </div>
+              {activeGoals.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No active goals.</p>
+              ) : (
+                <div className="space-y-4">
+                  {activeGoals.slice(0, 5).map((goal) => (
+                    <Link key={goal.goalId} to={`/goals/${goal.goalId}`} className="block space-y-1.5 no-underline text-inherit hover:opacity-80 transition-opacity">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="truncate font-medium">{goal.title}</span>
+                        <span className="text-xs text-muted-foreground shrink-0 ml-2">{goal.progressPercent}%</span>
+                      </div>
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className={cn(
+                            "h-full rounded-full transition-[width] duration-300",
+                            goal.progressPercent === 100 ? "bg-emerald-500" : goal.blockedIssues > 0 ? "bg-amber-500" : "bg-blue-500",
+                          )}
+                          style={{ width: `${goal.progressPercent}%` }}
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                        <span>{goal.completedIssues}/{goal.totalIssues} done</span>
+                        {goal.blockedIssues > 0 && (
+                          <span className="text-amber-400">· {goal.blockedIssues} blocked</span>
+                        )}
+                        {goal.blockedIssues === 0 && goal.progressPercent < 100 && (
+                          <span className="text-emerald-400">· on track</span>
+                        )}
+                        {goal.progressPercent === 100 && (
+                          <span className="text-emerald-400">· complete</span>
+                        )}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Issues Overview */}
+            <div className="rounded-xl border border-border p-4 space-y-4">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Issues Overview</h4>
+              <ChartCard title="Issues by Priority" subtitle="Last 14 days">
+                <PriorityChart issues={issues ?? []} />
+              </ChartCard>
+              <ChartCard title="Issues by Status" subtitle="Last 14 days">
+                <IssueStatusChart issues={issues ?? []} />
+              </ChartCard>
+            </div>
           </div>
 
           <PluginSlotOutlet
@@ -305,81 +597,31 @@ export function Dashboard() {
             itemClassName="rounded-lg border bg-card p-4 shadow-sm"
           />
 
-          <div className="grid md:grid-cols-2 gap-4">
-            {/* Recent Activity */}
-            {recentActivity.length > 0 && (
-              <div className="min-w-0">
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+          {/* ── 6. RECENT ACTIVITY ── */}
+          {recentActivity.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                   Recent Activity
                 </h3>
-                <div className="border border-border divide-y divide-border overflow-hidden">
-                  {recentActivity.map((event) => (
-                    <ActivityRow
-                      key={event.id}
-                      event={event}
-                      agentMap={agentMap}
-                      entityNameMap={entityNameMap}
-                      entityTitleMap={entityTitleMap}
-                      className={animatedActivityIds.has(event.id) ? "activity-row-enter" : undefined}
-                    />
-                  ))}
-                </div>
+                <Link to="/activity" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  View all activity
+                </Link>
               </div>
-            )}
-
-            {/* Recent Tasks */}
-            <div className="min-w-0">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-                Recent Tasks
-              </h3>
-              {recentIssues.length === 0 ? (
-                <div className="border border-border p-4">
-                  <p className="text-sm text-muted-foreground">No tasks yet.</p>
-                </div>
-              ) : (
-                <div className="border border-border divide-y divide-border overflow-hidden">
-                  {recentIssues.slice(0, 10).map((issue) => (
-                    <Link
-                      key={issue.id}
-                      to={`/issues/${issue.identifier ?? issue.id}`}
-                      className="px-4 py-3 text-sm cursor-pointer hover:bg-accent/50 transition-colors no-underline text-inherit block"
-                    >
-                      <div className="flex items-start gap-2 sm:items-center sm:gap-3">
-                        {/* Status icon - left column on mobile */}
-                        <span className="shrink-0 sm:hidden">
-                          <StatusIcon status={issue.status} />
-                        </span>
-
-                        {/* Right column on mobile: title + metadata stacked */}
-                        <span className="flex min-w-0 flex-1 flex-col gap-1 sm:contents">
-                          <span className="line-clamp-2 text-sm sm:order-2 sm:flex-1 sm:min-w-0 sm:line-clamp-none sm:truncate">
-                            {issue.title}
-                          </span>
-                          <span className="flex items-center gap-2 sm:order-1 sm:shrink-0">
-                            <span className="hidden sm:inline-flex"><StatusIcon status={issue.status} /></span>
-                            <span className="text-xs font-mono text-muted-foreground">
-                              {issue.identifier ?? issue.id.slice(0, 8)}
-                            </span>
-                            {issue.assigneeAgentId && (() => {
-                              const name = agentName(issue.assigneeAgentId);
-                              return name
-                                ? <span className="hidden sm:inline-flex"><Identity name={name} size="sm" /></span>
-                                : null;
-                            })()}
-                            <span className="text-xs text-muted-foreground sm:hidden">&middot;</span>
-                            <span className="text-xs text-muted-foreground shrink-0 sm:order-last">
-                              {timeAgo(issue.updatedAt)}
-                            </span>
-                          </span>
-                        </span>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              )}
+              <div className="border border-border divide-y divide-border overflow-hidden">
+                {recentActivity.map((event) => (
+                  <ActivityRow
+                    key={event.id}
+                    event={event}
+                    agentMap={agentMap}
+                    entityNameMap={entityNameMap}
+                    entityTitleMap={entityTitleMap}
+                    className={animatedActivityIds.has(event.id) ? "activity-row-enter" : undefined}
+                  />
+                ))}
+              </div>
             </div>
-          </div>
-
+          )}
         </>
       )}
     </div>
