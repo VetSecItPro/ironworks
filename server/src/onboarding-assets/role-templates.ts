@@ -568,9 +568,9 @@ export const TEAM_PACKS: TeamPack[] = [
   {
     key: "agency",
     name: "Agency",
-    description: "Full-service team for client work — leadership, engineering, marketing, and design",
+    description: "Full-service team for client work — leadership, engineering, marketing, and HR",
     icon: "building-2",
-    roles: ["ceo", "cto", "cmo", "seniorengineer", "contentmarketer"],
+    roles: ["ceo", "cto", "cmo", "vphr", "seniorengineer", "contentmarketer"],
   },
   {
     key: "enterprise",
