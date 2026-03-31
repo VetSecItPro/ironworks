@@ -23,6 +23,7 @@ import { ChartCard, PriorityChart, IssueStatusChart } from "../components/Activi
 import { PageSkeleton } from "../components/PageSkeleton";
 import type { Agent, Issue } from "@ironworksai/shared";
 import { PluginSlotOutlet } from "@/plugins/slots";
+import { computeAgentPerformance } from "./AgentPerformance";
 
 /* ── Activity noise filter + aggregation ── */
 
@@ -237,41 +238,13 @@ export function Dashboard() {
     ? Math.round(((todaySpendCents - dailyAvgCents) / dailyAvgCents) * 100)
     : 0;
 
-  // Agent efficiency: cost/task and avg close time
-  const agentEfficiency = useMemo(() => {
-    if (!costsByAgent || !issues) return [];
-    const completedByAgent = new Map<string, { count: number; totalMs: number }>();
-    for (const issue of issues) {
-      if (issue.status !== "done" || !issue.assigneeAgentId) continue;
-      const entry = completedByAgent.get(issue.assigneeAgentId) ?? { count: 0, totalMs: 0 };
-      entry.count++;
-      if (issue.startedAt && issue.completedAt) {
-        entry.totalMs += new Date(issue.completedAt).getTime() - new Date(issue.startedAt).getTime();
-      }
-      completedByAgent.set(issue.assigneeAgentId, entry);
-    }
+  // Agent efficiency via shared performance computation
+  const agentPerfRows = useMemo(
+    () => computeAgentPerformance(agents ?? [], issues ?? [], costsByAgent ?? [], "30d"),
+    [agents, issues, costsByAgent],
+  );
 
-    return costsByAgent
-      .filter((c) => c.agentName && c.costCents > 0)
-      .map((c) => {
-        const completed = completedByAgent.get(c.agentId);
-        const taskCount = completed?.count ?? 0;
-        const costPerTask = taskCount > 0 ? c.costCents / taskCount : null;
-        const avgCloseH = taskCount > 0 && completed!.totalMs > 0
-          ? completed!.totalMs / taskCount / (1000 * 60 * 60)
-          : null;
-        return {
-          agentId: c.agentId,
-          name: c.agentName!,
-          costCents: c.costCents,
-          taskCount,
-          costPerTask,
-          avgCloseH,
-        };
-      })
-      .sort((a, b) => b.costCents - a.costCents)
-      .slice(0, 6);
-  }, [costsByAgent, issues]);
+  const agentEfficiency = agentPerfRows.filter((r) => r.totalSpendCents > 0 || r.tasksDone > 0).slice(0, 6);
 
   const teamAvgCostPerTask = useMemo(() => {
     const withTasks = agentEfficiency.filter((a) => a.costPerTask !== null);
@@ -523,19 +496,33 @@ export function Dashboard() {
 
             {/* Agent Efficiency */}
             <div className="rounded-xl border border-border p-4 space-y-3">
-              <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Agent Efficiency</h4>
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Agent Efficiency</h4>
+                <Link to="/performance" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Details</Link>
+              </div>
               {agentEfficiency.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No agent cost data yet.</p>
               ) : (
                 <>
                   <div className="space-y-1">
-                    <div className="grid grid-cols-[1fr_60px_50px] gap-1 text-[10px] text-muted-foreground uppercase tracking-wider pb-1 border-b border-border/50">
+                    <div className="grid grid-cols-[24px_1fr_50px_45px] gap-1 text-[10px] text-muted-foreground uppercase tracking-wider pb-1 border-b border-border/50">
+                      <span></span>
                       <span>Agent</span>
                       <span className="text-right">$/task</span>
                       <span className="text-right">Time</span>
                     </div>
                     {agentEfficiency.map((a) => (
-                      <div key={a.agentId} className="grid grid-cols-[1fr_60px_50px] gap-1 text-xs py-0.5">
+                      <div key={a.agentId} className="grid grid-cols-[24px_1fr_50px_45px] gap-1 text-xs py-0.5 items-center">
+                        <span className={cn(
+                          "inline-flex items-center justify-center h-5 w-5 rounded text-[10px] font-bold",
+                          a.rating === "A" ? "text-emerald-400 bg-emerald-500/10" :
+                          a.rating === "B" ? "text-blue-400 bg-blue-500/10" :
+                          a.rating === "C" ? "text-amber-400 bg-amber-500/10" :
+                          a.rating === "D" ? "text-orange-400 bg-orange-500/10" :
+                          "text-red-400 bg-red-500/10",
+                        )}>
+                          {a.rating}
+                        </span>
                         <span className="truncate">{a.name}</span>
                         <span className="text-right text-muted-foreground">
                           {a.costPerTask !== null ? formatCents(Math.round(a.costPerTask)) : "—"}
