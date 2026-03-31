@@ -342,7 +342,11 @@ export function Layout() {
           <footer className="flex items-center justify-between px-4 py-1.5 border-t border-border text-xs text-muted-foreground shrink-0">
             <span>IronWorks by Steel Motion LLC</span>
             <div className="flex items-center gap-2">
+              <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>
               <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
+              <Link to="/aup" className="hover:text-foreground transition-colors">AUP</Link>
+              <Link to="/dpa" className="hover:text-foreground transition-colors">DPA</Link>
+              <Link to="/sla" className="hover:text-foreground transition-colors">SLA</Link>
               <CookieSettingsLink />
               <span className="text-border">|</span>
               <Button variant="ghost" size="icon-xs" className="text-muted-foreground" asChild>
