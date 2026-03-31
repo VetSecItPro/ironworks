@@ -379,6 +379,13 @@
       "when": 1775095200000,
       "tag": "0053_knowledge_pages",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1775181600000,
+      "tag": "0054_company_subscriptions",
+      "breakpoints": true
     }
   ]
 }

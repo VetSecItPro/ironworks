@@ -140,6 +140,9 @@ export const queryKeys = {
     search: (companyId: string, query: string) =>
       ["library", companyId, "search", query] as const,
   },
+  billing: {
+    subscription: (companyId: string) => ["billing", "subscription", companyId] as const,
+  },
   plugins: {
     all: ["plugins"] as const,
     examples: ["plugins", "examples"] as const,

@@ -61,3 +61,4 @@ export { libraryFileEvents } from "./library_file_events.js";
 export { playbooks, playbookSteps } from "./playbooks.js";
 export { playbookRuns, playbookRunSteps } from "./playbook_runs.js";
 export { knowledgePages, knowledgePageRevisions } from "./knowledge_pages.js";
+export { companySubscriptions } from "./subscriptions.js";
