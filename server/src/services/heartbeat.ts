@@ -51,6 +51,7 @@ import {
   resolveExecutionWorkspaceMode,
 } from "./execution-workspace-policy.js";
 import { instanceSettingsService } from "./instance-settings.js";
+import { logActivity } from "./activity-log.js";
 import { redactCurrentUserText, redactCurrentUserValue } from "../log-redaction.js";
 import {
   hasSessionCompactionThresholds,
@@ -1702,12 +1703,51 @@ export function heartbeatService(db: Db) {
           ? "idle"
           : "error";
 
+    // ── Item 7: Auto-recovery — pause after 3 consecutive failures ───────────
+    // Check before writing status so we can override nextStatus to "paused".
+    let shouldAutoPause = false;
+    if (outcome === "failed" && nextStatus === "error") {
+      // Query the 3 most recent terminal runs for this agent (excluding currently
+      // running/queued). "Process lost" errors from deploys are not real failures.
+      const TERMINAL_STATUSES = ["succeeded", "failed", "timed_out", "cancelled"];
+      const recentRuns = await db
+        .select({ status: heartbeatRuns.status, errorCode: heartbeatRuns.errorCode })
+        .from(heartbeatRuns)
+        .where(
+          and(
+            eq(heartbeatRuns.agentId, agentId),
+            inArray(heartbeatRuns.status, TERMINAL_STATUSES),
+          ),
+        )
+        .orderBy(desc(heartbeatRuns.finishedAt))
+        .limit(3);
+
+      if (recentRuns.length === 3) {
+        const allFailed = recentRuns.every((r) => {
+          // Skip process_lost errors (server restart / deploy bounce)
+          if (r.errorCode === "process_lost") return false;
+          return r.status === "failed" || r.status === "timed_out";
+        });
+        if (allFailed) {
+          shouldAutoPause = true;
+        }
+      }
+    }
+
+    const effectiveStatus = shouldAutoPause ? "paused" : nextStatus;
+
     const updated = await db
       .update(agents)
       .set({
-        status: nextStatus,
+        status: effectiveStatus,
         lastHeartbeatAt: new Date(),
         updatedAt: new Date(),
+        ...(shouldAutoPause
+          ? {
+              pauseReason: "auto_paused: 3 consecutive failures",
+              pausedAt: new Date(),
+            }
+          : {}),
       })
       .where(eq(agents.id, agentId))
       .returning()
@@ -1726,6 +1766,37 @@ export function heartbeatService(db: Db) {
           outcome,
         },
       });
+
+      // If auto-paused, create a system issue and log activity (non-fatal)
+      if (shouldAutoPause) {
+        logger.warn({ agentId, companyId: updated.companyId }, "Agent auto-paused after 3 consecutive failures");
+
+        issuesSvc
+          .create(updated.companyId, {
+            title: `[System] Agent ${updated.name} paused after 3 consecutive failures`,
+            description: `The agent **${updated.name}** (${updated.role}) has been automatically paused after failing 3 consecutive runs.\n\nPlease review the agent's configuration, adapter settings, and recent run logs, then resume the agent once the issue is resolved.`,
+            priority: "high",
+            status: "todo",
+            createdByUserId: null,
+            createdByAgentId: null,
+          })
+          .catch((err) => {
+            logger.warn({ err, agentId }, "Failed to create auto-pause system issue");
+          });
+
+        logActivity(db, {
+          companyId: updated.companyId,
+          actorType: "system",
+          actorId: agentId,
+          action: "agent.auto_paused",
+          entityType: "agent",
+          entityId: agentId,
+          agentId,
+          details: { reason: "3 consecutive failures", name: updated.name },
+        }).catch((err) => {
+          logger.warn({ err, agentId }, "Failed to log agent.auto_paused activity");
+        });
+      }
     }
   }
 
