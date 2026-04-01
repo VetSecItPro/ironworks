@@ -18,7 +18,7 @@ jobs:
 
     steps:
       - name: Checkout our fork
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           fetch-depth: 0
 
@@ -115,7 +115,7 @@ jobs:
 
       - name: Create or update GitHub issue
         if: steps.diff.outputs.status == 'behind'
-        uses: actions/github-script@v7
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
         with:
           script: |
             const fs = require('fs');

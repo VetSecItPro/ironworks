@@ -10,11 +10,12 @@ import {
   validatePlaybookOutput,
   type GeneratedPlaybook,
 } from "../lib/ai-security.js";
+import { resolveAnthropicAuth, buildAnthropicHeaders } from "../lib/anthropic-auth.js";
 
 /**
  * AI generation endpoints for playbooks, routines, etc.
- * Attempts to use Anthropic API if ANTHROPIC_API_KEY is set,
- * falls back to template-based generation otherwise.
+ * Attempts to use the company's BYOK Anthropic credentials (API key or OAuth token),
+ * falling back to the server-level ANTHROPIC_API_KEY env var for local dev.
  */
 export function aiGenerateRoutes(db: Db) {
   const router = Router();
@@ -39,11 +40,11 @@ export function aiGenerateRoutes(db: Db) {
 
     const agentRoles = companyAgents.map((a) => a.name.toLowerCase());
 
-    // Try Anthropic API if key is available
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (apiKey) {
+    // SEC-ADV-010: resolve per-company BYOK credentials; fall back to server env only if none set
+    const auth = await resolveAnthropicAuth(companyId, db);
+    if (auth) {
       try {
-        const result = await generateWithAnthropic(apiKey, prompt, agentRoles);
+        const result = await generateWithAnthropic(auth, prompt, agentRoles);
         res.json(result);
         return;
       } catch (err) {
@@ -60,7 +61,7 @@ export function aiGenerateRoutes(db: Db) {
 }
 
 async function generateWithAnthropic(
-  apiKey: string,
+  auth: import("../lib/anthropic-auth.js").AnthropicAuth,
   prompt: string,
   availableRoles: string[],
 ): Promise<GeneratedPlaybook> {
@@ -98,7 +99,7 @@ Rules:
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-api-key": apiKey,
+      ...buildAnthropicHeaders(auth),
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({

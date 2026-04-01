@@ -10,6 +10,7 @@ import {
   validateGoalBreakdownOutput,
   type GoalBreakdownResult,
 } from "../lib/ai-security.js";
+import { resolveAnthropicAuth, buildAnthropicHeaders } from "../lib/anthropic-auth.js";
 
 const AVAILABLE_ROLES = [
   "ceo",
@@ -70,11 +71,12 @@ export function aiGoalBreakdownRoutes(db: Db) {
 
       const agentRoles = companyAgents.map((a) => a.role?.toLowerCase() ?? a.name.toLowerCase());
 
-      const apiKey = process.env.ANTHROPIC_API_KEY;
-      if (apiKey) {
+      // SEC-ADV-010: resolve per-company BYOK credentials; fall back to server env only if none set
+      const auth = await resolveAnthropicAuth(companyId, db);
+      if (auth) {
         try {
           const result = await generateWithAnthropic(
-            apiKey,
+            auth,
             goalTitle,
             goalDescription,
             agentRoles,
@@ -99,7 +101,7 @@ export function aiGoalBreakdownRoutes(db: Db) {
 }
 
 async function generateWithAnthropic(
-  apiKey: string,
+  auth: import("../lib/anthropic-auth.js").AnthropicAuth,
   goalTitle: string,
   goalDescription: string | undefined,
   availableRoles: string[],
@@ -144,7 +146,7 @@ Rules:
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-api-key": apiKey,
+      ...buildAnthropicHeaders(auth),
       "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({

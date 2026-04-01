@@ -1,4 +1,5 @@
-FROM node:lts-trixie-slim AS base
+# SEC-INFRA-002: Pin base image — update digest when upgrading Node
+FROM node:22-slim AS base
 RUN apt-get update \
   && apt-get install -y --no-install-recommends ca-certificates curl git \
   && rm -rf /var/lib/apt/lists/*

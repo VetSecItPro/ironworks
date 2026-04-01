@@ -101,7 +101,10 @@ export function SetupPage() {
       await queryClient.invalidateQueries({ queryKey: queryKeys.companies.all });
       // Brief pause so the user sees the success state
       setTimeout(() => {
-        navigate(data.redirectUrl || "/dashboard", { replace: true });
+        // SEC-XSS-003: Only navigate to relative paths to prevent open redirect
+        const url = data.redirectUrl || "/dashboard";
+        const safeUrl = url.startsWith("/") && !url.startsWith("//") ? url : "/dashboard";
+        navigate(safeUrl, { replace: true });
       }, 800);
     },
     onError: (err) => {
