@@ -97,6 +97,7 @@ vi.mock("../services/index.js", () => ({
   issueApprovalService: () => mockIssueApprovalService,
   issueService: () => mockIssueService,
   logActivity: mockLogActivity,
+  playbookService: () => ({ seedDefaults: vi.fn() }),
   secretService: () => mockSecretService,
   syncInstructionsBundleConfigFromFilePath: vi.fn((_agent, config) => config),
   workspaceOperationService: () => mockWorkspaceOperationService,

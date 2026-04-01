@@ -30,6 +30,7 @@ vi.mock("../services/index.js", () => ({
     getById: vi.fn(),
   }),
   logActivity: vi.fn(),
+  playbookService: () => ({ seedDefaults: vi.fn() }),
 }));
 
 describe("company routes malformed issue path guard", () => {

@@ -37,6 +37,9 @@ vi.mock("../services/index.js", () => ({
   issueApprovalService: () => ({}),
   issueService: () => mockIssueService,
   logActivity: mockLogActivity,
+  playbookService: () => ({ seedDefaults: vi.fn() }),
+  budgetService: () => ({ upsertPolicy: vi.fn() }),
+  userInviteService: () => ({ create: vi.fn(), getByToken: vi.fn(), accept: vi.fn(), listForCompany: vi.fn(), revoke: vi.fn() }),
   projectService: () => ({}),
   routineService: () => ({
     syncRunStatusForIssue: vi.fn(async () => undefined),

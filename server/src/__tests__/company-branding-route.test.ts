@@ -42,6 +42,7 @@ vi.mock("../services/index.js", () => ({
   companyPortabilityService: () => mockCompanyPortabilityService,
   companyService: () => mockCompanyService,
   logActivity: mockLogActivity,
+  playbookService: () => ({ seedDefaults: vi.fn() }),
 }));
 
 function createCompany() {

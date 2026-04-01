@@ -40,6 +40,7 @@ vi.mock("../services/index.js", () => ({
   companyPortabilityService: () => mockCompanyPortabilityService,
   companyService: () => mockCompanyService,
   logActivity: mockLogActivity,
+  playbookService: () => ({ seedDefaults: vi.fn() }),
 }));
 
 async function createApp(actor: Record<string, unknown>) {

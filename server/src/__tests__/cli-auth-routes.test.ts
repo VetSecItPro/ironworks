@@ -30,6 +30,9 @@ vi.mock("../services/index.js", () => ({
   agentService: () => mockAgentService,
   boardAuthService: () => mockBoardAuthService,
   logActivity: mockLogActivity,
+  playbookService: () => ({ seedDefaults: vi.fn() }),
+  budgetService: () => ({ upsertPolicy: vi.fn() }),
+  userInviteService: () => ({ create: vi.fn(), getByToken: vi.fn(), accept: vi.fn(), listForCompany: vi.fn(), revoke: vi.fn() }),
   notifyHireApproved: vi.fn(),
   deduplicateAgentName: vi.fn((name: string) => name),
 }));

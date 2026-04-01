@@ -36,6 +36,9 @@ vi.mock("../services/index.js", () => ({
   heartbeatService: () => mockHeartbeatService,
   issueApprovalService: () => mockIssueApprovalService,
   logActivity: mockLogActivity,
+  playbookService: () => ({ seedDefaults: vi.fn() }),
+  budgetService: () => ({ upsertPolicy: vi.fn() }),
+  userInviteService: () => ({ create: vi.fn(), getByToken: vi.fn(), accept: vi.fn(), listForCompany: vi.fn(), revoke: vi.fn() }),
   secretService: () => mockSecretService,
 }));
 
