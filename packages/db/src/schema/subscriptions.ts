@@ -6,6 +6,7 @@ import {
   boolean,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { companies } from "./companies.js";
 
 export const companySubscriptions = pgTable(
@@ -17,6 +18,7 @@ export const companySubscriptions = pgTable(
       .references(() => companies.id),
     polarCustomerId: text("polar_customer_id"),
     polarSubscriptionId: text("polar_subscription_id"),
+    polarCheckoutId: text("polar_checkout_id"),
     planTier: text("plan_tier").notNull().default("starter"),
     status: text("status").notNull().default("incomplete"),
     trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
@@ -28,5 +30,8 @@ export const companySubscriptions = pgTable(
   },
   (table) => ({
     companyUniqueIdx: uniqueIndex("company_subscriptions_company_idx").on(table.companyId),
+    checkoutIdUniqueIdx: uniqueIndex("company_subscriptions_checkout_id_unique")
+      .on(table.polarCheckoutId)
+      .where(sql`${table.polarCheckoutId} IS NOT NULL`),
   }),
 );

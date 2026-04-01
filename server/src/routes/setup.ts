@@ -128,12 +128,6 @@ function checkRateLimit(ip: string): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// Track consumed checkouts to prevent replay
-// ---------------------------------------------------------------------------
-
-const consumedCheckouts = new Set<string>();
-
-// ---------------------------------------------------------------------------
 // Validation schemas
 // ---------------------------------------------------------------------------
 
@@ -185,13 +179,17 @@ export function setupRoutes(db: Db) {
     const { checkoutId, companyName, userName, email, password, tosAccepted } = parsed.data;
     void tosAccepted; // validated via z.literal(true)
 
-    // SEC-LOGIC-001: Atomic check-and-claim to prevent race condition.
-    // Mark the checkout as consumed BEFORE async work. If provisioning
-    // fails, we leave it claimed (user retries with a new checkout).
-    if (consumedCheckouts.has(checkoutId)) {
+    // SEC-ADV-009: DB-backed checkout deduplication. Check the unique
+    // polar_checkout_id column instead of an in-memory Set (which resets
+    // on restart). The unique index enforces exclusivity at the DB level.
+    const existingCheckout = await db
+      .select({ id: companySubscriptions.id })
+      .from(companySubscriptions)
+      .where(eq(companySubscriptions.polarCheckoutId, checkoutId))
+      .then((rows) => rows[0] ?? null);
+    if (existingCheckout) {
       throw conflict("This checkout has already been used to create an account.");
     }
-    consumedCheckouts.add(checkoutId);
 
     // 1. Verify checkout with Polar
     let checkout: PolarCheckout;
@@ -211,7 +209,6 @@ export function setupRoutes(db: Db) {
     // SEC-ADV-012: Verify the submitted email matches the checkout email
     // to prevent checkout ID hijacking (someone using another person's payment)
     if (checkout.customer_email && checkout.customer_email.toLowerCase() !== email) {
-      consumedCheckouts.delete(checkoutId); // release the claim
       throw badRequest("Email does not match the checkout. Use the email you paid with.");
     }
 
@@ -284,6 +281,7 @@ export function setupRoutes(db: Db) {
       .update(companySubscriptions)
       .set({
         polarCustomerId,
+        polarCheckoutId: checkoutId,
         planTier,
         status: "active",
         currentPeriodStart: now,
@@ -326,8 +324,6 @@ export function setupRoutes(db: Db) {
       createdAt: now,
       updatedAt: now,
     });
-
-    // (checkoutId already claimed at top of handler — SEC-LOGIC-001)
 
     // Set session cookie (same approach as Better Auth)
     res.cookie("better-auth.session_token", sessionToken, {
