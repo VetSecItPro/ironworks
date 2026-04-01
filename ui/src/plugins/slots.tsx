@@ -542,7 +542,8 @@ function usePluginModuleLoader(contributions: PluginUiContribution[] | undefined
  * newly-discovered contributions. Components render once loading completes.
  */
 export function usePluginSlots(filters: SlotFilters): UsePluginSlotsResult {
-  const queryEnabled = filters.enabled ?? true;
+  // Plugin system disabled for V1 — skip the API call entirely
+  const queryEnabled = false;
   const { data, isLoading: isQueryLoading, error } = useQuery({
     queryKey: queryKeys.plugins.uiContributions,
     queryFn: () => pluginsApi.listUiContributions(),
@@ -803,12 +804,10 @@ export function PluginSlotOutlet({
     companyId: context.companyId,
   });
 
+  // Plugin system is disabled for V1 — silently hide errors instead of showing
+  // a red banner when the plugin API routes are not mounted.
   if (errorMessage) {
-    return (
-      <div className={cn("rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1 text-xs text-destructive", errorClassName)}>
-        Plugin extensions unavailable: {errorMessage}
-      </div>
-    );
+    return null;
   }
 
   if (slots.length === 0) return null;

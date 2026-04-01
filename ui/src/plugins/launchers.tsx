@@ -263,7 +263,8 @@ function isPluginLauncherBounds(value: unknown): value is PluginLauncherBounds {
 export function usePluginLaunchers(
   filters: UsePluginLaunchersFilters,
 ): UsePluginLaunchersResult {
-  const queryEnabled = filters.enabled ?? true;
+  // Plugin system disabled for V1 — skip the API call entirely
+  const queryEnabled = false;
   const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.plugins.uiContributions,
     queryFn: () => pluginsApi.listUiContributions(),
@@ -771,12 +772,9 @@ export function PluginLauncherOutlet({
     enabled: !!context.companyId,
   });
 
+  // Plugin system disabled for V1 — silently hide errors
   if (errorMessage) {
-    return (
-      <div className={cn("rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1 text-xs text-destructive", errorClassName)}>
-        Plugin launchers unavailable: {errorMessage}
-      </div>
-    );
+    return null;
   }
 
   if (launchers.length === 0) return null;
