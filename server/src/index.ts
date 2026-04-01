@@ -362,7 +362,8 @@ export async function startServer(): Promise<StartedServer> {
         embeddedPostgres = new EmbeddedPostgres({
           databaseDir: dataDir,
           user: "ironworks",
-          password: "ironworks",
+          // SEC-SECRET-001: Use env var or default for embedded PG (local dev only)
+          password: process.env.IRONWORKS_EMBEDDED_PG_PASSWORD ?? "ironworks-local-dev",
           port,
           persistent: true,
           initdbFlags: ["--encoding=UTF8", "--locale=C", "--lc-messages=C"],

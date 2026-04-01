@@ -6,8 +6,20 @@ import {
   agents,
   issues,
   issueComments,
+  issueApprovals,
+  issueAttachments,
+  issueLabels,
+  issueDocuments,
+  issueWorkProducts,
+  issueReadStates,
+  issueInboxArchives,
   goals,
   projects,
+  projectGoals,
+  projectWorkspaces,
+  executionWorkspaces,
+  workspaceOperations,
+  workspaceRuntimeServices,
   heartbeatRuns,
   heartbeatRunEvents,
   costEvents,
@@ -16,10 +28,35 @@ import {
   approvals,
   approvalComments,
   companySkills,
+  companySecrets,
+  companyMemberships,
+  companySubscriptions,
+  companyLogos,
   libraryFiles,
   libraryFileEvents,
   playbooks,
   playbookRuns,
+  knowledgePages,
+  knowledgePageRevisions,
+  messagingBridges,
+  budgetPolicies,
+  budgetIncidents,
+  labels,
+  documents,
+  documentRevisions,
+  assets,
+  agentConfigRevisions,
+  agentApiKeys,
+  agentRuntimeState,
+  agentTaskSessions,
+  agentWakeupRequests,
+  routines,
+  routineTriggers,
+  routineRuns,
+  principalPermissionGrants,
+  invites,
+  joinRequests,
+  pluginCompanySettings,
   authSessions,
 } from "@ironworksai/db";
 import { assertCompanyAccess, getActorInfo } from "./authz.js";
@@ -295,7 +332,122 @@ export function privacyRoutes(db: Db) {
   return router;
 }
 
+/* ─── GDPR Erasure: Full Company Data Deletion ─────────────────────── */
+
+/**
+ * Permanently deletes ALL data belonging to a company.
+ * Deletion order respects foreign-key constraints (children before parents).
+ * Tables without a companyId column are NOT touched here.
+ */
+export async function deleteCompanyData(db: Db, companyId: string): Promise<void> {
+  logger.info({ companyId }, "beginning GDPR erasure for company");
+
+  // ── Tier 1: leaf rows that reference issues / approvals / comments ──────
+  await db.delete(issueReadStates).where(eq(issueReadStates.companyId, companyId));
+  await db.delete(issueInboxArchives).where(eq(issueInboxArchives.companyId, companyId));
+  await db.delete(issueLabels).where(eq(issueLabels.companyId, companyId));
+  // issueAttachments references issueComments (set null) and issues (cascade) and assets
+  await db.delete(issueAttachments).where(eq(issueAttachments.companyId, companyId));
+  await db.delete(issueApprovals).where(eq(issueApprovals.companyId, companyId));
+  await db.delete(issueWorkProducts).where(eq(issueWorkProducts.companyId, companyId));
+
+  // ── Tier 2: document junction rows ─────────────────────────────────────
+  await db.delete(issueDocuments).where(eq(issueDocuments.companyId, companyId));
+
+  // ── Tier 3: issue comments (before issues) ──────────────────────────────
+  await db.delete(issueComments).where(eq(issueComments.companyId, companyId));
+
+  // ── Tier 4: approval comments then approvals ────────────────────────────
+  await db.delete(approvalComments).where(eq(approvalComments.companyId, companyId));
+  await db.delete(approvals).where(eq(approvals.companyId, companyId));
+
+  // ── Tier 5: document revisions then documents ───────────────────────────
+  // document_revisions has onDelete: cascade from documents, but we delete explicitly
+  await db.delete(documentRevisions).where(eq(documentRevisions.companyId, companyId));
+  await db.delete(documents).where(eq(documents.companyId, companyId));
+
+  // ── Tier 6: library file events then library files ──────────────────────
+  await db.delete(libraryFileEvents).where(eq(libraryFileEvents.companyId, companyId));
+  await db.delete(libraryFiles).where(eq(libraryFiles.companyId, companyId));
+
+  // ── Tier 7: knowledge page revisions then knowledge pages ───────────────
+  await db.delete(knowledgePageRevisions).where(eq(knowledgePageRevisions.companyId, companyId));
+  await db.delete(knowledgePages).where(eq(knowledgePages.companyId, companyId));
+
+  // ── Tier 8: playbook runs then playbooks ────────────────────────────────
+  // playbookRunSteps has no companyId — cascade deletes them with playbookRuns.
+  // playbookSteps has no companyId — cascade deletes them with playbooks.
+  await db.delete(playbookRuns).where(eq(playbookRuns.companyId, companyId));
+  await db.delete(playbooks).where(eq(playbooks.companyId, companyId));
+
+  // ── Tier 9: routines (triggers and runs cascade from routines) ───────────
+  await db.delete(routineRuns).where(eq(routineRuns.companyId, companyId));
+  await db.delete(routineTriggers).where(eq(routineTriggers.companyId, companyId));
+  await db.delete(routines).where(eq(routines.companyId, companyId));
+
+  // ── Tier 10: workspace-level objects ────────────────────────────────────
+  await db.delete(workspaceOperations).where(eq(workspaceOperations.companyId, companyId));
+  await db.delete(workspaceRuntimeServices).where(eq(workspaceRuntimeServices.companyId, companyId));
+  await db.delete(executionWorkspaces).where(eq(executionWorkspaces.companyId, companyId));
+  await db.delete(projectWorkspaces).where(eq(projectWorkspaces.companyId, companyId));
+
+  // ── Tier 11: issues then goals and projects ──────────────────────────────
+  await db.delete(issues).where(eq(issues.companyId, companyId));
+  await db.delete(projectGoals).where(eq(projectGoals.companyId, companyId));
+  await db.delete(goals).where(eq(goals.companyId, companyId));
+  await db.delete(projects).where(eq(projects.companyId, companyId));
+
+  // ── Tier 12: finance and cost events ────────────────────────────────────
+  await db.delete(financeEvents).where(eq(financeEvents.companyId, companyId));
+  await db.delete(costEvents).where(eq(costEvents.companyId, companyId));
+
+  // ── Tier 13: heartbeat events then heartbeat runs ───────────────────────
+  await db.delete(heartbeatRunEvents).where(eq(heartbeatRunEvents.companyId, companyId));
+  await db.delete(heartbeatRuns).where(eq(heartbeatRuns.companyId, companyId));
+
+  // ── Tier 14: agent sub-objects then agents ───────────────────────────────
+  await db.delete(agentConfigRevisions).where(eq(agentConfigRevisions.companyId, companyId));
+  await db.delete(agentApiKeys).where(eq(agentApiKeys.companyId, companyId));
+  await db.delete(agentRuntimeState).where(eq(agentRuntimeState.companyId, companyId));
+  await db.delete(agentTaskSessions).where(eq(agentTaskSessions.companyId, companyId));
+  await db.delete(agentWakeupRequests).where(eq(agentWakeupRequests.companyId, companyId));
+  await db.delete(agents).where(eq(agents.companyId, companyId));
+
+  // ── Tier 15: activity log ────────────────────────────────────────────────
+  await db.delete(activityLog).where(eq(activityLog.companyId, companyId));
+
+  // ── Tier 16: miscellaneous company-scoped tables ─────────────────────────
+  await db.delete(labels).where(eq(labels.companyId, companyId));
+  await db.delete(assets).where(eq(assets.companyId, companyId));
+  await db.delete(companySkills).where(eq(companySkills.companyId, companyId));
+
+  // ── Tier 17: secrets (company_secret_versions has no companyId; cascade removes them) ─
+  await db.delete(companySecrets).where(eq(companySecrets.companyId, companyId));
+
+  // ── Tier 18: messaging, budget, permissions, invites ────────────────────
+  await db.delete(messagingBridges).where(eq(messagingBridges.companyId, companyId));
+  await db.delete(budgetIncidents).where(eq(budgetIncidents.companyId, companyId));
+  await db.delete(budgetPolicies).where(eq(budgetPolicies.companyId, companyId));
+  await db.delete(principalPermissionGrants).where(eq(principalPermissionGrants.companyId, companyId));
+  await db.delete(joinRequests).where(eq(joinRequests.companyId, companyId));
+  await db.delete(invites).where(eq(invites.companyId, companyId));
+  await db.delete(pluginCompanySettings).where(eq(pluginCompanySettings.companyId, companyId));
+  await db.delete(companyLogos).where(eq(companyLogos.companyId, companyId));
+
+  // ── Tier 19: subscriptions and memberships (before company row) ──────────
+  await db.delete(companySubscriptions).where(eq(companySubscriptions.companyId, companyId));
+  await db.delete(companyMemberships).where(eq(companyMemberships.companyId, companyId));
+
+  // ── Tier 20: the company itself ──────────────────────────────────────────
+  await db.delete(companies).where(eq(companies.id, companyId));
+
+  logger.info({ companyId }, "GDPR erasure complete — company and all data permanently deleted");
+}
+
 /* ─── Data Retention Cleanup Job ──────────────────────────────────── */
+
+/** Grace period (days) between erasure request and permanent deletion. */
+const ERASURE_GRACE_PERIOD_DAYS = 30;
 
 export async function runRetentionCleanup(db: Db): Promise<{
   heartbeatRunEvents: number;
@@ -303,6 +455,7 @@ export async function runRetentionCleanup(db: Db): Promise<{
   costEvents: number;
   financeEvents: number;
   expiredSessions: number;
+  companiesErased: number;
 }> {
   const results = {
     heartbeatRunEvents: 0,
@@ -310,9 +463,33 @@ export async function runRetentionCleanup(db: Db): Promise<{
     costEvents: 0,
     financeEvents: 0,
     expiredSessions: 0,
+    companiesErased: 0,
   };
 
   const now = new Date();
+
+  // ── GDPR erasure: permanently delete companies past their grace period ───
+  const erasureThreshold = new Date(
+    now.getTime() - ERASURE_GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000,
+  );
+  const pendingErasures = await db
+    .select({ id: companies.id })
+    .from(companies)
+    .where(
+      and(
+        eq(companies.status, "pending_erasure"),
+        lt(companies.updatedAt, erasureThreshold),
+      ),
+    );
+
+  for (const { id: companyId } of pendingErasures) {
+    try {
+      await deleteCompanyData(db, companyId);
+      results.companiesErased += 1;
+    } catch (err) {
+      logger.error({ err, companyId }, "GDPR erasure failed for company");
+    }
+  }
 
   // Heartbeat run events older than retention period
   const hreThreshold = new Date(now.getTime() - DEFAULT_RETENTION.heartbeatRunEvents * 24 * 60 * 60 * 1000);

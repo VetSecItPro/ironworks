@@ -57,7 +57,12 @@ function MermaidDiagramBlock({ source, darkMode }: { source: string; darkMode: b
         });
         const rendered = await mermaid.render(`ironworks-mermaid-${renderId}`, source);
         if (!active) return;
-        setSvg(rendered.svg);
+        // SEC-XSS-001: Strip script/event handler content from mermaid SVG
+        // Mermaid strict mode should prevent this, but defense-in-depth
+        const safeSvg = rendered.svg
+          .replace(/<script[\s\S]*?<\/script>/gi, "")
+          .replace(/\bon\w+\s*=\s*["'][^"']*["']/gi, "");
+        setSvg(safeSvg);
       })
       .catch((err) => {
         if (!active) return;
