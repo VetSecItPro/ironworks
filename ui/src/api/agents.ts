@@ -64,8 +64,21 @@ function agentPath(id: string, companyId?: string, suffix = "") {
   return withCompanyScope(`/agents/${encodeURIComponent(id)}${suffix}`, companyId);
 }
 
+/** Lightweight agent shape returned by the /agents/slim endpoint. */
+export interface AgentSlim {
+  id: string;
+  name: string;
+  status: string;
+  role: string;
+  icon: string | null;
+  title: string | null;
+  reportsTo: string | null;
+}
+
 export const agentsApi = {
   list: (companyId: string) => api.get<Agent[]>(`/companies/${companyId}/agents`),
+  /** Minimal agent payload for sidebar, dropdowns, and org chart. */
+  slim: (companyId: string) => api.get<AgentSlim[]>(`/companies/${companyId}/agents/slim`),
   org: (companyId: string) => api.get<OrgNode[]>(`/companies/${companyId}/org`),
   listConfigurations: (companyId: string) =>
     api.get<Record<string, unknown>[]>(`/companies/${companyId}/agent-configurations`),
