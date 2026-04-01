@@ -28,6 +28,9 @@ function parseNumber(value: string | undefined, fallback: number) {
 function jwtConfig() {
   const secret = process.env.IRONWORKS_AGENT_JWT_SECRET;
   if (!secret) return null;
+  if (secret.length < 32) {
+    throw new Error("IRONWORKS_AGENT_JWT_SECRET must be at least 32 characters for HS256 security");
+  }
 
   return {
     secret,
