@@ -16,7 +16,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@2ead5e36573714b28b4e92ec4064ec0de7536609 # v1
+        uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.VPS_HOST }}
           username: root
