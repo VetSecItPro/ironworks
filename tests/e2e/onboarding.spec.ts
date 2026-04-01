@@ -44,8 +44,11 @@ test.describe("Onboarding wizard", () => {
     await nextButton.click();
 
     await expect(
-      page.locator("h3", { hasText: "Create your first agent" })
+      page.locator("h3", { hasText: "Build your team" })
     ).toBeVisible({ timeout: 10_000 });
+
+    // Switch to Single Agent mode so we can configure a single CEO agent
+    await page.getByRole("button", { name: "Single Agent" }).click();
 
     const agentNameInput = page.locator('input[placeholder="CEO"]');
     await expect(agentNameInput).toHaveValue(AGENT_NAME);

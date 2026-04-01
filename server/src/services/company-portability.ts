@@ -3439,10 +3439,11 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
           }
         }
         if (issue.recurring) {
-          if (!issue.projectSlug) {
+          const isDraftRoutine = issue.status === "draft";
+          if (!issue.projectSlug && !isDraftRoutine) {
             errors.push(`Recurring task ${issue.slug} must declare a project to import as a routine.`);
           }
-          if (!issue.assigneeAgentSlug) {
+          if (!issue.assigneeAgentSlug && !isDraftRoutine) {
             errors.push(`Recurring task ${issue.slug} must declare an assignee to import as a routine.`);
           }
           const resolvedRoutine = resolvePortableRoutineDefinition(issue, parsed.frontmatter.schedule);
@@ -4126,7 +4127,8 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
           warnings.push(`Task ${manifestIssue.slug} references workspace key ${manifestIssue.projectWorkspaceKey}, but that workspace was not imported.`);
         }
         if (manifestIssue.recurring) {
-          if (!projectId || !assigneeAgentId) {
+          const isDraftRoutine = manifestIssue.status === "draft";
+          if ((!projectId || !assigneeAgentId) && !isDraftRoutine) {
             throw unprocessable(`Recurring task ${manifestIssue.slug} is missing the project or assignee required to create a routine.`);
           }
           const resolvedRoutine = resolvePortableRoutineDefinition(manifestIssue, parsed?.frontmatter.schedule);
