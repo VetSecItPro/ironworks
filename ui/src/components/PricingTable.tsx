@@ -17,25 +17,6 @@ interface PricingTier {
 
 const TIERS: PricingTier[] = [
   {
-    tier: "trial",
-    label: "14-Day Trial",
-    priceMonthly: 0,
-    subtitle: "No credit card required",
-    projects: "1 project",
-    storage: "500 MB",
-    companies: "1 company",
-    support: "Docs only",
-    messaging: "Email",
-    features: [
-      "Unlimited AI agents",
-      "1 project",
-      "500 MB storage",
-      "5 playbook runs/mo",
-      "5 KB pages",
-      "Email messaging",
-    ],
-  },
-  {
     tier: "starter",
     label: "Starter",
     priceMonthly: 7900,
@@ -107,9 +88,9 @@ interface PricingTableProps {
   loading?: boolean;
 }
 
-export function PricingTable({ currentTier = "trial", onSelectTier, loading }: PricingTableProps) {
+export function PricingTable({ currentTier = "starter", onSelectTier, loading }: PricingTableProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {TIERS.map((tier) => {
         const isCurrent = tier.tier === currentTier;
         const isUpgrade =
@@ -158,7 +139,7 @@ export function PricingTable({ currentTier = "trial", onSelectTier, loading }: P
             {onSelectTier && (
               <Button
                 variant={isCurrent ? "outline" : isUpgrade ? "default" : "outline"}
-                disabled={isCurrent || tier.tier === "trial" || loading}
+                disabled={isCurrent || loading}
                 onClick={() => onSelectTier(tier.tier)}
                 className="w-full"
               >

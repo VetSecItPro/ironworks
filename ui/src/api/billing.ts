@@ -1,7 +1,7 @@
 import { api } from "./client";
 
-export type PlanTier = "trial" | "starter" | "growth" | "business";
-export type SubscriptionStatus = "trialing" | "active" | "past_due" | "cancelled" | "incomplete";
+export type PlanTier = "starter" | "growth" | "business";
+export type SubscriptionStatus = "active" | "past_due" | "cancelled" | "incomplete";
 
 export interface PlanDefinition {
   productId: string | undefined;
@@ -23,7 +23,6 @@ export interface SubscriptionRecord {
   status: SubscriptionStatus;
   currentPeriodStart: string | null;
   currentPeriodEnd: string | null;
-  trialEndsAt: string | null;
   cancelAtPeriodEnd: boolean;
   createdAt: string;
   updatedAt: string;

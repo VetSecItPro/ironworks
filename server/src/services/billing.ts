@@ -22,8 +22,8 @@ import { logger } from "../middleware/logger.js";
 // Plan tier definitions
 // ---------------------------------------------------------------------------
 
-export type PlanTier = "trial" | "starter" | "growth" | "business";
-export type SubscriptionStatus = "trialing" | "active" | "past_due" | "cancelled" | "incomplete";
+export type PlanTier = "starter" | "growth" | "business";
+export type SubscriptionStatus = "active" | "past_due" | "cancelled" | "incomplete";
 
 export interface PlanDefinition {
   productId: string | undefined;
@@ -37,16 +37,6 @@ export interface PlanDefinition {
 }
 
 export const PLAN_DEFINITIONS: Record<PlanTier, PlanDefinition> = {
-  trial: {
-    productId: undefined,
-    projects: 1,
-    storageGB: 0.5,
-    companies: 1,
-    playbookRuns: 5,
-    kbPages: 5,
-    priceMonthly: 0,
-    label: "14-Day Trial",
-  },
   starter: {
     productId: process.env.POLAR_STARTER_PRODUCT_ID,
     projects: 5,
@@ -191,10 +181,9 @@ export function billingService(db: Db) {
     const existing = await getSubscription(companyId);
     if (existing) return existing;
 
-    const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
     const rows = await db
       .insert(companySubscriptions)
-      .values({ companyId, trialEndsAt })
+      .values({ companyId })
       .onConflictDoNothing()
       .returning();
 
@@ -405,12 +394,10 @@ function mapPolarStatus(polarStatus: string): SubscriptionStatus {
     case "canceled":
     case "revoked":
       return "cancelled";
-    case "trialing":
-      return "trialing";
     case "incomplete":
       return "incomplete";
     default:
-      return "trialing";
+      return "incomplete";
   }
 }
 

@@ -32,39 +32,6 @@ function tierLimitError(message: string, limit: string, currentPlan: PlanTier): 
 }
 
 /**
- * Returns a middleware that blocks all access if the company's trial has expired.
- */
-export function enforceTrialExpiry(db: Db) {
-  const billing = billingService(db);
-
-  return async (req: Request, _res: Response, next: NextFunction) => {
-    const companyId = req.params.companyId as string | undefined;
-    if (!companyId) {
-      next();
-      return;
-    }
-
-    try {
-      const sub = await billing.getOrCreateSubscription(companyId);
-      if (sub.planTier === "trial" && sub.trialEndsAt && sub.trialEndsAt < new Date()) {
-        throw new HttpError(
-          403,
-          "Your trial has expired. Subscribe to continue.",
-          {
-            error: "Your trial has expired. Subscribe to continue.",
-            trialExpired: true,
-            upgradeUrl: "/settings/billing",
-          },
-        );
-      }
-      next();
-    } catch (err) {
-      next(err);
-    }
-  };
-}
-
-/**
  * Returns a middleware that blocks project creation when the company has
  * reached its plan limit.
  */

@@ -34,14 +34,12 @@ import { CompanyPatternIcon } from "./CompanyPatternIcon";
 import { TierLimitModal } from "./TierLimitModal";
 
 const TIER_COMPANY_LIMITS: Record<PlanTier, number> = {
-  trial: 1,
   starter: 1,
   growth: 2,
   business: 5,
 };
 
 const TIER_UPGRADE_TARGETS: Record<PlanTier, PlanTier | null> = {
-  trial: "growth",
   starter: "growth",
   growth: "business",
   business: null,
@@ -272,7 +270,7 @@ export function CompanyRail() {
 
   const handleAddCompany = useCallback(() => {
     const companyCount = sidebarCompanies.length;
-    const currentTier: PlanTier = (subscriptionData?.subscription?.planTier as PlanTier) ?? "trial";
+    const currentTier: PlanTier = (subscriptionData?.subscription?.planTier as PlanTier) ?? "starter";
     const limit = TIER_COMPANY_LIMITS[currentTier];
 
     if (companyCount < limit) {

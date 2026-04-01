@@ -37,6 +37,7 @@ import { AcceptableUsePolicy } from "./pages/AcceptableUsePolicy";
 import { DataProcessingAgreement } from "./pages/DataProcessingAgreement";
 import { ServiceLevelAgreement } from "./pages/ServiceLevelAgreement";
 import { LegalIndex } from "./pages/LegalIndex";
+import { SetupPage } from "./pages/Setup";
 import { CompanyExport } from "./pages/CompanyExport";
 import { CompanyImport } from "./pages/CompanyImport";
 import { DesignGuide } from "./pages/DesignGuide";
@@ -327,6 +328,7 @@ export function App() {
         <Route path="sla" element={<ServiceLevelAgreement />} />
         <Route path="legal" element={<LegalIndex />} />
         <Route path="auth" element={<AuthPage />} />
+        <Route path="setup" element={<SetupPage />} />
         <Route path="board-claim/:token" element={<BoardClaimPage />} />
         <Route path="cli-auth/:id" element={<CliAuthPage />} />
         <Route path="invite/:token" element={<InviteLandingPage />} />

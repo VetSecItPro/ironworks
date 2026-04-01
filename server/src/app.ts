@@ -31,6 +31,7 @@ import { accessRoutes } from "./routes/access.js";
 import { libraryRoutes } from "./routes/library.js";
 import { playbookRoutes } from "./routes/playbooks.js";
 import { knowledgeRoutes } from "./routes/knowledge.js";
+import { setupRoutes } from "./routes/setup.js";
 import { teamTemplateRoutes } from "./routes/team-templates.js";
 import { aiGenerateRoutes } from "./routes/ai-generate.js";
 import { privacyRoutes, startRetentionScheduler } from "./routes/privacy.js";
@@ -192,6 +193,8 @@ export async function createApp(
       allowedHostnames: opts.allowedHostnames,
     }),
   );
+  // Setup routes are public (no auth required — user isn't logged in yet)
+  app.use("/api", setupRoutes(db));
   app.use("/api", api);
   app.use("/api", (_req, res) => {
     res.status(404).json({ error: "API route not found" });

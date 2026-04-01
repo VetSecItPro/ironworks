@@ -8,7 +8,7 @@ import { queryKeys } from "@/lib/queryKeys";
 import { PricingTable } from "@/components/PricingTable";
 import { Button } from "@/components/ui/button";
 import type { PlanTier } from "@/api/billing";
-import { CreditCard, ExternalLink, AlertTriangle, Clock } from "lucide-react";
+import { CreditCard, ExternalLink, AlertTriangle } from "lucide-react";
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return "0 B";
@@ -59,7 +59,7 @@ export function BillingSettings() {
   });
 
   async function handleSelectTier(tier: PlanTier) {
-    if (!selectedCompanyId || tier === "trial") return;
+    if (!selectedCompanyId) return;
     setCheckoutLoading(true);
     try {
       const result = await billingApi.createCheckoutSession(
@@ -163,9 +163,6 @@ export function BillingSettings() {
           </div>
         )}
 
-        {subscription.planTier === "trial" && subscription.trialEndsAt && (
-          <TrialBanner trialEndsAt={subscription.trialEndsAt} />
-        )}
       </div>
 
       {/* Usage Card */}
@@ -191,9 +188,7 @@ export function BillingSettings() {
 
       {/* Pricing Table */}
       <div className="space-y-3">
-        <h2 className="text-lg font-semibold">
-          {subscription.planTier === "trial" ? "Choose a Plan" : "Change Plan"}
-        </h2>
+        <h2 className="text-lg font-semibold">Change Plan</h2>
         <PricingTable
           currentTier={subscription.planTier}
           onSelectTier={handleSelectTier}
@@ -208,42 +203,14 @@ export function BillingSettings() {
 // Sub-components
 // ---------------------------------------------------------------------------
 
-function TrialBanner({ trialEndsAt }: { trialEndsAt: string }) {
-  const endsAt = new Date(trialEndsAt);
-  const now = new Date();
-  const diffMs = endsAt.getTime() - now.getTime();
-  const daysRemaining = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-  const isExpired = diffMs <= 0;
-
-  if (isExpired) {
-    return (
-      <div className="flex items-center gap-2 text-red-600 bg-red-50 dark:bg-red-950/30 rounded px-3 py-2 text-sm">
-        <AlertTriangle className="h-4 w-4 shrink-0" />
-        <span>Your trial has expired. Subscribe to a plan to continue using IronWorks.</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex items-center gap-2 text-blue-600 bg-blue-50 dark:bg-blue-950/30 rounded px-3 py-2 text-sm">
-      <Clock className="h-4 w-4 shrink-0" />
-      <span>
-        Trial expires on {formatDate(trialEndsAt)} ({daysRemaining} day{daysRemaining !== 1 ? "s" : ""} remaining).
-        Subscribe to keep access.
-      </span>
-    </div>
-  );
-}
-
 function StatusBadge({ status }: { status: string }) {
   const colorMap: Record<string, string> = {
     active: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-    trialing: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
     past_due: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
     cancelled: "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-500",
     incomplete: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
   };
-  const cls = colorMap[status] ?? colorMap.trialing;
+  const cls = colorMap[status] ?? colorMap.incomplete;
   return (
     <span className={`inline-block text-xs font-medium px-2 py-0.5 rounded capitalize ${cls}`}>
       {status.replace("_", " ")}
