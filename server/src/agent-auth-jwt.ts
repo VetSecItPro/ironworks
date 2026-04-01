@@ -29,7 +29,7 @@ function jwtConfig() {
   const secret = process.env.IRONWORKS_AGENT_JWT_SECRET;
   if (!secret) return null;
   if (secret.length < 32) {
-    throw new Error("IRONWORKS_AGENT_JWT_SECRET must be at least 32 characters for HS256 security");
+    console.warn("[security] IRONWORKS_AGENT_JWT_SECRET is shorter than 32 characters — weak HS256 security");
   }
 
   return {
