@@ -15,7 +15,7 @@
 import { eq } from "drizzle-orm";
 import { createHmac, timingSafeEqual } from "crypto";
 import type { Db } from "@ironworksai/db";
-import { companySubscriptions, projects, companies, libraryFiles, playbookRuns } from "@ironworksai/db";
+import { companySubscriptions, webhookEvents, projects, companies, libraryFiles, playbookRuns } from "@ironworksai/db";
 import { gte, and } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 
@@ -166,44 +166,11 @@ function productIdToTier(productId: string): PlanTier {
 }
 
 // ---------------------------------------------------------------------------
-// Webhook idempotency guard (SEC-LOGIC-001)
-// In-memory Map with 24-hour TTL. Prevents duplicate Polar events from
-// re-activating cancelled subscriptions or racing on tier changes.
-// A production deployment should persist this to the database instead.
+// Webhook idempotency guard (SEC-ADV-004)
+// DB-backed deduplication via the webhook_events table. Survives server
+// restarts. An INSERT with the eventId as primary key will fail with a
+// unique-constraint violation if the event was already processed.
 // ---------------------------------------------------------------------------
-
-interface IdempotencyEntry {
-  processedAt: number; // Date.now() ms
-}
-
-const IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
-
-const processedWebhookEvents = new Map<string, IdempotencyEntry>();
-
-function pruneExpiredIdempotencyEntries(): void {
-  const now = Date.now();
-  for (const [key, entry] of processedWebhookEvents) {
-    if (now - entry.processedAt > IDEMPOTENCY_TTL_MS) {
-      processedWebhookEvents.delete(key);
-    }
-  }
-}
-
-function isEventAlreadyProcessed(eventId: string): boolean {
-  const entry = processedWebhookEvents.get(eventId);
-  if (!entry) return false;
-  // Treat expired entries as unprocessed (prune will clean them up)
-  if (Date.now() - entry.processedAt > IDEMPOTENCY_TTL_MS) {
-    processedWebhookEvents.delete(eventId);
-    return false;
-  }
-  return true;
-}
-
-function markEventProcessed(eventId: string): void {
-  pruneExpiredIdempotencyEntries();
-  processedWebhookEvents.set(eventId, { processedAt: Date.now() });
-}
 
 // ---------------------------------------------------------------------------
 // Service factory
@@ -291,10 +258,18 @@ export function billingService(db: Db) {
   }
 
   async function handleWebhook(event: PolarWebhookEvent): Promise<void> {
-    // SEC-LOGIC-001: Idempotency guard — skip events we have already processed.
+    // SEC-ADV-004: DB-backed idempotency guard — attempt to INSERT the event ID
+    // as a primary key. If it already exists, the INSERT raises a unique-constraint
+    // violation and we bail out early. This is safe across restarts and replicas.
     const eventId = event.data.id as string | undefined;
     if (eventId) {
-      if (isEventAlreadyProcessed(eventId)) {
+      try {
+        await db.insert(webhookEvents).values({
+          eventId,
+          eventType: event.type,
+        });
+      } catch {
+        // Duplicate key — event was already processed
         logger.debug({ eventId, eventType: event.type }, "Skipping duplicate Polar webhook event");
         return;
       }
@@ -417,12 +392,6 @@ export function billingService(db: Db) {
 
       default:
         logger.debug({ eventType: event.type }, "Unhandled Polar webhook event");
-    }
-
-    // SEC-LOGIC-001: Mark the event as successfully processed so re-deliveries
-    // from Polar are safely ignored within the 24-hour TTL window.
-    if (eventId) {
-      markEventProcessed(eventId);
     }
   }
 
