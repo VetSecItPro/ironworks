@@ -3,6 +3,7 @@ import type { Db } from "@ironworksai/db";
 import { activityLog, agents, companies, costEvents, issues, projects } from "@ironworksai/db";
 import { notFound, unprocessable } from "../errors.js";
 import { budgetService, type BudgetServiceHooks } from "./budgets.js";
+import { checkBudgetAlerts } from "./budget-alerts.js";
 
 export interface CostDateRange {
   from?: Date;
@@ -92,6 +93,12 @@ export function costService(db: Db, budgetHooks: BudgetServiceHooks = {}) {
         .where(eq(companies.id, companyId));
 
       await budgets.evaluateCostEvent(event);
+
+      // Fire budget alerts (80% warning + 100% exceeded) for api_key customers.
+      // We intentionally do not await — alert failures should never block cost recording.
+      checkBudgetAlerts(db, companyId).catch((err) => {
+        console.error("[budget-alerts] checkBudgetAlerts failed:", err);
+      });
 
       return event;
     },

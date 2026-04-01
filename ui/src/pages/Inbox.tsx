@@ -23,6 +23,7 @@ import { StatusBadge } from "../components/StatusBadge";
 import { approvalLabel, defaultTypeIcon, typeIcon } from "../components/ApprovalPayload";
 import { timeAgo } from "../lib/timeAgo";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Tabs } from "@/components/ui/tabs";
 import {
@@ -33,6 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Archive,
   Inbox as InboxIcon,
   AlertTriangle,
   XCircle,
@@ -540,6 +542,7 @@ export function Inbox() {
 
   useEffect(() => {
     saveLastInboxTab(tab);
+    setSelectedIssueIds(new Set());
   }, [tab]);
 
   const {
@@ -793,6 +796,7 @@ export function Inbox() {
   const [archivingIssueIds, setArchivingIssueIds] = useState<Set<string>>(new Set());
   const [fadingNonIssueItems, setFadingNonIssueItems] = useState<Set<string>>(new Set());
   const [archivingNonIssueIds, setArchivingNonIssueIds] = useState<Set<string>>(new Set());
+  const [selectedIssueIds, setSelectedIssueIds] = useState<Set<string>>(new Set());
 
   const invalidateInboxIssueQueries = () => {
     if (!selectedCompanyId) return;
@@ -825,6 +829,36 @@ export function Inbox() {
         setArchivingIssueIds((prev) => {
           const next = new Set(prev);
           next.delete(id);
+          return next;
+        });
+      }, 500);
+    },
+  });
+
+  const bulkArchiveMutation = useMutation({
+    mutationFn: (ids: string[]) => issuesApi.bulkArchiveFromInbox(selectedCompanyId!, ids),
+    onMutate: (ids) => {
+      setActionError(null);
+      setArchivingIssueIds((prev) => {
+        const next = new Set(prev);
+        for (const id of ids) next.add(id);
+        return next;
+      });
+    },
+    onSuccess: () => {
+      setSelectedIssueIds(new Set());
+      invalidateInboxIssueQueries();
+    },
+    onError: (err) => {
+      setActionError(err instanceof Error ? err.message : "Failed to archive selected issues");
+      setArchivingIssueIds(new Set());
+    },
+    onSettled: (_data, error, ids) => {
+      if (error) return;
+      window.setTimeout(() => {
+        setArchivingIssueIds((prev) => {
+          const next = new Set(prev);
+          for (const id of ids) next.delete(id);
           return next;
         });
       }, 500);
@@ -951,6 +985,35 @@ export function Inbox() {
     .map((issue) => issue.id);
   const canMarkAllRead = unreadIssueIds.length > 0;
 
+  // Selectable issues: only on "mine" tab, only issue-kind work items
+  const selectableIssueIds = useMemo(
+    () =>
+      tab === "mine"
+        ? issuesToRender
+            .filter((issue) => !archivingIssueIds.has(issue.id))
+            .map((issue) => issue.id)
+        : [],
+    [tab, issuesToRender, archivingIssueIds],
+  );
+  const allSelected =
+    selectableIssueIds.length > 0 && selectableIssueIds.every((id) => selectedIssueIds.has(id));
+  const someSelected = selectedIssueIds.size > 0;
+  const handleSelectAll = () => {
+    if (allSelected) {
+      setSelectedIssueIds(new Set());
+    } else {
+      setSelectedIssueIds(new Set(selectableIssueIds));
+    }
+  };
+  const handleToggleIssue = (id: string) => {
+    setSelectedIssueIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -983,6 +1046,35 @@ export function Inbox() {
             >
               {markAllReadMutation.isPending ? "Marking…" : "Mark all as read"}
             </Button>
+          )}
+
+          {tab === "mine" && selectableIssueIds.length > 0 && (
+            <div className="flex items-center gap-2">
+              <label className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground select-none">
+                <Checkbox
+                  checked={allSelected}
+                  onCheckedChange={handleSelectAll}
+                  aria-label="Select all issues"
+                  className="h-3.5 w-3.5"
+                />
+                Select all
+              </label>
+              {someSelected && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 shrink-0"
+                  onClick={() => bulkArchiveMutation.mutate([...selectedIssueIds])}
+                  disabled={bulkArchiveMutation.isPending}
+                >
+                  <Archive className="mr-1.5 h-3.5 w-3.5" />
+                  {bulkArchiveMutation.isPending
+                    ? "Archiving…"
+                    : `Archive ${selectedIssueIds.size} selected`}
+                </Button>
+              )}
+            </div>
           )}
         </div>
 
@@ -1158,6 +1250,7 @@ export function Inbox() {
                 const isUnread = issue.isUnreadForMe && !fadingOutIssues.has(issue.id);
                 const isFading = fadingOutIssues.has(issue.id);
                 const isArchiving = archivingIssueIds.has(issue.id);
+                const isSelected = selectedIssueIds.has(issue.id);
                 const row = (
                   <IssueRow
                     key={`issue:${issue.id}`}
@@ -1212,7 +1305,7 @@ export function Inbox() {
                   />
                 );
 
-                return isMineTab ? (
+                const wrappedRow = isMineTab ? (
                   <SwipeToArchive
                     key={`issue:${issue.id}`}
                     disabled={isArchiving || archiveIssueMutation.isPending}
@@ -1221,6 +1314,28 @@ export function Inbox() {
                     {row}
                   </SwipeToArchive>
                 ) : row;
+
+                return isMineTab ? (
+                  <div key={`issue-sel:${issue.id}`} className="group/sel relative">
+                    {wrappedRow}
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleToggleIssue(issue.id); }}
+                      className={cn(
+                        "absolute left-0 top-0 hidden h-full w-7 items-center justify-center sm:flex",
+                        isSelected ? "opacity-100" : "opacity-0 group-hover/sel:opacity-100",
+                      )}
+                      aria-label={isSelected ? "Deselect issue" : "Select issue"}
+                    >
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={() => handleToggleIssue(issue.id)}
+                        className="h-3.5 w-3.5 pointer-events-none"
+                        aria-hidden="true"
+                      />
+                    </button>
+                  </div>
+                ) : wrappedRow;
               })}
             </div>
           </div>

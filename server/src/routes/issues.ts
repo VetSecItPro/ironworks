@@ -780,6 +780,34 @@ export function issueRoutes(db: Db, storage: StorageService) {
     res.json(removed ?? { ok: true });
   });
 
+  /**
+   * POST /companies/:companyId/inbox/bulk-archive
+   * Archives multiple issues from the inbox in one shot.
+   */
+  router.post("/companies/:companyId/inbox/bulk-archive", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+    if (req.actor.type !== "board") {
+      res.status(403).json({ error: "Board authentication required" });
+      return;
+    }
+    if (!req.actor.userId) {
+      res.status(403).json({ error: "Board user context required" });
+      return;
+    }
+    const { issueIds } = req.body as { issueIds?: unknown };
+    if (!Array.isArray(issueIds) || issueIds.length === 0) {
+      res.status(400).json({ error: "issueIds must be a non-empty array" });
+      return;
+    }
+    const userId = req.actor.userId;
+    const archivedAt = new Date();
+    await Promise.all(
+      (issueIds as string[]).map((id) => svc.archiveInbox(companyId, id, userId, archivedAt)),
+    );
+    res.json({ archived: issueIds.length });
+  });
+
   router.get("/issues/:id/approvals", async (req, res) => {
     const id = req.params.id as string;
     const issue = await svc.getById(id);
