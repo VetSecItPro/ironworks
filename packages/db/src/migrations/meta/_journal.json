@@ -414,6 +414,13 @@
       "when": 1775440800000,
       "tag": "0058_webhook_checkout_dedup",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1775527200000,
+      "tag": "0059_llm_auth_method",
+      "breakpoints": true
     }
   ]
 }

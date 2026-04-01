@@ -23,6 +23,7 @@ import {
 import { knowledgeService } from "../services/knowledge.js";
 import type { StorageService } from "../storage/types.js";
 import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
+import { ROLE_DEFAULT_CAPABILITIES } from "../services/role-defaults.js";
 
 export function companyRoutes(db: Db, storage?: StorageService) {
   const router = Router();
@@ -351,6 +352,106 @@ export function companyRoutes(db: Db, storage?: StorageService) {
       return;
     }
     res.json({ ok: true });
+  });
+
+  /**
+   * POST /api/companies/:companyId/agents/:agentId/grant-capability
+   *
+   * Allows an agent with canManagePermissions (CEO, CTO) to grant or revoke
+   * a capability on another agent within the same company.
+   *
+   * Body: { targetAgentId: string, capability: string, value: boolean, temporary?: boolean }
+   */
+  router.post("/:companyId/agents/:agentId/grant-capability", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    const agentId = req.params.agentId as string;
+    assertCompanyAccess(req, companyId);
+
+    const { targetAgentId, capability, value, temporary } = req.body as {
+      targetAgentId?: unknown;
+      capability?: unknown;
+      value?: unknown;
+      temporary?: unknown;
+    };
+
+    // Validate body
+    if (typeof targetAgentId !== "string" || targetAgentId.length === 0) {
+      res.status(422).json({ error: "targetAgentId is required" });
+      return;
+    }
+    if (typeof capability !== "string" || capability.length === 0) {
+      res.status(422).json({ error: "capability is required" });
+      return;
+    }
+    if (typeof value !== "boolean") {
+      res.status(422).json({ error: "value must be a boolean" });
+      return;
+    }
+
+    // Only known capability names are accepted
+    const knownCapabilities = new Set(Object.keys(ROLE_DEFAULT_CAPABILITIES["default"]!));
+    knownCapabilities.add("canCreateAgents"); // legacy
+    if (!knownCapabilities.has(capability)) {
+      res.status(422).json({ error: `Unknown capability: ${capability}` });
+      return;
+    }
+
+    // Resolve the acting agent
+    const actorAgentSvc = agentService(db);
+    const actorAgent = await actorAgentSvc.getById(agentId);
+    if (!actorAgent || actorAgent.companyId !== companyId) {
+      res.status(404).json({ error: "Agent not found" });
+      return;
+    }
+
+    // Check that actor has canManagePermissions
+    const canManagePermissions = Boolean(actorAgent.permissions?.canManagePermissions);
+    if (!canManagePermissions) {
+      res.status(403).json({ error: "Agent does not have canManagePermissions" });
+      return;
+    }
+
+    // Resolve target agent
+    const targetAgent = await actorAgentSvc.getById(targetAgentId);
+    if (!targetAgent || targetAgent.companyId !== companyId) {
+      res.status(404).json({ error: "Target agent not found" });
+      return;
+    }
+
+    // Apply the capability patch
+    const existingPerms: Record<string, unknown> = { ...(targetAgent.permissions ?? {}) };
+    const updatedPerms = { ...existingPerms, [capability]: value };
+    const updatedAgent = await actorAgentSvc.update(targetAgentId, { permissions: updatedPerms });
+    if (!updatedAgent) {
+      res.status(404).json({ error: "Target agent not found after update" });
+      return;
+    }
+
+    const actor = getActorInfo(req);
+    await logActivity(db, {
+      companyId,
+      actorType: actor.actorType,
+      actorId: actor.actorId,
+      agentId: actor.agentId,
+      runId: actor.runId,
+      action: "agent.capability_granted",
+      entityType: "agent",
+      entityId: targetAgentId,
+      details: {
+        grantedByAgentId: agentId,
+        capability,
+        value,
+        temporary: temporary === true,
+      },
+    });
+
+    res.json({
+      agentId: targetAgentId,
+      capability,
+      value,
+      temporary: temporary === true,
+      permissions: updatedAgent.permissions,
+    });
   });
 
   return router;

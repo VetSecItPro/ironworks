@@ -118,6 +118,24 @@ export const agentsApi = {
     api.post<Agent>(agentPath(id, companyId, `/config-revisions/${revisionId}/rollback`), {}),
   create: (companyId: string, data: Record<string, unknown>) =>
     api.post<Agent>(`/companies/${companyId}/agents`, data),
+  deployTeamPack: (
+    companyId: string,
+    data: {
+      agents: Array<{
+        templateKey: string;
+        name: string;
+        role: string;
+        title?: string | null;
+        icon?: string | null;
+        reportsTo?: string | null;
+        suggestedAdapter?: string | null;
+        skills?: string[];
+        agentsMd?: string | null;
+      }>;
+      adapterType: string;
+      adapterConfig: Record<string, unknown>;
+    },
+  ) => api.post<{ agents: Agent[] }>(`/companies/${companyId}/agents/team-pack`, data),
   hire: (companyId: string, data: Record<string, unknown>) =>
     api.post<AgentHireResponse>(`/companies/${companyId}/agent-hires`, data),
   update: (id: string, data: Record<string, unknown>, companyId?: string) =>

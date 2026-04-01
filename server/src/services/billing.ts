@@ -120,6 +120,8 @@ export interface PolarWebhookEvent {
 // Subscription record helpers
 // ---------------------------------------------------------------------------
 
+export type LlmAuthMethod = "api_key" | "oauth" | "none";
+
 export interface SubscriptionRecord {
   id: string;
   companyId: string;
@@ -131,6 +133,7 @@ export interface SubscriptionRecord {
   currentPeriodEnd: Date | null;
   trialEndsAt: Date | null;
   cancelAtPeriodEnd: boolean;
+  llmAuthMethod: LlmAuthMethod;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -147,6 +150,7 @@ function rowToRecord(row: typeof companySubscriptions.$inferSelect): Subscriptio
     currentPeriodEnd: row.currentPeriodEnd,
     trialEndsAt: row.trialEndsAt,
     cancelAtPeriodEnd: row.cancelAtPeriodEnd,
+    llmAuthMethod: (row.llmAuthMethod ?? "none") as LlmAuthMethod,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

@@ -2,7 +2,7 @@ import { Router, type Request } from "express";
 import { generateKeyPairSync, randomUUID } from "node:crypto";
 import path from "node:path";
 import type { Db } from "@ironworksai/db";
-import { agents as agentsTable, companies, heartbeatRuns } from "@ironworksai/db";
+import { agents as agentsTable, companies, companySubscriptions, heartbeatRuns } from "@ironworksai/db";
 import { and, desc, eq, inArray, not, sql } from "drizzle-orm";
 import {
   agentSkillSyncSchema,
@@ -27,6 +27,7 @@ import {
   writeIronworksSkillSyncPreference,
 } from "@ironworksai/adapter-utils/server-utils";
 import { validate } from "../middleware/validate.js";
+import { logger } from "../middleware/logger.js";
 import {
   agentService,
   agentInstructionsService,
@@ -62,6 +63,23 @@ import {
   loadDefaultAgentInstructionsBundle,
   resolveDefaultAgentInstructionsBundleRole,
 } from "../services/default-agent-instructions.js";
+
+// ---------------------------------------------------------------------------
+// Auto-budget helpers (Item 4)
+// ---------------------------------------------------------------------------
+
+/**
+ * Return a default monthly budget in cents for a new agent based on its role,
+ * but ONLY when the company uses "api_key" auth (i.e., they pay per token).
+ * Returns 0 (no budget) for oauth/none — billing is on their side.
+ */
+function defaultBudgetCentsForRole(role: string): number {
+  const normalized = role.toLowerCase();
+  if (/\b(ceo|cto|cxo|coo|cfo|chief)\b/.test(normalized)) return 10000; // $100
+  if (/\b(manager|director)\b/.test(normalized)) return 5000;            // $50
+  if (/\b(engineer|designer|marketer|developer|dev)\b/.test(normalized)) return 3000; // $30
+  return 2000;                                                             // $20
+}
 
 export function agentRoutes(db: Db) {
   const DEFAULT_INSTRUCTIONS_PATH_KEYS: Record<string, string> = {
@@ -1344,11 +1362,32 @@ export function agentRoutes(db: Db) {
       normalizedAdapterConfig,
     );
 
+    // Auto-budget: determine default before create so we can pass it in
+    // when the caller didn't supply one and the company uses api_key auth.
+    let resolvedBudgetCents = typeof createInput.budgetMonthlyCents === "number"
+      ? createInput.budgetMonthlyCents
+      : 0;
+
+    if (resolvedBudgetCents === 0) {
+      // Check the company's llmAuthMethod — only assign a default budget when
+      // the company is paying per-token via an API key.
+      const subRow = await db
+        .select({ llmAuthMethod: companySubscriptions.llmAuthMethod })
+        .from(companySubscriptions)
+        .where(eq(companySubscriptions.companyId, companyId))
+        .then((rows) => rows[0] ?? null);
+
+      if (subRow?.llmAuthMethod === "api_key") {
+        resolvedBudgetCents = defaultBudgetCentsForRole(createInput.role ?? "general");
+      }
+    }
+
     const createdAgent = await svc.create(companyId, {
       ...createInput,
       adapterConfig: normalizedAdapterConfig,
       status: "idle",
       spentMonthlyCents: 0,
+      budgetMonthlyCents: resolvedBudgetCents,
       lastHeartbeatAt: null,
     });
     const agent = await materializeDefaultInstructionsBundleForNewAgent(createdAgent);
@@ -1393,6 +1432,156 @@ export function agentRoutes(db: Db) {
     ensureLibraryAgentFolder(companyId, agent.name, db).catch(() => {});
 
     res.status(201).json(agent);
+  });
+
+  // ── POST /companies/:companyId/agents/team-pack ─────────────────────────────
+  // Deploy a team pack: create all agents in one shot, then create a welcome
+  // issue assigned to the CEO agent (Item 5: CEO welcome task on team pack).
+  router.post("/companies/:companyId/agents/team-pack", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+
+    if (req.actor.type === "agent") {
+      assertBoard(req);
+    }
+
+    const body = req.body as {
+      agents: Array<{
+        templateKey: string;
+        name: string;
+        role: string;
+        title?: string | null;
+        icon?: string | null;
+        reportsTo?: string | null; // template key of parent
+        suggestedAdapter?: string | null;
+        skills?: string[];
+        agentsMd?: string | null; // AGENTS.md content
+      }>;
+      adapterType: string;
+      adapterConfig: Record<string, unknown>;
+    };
+
+    if (!Array.isArray(body.agents) || body.agents.length === 0) {
+      res.status(400).json({ error: "agents array is required and must not be empty" });
+      return;
+    }
+
+    const actor = getActorInfo(req);
+    const issueSvc = issueService(db);
+
+    // Map templateKey → created agent id (for resolving reportsTo references)
+    const agentIdByTemplateKey = new Map<string, string>();
+    const createdAgents: NonNullable<Awaited<ReturnType<typeof svc.getById>>>[] = [];
+
+    for (const item of body.agents) {
+      const adapterType = item.suggestedAdapter || body.adapterType;
+      const baseAdapterConfig = applyCreateDefaultsByAdapterType(
+        adapterType,
+        body.adapterConfig ?? {},
+      );
+      const desiredSkillAssignment = await resolveDesiredSkillAssignment(
+        companyId,
+        adapterType,
+        baseAdapterConfig,
+        item.skills?.length ? item.skills : undefined,
+      );
+      const normalizedAdapterConfig = await secretsSvc.normalizeAdapterConfigForPersistence(
+        companyId,
+        item.agentsMd
+          ? { ...desiredSkillAssignment.adapterConfig, promptTemplate: item.agentsMd }
+          : desiredSkillAssignment.adapterConfig,
+        { strictMode: strictSecretsMode },
+      );
+
+      const reportsToAgentId =
+        item.reportsTo ? (agentIdByTemplateKey.get(item.reportsTo) ?? null) : null;
+
+      const createdAgent = await svc.create(companyId, {
+        name: item.name.trim() || item.title || item.role,
+        role: item.role,
+        title: item.title ?? null,
+        icon: item.icon ?? null,
+        reportsTo: reportsToAgentId,
+        adapterType,
+        adapterConfig: normalizedAdapterConfig,
+        runtimeConfig: {
+          heartbeat: {
+            enabled: true,
+            intervalSec: 3600,
+            wakeOnDemand: true,
+            cooldownSec: 10,
+            maxConcurrentRuns: 1,
+          },
+        },
+        status: "idle",
+        spentMonthlyCents: 0,
+        lastHeartbeatAt: null,
+      });
+
+      const agent = await materializeDefaultInstructionsBundleForNewAgent(createdAgent);
+      agentIdByTemplateKey.set(item.templateKey, agent.id);
+      createdAgents.push(agent);
+
+      await logActivity(db, {
+        companyId,
+        actorType: actor.actorType,
+        actorId: actor.actorId,
+        agentId: actor.agentId,
+        runId: actor.runId,
+        action: "agent.created",
+        entityType: "agent",
+        entityId: agent.id,
+        details: { name: agent.name, role: agent.role, source: "team_pack" },
+      });
+
+      await applyDefaultAgentTaskAssignGrant(
+        companyId,
+        agent.id,
+        req.actor.type === "board" ? (req.actor.userId ?? null) : null,
+      );
+
+      ensureLibraryAgentFolder(companyId, agent.name, db).catch(() => {});
+    }
+
+    // Create welcome issue assigned to the CEO agent (Item 5)
+    const ceoAgent = createdAgents.find((a) => a.role === "ceo");
+    if (ceoAgent) {
+      try {
+        await issueSvc.create(companyId, {
+          title: "Welcome: review your team and set company direction",
+          description: `Your AI workforce has been deployed. Here is what to do first:
+
+1. Review your team — check the Org Chart to see who reports to whom
+2. Set 2-3 company goals in the Goals section
+3. Create your first project and assign agents to it
+4. Run the "Client Onboarding" playbook if you have a client to onboard
+
+Your team is ready to work. Assign tasks by creating issues and setting an assignee.`,
+          assigneeAgentId: ceoAgent.id,
+          priority: "high",
+          status: "todo",
+          createdByUserId: actor.actorType === "user" ? actor.actorId : null,
+          createdByAgentId: actor.agentId ?? null,
+        });
+      } catch (err) {
+        // Non-fatal — team was created successfully; welcome issue failure is logged only
+        logger.warn({ err, companyId, ceoAgentId: ceoAgent.id }, "Non-fatal: failed to create CEO welcome issue after team pack deployment");
+      }
+    }
+
+    await logActivity(db, {
+      companyId,
+      actorType: actor.actorType,
+      actorId: actor.actorId,
+      agentId: actor.agentId,
+      runId: actor.runId,
+      action: "company.team_pack_deployed",
+      entityType: "company",
+      entityId: companyId,
+      details: { agentCount: createdAgents.length, hasCeo: !!ceoAgent },
+    });
+
+    res.status(201).json({ agents: createdAgents });
   });
 
   router.patch("/agents/:id/permissions", validate(updateAgentPermissionsSchema), async (req, res) => {

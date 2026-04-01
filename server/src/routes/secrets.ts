@@ -1,5 +1,7 @@
 import { Router } from "express";
+import { eq } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
+import { companies, companySubscriptions } from "@ironworksai/db";
 import {
   SECRET_PROVIDERS,
   type SecretProvider,
@@ -10,6 +12,65 @@ import {
 import { validate } from "../middleware/validate.js";
 import { assertBoard, assertCanWrite, assertCompanyAccess } from "./authz.js";
 import { logActivity, secretService } from "../services/index.js";
+import type { LlmAuthMethod } from "../services/billing.js";
+
+/** Secret names that signal how the company authenticates with their LLM provider. */
+const LLM_API_KEY_SECRET_NAMES = new Set([
+  "ANTHROPIC_API_KEY",
+  "OPENAI_API_KEY",
+]);
+const LLM_OAUTH_SECRET_NAMES = new Set([
+  "ANTHROPIC_OAUTH_TOKEN",
+]);
+
+/** Default company monthly budget when the company authenticates via API key ($500). */
+const DEFAULT_COMPANY_BUDGET_API_KEY_CENTS = 50_000;
+
+/**
+ * Derive the llmAuthMethod from a secret name, returning null if the
+ * secret name is unrelated to LLM auth.
+ */
+function llmAuthMethodFromSecretName(name: string): LlmAuthMethod | null {
+  if (LLM_API_KEY_SECRET_NAMES.has(name)) return "api_key";
+  if (LLM_OAUTH_SECRET_NAMES.has(name)) return "oauth";
+  return null;
+}
+
+/**
+ * Update the company subscription's llmAuthMethod when a relevant secret is
+ * stored. When the method transitions to "api_key" and the company has no
+ * budget set yet, apply the default company budget of $500/mo.
+ * No-ops silently if the subscription row doesn't exist yet.
+ */
+async function maybeUpdateLlmAuthMethod(
+  db: Db,
+  companyId: string,
+  secretName: string,
+): Promise<void> {
+  const method = llmAuthMethodFromSecretName(secretName);
+  if (!method) return;
+
+  await db
+    .update(companySubscriptions)
+    .set({ llmAuthMethod: method, updatedAt: new Date() })
+    .where(eq(companySubscriptions.companyId, companyId));
+
+  // When transitioning to api_key, set a default company budget if not already set.
+  if (method === "api_key") {
+    const companyRow = await db
+      .select({ budgetMonthlyCents: companies.budgetMonthlyCents })
+      .from(companies)
+      .where(eq(companies.id, companyId))
+      .then((rows) => rows[0] ?? null);
+
+    if (companyRow && companyRow.budgetMonthlyCents === 0) {
+      await db
+        .update(companies)
+        .set({ budgetMonthlyCents: DEFAULT_COMPANY_BUDGET_API_KEY_CENTS, updatedAt: new Date() })
+        .where(eq(companies.id, companyId));
+    }
+  }
+}
 
 export function secretRoutes(db: Db) {
   const router = Router();
@@ -53,6 +114,9 @@ export function secretRoutes(db: Db) {
       { userId: req.actor.userId ?? "board", agentId: null },
     );
 
+    // Update llmAuthMethod on the subscription when a well-known LLM secret is stored.
+    await maybeUpdateLlmAuthMethod(db, companyId, created.name);
+
     await logActivity(db, {
       companyId,
       actorType: "user",
@@ -84,6 +148,9 @@ export function secretRoutes(db: Db) {
       },
       { userId: req.actor.userId ?? "board", agentId: null },
     );
+
+    // Update llmAuthMethod when a well-known LLM secret is rotated.
+    await maybeUpdateLlmAuthMethod(db, rotated.companyId, rotated.name);
 
     await logActivity(db, {
       companyId: rotated.companyId,

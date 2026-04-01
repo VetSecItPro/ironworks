@@ -516,7 +516,6 @@ export function OnboardingWizard() {
     setPackProgress({ done: 0, total: rosterItems.length });
 
     const config = buildAdapterConfig();
-    const agentIdByTemplateKey = new Map<string, string>();
 
     // Pre-fetch all role template details (SOUL.md + AGENTS.md content)
     const templateDetails = new Map<string, { soul: string; agents: string }>();
@@ -538,48 +537,35 @@ export function OnboardingWizard() {
         return 0;
       });
 
-      for (let i = 0; i < sorted.length; i++) {
-        const item = sorted[i];
-        const reportsToAgentId = item.reportsTo ? agentIdByTemplateKey.get(item.reportsTo) ?? null : null;
+      // Build agent payload for the server-side team-pack endpoint.
+      // The server handles reportsTo resolution by templateKey, creates the CEO
+      // welcome issue automatically, and returns all created agents.
+      const agentPayloads = sorted.map((item) => {
         const template = templateDetails.get(item.templateKey);
-
-        // Pass AGENTS.md content as promptTemplate so the server materializes it
-        const agentConfig = { ...config };
-        if (template) {
-          agentConfig.promptTemplate = template.agents;
-        }
-
-        const agent = await agentsApi.create(createdCompanyId, {
+        return {
+          templateKey: item.templateKey,
           name: item.name.trim() || item.title,
           role: item.role,
-          title: item.title,
-          reportsTo: reportsToAgentId,
-          adapterType: item.suggestedAdapter || adapterType,
-          adapterConfig: agentConfig,
-          runtimeConfig: {
-            heartbeat: {
-              enabled: true,
-              intervalSec: 3600,
-              wakeOnDemand: true,
-              cooldownSec: 10,
-              maxConcurrentRuns: 1,
-            },
-          },
-        });
+          title: item.title ?? null,
+          reportsTo: item.reportsTo ?? null,
+          suggestedAdapter: item.suggestedAdapter ?? null,
+          skills: item.skills,
+          agentsMd: template?.agents ?? null,
+        };
+      });
 
-        agentIdByTemplateKey.set(item.templateKey, agent.id);
-        if (i === 0) setCreatedAgentId(agent.id);
+      setPackProgress({ done: 0, total: sorted.length });
+      const result = await agentsApi.deployTeamPack(createdCompanyId, {
+        agents: agentPayloads,
+        adapterType,
+        adapterConfig: config,
+      });
 
-        // Sync role template skills to the new agent
-        if (item.skills.length > 0) {
-          try {
-            await agentsApi.syncSkills(agent.id, item.skills, createdCompanyId);
-          } catch {
-            // Non-fatal — agent is created, skills can be assigned later
-          }
-        }
+      setPackProgress({ done: sorted.length, total: sorted.length });
 
-        setPackProgress({ done: i + 1, total: sorted.length });
+      // Use the first agent returned (CEO is sorted first) for createdAgentId
+      if (result.agents.length > 0) {
+        setCreatedAgentId(result.agents[0].id);
       }
 
       queryClient.invalidateQueries({ queryKey: queryKeys.agents.list(createdCompanyId) });
