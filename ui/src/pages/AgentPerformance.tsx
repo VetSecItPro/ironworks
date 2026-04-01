@@ -283,19 +283,64 @@ export function AgentPerformance() {
         <EmptyState icon={BarChart3} message="No agents to evaluate." />
       ) : (
         <div className="rounded-xl border border-border overflow-hidden">
-          <div className="overflow-x-auto">
+          {/* Mobile card view */}
+          <div className="md:hidden divide-y divide-border">
+            {sorted.map((row) => (
+              <div key={row.agentId} className="p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className={cn("inline-flex items-center justify-center h-6 w-6 rounded border text-xs font-bold shrink-0", RATING_COLORS[row.rating])}>
+                      {row.rating}
+                    </span>
+                    <Link to={agentUrl({ id: row.agentId, urlKey: null } as any)} className="no-underline text-inherit font-medium truncate">
+                      {row.name}
+                    </Link>
+                  </div>
+                  <span className="text-sm tabular-nums text-muted-foreground shrink-0">
+                    {row.tasksDone} done{row.tasksInProgress > 0 && <span> +{row.tasksInProgress}</span>}
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-sm tabular-nums">
+                  <div>
+                    <div className="text-xs text-muted-foreground/60">$/task</div>
+                    <div className="text-muted-foreground">{row.costPerTask !== null ? formatCents(Math.round(row.costPerTask)) : "—"}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground/60">Avg time</div>
+                    <div className="text-muted-foreground">{row.avgCloseH !== null ? `${row.avgCloseH.toFixed(1)}h` : "—"}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-muted-foreground/60">Completion</div>
+                    <div className="text-muted-foreground">{row.completionRate}%</div>
+                  </div>
+                </div>
+                {(row.rating === "D" || row.rating === "F") && row.tasksDone > 0 && (
+                  <button
+                    className="text-[10px] text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors"
+                    onClick={() => openNewIssue({
+                      title: `Performance Review: ${row.name} — rating ${row.rating}`,
+                      description: `## Performance Improvement Plan\n\n**Agent:** ${row.name}\n**Current Rating:** ${row.rating}\n**Cost/Task:** ${row.costPerTask !== null ? formatCents(Math.round(row.costPerTask)) : "N/A"}\n**Avg Close Time:** ${row.avgCloseH !== null ? `${row.avgCloseH.toFixed(1)}h` : "N/A"}\n**Completion Rate:** ${row.completionRate}%\n\n### Recommended Actions\n\n- [ ] Review SOUL.md and AGENTS.md for clarity\n- [ ] Check if assigned tasks match agent's role\n- [ ] Consider switching to a more cost-effective model\n- [ ] Simplify task instructions\n- [ ] Re-evaluate after 1 week`,
+                    })}
+                  >
+                    Create PIP
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full min-w-[600px] text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Agent</th>
                   <SortHeader field="rating" label="Rating" current={sortField} dir={sortDir} onToggle={toggleSort} align="center" />
                   <SortHeader field="tasksDone" label="Done" current={sortField} dir={sortDir} onToggle={toggleSort} align="center" />
-                  <SortHeader field="throughput" label="Tasks/Day" current={sortField} dir={sortDir} onToggle={toggleSort} className="hidden md:table-cell" />
-                  <SortHeader field="avgCloseH" label="Avg Time" current={sortField} dir={sortDir} onToggle={toggleSort} className="hidden md:table-cell" />
-                  <SortHeader field="costPerTask" label="$/Task" current={sortField} dir={sortDir} onToggle={toggleSort} className="hidden md:table-cell" />
-                  <SortHeader field="totalSpendCents" label="Total Spend" current={sortField} dir={sortDir} onToggle={toggleSort} className="hidden md:table-cell" />
-                  <SortHeader field="completionRate" label="Completion" current={sortField} dir={sortDir} onToggle={toggleSort} className="hidden md:table-cell" />
-                  <th className="hidden md:table-cell px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider w-20">Action</th>
+                  <SortHeader field="throughput" label="Tasks/Day" current={sortField} dir={sortDir} onToggle={toggleSort} />
+                  <SortHeader field="avgCloseH" label="Avg Time" current={sortField} dir={sortDir} onToggle={toggleSort} />
+                  <SortHeader field="costPerTask" label="$/Task" current={sortField} dir={sortDir} onToggle={toggleSort} />
+                  <SortHeader field="totalSpendCents" label="Total Spend" current={sortField} dir={sortDir} onToggle={toggleSort} />
+                  <SortHeader field="completionRate" label="Completion" current={sortField} dir={sortDir} onToggle={toggleSort} />
+                  <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider w-20">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -317,19 +362,19 @@ export function AgentPerformance() {
                         <span className="text-muted-foreground ml-1">+{row.tasksInProgress}</span>
                       )}
                     </td>
-                    <td className="hidden md:table-cell px-4 py-3 text-right tabular-nums text-muted-foreground">
+                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
                       {row.throughput > 0 ? row.throughput.toFixed(1) : "—"}
                     </td>
-                    <td className="hidden md:table-cell px-4 py-3 text-right tabular-nums text-muted-foreground">
+                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
                       {row.avgCloseH !== null ? `${row.avgCloseH.toFixed(1)}h` : "—"}
                     </td>
-                    <td className="hidden md:table-cell px-4 py-3 text-right tabular-nums text-muted-foreground">
+                    <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
                       {row.costPerTask !== null ? formatCents(Math.round(row.costPerTask)) : "—"}
                     </td>
-                    <td className="hidden md:table-cell px-4 py-3 text-right tabular-nums">
+                    <td className="px-4 py-3 text-right tabular-nums">
                       {formatCents(row.totalSpendCents)}
                     </td>
-                    <td className="hidden md:table-cell px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
                           <div
@@ -343,7 +388,7 @@ export function AgentPerformance() {
                         <span className="text-sm text-muted-foreground tabular-nums w-8 text-right">{row.completionRate}%</span>
                       </div>
                     </td>
-                    <td className="hidden md:table-cell px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-right">
                       {(row.rating === "D" || row.rating === "F") && row.tasksDone > 0 ? (
                         <button
                           className="text-[10px] text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors"
@@ -523,19 +568,55 @@ export function AgentPerformance() {
               </div>
             )}
 
-            <div className="overflow-x-auto">
+            {/* Mobile card view — project breakdown */}
+            <div className="md:hidden divide-y divide-border border-t border-border">
+              {projectRows.map((r) => (
+                <div key={r.agentId} className="p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium truncate">{r.name}</span>
+                    <span className="text-xs text-muted-foreground shrink-0">{r.total} total</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-sm tabular-nums">
+                    <div>
+                      <div className="text-xs text-muted-foreground/60">Done</div>
+                      <div className={r.done > 0 ? "text-emerald-400" : "text-muted-foreground/40"}>{r.done}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground/60">Active</div>
+                      <div className={r.active > 0 ? "text-blue-400" : "text-muted-foreground/40"}>{r.active}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground/60">Blocked</div>
+                      <div className={r.blocked > 0 ? "text-red-400" : "text-muted-foreground/40"}>{r.blocked}</div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm tabular-nums">
+                    <div>
+                      <div className="text-xs text-muted-foreground/60">Avg time</div>
+                      <div className="text-muted-foreground">{r.avgCloseH !== null ? `${r.avgCloseH.toFixed(1)}h` : "—"}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground/60">Completion</div>
+                      <div className="text-muted-foreground">{r.completionRate !== null ? `${r.completionRate}%` : "—"}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full min-w-[600px] text-sm">
                 <thead>
                   <tr className="border-b border-border bg-muted/30">
                     <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Agent</th>
                     <th className="px-4 py-2.5 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">Done</th>
                     <th className="px-4 py-2.5 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">Active</th>
-                    <th className="hidden md:table-cell px-4 py-2.5 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">Review</th>
-                    <th className="hidden md:table-cell px-4 py-2.5 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">Todo</th>
-                    <th className="hidden md:table-cell px-4 py-2.5 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">Blocked</th>
-                    <th className="hidden md:table-cell px-4 py-2.5 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">Total</th>
-                    <th className="hidden md:table-cell px-4 py-2.5 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Avg Time</th>
-                    <th className="hidden md:table-cell px-4 py-2.5 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Completion</th>
+                    <th className="px-4 py-2.5 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">Review</th>
+                    <th className="px-4 py-2.5 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">Todo</th>
+                    <th className="px-4 py-2.5 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">Blocked</th>
+                    <th className="px-4 py-2.5 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">Total</th>
+                    <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Avg Time</th>
+                    <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Completion</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -550,22 +631,22 @@ export function AgentPerformance() {
                       <td className="px-4 py-2.5 text-center tabular-nums">
                         {r.active > 0 ? <span className="text-blue-400">{r.active}</span> : <span className="text-muted-foreground/40">0</span>}
                       </td>
-                      <td className="hidden md:table-cell px-4 py-2.5 text-center tabular-nums">
+                      <td className="px-4 py-2.5 text-center tabular-nums">
                         {r.inReview > 0 ? <span className="text-violet-400">{r.inReview}</span> : <span className="text-muted-foreground/40">0</span>}
                       </td>
-                      <td className="hidden md:table-cell px-4 py-2.5 text-center tabular-nums">
+                      <td className="px-4 py-2.5 text-center tabular-nums">
                         {r.todo > 0 ? <span className="text-amber-400">{r.todo}</span> : <span className="text-muted-foreground/40">0</span>}
                       </td>
-                      <td className="hidden md:table-cell px-4 py-2.5 text-center tabular-nums">
+                      <td className="px-4 py-2.5 text-center tabular-nums">
                         {r.blocked > 0 ? <span className="text-red-400">{r.blocked}</span> : <span className="text-muted-foreground/40">0</span>}
                       </td>
-                      <td className="hidden md:table-cell px-4 py-2.5 text-center tabular-nums font-medium">
+                      <td className="px-4 py-2.5 text-center tabular-nums font-medium">
                         {r.total > 0 ? r.total : <span className="text-muted-foreground/40">0</span>}
                       </td>
-                      <td className="hidden md:table-cell px-4 py-2.5 text-right tabular-nums text-muted-foreground">
+                      <td className="px-4 py-2.5 text-right tabular-nums text-muted-foreground">
                         {r.avgCloseH !== null ? `${r.avgCloseH.toFixed(1)}h` : "—"}
                       </td>
-                      <td className="hidden md:table-cell px-4 py-2.5 text-right">
+                      <td className="px-4 py-2.5 text-right">
                         {r.completionRate !== null ? (
                           <div className="flex items-center justify-end gap-2">
                             <div className="w-12 h-1.5 bg-muted rounded-full overflow-hidden">
