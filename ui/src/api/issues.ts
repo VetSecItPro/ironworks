@@ -55,6 +55,8 @@ export const issuesApi = {
   markRead: (id: string) => api.post<{ id: string; lastReadAt: Date }>(`/issues/${id}/read`, {}),
   archiveFromInbox: (id: string) =>
     api.post<{ id: string; archivedAt: Date }>(`/issues/${id}/inbox-archive`, {}),
+  bulkArchiveFromInbox: (companyId: string, issueIds: string[]) =>
+    api.post<{ archived: number }>(`/companies/${companyId}/inbox/bulk-archive`, { issueIds }),
   unarchiveFromInbox: (id: string) =>
     api.delete<{ id: string; archivedAt: Date } | { ok: true }>(`/issues/${id}/inbox-archive`),
   create: (companyId: string, data: Record<string, unknown>) =>

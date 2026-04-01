@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { and, eq, lt, sql } from "drizzle-orm";
+import { and, eq, inArray, lt, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import {
   companies,
@@ -456,6 +456,7 @@ export async function runRetentionCleanup(db: Db): Promise<{
   financeEvents: number;
   expiredSessions: number;
   companiesErased: number;
+  doneIssuesAutoArchived: number;
 }> {
   const results = {
     heartbeatRunEvents: 0,
@@ -464,6 +465,7 @@ export async function runRetentionCleanup(db: Db): Promise<{
     financeEvents: 0,
     expiredSessions: 0,
     companiesErased: 0,
+    doneIssuesAutoArchived: 0,
   };
 
   const now = new Date();
@@ -525,6 +527,56 @@ export async function runRetentionCleanup(db: Db): Promise<{
     .delete(authSessions)
     .where(lt(authSessions.expiresAt, sessionThreshold));
   results.expiredSessions = (sessionResult as unknown as { rowCount?: number }).rowCount ?? 0;
+
+  // Auto-archive done issues older than 7 days from all users' inboxes
+  const doneArchiveThreshold = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const doneIssues = await db
+    .select({ id: issues.id, companyId: issues.companyId })
+    .from(issues)
+    .where(and(eq(issues.status, "done"), lt(issues.updatedAt, doneArchiveThreshold)));
+
+  if (doneIssues.length > 0) {
+    // Group by company so we can fetch members per company efficiently
+    const issuesByCompany = new Map<string, string[]>();
+    for (const issue of doneIssues) {
+      const existing = issuesByCompany.get(issue.companyId);
+      if (existing) existing.push(issue.id);
+      else issuesByCompany.set(issue.companyId, [issue.id]);
+    }
+
+    for (const [companyId, companyIssueIds] of issuesByCompany) {
+      // Find all user members of this company
+      const members = await db
+        .select({ principalId: companyMemberships.principalId })
+        .from(companyMemberships)
+        .where(
+          and(
+            eq(companyMemberships.companyId, companyId),
+            eq(companyMemberships.principalType, "user"),
+            eq(companyMemberships.status, "active"),
+          ),
+        );
+
+      if (members.length === 0) continue;
+
+      const archivedAt = now;
+      const updatedAt = now;
+
+      // Upsert archive records for each (issue, user) pair
+      for (const issueId of companyIssueIds) {
+        for (const { principalId: userId } of members) {
+          await db
+            .insert(issueInboxArchives)
+            .values({ companyId, issueId, userId, archivedAt, updatedAt })
+            .onConflictDoUpdate({
+              target: [issueInboxArchives.companyId, issueInboxArchives.issueId, issueInboxArchives.userId],
+              set: { archivedAt, updatedAt },
+            });
+          results.doneIssuesAutoArchived += 1;
+        }
+      }
+    }
+  }
 
   logger.info({ results }, "data retention cleanup completed");
   return results;
