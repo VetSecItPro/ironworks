@@ -2,10 +2,13 @@ import express, { Router, type Request as ExpressRequest } from "express";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
+import { createGzip, createDeflate } from "node:zlib";
+import { pipeline } from "node:stream";
 import type { Db } from "@ironworksai/db";
 import type { DeploymentExposure, DeploymentMode } from "@ironworksai/shared";
 import type { StorageService } from "./storage/types.js";
 import { httpLogger, errorHandler } from "./middleware/index.js";
+import { cacheControl, etag } from "./middleware/cache.js";
 import { actorMiddleware } from "./middleware/auth.js";
 import { boardMutationGuard } from "./middleware/board-mutation-guard.js";
 import { privateHostnameGuard, resolvePrivateHostnameAllowSet } from "./middleware/private-hostname-guard.js";
@@ -38,6 +41,7 @@ import { privacyRoutes, startRetentionScheduler } from "./routes/privacy.js";
 import { goalStatsRoutes } from "./routes/goal-stats.js";
 import { aiGoalBreakdownRoutes } from "./routes/ai-goal-breakdown.js";
 import { messagingRoutes, emailWebhookRoutes } from "./routes/messaging.js";
+import { slimRoutes } from "./routes/slim.js";
 // Plugin system disabled — not needed for V1 productization
 // import { pluginRoutes } from "./routes/plugins.js";
 // import { pluginUiStaticRoutes } from "./routes/plugin-ui-static.js";
@@ -89,6 +93,52 @@ export async function createApp(
   },
 ) {
   const app = express();
+
+  // ── HTTP Compression ──
+  // Use Node.js built-in zlib for gzip/deflate compression on API responses.
+  app.use((req, res, next) => {
+    const acceptEncoding = req.headers["accept-encoding"] ?? "";
+    // Skip compression for Server-Sent Events and tiny responses
+    const origEnd = res.end.bind(res);
+    const origWrite = res.write.bind(res);
+    // Only compress JSON API responses (not static files — express.static handles those)
+    if (req.path.startsWith("/api") && typeof acceptEncoding === "string") {
+      const originalJson = res.json.bind(res);
+      res.json = (body: unknown) => {
+        const json = JSON.stringify(body);
+        // Only compress if payload is reasonably large (> 1KB)
+        if (json.length > 1024) {
+          const encoding = acceptEncoding.includes("gzip")
+            ? "gzip"
+            : acceptEncoding.includes("deflate")
+              ? "deflate"
+              : null;
+          if (encoding) {
+            const compressor =
+              encoding === "gzip" ? createGzip() : createDeflate();
+            res.setHeader("Content-Encoding", encoding);
+            res.removeHeader("Content-Length");
+            if (!res.headersSent) {
+              res.setHeader("Content-Type", "application/json");
+            }
+            const chunks: Buffer[] = [];
+            compressor.on("data", (chunk: Buffer) => chunks.push(chunk));
+            compressor.on("end", () => {
+              const compressed = Buffer.concat(chunks);
+              origEnd(compressed);
+            });
+            compressor.end(json);
+            return res;
+          }
+        }
+        return originalJson(body);
+      };
+    }
+    next();
+  });
+
+  // ── ETag support for conditional GET requests ──
+  app.use(etag());
 
   app.use(express.json({
     // Company import/export payloads can inline full portable packages.
@@ -142,6 +192,19 @@ export async function createApp(
   // Mount API routes
   const api = Router();
   api.use(boardMutationGuard());
+
+  // ── Cache-Control headers per route pattern ──
+  api.get("/health", cacheControl(30, "public"));
+  api.get("/companies/:id/dashboard", cacheControl(30));
+  api.get("/companies/:id/agents", cacheControl(60));
+  api.get("/companies/:id/agents/slim", cacheControl(60));
+  api.get("/companies/:id/projects", cacheControl(60));
+  api.get("/companies/:id/goals", cacheControl(60));
+  api.get("/companies/:id/issues", cacheControl(15));
+  api.get("/companies/:id/activity", cacheControl(10));
+  api.get("/companies/:id/costs/*", cacheControl(60));
+  api.get("/companies/:id/knowledge/*", cacheControl(120));
+
   api.use(
     "/health",
     healthRoutes(db, {
@@ -176,6 +239,7 @@ export async function createApp(
   api.use(goalStatsRoutes(db));
   api.use(aiGoalBreakdownRoutes(db));
   api.use(messagingRoutes(db));
+  api.use(slimRoutes(db));
 
   // Start daily data retention cleanup
   startRetentionScheduler(db);
@@ -218,9 +282,20 @@ export async function createApp(
     const uiDist = candidates.find((p) => fs.existsSync(path.join(p, "index.html")));
     if (uiDist) {
       const indexHtml = applyUiBranding(fs.readFileSync(path.join(uiDist, "index.html"), "utf-8"));
-      app.use(express.static(uiDist));
+      // Static assets — Vite hashes filenames so hashed files are immutable
+      app.use(express.static(uiDist, {
+        maxAge: "1y",
+        immutable: true,
+        setHeaders: (res, filePath) => {
+          if (filePath.endsWith("index.html") || filePath.endsWith(".html")) {
+            res.setHeader("Cache-Control", "no-cache");
+          } else {
+            res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+          }
+        },
+      }));
       app.get(/.*/, (_req, res) => {
-        res.status(200).set("Content-Type", "text/html").end(indexHtml);
+        res.status(200).set({ "Content-Type": "text/html", "Cache-Control": "no-cache" }).end(indexHtml);
       });
     } else {
       console.warn("[ironworks] UI dist not found; running in API-only mode");

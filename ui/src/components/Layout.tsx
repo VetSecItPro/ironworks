@@ -24,6 +24,7 @@ import { useSidebar } from "../context/SidebarContext";
 import { useTheme } from "../context/ThemeContext";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { useCompanyPageMemory } from "../hooks/useCompanyPageMemory";
+import { usePrefetch } from "../hooks/usePrefetch";
 import { healthApi } from "../api/health";
 import { shouldSyncCompanySelectionFromRoute } from "../lib/company-selection";
 import {
@@ -61,6 +62,7 @@ export function Layout() {
   } = useCompany();
   const { theme, toggleTheme } = useTheme();
   const { companyPrefix } = useParams<{ companyPrefix: string }>();
+  usePrefetch(selectedCompanyId);
   const navigate = useNavigate();
   const location = useLocation();
   const { isInstanceAdmin } = useMeAccess();
