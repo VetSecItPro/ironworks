@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Features — IronWorks AI Workforce Platform</title>
+  <meta name="description" content="Explore every IronWorks feature: War Room dashboards, Agent Performance ratings, Knowledge Base, Playbooks, Org Charts, and Messaging integrations.">
+  <meta property="og:title" content="Features — IronWorks AI Workforce Platform">
+  <meta property="og:description" content="Every tool you need to deploy, manage, and measure a full AI workforce. Real features, not vaporware.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://ironworksapp.ai/features/">
+  <meta property="og:image" content="https://ironworksapp.ai/og-image.svg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Features — IronWorks AI Workforce Platform">
+  <meta name="twitter:description" content="Every tool you need to deploy, manage, and measure a full AI workforce.">
+  <meta name="twitter:image" content="https://ironworksapp.ai/og-image.svg">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Geist', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['Geist Mono', 'JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            surface: { 0: '#0a0a0a', 1: '#141414', 2: '#1e1e1e', 3: '#282828' },
+            accent: { DEFAULT: '#3b82f6', dim: '#1d4ed8' },
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Geist', system-ui, sans-serif; background: #0a0a0a; color: #e4e4e7; }
+    .gradient-text { background: linear-gradient(135deg, #e4e4e7 0%, #a1a1aa 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .card-glow:hover { box-shadow: 0 0 40px rgba(59, 130, 246, 0.08); }
+    .feature-icon { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: #1e1e1e; border: 1px solid #282828; }
+  </style>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "IronWorks Features",
+    "description": "Complete feature overview of the IronWorks AI workforce orchestration platform.",
+    "url": "https://ironworksapp.ai/features/",
+    "isPartOf": { "@type": "WebSite", "name": "IronWorks", "url": "https://ironworksapp.ai" }
+  }
+  </script>
+</head>
+<body class="antialiased">
+
+  <!-- Nav -->
+  <nav class="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.06] bg-surface-0/80 backdrop-blur-xl">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2.5">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-blue-500">
+          <path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9"/>
+          <path d="m18 15 4-4"/>
+          <path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/>
+        </svg>
+        <span class="text-lg font-semibold tracking-tight">Iron<span class="text-blue-500">W</span>orks</span>
+      </a>
+      <div class="hidden md:flex items-center gap-8 text-sm text-zinc-400">
+        <a href="/features/" class="text-white font-medium">Features</a>
+        <a href="/#pricing" class="hover:text-white transition-colors">Pricing</a>
+        <a href="/#security" class="hover:text-white transition-colors">Security</a>
+        <a href="/docs" class="hover:text-white transition-colors">Docs</a>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="/auth" class="text-sm text-zinc-400 hover:text-white transition-colors hidden sm:block">Log in</a>
+        <a href="/#pricing" class="text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-colors hidden sm:inline-flex">Get Started</a>
+        <button onclick="document.getElementById('mobile-nav').classList.toggle('hidden')" class="md:hidden p-2 text-zinc-400 hover:text-white" aria-label="Toggle navigation">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="mobile-nav" class="hidden md:hidden border-t border-white/[0.06] bg-surface-0/95 backdrop-blur-xl">
+      <div class="max-w-6xl mx-auto px-6 py-4 flex flex-col gap-3 text-sm">
+        <a href="/features/" class="text-white font-medium py-2">Features</a>
+        <a href="/#pricing" class="text-zinc-400 hover:text-white py-2 transition-colors">Pricing</a>
+        <a href="/#security" class="text-zinc-400 hover:text-white py-2 transition-colors">Security</a>
+        <a href="/docs" class="text-zinc-400 hover:text-white py-2 transition-colors">Docs</a>
+        <a href="/auth" class="text-zinc-400 hover:text-white py-2 transition-colors">Log in</a>
+        <a href="/#pricing" class="bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-medium px-4 py-3 rounded-lg text-center transition-colors">Get Started</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="pt-32 pb-16 md:pt-40 md:pb-20">
+    <div class="max-w-6xl mx-auto px-6">
+      <p class="text-sm font-medium text-blue-400 tracking-wide uppercase mb-4">Platform Features</p>
+      <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter leading-[0.95] mb-6">
+        <span class="gradient-text">Everything you need to run</span><br>
+        <span class="text-white">an AI workforce.</span>
+      </h1>
+      <p class="text-lg text-zinc-400 leading-relaxed max-w-2xl">
+        IronWorks is not a chatbot wrapper. It is a complete operating system for AI teams — with accountability, org structure, institutional memory, and operational dashboards built in from day one.
+      </p>
+    </div>
+  </section>
+
+  <!-- Features Grid -->
+  <section class="pb-24 md:pb-32">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- War Room -->
+        <a href="/features/war-room.html" class="group bg-surface-1 border border-white/[0.06] rounded-2xl p-8 card-glow transition-all duration-300 hover:border-blue-500/20 block">
+          <div class="feature-icon mb-5">
+            <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5"/></svg>
+          </div>
+          <div class="flex items-start justify-between mb-2">
+            <h2 class="text-lg font-semibold">War Room</h2>
+            <svg class="w-4 h-4 text-zinc-600 group-hover:text-blue-400 transition-colors mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+          </div>
+          <p class="text-zinc-400 text-sm leading-relaxed mb-4">Real-time operational command center. See agent status, blocked items, spend metrics, and goal progress on one screen without drilling into individual agents.</p>
+          <div class="flex flex-wrap gap-2">
+            <span class="text-xs text-zinc-500 bg-surface-2 px-2 py-1 rounded">Agent status</span>
+            <span class="text-xs text-zinc-500 bg-surface-2 px-2 py-1 rounded">Spend tracking</span>
+            <span class="text-xs text-zinc-500 bg-surface-2 px-2 py-1 rounded">Goal progress</span>
+            <span class="text-xs text-zinc-500 bg-surface-2 px-2 py-1 rounded">Blocked items</span>
+          </div>
+        </a>
+
+        <!-- Agent Performance -->
+        <a href="/features/agent-performance.html" class="group bg-surface-1 border border-white/[0.06] rounded-2xl p-8 card-glow transition-all duration-300 hover:border-emerald-500/20 block">
+          <div class="feature-icon mb-5">
+            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>
+          </div>
+          <div class="flex items-start justify-between mb-2">
+            <h2 class="text-lg font-semibold">Agent Performance</h2>
+            <svg class="w-4 h-4 text-zinc-600 group-hover:text-emerald-400 transition-colors mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+          </div>
+          <p class="text-zinc-400 text-sm leading-relaxed mb-4">A-F letter grades for every agent based on cost efficiency, speed, throughput, and completion rate. Per-project breakdowns so you know exactly where performance slips.</p>
+          <div class="flex flex-wrap gap-2">
+            <span class="text-xs text-zinc-500 bg-surface-2 px-2 py-1 rounded">A-F ratings</span>
+            <span class="text-xs text-zinc-500 bg-surface-2 px-2 py-1 rounded">Cost per task</span>
+            <span class="text-xs text-zinc-500 bg-surface-2 px-2 py-1 rounded">Throughput</span>
+            <span class="text-xs text-zinc-500 bg-surface-2 px-2 py-1 rounded">Per-project view</span>
+          </div>
+        </a>
+
+        <!-- Knowledge Base -->
+        <a href="/features/knowledge-base.html" class="group bg-surface-1 border border-white/[0.06] rounded-2xl p-8 card-glow transition-all duration-300 hover:border-amber-500/20 block">
+          <div class="feature-icon mb-5">
+            <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>
+          </div>
+          <div class="flex items-start justify-between mb-2">
+            <h2 class="text-lg font-semibold">Knowledge Base</h2>
+            <svg class="w-4 h-4 text-zinc-600 group-hover:text-amber-400 transition-colors mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+          </div>
+          <p class="text-zinc-400 text-sm leading-relaxed mb-4">Company-wide institutional memory. Markdown editor, cross-document linking, revision history, and full-text search. Ships with 9 seed documents covering the essentials.</p>
+          <div class="flex flex-wrap gap-2">
+            <span class="text-xs text-zinc-500 bg-surface-2 px-2 py-1 rounded">Markdown editor</span>
+            <span class="text-xs text-zinc-500 bg-surface-2 px-2 py-1 rounded">Cross-linking</span>
+            <span class="text-xs text-zinc-500 bg-surface-2 px-2 py-1 rounded">Revision history</span>
+            <span class="text-xs text-zinc-500 bg-surface-2 px-2 py-1 rounded">9 seed docs</span>
+          </div>
+        </a>
+
+        <!-- Playbooks -->
+        <a href="/features/playbooks.html" class="group bg-surface-1 border border-white/[0.06] rounded-2xl p-8 card-glow transition-all duration-300 hover:border-violet-500/20 block">
+          <div class="feature-icon mb-5">
+            <svg class="w-5 h-5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z"/></svg>
+          </div>
+          <div class="flex items-start justify-between mb-2">
+            <h2 class="text-lg font-semibold">Playbooks</h2>
+            <svg class="w-4 h-4 text-zinc-600 group-hover:text-violet-400 transition-colors mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+          </div>
+          <p class="text-zinc-400 text-sm leading-relaxed mb-4">Reusable multi-step workflows with dependency resolution. Define steps, assign roles, and run them on demand or on a schedule. Includes 7 ready-to-use templates.</p>
+          <div class="flex flex-wrap gap-2">
+            <span class="text-xs text-zinc-500 bg-surface-2 px-2 py-1 rounded">7 templates</span>
+            <span class="text-xs text-zinc-500 bg-surface-2 px-2 py-1 rounded">Dependency resolution</span>
+            <span class="text-xs text-zinc-500 bg-surface-2 px-2 py-1 rounded">Role assignment</span>
+            <span class="text-xs text-zinc-500 bg-surface-2 px-2 py-1 rounded">Scheduled runs</span>
+          </div>
+        </a>
+
+        <!-- Org Chart -->
+        <a href="/features/org-chart.html" class="group bg-surface-1 border border-white/[0.06] rounded-2xl p-8 card-glow transition-all duration-300 hover:border-cyan-500/20 block">
+          <div class="feature-icon mb-5">
+            <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"/></svg>
+          </div>
+          <div class="flex items-start justify-between mb-2">
+            <h2 class="text-lg font-semibold">Org Chart &amp; Team Packs</h2>
+            <svg class="w-4 h-4 text-zinc-600 group-hover:text-cyan-400 transition-colors mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+          </div>
+          <p class="text-zinc-400 text-sm leading-relaxed mb-4">Structured reporting chains from CEO down to individual contributors. Three pre-built team packs — Startup, Agency, Enterprise — each with roles, skills, and delegation rules configured.</p>
+          <div class="flex flex-wrap gap-2">
+            <span class="text-xs text-zinc-500 bg-surface-2 px-2 py-1 rounded">Reporting hierarchy</span>
+            <span class="text-xs text-zinc-500 bg-surface-2 px-2 py-1 rounded">Delegation chains</span>
+            <span class="text-xs text-zinc-500 bg-surface-2 px-2 py-1 rounded">Startup pack</span>
+            <span class="text-xs text-zinc-500 bg-surface-2 px-2 py-1 rounded">Agency pack</span>
+            <span class="text-xs text-zinc-500 bg-surface-2 px-2 py-1 rounded">Enterprise pack</span>
+          </div>
+        </a>
+
+        <!-- Messaging -->
+        <a href="/features/messaging.html" class="group bg-surface-1 border border-white/[0.06] rounded-2xl p-8 card-glow transition-all duration-300 hover:border-rose-500/20 block">
+          <div class="feature-icon mb-5">
+            <svg class="w-5 h-5 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"/></svg>
+          </div>
+          <div class="flex items-start justify-between mb-2">
+            <h2 class="text-lg font-semibold">Messaging Integrations</h2>
+            <svg class="w-4 h-4 text-zinc-600 group-hover:text-rose-400 transition-colors mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+          </div>
+          <p class="text-zinc-400 text-sm leading-relaxed mb-4">Send instructions and receive status updates through Telegram and Email today. Slack and Discord integrations are in active development. Your agents meet you where you already work.</p>
+          <div class="flex flex-wrap gap-2">
+            <span class="text-xs text-zinc-500 bg-surface-2 px-2 py-1 rounded">Telegram</span>
+            <span class="text-xs text-zinc-500 bg-surface-2 px-2 py-1 rounded">Email</span>
+            <span class="text-xs text-zinc-500 bg-surface-2 px-2 py-1 rounded">Slack (coming soon)</span>
+            <span class="text-xs text-zinc-500 bg-surface-2 px-2 py-1 rounded">Discord (coming soon)</span>
+          </div>
+        </a>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="py-24 md:py-32 border-t border-white/[0.06]">
+    <div class="max-w-6xl mx-auto px-6 text-center">
+      <h2 class="text-3xl md:text-4xl font-bold tracking-tight mb-4">Ready to put these features to work?</h2>
+      <p class="text-zinc-400 text-lg mb-8 max-w-xl mx-auto">Every plan includes all features. Pick the one that fits your project count and team size.</p>
+      <a href="/#pricing" class="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-medium px-8 py-4 rounded-lg transition-colors text-lg">
+        View Pricing
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="border-t border-white/[0.06] py-12">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="flex flex-col md:flex-row justify-between gap-8">
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-blue-500">
+              <path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9"/>
+              <path d="m18 15 4-4"/>
+              <path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/>
+            </svg>
+            <span class="font-semibold">IronWorks</span>
+          </div>
+          <p class="text-zinc-500 text-sm">IronWorks by Steel Motion LLC</p>
+        </div>
+        <div class="flex flex-wrap gap-x-8 gap-y-2 text-sm text-zinc-500">
+          <a href="/terms" class="hover:text-zinc-300 transition-colors">Terms of Service</a>
+          <a href="/aup" class="hover:text-zinc-300 transition-colors">Acceptable Use</a>
+          <a href="/privacy" class="hover:text-zinc-300 transition-colors">Privacy Policy</a>
+          <a href="/dpa" class="hover:text-zinc-300 transition-colors">Data Processing</a>
+          <a href="/sla" class="hover:text-zinc-300 transition-colors">SLA</a>
+          <a href="/docs" class="hover:text-zinc-300 transition-colors">Documentation</a>
+        </div>
+      </div>
+      <div class="mt-8 pt-8 border-t border-white/[0.06] text-xs text-zinc-600">
+        &copy; 2026 Steel Motion LLC. All rights reserved.
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

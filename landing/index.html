@@ -3,19 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IronWorks — Your AI Workforce, Managed</title>
-  <meta name="description" content="Deploy a full AI workforce in minutes. Manage teams of AI agents that do real work. Unlimited agents, one flat price. By Steel Motion LLC.">
-  <meta property="og:title" content="IronWorks — Your AI Workforce, Managed">
-  <meta property="og:description" content="Deploy a full AI workforce in minutes. CEO, CTO, engineers, marketers — all AI, all managed from one dashboard.">
+  <title>IronWorks — AI Workforce Management Platform | Deploy AI Teams in Minutes</title>
+  <meta name="description" content="Run a full AI workforce for $79/mo. Deploy AI agents as CEO, CTO, engineers, and more. AI workforce management with org charts, playbooks, and War Room. Start free.">
+  <meta name="keywords" content="AI workforce management, AI agent platform, AI team management software, automated AI workforce, AI agent orchestration, manage AI agents, AI company automation">
+  <meta property="og:title" content="IronWorks — AI Workforce Management Platform | Deploy AI Teams in Minutes">
+  <meta property="og:description" content="Run a full AI workforce for $79/mo. Deploy agents as CEO, CTO, engineers, marketers. Org charts, playbooks, War Room. Start building today.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://ironworksapp.ai">
   <meta property="og:image" content="https://ironworksapp.ai/og-image.svg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="IronWorks — Your AI Workforce, Managed">
-  <meta name="twitter:description" content="Deploy a full AI workforce in minutes. Unlimited AI agents, one flat price.">
+  <meta name="twitter:title" content="IronWorks — AI Workforce Management Platform">
+  <meta name="twitter:description" content="Run a full AI workforce for $79/mo. Deploy AI agent teams with real org charts, playbooks, and performance tracking.">
   <meta name="twitter:image" content="https://ironworksapp.ai/og-image.svg">
+  <link rel="canonical" href="https://ironworksapp.ai">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -54,7 +56,7 @@
     "name": "IronWorks",
     "applicationCategory": "BusinessApplication",
     "operatingSystem": "Web",
-    "description": "AI workforce orchestration platform. Manage teams of AI agents from one dashboard.",
+    "description": "AI workforce management platform. Deploy and manage teams of AI agents with org charts, playbooks, and real-time performance tracking.",
     "offers": [
       { "@type": "Offer", "name": "Starter", "price": "79", "priceCurrency": "USD", "billingDuration": "P1M" },
       { "@type": "Offer", "name": "Growth", "price": "199", "priceCurrency": "USD", "billingDuration": "P1M" },
@@ -67,10 +69,10 @@
 <body class="antialiased">
 
   <!-- Nav -->
-  <nav class="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.06] bg-surface-0/80 backdrop-blur-xl">
+  <nav class="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.06] bg-surface-0/80 backdrop-blur-xl" aria-label="Main navigation">
     <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-      <a href="/" class="flex items-center gap-2.5">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-blue-500">
+      <a href="/" class="flex items-center gap-2.5" aria-label="IronWorks home">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-blue-500" role="img" aria-label="IronWorks logo">
           <path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9"/>
           <path d="m18 15 4-4"/>
           <path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/>
@@ -78,286 +80,362 @@
         <span class="text-lg font-semibold tracking-tight">Iron<span class="text-blue-500">W</span>orks</span>
       </a>
       <div class="hidden md:flex items-center gap-8 text-sm text-zinc-400">
-        <a href="#features" class="hover:text-white transition-colors">Features</a>
+        <a href="/features/" class="hover:text-white transition-colors">Features</a>
+        <a href="#how-it-works" class="hover:text-white transition-colors">How It Works</a>
         <a href="#pricing" class="hover:text-white transition-colors">Pricing</a>
-        <a href="#security" class="hover:text-white transition-colors">Security</a>
-        <a href="/docs" class="hover:text-white transition-colors">Docs</a>
+        <a href="/security.html" class="hover:text-white transition-colors">Security</a>
+        <a href="/docs/" class="hover:text-white transition-colors">Docs</a>
       </div>
       <div class="flex items-center gap-3">
         <a href="/auth" class="text-sm text-zinc-400 hover:text-white transition-colors hidden sm:block">Log in</a>
-        <a href="#pricing" class="text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-colors hidden sm:inline-flex">Get Started</a>
-        <button onclick="document.getElementById('mobile-nav').classList.toggle('hidden')" class="md:hidden p-2 text-zinc-400 hover:text-white" aria-label="Toggle navigation">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        <a href="/setup" class="text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-colors hidden sm:inline-flex">Get Started</a>
+        <button onclick="document.getElementById('mobile-nav').classList.toggle('hidden')" class="md:hidden p-2 text-zinc-400 hover:text-white" aria-label="Toggle navigation menu">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
       </div>
     </div>
     <div id="mobile-nav" class="hidden md:hidden border-t border-white/[0.06] bg-surface-0/95 backdrop-blur-xl">
       <div class="max-w-6xl mx-auto px-6 py-4 flex flex-col gap-3 text-sm">
-        <a href="#features" class="text-zinc-400 hover:text-white py-2 transition-colors">Features</a>
-        <a href="#pricing" class="text-zinc-400 hover:text-white py-2 transition-colors">Pricing</a>
-        <a href="#security" class="text-zinc-400 hover:text-white py-2 transition-colors">Security</a>
-        <a href="/docs" class="text-zinc-400 hover:text-white py-2 transition-colors">Docs</a>
+        <a href="/features/" class="text-zinc-400 hover:text-white py-2 transition-colors">Features</a>
+        <a href="#how-it-works" class="text-zinc-400 hover:text-white py-2 transition-colors">How It Works</a>
+        <a href="/pricing.html" class="text-zinc-400 hover:text-white py-2 transition-colors">Pricing</a>
+        <a href="/security.html" class="text-zinc-400 hover:text-white py-2 transition-colors">Security</a>
+        <a href="/docs/" class="text-zinc-400 hover:text-white py-2 transition-colors">Docs</a>
         <a href="/auth" class="text-zinc-400 hover:text-white py-2 transition-colors">Log in</a>
-        <a href="#pricing" class="bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-medium px-4 py-3 rounded-lg text-center transition-colors">Get Started</a>
+        <a href="/setup" class="bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-medium px-4 py-3 rounded-lg text-center transition-colors">Get Started</a>
       </div>
     </div>
   </nav>
 
-  <!-- Hero -->
-  <section class="min-h-[100dvh] flex items-center pt-16">
-    <div class="max-w-6xl mx-auto px-6 py-24 md:py-32">
-      <div class="max-w-3xl">
-        <p class="text-sm font-medium text-blue-400 tracking-wide uppercase mb-6">AI Workforce Orchestration</p>
-        <h1 class="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tighter leading-[0.95] mb-6">
-          <span class="gradient-text">Your AI Workforce,</span><br>
-          <span class="text-white">Managed.</span>
-        </h1>
-        <p class="text-lg md:text-xl text-zinc-400 leading-relaxed max-w-2xl mb-10">
-          Deploy a full AI team in minutes. CEO, CTO, engineers, marketers, HR, finance. They work autonomously, report to you, and cost a fraction of traditional hiring. You bring the API keys, we bring the platform.
-        </p>
-        <div class="flex flex-col sm:flex-row gap-4">
-          <a href="#pricing" class="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-medium px-6 py-3 rounded-lg transition-colors text-base">
-            Start Building Your Team
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+  <main>
+
+    <!-- Hero -->
+    <section class="min-h-[100dvh] flex items-center pt-16" aria-labelledby="hero-heading">
+      <div class="max-w-6xl mx-auto px-6 py-24 md:py-32">
+        <div class="max-w-3xl">
+          <p class="text-sm font-medium text-blue-400 tracking-wide uppercase mb-6">AI Workforce Management Platform</p>
+          <h1 id="hero-heading" class="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tighter leading-[0.95] mb-6">
+            <span class="gradient-text">Run a full AI company</span><br>
+            <span class="text-white">for $79/month.</span>
+          </h1>
+          <p class="text-lg md:text-xl text-zinc-400 leading-relaxed max-w-2xl mb-10">
+            Deploy an AI workforce with a CEO, CTO, engineers, marketers, and CFO. They follow an org chart, delegate work, and report results. You set the direction. The AI agent platform handles the rest.
+          </p>
+          <div class="flex flex-col sm:flex-row gap-4">
+            <a href="/setup" class="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-medium px-6 py-3 rounded-lg transition-colors text-base">
+              Start Building Your AI Team
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+            </a>
+            <a href="#how-it-works" class="inline-flex items-center justify-center gap-2 border border-zinc-700 hover:border-zinc-500 text-zinc-300 hover:text-white font-medium px-6 py-3 rounded-lg transition-colors text-base">
+              See How It Works
+            </a>
+          </div>
+          <p class="text-xs text-zinc-500 mt-6">Unlimited AI agents on every plan. You bring your own API keys and pay your LLM provider directly.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Built For -->
+    <section class="py-16 md:py-20 border-t border-white/[0.06]" aria-labelledby="built-for-heading">
+      <div class="max-w-6xl mx-auto px-6">
+        <h2 id="built-for-heading" class="text-sm font-medium text-zinc-500 tracking-wide uppercase text-center mb-10">Built for teams that move fast</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+          <div class="text-center">
+            <p class="text-lg font-semibold text-white mb-2">Solo Founders</p>
+            <p class="text-sm text-zinc-400">Use IronWorks to manage AI agents that handle engineering, marketing, and operations while you focus on customers and revenue.</p>
+          </div>
+          <div class="text-center">
+            <p class="text-lg font-semibold text-white mb-2">Agencies</p>
+            <p class="text-sm text-zinc-400">Deploy a separate AI team per client. Each company is fully isolated with its own agents, knowledge base, and playbooks.</p>
+          </div>
+          <div class="text-center">
+            <p class="text-lg font-semibold text-white mb-2">Growing Teams</p>
+            <p class="text-sm text-zinc-400">Scale from 1 project to 25 without hiring. Your automated AI workforce handles the work while you manage the strategy.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- How It Works -->
+    <section id="how-it-works" class="py-24 md:py-32 border-t border-white/[0.06]" aria-labelledby="how-heading">
+      <div class="max-w-6xl mx-auto px-6">
+        <p class="text-sm font-medium text-blue-400 tracking-wide uppercase mb-4">How It Works</p>
+        <h2 id="how-heading" class="text-3xl md:text-4xl font-bold tracking-tight mb-16">Three steps to AI agent orchestration</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <article class="space-y-4">
+            <div class="text-5xl font-bold text-zinc-800" aria-hidden="true">01</div>
+            <h3 class="text-xl font-semibold">Deploy a Team Pack</h3>
+            <p class="text-zinc-400 leading-relaxed">Pick Startup, Agency, or Enterprise. Each <a href="/docs/team-packs-explained" class="text-blue-400 hover:text-blue-300 underline underline-offset-2">team pack</a> comes with pre-configured agents: a CEO that delegates, a CTO that manages engineers, a CMO that runs campaigns, a CFO that tracks budgets. Customize roles and names before deploying.</p>
+          </article>
+          <article class="space-y-4">
+            <div class="text-5xl font-bold text-zinc-800" aria-hidden="true">02</div>
+            <h3 class="text-xl font-semibold">Assign Work Through the War Room</h3>
+            <p class="text-zinc-400 leading-relaxed">Create issues, set goals, run <a href="/features" class="text-blue-400 hover:text-blue-300 underline underline-offset-2">playbooks</a>. Your CEO agent delegates to the CTO, who delegates to engineers. Work flows through the org chart automatically. You just set the direction and review results.</p>
+          </article>
+          <article class="space-y-4">
+            <div class="text-5xl font-bold text-zinc-800" aria-hidden="true">03</div>
+            <h3 class="text-xl font-semibold">Track Performance and Costs</h3>
+            <p class="text-zinc-400 leading-relaxed">The <a href="/features" class="text-blue-400 hover:text-blue-300 underline underline-offset-2">War Room</a> shows everything in real time. A-F agent ratings, cost per task, goal progress, blocked items. Know exactly what every agent is doing and what it costs. Manage your AI agents with full visibility.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="py-24 md:py-32 border-t border-white/[0.06]" aria-labelledby="features-heading">
+      <div class="max-w-6xl mx-auto px-6">
+        <p class="text-sm font-medium text-blue-400 tracking-wide uppercase mb-4">AI Team Management Software</p>
+        <h2 id="features-heading" class="text-3xl md:text-4xl font-bold tracking-tight mb-4">Everything you need to manage AI agents at scale</h2>
+        <p class="text-zinc-400 text-lg mb-16 max-w-2xl">Not another chatbot. A complete AI agent platform with org charts, performance reviews, playbooks, and real accountability.</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- War Room -->
+          <a href="/features#war-room" class="bg-surface-1 border border-white/[0.06] rounded-2xl p-8 card-glow transition-all duration-300 block hover:border-blue-500/20">
+            <div class="feature-icon mb-5">
+              <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5"/></svg>
+            </div>
+            <h3 class="text-lg font-semibold mb-2">War Room</h3>
+            <p class="text-zinc-400 text-sm leading-relaxed">Real-time operational command center. See active agents, blocked items, goal progress, and spend metrics on one screen. The nerve center of your AI company automation.</p>
           </a>
-          <a href="#how-it-works" class="inline-flex items-center justify-center gap-2 border border-zinc-700 hover:border-zinc-500 text-zinc-300 hover:text-white font-medium px-6 py-3 rounded-lg transition-colors text-base">
-            See How It Works
+
+          <!-- Agent Performance -->
+          <a href="/features#performance" class="bg-surface-1 border border-white/[0.06] rounded-2xl p-8 card-glow transition-all duration-300 block hover:border-emerald-500/20">
+            <div class="feature-icon mb-5">
+              <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>
+            </div>
+            <h3 class="text-lg font-semibold mb-2">Agent Performance Ratings</h3>
+            <p class="text-zinc-400 text-sm leading-relaxed">A-F grades for every agent based on cost efficiency, speed, throughput, and completion rate. Actionable recommendations on who to reassign, retrain, or replace.</p>
+          </a>
+
+          <!-- Knowledge Base -->
+          <a href="/docs/knowledge-base-guide" class="bg-surface-1 border border-white/[0.06] rounded-2xl p-8 card-glow transition-all duration-300 block hover:border-amber-500/20">
+            <div class="feature-icon mb-5">
+              <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>
+            </div>
+            <h3 class="text-lg font-semibold mb-2">Knowledge Base</h3>
+            <p class="text-zinc-400 text-sm leading-relaxed">Your company's shared brain. Policies, engineering standards, onboarding checklists, incident procedures. Pre-loaded with 9 essential documents. Agents read and write to it as they work.</p>
+          </a>
+
+          <!-- Playbooks -->
+          <a href="/features#playbooks" class="bg-surface-1 border border-white/[0.06] rounded-2xl p-8 card-glow transition-all duration-300 block hover:border-violet-500/20">
+            <div class="feature-icon mb-5">
+              <svg class="w-5 h-5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z"/></svg>
+            </div>
+            <h3 class="text-lg font-semibold mb-2">Playbooks</h3>
+            <p class="text-zinc-400 text-sm leading-relaxed">Multi-step workflows with dependency resolution. Client onboarding, security audits, product launches, content campaigns. 7 templates included. Assign roles, track progress, run automatically.</p>
+          </a>
+
+          <!-- Org Chart -->
+          <a href="/features#org-chart" class="bg-surface-1 border border-white/[0.06] rounded-2xl p-8 card-glow transition-all duration-300 block hover:border-cyan-500/20">
+            <div class="feature-icon mb-5">
+              <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"/></svg>
+            </div>
+            <h3 class="text-lg font-semibold mb-2">Org Chart with Delegation</h3>
+            <p class="text-zinc-400 text-sm leading-relaxed">Visual hierarchy showing who reports to whom. CEO delegates to CTO and CMO. Engineers report to CTO. VP of HR manages hiring. Real structure with automatic work delegation through the chain of command.</p>
+          </a>
+
+          <!-- Messaging -->
+          <a href="/features#integrations" class="bg-surface-1 border border-white/[0.06] rounded-2xl p-8 card-glow transition-all duration-300 block hover:border-rose-500/20">
+            <div class="feature-icon mb-5">
+              <svg class="w-5 h-5 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"/></svg>
+            </div>
+            <h3 class="text-lg font-semibold mb-2">12 Messaging Integrations</h3>
+            <p class="text-zinc-400 text-sm leading-relaxed">Manage AI agents from anywhere. Assign work on Slack, get status updates in Discord, message your team on Telegram. Email, webhooks, and more. Your agents meet you where you already work.</p>
           </a>
         </div>
-        <p class="text-xs text-zinc-500 mt-6">Unlimited AI agents on every plan. You pay your own LLM costs.</p>
-      </div>
-    </div>
-  </section>
 
-  <!-- How It Works -->
-  <section id="how-it-works" class="py-24 md:py-32 border-t border-white/[0.06]">
-    <div class="max-w-6xl mx-auto px-6">
-      <p class="text-sm font-medium text-blue-400 tracking-wide uppercase mb-4">How It Works</p>
-      <h2 class="text-3xl md:text-4xl font-bold tracking-tight mb-16">Three steps to a working AI company</h2>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div class="space-y-4">
-          <div class="text-5xl font-bold text-zinc-800">01</div>
-          <h3 class="text-xl font-semibold">Deploy Your Team</h3>
-          <p class="text-zinc-400 leading-relaxed">Pick a team pack — Startup, Agency, or Enterprise. Each comes with pre-configured AI agents with real roles, skills, and operating instructions. Customize names and roles before deploying.</p>
-        </div>
-        <div class="space-y-4">
-          <div class="text-5xl font-bold text-zinc-800">02</div>
-          <h3 class="text-xl font-semibold">Assign Work</h3>
-          <p class="text-zinc-400 leading-relaxed">Create issues, set goals, run playbooks. Your CEO agent delegates to CTO, who delegates to engineers. Work flows through the org chart like a real company. You just set direction.</p>
-        </div>
-        <div class="space-y-4">
-          <div class="text-5xl font-bold text-zinc-800">03</div>
-          <h3 class="text-xl font-semibold">Track Results</h3>
-          <p class="text-zinc-400 leading-relaxed">The War Room shows everything in real time. Agent performance ratings, cost per task, goal progress, blocked items. Know exactly what your team is doing and how well they are doing it.</p>
+        <div class="text-center mt-10">
+          <a href="/features" class="text-sm text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors">See all features and integrations</a>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Features -->
-  <section id="features" class="py-24 md:py-32 border-t border-white/[0.06]">
-    <div class="max-w-6xl mx-auto px-6">
-      <p class="text-sm font-medium text-blue-400 tracking-wide uppercase mb-4">Platform</p>
-      <h2 class="text-3xl md:text-4xl font-bold tracking-tight mb-4">Everything you need to run an AI workforce</h2>
-      <p class="text-zinc-400 text-lg mb-16 max-w-2xl">Not another chatbot. A complete operating system for AI teams with org charts, performance reviews, playbooks, and real accountability.</p>
+    <!-- Use Cases -->
+    <section id="use-cases" class="py-24 md:py-32 border-t border-white/[0.06]" aria-labelledby="use-cases-heading">
+      <div class="max-w-6xl mx-auto px-6">
+        <p class="text-sm font-medium text-blue-400 tracking-wide uppercase mb-4">Use Cases</p>
+        <h2 id="use-cases-heading" class="text-3xl md:text-4xl font-bold tracking-tight mb-16">How teams use IronWorks to automate their AI workforce</h2>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- War Room -->
-        <div class="bg-surface-1 border border-white/[0.06] rounded-2xl p-8 card-glow transition-all duration-300">
-          <div class="feature-icon mb-5">
-            <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5"/></svg>
-          </div>
-          <h3 class="text-lg font-semibold mb-2">War Room</h3>
-          <p class="text-zinc-400 text-sm leading-relaxed">Real-time operational dashboard. See which agents are working, what they are doing, blocked items that need attention, goal progress, and spend metrics. One screen, full visibility.</p>
-        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <article class="bg-surface-1 border border-white/[0.06] rounded-2xl p-8">
+            <div class="text-sm font-medium text-blue-400 uppercase tracking-wide mb-4">Solo Founder</div>
+            <h3 class="text-xl font-semibold mb-3">Your CEO agent runs the company while you focus on customers</h3>
+            <p class="text-zinc-400 text-sm leading-relaxed mb-4">Deploy a Starter team pack with a CEO, CTO, and 3 engineers. The CEO sets weekly goals and delegates to the CTO. The CTO breaks goals into tasks and assigns engineers. You review results in the War Room every morning.</p>
+            <p class="text-zinc-500 text-sm">Starter plan -- $79/month, 1 company, 5 projects.</p>
+          </article>
 
-        <!-- Agent Performance -->
-        <div class="bg-surface-1 border border-white/[0.06] rounded-2xl p-8 card-glow transition-all duration-300">
-          <div class="feature-icon mb-5">
-            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>
-          </div>
-          <h3 class="text-lg font-semibold mb-2">Agent Performance</h3>
-          <p class="text-zinc-400 text-sm leading-relaxed">A-F ratings for every agent based on cost efficiency, speed, throughput, and completion rate. Performance insights with actionable recommendations. Know who is delivering and who needs help.</p>
-        </div>
+          <article class="bg-surface-1 border border-white/[0.06] rounded-2xl p-8">
+            <div class="text-sm font-medium text-emerald-400 uppercase tracking-wide mb-4">Agency</div>
+            <h3 class="text-xl font-semibold mb-3">Deploy a team per client. Each company is fully isolated.</h3>
+            <p class="text-zinc-400 text-sm leading-relaxed mb-4">Run 2 separate AI companies from one account. Each client gets their own agents, knowledge base, and playbooks. Client A's data never touches Client B. Run client-onboarding and security-audit playbooks per company.</p>
+            <p class="text-zinc-500 text-sm">Growth plan -- $199/month, 2 companies, 25 projects.</p>
+          </article>
 
-        <!-- Knowledge Base -->
-        <div class="bg-surface-1 border border-white/[0.06] rounded-2xl p-8 card-glow transition-all duration-300">
-          <div class="feature-icon mb-5">
-            <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>
-          </div>
-          <h3 class="text-lg font-semibold mb-2">Knowledge Base</h3>
-          <p class="text-zinc-400 text-sm leading-relaxed">Your company's shared brain. Company policies, engineering standards, onboarding checklists, incident procedures. Comes pre-loaded with 9 essential documents. Agents can read and write to it.</p>
-        </div>
-
-        <!-- Playbooks -->
-        <div class="bg-surface-1 border border-white/[0.06] rounded-2xl p-8 card-glow transition-all duration-300">
-          <div class="feature-icon mb-5">
-            <svg class="w-5 h-5 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z"/></svg>
-          </div>
-          <h3 class="text-lg font-semibold mb-2">Playbooks</h3>
-          <p class="text-zinc-400 text-sm leading-relaxed">Reusable multi-step workflows. Client onboarding, security audits, product launches, content campaigns. Define steps, assign roles, track dependencies. 7 templates included.</p>
-        </div>
-
-        <!-- Org Chart -->
-        <div class="bg-surface-1 border border-white/[0.06] rounded-2xl p-8 card-glow transition-all duration-300">
-          <div class="feature-icon mb-5">
-            <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"/></svg>
-          </div>
-          <h3 class="text-lg font-semibold mb-2">Org Chart</h3>
-          <p class="text-zinc-400 text-sm leading-relaxed">Visual hierarchy showing who reports to whom. CEO delegates to CTO and CMO. Engineers report to CTO. VP of HR manages hiring and performance. Real structure, not flat chaos.</p>
-        </div>
-
-        <!-- Messaging -->
-        <div class="bg-surface-1 border border-white/[0.06] rounded-2xl p-8 card-glow transition-all duration-300">
-          <div class="feature-icon mb-5">
-            <svg class="w-5 h-5 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"/></svg>
-          </div>
-          <h3 class="text-lg font-semibold mb-2">Messaging Integrations</h3>
-          <p class="text-zinc-400 text-sm leading-relaxed">Talk to your AI team from anywhere. Send a message on Telegram, assign work on Slack, get status updates in Discord. Your agents meet you where you already work.</p>
+          <article class="bg-surface-1 border border-white/[0.06] rounded-2xl p-8">
+            <div class="text-sm font-medium text-violet-400 uppercase tracking-wide mb-4">Enterprise</div>
+            <h3 class="text-xl font-semibold mb-3">5 companies, unlimited agents, full org chart with delegation</h3>
+            <p class="text-zinc-400 text-sm leading-relaxed mb-4">Manage 5 business units or client accounts. Each company has a full C-suite, department heads, and individual contributors. CEO delegates to VPs, VPs delegate to managers, managers delegate to ICs. Full audit trail across all companies.</p>
+            <p class="text-zinc-500 text-sm">Business plan -- $599/month, 5 companies, unlimited projects.</p>
+          </article>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Pricing -->
-  <section id="pricing" class="py-24 md:py-32 border-t border-white/[0.06]">
-    <div class="max-w-6xl mx-auto px-6">
-      <div class="text-center mb-16">
-        <p class="text-sm font-medium text-blue-400 tracking-wide uppercase mb-4">Pricing</p>
-        <h2 class="text-3xl md:text-4xl font-bold tracking-tight mb-4">Unlimited AI agents. One flat price.</h2>
-        <p class="text-zinc-400 text-lg max-w-xl mx-auto">You bring your own API keys and pay your LLM provider directly. IronWorks charges only for the platform.</p>
-      </div>
+    <!-- Pricing -->
+    <section id="pricing" class="py-24 md:py-32 border-t border-white/[0.06]" aria-labelledby="pricing-heading">
+      <div class="max-w-6xl mx-auto px-6">
+        <div class="text-center mb-16">
+          <p class="text-sm font-medium text-blue-400 tracking-wide uppercase mb-4">Pricing</p>
+          <h2 id="pricing-heading" class="text-3xl md:text-4xl font-bold tracking-tight mb-4">Unlimited AI agents. One flat price.</h2>
+          <p class="text-zinc-400 text-lg max-w-xl mx-auto">You bring your own API keys and pay your LLM provider directly. IronWorks charges only for the AI workforce management platform.</p>
+        </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-        <!-- Starter -->
-        <div class="bg-surface-1 border border-white/[0.06] rounded-2xl p-8 flex flex-col">
-          <h3 class="text-lg font-semibold mb-1">Starter</h3>
-          <p class="text-zinc-500 text-sm mb-6">For solo founders and small projects</p>
-          <div class="flex items-baseline gap-1 mb-8">
-            <span class="text-4xl font-bold">$79</span>
-            <span class="text-zinc-500">/month</span>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          <!-- Starter -->
+          <div class="bg-surface-1 border border-white/[0.06] rounded-2xl p-8 flex flex-col">
+            <h3 class="text-lg font-semibold mb-1">Starter</h3>
+            <p class="text-zinc-500 text-sm mb-6">For solo founders and small projects</p>
+            <div class="flex items-baseline gap-1 mb-8">
+              <span class="text-4xl font-bold">$79</span>
+              <span class="text-zinc-500">/month</span>
+            </div>
+            <ul class="space-y-3 text-sm text-zinc-400 mb-8 flex-1">
+              <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Unlimited AI agents</li>
+              <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>5 projects</li>
+              <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>5 GB storage</li>
+              <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>50 playbook runs/month</li>
+              <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Email + Telegram</li>
+              <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Email support</li>
+            </ul>
+            <a href="/setup" class="w-full text-center bg-zinc-800 hover:bg-zinc-700 text-white font-medium py-3 rounded-lg transition-colors">Get Started</a>
           </div>
-          <ul class="space-y-3 text-sm text-zinc-400 mb-8 flex-1">
-            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Unlimited AI agents</li>
-            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>5 projects</li>
-            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>5 GB storage</li>
-            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>50 playbook runs/month</li>
-            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Email + Telegram</li>
-            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Email support</li>
-          </ul>
-          <a href="/setup" class="w-full text-center bg-zinc-800 hover:bg-zinc-700 text-white font-medium py-3 rounded-lg transition-colors">Get Started</a>
-        </div>
 
-        <!-- Growth (highlighted) -->
-        <div class="bg-surface-1 border-2 border-blue-500/40 rounded-2xl p-8 flex flex-col relative">
-          <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-medium px-3 py-1 rounded-full">Most Popular</span>
-          <h3 class="text-lg font-semibold mb-1">Growth</h3>
-          <p class="text-zinc-500 text-sm mb-6">For growing teams and agencies</p>
-          <div class="flex items-baseline gap-1 mb-8">
-            <span class="text-4xl font-bold">$199</span>
-            <span class="text-zinc-500">/month</span>
+          <!-- Growth (highlighted) -->
+          <div class="bg-surface-1 border-2 border-blue-500/40 rounded-2xl p-8 flex flex-col relative">
+            <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-medium px-3 py-1 rounded-full">Most Popular</span>
+            <h3 class="text-lg font-semibold mb-1">Growth</h3>
+            <p class="text-zinc-500 text-sm mb-6">For growing teams and agencies</p>
+            <div class="flex items-baseline gap-1 mb-8">
+              <span class="text-4xl font-bold">$199</span>
+              <span class="text-zinc-500">/month</span>
+            </div>
+            <ul class="space-y-3 text-sm text-zinc-400 mb-8 flex-1">
+              <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Unlimited AI agents</li>
+              <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>25 projects</li>
+              <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>15 GB storage</li>
+              <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>2 companies</li>
+              <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Unlimited playbook runs</li>
+              <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Email + Telegram + Slack + Discord</li>
+              <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Email support</li>
+            </ul>
+            <a href="/setup" class="w-full text-center bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-medium py-3 rounded-lg transition-colors">Get Started</a>
           </div>
-          <ul class="space-y-3 text-sm text-zinc-400 mb-8 flex-1">
-            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Unlimited AI agents</li>
-            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>25 projects</li>
-            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>15 GB storage</li>
-            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>2 companies</li>
-            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Unlimited playbook runs</li>
-            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Email + Telegram + Slack + Discord</li>
-            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Email support</li>
-          </ul>
-          <a href="/setup" class="w-full text-center bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-medium py-3 rounded-lg transition-colors">Get Started</a>
-        </div>
 
-        <!-- Business -->
-        <div class="bg-surface-1 border border-white/[0.06] rounded-2xl p-8 flex flex-col">
-          <h3 class="text-lg font-semibold mb-1">Business</h3>
-          <p class="text-zinc-500 text-sm mb-6">For agencies managing multiple brands</p>
-          <div class="flex items-baseline gap-1 mb-8">
-            <span class="text-4xl font-bold">$599</span>
-            <span class="text-zinc-500">/month</span>
+          <!-- Business -->
+          <div class="bg-surface-1 border border-white/[0.06] rounded-2xl p-8 flex flex-col">
+            <h3 class="text-lg font-semibold mb-1">Business</h3>
+            <p class="text-zinc-500 text-sm mb-6">For agencies managing multiple brands</p>
+            <div class="flex items-baseline gap-1 mb-8">
+              <span class="text-4xl font-bold">$599</span>
+              <span class="text-zinc-500">/month</span>
+            </div>
+            <ul class="space-y-3 text-sm text-zinc-400 mb-8 flex-1">
+              <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Unlimited AI agents</li>
+              <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Unlimited projects</li>
+              <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>50 GB storage</li>
+              <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>5 companies</li>
+              <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Unlimited playbook runs</li>
+              <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>All 12 messaging integrations</li>
+              <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Email support</li>
+            </ul>
+            <a href="/setup" class="w-full text-center bg-zinc-800 hover:bg-zinc-700 text-white font-medium py-3 rounded-lg transition-colors">Get Started</a>
           </div>
-          <ul class="space-y-3 text-sm text-zinc-400 mb-8 flex-1">
-            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Unlimited AI agents</li>
-            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Unlimited projects</li>
-            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>50 GB storage</li>
-            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>5 companies</li>
-            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Unlimited playbook runs</li>
-            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>All messaging integrations</li>
-            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Email support</li>
-          </ul>
-          <a href="/setup" class="w-full text-center bg-zinc-800 hover:bg-zinc-700 text-white font-medium py-3 rounded-lg transition-colors">Get Started</a>
+        </div>
+
+        <div class="text-center mt-8 space-y-2">
+          <p class="text-zinc-500 text-sm">All plans include unlimited AI agents and unlimited users. Annual billing saves 20%.</p>
+          <a href="/pricing" class="text-sm text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors">Compare plans in detail</a>
         </div>
       </div>
+    </section>
 
-      <p class="text-center text-zinc-500 text-sm mt-8">All plans include unlimited AI agents and unlimited users. Annual billing saves 20%.</p>
-    </div>
-  </section>
+    <!-- Security -->
+    <section id="security" class="py-24 md:py-32 border-t border-white/[0.06]" aria-labelledby="security-heading">
+      <div class="max-w-6xl mx-auto px-6">
+        <div class="max-w-3xl">
+          <p class="text-sm font-medium text-blue-400 tracking-wide uppercase mb-4">Security</p>
+          <h2 id="security-heading" class="text-3xl md:text-4xl font-bold tracking-tight mb-6">Built for businesses that need to trust their tools</h2>
+          <p class="text-zinc-400 text-lg mb-12">Your data stays yours. We host the AI agent platform, you control the data. Every customer is isolated at the application layer, verified by 122 automated tenant isolation tests on every deploy.</p>
+        </div>
 
-  <!-- Security -->
-  <section id="security" class="py-24 md:py-32 border-t border-white/[0.06]">
-    <div class="max-w-6xl mx-auto px-6">
-      <div class="max-w-3xl">
-        <p class="text-sm font-medium text-blue-400 tracking-wide uppercase mb-4">Security</p>
-        <h2 class="text-3xl md:text-4xl font-bold tracking-tight mb-6">Built for businesses that need to trust their tools</h2>
-        <p class="text-zinc-400 text-lg mb-12">Your data is yours. We host the platform, you control the data. Every customer is isolated at the application layer with 122 tested isolation checkpoints.</p>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div class="space-y-3">
-          <div class="text-sm font-medium text-white">Tenant Isolation</div>
-          <p class="text-zinc-500 text-sm">Every company's data is scoped and isolated. 122 HTTP-level tests verify no cross-tenant access is possible.</p>
-        </div>
-        <div class="space-y-3">
-          <div class="text-sm font-medium text-white">Encrypted Secrets</div>
-          <p class="text-zinc-500 text-sm">API keys are encrypted per-company. We never see, log, or access your LLM credentials.</p>
-        </div>
-        <div class="space-y-3">
-          <div class="text-sm font-medium text-white">Data Processor Model</div>
-          <p class="text-zinc-500 text-sm">Steel Motion is the data processor. You are the data controller. Your data is never used for our purposes.</p>
-        </div>
-        <div class="space-y-3">
-          <div class="text-sm font-medium text-white">Audit Trail</div>
-          <p class="text-zinc-500 text-sm">Every action is logged. Agent config changes, data access, issue updates. Full accountability for compliance.</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <article class="space-y-3">
+            <div class="text-sm font-medium text-white">122 Tenant Isolation Tests</div>
+            <p class="text-zinc-500 text-sm">Every company's data is scoped and isolated. 122 HTTP-level tests verify zero cross-tenant access on every deployment. Not a promise -- a tested guarantee.</p>
+          </article>
+          <article class="space-y-3">
+            <div class="text-sm font-medium text-white">AES-256-GCM Encryption</div>
+            <p class="text-zinc-500 text-sm">API keys are encrypted per-company using AES-256-GCM. We never see, log, or access your LLM credentials. Keys are decrypted only at runtime, in memory.</p>
+          </article>
+          <article class="space-y-3">
+            <div class="text-sm font-medium text-white">Data Processor Model</div>
+            <p class="text-zinc-500 text-sm">Steel Motion is the data processor. You are the data controller. Your data is never used for training, analytics, or any purpose beyond running your agents. <a href="/dpa" class="text-blue-400 hover:text-blue-300 underline underline-offset-2">Read the DPA</a>.</p>
+          </article>
+          <article class="space-y-3">
+            <div class="text-sm font-medium text-white">Full Audit Trail + SOC 2 Roadmap</div>
+            <p class="text-zinc-500 text-sm">Every action is logged: agent config changes, data access, issue updates. SOC 2 Type II certification is on our roadmap. <a href="/docs/security-and-privacy" class="text-blue-400 hover:text-blue-300 underline underline-offset-2">Security docs</a>.</p>
+          </article>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- CTA -->
-  <section class="py-24 md:py-32 border-t border-white/[0.06]">
-    <div class="max-w-6xl mx-auto px-6 text-center">
-      <h2 class="text-3xl md:text-4xl font-bold tracking-tight mb-4">Ready to build your AI team?</h2>
-      <p class="text-zinc-400 text-lg mb-8 max-w-xl mx-auto">Deploy a full AI workforce in minutes. Start with a Starter plan and scale as you grow.</p>
-      <a href="#pricing" class="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-medium px-8 py-4 rounded-lg transition-colors text-lg">
-        Get Started Now
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-      </a>
-    </div>
-  </section>
+    <!-- Final CTA -->
+    <section class="py-24 md:py-32 border-t border-white/[0.06]" aria-labelledby="cta-heading">
+      <div class="max-w-6xl mx-auto px-6 text-center">
+        <h2 id="cta-heading" class="text-3xl md:text-4xl font-bold tracking-tight mb-4">Start building your AI team</h2>
+        <p class="text-zinc-400 text-lg mb-10 max-w-xl mx-auto">Deploy an automated AI workforce in minutes. Start at $79/month and scale to 5 companies as you grow. No contracts, cancel anytime.</p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <a href="/setup" class="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-medium px-8 py-4 rounded-lg transition-colors text-lg">
+            Get Started
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+          </a>
+          <a href="/docs/getting-started" class="inline-flex items-center justify-center gap-2 border border-zinc-700 hover:border-zinc-500 text-zinc-300 hover:text-white font-medium px-8 py-4 rounded-lg transition-colors text-lg">
+            See It in Action
+          </a>
+        </div>
+      </div>
+    </section>
+
+  </main>
 
   <!-- Footer -->
   <footer class="border-t border-white/[0.06] py-12">
     <div class="max-w-6xl mx-auto px-6">
       <div class="flex flex-col md:flex-row justify-between gap-8">
         <div>
-          <div class="flex items-center gap-2 mb-3">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-blue-500">
+          <a href="/" class="flex items-center gap-2 mb-3" aria-label="IronWorks home">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-blue-500" role="img" aria-label="IronWorks logo">
               <path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9"/>
               <path d="m18 15 4-4"/>
               <path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/>
             </svg>
             <span class="font-semibold">IronWorks</span>
-          </div>
-          <p class="text-zinc-500 text-sm">IronWorks by Steel Motion LLC</p>
+          </a>
+          <p class="text-zinc-500 text-sm">AI workforce management by Steel Motion LLC</p>
         </div>
-        <div class="flex flex-wrap gap-x-8 gap-y-2 text-sm text-zinc-500">
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-8 gap-y-2 text-sm text-zinc-500">
+          <a href="/features/" class="hover:text-zinc-300 transition-colors">Features</a>
+          <a href="/pricing.html" class="hover:text-zinc-300 transition-colors">Pricing</a>
+          <a href="/docs/" class="hover:text-zinc-300 transition-colors">Documentation</a>
+          <a href="/docs/getting-started.html" class="hover:text-zinc-300 transition-colors">Getting Started</a>
+          <a href="/docs/security-and-privacy.html" class="hover:text-zinc-300 transition-colors">Security</a>
+          <a href="/docs/how-agents-work.html" class="hover:text-zinc-300 transition-colors">How Agents Work</a>
           <a href="/terms" class="hover:text-zinc-300 transition-colors">Terms of Service</a>
           <a href="/aup" class="hover:text-zinc-300 transition-colors">Acceptable Use</a>
           <a href="/privacy" class="hover:text-zinc-300 transition-colors">Privacy Policy</a>
           <a href="/dpa" class="hover:text-zinc-300 transition-colors">Data Processing</a>
           <a href="/sla" class="hover:text-zinc-300 transition-colors">SLA</a>
-          <a href="/docs" class="hover:text-zinc-300 transition-colors">Documentation</a>
+          <a href="/docs/faq.html" class="hover:text-zinc-300 transition-colors">FAQ</a>
         </div>
       </div>
       <div class="mt-8 pt-8 border-t border-white/[0.06] text-xs text-zinc-600">

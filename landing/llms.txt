@@ -1,0 +1,31 @@
+# IronWorks
+> AI workforce orchestration platform by Steel Motion LLC
+
+IronWorks lets businesses deploy and manage teams of AI agents that do real work. CEO, CTO, CFO, engineers, marketers — all AI, all managed from one dashboard.
+
+## Key Features
+- War Room: Real-time operational dashboard
+- Agent Performance: A-F ratings with cost efficiency metrics
+- Knowledge Base: Shared company brain with markdown editor
+- Playbooks: Multi-step reusable workflows
+- Org Chart: Visual hierarchy with team packs
+- Messaging: Telegram, Email, Slack, Discord integrations
+
+## Pricing
+- Starter: $79/month (5 projects, unlimited agents)
+- Growth: $199/month (25 projects, 2 companies)
+- Business: $599/month (unlimited projects, 5 companies)
+- All plans: Unlimited AI agents, BYOK (bring your own API keys)
+
+## Links
+- Website: https://ironworksapp.ai
+- App: https://app.ironworksapp.ai
+- Docs: https://ironworksapp.ai/docs/
+- Pricing: https://ironworksapp.ai/pricing
+- Security: https://ironworksapp.ai/security
+- Terms: https://app.ironworksapp.ai/terms
+- Privacy: https://app.ironworksapp.ai/privacy
+
+## Company
+Steel Motion LLC
+Contact: support@ironworksapp.ai

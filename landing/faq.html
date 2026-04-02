@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FAQ — IronWorks</title>
+  <meta name="description" content="Frequently asked questions about IronWorks — the AI workforce orchestration platform. Learn about agents, pricing, security, integrations, and more.">
+  <meta property="og:title" content="FAQ — IronWorks">
+  <meta property="og:description" content="Everything you need to know about IronWorks. Agents, billing, security, integrations, and playbooks explained.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://ironworksapp.ai/faq">
+  <meta property="og:image" content="https://ironworksapp.ai/og-image.svg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="FAQ — IronWorks">
+  <meta name="twitter:description" content="Everything you need to know about IronWorks.">
+  <meta name="twitter:image" content="https://ironworksapp.ai/og-image.svg">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Geist', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['Geist Mono', 'JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            surface: { 0: '#0a0a0a', 1: '#141414', 2: '#1e1e1e', 3: '#282828' },
+            accent: { DEFAULT: '#3b82f6', dim: '#1d4ed8' },
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Geist', system-ui, sans-serif; background: #0a0a0a; color: #e4e4e7; }
+    .gradient-text { background: linear-gradient(135deg, #e4e4e7 0%, #a1a1aa 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    details summary { list-style: none; cursor: pointer; }
+    details summary::-webkit-details-marker { display: none; }
+    details[open] .chevron { transform: rotate(180deg); }
+    .chevron { transition: transform 0.2s; }
+    details[open] .summary-text { color: #fff; }
+  </style>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is IronWorks?",
+        "acceptedAnswer": { "@type": "Answer", "text": "IronWorks is an AI workforce orchestration platform. You deploy a full team of AI agents — CEO, CTO, engineers, marketers, HR, finance — and manage them from a single dashboard. Agents have real roles, operating instructions, and reporting structures." }
+      },
+      {
+        "@type": "Question",
+        "name": "Do I need my own API keys?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. IronWorks uses the API keys you supply to call LLM providers such as OpenAI, Anthropic, and Google. You pay those providers directly at their published rates. IronWorks does not mark up LLM costs." }
+      },
+      {
+        "@type": "Question",
+        "name": "What are team packs?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Team packs are pre-configured sets of AI agents with defined roles, skills, and operating instructions. The Startup pack includes CEO, CTO, Software Engineer, Product Manager, and Support roles. The Agency pack adds creative, marketing, and client management roles. The Enterprise pack adds finance, legal, HR, and operations roles." }
+      }
+    ]
+  }
+  </script>
+</head>
+<body class="antialiased">
+
+  <!-- Nav -->
+  <nav class="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.06] bg-surface-0/80 backdrop-blur-xl">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2.5">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-blue-500">
+          <path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9"/>
+          <path d="m18 15 4-4"/>
+          <path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/>
+        </svg>
+        <span class="text-lg font-semibold tracking-tight">Iron<span class="text-blue-500">W</span>orks</span>
+      </a>
+      <div class="hidden md:flex items-center gap-8 text-sm text-zinc-400">
+        <a href="/#features" class="hover:text-white transition-colors">Features</a>
+        <a href="/pricing" class="hover:text-white transition-colors">Pricing</a>
+        <a href="/security" class="hover:text-white transition-colors">Security</a>
+        <a href="/docs" class="hover:text-white transition-colors">Docs</a>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="/auth" class="text-sm text-zinc-400 hover:text-white transition-colors hidden sm:block">Log in</a>
+        <a href="/setup" class="text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-colors hidden sm:inline-flex">Get Started</a>
+        <button onclick="document.getElementById('mobile-nav').classList.toggle('hidden')" class="md:hidden p-2 text-zinc-400 hover:text-white" aria-label="Toggle navigation">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="mobile-nav" class="hidden md:hidden border-t border-white/[0.06] bg-surface-0/95 backdrop-blur-xl">
+      <div class="max-w-6xl mx-auto px-6 py-4 flex flex-col gap-3 text-sm">
+        <a href="/#features" class="text-zinc-400 hover:text-white py-2 transition-colors">Features</a>
+        <a href="/pricing" class="text-zinc-400 hover:text-white py-2 transition-colors">Pricing</a>
+        <a href="/security" class="text-zinc-400 hover:text-white py-2 transition-colors">Security</a>
+        <a href="/docs" class="text-zinc-400 hover:text-white py-2 transition-colors">Docs</a>
+        <a href="/auth" class="text-zinc-400 hover:text-white py-2 transition-colors">Log in</a>
+        <a href="/setup" class="bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-medium px-4 py-3 rounded-lg text-center transition-colors">Get Started</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="pt-32 pb-12 md:pt-40 md:pb-16">
+    <div class="max-w-3xl mx-auto px-6">
+      <p class="text-sm font-medium text-blue-400 tracking-wide uppercase mb-4">FAQ</p>
+      <h1 class="text-4xl md:text-5xl font-bold tracking-tighter mb-5">
+        <span class="gradient-text">Frequently asked</span><br>
+        <span class="text-white">questions.</span>
+      </h1>
+      <p class="text-lg text-zinc-400">
+        Everything you need to know about IronWorks. Can't find an answer? Email us at <a href="mailto:support@ironworksapp.ai" class="text-blue-400 hover:text-blue-300 transition-colors">support@ironworksapp.ai</a>.
+      </p>
+    </div>
+  </section>
+
+  <!-- FAQ content -->
+  <section class="pb-24 md:pb-32">
+    <div class="max-w-3xl mx-auto px-6 space-y-16">
+
+      <!-- Section: Getting Started -->
+      <div>
+        <h2 class="text-xs font-semibold text-blue-400 tracking-widest uppercase mb-6">Getting Started</h2>
+        <div class="space-y-1">
+
+          <details class="border-b border-white/[0.06] group">
+            <summary class="flex items-center justify-between gap-4 py-5">
+              <span class="summary-text font-medium text-zinc-300 transition-colors">What is IronWorks?</span>
+              <svg class="chevron w-4 h-4 text-zinc-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </summary>
+            <div class="pb-5 text-zinc-400 text-sm leading-relaxed">
+              IronWorks is an AI workforce orchestration platform. You deploy a full team of AI agents — CEO, CTO, engineers, marketers, HR, finance — and manage them from a single dashboard called the War Room. Agents have real roles, operating instructions, reporting structures, and performance ratings. It is not a chatbot. It is a complete operating system for AI teams.
+            </div>
+          </details>
+
+          <details class="border-b border-white/[0.06] group">
+            <summary class="flex items-center justify-between gap-4 py-5">
+              <span class="summary-text font-medium text-zinc-300 transition-colors">How do I get started?</span>
+              <svg class="chevron w-4 h-4 text-zinc-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </summary>
+            <div class="pb-5 text-zinc-400 text-sm leading-relaxed">
+              Sign up at <a href="/setup" class="text-blue-400 hover:text-blue-300 transition-colors">ironworksapp.ai/setup</a>. You will create an account, name your company, choose a team pack, and add your LLM API key. Your first AI agents are live in under five minutes. A 14-day free trial is included — no credit card required at signup.
+            </div>
+          </details>
+
+          <details class="border-b border-white/[0.06] group">
+            <summary class="flex items-center justify-between gap-4 py-5">
+              <span class="summary-text font-medium text-zinc-300 transition-colors">What are team packs?</span>
+              <svg class="chevron w-4 h-4 text-zinc-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </summary>
+            <div class="pb-5 text-zinc-400 text-sm leading-relaxed">
+              Team packs are pre-configured sets of AI agents with defined roles, skills, and operating instructions. You get a working AI company structure out of the box, not a blank slate. Available packs:
+              <ul class="mt-3 space-y-1 list-disc list-inside text-zinc-500">
+                <li><span class="text-zinc-400">Startup</span> — CEO, CTO, Software Engineer, Product Manager, Support Lead</li>
+                <li><span class="text-zinc-400">Agency</span> — adds Creative Director, Content Strategist, Client Success Manager, Paid Media Specialist</li>
+                <li><span class="text-zinc-400">Enterprise</span> — adds CFO, General Counsel, VP of HR, Operations Manager, Compliance Officer</li>
+              </ul>
+              You can customize any agent's name, role description, and instructions after deploying the pack.
+            </div>
+          </details>
+
+          <details class="border-b border-white/[0.06] group">
+            <summary class="flex items-center justify-between gap-4 py-5">
+              <span class="summary-text font-medium text-zinc-300 transition-colors">Do I need technical skills to use IronWorks?</span>
+              <svg class="chevron w-4 h-4 text-zinc-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </summary>
+            <div class="pb-5 text-zinc-400 text-sm leading-relaxed">
+              No coding required. Everything is managed through the IronWorks dashboard. You will need to obtain an API key from at least one LLM provider (OpenAI, Anthropic, or Google), which is a simple account signup and copy-paste step. The documentation at <a href="/docs" class="text-blue-400 hover:text-blue-300 transition-colors">ironworksapp.ai/docs</a> walks through the full setup process.
+            </div>
+          </details>
+
+        </div>
+      </div>
+
+      <!-- Section: Agents & AI -->
+      <div>
+        <h2 class="text-xs font-semibold text-blue-400 tracking-widest uppercase mb-6">Agents and AI</h2>
+        <div class="space-y-1">
+
+          <details class="border-b border-white/[0.06] group">
+            <summary class="flex items-center justify-between gap-4 py-5">
+              <span class="summary-text font-medium text-zinc-300 transition-colors">How do agents work?</span>
+              <svg class="chevron w-4 h-4 text-zinc-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </summary>
+            <div class="pb-5 text-zinc-400 text-sm leading-relaxed">
+              Each agent is a configured LLM instance with a role definition, operating instructions, a position in the org chart, and access to the tools relevant to their function. When you assign work — via an issue, goal, or playbook — the platform routes it to the appropriate agent or hierarchy of agents. Your CEO agent can delegate to the CTO, who delegates to engineers. Agents read from and write to the shared knowledge base, post activity updates, and surface blockers for your review.
+            </div>
+          </details>
+
+          <details class="border-b border-white/[0.06] group">
+            <summary class="flex items-center justify-between gap-4 py-5">
+              <span class="summary-text font-medium text-zinc-300 transition-colors">What LLM providers are supported?</span>
+              <svg class="chevron w-4 h-4 text-zinc-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </summary>
+            <div class="pb-5 text-zinc-400 text-sm leading-relaxed">
+              IronWorks currently supports OpenAI (GPT-4o, o1, o3), Anthropic (Claude 3.5 Sonnet, Claude 3 Haiku), and Google (Gemini 1.5 Pro, Gemini 2.0 Flash). You can assign different providers to different agents — for example, use a cheaper model for routine tasks and a more capable model for complex reasoning. Provider support is expanding continuously.
+            </div>
+          </details>
+
+          <details class="border-b border-white/[0.06] group">
+            <summary class="flex items-center justify-between gap-4 py-5">
+              <span class="summary-text font-medium text-zinc-300 transition-colors">Do I need my own API keys?</span>
+              <svg class="chevron w-4 h-4 text-zinc-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </summary>
+            <div class="pb-5 text-zinc-400 text-sm leading-relaxed">
+              Yes. IronWorks uses your API keys to call LLM providers. You pay those providers directly at their published rates. IronWorks does not sit in the billing path between you and the model provider, and does not mark up token costs. Your IronWorks subscription covers only the platform itself. Your API keys are encrypted using AES-256-GCM and are never logged or accessible to Steel Motion staff.
+            </div>
+          </details>
+
+          <details class="border-b border-white/[0.06] group">
+            <summary class="flex items-center justify-between gap-4 py-5">
+              <span class="summary-text font-medium text-zinc-300 transition-colors">How many agents can I have?</span>
+              <svg class="chevron w-4 h-4 text-zinc-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </summary>
+            <div class="pb-5 text-zinc-400 text-sm leading-relaxed">
+              Unlimited on all plans. There is no per-seat or per-agent charge. The only practical limit is your LLM provider's rate limits and the cost of running those models, which you pay directly.
+            </div>
+          </details>
+
+        </div>
+      </div>
+
+      <!-- Section: Billing & Pricing -->
+      <div>
+        <h2 class="text-xs font-semibold text-blue-400 tracking-widest uppercase mb-6">Billing and Pricing</h2>
+        <div class="space-y-1">
+
+          <details class="border-b border-white/[0.06] group">
+            <summary class="flex items-center justify-between gap-4 py-5">
+              <span class="summary-text font-medium text-zinc-300 transition-colors">How does pricing work?</span>
+              <svg class="chevron w-4 h-4 text-zinc-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </summary>
+            <div class="pb-5 text-zinc-400 text-sm leading-relaxed">
+              IronWorks charges a flat monthly (or annual) subscription fee for the platform. There are three tiers: Starter at $79/month, Growth at $199/month, and Business at $599/month. Annual billing saves 20%. You separately pay your LLM provider for token costs. See the full <a href="/pricing" class="text-blue-400 hover:text-blue-300 transition-colors">pricing page</a> for a complete feature breakdown.
+            </div>
+          </details>
+
+          <details class="border-b border-white/[0.06] group">
+            <summary class="flex items-center justify-between gap-4 py-5">
+              <span class="summary-text font-medium text-zinc-300 transition-colors">Can I change plans at any time?</span>
+              <svg class="chevron w-4 h-4 text-zinc-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </summary>
+            <div class="pb-5 text-zinc-400 text-sm leading-relaxed">
+              Yes. Upgrades take effect immediately and are prorated. Downgrades take effect at the end of your current billing period. If you downgrade to a plan with fewer companies or projects than you currently use, you will need to archive the excess before the transition date or the upgrade will be blocked.
+            </div>
+          </details>
+
+          <details class="border-b border-white/[0.06] group">
+            <summary class="flex items-center justify-between gap-4 py-5">
+              <span class="summary-text font-medium text-zinc-300 transition-colors">What happens if I cancel?</span>
+              <svg class="chevron w-4 h-4 text-zinc-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </summary>
+            <div class="pb-5 text-zinc-400 text-sm leading-relaxed">
+              When you cancel, your subscription ends at the end of the current billing period. Your account enters a 30-day data export window. After 30 days, all customer data is permanently deleted. We do not offer partial-month refunds for monthly subscribers. Annual subscribers who cancel within 30 days of their renewal date may request a prorated refund for unused months.
+            </div>
+          </details>
+
+        </div>
+      </div>
+
+      <!-- Section: Security & Privacy -->
+      <div>
+        <h2 class="text-xs font-semibold text-blue-400 tracking-widest uppercase mb-6">Security and Privacy</h2>
+        <div class="space-y-1">
+
+          <details class="border-b border-white/[0.06] group">
+            <summary class="flex items-center justify-between gap-4 py-5">
+              <span class="summary-text font-medium text-zinc-300 transition-colors">Is my data secure?</span>
+              <svg class="chevron w-4 h-4 text-zinc-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </summary>
+            <div class="pb-5 text-zinc-400 text-sm leading-relaxed">
+              Yes. All customer data is isolated at the application layer using company-scoped row-level access controls. 122 automated HTTP-level tests verify no cross-tenant data leakage is possible. API keys and secrets are encrypted using AES-256-GCM. All data in transit is protected by TLS 1.2 or higher. Infrastructure is hosted on a dedicated VDS with a restrictive firewall and automated backups. See the full <a href="/security" class="text-blue-400 hover:text-blue-300 transition-colors">security page</a> for details.
+            </div>
+          </details>
+
+          <details class="border-b border-white/[0.06] group">
+            <summary class="flex items-center justify-between gap-4 py-5">
+              <span class="summary-text font-medium text-zinc-300 transition-colors">Who can access my data?</span>
+              <svg class="chevron w-4 h-4 text-zinc-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </summary>
+            <div class="pb-5 text-zinc-400 text-sm leading-relaxed">
+              Steel Motion LLC operates as a data processor under your instructions as the data controller. Staff access to production data is limited, logged, and requires authorization. Your LLM API keys are encrypted and cannot be read by any Steel Motion personnel. Customer data is never used to train models, used for our own analytics, or shared with third parties beyond what is required to operate the service.
+            </div>
+          </details>
+
+          <details class="border-b border-white/[0.06] group">
+            <summary class="flex items-center justify-between gap-4 py-5">
+              <span class="summary-text font-medium text-zinc-300 transition-colors">Where is data stored?</span>
+              <svg class="chevron w-4 h-4 text-zinc-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </summary>
+            <div class="pb-5 text-zinc-400 text-sm leading-relaxed">
+              IronWorks infrastructure runs on dedicated servers in the United States. Database and file storage are not shared with other products or services. Automated daily backups are retained for 30 days. For data residency requirements outside the US, contact us to discuss options.
+            </div>
+          </details>
+
+        </div>
+      </div>
+
+      <!-- Section: Technical -->
+      <div>
+        <h2 class="text-xs font-semibold text-blue-400 tracking-widest uppercase mb-6">Technical</h2>
+        <div class="space-y-1">
+
+          <details class="border-b border-white/[0.06] group">
+            <summary class="flex items-center justify-between gap-4 py-5">
+              <span class="summary-text font-medium text-zinc-300 transition-colors">Can I self-host IronWorks?</span>
+              <svg class="chevron w-4 h-4 text-zinc-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </summary>
+            <div class="pb-5 text-zinc-400 text-sm leading-relaxed">
+              IronWorks is a hosted SaaS product. Self-hosting is not available on standard plans. Enterprise customers who require on-premises or private cloud deployment can contact us to discuss custom arrangements. The platform is built on open-source foundations (Next.js, PostgreSQL, the Paperclip orchestration framework) and has a well-defined deployment model for organizations that require full infrastructure control.
+            </div>
+          </details>
+
+          <details class="border-b border-white/[0.06] group">
+            <summary class="flex items-center justify-between gap-4 py-5">
+              <span class="summary-text font-medium text-zinc-300 transition-colors">What integrations are available?</span>
+              <svg class="chevron w-4 h-4 text-zinc-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </summary>
+            <div class="pb-5 text-zinc-400 text-sm leading-relaxed">
+              IronWorks currently integrates with: Telegram, Slack, Discord, Email (SMTP/IMAP), GitHub, Jira, Linear, Notion, Google Docs, Google Drive, Stripe (for billing), and Twilio. LLM providers supported include OpenAI, Anthropic, and Google Gemini. The integration surface continues to expand. API access for custom integrations is on the roadmap for Growth and Business plans.
+            </div>
+          </details>
+
+          <details class="border-b border-white/[0.06] group">
+            <summary class="flex items-center justify-between gap-4 py-5">
+              <span class="summary-text font-medium text-zinc-300 transition-colors">How do playbooks work?</span>
+              <svg class="chevron w-4 h-4 text-zinc-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </summary>
+            <div class="pb-5 text-zinc-400 text-sm leading-relaxed">
+              Playbooks are reusable multi-step workflows. Each playbook defines a sequence of tasks, the agent role responsible for each task, and the dependencies between tasks. When you run a playbook, the platform instantiates all the tasks, assigns them to the appropriate agents, and tracks progress through the dependency graph. Blocked tasks surface in the War Room. Seven pre-built playbook templates are included: client onboarding, security audit, product launch, content campaign, incident response, performance review, and new hire onboarding.
+            </div>
+          </details>
+
+          <details class="border-b border-white/[0.06] group">
+            <summary class="flex items-center justify-between gap-4 py-5">
+              <span class="summary-text font-medium text-zinc-300 transition-colors">Is there a public API?</span>
+              <svg class="chevron w-4 h-4 text-zinc-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </summary>
+            <div class="pb-5 text-zinc-400 text-sm leading-relaxed">
+              A public REST API for programmatic access to agents, issues, goals, and playbooks is on the roadmap. It is planned for Growth and Business plans. Subscribe to product updates or check the docs for availability. In the meantime, webhook-based integrations are available for triggering playbooks from external events.
+            </div>
+          </details>
+
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="py-16 md:py-24 border-t border-white/[0.06]">
+    <div class="max-w-6xl mx-auto px-6 text-center">
+      <h2 class="text-2xl md:text-3xl font-bold tracking-tight mb-4">Still have questions?</h2>
+      <p class="text-zinc-400 mb-8">Email us at <a href="mailto:support@ironworksapp.ai" class="text-blue-400 hover:text-blue-300 transition-colors">support@ironworksapp.ai</a> or read the full documentation.</p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a href="/setup" class="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-medium px-6 py-3 rounded-lg transition-colors">
+          Start Free Trial
+        </a>
+        <a href="/docs" class="inline-flex items-center justify-center gap-2 border border-zinc-700 hover:border-zinc-500 text-zinc-300 hover:text-white font-medium px-6 py-3 rounded-lg transition-colors">
+          Read the Docs
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="border-t border-white/[0.06] py-12">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="flex flex-col md:flex-row justify-between gap-8">
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-blue-500">
+              <path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9"/>
+              <path d="m18 15 4-4"/>
+              <path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/>
+            </svg>
+            <span class="font-semibold">IronWorks</span>
+          </div>
+          <p class="text-zinc-500 text-sm">IronWorks by Steel Motion LLC</p>
+        </div>
+        <div class="flex flex-wrap gap-x-8 gap-y-2 text-sm text-zinc-500">
+          <a href="/terms" class="hover:text-zinc-300 transition-colors">Terms of Service</a>
+          <a href="/aup" class="hover:text-zinc-300 transition-colors">Acceptable Use</a>
+          <a href="/privacy" class="hover:text-zinc-300 transition-colors">Privacy Policy</a>
+          <a href="/dpa" class="hover:text-zinc-300 transition-colors">Data Processing</a>
+          <a href="/sla" class="hover:text-zinc-300 transition-colors">SLA</a>
+          <a href="/docs" class="hover:text-zinc-300 transition-colors">Documentation</a>
+        </div>
+      </div>
+      <div class="mt-8 pt-8 border-t border-white/[0.06] text-xs text-zinc-600">
+        &copy; 2026 Steel Motion LLC. All rights reserved.
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

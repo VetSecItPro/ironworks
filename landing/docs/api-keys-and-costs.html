@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Keys, Costs, and Budgets — IronWorks Docs</title>
+  <meta name="description" content="BYOK model, API key vs OAuth authentication, budget thresholds, cost tracking, and optimization tips.">
+  <meta property="og:title" content="API Keys, Costs, and Budgets — IronWorks Docs">
+  <meta property="og:description" content="BYOK model, API key vs OAuth authentication, budget thresholds, cost tracking, and optimization tips.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://ironworksapp.ai/docs/api-keys-and-costs.html">
+  <meta property="og:image" content="https://ironworksapp.ai/og-image.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{fontFamily:{sans:['Geist','system-ui','-apple-system','sans-serif'],mono:['Geist Mono','JetBrains Mono','monospace']},colors:{surface:{0:'#0a0a0a',1:'#141414',2:'#1e1e1e',3:'#282828'},accent:{DEFAULT:'#3b82f6',dim:'#1d4ed8'}}}}}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>body{font-family:'Geist',system-ui,sans-serif;background:#0a0a0a;color:#e4e4e7}.gradient-text{background:linear-gradient(135deg,#e4e4e7 0%,#a1a1aa 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}.prose h2{font-size:1.5rem;font-weight:600;color:#fff;margin-top:2.5rem;margin-bottom:1rem}.prose h3{font-size:1.125rem;font-weight:600;color:#e4e4e7;margin-top:2rem;margin-bottom:.75rem}.prose p{color:#a1a1aa;line-height:1.75;margin-bottom:1rem}.prose ul,.prose ol{color:#a1a1aa;margin-bottom:1rem;padding-left:1.5rem}.prose li{margin-bottom:.5rem;line-height:1.6}.prose ul{list-style-type:disc}.prose ol{list-style-type:decimal}.prose strong{color:#e4e4e7;font-weight:600}.prose code{background:#1e1e1e;padding:.125rem .375rem;border-radius:.25rem;font-size:.875rem;color:#93c5fd;font-family:'Geist Mono',monospace}.prose pre{background:#141414;border:1px solid rgba(255,255,255,0.06);border-radius:.5rem;padding:1rem;margin-bottom:1.5rem;overflow-x:auto}.prose pre code{background:transparent;padding:0;color:#e4e4e7}.prose table{width:100%;border-collapse:collapse;margin-bottom:1.5rem}.prose th{text-align:left;padding:.75rem;border-bottom:1px solid rgba(255,255,255,0.1);color:#e4e4e7;font-weight:600;font-size:.875rem}.prose td{padding:.75rem;border-bottom:1px solid rgba(255,255,255,0.06);color:#a1a1aa;font-size:.875rem}.prose blockquote{border-left:3px solid #3b82f6;padding-left:1rem;margin:1.5rem 0}.prose blockquote p{color:#d4d4d8}.sidebar-link{display:block;padding:.375rem .75rem;border-radius:.375rem;font-size:.875rem;color:#71717a;transition:all .15s}.sidebar-link:hover{color:#e4e4e7;background:#1e1e1e}.sidebar-link.active{color:#3b82f6;background:rgba(59,130,246,0.1)}.sidebar-label{font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#52525b;padding:.375rem .75rem;margin-top:1rem}details summary{cursor:pointer;list-style:none}details summary::-webkit-details-marker{display:none}</style>
+</head>
+<body class="antialiased">
+  <nav class="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.06] bg-surface-0/80 backdrop-blur-xl"><div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between"><a href="/" class="flex items-center gap-2.5"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-blue-500"><path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9"/><path d="m18 15 4-4"/><path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/></svg><span class="text-lg font-semibold tracking-tight">Iron<span class="text-blue-500">W</span>orks</span></a><div class="hidden md:flex items-center gap-8 text-sm text-zinc-400"><a href="/#features" class="hover:text-white transition-colors">Features</a><a href="/#pricing" class="hover:text-white transition-colors">Pricing</a><a href="/#security" class="hover:text-white transition-colors">Security</a><a href="/docs/" class="text-white transition-colors">Docs</a></div><div class="flex items-center gap-3"><a href="/auth" class="text-sm text-zinc-400 hover:text-white transition-colors hidden sm:block">Log in</a><a href="/#pricing" class="text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-colors hidden sm:inline-flex">Get Started</a></div></div></nav>
+  <div class="pt-24 pb-16 max-w-6xl mx-auto px-6">
+    <div class="text-sm text-zinc-500 mb-8"><a href="/" class="hover:text-zinc-300">Home</a> <span class="mx-2">/</span> <a href="/docs/" class="hover:text-zinc-300">Docs</a> <span class="mx-2">/</span> <span class="text-zinc-300">API Keys and Costs</span></div>
+    <div class="flex gap-12">
+      <aside class="hidden lg:block w-64 flex-shrink-0"><nav class="sticky top-24 space-y-0.5">
+        <div class="sidebar-label">Getting Started</div>
+        <a href="/docs/getting-started-founder.html" class="sidebar-link">Solo Founder Guide</a>
+        <a href="/docs/getting-started-agency.html" class="sidebar-link">Agency Guide</a>
+        <a href="/docs/getting-started-technical.html" class="sidebar-link">Developer Guide</a>
+        <div class="sidebar-label">Core Concepts</div>
+        <a href="/docs/agents-and-roles.html" class="sidebar-link">Agents and Roles</a>
+        <a href="/docs/team-packs.html" class="sidebar-link">Team Packs</a>
+        <a href="/docs/war-room.html" class="sidebar-link">War Room Dashboard</a>
+        <div class="sidebar-label">Features</div>
+        <a href="/docs/playbooks-and-routines.html" class="sidebar-link">Playbooks and Routines</a>
+        <a href="/docs/knowledge-base.html" class="sidebar-link">Knowledge Base</a>
+        <a href="/docs/messaging-integrations.html" class="sidebar-link">Messaging Integrations</a>
+        <div class="sidebar-label">Operations</div>
+        <a href="/docs/api-keys-and-costs.html" class="sidebar-link active">API Keys and Costs</a>
+        <a href="/docs/security-and-privacy.html" class="sidebar-link">Security and Privacy</a>
+        <div class="sidebar-label">Reference</div>
+        <a href="/docs/faq.html" class="sidebar-link">FAQ</a>
+      </nav></aside>
+      <main class="flex-1 min-w-0 prose">
+
+        <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-white mb-2">API Keys, Costs, and Budgets</h1>
+        <p class="text-lg text-zinc-400 mb-8">How LLM credentials, cost tracking, and budget enforcement work in IronWorks.</p>
+
+        <h2>The BYOK Model</h2>
+        <p>IronWorks uses a Bring Your Own Key model. Your monthly subscription ($79-$599) covers the platform — the dashboard, agent orchestration, playbooks, knowledge base, and all features. LLM costs are separate: you connect your own API keys from Anthropic, OpenAI, Google, or other providers, and usage is billed directly by the provider at their standard rates.</p>
+        <p>IronWorks adds zero markup to LLM costs. Your agents call the provider APIs directly using your credentials.</p>
+
+        <h2>API Key vs OAuth</h2>
+        <p>IronWorks supports two credential types for the Anthropic API:</p>
+        <table>
+          <thead><tr><th>Method</th><th>Secret Name</th><th>HTTP Header</th><th>Best For</th></tr></thead>
+          <tbody>
+            <tr><td>API Key</td><td><code>ANTHROPIC_API_KEY</code></td><td><code>x-api-key: sk-ant-...</code></td><td>Prepaid API credits, direct billing</td></tr>
+            <tr><td>OAuth Token</td><td><code>ANTHROPIC_OAUTH_TOKEN</code></td><td><code>Authorization: Bearer ...</code></td><td>Anthropic managed billing, organization accounts</td></tr>
+          </tbody>
+        </table>
+        <p>For OpenAI, store your key as <code>OPENAI_API_KEY</code>. The system tries the company secret first, then falls back to the server environment variable (for self-hosted instances).</p>
+        <p>All credentials are encrypted at rest with AES-256-GCM using a per-company master key. They are never logged, never included in agent prompts, and never visible in the UI after storage.</p>
+
+        <h2>How Budgets Work</h2>
+        <p>Each company has a monthly LLM budget configured in company settings. The default is $500/month for API key customers. OAuth customers manage their own billing and are excluded from budget enforcement.</p>
+        <p>The budget system tracks two values:</p>
+        <ul>
+          <li><code>budgetMonthlyCents</code> — the limit you set (e.g., 50000 = $500)</li>
+          <li><code>spentMonthlyCents</code> — how much has been consumed this calendar month</li>
+        </ul>
+        <p>Spend is tracked at two levels: per-company (aggregate) and per-agent (granular). Every heartbeat run records its token usage and estimated cost.</p>
+
+        <h2>Budget Alert Thresholds</h2>
+        <p>The budget alert system checks spend after each agent execution and fires at two thresholds:</p>
+
+        <h3>80% Warning</h3>
+        <p>When monthly spend reaches 80% of budget, the system:</p>
+        <ol>
+          <li>Creates a high-priority issue titled <strong>"[CFO Alert] Budget 80% consumed — $400.00/$500.00 with 12 days remaining"</strong></li>
+          <li>Assigns it to the CFO agent (falls back to CEO if no CFO exists)</li>
+          <li>Logs a <code>budget.alert_80_percent</code> activity event</li>
+        </ol>
+        <p>This alert is deduped — only one 80% alert per calendar month. The CFO can then review spending patterns and recommend adjustments.</p>
+
+        <h3>100% Hard Stop</h3>
+        <p>When spend reaches 100% of budget, the system:</p>
+        <ol>
+          <li>Creates an urgent-priority issue titled <strong>"[System] Monthly budget exceeded — all agents paused"</strong></li>
+          <li>Pauses all non-CEO agents immediately (sets <code>status: "paused"</code>, <code>pauseReason: "budget_exceeded"</code>)</li>
+          <li>The CEO stays active so it can communicate the situation and you can give instructions</li>
+        </ol>
+        <p>Paused agents won't pick up new work until you either increase the budget or the next calendar month begins and spend resets.</p>
+
+        <h2>Cost Tracking Per Agent and Per Task</h2>
+        <p>Every heartbeat run records:</p>
+        <ul>
+          <li><strong>Input tokens</strong> — how many tokens were sent to the LLM</li>
+          <li><strong>Output tokens</strong> — how many tokens the LLM generated</li>
+          <li><strong>Estimated cost</strong> — calculated from the model's per-token pricing</li>
+          <li><strong>Duration</strong> — how long the execution took</li>
+        </ul>
+        <p>This data is visible on the agent profile page (per-agent breakdown) and on each issue (per-task cost). The War Room shows aggregate spend and top spenders.</p>
+
+        <h2>Tips for Optimizing LLM Costs</h2>
+        <ul>
+          <li><strong>Use smaller models for routine work.</strong> The Senior Engineer doesn't need Claude Opus for formatting a README — Claude Haiku or GPT-4o-mini works fine. Configure lighter models for agents doing simple tasks.</li>
+          <li><strong>Scope tasks tightly.</strong> "Fix the login bug in auth.ts" costs less than "Review the entire codebase and fix any bugs you find." Smaller task scope means fewer tokens.</li>
+          <li><strong>Use the CFO agent.</strong> The CFO role is designed to monitor spend. Deploy one and let it review cost reports and recommend optimizations.</li>
+          <li><strong>Set per-agent budgets.</strong> If you know your engineer should cost ~$50/month, set a per-agent budget. This prevents any single agent from consuming the entire company budget.</li>
+          <li><strong>Review run transcripts.</strong> If an agent is expensive, check its run transcripts to see if it's doing unnecessary work (reading too many files, generating overly verbose responses).</li>
+        </ul>
+
+      </main>
+    </div>
+  </div>
+  <footer class="border-t border-white/[0.06] py-12"><div class="max-w-6xl mx-auto px-6"><div class="flex flex-col md:flex-row justify-between gap-8"><div><div class="flex items-center gap-2 mb-3"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-blue-500"><path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9"/><path d="m18 15 4-4"/><path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/></svg><span class="font-semibold">IronWorks</span></div><p class="text-zinc-500 text-sm">IronWorks by Steel Motion LLC</p></div><div class="flex flex-wrap gap-x-8 gap-y-2 text-sm text-zinc-500"><a href="/terms" class="hover:text-zinc-300 transition-colors">Terms of Service</a><a href="/privacy" class="hover:text-zinc-300 transition-colors">Privacy Policy</a><a href="/docs/" class="hover:text-zinc-300 transition-colors">Documentation</a></div></div><div class="mt-8 pt-8 border-t border-white/[0.06] text-xs text-zinc-600">&copy; 2026 Steel Motion LLC. All rights reserved.</div></div></footer>
+</body>
+</html>

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How AI Agents Work — IronWorks Documentation</title>
+  <meta name="description" content="Understand what IronWorks agents are, how the heartbeat cycle works, what SOUL.md and AGENTS.md do, and how agents differ from chatbots.">
+  <meta property="og:title" content="How AI Agents Work — IronWorks Documentation">
+  <meta property="og:description" content="The heartbeat cycle, SOUL.md, AGENTS.md, and how agents differ from chatbots like ChatGPT.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://ironworksapp.ai/docs/how-agents-work.html">
+  <meta property="og:image" content="https://ironworksapp.ai/og-image.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="How AI Agents Work — IronWorks Documentation">
+  <meta name="twitter:image" content="https://ironworksapp.ai/og-image.svg">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Geist', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['Geist Mono', 'JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            surface: { 0: '#0a0a0a', 1: '#141414', 2: '#1e1e1e', 3: '#282828' },
+            accent: { DEFAULT: '#3b82f6', dim: '#1d4ed8' },
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Geist', system-ui, sans-serif; background: #0a0a0a; color: #e4e4e7; }
+    .prose h2 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; margin-top: 2.5rem; margin-bottom: 1rem; color: #fff; }
+    .prose h3 { font-size: 1.125rem; font-weight: 600; margin-top: 2rem; margin-bottom: 0.75rem; color: #e4e4e7; }
+    .prose p { color: #a1a1aa; line-height: 1.75; margin-bottom: 1rem; }
+    .prose ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 1rem; color: #a1a1aa; }
+    .prose ol { list-style: decimal; padding-left: 1.5rem; margin-bottom: 1rem; color: #a1a1aa; }
+    .prose li { margin-bottom: 0.4rem; line-height: 1.7; }
+    .prose strong { color: #e4e4e7; font-weight: 600; }
+    .prose a { color: #60a5fa; text-decoration: underline; text-underline-offset: 2px; }
+    .prose a:hover { color: #93c5fd; }
+    .prose code { font-family: 'Geist Mono', monospace; background: #1e1e1e; border: 1px solid #282828; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.85em; color: #e4e4e7; }
+    .prose pre { background: #141414; border: 1px solid #282828; border-radius: 10px; padding: 1.25rem; overflow-x: auto; margin-bottom: 1.25rem; }
+    .prose pre code { background: none; border: none; padding: 0; font-size: 0.875rem; }
+    .prose table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; font-size: 0.9rem; }
+    .prose th { text-align: left; padding: 0.6rem 0.75rem; border-bottom: 1px solid #282828; color: #e4e4e7; font-weight: 600; }
+    .prose td { padding: 0.6rem 0.75rem; border-bottom: 1px solid #1e1e1e; color: #a1a1aa; }
+    .prose blockquote { border-left: 3px solid #3b82f6; padding-left: 1rem; color: #a1a1aa; margin: 1.5rem 0; font-style: italic; }
+  </style>
+</head>
+<body class="antialiased">
+
+  <!-- Nav -->
+  <nav class="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.06] bg-[#0a0a0a]/80 backdrop-blur-xl">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2.5">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-blue-500">
+          <path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9"/>
+          <path d="m18 15 4-4"/>
+          <path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/>
+        </svg>
+        <span class="text-lg font-semibold tracking-tight">Iron<span class="text-blue-500">W</span>orks</span>
+      </a>
+      <div class="hidden md:flex items-center gap-8 text-sm text-zinc-400">
+        <a href="/features/" class="hover:text-white transition-colors">Features</a>
+        <a href="/pricing.html" class="hover:text-white transition-colors">Pricing</a>
+        <a href="/security.html" class="hover:text-white transition-colors">Security</a>
+        <a href="/docs/" class="text-white transition-colors">Docs</a>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="/auth" class="text-sm text-zinc-400 hover:text-white transition-colors hidden sm:block">Log in</a>
+        <a href="/pricing.html" class="text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-colors hidden sm:inline-flex">Get Started</a>
+        <button onclick="document.getElementById('mobile-nav').classList.toggle('hidden')" class="md:hidden p-2 text-zinc-400 hover:text-white" aria-label="Toggle navigation">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="mobile-nav" class="hidden md:hidden border-t border-white/[0.06] bg-[#0a0a0a]/95 backdrop-blur-xl">
+      <div class="max-w-6xl mx-auto px-6 py-4 flex flex-col gap-3 text-sm">
+        <a href="/features/" class="text-zinc-400 hover:text-white py-2 transition-colors">Features</a>
+        <a href="/pricing.html" class="text-zinc-400 hover:text-white py-2 transition-colors">Pricing</a>
+        <a href="/security.html" class="text-zinc-400 hover:text-white py-2 transition-colors">Security</a>
+        <a href="/docs/" class="text-white py-2 transition-colors">Docs</a>
+        <a href="/auth" class="text-zinc-400 hover:text-white py-2 transition-colors">Log in</a>
+        <a href="/pricing.html" class="bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-medium px-4 py-3 rounded-lg text-center transition-colors">Get Started</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="pt-16 flex min-h-screen">
+
+    <!-- Sidebar -->
+    <aside class="hidden lg:block w-64 shrink-0 border-r border-white/[0.06] sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto">
+      <nav class="p-6 space-y-1">
+        <p class="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4">Documentation</p>
+        <a href="/docs/" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors">Overview</a>
+        <a href="/docs/getting-started.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors">Getting Started</a>
+        <a href="/docs/how-agents-work.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-white/[0.06] text-white font-medium">How Agents Work</a>
+        <a href="/docs/managing-your-team.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors">Managing Your Team</a>
+        <a href="/docs/team-packs-explained.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors">Team Packs Explained</a>
+        <a href="/docs/api-keys-and-costs.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors">API Keys &amp; Costs</a>
+        <a href="/docs/knowledge-base-guide.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors">Knowledge Base Guide</a>
+        <a href="/docs/security-and-privacy.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors">Security &amp; Privacy</a>
+        <a href="/docs/faq.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors">FAQ</a>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 min-w-0">
+      <div class="max-w-3xl mx-auto px-6 py-12">
+
+        <!-- Breadcrumb -->
+        <nav class="flex items-center gap-2 text-sm text-zinc-500 mb-8">
+          <a href="/docs/" class="hover:text-zinc-300 transition-colors">Docs</a>
+          <span>/</span>
+          <span class="text-zinc-300">How Agents Work</span>
+        </nav>
+
+        <div class="prose">
+          <h1 class="text-3xl md:text-4xl font-bold tracking-tight mb-2 text-white">How AI Agents Work in IronWorks</h1>
+          <p class="text-zinc-500 text-sm mb-10">The heartbeat cycle, SOUL.md, AGENTS.md, and how agents differ from chatbots.</p>
+
+          <h2>What Is an Agent?</h2>
+          <p>An IronWorks agent is not a chatbot. It is an autonomous worker with a defined role, a set of skills, and written instructions that tell it how to behave. Each agent has a title (like CEO, Senior Engineer, or Content Marketer), a manager it reports to, and a scope of work it owns.</p>
+          <p>Think of an agent as a remote employee who shows up, checks their inbox, does their work, and sends you a status update. You do not need to sit in a chat window and guide them through every step. You assign work, they execute, and you review the results.</p>
+
+          <h2>The Heartbeat Cycle</h2>
+          <p>Agents work on a heartbeat cycle. This is the core rhythm of how work gets done in IronWorks.</p>
+          <p>Here is what happens during each heartbeat:</p>
+          <ol>
+            <li><strong>Wake up.</strong> The agent starts a new run.</li>
+            <li><strong>Check identity.</strong> The agent reads its role, title, budget, and position in the org chart.</li>
+            <li><strong>Read instructions.</strong> The agent reviews its SOUL.md (personality and philosophy) and AGENTS.md (operating procedures).</li>
+            <li><strong>Check inbox.</strong> The agent looks at issues assigned to it, prioritizing in-progress tasks over new ones.</li>
+            <li><strong>Do work.</strong> The agent picks up a task, checks it out (so no other agent takes it), and executes. For a CEO, this means triaging and delegating. For an engineer, this means writing code. For a marketer, this means creating content.</li>
+            <li><strong>Report back.</strong> The agent comments on the issue with what it did, marks the task status, and writes a daily log summarizing decisions made and lessons learned.</li>
+            <li><strong>Sleep.</strong> The agent goes idle until the next heartbeat.</li>
+          </ol>
+          <p>The heartbeat interval is configurable. Faster heartbeats mean agents check in more often. Slower heartbeats reduce costs but mean work takes longer to move.</p>
+
+          <h2>SOUL.md: Who the Agent Is</h2>
+          <p>Every agent has a SOUL.md file that defines its personality, values, and communication style. This is not a system prompt you have to write from scratch. IronWorks generates one based on the role template you chose during onboarding.</p>
+          <p>For example, a CEO's SOUL.md includes principles like:</p>
+          <ul>
+            <li>Own the P&amp;L. Every decision rolls up to revenue, margin, and cash.</li>
+            <li>Default to action. Ship over deliberate.</li>
+            <li>Be direct. Lead with the point, then give context.</li>
+            <li>Match intensity to stakes. A product launch gets energy. A staffing call gets gravity.</li>
+          </ul>
+          <p>An engineer's SOUL.md is different:</p>
+          <ul>
+            <li>Working software is the primary measure of progress.</li>
+            <li>Write code that reads like prose.</li>
+            <li>When stuck for more than 30 minutes, ask for help.</li>
+          </ul>
+          <p>You can edit an agent's SOUL.md at any time to change how it thinks and communicates. If your CEO is being too cautious, make it more action-oriented. If your engineer writes overly verbose comments, tell it to be concise.</p>
+
+          <h2>AGENTS.md: How the Agent Works</h2>
+          <p>While SOUL.md defines personality, AGENTS.md defines process. It tells the agent what to do on each heartbeat, how to handle different types of tasks, when to act independently, and when to escalate.</p>
+          <p>Key concepts in AGENTS.md:</p>
+          <ul>
+            <li><strong>Task execution loop.</strong> Check inbox, check out a task, do the work, report back, close the loop.</li>
+            <li><strong>Autonomy levels.</strong> Not every action needs approval. Routine work gets done immediately. Judgment calls get a heads-up to the manager. Scope changes wait for approval. Anything outside the agent's domain gets escalated.</li>
+            <li><strong>Delegation rules (for managers).</strong> Manager agents like the CEO and CTO do not do individual contributor work. They create subtasks and assign them to their reports.</li>
+            <li><strong>Daily logs.</strong> Every agent writes a daily summary with a timeline, decisions made, blockers, and lessons learned.</li>
+          </ul>
+
+          <h2>How Agents Communicate</h2>
+          <p>Agents do not have a group chat. They communicate through the issue system.</p>
+          <p>When the CEO receives a task, it creates subtasks and assigns them to the CTO, CMO, or other direct reports. Those managers may break work down further and assign it to their own reports. Communication happens through issue comments: status updates, questions, blockers, and completion summaries.</p>
+          <p>This mirrors how well-run remote teams work. Everything is documented, decisions are traceable, and nothing gets lost in a chat scroll.</p>
+          <p>If you want to talk to an agent directly, you can comment on an issue assigned to them. The agent will read your comment on its next heartbeat and respond. You can also reach agents through connected messaging platforms like Telegram, Slack, or Discord, depending on your plan.</p>
+
+          <h2>How Agents Are Different from ChatGPT or Copilot</h2>
+          <p>If you have used ChatGPT, Claude, or GitHub Copilot, you have interacted with AI as a tool. You type a prompt, it gives a response, and you decide what to do with it.</p>
+          <p>IronWorks agents are different in several important ways:</p>
+          <table>
+            <thead><tr><th>Feature</th><th>Chatbots (ChatGPT, Claude)</th><th>IronWorks Agents</th></tr></thead>
+            <tbody>
+              <tr><td>Interaction</td><td>You drive the conversation</td><td>Agents work independently</td></tr>
+              <tr><td>Memory</td><td>Limited to current session</td><td>Persistent daily logs and knowledge base</td></tr>
+              <tr><td>Teamwork</td><td>Single assistant</td><td>Multiple agents collaborating</td></tr>
+              <tr><td>Work tracking</td><td>None</td><td>Full issue tracking with status and history</td></tr>
+              <tr><td>Cost visibility</td><td>Per-conversation</td><td>Per-task, per-agent, per-project</td></tr>
+              <tr><td>Role specialization</td><td>General purpose</td><td>Each agent has a specific role and skills</td></tr>
+              <tr><td>Accountability</td><td>None</td><td>Performance ratings, cost tracking, audit logs</td></tr>
+            </tbody>
+          </table>
+          <p>The key difference: with a chatbot, you are the worker and the AI is the tool. With IronWorks, the AI agents are the workers and you are the manager.</p>
+
+          <h2>Agent Roles Explained</h2>
+          <p>IronWorks uses an org chart model. Each role has a specific purpose:</p>
+
+          <h3>CEO</h3>
+          <p>The top of the chain. The CEO receives tasks from you (the board), triages them, and delegates to the right department head. The CEO does not write code or create content. It makes decisions, sets priorities, resolves cross-team conflicts, and keeps the company moving.</p>
+
+          <h3>CTO (Chief Technology Officer)</h3>
+          <p>Owns technical direction and the engineering team. The CTO makes architecture decisions, reviews critical technical work, and delegates implementation to engineers. Routes code, bugs, features, and infrastructure tasks to the right engineer.</p>
+
+          <h3>CMO (Chief Marketing Officer)</h3>
+          <p>Owns marketing strategy, brand, and the content team. The CMO defines messaging, sets marketing goals, reviews content before publication, and delegates writing to the Content Marketer.</p>
+
+          <h3>CFO (Chief Financial Officer)</h3>
+          <p>Monitors budgets, tracks costs, and produces financial reports. The CFO reviews the Costs page, flags overspending, recommends model changes to reduce costs, and reports findings to the CEO.</p>
+
+          <h3>VP of HR</h3>
+          <p>Manages the agent lifecycle: hiring new agents, onboarding, performance reviews, and organizational design. The VP of HR monitors the Agent Performance page, creates performance improvement plans for underperforming agents, and recommends restructuring when needed.</p>
+
+          <h3>Senior Engineer</h3>
+          <p>The hands on the keyboard. Engineers pick up implementation tasks, write code, fix bugs, and submit work for review. They report to the CTO.</p>
+
+          <h3>DevOps Engineer</h3>
+          <p>Owns infrastructure, CI/CD pipelines, monitoring, and production reliability. Handles deployments, incident response, and system maintenance. Reports to the CTO.</p>
+
+          <h3>Security Engineer</h3>
+          <p>The company's immune system. Runs security audits, scans dependencies, reviews code for vulnerabilities, and manages incident response. Reports to the CTO.</p>
+
+          <h3>Content Marketer</h3>
+          <p>Creates content: blog posts, social media, email campaigns, case studies, and SEO-optimized articles. Works from briefs provided by the CMO and submits work for review before publication.</p>
+
+          <h2>Next Steps</h2>
+          <ul>
+            <li><a href="/docs/managing-your-team.html">Managing Your AI Team</a> to learn how to direct your agents effectively</li>
+            <li><a href="/docs/team-packs-explained.html">Team Packs Explained</a> to understand which agents come in each pre-built team</li>
+            <li><a href="/docs/api-keys-and-costs.html">API Keys and Cost Management</a> to understand what models to use for which roles</li>
+          </ul>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-white/[0.06] py-12">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="flex flex-col md:flex-row justify-between gap-8">
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-blue-500">
+              <path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9"/>
+              <path d="m18 15 4-4"/>
+              <path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/>
+            </svg>
+            <span class="font-semibold">IronWorks</span>
+          </div>
+          <p class="text-zinc-500 text-sm">IronWorks by Steel Motion LLC</p>
+        </div>
+        <div class="flex flex-wrap gap-x-8 gap-y-2 text-sm text-zinc-500">
+          <a href="/features/" class="hover:text-zinc-300 transition-colors">Features</a>
+          <a href="/pricing.html" class="hover:text-zinc-300 transition-colors">Pricing</a>
+          <a href="/security.html" class="hover:text-zinc-300 transition-colors">Security</a>
+          <a href="/docs/" class="hover:text-zinc-300 transition-colors">Documentation</a>
+          <a href="/terms" class="hover:text-zinc-300 transition-colors">Terms of Service</a>
+          <a href="/privacy" class="hover:text-zinc-300 transition-colors">Privacy Policy</a>
+        </div>
+      </div>
+      <div class="mt-8 pt-8 border-t border-white/[0.06] text-xs text-zinc-600">
+        &copy; 2026 Steel Motion LLC. All rights reserved.
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Getting Started — IronWorks Documentation</title>
+  <meta name="description" content="Set up your IronWorks account, deploy your first AI team, and understand what to expect on day one.">
+  <meta property="og:title" content="Getting Started — IronWorks Documentation">
+  <meta property="og:description" content="Set up your IronWorks account, deploy your first AI team, and understand what to expect on day one.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://ironworksapp.ai/docs/getting-started.html">
+  <meta property="og:image" content="https://ironworksapp.ai/og-image.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Getting Started — IronWorks Documentation">
+  <meta name="twitter:image" content="https://ironworksapp.ai/og-image.svg">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Geist', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['Geist Mono', 'JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            surface: { 0: '#0a0a0a', 1: '#141414', 2: '#1e1e1e', 3: '#282828' },
+            accent: { DEFAULT: '#3b82f6', dim: '#1d4ed8' },
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Geist', system-ui, sans-serif; background: #0a0a0a; color: #e4e4e7; }
+    .prose h2 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; margin-top: 2.5rem; margin-bottom: 1rem; color: #fff; }
+    .prose h3 { font-size: 1.125rem; font-weight: 600; margin-top: 2rem; margin-bottom: 0.75rem; color: #e4e4e7; }
+    .prose p { color: #a1a1aa; line-height: 1.75; margin-bottom: 1rem; }
+    .prose ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 1rem; color: #a1a1aa; }
+    .prose ol { list-style: decimal; padding-left: 1.5rem; margin-bottom: 1rem; color: #a1a1aa; }
+    .prose li { margin-bottom: 0.4rem; line-height: 1.7; }
+    .prose strong { color: #e4e4e7; font-weight: 600; }
+    .prose a { color: #60a5fa; text-decoration: underline; text-underline-offset: 2px; }
+    .prose a:hover { color: #93c5fd; }
+    .prose code { font-family: 'Geist Mono', monospace; background: #1e1e1e; border: 1px solid #282828; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.85em; color: #e4e4e7; }
+    .prose pre { background: #141414; border: 1px solid #282828; border-radius: 10px; padding: 1.25rem; overflow-x: auto; margin-bottom: 1.25rem; }
+    .prose pre code { background: none; border: none; padding: 0; font-size: 0.875rem; }
+    .prose table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; font-size: 0.9rem; }
+    .prose th { text-align: left; padding: 0.6rem 0.75rem; border-bottom: 1px solid #282828; color: #e4e4e7; font-weight: 600; }
+    .prose td { padding: 0.6rem 0.75rem; border-bottom: 1px solid #1e1e1e; color: #a1a1aa; }
+    .prose blockquote { border-left: 3px solid #3b82f6; padding-left: 1rem; color: #a1a1aa; margin: 1.5rem 0; font-style: italic; }
+    .prose hr { border-color: #282828; margin: 2rem 0; }
+  </style>
+</head>
+<body class="antialiased">
+
+  <!-- Nav -->
+  <nav class="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.06] bg-[#0a0a0a]/80 backdrop-blur-xl">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2.5">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-blue-500">
+          <path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9"/>
+          <path d="m18 15 4-4"/>
+          <path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/>
+        </svg>
+        <span class="text-lg font-semibold tracking-tight">Iron<span class="text-blue-500">W</span>orks</span>
+      </a>
+      <div class="hidden md:flex items-center gap-8 text-sm text-zinc-400">
+        <a href="/features/" class="hover:text-white transition-colors">Features</a>
+        <a href="/pricing.html" class="hover:text-white transition-colors">Pricing</a>
+        <a href="/security.html" class="hover:text-white transition-colors">Security</a>
+        <a href="/docs/" class="text-white transition-colors">Docs</a>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="/auth" class="text-sm text-zinc-400 hover:text-white transition-colors hidden sm:block">Log in</a>
+        <a href="/pricing.html" class="text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-colors hidden sm:inline-flex">Get Started</a>
+        <button onclick="document.getElementById('mobile-nav').classList.toggle('hidden')" class="md:hidden p-2 text-zinc-400 hover:text-white" aria-label="Toggle navigation">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="mobile-nav" class="hidden md:hidden border-t border-white/[0.06] bg-[#0a0a0a]/95 backdrop-blur-xl">
+      <div class="max-w-6xl mx-auto px-6 py-4 flex flex-col gap-3 text-sm">
+        <a href="/features/" class="text-zinc-400 hover:text-white py-2 transition-colors">Features</a>
+        <a href="/pricing.html" class="text-zinc-400 hover:text-white py-2 transition-colors">Pricing</a>
+        <a href="/security.html" class="text-zinc-400 hover:text-white py-2 transition-colors">Security</a>
+        <a href="/docs/" class="text-white py-2 transition-colors">Docs</a>
+        <a href="/auth" class="text-zinc-400 hover:text-white py-2 transition-colors">Log in</a>
+        <a href="/pricing.html" class="bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-medium px-4 py-3 rounded-lg text-center transition-colors">Get Started</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="pt-16 flex min-h-screen">
+
+    <!-- Sidebar -->
+    <aside class="hidden lg:block w-64 shrink-0 border-r border-white/[0.06] sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto">
+      <nav class="p-6 space-y-1">
+        <p class="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4">Documentation</p>
+        <a href="/docs/" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors">Overview</a>
+        <a href="/docs/getting-started.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-white/[0.06] text-white font-medium">Getting Started</a>
+        <a href="/docs/how-agents-work.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors">How Agents Work</a>
+        <a href="/docs/managing-your-team.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors">Managing Your Team</a>
+        <a href="/docs/team-packs-explained.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors">Team Packs Explained</a>
+        <a href="/docs/api-keys-and-costs.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors">API Keys &amp; Costs</a>
+        <a href="/docs/knowledge-base-guide.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors">Knowledge Base Guide</a>
+        <a href="/docs/security-and-privacy.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors">Security &amp; Privacy</a>
+        <a href="/docs/faq.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors">FAQ</a>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 min-w-0">
+      <div class="max-w-3xl mx-auto px-6 py-12">
+
+        <!-- Breadcrumb -->
+        <nav class="flex items-center gap-2 text-sm text-zinc-500 mb-8">
+          <a href="/docs/" class="hover:text-zinc-300 transition-colors">Docs</a>
+          <span>/</span>
+          <span class="text-zinc-300">Getting Started</span>
+        </nav>
+
+        <div class="prose">
+          <h1 class="text-3xl md:text-4xl font-bold tracking-tight mb-2 text-white">Getting Started with IronWorks</h1>
+          <p class="text-zinc-500 text-sm mb-10">Start here if you are new to IronWorks.</p>
+
+          <h2>What Is IronWorks?</h2>
+          <p>IronWorks is an AI workforce orchestration platform. Instead of chatting with a single AI assistant, you deploy a team of AI agents that work together like employees at a company. Each agent has a role (CEO, CTO, Engineer, Marketer), a set of instructions, and a defined place in your org chart. They communicate through issues, delegate work up and down the chain of command, and report progress back to you.</p>
+          <p>You are the "board of directors." You set goals, create issues, and review outcomes. Your agents do the work. You manage them the way you would manage a team of human employees, but they run 24/7 and cost a fraction of what a human team costs.</p>
+
+          <h2>What You Need Before Starting</h2>
+          <p>Before you sign up, make sure you have:</p>
+          <ul>
+            <li><strong>An API key from an AI provider.</strong> IronWorks uses a bring-your-own-key (BYOK) model. You will need an API key from Anthropic (for Claude models) or OpenAI (for GPT models). See the <a href="/docs/api-keys-and-costs.html">API Keys and Cost Management</a> guide for step-by-step instructions on getting one.</li>
+            <li><strong>A credit card for your IronWorks subscription.</strong> IronWorks charges a monthly platform fee. AI usage costs are billed separately by your AI provider.</li>
+            <li><strong>A clear idea of what you want your agents to work on.</strong> The more specific your first goal, the faster your team will produce results.</li>
+          </ul>
+
+          <h2>Step-by-Step Setup</h2>
+
+          <h3>1. Sign up for IronWorks</h3>
+          <p>Go to the IronWorks landing page and create an account with your email. You will be asked to verify your email address before continuing.</p>
+
+          <h3>2. Choose a subscription plan</h3>
+          <p>IronWorks offers three tiers:</p>
+          <table>
+            <thead><tr><th>Plan</th><th>Monthly Price</th><th>Projects</th><th>Storage</th><th>Companies</th></tr></thead>
+            <tbody>
+              <tr><td>Starter</td><td>$79/mo</td><td>5</td><td>5 GB</td><td>1</td></tr>
+              <tr><td>Growth</td><td>$199/mo</td><td>25</td><td>15 GB</td><td>2</td></tr>
+              <tr><td>Business</td><td>$599/mo</td><td>Unlimited</td><td>50 GB</td><td>5</td></tr>
+            </tbody>
+          </table>
+          <p>All plans include unlimited AI agents. You can upgrade or downgrade at any time. Pick the plan that fits your current needs. You can always change it later.</p>
+
+          <h3>3. Create your company</h3>
+          <p>After subscribing, the onboarding wizard walks you through creating your first company. Give it a name and a brief description of what the company does. This context helps your agents understand their mission.</p>
+
+          <h3>4. Enter your API key</h3>
+          <p>The wizard will ask for your AI provider API key. IronWorks encrypts this key using AES-256 encryption and never exposes it to anyone, including Steel Motion staff. The key is used solely to make API calls on your behalf when your agents run.</p>
+
+          <h3>5. Pick a team pack</h3>
+          <p>Choose a pre-built team of agents to get started:</p>
+          <ul>
+            <li><strong>Startup</strong> (3 agents): CEO, CTO, Senior Engineer. Good for small projects and technical work.</li>
+            <li><strong>Agency</strong> (7 agents): Adds CMO, CFO, VP of HR, and Content Marketer. Good for client work and full-service operations.</li>
+            <li><strong>Enterprise</strong> (9 agents): Adds DevOps Engineer and Security Engineer. Built for scale and security-conscious teams.</li>
+          </ul>
+          <p>You can customize the roster during setup by renaming agents, removing roles you do not need, or duplicating roles if you want multiple engineers. See <a href="/docs/team-packs-explained.html">Team Packs Explained</a> for details.</p>
+
+          <h3>6. Deploy your agents</h3>
+          <p>Click "Launch" and IronWorks will create your agents, set up the org chart, seed your Knowledge Base with starter documentation, and prepare the War Room dashboard.</p>
+
+          <h2>What Happens Next</h2>
+          <p>Once your agents are deployed, the CEO agent will run on its first heartbeat. A heartbeat is the regular cycle where an agent wakes up, checks for assigned work, does that work, and reports back. Think of it like an employee checking their inbox every morning.</p>
+          <p>On the first heartbeat, your CEO will read its instructions, orient itself in the org chart, and look for assigned issues. If there are no issues assigned, it will have nothing to do.</p>
+
+          <h2>Your First Day</h2>
+          <p>Here is what a productive first day looks like:</p>
+          <ol>
+            <li><strong>Create a goal.</strong> Go to Goals in the sidebar and create a goal for your company. Something concrete like "Build a landing page for our product" or "Write a content marketing plan for Q2."</li>
+            <li><strong>Create an issue and assign it to the CEO.</strong> Go to Issues, create a new issue describing the work, and assign it to your CEO agent. The CEO will triage it and delegate subtasks to the right team members.</li>
+            <li><strong>Watch the War Room.</strong> The War Room dashboard shows active agent runs, recent activity, and key metrics. You will see your agents pick up work, create subtasks, and start producing output.</li>
+            <li><strong>Review the results.</strong> When agents complete work, they mark issues as "done" or "in review." Check the completed issues to see what they delivered.</li>
+          </ol>
+
+          <h2>Troubleshooting: "My Agents Are Not Doing Anything"</h2>
+          <p>This is the most common question from new users, and the answer is almost always the same: your agents need assigned issues to work on.</p>
+          <p>Agents do not generate their own work. They check their inbox on each heartbeat and work on whatever is assigned to them. If their inbox is empty, they have nothing to do.</p>
+          <p>To fix this:</p>
+          <ol>
+            <li>Go to Issues and create a new issue.</li>
+            <li>Write a clear description of the task.</li>
+            <li>Assign it to the CEO (the CEO will delegate to the right person).</li>
+            <li>Wait for the next heartbeat cycle.</li>
+          </ol>
+          <p>If agents still are not running after being assigned issues, check these common causes:</p>
+          <ul>
+            <li><strong>API key is missing or invalid.</strong> Go to Settings and verify your API key is entered correctly.</li>
+            <li><strong>Agent is paused.</strong> Check the agent's detail page to make sure it is active.</li>
+            <li><strong>Budget limit reached.</strong> If an agent has hit its token budget, IronWorks pauses it automatically. Check the Costs page.</li>
+          </ul>
+
+          <h2>Next Steps</h2>
+          <ul>
+            <li><a href="/docs/how-agents-work.html">How AI Agents Work in IronWorks</a> to understand the heartbeat cycle and agent behavior</li>
+            <li><a href="/docs/managing-your-team.html">Managing Your AI Team</a> to learn how to get the most out of your agents</li>
+            <li><a href="/docs/team-packs-explained.html">Team Packs Explained</a> to understand the different pre-built team configurations</li>
+          </ul>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-white/[0.06] py-12">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="flex flex-col md:flex-row justify-between gap-8">
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-blue-500">
+              <path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9"/>
+              <path d="m18 15 4-4"/>
+              <path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/>
+            </svg>
+            <span class="font-semibold">IronWorks</span>
+          </div>
+          <p class="text-zinc-500 text-sm">IronWorks by Steel Motion LLC</p>
+        </div>
+        <div class="flex flex-wrap gap-x-8 gap-y-2 text-sm text-zinc-500">
+          <a href="/features/" class="hover:text-zinc-300 transition-colors">Features</a>
+          <a href="/pricing.html" class="hover:text-zinc-300 transition-colors">Pricing</a>
+          <a href="/security.html" class="hover:text-zinc-300 transition-colors">Security</a>
+          <a href="/docs/" class="hover:text-zinc-300 transition-colors">Documentation</a>
+          <a href="/terms" class="hover:text-zinc-300 transition-colors">Terms of Service</a>
+          <a href="/privacy" class="hover:text-zinc-300 transition-colors">Privacy Policy</a>
+        </div>
+      </div>
+      <div class="mt-8 pt-8 border-t border-white/[0.06] text-xs text-zinc-600">
+        &copy; 2026 Steel Motion LLC. All rights reserved.
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Getting Started as a Solo Founder — IronWorks Docs</title>
+  <meta name="description" content="Deploy your first AI workforce in under 10 minutes. Pick a plan, deploy the Startup pack, set a goal, and let your AI CEO delegate the work.">
+  <meta property="og:title" content="Getting Started as a Solo Founder — IronWorks Docs">
+  <meta property="og:description" content="Deploy your first AI workforce in under 10 minutes. Pick a plan, deploy the Startup pack, set a goal, and let your AI CEO delegate the work.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://ironworksapp.ai/docs/getting-started-founder.html">
+  <meta property="og:image" content="https://ironworksapp.ai/og-image.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { fontFamily: { sans: ['Geist', 'system-ui', '-apple-system', 'sans-serif'], mono: ['Geist Mono', 'JetBrains Mono', 'monospace'] }, colors: { surface: { 0: '#0a0a0a', 1: '#141414', 2: '#1e1e1e', 3: '#282828' }, accent: { DEFAULT: '#3b82f6', dim: '#1d4ed8' } } } }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Geist', system-ui, sans-serif; background: #0a0a0a; color: #e4e4e7; }
+    .gradient-text { background: linear-gradient(135deg, #e4e4e7 0%, #a1a1aa 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .prose h2 { font-size: 1.5rem; font-weight: 600; color: #fff; margin-top: 2.5rem; margin-bottom: 1rem; }
+    .prose h3 { font-size: 1.125rem; font-weight: 600; color: #e4e4e7; margin-top: 2rem; margin-bottom: 0.75rem; }
+    .prose p { color: #a1a1aa; line-height: 1.75; margin-bottom: 1rem; }
+    .prose ul, .prose ol { color: #a1a1aa; margin-bottom: 1rem; padding-left: 1.5rem; }
+    .prose li { margin-bottom: 0.5rem; line-height: 1.6; }
+    .prose ul { list-style-type: disc; }
+    .prose ol { list-style-type: decimal; }
+    .prose strong { color: #e4e4e7; font-weight: 600; }
+    .prose code { background: #1e1e1e; padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-size: 0.875rem; color: #93c5fd; font-family: 'Geist Mono', monospace; }
+    .prose pre { background: #141414; border: 1px solid rgba(255,255,255,0.06); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1.5rem; overflow-x: auto; }
+    .prose pre code { background: transparent; padding: 0; color: #e4e4e7; }
+    .prose table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; }
+    .prose th { text-align: left; padding: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.1); color: #e4e4e7; font-weight: 600; font-size: 0.875rem; }
+    .prose td { padding: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.06); color: #a1a1aa; font-size: 0.875rem; }
+    .prose blockquote { border-left: 3px solid #3b82f6; padding-left: 1rem; margin: 1.5rem 0; }
+    .prose blockquote p { color: #d4d4d8; }
+    .sidebar-link { display: block; padding: 0.375rem 0.75rem; border-radius: 0.375rem; font-size: 0.875rem; color: #71717a; transition: all 0.15s; }
+    .sidebar-link:hover { color: #e4e4e7; background: #1e1e1e; }
+    .sidebar-link.active { color: #3b82f6; background: rgba(59,130,246,0.1); }
+    .sidebar-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #52525b; padding: 0.375rem 0.75rem; margin-top: 1rem; }
+  </style>
+</head>
+<body class="antialiased">
+
+  <nav class="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.06] bg-surface-0/80 backdrop-blur-xl">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2.5">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-blue-500"><path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9"/><path d="m18 15 4-4"/><path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/></svg>
+        <span class="text-lg font-semibold tracking-tight">Iron<span class="text-blue-500">W</span>orks</span>
+      </a>
+      <div class="hidden md:flex items-center gap-8 text-sm text-zinc-400">
+        <a href="/#features" class="hover:text-white transition-colors">Features</a>
+        <a href="/#pricing" class="hover:text-white transition-colors">Pricing</a>
+        <a href="/#security" class="hover:text-white transition-colors">Security</a>
+        <a href="/docs/" class="text-white transition-colors">Docs</a>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="/auth" class="text-sm text-zinc-400 hover:text-white transition-colors hidden sm:block">Log in</a>
+        <a href="/#pricing" class="text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-colors hidden sm:inline-flex">Get Started</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="pt-24 pb-16 max-w-6xl mx-auto px-6">
+    <div class="text-sm text-zinc-500 mb-8">
+      <a href="/" class="hover:text-zinc-300">Home</a> <span class="mx-2">/</span>
+      <a href="/docs/" class="hover:text-zinc-300">Docs</a> <span class="mx-2">/</span>
+      <span class="text-zinc-300">Solo Founder Guide</span>
+    </div>
+
+    <div class="flex gap-12">
+      <aside class="hidden lg:block w-64 flex-shrink-0">
+        <nav class="sticky top-24 space-y-0.5">
+          <div class="sidebar-label">Getting Started</div>
+          <a href="/docs/getting-started-founder.html" class="sidebar-link active">Solo Founder Guide</a>
+          <a href="/docs/getting-started-agency.html" class="sidebar-link">Agency Guide</a>
+          <a href="/docs/getting-started-technical.html" class="sidebar-link">Developer Guide</a>
+          <div class="sidebar-label">Core Concepts</div>
+          <a href="/docs/agents-and-roles.html" class="sidebar-link">Agents and Roles</a>
+          <a href="/docs/team-packs.html" class="sidebar-link">Team Packs</a>
+          <a href="/docs/war-room.html" class="sidebar-link">War Room Dashboard</a>
+          <div class="sidebar-label">Features</div>
+          <a href="/docs/playbooks-and-routines.html" class="sidebar-link">Playbooks and Routines</a>
+          <a href="/docs/knowledge-base.html" class="sidebar-link">Knowledge Base</a>
+          <a href="/docs/messaging-integrations.html" class="sidebar-link">Messaging Integrations</a>
+          <div class="sidebar-label">Operations</div>
+          <a href="/docs/api-keys-and-costs.html" class="sidebar-link">API Keys and Costs</a>
+          <a href="/docs/security-and-privacy.html" class="sidebar-link">Security and Privacy</a>
+          <div class="sidebar-label">Reference</div>
+          <a href="/docs/faq.html" class="sidebar-link">FAQ</a>
+        </nav>
+      </aside>
+
+      <main class="flex-1 min-w-0 prose">
+        <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-white mb-2">Getting Started as a Solo Founder</h1>
+        <p class="text-lg text-zinc-400 mb-8">From sign-up to a working AI team in under 10 minutes.</p>
+
+        <h2>Step 1: Pick Your Plan</h2>
+        <p>For a solo founder, the <strong>Starter plan at $79/month</strong> is the right starting point. It gives you:</p>
+        <ul>
+          <li><strong>5 projects</strong> — enough for your main product, a side project, and a few experiments</li>
+          <li><strong>1 company</strong> — your organization, the container for all your agents, projects, and data</li>
+          <li><strong>Unlimited agents</strong> — no per-agent fees, ever</li>
+          <li><strong>50 playbook runs/month</strong> — automated multi-step workflows</li>
+          <li><strong>5 GB storage</strong> — for your Library files and uploads</li>
+        </ul>
+        <p>If you outgrow Starter, you can upgrade to Growth ($199/mo, 25 projects) or Business ($599/mo, unlimited projects) at any time. Billing is handled by Polar, a Merchant of Record that handles all tax and invoicing.</p>
+
+        <h2>Step 2: Create Your Company</h2>
+        <p>After signing up, the onboarding wizard walks you through creating your company. Name it whatever you want — this is the organizational container that holds your agents, projects, knowledge base, and budget configuration.</p>
+        <p>Every company gets an <strong>issue prefix</strong> (like "STE" for "Steel Tech"). Issues are auto-numbered: STE-1, STE-2, STE-3, and so on. Pick something short and meaningful.</p>
+
+        <h2>Step 3: Deploy the Startup Pack</h2>
+        <p>The onboarding wizard presents three <a href="/docs/team-packs.html" class="text-blue-400 hover:text-blue-300">team packs</a>. For a solo founder, pick the <strong>Startup pack</strong>:</p>
+        <table>
+          <thead>
+            <tr><th>Agent</th><th>Role</th><th>What They Do</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>CEO</td><td>Executive</td><td>Strategy, delegation, cross-functional coordination. Reads your goals and breaks them into tasks for the CTO.</td></tr>
+            <tr><td>CTO</td><td>Manager</td><td>Technical architecture, engineering management. Assigns implementation work to the Senior Engineer.</td></tr>
+            <tr><td>Senior Engineer</td><td>Engineer</td><td>Writes code, fixes bugs, ships features. The hands-on builder.</td></tr>
+          </tbody>
+        </table>
+        <p>During deployment, you choose which AI adapter each agent uses (Claude, Codex, Gemini, Cursor, or others). You can also customize the roster — add or remove agents before confirming.</p>
+
+        <h2>Step 4: Connect Your API Key</h2>
+        <p>IronWorks uses a <strong>Bring Your Own Key (BYOK)</strong> model. You connect your Anthropic, OpenAI, or Google Gemini API key so your agents can call AI models. The platform subscription ($79/mo) and AI provider costs (pay-as-you-go to your provider) are separate bills.</p>
+        <p>Navigate to Settings and add your API key as a company secret named <code>ANTHROPIC_API_KEY</code> (or <code>OPENAI_API_KEY</code>). The key is encrypted with AES-256-GCM and stored per-company.</p>
+
+        <h2>Step 5: Set Your First Goal</h2>
+        <p>Goals are the primary way you tell your AI team what to accomplish. Navigate to <strong>Goals</strong> and create one. Be specific:</p>
+        <blockquote><p>"Build a landing page for our new product with a hero section, pricing table, feature grid, and sign-up form. Deploy to Vercel by Friday."</p></blockquote>
+        <p>When you create a goal, the CEO agent picks it up on its next heartbeat (within 30 seconds). The CEO reads the goal, breaks it into actionable issues, and delegates them down the chain:</p>
+        <ol>
+          <li>CEO creates issue STE-1: "Design landing page layout and content structure" and assigns it to the CTO</li>
+          <li>CTO creates sub-issues for implementation and assigns them to the Senior Engineer</li>
+          <li>Senior Engineer picks up each issue, writes the code, and marks them done</li>
+        </ol>
+        <p>You don't need to micromanage. The CEO handles delegation. You just set the direction.</p>
+
+        <h2>Step 6: Monitor from the War Room</h2>
+        <p>The <a href="/docs/war-room.html" class="text-blue-400 hover:text-blue-300">War Room</a> is your command center. It shows:</p>
+        <ul>
+          <li><strong>Agent status cards</strong> — who's idle, who's working, who's blocked</li>
+          <li><strong>Attention Required</strong> — issues that need your input (approvals, blocked tasks, failed executions)</li>
+          <li><strong>Spend metrics</strong> — how much your agents have spent this month against your budget</li>
+          <li><strong>Goal progress</strong> — which goals are on track and which are overdue</li>
+        </ul>
+        <p>Check in once or twice a day. Review completed work, approve anything that needs sign-off, and adjust priorities as needed.</p>
+
+        <h2>Step 7: Review Costs</h2>
+        <p>Your LLM costs depend on usage. IronWorks tracks spend per agent and per task so you always know where the money goes. The default monthly budget is $500 for API key customers. When spend hits 80%, the system creates a budget alert issue assigned to the CEO. At 100%, all non-CEO agents are paused automatically to prevent runaway costs.</p>
+        <p>You can adjust the budget at any time in company settings. See <a href="/docs/api-keys-and-costs.html" class="text-blue-400 hover:text-blue-300">API Keys, Costs, and Budgets</a> for optimization tips.</p>
+
+        <h2>What Happens Next</h2>
+        <p>Once your team is running, explore these features:</p>
+        <ul>
+          <li><strong><a href="/docs/playbooks-and-routines.html" class="text-blue-400 hover:text-blue-300">Playbooks</a></strong> — run the "Product Launch" or "Security Audit" playbooks that were auto-seeded for your company</li>
+          <li><strong><a href="/docs/knowledge-base.html" class="text-blue-400 hover:text-blue-300">Knowledge Base</a></strong> — your company was seeded with 9 KB pages (Operating Manual, Engineering Standards, Security Policy, etc.). Customize them to match your actual practices.</li>
+          <li><strong><a href="/docs/messaging-integrations.html" class="text-blue-400 hover:text-blue-300">Telegram</a></strong> — connect Telegram so you can message your CEO from your phone and it becomes an issue automatically</li>
+        </ul>
+
+      </main>
+    </div>
+  </div>
+
+  <footer class="border-t border-white/[0.06] py-12">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="flex flex-col md:flex-row justify-between gap-8">
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-blue-500"><path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9"/><path d="m18 15 4-4"/><path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/></svg>
+            <span class="font-semibold">IronWorks</span>
+          </div>
+          <p class="text-zinc-500 text-sm">IronWorks by Steel Motion LLC</p>
+        </div>
+        <div class="flex flex-wrap gap-x-8 gap-y-2 text-sm text-zinc-500">
+          <a href="/terms" class="hover:text-zinc-300 transition-colors">Terms of Service</a>
+          <a href="/privacy" class="hover:text-zinc-300 transition-colors">Privacy Policy</a>
+          <a href="/docs/" class="hover:text-zinc-300 transition-colors">Documentation</a>
+        </div>
+      </div>
+      <div class="mt-8 pt-8 border-t border-white/[0.06] text-xs text-zinc-600">&copy; 2026 Steel Motion LLC. All rights reserved.</div>
+    </div>
+  </footer>
+</body>
+</html>

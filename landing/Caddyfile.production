@@ -1,0 +1,102 @@
+# IronWorks marketing site — production Caddyfile
+# Deploy to: /etc/caddy/Caddyfile on the Contabo VDS
+# Site root: /var/www/ironworksapp.ai
+
+ironworksapp.ai {
+
+  root * /var/www/ironworksapp.ai
+
+  # Serve static files
+  file_server
+
+  # Clean URL rewrites: strip .html extension from requests
+  # e.g. /pricing -> /pricing.html, /docs/faq -> /docs/faq.html
+  @clean_url {
+    not path_regexp \.(html|css|js|svg|png|jpg|jpeg|gif|ico|woff|woff2|ttf|eot|webp|avif|pdf|zip|xml|json|txt)$
+    not path */
+    file {
+      try_files {path}.html
+    }
+  }
+  rewrite @clean_url {path}.html
+
+  # Ensure /docs/ loads /docs/index.html
+  @docs_root {
+    path /docs/
+  }
+  rewrite @docs_root /docs/index.html
+
+  # Ensure /features/ loads /features/index.html
+  @features_root {
+    path /features/
+  }
+  rewrite @features_root /features/index.html
+
+  # Redirect bare /docs to /docs/ (trailing slash canonical)
+  @docs_no_slash {
+    path /docs
+  }
+  redir @docs_no_slash /docs/ 301
+
+  # Redirect bare /features to /features/ (trailing slash canonical)
+  @features_no_slash {
+    path /features
+  }
+  redir @features_no_slash /features/ 301
+
+  # Security headers
+  header {
+    # Prevent clickjacking
+    X-Frame-Options "SAMEORIGIN"
+    # Prevent MIME sniffing
+    X-Content-Type-Options "nosniff"
+    # Enable HTTPS strict transport
+    Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    # Referrer policy
+    Referrer-Policy "strict-origin-when-cross-origin"
+    # Basic content security
+    X-XSS-Protection "1; mode=block"
+    # Remove server header
+    -Server
+  }
+
+  # Cache static assets aggressively
+  @static_assets {
+    path_regexp \.(css|js|svg|png|jpg|jpeg|gif|ico|woff|woff2|ttf|eot|webp|avif)$
+  }
+  header @static_assets Cache-Control "public, max-age=31536000, immutable"
+
+  # Cache HTML with short TTL to allow updates
+  @html_files {
+    path_regexp \.html$
+  }
+  header @html_files Cache-Control "public, max-age=3600, must-revalidate"
+
+  # Cache index pages
+  @index_pages {
+    path */
+  }
+  header @index_pages Cache-Control "public, max-age=3600, must-revalidate"
+
+  # TLS managed automatically by Caddy + Let's Encrypt
+  tls {
+    protocols tls1.2 tls1.3
+  }
+
+  # Log to file
+  log {
+    output file /var/log/caddy/ironworksapp.ai.log {
+      roll_size 50mb
+      roll_keep 5
+    }
+    format json
+  }
+
+  # Gzip / Zstandard compression
+  encode zstd gzip
+}
+
+# Redirect www to apex
+www.ironworksapp.ai {
+  redir https://ironworksapp.ai{uri} 301
+}

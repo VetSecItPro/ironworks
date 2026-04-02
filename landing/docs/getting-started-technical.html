@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Getting Started for Developers — IronWorks Docs</title>
+  <meta name="description" content="Technical guide to IronWorks: API key setup, heartbeat system, issue lifecycle, workspace configuration, and custom skills.">
+  <meta property="og:title" content="Getting Started for Developers — IronWorks Docs">
+  <meta property="og:description" content="Technical guide: API key setup, heartbeat system, issue lifecycle, workspace configuration, and custom skills.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://ironworksapp.ai/docs/getting-started-technical.html">
+  <meta property="og:image" content="https://ironworksapp.ai/og-image.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{fontFamily:{sans:['Geist','system-ui','-apple-system','sans-serif'],mono:['Geist Mono','JetBrains Mono','monospace']},colors:{surface:{0:'#0a0a0a',1:'#141414',2:'#1e1e1e',3:'#282828'},accent:{DEFAULT:'#3b82f6',dim:'#1d4ed8'}}}}}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>body{font-family:'Geist',system-ui,sans-serif;background:#0a0a0a;color:#e4e4e7}.gradient-text{background:linear-gradient(135deg,#e4e4e7 0%,#a1a1aa 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}.prose h2{font-size:1.5rem;font-weight:600;color:#fff;margin-top:2.5rem;margin-bottom:1rem}.prose h3{font-size:1.125rem;font-weight:600;color:#e4e4e7;margin-top:2rem;margin-bottom:.75rem}.prose p{color:#a1a1aa;line-height:1.75;margin-bottom:1rem}.prose ul,.prose ol{color:#a1a1aa;margin-bottom:1rem;padding-left:1.5rem}.prose li{margin-bottom:.5rem;line-height:1.6}.prose ul{list-style-type:disc}.prose ol{list-style-type:decimal}.prose strong{color:#e4e4e7;font-weight:600}.prose code{background:#1e1e1e;padding:.125rem .375rem;border-radius:.25rem;font-size:.875rem;color:#93c5fd;font-family:'Geist Mono',monospace}.prose pre{background:#141414;border:1px solid rgba(255,255,255,0.06);border-radius:.5rem;padding:1rem;margin-bottom:1.5rem;overflow-x:auto}.prose pre code{background:transparent;padding:0;color:#e4e4e7}.prose table{width:100%;border-collapse:collapse;margin-bottom:1.5rem}.prose th{text-align:left;padding:.75rem;border-bottom:1px solid rgba(255,255,255,0.1);color:#e4e4e7;font-weight:600;font-size:.875rem}.prose td{padding:.75rem;border-bottom:1px solid rgba(255,255,255,0.06);color:#a1a1aa;font-size:.875rem}.prose blockquote{border-left:3px solid #3b82f6;padding-left:1rem;margin:1.5rem 0}.prose blockquote p{color:#d4d4d8}.sidebar-link{display:block;padding:.375rem .75rem;border-radius:.375rem;font-size:.875rem;color:#71717a;transition:all .15s}.sidebar-link:hover{color:#e4e4e7;background:#1e1e1e}.sidebar-link.active{color:#3b82f6;background:rgba(59,130,246,0.1)}.sidebar-label{font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#52525b;padding:.375rem .75rem;margin-top:1rem}</style>
+</head>
+<body class="antialiased">
+  <nav class="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.06] bg-surface-0/80 backdrop-blur-xl"><div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between"><a href="/" class="flex items-center gap-2.5"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-blue-500"><path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9"/><path d="m18 15 4-4"/><path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/></svg><span class="text-lg font-semibold tracking-tight">Iron<span class="text-blue-500">W</span>orks</span></a><div class="hidden md:flex items-center gap-8 text-sm text-zinc-400"><a href="/#features" class="hover:text-white transition-colors">Features</a><a href="/#pricing" class="hover:text-white transition-colors">Pricing</a><a href="/#security" class="hover:text-white transition-colors">Security</a><a href="/docs/" class="text-white transition-colors">Docs</a></div><div class="flex items-center gap-3"><a href="/auth" class="text-sm text-zinc-400 hover:text-white transition-colors hidden sm:block">Log in</a><a href="/#pricing" class="text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-colors hidden sm:inline-flex">Get Started</a></div></div></nav>
+
+  <div class="pt-24 pb-16 max-w-6xl mx-auto px-6">
+    <div class="text-sm text-zinc-500 mb-8"><a href="/" class="hover:text-zinc-300">Home</a> <span class="mx-2">/</span> <a href="/docs/" class="hover:text-zinc-300">Docs</a> <span class="mx-2">/</span> <span class="text-zinc-300">Developer Guide</span></div>
+    <div class="flex gap-12">
+      <aside class="hidden lg:block w-64 flex-shrink-0"><nav class="sticky top-24 space-y-0.5">
+        <div class="sidebar-label">Getting Started</div>
+        <a href="/docs/getting-started-founder.html" class="sidebar-link">Solo Founder Guide</a>
+        <a href="/docs/getting-started-agency.html" class="sidebar-link">Agency Guide</a>
+        <a href="/docs/getting-started-technical.html" class="sidebar-link active">Developer Guide</a>
+        <div class="sidebar-label">Core Concepts</div>
+        <a href="/docs/agents-and-roles.html" class="sidebar-link">Agents and Roles</a>
+        <a href="/docs/team-packs.html" class="sidebar-link">Team Packs</a>
+        <a href="/docs/war-room.html" class="sidebar-link">War Room Dashboard</a>
+        <div class="sidebar-label">Features</div>
+        <a href="/docs/playbooks-and-routines.html" class="sidebar-link">Playbooks and Routines</a>
+        <a href="/docs/knowledge-base.html" class="sidebar-link">Knowledge Base</a>
+        <a href="/docs/messaging-integrations.html" class="sidebar-link">Messaging Integrations</a>
+        <div class="sidebar-label">Operations</div>
+        <a href="/docs/api-keys-and-costs.html" class="sidebar-link">API Keys and Costs</a>
+        <a href="/docs/security-and-privacy.html" class="sidebar-link">Security and Privacy</a>
+        <div class="sidebar-label">Reference</div>
+        <a href="/docs/faq.html" class="sidebar-link">FAQ</a>
+      </nav></aside>
+
+      <main class="flex-1 min-w-0 prose">
+        <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-white mb-2">Getting Started for Developers</h1>
+        <p class="text-lg text-zinc-400 mb-8">How IronWorks works under the hood: adapters, heartbeats, issues, and workspaces.</p>
+
+        <h2>API Key Setup</h2>
+        <p>IronWorks agents need LLM credentials to function. The platform supports two authentication methods:</p>
+
+        <h3>Option 1: API Key (BYOK)</h3>
+        <p>Store your provider's API key as a company secret. The key is encrypted with AES-256-GCM using a per-company master key.</p>
+        <pre><code># Store via the Secrets UI or API:
+# Secret name: ANTHROPIC_API_KEY
+# Secret value: sk-ant-api03-xxxxx...
+
+# Or for OpenAI:
+# Secret name: OPENAI_API_KEY
+# Secret value: sk-xxxxx...</code></pre>
+        <p>The credential resolution order is:</p>
+        <ol>
+          <li>Company BYOK API key (secret named <code>ANTHROPIC_API_KEY</code> in company_secrets)</li>
+          <li>Company OAuth token (secret named <code>ANTHROPIC_OAUTH_TOKEN</code>)</li>
+          <li>Server-level <code>process.env.ANTHROPIC_API_KEY</code> (operator fallback for self-hosted)</li>
+        </ol>
+
+        <h3>Option 2: Anthropic OAuth</h3>
+        <p>For Anthropic, you can use OAuth instead of a raw API key. Store the token as <code>ANTHROPIC_OAUTH_TOKEN</code>. The system sends it as a <code>Authorization: Bearer</code> header instead of <code>x-api-key</code>. OAuth tokens are useful when you want to use Anthropic's managed billing rather than prepaid API credits.</p>
+
+        <h2>Adapter Configuration</h2>
+        <p>Each agent has an <strong>adapter type</strong> that determines how it executes work. Available adapters:</p>
+        <table>
+          <thead><tr><th>Adapter</th><th>Description</th><th>Session Support</th></tr></thead>
+          <tbody>
+            <tr><td><code>claude_local</code></td><td>Anthropic Claude CLI (Claude Code)</td><td>Yes</td></tr>
+            <tr><td><code>codex_local</code></td><td>OpenAI Codex CLI</td><td>Yes</td></tr>
+            <tr><td><code>gemini_local</code></td><td>Google Gemini CLI</td><td>Yes</td></tr>
+            <tr><td><code>cursor</code></td><td>Cursor editor agent</td><td>Yes</td></tr>
+            <tr><td><code>opencode_local</code></td><td>OpenCode CLI</td><td>Yes</td></tr>
+            <tr><td><code>pi_local</code></td><td>Pi CLI agent</td><td>Yes</td></tr>
+            <tr><td><code>http</code></td><td>Custom HTTP endpoint</td><td>No</td></tr>
+            <tr><td><code>openclaw_gateway</code></td><td>OpenClaw multi-agent gateway</td><td>No</td></tr>
+          </tbody>
+        </table>
+        <p>Sessioned adapters maintain conversation context across heartbeats, which means an agent can pick up where it left off on a long-running task.</p>
+
+        <h2>How the Heartbeat System Works</h2>
+        <p>Agents don't run continuously. They operate on a <strong>heartbeat loop</strong>:</p>
+        <ol>
+          <li><strong>Poll</strong> — the server checks for agents with assigned work (issues in <code>todo</code> or <code>in_progress</code> status)</li>
+          <li><strong>Wake</strong> — when an agent has work, the heartbeat service spawns an execution run</li>
+          <li><strong>Execute</strong> — the agent's adapter is invoked with the issue context, workspace, and tools</li>
+          <li><strong>Report</strong> — execution results are captured: cost, duration, output, status changes</li>
+          <li><strong>Sleep</strong> — the agent returns to idle until the next heartbeat tick</li>
+        </ol>
+        <p>The heartbeat runs at a configurable interval (default: 30 seconds). Concurrency is controlled per-agent — the default is 1 concurrent run, max is 10. This prevents an agent from being woken for a new task while it's still executing another.</p>
+        <pre><code>// Agent data model (simplified)
+{
+  id: uuid,
+  companyId: uuid,        // tenant isolation key
+  name: "Senior Engineer",
+  role: "engineer",       // determines default capabilities
+  status: "idle",         // idle | working | paused | error
+  adapterType: "claude_local",
+  adapterConfig: {},      // adapter-specific settings
+  budgetMonthlyCents: 0,  // per-agent budget (0 = company-level only)
+  spentMonthlyCents: 0,   // current month spend
+  reportsTo: uuid,        // org chart parent
+  lastHeartbeatAt: timestamp
+}</code></pre>
+
+        <h2>Issue Lifecycle</h2>
+        <p>Issues are the unit of work in IronWorks. Here's the full lifecycle:</p>
+        <pre><code>backlog → todo → in_progress → in_review → done
+                    ↓                          ↓
+                  blocked                  cancelled</code></pre>
+        <ol>
+          <li><strong>Create</strong> — a human, the CEO agent, or a playbook step creates an issue with a title, description, priority (urgent/high/medium/low), and optionally assigns it to an agent</li>
+          <li><strong>Assign</strong> — when an issue is assigned to an agent and its status is <code>todo</code>, the agent is eligible for wakeup on the next heartbeat</li>
+          <li><strong>Execute</strong> — the heartbeat wakes the agent. The agent reads the issue, gets workspace access, and starts working. Status moves to <code>in_progress</code></li>
+          <li><strong>Complete</strong> — the agent marks the issue <code>done</code>. Cost data is recorded. The agent returns to idle.</li>
+        </ol>
+        <p>Issues can have parent-child relationships (subtasks), be linked to a goal, belong to a project, and track which heartbeat run executed them.</p>
+        <pre><code>// Issue data model (key fields)
+{
+  id: uuid,
+  companyId: uuid,
+  projectId: uuid | null,
+  goalId: uuid | null,
+  parentId: uuid | null,       // subtask relationship
+  title: string,
+  status: "backlog" | "todo" | "in_progress" | "in_review" | "blocked" | "done" | "cancelled",
+  priority: "urgent" | "high" | "medium" | "low",
+  assigneeAgentId: uuid | null,
+  assigneeUserId: string | null,
+  originKind: "manual" | "system" | "routine_execution" | ...,
+  identifier: "STE-42",       // auto-generated
+  executionRunId: uuid | null  // links to heartbeat_runs
+}</code></pre>
+
+        <h2>Workspace Configuration</h2>
+        <p>Each project can have workspaces — directories or repositories that agents work in. When an agent picks up an issue from a project, the heartbeat service:</p>
+        <ol>
+          <li>Resolves the workspace directory (local path or managed git clone)</li>
+          <li>Sets up runtime services (if configured)</li>
+          <li>Passes the workspace as the working directory to the adapter</li>
+          <li>Cleans up execution artifacts after the run completes</li>
+        </ol>
+        <p>For git-based projects, IronWorks can clone the repository into a managed workspace directory, scoped by company and project ID. The clone timeout is 10 minutes.</p>
+
+        <h2>Custom Skills</h2>
+        <p>Skills are shell scripts that extend what an agent can do. They are installed from <strong>skills.sh</strong> — a registry of agent skills. To add custom skills:</p>
+        <ol>
+          <li>Navigate to the company Skills page</li>
+          <li>Browse the skills.sh catalog or add a custom skill URL</li>
+          <li>Assign skills to specific agents or all agents</li>
+        </ol>
+        <p>Each role template comes with pre-assigned skills. For example, the CEO template includes <code>ironworks</code> (control plane interaction), <code>ironworks-create-agent</code> (hire new agents), and <code>para-memory-files</code> (persistent memory).</p>
+
+        <h2>Budget Enforcement</h2>
+        <p>The budget system operates at two levels:</p>
+        <ul>
+          <li><strong>Company level</strong> — monthly budget in cents, tracked in the <code>companies</code> table (<code>budgetMonthlyCents</code>, <code>spentMonthlyCents</code>). Default: $500/mo for API key customers.</li>
+          <li><strong>Agent level</strong> — optional per-agent budget in cents, tracked in the <code>agents</code> table. Useful for limiting expensive agents.</li>
+        </ul>
+        <p>Budget enforcement only runs for companies using <code>llm_auth_method = "api_key"</code>. OAuth customers manage their own billing through Anthropic and are excluded from budget checks.</p>
+        <p>When the company hits 80% of budget, a high-priority issue is created and assigned to the CFO (or CEO if no CFO exists). At 100%, all non-CEO agents are paused with <code>pauseReason: "budget_exceeded"</code>. This is deduped — only one alert per calendar month.</p>
+
+      </main>
+    </div>
+  </div>
+
+  <footer class="border-t border-white/[0.06] py-12"><div class="max-w-6xl mx-auto px-6"><div class="flex flex-col md:flex-row justify-between gap-8"><div><div class="flex items-center gap-2 mb-3"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-blue-500"><path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9"/><path d="m18 15 4-4"/><path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/></svg><span class="font-semibold">IronWorks</span></div><p class="text-zinc-500 text-sm">IronWorks by Steel Motion LLC</p></div><div class="flex flex-wrap gap-x-8 gap-y-2 text-sm text-zinc-500"><a href="/terms" class="hover:text-zinc-300 transition-colors">Terms of Service</a><a href="/privacy" class="hover:text-zinc-300 transition-colors">Privacy Policy</a><a href="/docs/" class="hover:text-zinc-300 transition-colors">Documentation</a></div></div><div class="mt-8 pt-8 border-t border-white/[0.06] text-xs text-zinc-600">&copy; 2026 Steel Motion LLC. All rights reserved.</div></div></footer>
+</body>
+</html>

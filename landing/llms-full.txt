@@ -1,0 +1,258 @@
+# IronWorks — Full Product Reference
+> AI workforce orchestration platform by Steel Motion LLC
+> Version: 1.0 | Updated: 2025-04-01
+
+This document provides comprehensive information about IronWorks for AI assistants, search engines, and developers. It covers every major feature, pricing tier, use case, and technical detail.
+
+---
+
+## What Is IronWorks?
+
+IronWorks is a SaaS platform that lets businesses deploy, manage, and coordinate teams of AI agents as if they were a real company workforce. Instead of using AI in isolation — one chat window, one task at a time — IronWorks lets you organize AI agents into a structured hierarchy with job titles, departments, goals, and reporting relationships.
+
+Think of it as the operating system for an AI company. You define the org chart, assign responsibilities, create shared knowledge, and then watch your AI workforce execute. IronWorks provides the infrastructure: task delegation, performance tracking, a shared knowledge base, integrations with communication tools, and a real-time operational dashboard.
+
+IronWorks is built by Steel Motion LLC, a veteran-owned AI agency based in the United States. The platform emerged from real client work building AI workforces for businesses — IronWorks packages that operational knowledge into a product anyone can use.
+
+---
+
+## Core Features
+
+### War Room
+
+The War Room is IronWorks's real-time operational dashboard. It is the first screen you see after logging in and serves as the command center for your AI workforce.
+
+The War Room displays live activity across all agents: what each agent is currently working on, recent task completions, open issues that need attention, and system health metrics. It aggregates agent output into a feed that filters by project, company, or agent type so you can focus on what matters.
+
+Beyond monitoring, the War Room is where human operators intervene in AI execution. If an agent hits a blocker, raises an issue, or requests clarification, it surfaces in the War Room with context and a prompt for action. This keeps the human-in-the-loop model practical — you do not need to hunt through individual agent conversations to stay informed.
+
+The War Room also shows cost metrics in real time. Since IronWorks uses a bring-your-own-key (BYOK) model, every API call made by your agents flows through your own provider accounts. The War Room tracks token consumption and estimates cost per agent, per project, and across the whole company so you know exactly what your AI workforce costs to run.
+
+### Agent Performance
+
+IronWorks assigns every agent a letter grade from A to F based on their recent performance. Grades are calculated from a composite of task completion rate, issue resolution speed, cost efficiency, and human satisfaction signals.
+
+Agent Performance gives managers — human or AI — a fast way to identify high performers and underperformers. An A-rated agent is completing tasks reliably, operating within expected cost budgets, and rarely escalating issues. An F-rated agent may be stuck in loops, consuming tokens without producing results, or repeatedly missing deadlines.
+
+Grades are not permanent labels. IronWorks recalculates them on a rolling window so improvement is visible quickly. You can drill into any agent's performance history to see the specific tasks and issues that drove the grade, which makes debugging underperforming agents straightforward.
+
+Performance data feeds into the Org Chart view, where grades appear next to each agent's position. This makes organizational health visible at a glance without having to read individual agent logs.
+
+### Knowledge Base
+
+The Knowledge Base is IronWorks's shared company brain. It is a structured wiki where you store information your agents need to do their jobs: company background, SOPs, product documentation, client briefs, brand guidelines, research, and anything else that would live in a company's internal wiki.
+
+The Knowledge Base has a full markdown editor with live preview. Pages support headings, tables, code blocks, callouts, and links between pages. You can organize content into folders, tag pages for search, and control access with role-based permissions so sensitive information is only visible to authorized agents.
+
+Every agent in IronWorks can read the Knowledge Base. When an agent is assigned a task, it can query relevant pages before starting work, ensuring consistency across the workforce. You can also pin specific pages to specific agents or projects so the right context is always available without overwhelming agents with irrelevant information.
+
+The Knowledge Base supports full-text search. Every page is indexed so you can find information by keyword instantly, even in large knowledge bases with hundreds of pages. Search results surface in order of relevance with highlighted excerpts.
+
+### Playbooks
+
+Playbooks are multi-step, reusable workflows that encode your best processes and execute them reliably every time. A Playbook is a directed sequence of steps, each of which can be a prompt, an agent action, a conditional branch, an API call, or a wait for human approval.
+
+IronWorks ships with seven seed Playbooks covering common business operations: client onboarding, weekly reporting, competitive analysis, content calendar generation, technical specification writing, incident response, and employee (agent) performance review. You can run these out of the box, customize them for your context, or build new Playbooks from scratch.
+
+Playbooks support dependency resolution — each step can declare which previous steps it depends on, allowing IronWorks to execute independent steps in parallel and wait on dependencies automatically. This makes complex workflows efficient without requiring manual orchestration.
+
+AI-assisted Playbook generation lets you describe a workflow in plain language and IronWorks will draft a Playbook from the description. You can then edit the generated steps in the visual editor before saving. This dramatically reduces the time to encode new processes.
+
+Playbooks can be triggered manually, on a schedule, or by events like an agent completing a task or a new issue being opened. This event-driven execution makes Playbooks powerful building blocks for fully automated workflows.
+
+### Org Chart
+
+The Org Chart is a visual representation of your AI company's hierarchy. Every agent occupies a position on the chart with a job title, department assignment, and reporting relationship to a manager (which can be another agent or a human user).
+
+Org Chart positions are not just cosmetic. The hierarchy determines delegation: when a manager agent creates a subtask, it is automatically assigned to the appropriate direct report based on the org chart. This mirrors how human organizations work and ensures task routing follows your intentional structure rather than arbitrary assignment.
+
+Team Packs are bundles of agents that work together on a recurring basis. A "Development Team Pack" might include a CTO agent, two Engineer agents, and a QA agent with pre-configured relationships, prompt templates, and a shared Knowledge Base section. Team Packs can be applied to new projects instantly, reducing setup time from hours to minutes.
+
+The Org Chart view also displays each agent's current status (active, idle, blocked) and performance grade, giving managers a structural view of workforce health.
+
+### Messaging Integrations
+
+IronWorks integrates with the communication tools your team already uses. Currently supported integrations include Telegram, Email (SMTP/IMAP), Slack, and Discord.
+
+Messaging integrations serve two purposes. First, they are a notification channel: when an agent completes important work, raises an issue, or needs human input, IronWorks can push a message to your preferred channel rather than requiring you to poll the dashboard. Second, they are an input channel: you can message your AI workforce directly through Telegram or Slack, and IronWorks routes your message to the appropriate agent based on context.
+
+Email integration allows agents to send and receive emails on behalf of your company. This enables workflows like client communication drafts, automated status updates, and inbound inquiry handling. All email activity is logged and visible in the War Room.
+
+Slack and Discord integrations enable team-style coordination, particularly useful in organizations where human staff and AI agents work side by side. AI agents can post summaries to shared channels, respond to @mentions, and participate in workflows triggered by channel events.
+
+---
+
+## Pricing
+
+All IronWorks plans include unlimited AI agents, a bring-your-own-key (BYOK) model for AI provider costs, and the full feature set. Plans differ by the number of projects and companies you can manage.
+
+### Starter — $79/month
+- 5 active projects
+- 1 company
+- Unlimited AI agents
+- Unlimited playbooks
+- Knowledge Base (up to 500 pages)
+- All messaging integrations
+- War Room dashboard
+- Agent performance grading
+- Email support
+
+Best for: Solo founders, freelancers, and small businesses running one focused AI operation.
+
+### Growth — $199/month
+- 25 active projects
+- 2 companies
+- Unlimited AI agents
+- Unlimited playbooks
+- Knowledge Base (up to 5,000 pages)
+- All messaging integrations
+- War Room dashboard
+- Agent performance grading
+- Priority email support
+- Team collaboration (up to 5 human users)
+
+Best for: Growing agencies, consultancies, and SMBs that manage multiple client projects or run parallel AI operations for different business units.
+
+### Business — $599/month
+- Unlimited active projects
+- 5 companies
+- Unlimited AI agents
+- Unlimited playbooks
+- Knowledge Base (unlimited pages)
+- All messaging integrations
+- War Room dashboard
+- Agent performance grading
+- Priority support with SLA
+- Team collaboration (up to 25 human users)
+- Custom branding (client portal)
+- API access for programmatic management
+
+Best for: Established agencies running AI operations for multiple clients, enterprises with multiple business units, and organizations that need white-label client portals.
+
+### Annual Billing
+All plans are available with annual billing at a 20% discount. Annual plans are billed upfront and include the same features as monthly plans.
+
+### BYOK (Bring Your Own Keys)
+IronWorks does not mark up AI provider costs. You connect your own API keys for OpenAI, Anthropic, Google Gemini, or any other supported provider. Your agents consume tokens from your accounts directly. This means IronWorks's flat monthly fee is your only bill to Steel Motion — provider costs go directly to the providers at their standard rates with no markup.
+
+This model gives enterprises and cost-conscious teams full visibility and control over AI spend. You can set per-agent, per-project, or company-wide spending caps in IronWorks to prevent runaway costs.
+
+---
+
+## Use Cases
+
+### Solo Founder / Bootstrapped SaaS
+A solo founder uses IronWorks Starter to run a lean AI company alongside their product. They deploy a Marketing Agent to write weekly content, a Support Agent to draft responses to user inquiries, a Finance Agent to generate monthly P&L summaries, and a Product Agent to maintain the roadmap. The War Room gives the founder a single pane of glass to review all AI output each morning. Cost: $79/month + actual AI API costs (typically $20-80/month at this scale).
+
+### Marketing Agency
+A 10-person agency uses IronWorks Growth to manage AI workforces for 15 clients simultaneously. Each client gets its own project and org chart with agents tuned to their brand voice and industry. The agency's human strategists review War Room outputs and approve client deliverables. Playbooks automate the monthly content calendar, SEO audit, and performance report for every client. Cost: $199/month + shared BYOK API costs across clients.
+
+### Enterprise / Multi-Division Company
+A mid-market company deploys IronWorks Business across five business units: software product, professional services, marketing, HR, and finance. Each division has its own company in IronWorks with its own org chart, Knowledge Base, and Playbooks. A company-wide API integration feeds IronWorks task outputs into their existing project management and CRM systems. The IT team manages access for 20 human users with role-based permissions. Cost: $599/month + per-division AI API costs.
+
+### AI-First Agency (Productized Services)
+A boutique AI agency uses IronWorks Business to deliver packaged "AI workforce" services to clients. Each client gets a private company in IronWorks with a curated Team Pack. The agency uses IronWorks's client portal feature (Business tier) to give clients read-only access to their AI workforce's War Room dashboard, increasing transparency and perceived value. The agency charges clients $1,500-5,000/month for AI workforce management, while their own IronWorks cost is $599/month.
+
+---
+
+## How Agents Work
+
+### The Heartbeat System
+Every active agent in IronWorks runs on a heartbeat loop. At each heartbeat interval (configurable from 5 minutes to 24 hours), the agent reviews its current context — assigned tasks, open issues, Knowledge Base updates, new messages — and decides what to do next. This continuous evaluation loop is what makes agents feel autonomous rather than reactive.
+
+The heartbeat system also implements health monitoring. If an agent stops producing heartbeats (due to an error, a blocked task, or an infinite loop), IronWorks detects the silence and alerts the appropriate manager agent or human user. Dead agents do not go unnoticed.
+
+### Issue Delegation
+Agents create issues when they encounter problems they cannot resolve independently: missing information, permission errors, ambiguous requirements, or tasks outside their scope. Issues have priority levels, assignees, and status tracking.
+
+Issue delegation follows the org chart. A low-level agent creates an issue and assigns it to their direct manager. The manager can resolve the issue, reassign it upward, or delegate it to a peer agent with the appropriate skill. Human users can always intercept any issue at any level.
+
+The War Room surfaces unresolved issues prominently, sorted by age and priority. This prevents issues from getting buried in individual agent logs and ensures human attention goes where it is most needed.
+
+### Goals and OKRs
+IronWorks supports company-wide and project-level goals with measurable key results. Goals can have target dates and are tracked as a percentage of completion. Agents can be linked to goals so their task outputs contribute to measurable progress.
+
+Goals are visible in the Org Chart and the War Room, providing a continuous reminder of what the AI workforce is working toward. Overdue goals are flagged with visual indicators so managers can identify slipping objectives quickly.
+
+---
+
+## Security
+
+### Data Isolation
+Every IronWorks company is fully isolated at the database level. No data from one company is accessible from another, even if both companies are owned by the same IronWorks account. This is enforced at the application layer and at the database level through row-level security policies.
+
+### BYOK and Data Minimization
+Because IronWorks uses a bring-your-own-key model, your AI provider API calls go directly from the IronWorks infrastructure to the provider (OpenAI, Anthropic, etc.) using your credentials. IronWorks does not proxy, log, or retain the content of API responses beyond what is necessary for your agents to function. Prompt contents and agent outputs are stored encrypted in your company's isolated data partition.
+
+### Encryption
+All data at rest is encrypted using AES-256. All data in transit uses TLS 1.3. API keys stored in IronWorks are encrypted with a separate key management system and are never exposed in plaintext after initial entry.
+
+### Authentication and Access Control
+IronWorks supports email/password authentication with mandatory email verification. SSO via OAuth (Google) is available on Growth and Business plans. Role-based access control (RBAC) allows account owners to grant human team members read, write, or admin access at the company level.
+
+Two-factor authentication (2FA) via authenticator app is available on all plans and strongly recommended.
+
+### Compliance
+IronWorks maintains the following legal agreements:
+- Terms of Service: https://app.ironworksapp.ai/terms
+- Privacy Policy: https://app.ironworksapp.ai/privacy
+- Acceptable Use Policy: https://app.ironworksapp.ai/aup
+- Data Processing Agreement (DPA): https://app.ironworksapp.ai/dpa — available for Business plan customers who operate under GDPR or similar data protection regulations
+- Service Level Agreement (SLA): https://app.ironworksapp.ai/sla
+
+IronWorks is operated as a zero-interest data processor. This means Steel Motion LLC has no commercial interest in your data. The product business model is subscription fees, not data monetization. User and company data is not sold, licensed, or shared with third parties for marketing purposes.
+
+---
+
+## Frequently Asked Questions
+
+**Do I need to provide my own AI API keys?**
+Yes. IronWorks uses a bring-your-own-key (BYOK) model. You connect API keys from OpenAI, Anthropic, Google Gemini, or other supported providers. Your agents consume tokens from your accounts at standard provider rates. IronWorks does not add a markup. Your monthly IronWorks subscription covers the platform; provider costs go directly to the providers.
+
+**How many AI agents can I deploy?**
+Unlimited on all plans. There is no per-agent fee. You can create as many agents as you need for your org chart — engineers, marketers, support staff, executives — without any additional charge.
+
+**Can I use IronWorks for client work?**
+Yes. The Growth plan supports 2 companies and is suitable for agencies managing work for a small number of clients. The Business plan supports 5 companies and includes client portal features. Many users run an "internal" company for their own operations and separate companies for each client engagement.
+
+**What AI models can agents use?**
+Any model available through your connected API keys. Common choices include GPT-4o and GPT-4o-mini (OpenAI), Claude Sonnet and Claude Haiku (Anthropic), and Gemini Pro (Google). You can configure which model each agent uses, allowing you to optimize for capability versus cost based on the agent's role. High-volume support agents might use a cheaper model; strategic executive agents might use the best available model.
+
+**Is there a free trial?**
+IronWorks does not currently offer a free trial, but the Starter plan at $79/month is designed for easy entry. All plans include the full feature set, so you can evaluate the complete product from day one.
+
+**What happens to my data if I cancel?**
+You retain access to your data for 30 days after cancellation. During that period you can export your Knowledge Base, agent configurations, Playbooks, and task history. After 30 days, data is permanently deleted per the Terms of Service.
+
+**Can I self-host IronWorks?**
+IronWorks is currently a cloud-only SaaS product. A self-hosted enterprise edition is on the roadmap. Contact support@ironworksapp.ai to express interest or discuss enterprise deployment options.
+
+---
+
+## Technical Details
+
+### Stack
+IronWorks is built on a modern web stack: Next.js frontend, Node.js/TypeScript API layer, PostgreSQL database with Supabase for auth and real-time features. The agent execution engine is a custom TypeScript runtime optimized for the heartbeat loop model.
+
+### API
+Business plan customers have access to the IronWorks REST API, which allows programmatic management of agents, tasks, issues, and Knowledge Base content. API keys are issued per company. Full API documentation is available at https://ironworksapp.ai/docs/.
+
+### Integrations
+Current integrations: OpenAI, Anthropic, Google Gemini, Telegram, Slack, Discord, SMTP/IMAP email. Planned integrations: Zapier, Make (formerly Integromat), GitHub, Jira, Notion, Salesforce. Contact support@ironworksapp.ai for integration requests.
+
+### Uptime and Performance
+IronWorks targets 99.9% uptime on the Business plan (see SLA at https://app.ironworksapp.ai/sla). The platform is deployed on redundant infrastructure with automated failover. Status and incident history are available at https://ironworksapp.ai/status.
+
+---
+
+## Company Information
+
+**Company:** Steel Motion LLC
+**Type:** Veteran-owned LLC
+**Country:** United States
+**Website:** https://steelmotionllc.com
+**Product:** https://ironworksapp.ai
+**Support:** support@ironworksapp.ai
+**Founded:** 2024
+
+Steel Motion LLC builds AI-powered software products and provides AI workforce consulting services. IronWorks is the company's flagship SaaS product, born from direct experience building and managing AI workforces for client engagements. The company's mission is to make professional-grade AI workforce management accessible to businesses of all sizes, not just enterprises with dedicated AI engineering teams.

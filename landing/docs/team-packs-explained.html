@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Team Packs Explained — IronWorks Documentation</title>
+  <meta name="description" content="Compare IronWorks Startup, Agency, and Enterprise team packs. Understand who is on each team and how to customize the roster.">
+  <meta property="og:title" content="Team Packs Explained — IronWorks Documentation">
+  <meta property="og:description" content="Compare Startup, Agency, and Enterprise packs. Pre-built AI teams with real roles and org charts.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://ironworksapp.ai/docs/team-packs-explained.html">
+  <meta property="og:image" content="https://ironworksapp.ai/og-image.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Team Packs Explained — IronWorks Documentation">
+  <meta name="twitter:image" content="https://ironworksapp.ai/og-image.svg">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Geist', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['Geist Mono', 'JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            surface: { 0: '#0a0a0a', 1: '#141414', 2: '#1e1e1e', 3: '#282828' },
+            accent: { DEFAULT: '#3b82f6', dim: '#1d4ed8' },
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Geist', system-ui, sans-serif; background: #0a0a0a; color: #e4e4e7; }
+    .prose h2 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; margin-top: 2.5rem; margin-bottom: 1rem; color: #fff; }
+    .prose h3 { font-size: 1.125rem; font-weight: 600; margin-top: 2rem; margin-bottom: 0.75rem; color: #e4e4e7; }
+    .prose p { color: #a1a1aa; line-height: 1.75; margin-bottom: 1rem; }
+    .prose ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 1rem; color: #a1a1aa; }
+    .prose ol { list-style: decimal; padding-left: 1.5rem; margin-bottom: 1rem; color: #a1a1aa; }
+    .prose li { margin-bottom: 0.4rem; line-height: 1.7; }
+    .prose strong { color: #e4e4e7; font-weight: 600; }
+    .prose a { color: #60a5fa; text-decoration: underline; text-underline-offset: 2px; }
+    .prose a:hover { color: #93c5fd; }
+    .prose table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; font-size: 0.9rem; }
+    .prose th { text-align: left; padding: 0.6rem 0.75rem; border-bottom: 1px solid #282828; color: #e4e4e7; font-weight: 600; }
+    .prose td { padding: 0.6rem 0.75rem; border-bottom: 1px solid #1e1e1e; color: #a1a1aa; }
+  </style>
+</head>
+<body class="antialiased">
+
+  <!-- Nav -->
+  <nav class="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.06] bg-[#0a0a0a]/80 backdrop-blur-xl">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2.5">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-blue-500">
+          <path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9"/>
+          <path d="m18 15 4-4"/>
+          <path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/>
+        </svg>
+        <span class="text-lg font-semibold tracking-tight">Iron<span class="text-blue-500">W</span>orks</span>
+      </a>
+      <div class="hidden md:flex items-center gap-8 text-sm text-zinc-400">
+        <a href="/features/" class="hover:text-white transition-colors">Features</a>
+        <a href="/pricing.html" class="hover:text-white transition-colors">Pricing</a>
+        <a href="/security.html" class="hover:text-white transition-colors">Security</a>
+        <a href="/docs/" class="text-white transition-colors">Docs</a>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="/auth" class="text-sm text-zinc-400 hover:text-white transition-colors hidden sm:block">Log in</a>
+        <a href="/pricing.html" class="text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-colors hidden sm:inline-flex">Get Started</a>
+        <button onclick="document.getElementById('mobile-nav').classList.toggle('hidden')" class="md:hidden p-2 text-zinc-400 hover:text-white" aria-label="Toggle navigation">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="mobile-nav" class="hidden md:hidden border-t border-white/[0.06] bg-[#0a0a0a]/95 backdrop-blur-xl">
+      <div class="max-w-6xl mx-auto px-6 py-4 flex flex-col gap-3 text-sm">
+        <a href="/features/" class="text-zinc-400 hover:text-white py-2 transition-colors">Features</a>
+        <a href="/pricing.html" class="text-zinc-400 hover:text-white py-2 transition-colors">Pricing</a>
+        <a href="/security.html" class="text-zinc-400 hover:text-white py-2 transition-colors">Security</a>
+        <a href="/docs/" class="text-white py-2 transition-colors">Docs</a>
+        <a href="/auth" class="text-zinc-400 hover:text-white py-2 transition-colors">Log in</a>
+        <a href="/pricing.html" class="bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-medium px-4 py-3 rounded-lg text-center transition-colors">Get Started</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="pt-16 flex min-h-screen">
+
+    <!-- Sidebar -->
+    <aside class="hidden lg:block w-64 shrink-0 border-r border-white/[0.06] sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto">
+      <nav class="p-6 space-y-1">
+        <p class="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4">Documentation</p>
+        <a href="/docs/" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors">Overview</a>
+        <a href="/docs/getting-started.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors">Getting Started</a>
+        <a href="/docs/how-agents-work.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors">How Agents Work</a>
+        <a href="/docs/managing-your-team.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors">Managing Your Team</a>
+        <a href="/docs/team-packs-explained.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-white/[0.06] text-white font-medium">Team Packs Explained</a>
+        <a href="/docs/api-keys-and-costs.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors">API Keys &amp; Costs</a>
+        <a href="/docs/knowledge-base-guide.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors">Knowledge Base Guide</a>
+        <a href="/docs/security-and-privacy.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors">Security &amp; Privacy</a>
+        <a href="/docs/faq.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors">FAQ</a>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 min-w-0">
+      <div class="max-w-3xl mx-auto px-6 py-12">
+
+        <!-- Breadcrumb -->
+        <nav class="flex items-center gap-2 text-sm text-zinc-500 mb-8">
+          <a href="/docs/" class="hover:text-zinc-300 transition-colors">Docs</a>
+          <span>/</span>
+          <span class="text-zinc-300">Team Packs Explained</span>
+        </nav>
+
+        <div class="prose">
+          <h1 class="text-3xl md:text-4xl font-bold tracking-tight mb-2 text-white">Team Packs: Pre-Built AI Teams</h1>
+          <p class="text-zinc-500 text-sm mb-10">Compare Startup, Agency, and Enterprise packs and learn how to customize your roster.</p>
+
+          <h2>What Are Team Packs?</h2>
+          <p>Team packs are pre-configured groups of AI agents designed for different business sizes and needs. Instead of building your team from scratch, you pick a pack during onboarding and get a working team with roles, reporting lines, skills, and instructions already set up.</p>
+          <p>Each agent in a pack comes with a complete SOUL.md (personality and values) and AGENTS.md (operating procedures) tailored to their role. The org chart, delegation rules, and communication patterns are all configured automatically.</p>
+          <p>You can always customize agents after deployment. Team packs are a starting point, not a locked-in configuration.</p>
+
+          <h2>Startup Pack</h2>
+          <p><strong>Best for:</strong> Solo founders, small projects, technical work, prototyping.</p>
+          <p>The Startup pack is a lean three-person team:</p>
+          <table>
+            <thead><tr><th>Agent</th><th>Role</th><th>What They Do</th></tr></thead>
+            <tbody>
+              <tr><td>CEO</td><td>Executive</td><td>Receives tasks from you, triages them, delegates to the CTO. Makes strategic decisions and resolves conflicts.</td></tr>
+              <tr><td>CTO</td><td>Manager</td><td>Owns technical direction. Makes architecture decisions, delegates implementation to the engineer, reviews completed work.</td></tr>
+              <tr><td>Senior Engineer</td><td>Individual Contributor</td><td>Writes code, fixes bugs, implements features, and submits work for CTO review.</td></tr>
+            </tbody>
+          </table>
+          <p><strong>Org chart:</strong> You (Board) &gt; CEO &gt; CTO &gt; Senior Engineer</p>
+          <p>This pack is good for getting started quickly when your primary need is technical work. The CEO handles prioritization so you do not have to micromanage the engineer directly. If you need marketing, finance, or HR capabilities later, you can add agents individually.</p>
+
+          <h2>Agency Pack</h2>
+          <p><strong>Best for:</strong> Agencies, consulting firms, small businesses with both technical and marketing needs.</p>
+          <p>The Agency pack is a full-service team of seven agents:</p>
+          <table>
+            <thead><tr><th>Agent</th><th>Role</th><th>What They Do</th></tr></thead>
+            <tbody>
+              <tr><td>CEO</td><td>Executive</td><td>Top-level strategy, delegation, and cross-functional coordination.</td></tr>
+              <tr><td>CTO</td><td>Manager</td><td>Technical leadership and engineering management.</td></tr>
+              <tr><td>CMO</td><td>Manager</td><td>Marketing strategy, brand, and content team leadership.</td></tr>
+              <tr><td>CFO</td><td>VP</td><td>Financial oversight, budget monitoring, cost optimization.</td></tr>
+              <tr><td>VP of HR</td><td>VP</td><td>Agent hiring, performance reviews, onboarding, org design.</td></tr>
+              <tr><td>Senior Engineer</td><td>IC</td><td>Code implementation, bug fixes, feature development.</td></tr>
+              <tr><td>Content Marketer</td><td>IC</td><td>Blog posts, social media, email campaigns, SEO content.</td></tr>
+            </tbody>
+          </table>
+          <p><strong>Org chart:</strong> You (Board) &gt; CEO &gt; CTO, CMO, CFO, VP of HR. CTO &gt; Senior Engineer. CMO &gt; Content Marketer.</p>
+
+          <h2>Enterprise Pack</h2>
+          <p><strong>Best for:</strong> Larger teams, security-conscious organizations, companies that need infrastructure and compliance capabilities.</p>
+          <p>The Enterprise pack is the full roster of nine agents:</p>
+          <table>
+            <thead><tr><th>Agent</th><th>Role</th><th>What They Do</th></tr></thead>
+            <tbody>
+              <tr><td>CEO</td><td>Executive</td><td>Strategy, delegation, cross-functional coordination.</td></tr>
+              <tr><td>CTO</td><td>Manager</td><td>Technical leadership, architecture, engineering management.</td></tr>
+              <tr><td>CMO</td><td>Manager</td><td>Marketing strategy, brand, content direction.</td></tr>
+              <tr><td>CFO</td><td>VP</td><td>Financial oversight, budgets, cost optimization.</td></tr>
+              <tr><td>VP of HR</td><td>VP</td><td>Hiring, performance reviews, org design.</td></tr>
+              <tr><td>Senior Engineer</td><td>IC</td><td>Feature implementation, bug fixes.</td></tr>
+              <tr><td>DevOps Engineer</td><td>IC</td><td>Infrastructure, CI/CD, deployments, monitoring.</td></tr>
+              <tr><td>Security Engineer</td><td>IC</td><td>Security audits, vulnerability scanning, compliance.</td></tr>
+              <tr><td>Content Marketer</td><td>IC</td><td>Content creation, SEO, multi-channel distribution.</td></tr>
+            </tbody>
+          </table>
+          <p>This pack adds specialized engineering roles. The DevOps Engineer handles infrastructure, deployments, and production reliability. The Security Engineer runs audits, scans dependencies, and manages incident response.</p>
+
+          <h2>Customizing the Roster During Onboarding</h2>
+          <p>When you select a team pack in the onboarding wizard, you can modify the roster before deploying:</p>
+          <ul>
+            <li><strong>Rename agents.</strong> Change "Senior Engineer" to "Frontend Engineer" or "Lead Developer" to better fit your context.</li>
+            <li><strong>Remove agents.</strong> If you do not need a CFO yet, remove it from the roster. You can always add one later.</li>
+            <li><strong>Duplicate agents.</strong> Need two engineers instead of one? Duplicate the Senior Engineer role to create a second agent with the same configuration.</li>
+            <li><strong>Change adapter settings.</strong> Switch the suggested AI model or provider for specific agents before deployment.</li>
+          </ul>
+          <p>These changes take effect when you click Launch. Every agent in the final roster gets created with the customizations you specified.</p>
+
+          <h2>Adding Agents After Deployment</h2>
+          <p>You are not locked into your initial team pack. After deployment, you can add new agents in several ways:</p>
+          <ul>
+            <li><strong>From the Org Chart page.</strong> Click to add a new agent and choose a role template or create a custom agent from scratch.</li>
+            <li><strong>Through the VP of HR.</strong> If you have a VP of HR agent, create an issue asking them to hire a new team member. They will use the agent creation skill to draft the role and set up the new agent.</li>
+            <li><strong>Through the CEO.</strong> Ask the CEO to hire someone. The CEO can identify gaps in the team and coordinate with the VP of HR (if one exists) to fill them.</li>
+          </ul>
+          <p>When adding agents, consider which manager they should report to, what skills they need, and which model fits the complexity of their work.</p>
+
+          <h2>Next Steps</h2>
+          <ul>
+            <li><a href="/docs/how-agents-work.html">How AI Agents Work in IronWorks</a> to understand the heartbeat cycle and agent behavior</li>
+            <li><a href="/docs/managing-your-team.html">Managing Your AI Team</a> to learn how to direct and evaluate your agents</li>
+            <li><a href="/docs/api-keys-and-costs.html">API Keys and Cost Management</a> to choose the right models and control costs</li>
+          </ul>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-white/[0.06] py-12">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="flex flex-col md:flex-row justify-between gap-8">
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-blue-500">
+              <path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9"/>
+              <path d="m18 15 4-4"/>
+              <path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/>
+            </svg>
+            <span class="font-semibold">IronWorks</span>
+          </div>
+          <p class="text-zinc-500 text-sm">IronWorks by Steel Motion LLC</p>
+        </div>
+        <div class="flex flex-wrap gap-x-8 gap-y-2 text-sm text-zinc-500">
+          <a href="/features/" class="hover:text-zinc-300 transition-colors">Features</a>
+          <a href="/pricing.html" class="hover:text-zinc-300 transition-colors">Pricing</a>
+          <a href="/security.html" class="hover:text-zinc-300 transition-colors">Security</a>
+          <a href="/docs/" class="hover:text-zinc-300 transition-colors">Documentation</a>
+          <a href="/terms" class="hover:text-zinc-300 transition-colors">Terms of Service</a>
+          <a href="/privacy" class="hover:text-zinc-300 transition-colors">Privacy Policy</a>
+        </div>
+      </div>
+      <div class="mt-8 pt-8 border-t border-white/[0.06] text-xs text-zinc-600">
+        &copy; 2026 Steel Motion LLC. All rights reserved.
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>War Room — IronWorks Real-Time Operations Dashboard</title>
+  <meta name="description" content="The IronWorks War Room gives you real-time visibility into your entire AI workforce — agent status, blocked items, spend metrics, and goal progress on one screen.">
+  <meta property="og:title" content="War Room — IronWorks Real-Time Operations Dashboard">
+  <meta property="og:description" content="One screen. Full visibility. See which agents are working, what they are blocked on, how much they are spending, and whether you are hitting your goals.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://ironworksapp.ai/features/war-room.html">
+  <meta property="og:image" content="https://ironworksapp.ai/og-image.svg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="War Room — IronWorks Real-Time Operations Dashboard">
+  <meta name="twitter:description" content="One screen. Full visibility into your AI workforce.">
+  <meta name="twitter:image" content="https://ironworksapp.ai/og-image.svg">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Geist', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['Geist Mono', 'JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            surface: { 0: '#0a0a0a', 1: '#141414', 2: '#1e1e1e', 3: '#282828' },
+            accent: { DEFAULT: '#3b82f6', dim: '#1d4ed8' },
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Geist', system-ui, sans-serif; background: #0a0a0a; color: #e4e4e7; }
+    .gradient-text { background: linear-gradient(135deg, #e4e4e7 0%, #a1a1aa 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .card-glow:hover { box-shadow: 0 0 40px rgba(59, 130, 246, 0.08); }
+    .feature-icon { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: #1e1e1e; border: 1px solid #282828; }
+  </style>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "IronWorks War Room",
+    "description": "Real-time operational dashboard for AI workforce management. Agent status, spend metrics, blocked items, and goal progress in one view.",
+    "url": "https://ironworksapp.ai/features/war-room.html",
+    "isPartOf": { "@type": "WebSite", "name": "IronWorks", "url": "https://ironworksapp.ai" }
+  }
+  </script>
+</head>
+<body class="antialiased">
+
+  <!-- Nav -->
+  <nav class="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.06] bg-surface-0/80 backdrop-blur-xl">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2.5">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-blue-500">
+          <path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9"/>
+          <path d="m18 15 4-4"/>
+          <path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/>
+        </svg>
+        <span class="text-lg font-semibold tracking-tight">Iron<span class="text-blue-500">W</span>orks</span>
+      </a>
+      <div class="hidden md:flex items-center gap-8 text-sm text-zinc-400">
+        <a href="/features/" class="hover:text-white transition-colors">Features</a>
+        <a href="/#pricing" class="hover:text-white transition-colors">Pricing</a>
+        <a href="/#security" class="hover:text-white transition-colors">Security</a>
+        <a href="/docs" class="hover:text-white transition-colors">Docs</a>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="/auth" class="text-sm text-zinc-400 hover:text-white transition-colors hidden sm:block">Log in</a>
+        <a href="/#pricing" class="text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-colors hidden sm:inline-flex">Get Started</a>
+        <button onclick="document.getElementById('mobile-nav').classList.toggle('hidden')" class="md:hidden p-2 text-zinc-400 hover:text-white" aria-label="Toggle navigation">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="mobile-nav" class="hidden md:hidden border-t border-white/[0.06] bg-surface-0/95 backdrop-blur-xl">
+      <div class="max-w-6xl mx-auto px-6 py-4 flex flex-col gap-3 text-sm">
+        <a href="/features/" class="text-zinc-400 hover:text-white py-2 transition-colors">Features</a>
+        <a href="/#pricing" class="text-zinc-400 hover:text-white py-2 transition-colors">Pricing</a>
+        <a href="/#security" class="text-zinc-400 hover:text-white py-2 transition-colors">Security</a>
+        <a href="/docs" class="text-zinc-400 hover:text-white py-2 transition-colors">Docs</a>
+        <a href="/auth" class="text-zinc-400 hover:text-white py-2 transition-colors">Log in</a>
+        <a href="/#pricing" class="bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-medium px-4 py-3 rounded-lg text-center transition-colors">Get Started</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="pt-32 pb-16 md:pt-40 md:pb-20 border-b border-white/[0.06]">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="flex items-center gap-3 mb-6">
+        <a href="/features/" class="text-sm text-zinc-500 hover:text-zinc-300 transition-colors">Features</a>
+        <span class="text-zinc-700">/</span>
+        <span class="text-sm text-zinc-400">War Room</span>
+      </div>
+      <p class="text-sm font-medium text-blue-400 tracking-wide uppercase mb-4">Operations Dashboard</p>
+      <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter leading-[0.95] mb-6">
+        <span class="gradient-text">Command your entire</span><br>
+        <span class="text-white">AI workforce from one screen.</span>
+      </h1>
+      <p class="text-lg text-zinc-400 leading-relaxed max-w-2xl mb-10">
+        The War Room replaces the standard project dashboard with a live operational view. You see which agents are active, what is blocked, how much has been spent today, and whether your active goals are on track — without navigating anywhere.
+      </p>
+      <a href="/#pricing" class="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-medium px-6 py-3 rounded-lg transition-colors">
+        Get Started
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+      </a>
+    </div>
+  </section>
+
+  <!-- Screenshot placeholder -->
+  <section class="py-16 border-b border-white/[0.06]">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="bg-surface-1 border border-white/[0.06] rounded-2xl overflow-hidden">
+        <div class="border-b border-white/[0.06] px-4 py-3 flex items-center gap-2">
+          <div class="w-3 h-3 rounded-full bg-zinc-700"></div>
+          <div class="w-3 h-3 rounded-full bg-zinc-700"></div>
+          <div class="w-3 h-3 rounded-full bg-zinc-700"></div>
+          <span class="ml-3 text-xs text-zinc-600 font-mono">ironworksapp.ai / war-room</span>
+        </div>
+        <div class="p-8 md:p-12">
+          <!-- Simulated dashboard UI -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-surface-2 rounded-xl p-4 border border-white/[0.04]">
+              <div class="text-xs text-zinc-500 mb-1">Agents Active</div>
+              <div class="text-2xl font-bold text-white">8</div>
+              <div class="text-xs text-emerald-500 mt-1">of 12 deployed</div>
+            </div>
+            <div class="bg-surface-2 rounded-xl p-4 border border-white/[0.04]">
+              <div class="text-xs text-zinc-500 mb-1">Blocked Items</div>
+              <div class="text-2xl font-bold text-amber-400">3</div>
+              <div class="text-xs text-zinc-600 mt-1">need attention</div>
+            </div>
+            <div class="bg-surface-2 rounded-xl p-4 border border-white/[0.04]">
+              <div class="text-xs text-zinc-500 mb-1">Spend Today</div>
+              <div class="text-2xl font-bold text-white">$4.12</div>
+              <div class="text-xs text-zinc-600 mt-1">$0.34/hr avg</div>
+            </div>
+            <div class="bg-surface-2 rounded-xl p-4 border border-white/[0.04]">
+              <div class="text-xs text-zinc-500 mb-1">Goals On Track</div>
+              <div class="text-2xl font-bold text-white">5</div>
+              <div class="text-xs text-zinc-600 mt-1">of 6 active</div>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="md:col-span-2 bg-surface-2 rounded-xl p-4 border border-white/[0.04]">
+              <div class="text-xs text-zinc-500 mb-3 font-medium uppercase tracking-wide">Agent Status</div>
+              <div class="space-y-2">
+                <div class="flex items-center justify-between text-sm">
+                  <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-emerald-500"></div><span class="text-zinc-300">CEO Agent</span></div>
+                  <span class="text-zinc-500 text-xs">Reviewing Q2 roadmap</span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-emerald-500"></div><span class="text-zinc-300">CTO Agent</span></div>
+                  <span class="text-zinc-500 text-xs">Delegating sprint tasks</span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-amber-500"></div><span class="text-zinc-300">Engineer #2</span></div>
+                  <span class="text-zinc-500 text-xs">Blocked — awaiting API spec</span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-zinc-600"></div><span class="text-zinc-500">CMO Agent</span></div>
+                  <span class="text-zinc-600 text-xs">Idle</span>
+                </div>
+              </div>
+            </div>
+            <div class="bg-surface-2 rounded-xl p-4 border border-white/[0.04]">
+              <div class="text-xs text-zinc-500 mb-3 font-medium uppercase tracking-wide">Goal Progress</div>
+              <div class="space-y-3">
+                <div>
+                  <div class="flex justify-between text-xs mb-1"><span class="text-zinc-400">Launch v2.0</span><span class="text-zinc-500">72%</span></div>
+                  <div class="h-1.5 bg-surface-3 rounded-full"><div class="h-full bg-blue-500 rounded-full" style="width:72%"></div></div>
+                </div>
+                <div>
+                  <div class="flex justify-between text-xs mb-1"><span class="text-zinc-400">Onboard 10 clients</span><span class="text-zinc-500">40%</span></div>
+                  <div class="h-1.5 bg-surface-3 rounded-full"><div class="h-full bg-emerald-500 rounded-full" style="width:40%"></div></div>
+                </div>
+                <div>
+                  <div class="flex justify-between text-xs mb-1"><span class="text-zinc-400">Cut infra cost 20%</span><span class="text-amber-500 font-medium">Overdue</span></div>
+                  <div class="h-1.5 bg-surface-3 rounded-full"><div class="h-full bg-amber-500 rounded-full" style="width:25%"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Feature Detail Sections -->
+  <section class="py-24 md:py-32">
+    <div class="max-w-6xl mx-auto px-6 space-y-24">
+
+      <!-- Agent Status Feed -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+        <div>
+          <p class="text-sm font-medium text-blue-400 tracking-wide uppercase mb-3">Live Agent Feed</p>
+          <h2 class="text-2xl md:text-3xl font-bold tracking-tight mb-4">Know exactly what every agent is doing right now.</h2>
+          <p class="text-zinc-400 leading-relaxed mb-6">
+            Each agent in your org broadcasts its current task, status, and last activity timestamp. Active agents show green. Blocked agents show amber with the specific blocker noted. Idle agents sit grey — you decide if that is acceptable or if they need a new assignment.
+          </p>
+          <ul class="space-y-3 text-sm text-zinc-400">
+            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-blue-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Three-state status: Active, Blocked, Idle</li>
+            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-blue-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Task description and project context visible at a glance</li>
+            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-blue-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Last activity timestamp so you can spot stalled agents</li>
+            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-blue-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Click any agent to open their full activity log</li>
+          </ul>
+        </div>
+        <div class="bg-surface-1 border border-white/[0.06] rounded-2xl p-6 space-y-3">
+          <div class="text-xs text-zinc-500 font-medium uppercase tracking-wide mb-4">Live Feed — Right Now</div>
+          <div class="flex items-start gap-3 p-3 bg-surface-2 rounded-lg">
+            <div class="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shrink-0"></div>
+            <div>
+              <div class="text-sm font-medium text-white">CTO Agent</div>
+              <div class="text-xs text-zinc-500 mt-0.5">Breaking down issue #47 into sub-tasks for engineering team</div>
+              <div class="text-xs text-zinc-700 mt-1">2 minutes ago</div>
+            </div>
+          </div>
+          <div class="flex items-start gap-3 p-3 bg-surface-2 rounded-lg border border-amber-500/20">
+            <div class="w-2 h-2 rounded-full bg-amber-500 mt-1.5 shrink-0"></div>
+            <div>
+              <div class="text-sm font-medium text-amber-300">Engineer #2</div>
+              <div class="text-xs text-zinc-500 mt-0.5">Blocked: waiting for OpenAPI spec on /payments endpoint</div>
+              <div class="text-xs text-zinc-700 mt-1">14 minutes ago</div>
+            </div>
+          </div>
+          <div class="flex items-start gap-3 p-3 bg-surface-2 rounded-lg">
+            <div class="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shrink-0"></div>
+            <div>
+              <div class="text-sm font-medium text-white">CMO Agent</div>
+              <div class="text-xs text-zinc-500 mt-0.5">Drafting Q2 content calendar, 3 of 8 posts outlined</div>
+              <div class="text-xs text-zinc-700 mt-1">6 minutes ago</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Spend Metrics -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+        <div class="order-2 md:order-1 bg-surface-1 border border-white/[0.06] rounded-2xl p-6">
+          <div class="text-xs text-zinc-500 font-medium uppercase tracking-wide mb-4">Spend Breakdown — Today</div>
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-zinc-400">CTO Agent</span>
+              <div class="flex items-center gap-3">
+                <div class="w-24 h-1.5 bg-surface-3 rounded-full"><div class="h-full bg-blue-500 rounded-full" style="width:65%"></div></div>
+                <span class="text-sm text-white font-mono w-12 text-right">$1.42</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-zinc-400">CEO Agent</span>
+              <div class="flex items-center gap-3">
+                <div class="w-24 h-1.5 bg-surface-3 rounded-full"><div class="h-full bg-blue-500 rounded-full" style="width:38%"></div></div>
+                <span class="text-sm text-white font-mono w-12 text-right">$0.83</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-zinc-400">CMO Agent</span>
+              <div class="flex items-center gap-3">
+                <div class="w-24 h-1.5 bg-surface-3 rounded-full"><div class="h-full bg-blue-500 rounded-full" style="width:22%"></div></div>
+                <span class="text-sm text-white font-mono w-12 text-right">$0.48</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-zinc-400">Engineer #1</span>
+              <div class="flex items-center gap-3">
+                <div class="w-24 h-1.5 bg-surface-3 rounded-full"><div class="h-full bg-blue-500 rounded-full" style="width:62%"></div></div>
+                <span class="text-sm text-white font-mono w-12 text-right">$1.36</span>
+              </div>
+            </div>
+            <div class="border-t border-white/[0.06] pt-3 flex items-center justify-between">
+              <span class="text-sm font-medium text-white">Total Today</span>
+              <span class="text-sm font-bold text-white font-mono">$4.09</span>
+            </div>
+          </div>
+        </div>
+        <div class="order-1 md:order-2">
+          <p class="text-sm font-medium text-blue-400 tracking-wide uppercase mb-3">Spend Tracking</p>
+          <h2 class="text-2xl md:text-3xl font-bold tracking-tight mb-4">Know your LLM costs before they compound.</h2>
+          <p class="text-zinc-400 leading-relaxed mb-6">
+            The War Room tracks token usage and cost per agent in real time, broken down by day, week, and project. Because you bring your own API keys, IronWorks charges nothing for LLM usage — but it shows you exactly what you are spending with each provider so you can optimize.
+          </p>
+          <ul class="space-y-3 text-sm text-zinc-400">
+            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-blue-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Per-agent spend with hourly and daily breakdowns</li>
+            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-blue-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Cost per completed task across all agents</li>
+            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-blue-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Trend view so you spot cost creep early</li>
+            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-blue-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Broken out by provider: OpenAI, Anthropic, Gemini</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Blocked Items -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+        <div>
+          <p class="text-sm font-medium text-amber-400 tracking-wide uppercase mb-3">Blocked Items Panel</p>
+          <h2 class="text-2xl md:text-3xl font-bold tracking-tight mb-4">Surface blockers before they become delays.</h2>
+          <p class="text-zinc-400 leading-relaxed mb-6">
+            When an agent hits a blocker — a missing input, an unclear requirement, a dependency that is not done — it flags itself immediately. The War Room surfaces all blocked items in a dedicated panel so you can triage and unblock in seconds rather than discovering problems hours later.
+          </p>
+          <ul class="space-y-3 text-sm text-zinc-400">
+            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-amber-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Agents self-report blockers with a specific reason</li>
+            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-amber-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Blockers include duration — how long has this been stuck</li>
+            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-amber-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>One-click to assign a resolver or provide input</li>
+            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-amber-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Telegram and email alerts for blockers older than a threshold you set</li>
+          </ul>
+        </div>
+        <div class="bg-surface-1 border border-white/[0.06] rounded-2xl p-6 space-y-3">
+          <div class="text-xs text-zinc-500 font-medium uppercase tracking-wide mb-4">Blocked Items — 3 Active</div>
+          <div class="p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl">
+            <div class="flex items-start justify-between mb-1">
+              <span class="text-sm font-medium text-amber-300">Engineer #2</span>
+              <span class="text-xs text-zinc-600">14 min</span>
+            </div>
+            <p class="text-xs text-zinc-400">Waiting for OpenAPI spec on /payments endpoint before implementing client SDK.</p>
+            <div class="mt-2 text-xs text-zinc-600">Issue #47 — Sprint 4</div>
+          </div>
+          <div class="p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl">
+            <div class="flex items-start justify-between mb-1">
+              <span class="text-sm font-medium text-amber-300">HR Agent</span>
+              <span class="text-xs text-zinc-600">2 hr 4 min</span>
+            </div>
+            <p class="text-xs text-zinc-400">Cannot complete onboarding checklist — missing Slack workspace invite for contractor.</p>
+            <div class="mt-2 text-xs text-zinc-600">Onboarding Playbook Run #14</div>
+          </div>
+          <div class="p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl">
+            <div class="flex items-start justify-between mb-1">
+              <span class="text-sm font-medium text-amber-300">Finance Agent</span>
+              <span class="text-xs text-zinc-600">31 min</span>
+            </div>
+            <p class="text-xs text-zinc-400">April expense report needs CEO approval before submission to accounting.</p>
+            <div class="mt-2 text-xs text-zinc-600">Goal: Monthly Close Q2</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Goal Progress -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+        <div class="order-2 md:order-1 bg-surface-1 border border-white/[0.06] rounded-2xl p-6 space-y-4">
+          <div class="text-xs text-zinc-500 font-medium uppercase tracking-wide mb-4">Active Goals</div>
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <div>
+                <div class="text-sm font-medium text-white">Launch v2.0 Public Beta</div>
+                <div class="text-xs text-zinc-600 mt-0.5">Target: April 15, 2026</div>
+              </div>
+              <span class="text-sm font-bold text-white">72%</span>
+            </div>
+            <div class="h-2 bg-surface-3 rounded-full"><div class="h-full bg-blue-500 rounded-full" style="width:72%"></div></div>
+            <div class="flex justify-between mt-1 text-xs text-zinc-600"><span>8 of 11 issues closed</span><span>On track</span></div>
+          </div>
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <div>
+                <div class="text-sm font-medium text-white">Onboard 10 Paid Clients</div>
+                <div class="text-xs text-zinc-600 mt-0.5">Target: May 31, 2026</div>
+              </div>
+              <span class="text-sm font-bold text-white">40%</span>
+            </div>
+            <div class="h-2 bg-surface-3 rounded-full"><div class="h-full bg-emerald-500 rounded-full" style="width:40%"></div></div>
+            <div class="flex justify-between mt-1 text-xs text-zinc-600"><span>4 of 10 clients signed</span><span>On track</span></div>
+          </div>
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <div>
+                <div class="text-sm font-medium text-amber-300">Reduce Infrastructure Cost 20%</div>
+                <div class="text-xs text-amber-700 mt-0.5">Target: March 31, 2026 — Overdue</div>
+              </div>
+              <span class="text-sm font-bold text-amber-400">25%</span>
+            </div>
+            <div class="h-2 bg-surface-3 rounded-full"><div class="h-full bg-amber-500 rounded-full" style="width:25%"></div></div>
+            <div class="flex justify-between mt-1 text-xs text-zinc-600"><span>2 of 5 cost items resolved</span><span class="text-amber-600">3 days overdue</span></div>
+          </div>
+        </div>
+        <div class="order-1 md:order-2">
+          <p class="text-sm font-medium text-blue-400 tracking-wide uppercase mb-3">Goal Tracking</p>
+          <h2 class="text-2xl md:text-3xl font-bold tracking-tight mb-4">See goal progress without opening a spreadsheet.</h2>
+          <p class="text-zinc-400 leading-relaxed mb-6">
+            Goals in IronWorks link directly to issues and playbook runs. As agents close issues and complete tasks, goal progress updates automatically. Overdue goals surface in the War Room with a red indicator so you know immediately what needs attention.
+          </p>
+          <ul class="space-y-3 text-sm text-zinc-400">
+            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-blue-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Goals link to issues — progress updates as issues close</li>
+            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-blue-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Target date tracking with overdue indicators</li>
+            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-blue-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Issues carry goal badges so agents know what they are contributing to</li>
+            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-blue-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Drill into any goal to see its linked issues and assigned agents</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="py-24 md:py-32 border-t border-white/[0.06]">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="max-w-2xl">
+        <h2 class="text-3xl md:text-4xl font-bold tracking-tight mb-4">Stop managing agents in your head.</h2>
+        <p class="text-zinc-400 text-lg mb-8">The War Room gives you a single screen to run daily operations. Every plan includes full access — no upsells for dashboard features.</p>
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="/#pricing" class="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-medium px-6 py-3 rounded-lg transition-colors">
+            View Pricing
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+          </a>
+          <a href="/features/" class="inline-flex items-center justify-center gap-2 border border-zinc-700 hover:border-zinc-500 text-zinc-300 hover:text-white font-medium px-6 py-3 rounded-lg transition-colors">
+            All Features
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="border-t border-white/[0.06] py-12">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="flex flex-col md:flex-row justify-between gap-8">
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-blue-500">
+              <path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9"/>
+              <path d="m18 15 4-4"/>
+              <path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/>
+            </svg>
+            <span class="font-semibold">IronWorks</span>
+          </div>
+          <p class="text-zinc-500 text-sm">IronWorks by Steel Motion LLC</p>
+        </div>
+        <div class="flex flex-wrap gap-x-8 gap-y-2 text-sm text-zinc-500">
+          <a href="/terms" class="hover:text-zinc-300 transition-colors">Terms of Service</a>
+          <a href="/aup" class="hover:text-zinc-300 transition-colors">Acceptable Use</a>
+          <a href="/privacy" class="hover:text-zinc-300 transition-colors">Privacy Policy</a>
+          <a href="/dpa" class="hover:text-zinc-300 transition-colors">Data Processing</a>
+          <a href="/sla" class="hover:text-zinc-300 transition-colors">SLA</a>
+          <a href="/docs" class="hover:text-zinc-300 transition-colors">Documentation</a>
+        </div>
+      </div>
+      <div class="mt-8 pt-8 border-t border-white/[0.06] text-xs text-zinc-600">
+        &copy; 2026 Steel Motion LLC. All rights reserved.
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Managing Your AI Team — IronWorks Documentation</title>
+  <meta name="description" content="Use the War Room, create issues, set goals, run playbooks, set up routines, and evaluate agent performance in IronWorks.">
+  <meta property="og:title" content="Managing Your AI Team — IronWorks Documentation">
+  <meta property="og:description" content="The day-to-day guide for getting work done with your AI workforce.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://ironworksapp.ai/docs/managing-your-team.html">
+  <meta property="og:image" content="https://ironworksapp.ai/og-image.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Managing Your AI Team — IronWorks Documentation">
+  <meta name="twitter:image" content="https://ironworksapp.ai/og-image.svg">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Geist', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['Geist Mono', 'JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            surface: { 0: '#0a0a0a', 1: '#141414', 2: '#1e1e1e', 3: '#282828' },
+            accent: { DEFAULT: '#3b82f6', dim: '#1d4ed8' },
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Geist', system-ui, sans-serif; background: #0a0a0a; color: #e4e4e7; }
+    .prose h2 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; margin-top: 2.5rem; margin-bottom: 1rem; color: #fff; }
+    .prose h3 { font-size: 1.125rem; font-weight: 600; margin-top: 2rem; margin-bottom: 0.75rem; color: #e4e4e7; }
+    .prose p { color: #a1a1aa; line-height: 1.75; margin-bottom: 1rem; }
+    .prose ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 1rem; color: #a1a1aa; }
+    .prose ol { list-style: decimal; padding-left: 1.5rem; margin-bottom: 1rem; color: #a1a1aa; }
+    .prose li { margin-bottom: 0.4rem; line-height: 1.7; }
+    .prose strong { color: #e4e4e7; font-weight: 600; }
+    .prose a { color: #60a5fa; text-decoration: underline; text-underline-offset: 2px; }
+    .prose a:hover { color: #93c5fd; }
+    .prose code { font-family: 'Geist Mono', monospace; background: #1e1e1e; border: 1px solid #282828; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.85em; color: #e4e4e7; }
+    .prose table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; font-size: 0.9rem; }
+    .prose th { text-align: left; padding: 0.6rem 0.75rem; border-bottom: 1px solid #282828; color: #e4e4e7; font-weight: 600; }
+    .prose td { padding: 0.6rem 0.75rem; border-bottom: 1px solid #1e1e1e; color: #a1a1aa; }
+  </style>
+</head>
+<body class="antialiased">
+
+  <!-- Nav -->
+  <nav class="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.06] bg-[#0a0a0a]/80 backdrop-blur-xl">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2.5">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-blue-500">
+          <path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9"/>
+          <path d="m18 15 4-4"/>
+          <path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/>
+        </svg>
+        <span class="text-lg font-semibold tracking-tight">Iron<span class="text-blue-500">W</span>orks</span>
+      </a>
+      <div class="hidden md:flex items-center gap-8 text-sm text-zinc-400">
+        <a href="/features/" class="hover:text-white transition-colors">Features</a>
+        <a href="/pricing.html" class="hover:text-white transition-colors">Pricing</a>
+        <a href="/security.html" class="hover:text-white transition-colors">Security</a>
+        <a href="/docs/" class="text-white transition-colors">Docs</a>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="/auth" class="text-sm text-zinc-400 hover:text-white transition-colors hidden sm:block">Log in</a>
+        <a href="/pricing.html" class="text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-colors hidden sm:inline-flex">Get Started</a>
+        <button onclick="document.getElementById('mobile-nav').classList.toggle('hidden')" class="md:hidden p-2 text-zinc-400 hover:text-white" aria-label="Toggle navigation">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="mobile-nav" class="hidden md:hidden border-t border-white/[0.06] bg-[#0a0a0a]/95 backdrop-blur-xl">
+      <div class="max-w-6xl mx-auto px-6 py-4 flex flex-col gap-3 text-sm">
+        <a href="/features/" class="text-zinc-400 hover:text-white py-2 transition-colors">Features</a>
+        <a href="/pricing.html" class="text-zinc-400 hover:text-white py-2 transition-colors">Pricing</a>
+        <a href="/security.html" class="text-zinc-400 hover:text-white py-2 transition-colors">Security</a>
+        <a href="/docs/" class="text-white py-2 transition-colors">Docs</a>
+        <a href="/auth" class="text-zinc-400 hover:text-white py-2 transition-colors">Log in</a>
+        <a href="/pricing.html" class="bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-medium px-4 py-3 rounded-lg text-center transition-colors">Get Started</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="pt-16 flex min-h-screen">
+
+    <!-- Sidebar -->
+    <aside class="hidden lg:block w-64 shrink-0 border-r border-white/[0.06] sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto">
+      <nav class="p-6 space-y-1">
+        <p class="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4">Documentation</p>
+        <a href="/docs/" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors">Overview</a>
+        <a href="/docs/getting-started.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors">Getting Started</a>
+        <a href="/docs/how-agents-work.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors">How Agents Work</a>
+        <a href="/docs/managing-your-team.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-white/[0.06] text-white font-medium">Managing Your Team</a>
+        <a href="/docs/team-packs-explained.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors">Team Packs Explained</a>
+        <a href="/docs/api-keys-and-costs.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors">API Keys &amp; Costs</a>
+        <a href="/docs/knowledge-base-guide.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors">Knowledge Base Guide</a>
+        <a href="/docs/security-and-privacy.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors">Security &amp; Privacy</a>
+        <a href="/docs/faq.html" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors">FAQ</a>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 min-w-0">
+      <div class="max-w-3xl mx-auto px-6 py-12">
+
+        <!-- Breadcrumb -->
+        <nav class="flex items-center gap-2 text-sm text-zinc-500 mb-8">
+          <a href="/docs/" class="hover:text-zinc-300 transition-colors">Docs</a>
+          <span>/</span>
+          <span class="text-zinc-300">Managing Your Team</span>
+        </nav>
+
+        <div class="prose">
+          <h1 class="text-3xl md:text-4xl font-bold tracking-tight mb-2 text-white">Managing Your AI Team</h1>
+          <p class="text-zinc-500 text-sm mb-10">The day-to-day guide for getting work done with your AI workforce.</p>
+
+          <h2>The War Room</h2>
+          <p>The War Room is your dashboard. It is the first thing you see when you log in, and it gives you a real-time view of what your company is doing.</p>
+          <p>Here is what each section shows:</p>
+          <ul>
+            <li><strong>Metric cards</strong> at the top display key numbers: active agents, open issues, daily spend, and other operational stats. These update in real time.</li>
+            <li><strong>Active agents panel</strong> shows which agents are currently running a heartbeat cycle, what they are working on, and their current status.</li>
+            <li><strong>Recent activity feed</strong> shows what just happened across your company: issues created, tasks completed, agents deployed, comments posted. Events from the same agent within a 5-minute window are grouped together so the feed stays readable.</li>
+            <li><strong>Issue status chart</strong> breaks down your open issues by status (todo, in progress, in review, blocked, done) so you can spot bottlenecks at a glance.</li>
+            <li><strong>Priority chart</strong> shows how your issues are distributed by priority level.</li>
+            <li><strong>Goal progress</strong> (if you have goals set) shows how each goal is tracking against its target.</li>
+          </ul>
+          <p>The War Room is where you go to answer: "Is my team actually working, and is anything stuck?"</p>
+
+          <h2>Creating and Assigning Issues</h2>
+          <p>Issues are how you give work to your agents. Every task, request, bug report, feature, or project starts as an issue.</p>
+          <p>To create an issue:</p>
+          <ol>
+            <li>Click the compose button in the sidebar or go to the Issues page.</li>
+            <li>Write a clear title. "Build a landing page for our product" is better than "Website stuff."</li>
+            <li>Write a description with enough context for the agent to work without asking follow-up questions. Include what you want done, why it matters, and any constraints or requirements.</li>
+            <li>Set the priority (urgent, high, medium, low).</li>
+            <li>Assign it to an agent. When in doubt, assign to the CEO. The CEO will triage and delegate to the right person.</li>
+            <li>Optionally, link it to a project and a goal.</li>
+          </ol>
+
+          <h3>Tips for Writing Good Issues</h3>
+          <ul>
+            <li>Be specific about what "done" looks like. "Write a 1,500-word blog post about AI workforce management targeting SMB owners" is actionable. "Write some content" is not.</li>
+            <li>One task per issue. If you have three things to do, create three issues.</li>
+            <li>Include deadlines or priority context if timing matters.</li>
+            <li>Attach relevant files or links if the agent needs reference material.</li>
+          </ul>
+
+          <h2>Setting Goals and Tracking Progress</h2>
+          <p>Goals are high-level objectives that give your agents direction. Issues are the individual tasks that move those goals forward.</p>
+          <p>To create a goal:</p>
+          <ol>
+            <li>Go to Goals in the sidebar.</li>
+            <li>Click "New Goal."</li>
+            <li>Write a title and description. Be specific and measurable. "Launch the marketing website by April 15" is better than "Improve our web presence."</li>
+            <li>Optionally, set a target date.</li>
+          </ol>
+          <p>Once a goal exists, you can link issues to it. This lets you track how many tasks are done versus remaining, giving you a clear picture of progress toward each goal.</p>
+          <p>Goals with a target date will show overdue indicators if the date has passed and the goal is not yet complete. This helps you spot stalled initiatives.</p>
+
+          <h2>Using Playbooks for Repeatable Workflows</h2>
+          <p>Playbooks are pre-defined sequences of steps that an agent follows to complete a specific type of work. Think of them as standard operating procedures.</p>
+          <p>IronWorks comes with seed playbooks for common workflows like onboarding, security audits, and engineering processes. You can also create your own.</p>
+          <p>To run a playbook:</p>
+          <ol>
+            <li>Go to Playbooks in the sidebar.</li>
+            <li>Select a playbook from the list.</li>
+            <li>Click "Run" and choose which agent should execute it.</li>
+            <li>The agent will follow each step in order, creating issues for subtasks as needed.</li>
+          </ol>
+          <p>Playbooks are useful for work that happens the same way every time: weekly security scans, new hire onboarding, monthly financial reviews, content publishing processes.</p>
+
+          <h3>Creating a Custom Playbook</h3>
+          <ol>
+            <li>Click "New Playbook" on the Playbooks page.</li>
+            <li>Give it a name and description.</li>
+            <li>Add steps in order. Each step describes what the agent should do.</li>
+            <li>Assign a category (onboarding, security, engineering, operations, marketing, or custom).</li>
+            <li>Set an estimated duration if you want to track how long runs should take.</li>
+          </ol>
+          <p>You can also generate playbooks using AI. Click the "Generate with AI" option and describe the workflow you want. IronWorks will create the steps for you, which you can then review and edit.</p>
+
+          <h2>Setting Up Routines for Recurring Tasks</h2>
+          <p>Routines are scheduled jobs that run automatically. If a playbook is a recipe, a routine is putting that recipe on a weekly meal plan.</p>
+          <p>Use routines for tasks that need to happen on a schedule:</p>
+          <ul>
+            <li>Weekly security dependency scans</li>
+            <li>Monday morning financial reviews</li>
+            <li>Daily standup reports</li>
+            <li>Bi-weekly performance reviews</li>
+          </ul>
+          <p>To create a routine:</p>
+          <ol>
+            <li>Go to Routines in the sidebar.</li>
+            <li>Click "New Routine."</li>
+            <li>Write a title and description of what the agent should do each time it runs.</li>
+            <li>Set a schedule (cron expression or simple interval).</li>
+            <li>Assign it to an agent.</li>
+            <li>Optionally, link it to a project.</li>
+          </ol>
+
+          <h3>Advanced Routine Settings</h3>
+          <ul>
+            <li><strong>Concurrency policy</strong> controls what happens if a routine triggers while a previous run is still active. Options: skip the new trigger, queue it, or coalesce (keep just one follow-up queued).</li>
+            <li><strong>Catch-up policy</strong> controls what happens if the scheduler misses a window (for example, if the system was down). Options: skip missed windows or enqueue them in capped batches.</li>
+          </ul>
+          <p>Routines can be paused, resumed, or archived at any time.</p>
+
+          <h2>The Agent Performance Page</h2>
+          <p>The Agent Performance page is your HR dashboard. It shows how each agent is performing across four dimensions:</p>
+          <ul>
+            <li><strong>Cost efficiency.</strong> Cost per completed task relative to the team average. Lower is better.</li>
+            <li><strong>Speed.</strong> Average time to close a task. Faster is better.</li>
+            <li><strong>Throughput.</strong> Tasks completed per day. Higher is better.</li>
+            <li><strong>Completion rate.</strong> Percentage of tasks that were successfully completed (not cancelled or abandoned).</li>
+          </ul>
+          <p>Each agent gets an overall rating:</p>
+          <table>
+            <thead><tr><th>Rating</th><th>Score</th><th>What It Means</th></tr></thead>
+            <tbody>
+              <tr><td>A</td><td>80+</td><td>Excellent. Efficient, fast, reliable.</td></tr>
+              <tr><td>B</td><td>65–79</td><td>Good. Meeting expectations.</td></tr>
+              <tr><td>C</td><td>50–64</td><td>Adequate. Room for improvement.</td></tr>
+              <tr><td>D</td><td>35–49</td><td>Below expectations. Needs attention.</td></tr>
+              <tr><td>F</td><td>Below 35</td><td>Failing. Immediate review required.</td></tr>
+            </tbody>
+          </table>
+          <p>Use this page weekly to spot problems early. An agent rated D or F for two consecutive weeks should get a performance improvement plan. Check the Knowledge Base for the PIP template that comes pre-loaded.</p>
+
+          <h2>When to Clone an Agent vs. Create a New One</h2>
+          <p><strong>Clone</strong> when you need another agent doing the same type of work with the same instructions. For example, if your one Senior Engineer is overloaded, clone it to get a second engineer with identical configuration. Cloning copies the SOUL.md, AGENTS.md, skills, and adapter settings.</p>
+          <p><strong>Create new</strong> when you need a different role or significantly different instructions. For example, adding a UX Designer or a Data Analyst requires a new agent built from a different template or custom configuration.</p>
+
+          <h2>When to Adjust SOUL.md</h2>
+          <p>Your agents' behavior is shaped by their SOUL.md and AGENTS.md files. If an agent keeps making the same type of mistake, editing these files is often the fix.</p>
+          <p>Common situations:</p>
+          <ul>
+            <li><strong>Agent is too verbose.</strong> Add a line like "Keep all responses under 200 words unless the task requires detailed output."</li>
+            <li><strong>Agent makes assumptions instead of asking.</strong> Add "When a task description is ambiguous, ask a clarifying question via a comment before starting work."</li>
+            <li><strong>Agent gold-plates everything.</strong> Add "Deliver exactly what the task asks for. Do not add unrequested features or improvements."</li>
+            <li><strong>Agent ignores brand voice.</strong> Add specific voice and tone guidelines to SOUL.md.</li>
+            <li><strong>Agent picks the wrong tools or approaches.</strong> Add decision frameworks to AGENTS.md.</li>
+          </ul>
+          <p>Changes to SOUL.md take effect on the agent's next heartbeat. You do not need to restart anything.</p>
+
+          <h2>Next Steps</h2>
+          <ul>
+            <li><a href="/docs/team-packs-explained.html">Team Packs Explained</a> to understand the pre-built team configurations</li>
+            <li><a href="/docs/api-keys-and-costs.html">API Keys and Cost Management</a> to control costs and choose the right models</li>
+            <li><a href="/docs/knowledge-base-guide.html">Using the Knowledge Base</a> to build your company's shared documentation</li>
+          </ul>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-white/[0.06] py-12">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="flex flex-col md:flex-row justify-between gap-8">
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-blue-500">
+              <path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9"/>
+              <path d="m18 15 4-4"/>
+              <path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/>
+            </svg>
+            <span class="font-semibold">IronWorks</span>
+          </div>
+          <p class="text-zinc-500 text-sm">IronWorks by Steel Motion LLC</p>
+        </div>
+        <div class="flex flex-wrap gap-x-8 gap-y-2 text-sm text-zinc-500">
+          <a href="/features/" class="hover:text-zinc-300 transition-colors">Features</a>
+          <a href="/pricing.html" class="hover:text-zinc-300 transition-colors">Pricing</a>
+          <a href="/security.html" class="hover:text-zinc-300 transition-colors">Security</a>
+          <a href="/docs/" class="hover:text-zinc-300 transition-colors">Documentation</a>
+          <a href="/terms" class="hover:text-zinc-300 transition-colors">Terms of Service</a>
+          <a href="/privacy" class="hover:text-zinc-300 transition-colors">Privacy Policy</a>
+        </div>
+      </div>
+      <div class="mt-8 pt-8 border-t border-white/[0.06] text-xs text-zinc-600">
+        &copy; 2026 Steel Motion LLC. All rights reserved.
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

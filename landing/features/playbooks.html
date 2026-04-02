@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Playbooks — IronWorks Multi-Step AI Workflows</title>
+  <meta name="description" content="IronWorks Playbooks turn repeatable processes into automated multi-step workflows. 7 templates included. Define steps, assign roles, resolve dependencies, and run on demand or on schedule.">
+  <meta property="og:title" content="Playbooks — IronWorks Multi-Step AI Workflows">
+  <meta property="og:description" content="Client onboarding, security audits, product launches, content campaigns. Define the steps once, run them as many times as you need.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://ironworksapp.ai/features/playbooks.html">
+  <meta property="og:image" content="https://ironworksapp.ai/og-image.svg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Playbooks — IronWorks Multi-Step AI Workflows">
+  <meta name="twitter:description" content="Reusable multi-step workflows with dependency resolution. 7 templates included.">
+  <meta name="twitter:image" content="https://ironworksapp.ai/og-image.svg">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Geist', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['Geist Mono', 'JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            surface: { 0: '#0a0a0a', 1: '#141414', 2: '#1e1e1e', 3: '#282828' },
+            accent: { DEFAULT: '#3b82f6', dim: '#1d4ed8' },
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Geist', system-ui, sans-serif; background: #0a0a0a; color: #e4e4e7; }
+    .gradient-text { background: linear-gradient(135deg, #e4e4e7 0%, #a1a1aa 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .card-glow:hover { box-shadow: 0 0 40px rgba(139, 92, 246, 0.08); }
+  </style>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "IronWorks Playbooks",
+    "description": "Reusable multi-step AI workflows with dependency resolution, role assignment, and 7 pre-built templates for common business processes.",
+    "url": "https://ironworksapp.ai/features/playbooks.html",
+    "isPartOf": { "@type": "WebSite", "name": "IronWorks", "url": "https://ironworksapp.ai" }
+  }
+  </script>
+</head>
+<body class="antialiased">
+
+  <!-- Nav -->
+  <nav class="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.06] bg-surface-0/80 backdrop-blur-xl">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2.5">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-blue-500">
+          <path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9"/>
+          <path d="m18 15 4-4"/>
+          <path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/>
+        </svg>
+        <span class="text-lg font-semibold tracking-tight">Iron<span class="text-blue-500">W</span>orks</span>
+      </a>
+      <div class="hidden md:flex items-center gap-8 text-sm text-zinc-400">
+        <a href="/features/" class="hover:text-white transition-colors">Features</a>
+        <a href="/#pricing" class="hover:text-white transition-colors">Pricing</a>
+        <a href="/#security" class="hover:text-white transition-colors">Security</a>
+        <a href="/docs" class="hover:text-white transition-colors">Docs</a>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="/auth" class="text-sm text-zinc-400 hover:text-white transition-colors hidden sm:block">Log in</a>
+        <a href="/#pricing" class="text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-colors hidden sm:inline-flex">Get Started</a>
+        <button onclick="document.getElementById('mobile-nav').classList.toggle('hidden')" class="md:hidden p-2 text-zinc-400 hover:text-white" aria-label="Toggle navigation">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+      </div>
+    </div>
+    <div id="mobile-nav" class="hidden md:hidden border-t border-white/[0.06] bg-surface-0/95 backdrop-blur-xl">
+      <div class="max-w-6xl mx-auto px-6 py-4 flex flex-col gap-3 text-sm">
+        <a href="/features/" class="text-zinc-400 hover:text-white py-2 transition-colors">Features</a>
+        <a href="/#pricing" class="text-zinc-400 hover:text-white py-2 transition-colors">Pricing</a>
+        <a href="/#security" class="text-zinc-400 hover:text-white py-2 transition-colors">Security</a>
+        <a href="/docs" class="text-zinc-400 hover:text-white py-2 transition-colors">Docs</a>
+        <a href="/auth" class="text-zinc-400 hover:text-white py-2 transition-colors">Log in</a>
+        <a href="/#pricing" class="bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-medium px-4 py-3 rounded-lg text-center transition-colors">Get Started</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="pt-32 pb-16 md:pt-40 md:pb-20 border-b border-white/[0.06]">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="flex items-center gap-3 mb-6">
+        <a href="/features/" class="text-sm text-zinc-500 hover:text-zinc-300 transition-colors">Features</a>
+        <span class="text-zinc-700">/</span>
+        <span class="text-sm text-zinc-400">Playbooks</span>
+      </div>
+      <p class="text-sm font-medium text-violet-400 tracking-wide uppercase mb-4">Workflow Automation</p>
+      <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter leading-[0.95] mb-6">
+        <span class="gradient-text">Write the process once.</span><br>
+        <span class="text-white">Run it every time.</span>
+      </h1>
+      <p class="text-lg text-zinc-400 leading-relaxed max-w-2xl mb-10">
+        Playbooks are reusable workflows made up of ordered steps, assigned roles, and dependency rules. When you trigger a Playbook run, IronWorks assigns each step to the right agent, tracks dependencies, and keeps you informed of progress. No manual coordination required.
+      </p>
+      <a href="/#pricing" class="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-medium px-6 py-3 rounded-lg transition-colors">
+        Get Started
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+      </a>
+    </div>
+  </section>
+
+  <!-- Playbook Run Preview -->
+  <section class="py-16 border-b border-white/[0.06]">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="bg-surface-1 border border-white/[0.06] rounded-2xl p-8 md:p-10">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <div class="text-xs text-zinc-500 font-medium uppercase tracking-wide mb-1">Playbook Run #14</div>
+            <h3 class="text-base font-semibold text-white">Client Onboarding — Acme Corp</h3>
+          </div>
+          <span class="text-xs font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full">In Progress</span>
+        </div>
+        <div class="space-y-3">
+          <div class="flex items-start gap-4">
+            <div class="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center shrink-0 mt-0.5">
+              <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-zinc-300 font-medium">1. Send welcome email and contract</span>
+                <span class="text-xs text-zinc-600">CMO Agent — 8 min</span>
+              </div>
+              <div class="text-xs text-zinc-600 mt-0.5">Completed. Contract sent via DocuSign.</div>
+            </div>
+          </div>
+          <div class="flex items-start gap-4">
+            <div class="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center shrink-0 mt-0.5">
+              <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-zinc-300 font-medium">2. Create client project and assign team</span>
+                <span class="text-xs text-zinc-600">CTO Agent — 4 min</span>
+              </div>
+              <div class="text-xs text-zinc-600 mt-0.5">Completed. Project created, 3 agents assigned.</div>
+            </div>
+          </div>
+          <div class="flex items-start gap-4">
+            <div class="w-6 h-6 rounded-full border-2 border-violet-500 flex items-center justify-center shrink-0 mt-0.5 bg-violet-500/10">
+              <div class="w-2 h-2 bg-violet-500 rounded-full"></div>
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-white font-medium">3. Configure access and send credentials</span>
+                <span class="text-xs text-violet-400">HR Agent — In progress</span>
+              </div>
+              <div class="text-xs text-zinc-500 mt-0.5">Setting up Slack access and dashboard login.</div>
+            </div>
+          </div>
+          <div class="flex items-start gap-4">
+            <div class="w-6 h-6 rounded-full border border-zinc-700 flex items-center justify-center shrink-0 mt-0.5">
+              <span class="text-xs text-zinc-600">4</span>
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-zinc-600">Kickoff call brief and agenda</span>
+                <span class="text-xs text-zinc-700">CMO Agent — Waiting on step 3</span>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-start gap-4">
+            <div class="w-6 h-6 rounded-full border border-zinc-700 flex items-center justify-center shrink-0 mt-0.5">
+              <span class="text-xs text-zinc-600">5</span>
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-zinc-600">Submit to finance for contract recording</span>
+                <span class="text-xs text-zinc-700">Finance Agent — Waiting on step 3</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Feature Sections -->
+  <section class="py-24 md:py-32">
+    <div class="max-w-6xl mx-auto px-6 space-y-24">
+
+      <!-- 7 Templates -->
+      <div>
+        <p class="text-sm font-medium text-violet-400 tracking-wide uppercase mb-3">7 Included Templates</p>
+        <h2 class="text-2xl md:text-3xl font-bold tracking-tight mb-4">Start running common workflows immediately.</h2>
+        <p class="text-zinc-400 leading-relaxed mb-10 max-w-2xl">
+          Each template is fully configured with steps, recommended role assignments, and dependency rules. Customize them for your org or run them as-is. You can also build Playbooks from scratch or ask an agent to generate one from a plain-English description.
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="bg-surface-1 border border-white/[0.06] rounded-xl p-5 card-glow transition-all">
+            <div class="text-sm font-semibold text-white mb-1">Client Onboarding</div>
+            <p class="text-xs text-zinc-500 leading-relaxed">Welcome email, contract, project setup, access provisioning, kickoff brief, finance recording. 6 steps across 4 agent roles.</p>
+          </div>
+          <div class="bg-surface-1 border border-white/[0.06] rounded-xl p-5 card-glow transition-all">
+            <div class="text-sm font-semibold text-white mb-1">Security Audit</div>
+            <p class="text-xs text-zinc-500 leading-relaxed">Dependency scan, secret rotation check, access review, infrastructure review, report generation. Runs monthly by default.</p>
+          </div>
+          <div class="bg-surface-1 border border-white/[0.06] rounded-xl p-5 card-glow transition-all">
+            <div class="text-sm font-semibold text-white mb-1">Product Launch</div>
+            <p class="text-xs text-zinc-500 leading-relaxed">Pre-launch checklist, content creation, social scheduling, announcement email, support FAQ update. 8 steps.</p>
+          </div>
+          <div class="bg-surface-1 border border-white/[0.06] rounded-xl p-5 card-glow transition-all">
+            <div class="text-sm font-semibold text-white mb-1">Content Campaign</div>
+            <p class="text-xs text-zinc-500 leading-relaxed">Topic research, outline, drafting, editing, SEO review, publishing, performance tracking. Fully handled by CMO Agent.</p>
+          </div>
+          <div class="bg-surface-1 border border-white/[0.06] rounded-xl p-5 card-glow transition-all">
+            <div class="text-sm font-semibold text-white mb-1">Sprint Planning</div>
+            <p class="text-xs text-zinc-500 leading-relaxed">Backlog grooming, capacity estimate, issue prioritization, sprint goal definition, team assignment. CTO-led.</p>
+          </div>
+          <div class="bg-surface-1 border border-white/[0.06] rounded-xl p-5 card-glow transition-all">
+            <div class="text-sm font-semibold text-white mb-1">Incident Response</div>
+            <p class="text-xs text-zinc-500 leading-relaxed">Alert triage, severity classification, engineering escalation, stakeholder communication, post-mortem. Always available.</p>
+          </div>
+          <div class="bg-surface-1 border border-white/[0.06] rounded-xl p-5 card-glow transition-all sm:col-span-2 lg:col-span-1">
+            <div class="text-sm font-semibold text-white mb-1">New Hire Onboarding</div>
+            <p class="text-xs text-zinc-500 leading-relaxed">Role briefing, system access, KB reading assignment, first-week task list, check-in schedule. HR Agent-led.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dependency Resolution -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+        <div>
+          <p class="text-sm font-medium text-violet-400 tracking-wide uppercase mb-3">Dependency Resolution</p>
+          <h2 class="text-2xl md:text-3xl font-bold tracking-tight mb-4">Steps that depend on other steps wait automatically.</h2>
+          <p class="text-zinc-400 leading-relaxed mb-6">
+            Every Playbook step can declare dependencies on prior steps. IronWorks' execution engine evaluates these at runtime — a step that requires step 3 to be complete will not start until step 3 is done and marked successful. No polling, no manual handoffs.
+          </p>
+          <ul class="space-y-3 text-sm text-zinc-400">
+            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-violet-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Steps can depend on one or multiple prior steps</li>
+            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-violet-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Parallel execution for independent steps — no unnecessary waiting</li>
+            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-violet-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>If a step fails, downstream steps are halted and you are alerted</li>
+            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-violet-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Retry failed steps individually without rerunning the entire playbook</li>
+          </ul>
+        </div>
+        <div class="bg-surface-1 border border-white/[0.06] rounded-2xl p-6">
+          <div class="text-xs text-zinc-500 font-medium uppercase tracking-wide mb-4">Execution Graph — Client Onboarding</div>
+          <div class="space-y-2">
+            <div class="flex justify-center">
+              <div class="px-4 py-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-xs text-emerald-400 font-medium">Step 1: Welcome email</div>
+            </div>
+            <div class="flex justify-center"><div class="w-px h-4 bg-zinc-700"></div></div>
+            <div class="flex justify-center">
+              <div class="px-4 py-2 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-xs text-emerald-400 font-medium">Step 2: Create project</div>
+            </div>
+            <div class="flex justify-center"><div class="w-px h-4 bg-zinc-700"></div></div>
+            <div class="flex justify-center">
+              <div class="px-4 py-2 bg-violet-500/10 border border-violet-500/30 rounded-lg text-xs text-violet-400 font-medium">Step 3: Configure access</div>
+            </div>
+            <div class="flex items-start gap-4 mt-1 ml-8 mr-8">
+              <div class="flex-1 flex flex-col items-center gap-1">
+                <div class="w-px h-4 bg-zinc-700"></div>
+                <div class="px-3 py-2 bg-surface-2 border border-zinc-700 rounded-lg text-xs text-zinc-500 text-center w-full">Step 4: Kickoff brief</div>
+              </div>
+              <div class="flex-1 flex flex-col items-center gap-1">
+                <div class="w-px h-4 bg-zinc-700"></div>
+                <div class="px-3 py-2 bg-surface-2 border border-zinc-700 rounded-lg text-xs text-zinc-500 text-center w-full">Step 5: Finance</div>
+              </div>
+            </div>
+            <div class="text-center text-xs text-zinc-700 mt-2">Steps 4 and 5 run in parallel once Step 3 completes</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI Generation + Scheduling -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+        <div class="order-2 md:order-1 space-y-4">
+          <div class="bg-surface-1 border border-white/[0.06] rounded-xl p-5">
+            <div class="text-xs text-zinc-500 font-medium mb-3">AI Playbook Generation</div>
+            <div class="bg-surface-2 rounded-lg p-3 mb-3">
+              <div class="text-xs text-zinc-500 mb-1">Your prompt</div>
+              <div class="text-sm text-zinc-300">"Create a playbook for our monthly financial close process. Finance agent handles reconciliation, CEO approves, then CMO sends the summary to stakeholders."</div>
+            </div>
+            <div class="text-xs text-violet-400">Generating 6-step playbook...</div>
+          </div>
+          <div class="bg-surface-1 border border-white/[0.06] rounded-xl p-5">
+            <div class="text-xs text-zinc-500 font-medium mb-3">Scheduled Runs</div>
+            <div class="space-y-2 text-sm">
+              <div class="flex items-center justify-between">
+                <span class="text-zinc-400">Security Audit</span>
+                <span class="text-xs text-zinc-600 font-mono">1st of each month, 9 AM CT</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-zinc-400">Sprint Planning</span>
+                <span class="text-xs text-zinc-600 font-mono">Every Monday, 8 AM CT</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-zinc-400">Monthly Financial Close</span>
+                <span class="text-xs text-zinc-600 font-mono">Last Friday, 5 PM CT</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="order-1 md:order-2">
+          <p class="text-sm font-medium text-violet-400 tracking-wide uppercase mb-3">AI Generation + Scheduling</p>
+          <h2 class="text-2xl md:text-3xl font-bold tracking-tight mb-4">Describe the process. IronWorks builds the playbook.</h2>
+          <p class="text-zinc-400 leading-relaxed mb-6">
+            You can build Playbooks manually step by step, or describe the process in plain English and let an agent generate the structure. Once created, Playbooks can run on demand or on a fixed schedule. All schedules use Central Time.
+          </p>
+          <ul class="space-y-3 text-sm text-zinc-400">
+            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-violet-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Natural language prompt generates a full playbook structure</li>
+            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-violet-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Cron-style scheduling with Central Time zone</li>
+            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-violet-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Trigger via API, Telegram command, or manually from the dashboard</li>
+            <li class="flex items-start gap-2"><svg class="w-4 h-4 text-violet-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Run history with per-step timing and cost breakdown</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="py-24 md:py-32 border-t border-white/[0.06]">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="max-w-2xl">
+        <h2 class="text-3xl md:text-4xl font-bold tracking-tight mb-4">Stop rebuilding the same workflow every time.</h2>
+        <p class="text-zinc-400 text-lg mb-8">Playbooks are included on all plans. Starter allows 50 runs per month. Growth and Business are unlimited.</p>
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="/#pricing" class="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-medium px-6 py-3 rounded-lg transition-colors">
+            View Pricing
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+          </a>
+          <a href="/features/" class="inline-flex items-center justify-center gap-2 border border-zinc-700 hover:border-zinc-500 text-zinc-300 hover:text-white font-medium px-6 py-3 rounded-lg transition-colors">
+            All Features
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="border-t border-white/[0.06] py-12">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="flex flex-col md:flex-row justify-between gap-8">
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-blue-500">
+              <path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9"/>
+              <path d="m18 15 4-4"/>
+              <path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/>
+            </svg>
+            <span class="font-semibold">IronWorks</span>
+          </div>
+          <p class="text-zinc-500 text-sm">IronWorks by Steel Motion LLC</p>
+        </div>
+        <div class="flex flex-wrap gap-x-8 gap-y-2 text-sm text-zinc-500">
+          <a href="/terms" class="hover:text-zinc-300 transition-colors">Terms of Service</a>
+          <a href="/aup" class="hover:text-zinc-300 transition-colors">Acceptable Use</a>
+          <a href="/privacy" class="hover:text-zinc-300 transition-colors">Privacy Policy</a>
+          <a href="/dpa" class="hover:text-zinc-300 transition-colors">Data Processing</a>
+          <a href="/sla" class="hover:text-zinc-300 transition-colors">SLA</a>
+          <a href="/docs" class="hover:text-zinc-300 transition-colors">Documentation</a>
+        </div>
+      </div>
+      <div class="mt-8 pt-8 border-t border-white/[0.06] text-xs text-zinc-600">
+        &copy; 2026 Steel Motion LLC. All rights reserved.
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

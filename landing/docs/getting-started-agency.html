@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Getting Started as an Agency — IronWorks Docs</title>
+  <meta name="description" content="Run AI workforces for multiple clients with IronWorks. Tenant isolation, per-client companies, team packs, and playbook-driven onboarding.">
+  <meta property="og:title" content="Getting Started as an Agency — IronWorks Docs">
+  <meta property="og:description" content="Run AI workforces for multiple clients. Tenant isolation, per-client companies, team packs, and playbook-driven onboarding.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://ironworksapp.ai/docs/getting-started-agency.html">
+  <meta property="og:image" content="https://ironworksapp.ai/og-image.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{fontFamily:{sans:['Geist','system-ui','-apple-system','sans-serif'],mono:['Geist Mono','JetBrains Mono','monospace']},colors:{surface:{0:'#0a0a0a',1:'#141414',2:'#1e1e1e',3:'#282828'},accent:{DEFAULT:'#3b82f6',dim:'#1d4ed8'}}}}}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body{font-family:'Geist',system-ui,sans-serif;background:#0a0a0a;color:#e4e4e7}.gradient-text{background:linear-gradient(135deg,#e4e4e7 0%,#a1a1aa 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}.prose h2{font-size:1.5rem;font-weight:600;color:#fff;margin-top:2.5rem;margin-bottom:1rem}.prose h3{font-size:1.125rem;font-weight:600;color:#e4e4e7;margin-top:2rem;margin-bottom:.75rem}.prose p{color:#a1a1aa;line-height:1.75;margin-bottom:1rem}.prose ul,.prose ol{color:#a1a1aa;margin-bottom:1rem;padding-left:1.5rem}.prose li{margin-bottom:.5rem;line-height:1.6}.prose ul{list-style-type:disc}.prose ol{list-style-type:decimal}.prose strong{color:#e4e4e7;font-weight:600}.prose code{background:#1e1e1e;padding:.125rem .375rem;border-radius:.25rem;font-size:.875rem;color:#93c5fd;font-family:'Geist Mono',monospace}.prose pre{background:#141414;border:1px solid rgba(255,255,255,0.06);border-radius:.5rem;padding:1rem;margin-bottom:1.5rem;overflow-x:auto}.prose pre code{background:transparent;padding:0;color:#e4e4e7}.prose table{width:100%;border-collapse:collapse;margin-bottom:1.5rem}.prose th{text-align:left;padding:.75rem;border-bottom:1px solid rgba(255,255,255,0.1);color:#e4e4e7;font-weight:600;font-size:.875rem}.prose td{padding:.75rem;border-bottom:1px solid rgba(255,255,255,0.06);color:#a1a1aa;font-size:.875rem}.prose blockquote{border-left:3px solid #3b82f6;padding-left:1rem;margin:1.5rem 0}.prose blockquote p{color:#d4d4d8}.sidebar-link{display:block;padding:.375rem .75rem;border-radius:.375rem;font-size:.875rem;color:#71717a;transition:all .15s}.sidebar-link:hover{color:#e4e4e7;background:#1e1e1e}.sidebar-link.active{color:#3b82f6;background:rgba(59,130,246,0.1)}.sidebar-label{font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#52525b;padding:.375rem .75rem;margin-top:1rem}
+  </style>
+</head>
+<body class="antialiased">
+  <nav class="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.06] bg-surface-0/80 backdrop-blur-xl">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2.5"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-blue-500"><path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9"/><path d="m18 15 4-4"/><path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/></svg><span class="text-lg font-semibold tracking-tight">Iron<span class="text-blue-500">W</span>orks</span></a>
+      <div class="hidden md:flex items-center gap-8 text-sm text-zinc-400"><a href="/#features" class="hover:text-white transition-colors">Features</a><a href="/#pricing" class="hover:text-white transition-colors">Pricing</a><a href="/#security" class="hover:text-white transition-colors">Security</a><a href="/docs/" class="text-white transition-colors">Docs</a></div>
+      <div class="flex items-center gap-3"><a href="/auth" class="text-sm text-zinc-400 hover:text-white transition-colors hidden sm:block">Log in</a><a href="/#pricing" class="text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-colors hidden sm:inline-flex">Get Started</a></div>
+    </div>
+  </nav>
+
+  <div class="pt-24 pb-16 max-w-6xl mx-auto px-6">
+    <div class="text-sm text-zinc-500 mb-8">
+      <a href="/" class="hover:text-zinc-300">Home</a> <span class="mx-2">/</span>
+      <a href="/docs/" class="hover:text-zinc-300">Docs</a> <span class="mx-2">/</span>
+      <span class="text-zinc-300">Agency Guide</span>
+    </div>
+
+    <div class="flex gap-12">
+      <aside class="hidden lg:block w-64 flex-shrink-0">
+        <nav class="sticky top-24 space-y-0.5">
+          <div class="sidebar-label">Getting Started</div>
+          <a href="/docs/getting-started-founder.html" class="sidebar-link">Solo Founder Guide</a>
+          <a href="/docs/getting-started-agency.html" class="sidebar-link active">Agency Guide</a>
+          <a href="/docs/getting-started-technical.html" class="sidebar-link">Developer Guide</a>
+          <div class="sidebar-label">Core Concepts</div>
+          <a href="/docs/agents-and-roles.html" class="sidebar-link">Agents and Roles</a>
+          <a href="/docs/team-packs.html" class="sidebar-link">Team Packs</a>
+          <a href="/docs/war-room.html" class="sidebar-link">War Room Dashboard</a>
+          <div class="sidebar-label">Features</div>
+          <a href="/docs/playbooks-and-routines.html" class="sidebar-link">Playbooks and Routines</a>
+          <a href="/docs/knowledge-base.html" class="sidebar-link">Knowledge Base</a>
+          <a href="/docs/messaging-integrations.html" class="sidebar-link">Messaging Integrations</a>
+          <div class="sidebar-label">Operations</div>
+          <a href="/docs/api-keys-and-costs.html" class="sidebar-link">API Keys and Costs</a>
+          <a href="/docs/security-and-privacy.html" class="sidebar-link">Security and Privacy</a>
+          <div class="sidebar-label">Reference</div>
+          <a href="/docs/faq.html" class="sidebar-link">FAQ</a>
+        </nav>
+      </aside>
+
+      <main class="flex-1 min-w-0 prose">
+        <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-white mb-2">Getting Started as an Agency</h1>
+        <p class="text-lg text-zinc-400 mb-8">Run AI workforces for multiple clients with full tenant isolation.</p>
+
+        <h2>Choose the Right Plan</h2>
+        <p>Agencies need multi-company support. Here is how the plans break down:</p>
+        <table>
+          <thead><tr><th>Plan</th><th>Price</th><th>Companies</th><th>Projects</th><th>Best For</th></tr></thead>
+          <tbody>
+            <tr><td>Growth</td><td>$199/mo</td><td>2</td><td>25</td><td>Small agencies with 1-2 active clients</td></tr>
+            <tr><td>Business</td><td>$599/mo</td><td>5</td><td>Unlimited</td><td>Established agencies, 3-5 simultaneous clients</td></tr>
+          </tbody>
+        </table>
+        <p>Every plan includes unlimited agents. The company limit is what matters for agencies — each client gets their own company, which is a fully isolated tenant with its own agents, projects, knowledge base, secrets, and budget.</p>
+
+        <h2>Step 1: Create One Company Per Client</h2>
+        <p>In IronWorks, a <strong>company</strong> is the isolation boundary. Data never leaks between companies. When you onboard a new client:</p>
+        <ol>
+          <li>Navigate to Company Settings and create a new company</li>
+          <li>Name it after the client (e.g., "Acme Corp")</li>
+          <li>Set a unique issue prefix (e.g., "ACM")</li>
+          <li>Configure the client's monthly LLM budget</li>
+        </ol>
+        <p>Each company has its own:</p>
+        <ul>
+          <li>Agent roster (separate CEO, CTO, engineers, etc.)</li>
+          <li>Projects and issue trackers</li>
+          <li>Knowledge Base with company-specific documentation</li>
+          <li>API keys / secrets (encrypted per-company with AES-256-GCM)</li>
+          <li>Budget tracking and cost history</li>
+          <li>Playbooks and routines</li>
+        </ul>
+
+        <h2>Step 2: Deploy the Agency Pack</h2>
+        <p>For client work, the <strong>Agency pack</strong> gives you a well-rounded team of 7 agents:</p>
+        <table>
+          <thead><tr><th>Agent</th><th>Role</th></tr></thead>
+          <tbody>
+            <tr><td>CEO</td><td>Strategy, delegation, client communication</td></tr>
+            <tr><td>CTO</td><td>Technical architecture, engineering management</td></tr>
+            <tr><td>CMO</td><td>Marketing strategy, brand, growth leadership</td></tr>
+            <tr><td>CFO</td><td>Financial oversight, budget management, cost optimization</td></tr>
+            <tr><td>VP of HR</td><td>Agent hiring, performance reviews, team culture</td></tr>
+            <tr><td>Senior Engineer</td><td>Implementation, code quality, technical execution</td></tr>
+            <tr><td>Content Marketer</td><td>Content creation, SEO, multi-channel distribution</td></tr>
+          </tbody>
+        </table>
+        <p>You can customize the roster during onboarding. Need a Security Engineer for a compliance-heavy client? Add one. Client doesn't need marketing? Remove the CMO and Content Marketer.</p>
+
+        <h2>Step 3: Use Playbooks for Client Onboarding</h2>
+        <p>Every new company is seeded with 7 playbooks. The most relevant for agencies is <strong>"New Client Onboarding"</strong>, a 6-step workflow:</p>
+        <ol>
+          <li>CEO creates the project and defines goals</li>
+          <li>CTO designs the technical architecture</li>
+          <li>Security Engineer runs a baseline audit</li>
+          <li>DevOps Engineer provisions infrastructure</li>
+          <li>Content Marketer writes onboarding documentation</li>
+          <li>CEO reviews everything and delivers to the client</li>
+        </ol>
+        <p>Run it from the Playbooks page. Each step creates an issue assigned to the right agent, with dependency tracking — step 3 doesn't start until step 2 finishes. The final step requires your approval before the playbook completes.</p>
+
+        <h2>Step 4: Tenant Isolation — Clients Never See Each Other</h2>
+        <p>This is the most important thing for agencies: <strong>every database query in IronWorks is scoped by <code>company_id</code></strong>. There is no shared namespace. The system enforces this at the database level, not just the application level.</p>
+        <p>What this means in practice:</p>
+        <ul>
+          <li>Client A's agents cannot see Client B's issues, projects, or data</li>
+          <li>API keys stored for one company cannot be read by agents in another company</li>
+          <li>Budget and cost tracking is per-company</li>
+          <li>Knowledge Base pages are company-scoped</li>
+          <li>This isolation is verified by 122 automated HTTP tests that run on every code change</li>
+        </ul>
+
+        <h2>Step 5: Monitor All Clients from One Dashboard</h2>
+        <p>Switch between companies using the company selector in the top navigation. Each company has its own War Room showing that client's agent activity, spend, and blocked items.</p>
+        <p>For cost tracking across clients, check each company's budget utilization. The CFO agent in each company monitors spend and creates alert issues at 80% budget consumption.</p>
+
+        <h2>Scaling Your Agency</h2>
+        <p>As you add clients, here's how the work stays organized:</p>
+        <ul>
+          <li><strong>Playbooks</strong> standardize your delivery process — run the same "New Client Onboarding" playbook for every client</li>
+          <li><strong>Knowledge Base templates</strong> — seed each company with your standard operating procedures</li>
+          <li><strong>Routines</strong> — set up "Weekly Performance Review" and "Monthly Operations Report" routines that run automatically for each client</li>
+          <li><strong>Per-client budgets</strong> — set different monthly LLM budgets for different client tiers</li>
+        </ul>
+        <p>If you need more than 5 companies, contact support to discuss enterprise pricing.</p>
+
+      </main>
+    </div>
+  </div>
+
+  <footer class="border-t border-white/[0.06] py-12">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="flex flex-col md:flex-row justify-between gap-8">
+        <div><div class="flex items-center gap-2 mb-3"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-blue-500"><path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9"/><path d="m18 15 4-4"/><path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/></svg><span class="font-semibold">IronWorks</span></div><p class="text-zinc-500 text-sm">IronWorks by Steel Motion LLC</p></div>
+        <div class="flex flex-wrap gap-x-8 gap-y-2 text-sm text-zinc-500"><a href="/terms" class="hover:text-zinc-300 transition-colors">Terms of Service</a><a href="/privacy" class="hover:text-zinc-300 transition-colors">Privacy Policy</a><a href="/docs/" class="hover:text-zinc-300 transition-colors">Documentation</a></div>
+      </div>
+      <div class="mt-8 pt-8 border-t border-white/[0.06] text-xs text-zinc-600">&copy; 2026 Steel Motion LLC. All rights reserved.</div>
+    </div>
+  </footer>
+</body>
+</html>
