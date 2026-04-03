@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { eq, sql, and, gte, ne, desc } from "drizzle-orm";
+import { eq, sql, and, gte, ne, desc, count } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import {
   companies,
@@ -14,11 +14,16 @@ import {
   instanceUserRoles,
   authSessions,
   analyticsSnapshots,
+  issues,
 } from "@ironworksai/db";
 import { assertInstanceAdmin } from "./authz.js";
-import { notFound } from "../errors.js";
+import { notFound, badRequest } from "../errors.js";
 import { gatherLiveMetrics } from "../services/analytics.js";
 import { supportAdminRoutes } from "./support.js";
+import { logActivity } from "../services/index.js";
+
+// UUID v4 format validation
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -238,6 +243,11 @@ export function adminRoutes(db: Db) {
 
     const companyId = req.params.id as string;
 
+    // FIND-004: validate UUID format before touching the database
+    if (!UUID_RE.test(companyId)) {
+      throw badRequest("Invalid company ID format");
+    }
+
     const [companyRow] = await db
       .select()
       .from(companies)
@@ -259,9 +269,11 @@ export function adminRoutes(db: Db) {
         .from(agents)
         .where(and(eq(agents.companyId, companyId), ne(agents.status, "terminated"))),
 
-      db.execute(
-        sql`SELECT count(*)::int AS count FROM issues WHERE company_id = ${companyId}`,
-      ),
+      // FIND-004: replace raw SQL with Drizzle query builder
+      db
+        .select({ count: count() })
+        .from(issues)
+        .where(eq(issues.companyId, companyId)),
 
       db
         .select({ count: sql<number>`count(*)::int` })
@@ -275,14 +287,12 @@ export function adminRoutes(db: Db) {
         ),
     ]);
 
-    const issueCountRows = issueCountResult as unknown as Array<{ count: number }>;
-
     res.json({
       company: companyRow,
       subscription,
       agents: agentList,
       agentCount: agentList.length,
-      issueCount: Number(issueCountRows[0]?.count ?? 0),
+      issueCount: Number(issueCountResult[0]?.count ?? 0),
       memberCount: Number(memberCount[0]?.count ?? 0),
     });
   });
@@ -320,6 +330,17 @@ export function adminRoutes(db: Db) {
       throw notFound("Company not found");
     }
 
+    // FIND-003: log pause to audit trail
+    await logActivity(db, {
+      companyId,
+      actorType: "system",
+      actorId: "instance_admin",
+      action: "company.paused",
+      entityType: "company",
+      entityId: companyId,
+      details: { reason },
+    });
+
     res.json({ ok: true, company: updated });
   });
 
@@ -343,6 +364,16 @@ export function adminRoutes(db: Db) {
     if (!updated) {
       throw notFound("Company not found");
     }
+
+    // FIND-003: log resume to audit trail
+    await logActivity(db, {
+      companyId,
+      actorType: "system",
+      actorId: "instance_admin",
+      action: "company.resumed",
+      entityType: "company",
+      entityId: companyId,
+    });
 
     res.json({ ok: true, company: updated });
   });

@@ -12,7 +12,15 @@ export function assertBoard(req: Request) {
 
 export function assertInstanceAdmin(req: Request) {
   assertBoard(req);
-  if (req.actor.source === "local_implicit" || req.actor.isInstanceAdmin) {
+  if (req.actor.source === "local_implicit") {
+    // FIND-007: defense-in-depth — local_implicit must originate from loopback
+    const ip = req.ip ?? req.socket.remoteAddress ?? "";
+    if (!ip.startsWith("127.") && ip !== "::1" && ip !== "::ffff:127.0.0.1") {
+      throw forbidden("local_implicit access only allowed from loopback");
+    }
+    return;
+  }
+  if (req.actor.isInstanceAdmin) {
     return;
   }
   throw forbidden("Instance admin access required");

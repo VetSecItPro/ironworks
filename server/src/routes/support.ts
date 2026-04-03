@@ -8,10 +8,52 @@ import { notFound, badRequest } from "../errors.js";
 const VALID_TYPES = ["bug", "feature", "billing", "security", "other"] as const;
 const VALID_STATUSES = ["open", "in-progress", "resolved"] as const;
 
+// ── Rate limiter for public ticket submission (FIND-001) ─────────────────────
+// 5 tickets per hour per IP, in-memory sliding window.
+const ticketRateBuckets = new Map<string, { count: number; resetAt: number }>();
+const TICKET_RATE_LIMIT = 5;
+const TICKET_RATE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
+function checkTicketRateLimit(ip: string): boolean {
+  const now = Date.now();
+  let bucket = ticketRateBuckets.get(ip);
+  if (!bucket || now > bucket.resetAt) {
+    bucket = { count: 0, resetAt: now + TICKET_RATE_WINDOW_MS };
+    ticketRateBuckets.set(ip, bucket);
+  }
+  bucket.count++;
+  // Prune stale buckets occasionally
+  if (bucket.count === 1 && ticketRateBuckets.size > 5000) {
+    for (const [k, v] of ticketRateBuckets) {
+      if (now > v.resetAt) ticketRateBuckets.delete(k);
+    }
+  }
+  return bucket.count <= TICKET_RATE_LIMIT;
+}
+
+// ── HTML sanitizer (FIND-002) ────────────────────────────────────────────────
+function stripHtml(text: string): string {
+  return text.replace(/<[^>]*>/g, "");
+}
+
+// ── Email regex (FIND-001) ────────────────────────────────────────────────────
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// ── CORS origin for landing site (FIND-006) ──────────────────────────────────
+const LANDING_ORIGIN = "https://ironworksapp.ai";
+
 // ── Public route factory ─────────────────────────────────────────────────────
 
 export function supportPublicRoutes(db: Db) {
   const router = Router();
+
+  // FIND-006: preflight for cross-origin ticket submission from landing site
+  router.options("/support/tickets", (_req, res) => {
+    res.setHeader("Access-Control-Allow-Origin", LANDING_ORIGIN);
+    res.setHeader("Access-Control-Allow-Methods", "POST");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.status(204).end();
+  });
 
   /**
    * POST /api/support/tickets
@@ -19,6 +61,13 @@ export function supportPublicRoutes(db: Db) {
    * No auth required so that unauthenticated users can submit tickets.
    */
   router.post("/support/tickets", async (req, res) => {
+    // FIND-001: per-IP rate limit
+    const ip = req.ip ?? req.socket.remoteAddress ?? "unknown";
+    if (!checkTicketRateLimit(ip)) {
+      res.status(429).json({ error: "Too many ticket submissions. Try again later." });
+      return;
+    }
+
     const {
       type,
       subject,
@@ -37,7 +86,8 @@ export function supportPublicRoutes(db: Db) {
       userId?: string;
     };
 
-    if (!email || typeof email !== "string" || !email.includes("@")) {
+    // FIND-001: proper email regex validation
+    if (!email || typeof email !== "string" || !EMAIL_RE.test(email.trim())) {
       throw badRequest("A valid email address is required");
     }
     if (!subject || typeof subject !== "string" || subject.trim().length === 0) {
@@ -52,19 +102,26 @@ export function supportPublicRoutes(db: Db) {
         ? type
         : "bug";
 
+    // FIND-002: strip HTML from user-supplied text fields
+    const safeSubject = stripHtml(subject.trim());
+    const safeBody = stripHtml(body.trim());
+    const safeName = name ? stripHtml(name.trim()) : null;
+
     const [ticket] = await db
       .insert(supportTickets)
       .values({
         companyId: companyId ?? null,
         userId: userId ?? null,
         userEmail: email.trim(),
-        userName: name?.trim() ?? null,
+        userName: safeName || null,
         type: ticketType,
-        subject: subject.trim(),
-        body: body.trim(),
+        subject: safeSubject,
+        body: safeBody,
       })
       .returning();
 
+    // FIND-006: CORS header on actual POST response
+    res.setHeader("Access-Control-Allow-Origin", LANDING_ORIGIN);
     res.status(201).json({ id: ticket!.id, status: ticket!.status });
   });
 
@@ -164,13 +221,17 @@ export function supportAdminRoutes(db: Db) {
       throw notFound("Ticket not found");
     }
 
+    // FIND-002: strip HTML from admin-supplied fields
+    const safeCommentBody = stripHtml(body.trim());
+    const safeAuthorName = authorName ? stripHtml(authorName.trim()) : null;
+
     const [comment] = await db
       .insert(supportTicketComments)
       .values({
         ticketId,
         authorType: "admin",
-        authorName: authorName?.trim() ?? null,
-        body: body.trim(),
+        authorName: safeAuthorName,
+        body: safeCommentBody,
       })
       .returning();
 
