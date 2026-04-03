@@ -9,6 +9,8 @@ import { projectsApi } from "../api/projects";
 import { heartbeatsApi } from "../api/heartbeats";
 import { costsApi } from "../api/costs";
 import { goalProgressApi } from "../api/goalProgress";
+import { hiringApi } from "../api/hiring";
+import { approvalsApi } from "../api/approvals";
 import { useCompany } from "../context/CompanyContext";
 import { useDialog } from "../context/DialogContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
@@ -18,7 +20,7 @@ import { EmptyState } from "../components/EmptyState";
 import { ActivityRow } from "../components/ActivityRow";
 import { Button } from "@/components/ui/button";
 import { cn, formatCents } from "../lib/utils";
-import { AlertTriangle, Bot, ChevronDown, ChevronRight, CircleDot, DollarSign, ShieldCheck, Swords, PauseCircle, Users, UserPlus } from "lucide-react";
+import { AlertTriangle, Bot, Briefcase, ChevronDown, ChevronRight, CircleDot, DollarSign, ShieldCheck, Swords, PauseCircle, Users, UserPlus, Zap } from "lucide-react";
 import { ActiveAgentsPanel } from "../components/ActiveAgentsPanel";
 import { ChartCard, PriorityChart, IssueStatusChart } from "../components/ActivityCharts";
 import { PageSkeleton } from "../components/PageSkeleton";
@@ -176,6 +178,20 @@ export function Dashboard() {
     staleTime: 30_000,
   });
 
+  const { data: hiringRequests } = useQuery({
+    queryKey: queryKeys.hiring.list(selectedCompanyId!),
+    queryFn: () => hiringApi.list(selectedCompanyId!),
+    enabled: !!selectedCompanyId,
+    staleTime: 30_000,
+  });
+
+  const { data: pendingApprovalsList } = useQuery({
+    queryKey: queryKeys.approvals.list(selectedCompanyId!, "pending"),
+    queryFn: () => approvalsApi.list(selectedCompanyId!, "pending"),
+    enabled: !!selectedCompanyId,
+    staleTime: 30_000,
+  });
+
   /* ── Maps ── */
 
   const agentMap = useMemo(() => {
@@ -305,6 +321,27 @@ export function Dashboard() {
     () => (goalsProgress ?? []).filter((g) => g.status === "active" || g.status === "planned"),
     [goalsProgress],
   );
+
+  // AI Workforce Impact metrics
+  const impactMetrics = useMemo(() => {
+    // Count issues completed this week
+    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const doneThisWeek = (issues ?? []).filter(
+      (i) => i.status === "done" && i.completedAt && new Date(i.completedAt).getTime() > weekAgo,
+    ).length;
+    const humanHoursEquiv = doneThisWeek * 2;
+    const costPerTask = doneThisWeek > 0 ? weekSpendCents / doneThisWeek : 0;
+    const costPerHumanHour = humanHoursEquiv > 0 ? weekSpendCents / humanHoursEquiv : 0;
+    return { doneThisWeek, humanHoursEquiv, costPerTask, costPerHumanHour };
+  }, [issues, weekSpendCents]);
+
+  // CEO Decisions Needed
+  const pendingHiringCount = useMemo(
+    () => (hiringRequests ?? []).filter((r) => r.status === "pending" || r.status === "open").length,
+    [hiringRequests],
+  );
+  const pendingApprovalsCount = (pendingApprovalsList ?? []).length;
+  const hasDecisionsNeeded = pendingHiringCount > 0 || pendingApprovalsCount > 0;
 
   /* ── Activity animation ── */
 
@@ -612,6 +649,95 @@ export function Dashboard() {
               )}
             </div>
           </div>
+
+          {/* ── 4b. AI WORKFORCE IMPACT ── */}
+          {(impactMetrics.doneThisWeek > 0 || weekSpendCents > 0) && (
+            <div className="rounded-xl border border-border p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+                  <Zap className="h-3.5 w-3.5" />
+                  AI Workforce Impact
+                </h4>
+                <Link to="/performance" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Details</Link>
+              </div>
+              <p className="text-sm text-foreground">
+                Your {headcount ? headcount.fte + headcount.contractor : agents?.length ?? 0} agents completed{" "}
+                <span className="font-semibold">{impactMetrics.doneThisWeek}</span> tasks this week
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="space-y-0.5">
+                  <p className="text-lg font-bold tabular-nums">{impactMetrics.humanHoursEquiv}h</p>
+                  <p className="text-[11px] text-muted-foreground">Human-hours equivalent</p>
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-lg font-bold tabular-nums">{formatCents(weekSpendCents)}</p>
+                  <p className="text-[11px] text-muted-foreground">Total cost this week</p>
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-lg font-bold tabular-nums">
+                    {impactMetrics.doneThisWeek > 0 ? formatCents(Math.round(impactMetrics.costPerTask)) : "-"}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">Cost per task</p>
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-lg font-bold tabular-nums">
+                    {impactMetrics.humanHoursEquiv > 0 ? formatCents(Math.round(impactMetrics.costPerHumanHour)) : "-"}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">Cost per human-hour</p>
+                </div>
+              </div>
+              {impactMetrics.humanHoursEquiv > 0 && (
+                <p className="text-xs text-muted-foreground border-t border-border/50 pt-2">
+                  Your AI workforce operates at{" "}
+                  <span className="font-medium text-foreground">
+                    {formatCents(Math.round(impactMetrics.costPerHumanHour))}/human-hour equivalent
+                  </span>
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* ── 4c. DECISIONS NEEDED (CEO) ── */}
+          {hasDecisionsNeeded && (
+            <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.04] p-4 space-y-3">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-amber-400 flex items-center gap-2">
+                <Briefcase className="h-3.5 w-3.5" />
+                Decisions Needed
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {pendingHiringCount > 0 && (
+                  <Link
+                    to="/hiring"
+                    className="flex items-center justify-between gap-3 rounded-lg border border-amber-500/15 bg-amber-500/[0.04] px-4 py-3 no-underline text-inherit hover:bg-amber-500/10 transition-colors"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <UserPlus className="h-4 w-4 text-amber-400 shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium">{pendingHiringCount} hiring request{pendingHiringCount !== 1 ? "s" : ""}</p>
+                        <p className="text-xs text-muted-foreground">Pending review</p>
+                      </div>
+                    </div>
+                    <span className="text-xs text-amber-400 shrink-0">Review</span>
+                  </Link>
+                )}
+                {pendingApprovalsCount > 0 && (
+                  <Link
+                    to="/approvals"
+                    className="flex items-center justify-between gap-3 rounded-lg border border-amber-500/15 bg-amber-500/[0.04] px-4 py-3 no-underline text-inherit hover:bg-amber-500/10 transition-colors"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <ShieldCheck className="h-4 w-4 text-amber-400 shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium">{pendingApprovalsCount} pending approval{pendingApprovalsCount !== 1 ? "s" : ""}</p>
+                        <p className="text-xs text-muted-foreground">Awaiting board review</p>
+                      </div>
+                    </div>
+                    <span className="text-xs text-amber-400 shrink-0">Review</span>
+                  </Link>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* ── 5. PROGRESS ROW ── */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
