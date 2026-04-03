@@ -15,7 +15,8 @@ import {
 } from "@ironworksai/shared";
 import { badRequest, notFound, unprocessable } from "../errors.js";
 import { assertCanWrite, assertCompanyAccess, getActorInfo } from "./authz.js";
-import { logActivity, createAgentWorkspace, createHiringRecord } from "../services/index.js";
+import { logActivity, createAgentWorkspace, createHiringRecord, buildOnboardingPacket } from "../services/index.js";
+import { logger } from "../middleware/logger.js";
 
 export function hiringRoutes(db: Db) {
   const router = Router();
@@ -270,6 +271,28 @@ export function hiringRoutes(db: Db) {
         employmentType: result.agent.employmentType,
       },
     });
+
+    // Build and store contractor onboarding packet (best-effort, non-blocking)
+    if (empType === "contractor") {
+      try {
+        const packet = await buildOnboardingPacket(
+          db,
+          companyId,
+          existing.projectId ?? null,
+          existing.onboardingKbPageIds ?? [],
+          existing.reportsToAgentId ?? null,
+        );
+        await db
+          .update(agentsTable)
+          .set({
+            runtimeConfig: { onboardingPacket: packet },
+            updatedAt: new Date(),
+          })
+          .where(eq(agentsTable.id, result.agent.id));
+      } catch (err) {
+        logger.error({ err, agentId: result.agent.id }, "Failed to build contractor onboarding packet");
+      }
+    }
 
     // Create agent workspace folders and HR hiring record (best-effort, non-blocking)
     try {

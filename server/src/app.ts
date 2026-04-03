@@ -49,6 +49,7 @@ import { aiGoalBreakdownRoutes } from "./routes/ai-goal-breakdown.js";
 import { messagingRoutes, emailWebhookRoutes } from "./routes/messaging.js";
 import { slimRoutes } from "./routes/slim.js";
 import { adminRoutes } from "./routes/admin.js";
+import { executiveRoutes } from "./routes/executive.js";
 // Plugin system disabled — not needed for V1 productization
 // import { pluginRoutes } from "./routes/plugins.js";
 // import { pluginUiStaticRoutes } from "./routes/plugin-ui-static.js";
@@ -281,6 +282,7 @@ export async function createApp(
   api.use(approvalRoutes(db));
   api.use(secretRoutes(db));
   api.use(costRoutes(db));
+  api.use(executiveRoutes(db));
   api.use(activityRoutes(db));
   api.use(dashboardRoutes(db));
   api.use(sidebarBadgeRoutes(db));

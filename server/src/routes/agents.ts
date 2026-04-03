@@ -55,6 +55,7 @@ import {
   archiveAgentWorkspace as archiveAgentWorkspaceService,
   createHiringRecord as createHiringRecordService,
   createTerminationRecord as createTerminationRecordService,
+  buildOnboardingPacket,
 } from "../services/index.js";
 import { conflict, forbidden, notFound, unprocessable } from "../errors.js";
 import { assertBoard, assertCanWrite, assertCompanyAccess, assertInstanceAdmin, getActorInfo } from "./authz.js";
@@ -1518,6 +1519,24 @@ export function agentRoutes(db: Db) {
 
     // Wire: auto-create library folder for new agent
     ensureLibraryAgentFolder(companyId, agent.name, db).catch(() => {});
+
+    // Build and store contractor onboarding packet if applicable
+    if (resolvedEmploymentType === "contractor") {
+      try {
+        const packet = await buildOnboardingPacket(
+          db,
+          companyId,
+          typeof createInput.contractProjectId === "string" ? createInput.contractProjectId : null,
+          Array.isArray(createInput.onboardingContextIds) ? createInput.onboardingContextIds : [],
+          typeof createInput.reportsTo === "string" ? createInput.reportsTo : null,
+        );
+        await svc.update(agent.id, {
+          runtimeConfig: { ...agent.runtimeConfig, onboardingPacket: packet },
+        });
+      } catch (err) {
+        logger.error({ err, agentId: agent.id }, "Failed to build contractor onboarding packet");
+      }
+    }
 
     res.status(201).json(agent);
   });

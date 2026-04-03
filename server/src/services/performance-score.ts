@@ -1,6 +1,6 @@
 import { and, eq, gte, ne, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import { agents, issues } from "@ironworksai/db";
+import { agents, agentMemoryEntries, companies, heartbeatRuns, issues } from "@ironworksai/db";
 import { logger } from "../middleware/logger.js";
 
 // ── Agent Performance Score ─────────────────────────────────────────────────
@@ -146,4 +146,130 @@ export async function updateAllPerformanceScores(
     { companyId, agentsUpdated: updated },
     "updated performance scores for company agents",
   );
+}
+
+// ── Agent Utilization Tracking ─────────────────────────────────────────────
+
+const DEFAULT_RUN_DURATION_MINUTES = 5;
+
+/**
+ * Compute agent utilization as a percentage of calendar time spent actively running.
+ *
+ * Counts heartbeat runs in the period, uses actual run durations where available
+ * (startedAt to finishedAt), or falls back to a default estimate per run.
+ */
+export async function computeAgentUtilization(
+  db: Db,
+  agentId: string,
+  periodDays: number = 30,
+): Promise<{
+  activeMinutes: number;
+  totalMinutes: number;
+  utilizationPct: number;
+}> {
+  const periodStart = new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000);
+  const totalMinutes = periodDays * 24 * 60;
+
+  // Get runs with timing data
+  const runs = await db
+    .select({
+      startedAt: heartbeatRuns.startedAt,
+      finishedAt: heartbeatRuns.finishedAt,
+    })
+    .from(heartbeatRuns)
+    .where(
+      and(
+        eq(heartbeatRuns.agentId, agentId),
+        gte(heartbeatRuns.createdAt, periodStart),
+      ),
+    );
+
+  let activeMinutes = 0;
+  for (const run of runs) {
+    if (run.startedAt && run.finishedAt) {
+      const durationMs = run.finishedAt.getTime() - run.startedAt.getTime();
+      activeMinutes += Math.max(0, durationMs / (60 * 1000));
+    } else {
+      activeMinutes += DEFAULT_RUN_DURATION_MINUTES;
+    }
+  }
+
+  activeMinutes = Math.round(activeMinutes);
+  const utilizationPct = totalMinutes > 0
+    ? Math.min(100, Math.round((activeMinutes / totalMinutes) * 100))
+    : 0;
+
+  return { activeMinutes, totalMinutes, utilizationPct };
+}
+
+// ── Performance Snapshots ──────────────────────────────────────────────────
+
+/**
+ * Capture a weekly performance snapshot for all agents in a company.
+ *
+ * Stores each agent's current performance_score as a semantic memory entry
+ * with category "performance_snapshot". Intended to run alongside weekly reports.
+ */
+export async function capturePerformanceSnapshot(
+  db: Db,
+  companyId: string,
+): Promise<void> {
+  const companyAgents = await db
+    .select({
+      id: agents.id,
+      performanceScore: agents.performanceScore,
+    })
+    .from(agents)
+    .where(
+      and(
+        eq(agents.companyId, companyId),
+        ne(agents.status, "terminated"),
+      ),
+    );
+
+  const now = new Date();
+  const dateStr = now.toISOString().slice(0, 10);
+
+  for (const agent of companyAgents) {
+    const snapshotData = JSON.stringify({
+      agentId: agent.id,
+      score: agent.performanceScore ?? 0,
+      date: dateStr,
+    });
+
+    await db.insert(agentMemoryEntries).values({
+      agentId: agent.id,
+      companyId,
+      memoryType: "semantic",
+      category: "performance_snapshot",
+      content: snapshotData,
+      confidence: 100,
+      lastAccessedAt: now,
+    });
+  }
+
+  logger.info(
+    { companyId, agentsSnapshotted: companyAgents.length },
+    "captured performance snapshots for company agents",
+  );
+}
+
+/**
+ * Capture performance snapshots for ALL companies.
+ */
+export async function captureAllPerformanceSnapshots(db: Db): Promise<void> {
+  const allCompanies = await db
+    .select({ id: companies.id })
+    .from(companies)
+    .where(ne(companies.status, "pending_erasure"));
+
+  for (const company of allCompanies) {
+    try {
+      await capturePerformanceSnapshot(db, company.id);
+    } catch (err) {
+      logger.error({ err, companyId: company.id }, "failed to capture performance snapshots for company");
+    }
+  }
+
+  logger.info({ companiesProcessed: allCompanies.length }, "performance snapshots capture complete");
 }

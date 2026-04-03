@@ -6,6 +6,8 @@ import { checkContractorLifecycles } from "../services/contractor-lifecycle.js";
 import { decayStaleMemories } from "../services/agent-memory.js";
 import { runAllWeeklyReports } from "../services/weekly-reports.js";
 import { runAllDailyStandups } from "../services/daily-standup.js";
+import { captureAllPerformanceSnapshots } from "../services/performance-score.js";
+import { runAllAchievementChecks } from "../services/achievements.js";
 import {
   companies,
   agents,
@@ -690,6 +692,10 @@ export function startRetentionScheduler(db: Db): NodeJS.Timeout {
       runAllDailyStandups(db).catch((err) =>
         logger.error({ err }, "scheduled daily standups failed"),
       );
+      // Achievement checks run daily alongside standups
+      runAllAchievementChecks(db).catch((err) =>
+        logger.error({ err }, "scheduled achievement checks failed"),
+      );
     }
 
     // Weekly reports on Sunday at 18:00 CT (run once per week)
@@ -697,6 +703,10 @@ export function startRetentionScheduler(db: Db): NodeJS.Timeout {
       lastWeeklyDate = dateKey;
       runAllWeeklyReports(db).catch((err) =>
         logger.error({ err }, "scheduled weekly reports failed"),
+      );
+      // Performance snapshots captured alongside weekly reports
+      captureAllPerformanceSnapshots(db).catch((err) =>
+        logger.error({ err }, "scheduled performance snapshots failed"),
       );
     }
   }, MINUTE_MS);

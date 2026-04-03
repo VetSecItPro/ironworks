@@ -1833,7 +1833,27 @@ export function heartbeatService(db: Db) {
       }
     }
 
-    const effectiveStatus = shouldAutoPause ? "paused" : nextStatus;
+    // Cost anomaly circuit breaker: if last 5 runs all exceeded expected
+    // token usage by >3x the historical baseline, auto-pause the agent.
+    let shouldCostPause = false;
+    if (!shouldAutoPause && outcome === "succeeded" && runningCount === 0) {
+      try {
+        const { executiveAnalyticsService: execSvc } = await import("./executive-analytics.js");
+        const execAnalytics = execSvc(db);
+        const anomaly = await execAnalytics.checkCostAnomaly(agentId);
+        if (anomaly.anomaly) {
+          shouldCostPause = true;
+          logger.warn(
+            { agentId, companyId: existing.companyId, ...anomaly },
+            "Cost anomaly detected: agent paused via circuit breaker",
+          );
+        }
+      } catch (err) {
+        logger.warn({ err, agentId }, "Cost anomaly check failed (non-fatal)");
+      }
+    }
+
+    const effectiveStatus = shouldAutoPause || shouldCostPause ? "paused" : nextStatus;
 
     const updated = await db
       .update(agents)
@@ -1846,7 +1866,12 @@ export function heartbeatService(db: Db) {
               pauseReason: "auto_paused: 3 consecutive failures",
               pausedAt: new Date(),
             }
-          : {}),
+          : shouldCostPause
+            ? {
+                pauseReason: "cost_anomaly",
+                pausedAt: new Date(),
+              }
+            : {}),
       })
       .where(eq(agents.id, agentId))
       .returning()
@@ -1894,6 +1919,35 @@ export function heartbeatService(db: Db) {
           details: { reason: "3 consecutive failures", name: updated.name },
         }).catch((err) => {
           logger.warn({ err, agentId }, "Failed to log agent.auto_paused activity");
+        });
+      }
+
+      // Cost anomaly pause: create critical issue and log activity
+      if (shouldCostPause) {
+        issuesSvc
+          .create(updated.companyId, {
+            title: `[System] Agent ${updated.name} paused - cost anomaly detected`,
+            description: `The agent **${updated.name}** (${updated.role}) has been automatically paused because its last 5 runs all exceeded expected token usage by more than 3x the historical baseline.\n\nReview the agent's behavior, prompt configuration, and recent run logs before resuming.`,
+            priority: "critical",
+            status: "todo",
+            createdByUserId: null,
+            createdByAgentId: null,
+          })
+          .catch((err) => {
+            logger.warn({ err, agentId }, "Failed to create cost-anomaly system issue");
+          });
+
+        logActivity(db, {
+          companyId: updated.companyId,
+          actorType: "system",
+          actorId: agentId,
+          action: "agent.cost_anomaly_paused",
+          entityType: "agent",
+          entityId: agentId,
+          agentId,
+          details: { reason: "cost_anomaly", name: updated.name },
+        }).catch((err) => {
+          logger.warn({ err, agentId }, "Failed to log cost_anomaly_paused activity");
         });
       }
     }
@@ -2429,6 +2483,39 @@ export function heartbeatService(db: Db) {
           ]
         : []),
     ];
+    // Inject contractor onboarding packet into context if present
+    const agentRuntimeConfig = parseObject(agent.runtimeConfig);
+    const onboardingPacket = agentRuntimeConfig.onboardingPacket as {
+      companyBrief?: string;
+      projectScope?: string | null;
+      kbPageSummaries?: Array<{ slug: string; title: string; excerpt: string }>;
+      teamContacts?: Array<{ name: string; role: string; agentId: string }>;
+    } | null;
+    if (onboardingPacket && typeof onboardingPacket === "object") {
+      const sections: string[] = [];
+      if (onboardingPacket.companyBrief) {
+        sections.push(`## Company Context (Contractor Onboarding)\n${onboardingPacket.companyBrief}`);
+      }
+      if (onboardingPacket.projectScope) {
+        sections.push(`## Project Scope\n${onboardingPacket.projectScope}`);
+      }
+      if (onboardingPacket.kbPageSummaries && onboardingPacket.kbPageSummaries.length > 0) {
+        const kbLines = onboardingPacket.kbPageSummaries.map(
+          (p) => `- **${p.title}** (${p.slug}): ${p.excerpt}`,
+        );
+        sections.push(`## Key Knowledge\n${kbLines.join("\n")}`);
+      }
+      if (onboardingPacket.teamContacts && onboardingPacket.teamContacts.length > 0) {
+        const contactLines = onboardingPacket.teamContacts.map(
+          (c) => `- ${c.name} (${c.role})`,
+        );
+        sections.push(`## Team Contacts\n${contactLines.join("\n")}`);
+      }
+      if (sections.length > 0) {
+        context.ironworksOnboardingContext = sections.join("\n\n");
+      }
+    }
+
     context.ironworksWorkspace = {
       cwd: executionWorkspace.cwd,
       source: executionWorkspace.source,

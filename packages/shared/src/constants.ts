@@ -190,7 +190,7 @@ export type RoutineRunStatus = (typeof ROUTINE_RUN_STATUSES)[number];
 export const ROUTINE_RUN_SOURCES = ["schedule", "manual", "api", "webhook"] as const;
 export type RoutineRunSource = (typeof ROUTINE_RUN_SOURCES)[number];
 
-export const PAUSE_REASONS = ["manual", "budget", "system", "iteration_limit"] as const;
+export const PAUSE_REASONS = ["manual", "budget", "system", "iteration_limit", "cost_anomaly"] as const;
 export type PauseReason = (typeof PAUSE_REASONS)[number];
 
 export const DEFAULT_ITERATION_LIMITS = {
@@ -868,3 +868,35 @@ export const MEMORY_TYPE_LABELS: Record<MemoryType, string> = {
 
 export const HIRING_REQUEST_STATUSES = ["draft", "pending", "approved", "rejected", "fulfilled"] as const;
 export type HiringRequestStatus = (typeof HIRING_REQUEST_STATUSES)[number];
+
+// ── SLA Targets ────────────────────────────────────────────────────────────
+// Maximum resolution time in minutes by priority
+
+export const SLA_TARGETS = {
+  critical: 4 * 60,
+  high: 24 * 60,
+  medium: 72 * 60,
+  low: 168 * 60,
+} as const;
+
+// ── Risk Register ──────────────────────────────────────────────────────────
+
+export const RISK_LEVELS = ["low", "medium", "high", "critical"] as const;
+export type RiskLevel = (typeof RISK_LEVELS)[number];
+
+// ── Well-Known Issue Labels ────────────────────────────────────────────────
+
+export const WELL_KNOWN_LABELS = [
+  "tech_debt",
+  "bug",
+  "feature",
+  "security",
+  "performance",
+  "documentation",
+] as const;
+export type WellKnownLabel = (typeof WELL_KNOWN_LABELS)[number];
+
+// ── Cost Circuit Breaker ───────────────────────────────────────────────────
+
+export const COST_CIRCUIT_BREAKER_WINDOW = 5;
+export const COST_CIRCUIT_BREAKER_MULTIPLIER = 3;

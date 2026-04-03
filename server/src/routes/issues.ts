@@ -38,6 +38,7 @@ import { isAllowedContentType, MAX_ATTACHMENT_BYTES } from "../attachment-types.
 import { queueIssueAssignmentWakeup } from "../services/issue-assignment-wakeup.js";
 import { playbookExecutionService } from "../services/playbook-execution.js";
 import { recalculateGoalProgress } from "../services/goal-progress.js";
+import { performPostTaskReflection } from "../services/agent-reflection.js";
 
 const MAX_ISSUE_COMMENT_LIMIT = 500;
 
@@ -1137,6 +1138,25 @@ export function issueRoutes(db: Db, storage: StorageService) {
         recalculateGoalProgress(db, issue.goalId).catch((err) =>
           logger.warn({ err, goalId: issue.goalId }, "goal progress recalculation failed"),
         );
+      }
+
+      // Post-task reflection: when an issue transitions to done or cancelled
+      if (issue.assigneeAgentId && issue.status !== existing.status) {
+        const outcome =
+          issue.status === "done" ? "completed" as const :
+          issue.status === "cancelled" ? "cancelled" as const :
+          null;
+        if (outcome) {
+          performPostTaskReflection(db, {
+            agentId: issue.assigneeAgentId,
+            companyId: issue.companyId,
+            issueId: issue.id,
+            issueTitle: issue.title,
+            outcome,
+          }).catch((err) =>
+            logger.warn({ err, issueId: issue.id }, "post-task reflection failed"),
+          );
+        }
       }
     })();
 

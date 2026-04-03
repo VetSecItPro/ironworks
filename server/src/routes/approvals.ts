@@ -18,6 +18,7 @@ import {
 } from "../services/index.js";
 import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
 import { redactEventPayload } from "../redaction.js";
+import { extractLessonFromRejection } from "../services/agent-reflection.js";
 
 function redactApprovalPayload<T extends { payload: Record<string, unknown> }>(approval: T): T {
   return {
@@ -232,6 +233,21 @@ export function approvalRoutes(db: Db) {
         entityId: approval.id,
         details: { type: approval.type },
       });
+
+      // Extract lesson from rejection for the requesting agent
+      if (approval.requestedByAgentId && req.body.decisionNote) {
+        const linkedIssues = await issueApprovalsSvc.listIssuesForApproval(approval.id);
+        const primaryIssueId = linkedIssues[0]?.id ?? null;
+
+        extractLessonFromRejection(db, {
+          agentId: approval.requestedByAgentId,
+          companyId: approval.companyId,
+          issueId: primaryIssueId ?? approval.id,
+          rejectionReason: req.body.decisionNote,
+        }).catch((err) =>
+          logger.warn({ err, approvalId: approval.id }, "failed to extract lesson from rejection"),
+        );
+      }
     }
 
     res.json(redactApprovalPayload(approval));

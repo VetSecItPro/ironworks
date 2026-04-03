@@ -12,6 +12,7 @@ import { goalProgressApi } from "../api/goalProgress";
 import { hiringApi } from "../api/hiring";
 import { approvalsApi } from "../api/approvals";
 import { announcementsApi } from "../api/announcements";
+import { velocityApi, type VelocityWeek } from "../api/velocity";
 import { useCompany } from "../context/CompanyContext";
 import { useDialog } from "../context/DialogContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
@@ -97,6 +98,124 @@ function aggregateActivityEvents(
 
 function isAggregated(item: import("@ironworksai/shared").ActivityEvent | AggregatedGroup): item is AggregatedGroup {
   return "count" in item && "key" in item;
+}
+
+/* ── Velocity Chart ── */
+
+function VelocityChart({ weeks }: { weeks: VelocityWeek[] }) {
+  const maxVal = Math.max(...weeks.map((w) => w.issuesCompleted + w.issuesCancelled), 1);
+  const chartW = 400;
+  const chartH = 120;
+  const barGap = 4;
+  const barW = Math.max(4, (chartW - barGap * weeks.length) / weeks.length);
+  const labelY = chartH + 14;
+
+  return (
+    <div>
+      <svg viewBox={`0 0 ${chartW} ${chartH + 24}`} className="w-full" preserveAspectRatio="xMidYMid meet">
+        {weeks.map((w, i) => {
+          const total = w.issuesCompleted + w.issuesCancelled;
+          const totalH = (total / maxVal) * chartH;
+          const completedH = (w.issuesCompleted / maxVal) * chartH;
+          const cancelledH = (w.issuesCancelled / maxVal) * chartH;
+          const x = i * (barW + barGap) + barGap / 2;
+
+          const d = new Date(w.weekStart);
+          const label = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+          const showLabel = i === 0 || i === weeks.length - 1 || i % 3 === 0;
+
+          return (
+            <g key={w.weekStart}>
+              <title>{label}: {w.issuesCompleted} completed, {w.issuesCancelled} cancelled</title>
+              {completedH > 0 && (
+                <rect
+                  x={x}
+                  y={chartH - totalH}
+                  width={barW}
+                  height={completedH}
+                  rx={2}
+                  className="fill-emerald-500"
+                />
+              )}
+              {cancelledH > 0 && (
+                <rect
+                  x={x}
+                  y={chartH - cancelledH}
+                  width={barW}
+                  height={cancelledH}
+                  rx={2}
+                  className="fill-muted-foreground/30"
+                />
+              )}
+              {total === 0 && (
+                <rect
+                  x={x}
+                  y={chartH - 2}
+                  width={barW}
+                  height={2}
+                  rx={1}
+                  className="fill-muted/30"
+                />
+              )}
+              {showLabel && (
+                <text
+                  x={x + barW / 2}
+                  y={labelY}
+                  textAnchor="middle"
+                  className="fill-muted-foreground text-[8px]"
+                >
+                  {label}
+                </text>
+              )}
+            </g>
+          );
+        })}
+      </svg>
+      <div className="flex items-center gap-3 mt-1 text-[10px] text-muted-foreground">
+        <span className="flex items-center gap-1">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+          Completed
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30 shrink-0" />
+          Cancelled
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* ── Department Mini-Chart ── */
+
+const DEPT_COLORS = [
+  "#6366f1", "#8b5cf6", "#ec4899", "#f97316",
+  "#06b6d4", "#10b981", "#eab308", "#ef4444",
+];
+
+function DepartmentMiniChart({ departments }: { departments: Array<{ name: string; count: number }> }) {
+  const maxCount = Math.max(...departments.map((d) => d.count), 1);
+
+  return (
+    <div className="space-y-2">
+      {departments.map((dept, i) => (
+        <div key={dept.name} className="space-y-1">
+          <div className="flex items-center justify-between text-sm">
+            <span className="truncate">{dept.name}</span>
+            <span className="text-muted-foreground tabular-nums shrink-0 ml-2">{dept.count}</span>
+          </div>
+          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-[width] duration-300"
+              style={{
+                width: `${(dept.count / maxCount) * 100}%`,
+                backgroundColor: DEPT_COLORS[i % DEPT_COLORS.length],
+              }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 /* ── Main component ── */
@@ -198,6 +317,13 @@ export function Dashboard() {
     queryFn: () => announcementsApi.list(selectedCompanyId!),
     enabled: !!selectedCompanyId,
     staleTime: 30_000,
+  });
+
+  const { data: velocity } = useQuery({
+    queryKey: ["velocity", selectedCompanyId!],
+    queryFn: () => velocityApi.get(selectedCompanyId!, 12),
+    enabled: !!selectedCompanyId,
+    staleTime: 60_000,
   });
 
   /* ── Maps ── */
@@ -323,6 +449,20 @@ export function Dashboard() {
   }, [issues, projects]);
 
   const totalProjectIssues = projectActivity.reduce((s, p) => s + p.count, 0);
+
+  // Department breakdown
+  const departmentBreakdown = useMemo(() => {
+    if (!agents) return [];
+    const counts = new Map<string, number>();
+    for (const a of agents) {
+      if (a.status === "terminated") continue;
+      const dept = (a as { department?: string | null }).department ?? "Unassigned";
+      counts.set(dept, (counts.get(dept) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [agents]);
 
   // Active goals
   const activeGoals = useMemo(
@@ -832,6 +972,29 @@ export function Dashboard() {
               <ChartCard title="Issues by Status" subtitle="Last 14 days">
                 <IssueStatusChart issues={issues ?? []} />
               </ChartCard>
+            </div>
+          </div>
+
+          {/* ── 5b. VELOCITY + DEPARTMENT ── */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Velocity Chart */}
+            <div className="rounded-xl border border-border p-4 space-y-3">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Team Velocity (12 weeks)</h4>
+              {!velocity || velocity.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No velocity data yet.</p>
+              ) : (
+                <VelocityChart weeks={velocity} />
+              )}
+            </div>
+
+            {/* Department Breakdown */}
+            <div className="rounded-xl border border-border p-4 space-y-3">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Agents by Department</h4>
+              {departmentBreakdown.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No agents yet.</p>
+              ) : (
+                <DepartmentMiniChart departments={departmentBreakdown} />
+              )}
             </div>
           </div>
 

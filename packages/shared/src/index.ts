@@ -87,6 +87,11 @@ export {
   MEMORY_TYPES,
   MEMORY_TYPE_LABELS,
   HIRING_REQUEST_STATUSES,
+  SLA_TARGETS,
+  RISK_LEVELS,
+  WELL_KNOWN_LABELS,
+  COST_CIRCUIT_BREAKER_WINDOW,
+  COST_CIRCUIT_BREAKER_MULTIPLIER,
   type CompanyStatus,
   type DeploymentMode,
   type DeploymentExposure,
@@ -160,6 +165,8 @@ export {
   type RoleLevel,
   type MemoryType,
   type HiringRequestStatus,
+  type RiskLevel,
+  type WellKnownLabel,
 } from "./constants.js";
 
 export type {
