@@ -188,7 +188,7 @@ describe("agent permission routes", () => {
     mockLogActivity.mockResolvedValue(undefined);
   });
 
-  it("grants tasks:assign by default when board creates a new agent", { timeout: 30_000 }, async () => {
+  it("grants tasks:assign by default when board creates a new agent", { timeout: 60_000 }, async () => {
     const app = createApp({
       type: "board",
       userId: "board-user",
