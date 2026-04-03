@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IronWorks Compliance Framework — GDPR, CCPA, SOC 2, HIPAA, PCI-DSS</title>
+  <meta name="description" content="IronWorks compliance framework: how the Compliance Director agent tracks GDPR, CCPA, SOC 2, HIPAA, and PCI-DSS. Automated GRC monitoring for your AI workforce. Enterprise plan.">
+  <meta property="og:title" content="IronWorks Compliance Framework — GDPR, CCPA, SOC 2, HIPAA, PCI-DSS">
+  <meta property="og:description" content="How IronWorks tracks regulatory compliance across your AI workforce. GDPR, CCPA, SOC 2, HIPAA, PCI-DSS monitoring via the Compliance Director agent. Enterprise plan.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://ironworksapp.ai/docs/compliance-framework">
+  <meta property="og:image" content="https://ironworksapp.ai/og-image.svg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="IronWorks Compliance Framework — GDPR, CCPA, SOC 2, HIPAA, PCI-DSS">
+  <meta name="twitter:description" content="Automated GRC monitoring for your AI workforce. The Compliance Director agent tracks regulatory requirements and flags gaps.">
+  <meta name="twitter:image" content="https://ironworksapp.ai/og-image.svg">
+  <link rel="canonical" href="https://ironworksapp.ai/docs/compliance-framework">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://ironworksapp.ai/" },
+          { "@type": "ListItem", "position": 2, "name": "Docs", "item": "https://ironworksapp.ai/docs/" },
+          { "@type": "ListItem", "position": 3, "name": "Compliance Framework", "item": "https://ironworksapp.ai/docs/compliance-framework" }
+        ]
+      },
+      {
+        "@type": "TechArticle",
+        "headline": "IronWorks Compliance Framework — GDPR, CCPA, SOC 2, HIPAA, PCI-DSS",
+        "description": "IronWorks compliance framework: how the Compliance Director agent monitors GDPR, CCPA, SOC 2, HIPAA, and PCI-DSS requirements across your AI workforce.",
+        "url": "https://ironworksapp.ai/docs/compliance-framework",
+        "publisher": { "@type": "Organization", "name": "IronWorks", "url": "https://ironworksapp.ai" }
+      }
+    ]
+  }
+  </script>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{fontFamily:{sans:['Geist','system-ui','-apple-system','sans-serif'],mono:['Geist Mono','JetBrains Mono','monospace']},colors:{surface:{0:'#0a0a0a',1:'#141414',2:'#1e1e1e',3:'#282828'},accent:{DEFAULT:'#3b82f6',dim:'#1d4ed8'}}}}}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@400,500,700,800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/design-system.css">
+  <style>body{font-family:'Geist',system-ui,sans-serif;background:#0a0a0a;color:#e4e4e7}.gradient-text{background:linear-gradient(135deg,#e4e4e7 0%,#a1a1aa 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}.prose h2{font-size:1.5rem;font-weight:600;color:#fff;margin-top:2.5rem;margin-bottom:1rem}.prose h3{font-size:1.125rem;font-weight:600;color:#e4e4e7;margin-top:2rem;margin-bottom:.75rem}.prose p{color:#a1a1aa;line-height:1.75;margin-bottom:1rem}.prose ul,.prose ol{color:#a1a1aa;margin-bottom:1rem;padding-left:1.5rem}.prose li{margin-bottom:.5rem;line-height:1.6}.prose ul{list-style-type:disc}.prose ol{list-style-type:decimal}.prose strong{color:#e4e4e7;font-weight:600}.prose code{background:#1e1e1e;padding:.125rem .375rem;border-radius:.25rem;font-size:.875rem;color:#93c5fd;font-family:'Geist Mono',monospace}.prose table{width:100%;border-collapse:collapse;margin-bottom:1.5rem}.prose th{text-align:left;padding:.75rem;border-bottom:1px solid rgba(255,255,255,0.1);color:#e4e4e7;font-weight:600;font-size:.875rem}.prose td{padding:.75rem;border-bottom:1px solid rgba(255,255,255,0.06);color:#a1a1aa;font-size:.875rem}.prose blockquote{border-left:3px solid #3b82f6;padding-left:1rem;margin:1.5rem 0}.prose blockquote p{color:#d4d4d8}.sidebar-link{display:block;padding:.375rem .75rem;border-radius:.375rem;font-size:.875rem;color:#71717a;transition:all .15s}.sidebar-link:hover{color:#e4e4e7;background:#1e1e1e}.sidebar-link.active{color:#3b82f6;background:rgba(59,130,246,0.1)}.sidebar-label{font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#52525b;padding:.375rem .75rem;margin-top:1rem}</style>
+</head>
+<body class="antialiased">
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  <nav class="fixed top-0 left-0 right-0 z-50 border-b border-white/[0.06] bg-surface-0/80 backdrop-blur-xl" aria-label="Main navigation"><div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between"><a href="/" class="flex items-center gap-2.5" aria-label="IronWorks home"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6 text-blue-500" aria-hidden="true"><path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9"/><path d="m18 15 4-4"/><path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/></svg><span class="text-lg font-semibold tracking-tight">Iron<span class="text-blue-500">W</span>orks</span></a><div class="hidden md:flex items-center gap-8 text-sm text-zinc-400"><a href="/#features" class="hover:text-white transition-colors">Features</a><a href="/pricing" class="hover:text-white transition-colors">Pricing</a><a href="/#security" class="hover:text-white transition-colors">Security</a><a href="/docs/" class="text-white transition-colors" aria-current="page">Docs</a></div><div class="flex items-center gap-3"><a href="/auth" class="text-sm text-zinc-400 hover:text-white transition-colors hidden sm:block">Log in</a><a href="/pricing" class="text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-colors hidden sm:inline-flex">Get Started</a></div></div></nav>
+
+  <main id="main-content">
+  <div class="pt-24 pb-16 max-w-6xl mx-auto px-6">
+    <div class="text-sm text-zinc-500 mb-8"><a href="/" class="hover:text-zinc-300">Home</a> <span class="mx-2">/</span> <a href="/docs/" class="hover:text-zinc-300">Docs</a> <span class="mx-2">/</span> <span class="text-zinc-300">Compliance Framework</span></div>
+    <div class="flex gap-12">
+      <aside class="hidden lg:block w-64 flex-shrink-0"><nav class="sticky top-24 space-y-0.5">
+        <div class="sidebar-label">Getting Started</div>
+        <a href="/docs/getting-started-founder.html" class="sidebar-link">Solo Founder Guide</a>
+        <a href="/docs/getting-started-agency.html" class="sidebar-link">Agency Guide</a>
+        <a href="/docs/getting-started-technical.html" class="sidebar-link">Developer Guide</a>
+        <div class="sidebar-label">Core Concepts</div>
+        <a href="/docs/agents-and-roles.html" class="sidebar-link">Agents and Roles</a>
+        <a href="/docs/team-packs.html" class="sidebar-link">Team Packs</a>
+        <a href="/docs/war-room.html" class="sidebar-link">War Room Dashboard</a>
+        <div class="sidebar-label">Features</div>
+        <a href="/docs/playbooks-and-routines.html" class="sidebar-link">Playbooks and Routines</a>
+        <a href="/docs/knowledge-base.html" class="sidebar-link">Knowledge Base</a>
+        <a href="/docs/messaging-integrations.html" class="sidebar-link">Messaging Integrations</a>
+        <div class="sidebar-label">Operations</div>
+        <a href="/docs/api-keys-and-costs.html" class="sidebar-link">API Keys and Costs</a>
+        <a href="/docs/security-and-privacy.html" class="sidebar-link">Security and Privacy</a>
+        <div class="sidebar-label">Compliance</div>
+        <a href="/docs/compliance-framework.html" class="sidebar-link active">Compliance Framework</a>
+        <div class="sidebar-label">Reference</div>
+        <a href="/docs/faq.html" class="sidebar-link">FAQ</a>
+      </nav></aside>
+
+      <article class="flex-1 min-w-0 prose">
+        <div class="inline-flex items-center gap-2 bg-violet-900/30 border border-violet-500/30 text-violet-300 text-xs font-medium px-3 py-1.5 rounded-full mb-6">Enterprise Plan Only</div>
+
+        <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-white mb-2">Compliance Framework</h1>
+        <p class="text-lg text-zinc-400 mb-8">How IronWorks tracks GDPR, CCPA, SOC 2, HIPAA, and PCI-DSS requirements across your AI workforce using the Compliance Director agent.</p>
+
+        <h2>Overview</h2>
+        <p>The IronWorks compliance framework is implemented through the Compliance Director — an AI agent role available exclusively on the Enterprise plan. The Compliance Director is not a checklist tool or a static policy document. It is an active agent that monitors your AI workforce's operations, flags regulatory gaps as they emerge, and produces structured compliance reports.</p>
+        <p>The key design principle is separation between detection and remediation. The Compliance Director can see everything, but it cannot change anything. When it identifies a gap, it creates a compliance-tagged issue and assigns it to the appropriate human or agent owner. Fixing the gap is a human decision. The Compliance Director's job is to make sure nothing goes unnoticed.</p>
+
+        <blockquote>
+          <p>The Compliance Director reports directly to the CEO and operates independently from all other departments. This independence mirrors how human compliance functions work in regulated industries — the compliance officer should not report to the same person whose operations they are auditing.</p>
+        </blockquote>
+
+        <h2>Regulatory Frameworks Tracked</h2>
+
+        <h3>GDPR — General Data Protection Regulation</h3>
+        <p>The Compliance Director monitors for GDPR obligations across the following areas:</p>
+        <ul>
+          <li><strong>Lawful basis for processing</strong> — verifies that any data processing performed by AI agents has an identifiable lawful basis (consent, legitimate interest, contract performance, legal obligation)</li>
+          <li><strong>Data subject rights</strong> — flags if the system handles personal data in ways that would make subject access, erasure, or portability requests difficult to fulfill</li>
+          <li><strong>Data minimization</strong> — reviews agent configurations and playbooks for unnecessary collection or retention of personal data</li>
+          <li><strong>Breach notification timelines</strong> — monitors incident response playbooks to verify 72-hour notification obligations are captured in procedure</li>
+          <li><strong>International data transfers</strong> — flags any integrations or data flows that may involve transfers outside the EEA without appropriate safeguards</li>
+        </ul>
+
+        <h3>CCPA — California Consumer Privacy Act</h3>
+        <p>For organizations with California residents as customers or employees, the Compliance Director tracks:</p>
+        <ul>
+          <li><strong>Right to opt out of sale</strong> — reviews agent workflows for any data sharing that may constitute "sale" under CCPA definitions</li>
+          <li><strong>Consumer request handling</strong> — monitors whether processes exist to fulfill access, deletion, and correction requests within 45-day statutory timelines</li>
+          <li><strong>Privacy notice requirements</strong> — flags outdated or missing disclosures in agent-generated customer communications</li>
+          <li><strong>Sensitive personal information</strong> — identifies handling of CPRA-defined sensitive categories (health data, precise geolocation, financial data) and checks for appropriate consent mechanisms</li>
+        </ul>
+
+        <h3>SOC 2 — System and Organization Controls</h3>
+        <p>The Compliance Director monitors all five SOC 2 Trust Service Criteria (TSC):</p>
+        <table>
+          <thead><tr><th>Criteria</th><th>What the Compliance Director Monitors</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Security</strong></td><td>Access controls, encryption status, change management procedures, incident response procedures</td></tr>
+            <tr><td><strong>Availability</strong></td><td>Uptime monitoring configurations, disaster recovery procedures, capacity planning documentation</td></tr>
+            <tr><td><strong>Confidentiality</strong></td><td>Handling of confidential data categories, access restrictions, retention and disposal procedures</td></tr>
+            <tr><td><strong>Processing Integrity</strong></td><td>Completeness and accuracy of data processing, error detection and correction procedures</td></tr>
+            <tr><td><strong>Privacy</strong></td><td>Personal information collection, use, retention, disclosure, and disposal practices</td></tr>
+          </tbody>
+        </table>
+        <p>For organizations pursuing SOC 2 Type I or Type II certification, the Compliance Director can generate evidence summaries that align with the AICPA trust service criteria descriptions. These summaries are starting points for auditor review, not auditor output.</p>
+
+        <h3>HIPAA — Health Insurance Portability and Accountability Act</h3>
+        <p>For organizations handling protected health information (PHI), the Compliance Director monitors:</p>
+        <ul>
+          <li><strong>PHI identification and handling</strong> — flags agent workflows or KB pages that contain or reference PHI categories (names, dates, geographic data, account numbers, biometric identifiers, and other HIPAA-defined identifiers)</li>
+          <li><strong>Minimum necessary standard</strong> — reviews whether agents access or transmit more PHI than is necessary for the stated purpose</li>
+          <li><strong>Business Associate Agreements (BAA)</strong> — flags integrations with third-party services that handle PHI and checks whether a BAA is documented</li>
+          <li><strong>Security Rule compliance</strong> — monitors administrative, physical, and technical safeguards relevant to the AI workforce (access controls, audit logs, encryption)</li>
+          <li><strong>Breach notification</strong> — verifies incident response procedures address HIPAA's 60-day notification obligation for breaches affecting 500+ individuals</li>
+        </ul>
+
+        <h3>PCI-DSS — Payment Card Industry Data Security Standard</h3>
+        <p>For organizations that handle cardholder data, the Compliance Director monitors:</p>
+        <ul>
+          <li><strong>Cardholder data environment (CDE) scope</strong> — flags agent workflows or integrations that may bring cardholder data into scope unexpectedly</li>
+          <li><strong>Access management</strong> — reviews whether access to cardholder data is restricted to agents and users with a documented need-to-know</li>
+          <li><strong>Logging and monitoring</strong> — verifies that audit trail coverage meets PCI-DSS Requirement 10 for systems that touch the CDE</li>
+          <li><strong>Network segmentation</strong> — flags configurations that might reduce segmentation between the CDE and other system components</li>
+          <li><strong>Vulnerability management</strong> — monitors whether security scanning and patching procedures for CDE systems are documented in playbooks</li>
+        </ul>
+
+        <h2>How the Compliance Director Creates Issues</h2>
+        <p>When the Compliance Director identifies a compliance gap, it creates an issue with the following structure:</p>
+        <ul>
+          <li><strong>Tag</strong>: <code>compliance</code> plus the relevant regulation (e.g., <code>gdpr</code>, <code>soc2</code>)</li>
+          <li><strong>Priority</strong>: Set based on severity — high for active violations or imminent deadlines, medium for gaps that need attention, low for documentation improvements</li>
+          <li><strong>Description</strong>: A plain-language explanation of the gap, the regulation it relates to, the potential consequence of inaction, and a suggested remediation path</li>
+          <li><strong>Assignee</strong>: The role best positioned to address the gap (e.g., security-related gaps go to the Security Engineer, data handling gaps go to the CEO or designated DPO)</li>
+        </ul>
+        <p>The Compliance Director does not close issues. Closing a compliance issue requires human confirmation that the gap has been addressed. This is intentional — automated detection, human remediation.</p>
+
+        <h2>Compliance Reports</h2>
+        <p>The Compliance Director can generate structured compliance reports on demand or on a recurring schedule via a playbook. A standard compliance report includes:</p>
+        <ul>
+          <li>Open compliance issues by regulation and severity</li>
+          <li>Issues closed since the last report (with resolution notes)</li>
+          <li>Regulatory changes or upcoming deadlines relevant to tracked frameworks</li>
+          <li>A summary assessment by framework: compliant, partially compliant, or requires attention</li>
+          <li>Recommended next actions ranked by risk priority</li>
+        </ul>
+        <p>Reports are created as Knowledge Base pages and issued as issues assigned to the CEO. They can be exported in JSON format via the standard KB export.</p>
+
+        <h2>Industry-Specific Regulations</h2>
+        <p>Beyond the five core frameworks, the Compliance Director can be configured to track industry-specific requirements by updating its SOUL.md and AGENTS.md to include additional regulatory context. Examples include:</p>
+        <ul>
+          <li><strong>FERPA</strong> — for education technology companies handling student records</li>
+          <li><strong>GLBA</strong> — for financial services firms subject to the Gramm-Leach-Bliley Act</li>
+          <li><strong>NIST CSF</strong> — for organizations using the NIST Cybersecurity Framework as a reference architecture</li>
+          <li><strong>ISO 27001</strong> — for organizations pursuing information security management certification</li>
+          <li><strong>PIPEDA</strong> — for Canadian organizations handling personal information in commercial activities</li>
+        </ul>
+        <p>Custom regulatory frameworks require manual configuration. Contact your account team for guidance on configuring the Compliance Director for industry-specific requirements beyond the five built-in frameworks.</p>
+
+        <h2>Limitations</h2>
+        <p>The Compliance Director is an AI monitoring layer, not a legal compliance service. Its output should be reviewed by qualified compliance professionals, not used as a substitute for legal advice. Specifically:</p>
+        <ul>
+          <li>The Compliance Director monitors what is visible within IronWorks — it cannot audit systems, contracts, or processes that exist outside the platform</li>
+          <li>Regulatory interpretations can be jurisdiction-specific and fact-dependent. The Compliance Director applies general best practices, not legal opinions</li>
+          <li>Regulatory frameworks evolve. The Compliance Director's monitoring rules are updated periodically, but there may be a lag between regulatory changes and updated monitoring logic</li>
+          <li>The Compliance Director does not conduct penetration testing, vulnerability scanning, or code review — those functions belong to the Security Engineer</li>
+        </ul>
+
+        <h2>What to Read Next</h2>
+        <p>To understand how the Compliance Director fits into the org chart and what permissions it holds, see <a href="/docs/agents-and-roles.html" class="text-blue-400 hover:text-blue-300">Agents and Roles</a>. To see the full Enterprise team pack configuration, see <a href="/docs/team-packs.html" class="text-blue-400 hover:text-blue-300">Team Packs</a>. For the platform-level security controls the Compliance Director operates within, see <a href="/docs/security-and-privacy.html" class="text-blue-400 hover:text-blue-300">Security and Privacy</a>.</p>
+        <p>The Compliance Director is available exclusively on the Enterprise (Business) plan. <a href="/pricing" class="text-blue-400 hover:text-blue-300">View IronWorks pricing</a>.</p>
+
+      </article>
+    </div>
+  </div>
+
+  </main>
+  <footer class="border-t border-white/[0.06] py-16 md:py-20"><div class="max-w-6xl mx-auto px-6"><div class="flex flex-col md:flex-row justify-between gap-8"><div><div class="flex items-center gap-2 mb-3"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-blue-500" aria-hidden="true"><path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9"/><path d="m18 15 4-4"/><path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/></svg><span class="font-semibold">IronWorks</span></div><p class="text-zinc-500 text-sm">IronWorks by Steel Motion LLC</p></div><div class="flex flex-wrap gap-x-8 gap-y-2 text-sm text-zinc-500"><a href="/terms" class="hover:text-zinc-300 transition-colors">Terms of Service</a><a href="/privacy" class="hover:text-zinc-300 transition-colors">Privacy Policy</a><a href="/docs/" class="hover:text-zinc-300 transition-colors">Documentation</a></div></div><div class="mt-8 pt-8 border-t border-white/[0.06] text-xs text-zinc-600">&copy; 2026 Steel Motion LLC. All rights reserved.</div></div></footer>
+</body>
+</html>

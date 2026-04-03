@@ -107,6 +107,8 @@ export function privacyRoutes(db: Db) {
       companyLibraryFiles,
       companyPlaybooks,
       companyPlaybookRuns,
+      companyKnowledgePages,
+      companyRoutines,
     ] = await Promise.all([
       db.select().from(agents).where(eq(agents.companyId, companyId)),
       db.select().from(projects).where(eq(projects.companyId, companyId)),
@@ -120,6 +122,8 @@ export function privacyRoutes(db: Db) {
       db.select().from(libraryFiles).where(eq(libraryFiles.companyId, companyId)),
       db.select().from(playbooks).where(eq(playbooks.companyId, companyId)),
       db.select().from(playbookRuns).where(eq(playbookRuns.companyId, companyId)),
+      db.select().from(knowledgePages).where(eq(knowledgePages.companyId, companyId)),
+      db.select().from(routines).where(eq(routines.companyId, companyId)),
     ]);
 
     const exportData = {
@@ -217,6 +221,21 @@ export function privacyRoutes(db: Db) {
         totalSteps: r.totalSteps,
         completedSteps: r.completedSteps,
         startedAt: r.startedAt,
+      })),
+      knowledgeBase: companyKnowledgePages.map((p) => ({
+        id: p.id,
+        title: p.title,
+        slug: p.slug,
+        visibility: p.visibility,
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+      })),
+      routines: companyRoutines.map((r) => ({
+        id: r.id,
+        title: r.title,
+        description: r.description,
+        status: r.status,
+        createdAt: r.createdAt,
       })),
     };
 

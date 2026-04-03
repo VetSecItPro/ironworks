@@ -2,10 +2,10 @@
 <html lang="en" class="scroll-smooth">
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IronWorks AI Agent Roles — 9 Built-In Roles, Org Chart & SOUL.md</title>
-  <meta name="description" content="IronWorks ships 9 pre-built AI agent roles — CEO, CTO, CMO, CFO, and more. Each has default capabilities, an org chart position, and a customizable SOUL.md system prompt. Get started today.">
-  <meta property="og:title" content="IronWorks AI Agent Roles — 9 Built-In Roles, Org Chart & SOUL.md">
-  <meta property="og:description" content="9 pre-built AI agent roles with default capabilities, org chart delegation, and customizable SOUL.md system prompts. Learn how IronWorks structures your AI workforce.">
+  <title>IronWorks AI Agent Roles — 10 Built-In Roles, Org Chart & SOUL.md</title>
+  <meta name="description" content="IronWorks ships 10 pre-built AI agent roles — CEO, CTO, CMO, CFO, Compliance Director, and more. Each has default capabilities, an org chart position, and a customizable SOUL.md system prompt. Get started today.">
+  <meta property="og:title" content="IronWorks AI Agent Roles — 10 Built-In Roles, Org Chart & SOUL.md">
+  <meta property="og:description" content="10 pre-built AI agent roles with default capabilities, org chart delegation, and customizable SOUL.md system prompts. Learn how IronWorks structures your AI workforce.">
   <meta property="og:type" content="article">
   <meta property="og:url" content="https://ironworksapp.ai/docs/agents-and-roles">
   <meta property="og:image" content="https://ironworksapp.ai/og-image.svg">
@@ -70,15 +70,17 @@
         <div class="sidebar-label">Operations</div>
         <a href="/docs/api-keys-and-costs.html" class="sidebar-link">API Keys and Costs</a>
         <a href="/docs/security-and-privacy.html" class="sidebar-link">Security and Privacy</a>
+        <div class="sidebar-label">Compliance</div>
+        <a href="/docs/compliance-framework.html" class="sidebar-link">Compliance Framework</a>
         <div class="sidebar-label">Reference</div>
         <a href="/docs/faq.html" class="sidebar-link">FAQ</a>
       </nav></aside>
 
       <article class="flex-1 min-w-0 prose">
         <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-white mb-2">Understanding Agents and Roles</h1>
-        <p class="text-lg text-zinc-400 mb-8">9 pre-built role templates, a capability system, and an org chart that mirrors how real companies work.</p>
+        <p class="text-lg text-zinc-400 mb-8">10 pre-built role templates, a capability system, and an org chart that mirrors how real companies work.</p>
 
-        <h2>The 9 Role Templates</h2>
+        <h2>The 10 Role Templates</h2>
         <p>Every IronWorks company builds its team from role templates. Each template includes a pre-written SOUL.md (personality and values), AGENTS.md (operational instructions), default skills, and a place in the org chart hierarchy.</p>
 
         <table>
@@ -89,6 +91,7 @@
             <tr><td><code>cmo</code></td><td>CMO</td><td>CEO</td><td>Marketing strategy, brand, growth leadership</td></tr>
             <tr><td><code>cfo</code></td><td>CFO</td><td>CEO</td><td>Financial oversight, budget management, cost optimization</td></tr>
             <tr><td><code>vphr</code></td><td>VP of HR</td><td>CEO</td><td>Agent hiring, performance reviews, team culture</td></tr>
+            <tr><td><code>compliancedirector</code></td><td>Compliance Director</td><td>CEO</td><td>GRC monitoring, regulatory tracking, compliance reporting — Enterprise only</td></tr>
             <tr><td><code>seniorengineer</code></td><td>Senior Engineer</td><td>CTO</td><td>Implementation, code quality, technical execution</td></tr>
             <tr><td><code>devopsengineer</code></td><td>DevOps Engineer</td><td>CTO</td><td>Infrastructure, CI/CD, production reliability</td></tr>
             <tr><td><code>securityengineer</code></td><td>Security Engineer</td><td>CTO</td><td>Security audits, compliance, vulnerability management</td></tr>
@@ -99,27 +102,50 @@
         <h2>Default Capabilities by Role</h2>
         <p>Each role has a default set of capabilities that control what the agent can do within the system. These are enforced at the API level.</p>
         <table>
-          <thead><tr><th>Capability</th><th>CEO</th><th>CTO</th><th>CMO</th><th>CFO</th><th>Engineer</th><th>Default</th></tr></thead>
+          <thead><tr><th>Capability</th><th>CEO</th><th>CTO</th><th>CMO</th><th>CFO</th><th>Compliance Dir.</th><th>Engineer</th><th>Default</th></tr></thead>
           <tbody>
-            <tr><td>Manage Agents</td><td>Yes</td><td>Yes</td><td>No</td><td>No</td><td>No</td><td>No</td></tr>
-            <tr><td>Manage Projects</td><td>Yes</td><td>Yes</td><td>Yes</td><td>No</td><td>No</td><td>No</td></tr>
-            <tr><td>Manage Goals</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td><td>No</td><td>No</td></tr>
-            <tr><td>Manage Playbooks</td><td>Yes</td><td>Yes</td><td>Yes</td><td>No</td><td>No</td><td>No</td></tr>
-            <tr><td>Manage Secrets</td><td>Yes</td><td>Yes</td><td>No</td><td>No</td><td>No</td><td>No</td></tr>
-            <tr><td>Manage Permissions</td><td>Yes</td><td>Yes</td><td>No</td><td>No</td><td>No</td><td>No</td></tr>
-            <tr><td>Create Issues</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
-            <tr><td>Run Playbooks</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td><td>No</td><td>No</td></tr>
-            <tr><td>Access Knowledge Base</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
-            <tr><td>Delegate Work</td><td>Yes</td><td>Yes</td><td>Yes</td><td>No</td><td>No</td><td>No</td></tr>
+            <tr><td>Manage Agents</td><td>Yes</td><td>Yes</td><td>No</td><td>No</td><td>No</td><td>No</td><td>No</td></tr>
+            <tr><td>Manage Projects</td><td>Yes</td><td>Yes</td><td>Yes</td><td>No</td><td>No</td><td>No</td><td>No</td></tr>
+            <tr><td>Manage Goals</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td><td>No</td><td>No</td><td>No</td></tr>
+            <tr><td>Manage Playbooks</td><td>Yes</td><td>Yes</td><td>Yes</td><td>No</td><td>No</td><td>No</td><td>No</td></tr>
+            <tr><td>Manage Secrets</td><td>Yes</td><td>Yes</td><td>No</td><td>No</td><td>No</td><td>No</td><td>No</td></tr>
+            <tr><td>Manage Permissions</td><td>Yes</td><td>Yes</td><td>No</td><td>No</td><td>No</td><td>No</td><td>No</td></tr>
+            <tr><td>Create Issues</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes (compliance-tagged)</td><td>Yes</td><td>Yes</td></tr>
+            <tr><td>Run Playbooks</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td><td>No</td><td>No</td><td>No</td></tr>
+            <tr><td>Access Knowledge Base</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes (read-only)</td><td>Yes</td><td>Yes</td></tr>
+            <tr><td>Read All Data</td><td>Yes</td><td>Partial</td><td>Partial</td><td>Partial</td><td>Yes (read-only)</td><td>No</td><td>No</td></tr>
+            <tr><td>Modify Configs</td><td>Yes</td><td>Yes</td><td>No</td><td>No</td><td>No</td><td>No</td><td>No</td></tr>
+            <tr><td>Delete Data</td><td>Yes</td><td>No</td><td>No</td><td>No</td><td>No</td><td>No</td><td>No</td></tr>
+            <tr><td>Delegate Work</td><td>Yes</td><td>Yes</td><td>Yes</td><td>No</td><td>No</td><td>No</td><td>No</td></tr>
           </tbody>
         </table>
         <p>The CEO and CTO have full permissions. The CMO can delegate within marketing. Engineers can create issues and read the KB but can't manage agents, secrets, or playbooks. The CFO has a limited scope focused on financial oversight.</p>
+
+        <h2>Compliance Director (Enterprise Only)</h2>
+        <p>The Compliance Director is an oversight role available exclusively on the Enterprise pack. It reports directly to the CEO alongside the CTO, CFO, CMO, and VP of HR, but operates with deliberate independence from operations — it cannot modify configs, trigger deployments, or delete data.</p>
+        <p>The Compliance Director's capabilities are intentionally read-heavy:</p>
+        <ul>
+          <li><strong>Read access to everything</strong> — agents, issues, goals, playbooks, run transcripts, KB pages, cost records</li>
+          <li><strong>Creates compliance-tagged issues</strong> — flags regulatory gaps, data handling concerns, or policy violations as issues assigned to the appropriate owner</li>
+          <li><strong>Generates compliance reports</strong> — produces structured GRC reports on demand or on a schedule</li>
+          <li><strong>Cannot modify configs or delete data</strong> — the role is intentionally scoped to oversight only, preventing conflicts of interest</li>
+        </ul>
+        <p>Regulatory frameworks tracked by the Compliance Director include:</p>
+        <ul>
+          <li><strong>GDPR</strong> — data subject rights, processing lawfulness, data minimization, breach notification timelines</li>
+          <li><strong>CCPA</strong> — consumer opt-out rights, sale of personal information, privacy notice requirements</li>
+          <li><strong>SOC 2</strong> — trust service criteria monitoring: Security, Availability, Confidentiality, Processing Integrity, Privacy</li>
+          <li><strong>HIPAA</strong> — PHI handling, covered entity obligations, Business Associate Agreements</li>
+          <li><strong>PCI-DSS</strong> — cardholder data environment controls, network segmentation, access management</li>
+        </ul>
+        <p>The Compliance Director does not replace a human compliance officer or legal counsel. It is an automation layer that tracks what is happening, flags what needs attention, and maintains a running record — so your human team can make faster, better-informed decisions.</p>
 
         <h2>The Org Chart Delegation Chain</h2>
         <p>Work flows through the org chart the same way it would in a real company:</p>
         <ol>
           <li><strong>You (the Board)</strong> set goals and high-level priorities</li>
           <li><strong>CEO</strong> reads goals, creates issues, and delegates to direct reports: CTO for technical work, CMO for marketing, CFO for financial tasks, VP of HR for team management</li>
+          <li><strong>Compliance Director</strong> (Enterprise only) operates as an independent oversight function reporting to the CEO. It monitors operations across all departments but does not participate in the delegation chain — it cannot assign work or be assigned work by other agents. It raises compliance issues directly to the appropriate owner.</li>
           <li><strong>CTO</strong> receives technical work, designs architecture, and delegates implementation to Senior Engineer, DevOps Engineer, and Security Engineer</li>
           <li><strong>CMO</strong> receives marketing work and delegates content creation to the Content Marketer</li>
           <li><strong>Individual contributors</strong> (engineers, Content Marketer) execute the actual work and report results back up the chain</li>

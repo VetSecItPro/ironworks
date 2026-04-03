@@ -486,6 +486,207 @@ Watch for these on the Costs page and Agent Performance:
 5. Review the Agent Performance page weekly. The cost-per-task metric tells you exactly who is expensive.`,
         },
         {
+          title: "Compliance Framework",
+          body: `# Compliance Framework
+
+This page is owned by the Compliance Director and maintained as the authoritative reference for all regulatory obligations applicable to this company.
+
+## Overview
+
+Compliance is not a one-time project — it is an ongoing operational discipline. The Compliance Director audits all company activities against this framework and reports findings to the CEO.
+
+## Applicable Regulations
+
+### GDPR — EU General Data Protection Regulation
+
+Applies when: the company processes personal data of EU/EEA residents, regardless of where the company is located.
+
+Key obligations:
+- Lawful basis for processing must be documented before collecting any personal data.
+- Data subjects have rights: access, rectification, erasure, portability, restriction, objection.
+- Data breaches affecting EU residents must be reported to the supervisory authority within 72 hours.
+- Data Processing Agreements (DPAs) required with all sub-processors.
+- Privacy notices must be clear, accessible, and complete.
+
+### CCPA — California Consumer Privacy Act
+
+Applies when: the company meets revenue or data volume thresholds and processes personal information of California residents.
+
+Key obligations:
+- Consumers have the right to know what data is collected and why.
+- Consumers have the right to opt out of the sale of their personal information.
+- Consumers have the right to deletion, subject to exceptions.
+- Do not discriminate against consumers exercising their CCPA rights.
+
+### SOC 2 — Service Organization Control 2
+
+Applies when: the company provides services that store, process, or transmit customer data.
+
+Trust Service Criteria:
+- **Security** — protection against unauthorized access (required for all SOC 2 reports)
+- **Availability** — system is available for operation as committed
+- **Confidentiality** — information designated as confidential is protected
+- **Processing Integrity** — processing is complete, accurate, and authorized
+- **Privacy** — personal information is collected, used, and retained per policy
+
+### Industry-Specific Regulations
+
+| Regulation | Industry | Key Requirement |
+|---|---|---|
+| HIPAA | Healthcare | PHI protection, Business Associate Agreements, breach notification |
+| PCI-DSS | Payments | Cardholder data protection, network segmentation, encryption |
+| FERPA | Education | Student record privacy, parental/student consent for disclosure |
+
+## Compliance Review Cadence
+
+| Activity | Frequency | Owner |
+|---|---|---|
+| Data handling audit | Monthly | Compliance Director |
+| Access control review | Quarterly | Compliance Director + CTO |
+| Policy review | Annually | Compliance Director + CEO |
+| Regulatory update scan | Monthly | Compliance Director |
+| Compliance status report | Monthly | Compliance Director → CEO |
+
+## Open Compliance Items
+
+Track active compliance issues in the Issues section tagged [Compliance]. Link findings here when closed.`,
+        },
+        {
+          title: "Data Handling Policy",
+          body: `# Data Handling Policy
+
+This policy defines how all company data — including customer data, internal data, and third-party data — must be collected, stored, processed, and deleted. The Compliance Director owns this policy. All agents must follow it.
+
+## Data Classification
+
+| Class | Description | Examples |
+|---|---|---|
+| **Restricted** | Highest sensitivity; breach causes severe harm | PII, credentials, payment data, PHI |
+| **Confidential** | Business-sensitive; internal use only | Financial records, contracts, API keys |
+| **Internal** | Operational data; employees only | Meeting notes, project plans, agent configs |
+| **Public** | Intentionally shared externally | Marketing content, published docs, open APIs |
+
+## Collection Principles
+
+1. **Data Minimization** — collect only the data you need for a specific, documented purpose.
+2. **Purpose Limitation** — do not use data for purposes beyond what it was collected for.
+3. **Consent** — obtain documented consent before collecting Restricted data from individuals.
+4. **Transparency** — tell data subjects what you collect, why, and for how long.
+
+## Storage Standards
+
+- Restricted data must be encrypted at rest (AES-256 minimum) and in transit (TLS 1.2+).
+- PII must not appear in log files, issue descriptions, Knowledge Base pages, or agent transcripts.
+- Credentials and API keys must be stored in the Secrets Manager, never in code or environment files.
+- Customer data must not be copied to projects it was not provided for.
+
+## Access Control
+
+- Agents only access data for their assigned projects.
+- Restricted data requires explicit per-project access provisioning.
+- Access is revoked immediately upon agent termination. The VP of HR coordinates with the CTO.
+- Access reviews happen quarterly. Compliance Director reviews with CTO.
+
+## Retention and Deletion
+
+| Data Class | Retention Period | Deletion Method |
+|---|---|---|
+| Customer PII | Duration of relationship + 2 years | Verified secure deletion |
+| Financial records | 7 years (legal minimum) | Archived, then secure deletion |
+| Agent transcripts | 90 days | Automated purge |
+| Internal operational data | 2 years | Standard deletion |
+| Backup data | 1 year | Encrypted archive, then deletion |
+
+## Incident Handling
+
+If a data handling violation is suspected:
+1. Stop the activity immediately.
+2. Create an urgent issue tagged [Compliance] [Data Breach].
+3. Notify the Compliance Director and CTO immediately.
+4. Do not attempt to cover up, delete, or modify data related to the incident.
+5. The Compliance Director will assess breach notification obligations (GDPR: 72 hours; HIPAA: 60 days).
+
+See the [[Compliance Incident Response Plan]] for the full procedure.`,
+        },
+        {
+          title: "Compliance Incident Response Plan",
+          body: `# Compliance Incident Response Plan
+
+This plan covers how to respond when a compliance issue is identified — data breach, regulatory inquiry, or policy violation. The Compliance Director leads all compliance incidents. For technical security incidents (system intrusions, vulnerabilities), see the [[Security Policy]] and [[Incident Response Procedure]] pages.
+
+## What Counts as a Compliance Incident
+
+- Unauthorized access to, disclosure of, or loss of personal data (PII, PHI, payment data)
+- Agent or employee accessing data outside their authorized scope
+- Data retained beyond policy limits
+- Regulatory inquiry, audit notice, or complaint from a data subject
+- Identified violation of GDPR, CCPA, HIPAA, PCI-DSS, or other applicable regulation
+- Third-party sub-processor experiencing a breach that affects company data
+
+## Severity Classification
+
+| Severity | Definition | Notification Deadline |
+|---|---|---|
+| Critical | PII/PHI breach affecting external individuals; regulatory reporting required | GDPR: 72 hours to supervisory authority; HIPAA: 60 days |
+| High | Internal policy violation with potential external impact; no confirmed external disclosure | 24 hours internal escalation |
+| Medium | Policy violation contained to internal systems; no PII exposure confirmed | 48 hours internal escalation |
+| Low | Procedural gap identified; no active violation | Document and resolve in next sprint |
+
+## Response Procedure
+
+### Step 1 — Identify and Contain (0–2 hours)
+1. Stop the activity causing the potential incident.
+2. Do not delete or modify data related to the incident.
+3. Document exactly what was observed: who, what data, when, how discovered.
+4. Create an issue with priority "urgent" tagged [Compliance] [Incident].
+5. Notify the Compliance Director and CTO immediately.
+
+### Step 2 — Assess (2–8 hours)
+1. Compliance Director conducts initial assessment:
+   - What data was involved? Classification?
+   - How many individuals affected?
+   - Was the data accessed, exfiltrated, or merely exposed?
+   - Is the exposure ongoing or contained?
+2. Determine severity classification.
+3. Engage legal counsel if Critical or if regulatory notification is likely.
+
+### Step 3 — Notify (per severity timeline)
+- **Internal**: CEO notified immediately for Critical/High. Compliance Director sends briefing.
+- **Regulatory**: GDPR supervisory authority within 72 hours for qualifying breaches. HIPAA HHS within 60 days.
+- **Individuals**: Notify affected data subjects per applicable regulation (GDPR Art. 34, HIPAA §164.404).
+- **Sub-processors**: Notify if incident originates from or propagates to a third party.
+
+### Step 4 — Remediate
+1. CTO leads technical remediation (close access vector, rotate credentials, patch system).
+2. VP of HR handles personnel issues (if an agent or employee caused the incident).
+3. Compliance Director documents remediation steps and verifies completion.
+
+### Step 5 — Post-Incident Review (within 5 business days)
+1. Compliance Director writes a post-incident report including:
+   - Timeline of events
+   - Root cause
+   - Data involved and individuals affected
+   - Actions taken
+   - Regulatory notifications made
+   - Preventive measures implemented
+2. Store the report in the Knowledge Base under "Compliance Reviews."
+3. Update the Data Handling Policy and Compliance Framework if gaps were identified.
+4. Schedule a follow-up review 30 days later to verify preventive measures are effective.
+
+## Key Contacts
+
+| Role | Responsibility |
+|---|---|
+| Compliance Director | Incident lead, regulatory notification, documentation |
+| CTO | Technical containment and remediation |
+| CEO | Executive decisions, stakeholder communication |
+| VP of HR | Personnel-related incidents and offboarding |
+
+## Regulatory Notification Templates
+
+Keep approved notification templates in the Knowledge Base under "Compliance Reviews / Notification Templates." Always have legal review before sending regulatory notifications.`,
+        },
+        {
           title: "Project Kickoff Template",
           body: `# Project Kickoff Template
 

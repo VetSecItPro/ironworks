@@ -72,6 +72,19 @@ export const ROLE_DEFAULT_CAPABILITIES: Record<string, RoleCapabilities> = {
     canAccessKB: true,
     canDelegateWork: false,
   },
+  compliance_director: {
+    canManageAgents: false,
+    canManageProjects: false,
+    canManageGoals: false,
+    canManagePlaybooks: false,
+    canManageSecrets: false,
+    canManagePermissions: false,
+    canCreateIssues: true,
+    canRunPlaybooks: true,
+    canAccessKB: true,
+    canDelegateWork: false,
+    // Compliance-specific: read access to everything, write to compliance issues
+  },
   default: {
     canManageAgents: false,
     canManageProjects: false,

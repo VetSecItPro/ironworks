@@ -69,6 +69,8 @@
         <div class="sidebar-label">Operations</div>
         <a href="/docs/api-keys-and-costs.html" class="sidebar-link">API Keys and Costs</a>
         <a href="/docs/security-and-privacy.html" class="sidebar-link active">Security and Privacy</a>
+        <div class="sidebar-label">Compliance</div>
+        <a href="/docs/compliance-framework.html" class="sidebar-link">Compliance Framework</a>
         <div class="sidebar-label">Reference</div>
         <a href="/docs/faq.html" class="sidebar-link">FAQ</a>
       </nav></aside>
@@ -161,6 +163,19 @@
           <li><strong>Automated backups</strong> — PostgreSQL database backups on a regular schedule</li>
           <li><strong>TLS everywhere</strong> — all traffic is encrypted in transit via HTTPS</li>
         </ul>
+
+        <h2>Compliance Director Agent (Enterprise)</h2>
+        <p>Enterprise customers get a dedicated Compliance Director AI agent that monitors data handling, tracks regulatory requirements, and creates compliance reports. The Compliance Director operates as a cross-departmental oversight role — it has read access to all agent activity, issues, goals, run transcripts, and KB pages, but cannot modify configurations or delete data.</p>
+        <p>The Compliance Director tracks these regulatory frameworks continuously:</p>
+        <ul>
+          <li><strong>GDPR</strong> — data subject rights, lawful processing bases, data minimization, breach notification timelines</li>
+          <li><strong>CCPA</strong> — consumer opt-out mechanisms, sale of personal information, privacy notice requirements</li>
+          <li><strong>SOC 2</strong> — Security, Availability, Confidentiality, Processing Integrity, and Privacy trust service criteria</li>
+          <li><strong>HIPAA</strong> — PHI handling obligations, covered entity and business associate requirements</li>
+          <li><strong>PCI-DSS</strong> — cardholder data environment controls, access management, and network segmentation requirements</li>
+        </ul>
+        <p>When the Compliance Director identifies a gap — for example, a playbook that processes data without logging it, or an agent configuration that grants permissions beyond what is needed — it creates a compliance-tagged issue and assigns it to the appropriate owner. It does not make changes itself. The separation between detection and remediation is intentional.</p>
+        <p>For a full breakdown of the Compliance Director's capabilities and permission set, see <a href="/docs/agents-and-roles.html" class="text-blue-400 hover:text-blue-300">Agents and Roles</a>.</p>
 
         <h2>Related Documentation</h2>
         <p>For details on how API key credentials are stored and retrieved, see <a href="/docs/api-keys-and-costs.html" class="text-blue-400 hover:text-blue-300">API Keys, Costs, and Budgets</a>. The <a href="/docs/agents-and-roles.html" class="text-blue-400 hover:text-blue-300">Agents and Roles</a> reference explains the capability system that enforces what each agent can do. To understand how tenant isolation is verified in practice, see the security section on the <a href="/security" class="text-blue-400 hover:text-blue-300">Security page</a>.</p>
