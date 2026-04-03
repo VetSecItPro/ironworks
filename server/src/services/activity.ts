@@ -45,6 +45,7 @@ export function activityService(db: Db) {
           ),
         )
         .orderBy(desc(activityLog.createdAt))
+        .limit(200)
         .then((rows) => rows.map((r) => r.activityLog));
     },
 
@@ -58,7 +59,8 @@ export function activityService(db: Db) {
             eq(activityLog.entityId, issueId),
           ),
         )
-        .orderBy(desc(activityLog.createdAt)),
+        .orderBy(desc(activityLog.createdAt))
+        .limit(100),
 
     runsForIssue: (companyId: string, issueId: string) =>
       db
@@ -90,7 +92,8 @@ export function activityService(db: Db) {
             ),
           ),
         )
-        .orderBy(desc(heartbeatRuns.createdAt)),
+        .orderBy(desc(heartbeatRuns.createdAt))
+        .limit(50),
 
     issuesForRun: async (runId: string) => {
       const run = await db

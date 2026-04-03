@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Link } from "@/lib/router";
 import { Identity } from "./Identity";
 import { timeAgo } from "../lib/timeAgo";
@@ -103,7 +104,7 @@ interface ActivityRowProps {
   className?: string;
 }
 
-export function ActivityRow({ event, agentMap, entityNameMap, entityTitleMap, className }: ActivityRowProps) {
+export const ActivityRow = memo(function ActivityRow({ event, agentMap, entityNameMap, entityTitleMap, className }: ActivityRowProps) {
   const verb = formatVerb(event.action, event.details);
 
   // Determine verb color
@@ -177,4 +178,4 @@ export function ActivityRow({ event, agentMap, entityNameMap, entityTitleMap, cl
       {inner}
     </div>
   );
-}
+});

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 import type { Issue } from "@ironworksai/shared";
 import { Link } from "@/lib/router";
 import { X } from "lucide-react";
@@ -23,7 +23,7 @@ interface IssueRowProps {
   className?: string;
 }
 
-export function IssueRow({
+export const IssueRow = memo(function IssueRow({
   issue,
   issueLinkState,
   mobileLeading,
@@ -145,4 +145,4 @@ export function IssueRow({
       ) : null}
     </Link>
   );
-}
+});

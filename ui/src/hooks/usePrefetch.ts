@@ -5,6 +5,8 @@ import { dashboardApi } from "../api/dashboard";
 import { agentsApi } from "../api/agents";
 import { issuesApi } from "../api/issues";
 import { projectsApi } from "../api/projects";
+import { goalsApi } from "../api/goals";
+import { routinesApi } from "../api/routines";
 
 /**
  * Prefetch critical data so that navigating between top-level pages feels
@@ -43,6 +45,20 @@ export function usePrefetch(companyId: string | null | undefined) {
     queryClient.prefetchQuery({
       queryKey: queryKeys.projects.list(companyId),
       queryFn: () => projectsApi.list(companyId),
+      staleTime: STALE,
+    });
+
+    // Prefetch goals list (used by Goals page, Dashboard progress panel)
+    queryClient.prefetchQuery({
+      queryKey: queryKeys.goals.list(companyId),
+      queryFn: () => goalsApi.list(companyId),
+      staleTime: STALE,
+    });
+
+    // Prefetch routines list (used by Routines page, sidebar)
+    queryClient.prefetchQuery({
+      queryKey: queryKeys.routines.list(companyId),
+      queryFn: () => routinesApi.list(companyId),
       staleTime: STALE,
     });
   }, [companyId, queryClient]);
