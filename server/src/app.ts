@@ -39,6 +39,7 @@ import { setupRoutes } from "./routes/setup.js";
 import { teamTemplateRoutes } from "./routes/team-templates.js";
 import { aiGenerateRoutes } from "./routes/ai-generate.js";
 import { privacyRoutes, startRetentionScheduler } from "./routes/privacy.js";
+import { supportPublicRoutes } from "./routes/support.js";
 import { goalStatsRoutes } from "./routes/goal-stats.js";
 import { aiGoalBreakdownRoutes } from "./routes/ai-goal-breakdown.js";
 import { messagingRoutes, emailWebhookRoutes } from "./routes/messaging.js";
@@ -313,6 +314,8 @@ export async function createApp(
   app.use("/api", setupRoutes(db));
   // Email webhook is public (called by Mailgun/SendGrid — no auth)
   app.use("/api", emailWebhookRoutes(db));
+  // Support ticket submission is public (landing site contact form)
+  app.use("/api", supportPublicRoutes(db));
   app.use("/api", api);
   app.use("/api", (_req, res) => {
     res.status(404).json({ error: "API route not found" });

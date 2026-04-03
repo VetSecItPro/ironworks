@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { and, eq, inArray, lt, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
+import { captureAnalyticsSnapshot } from "../services/analytics.js";
 import {
   companies,
   agents,
@@ -613,12 +614,18 @@ export function startRetentionScheduler(db: Db): NodeJS.Timeout {
     runRetentionCleanup(db).catch((err) =>
       logger.error({ err }, "initial retention cleanup failed"),
     );
+    captureAnalyticsSnapshot(db).catch((err) =>
+      logger.error({ err }, "initial analytics snapshot failed"),
+    );
   }, 60_000);
 
   // Then run daily
   const interval = setInterval(() => {
     runRetentionCleanup(db).catch((err) =>
       logger.error({ err }, "scheduled retention cleanup failed"),
+    );
+    captureAnalyticsSnapshot(db).catch((err) =>
+      logger.error({ err }, "scheduled analytics snapshot failed"),
     );
   }, CLEANUP_INTERVAL_MS);
 

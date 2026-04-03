@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Feedback — IronWorks</title>
+  <meta name="description" content="Report a bug or request a feature for IronWorks AI workforce management.">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Geist', 'system-ui', '-apple-system', 'sans-serif'],
+            display: ['Cabinet Grotesk', 'Geist', 'system-ui', 'sans-serif'],
+            mono: ['Geist Mono', 'JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            surface: { 0: '#0a0a0a', 1: '#141414', 2: '#1e1e1e', 3: '#282828' },
+            accent: { DEFAULT: '#3b82f6', dim: '#1d4ed8' },
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@400,500,700,800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/design-system.css">
+</head>
+<body class="bg-surface-0 text-white font-sans antialiased min-h-screen flex flex-col">
+
+  <!-- Nav -->
+  <header class="sticky top-0 z-50 border-b border-white/[0.06] bg-surface-0/80 backdrop-blur-md">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
+      <a href="/" class="flex items-center gap-2" aria-label="IronWorks home">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-blue-500" aria-hidden="true">
+          <path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9"/>
+          <path d="m18 15 4-4"/>
+          <path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/>
+        </svg>
+        <span class="font-semibold text-white">IronWorks</span>
+      </a>
+      <a href="/" class="text-sm text-zinc-400 hover:text-white transition-colors">&larr; Back to home</a>
+    </div>
+  </header>
+
+  <main class="flex-1 flex items-start justify-center py-16 px-6">
+    <div class="w-full max-w-lg">
+      <h1 class="font-display text-3xl font-bold tracking-tight mb-2">Send Feedback</h1>
+      <p class="text-zinc-400 mb-8">Report a bug or request a feature. We read every submission.</p>
+
+      <!-- Success message (hidden by default) -->
+      <div id="success-msg" class="hidden rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-4 text-sm text-emerald-300 mb-6">
+        <strong>Thank you!</strong> Your feedback has been submitted. We'll follow up if we need more info.
+      </div>
+
+      <!-- Error message (hidden by default) -->
+      <div id="error-msg" class="hidden rounded-xl border border-red-500/30 bg-red-500/10 px-5 py-4 text-sm text-red-300 mb-6">
+        Something went wrong. Please try again or email us at <a href="mailto:support@ironworksapp.ai" class="underline">support@ironworksapp.ai</a>.
+      </div>
+
+      <form id="feedback-form" class="space-y-5">
+        <!-- Type -->
+        <div>
+          <label class="block text-sm font-medium text-zinc-300 mb-2">Type</label>
+          <div class="flex gap-6">
+            <label class="flex items-center gap-2 cursor-pointer text-sm text-zinc-300">
+              <input type="radio" name="type" value="bug" checked class="accent-blue-500" />
+              Bug Report
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer text-sm text-zinc-300">
+              <input type="radio" name="type" value="feature" class="accent-blue-500" />
+              Feature Request
+            </label>
+          </div>
+        </div>
+
+        <!-- Name -->
+        <div>
+          <label for="name" class="block text-sm font-medium text-zinc-300 mb-1.5">Name</label>
+          <input
+            id="name"
+            name="name"
+            type="text"
+            placeholder="Your name"
+            class="w-full bg-surface-2 border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition"
+          />
+        </div>
+
+        <!-- Email -->
+        <div>
+          <label for="email" class="block text-sm font-medium text-zinc-300 mb-1.5">
+            Email <span class="text-red-400">*</span>
+          </label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            required
+            placeholder="you@example.com"
+            class="w-full bg-surface-2 border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition"
+          />
+        </div>
+
+        <!-- Subject -->
+        <div>
+          <label for="subject" class="block text-sm font-medium text-zinc-300 mb-1.5">
+            Subject <span class="text-red-400">*</span>
+          </label>
+          <input
+            id="subject"
+            name="subject"
+            type="text"
+            required
+            placeholder="Briefly describe the issue or request..."
+            class="w-full bg-surface-2 border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition"
+          />
+        </div>
+
+        <!-- Description -->
+        <div>
+          <label for="description" class="block text-sm font-medium text-zinc-300 mb-1.5">
+            Description <span class="text-red-400">*</span>
+          </label>
+          <textarea
+            id="description"
+            name="description"
+            required
+            rows="6"
+            placeholder="For bugs: steps to reproduce, expected vs actual behavior. For features: describe the feature and why it would help you."
+            class="w-full bg-surface-2 border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition resize-none"
+          ></textarea>
+        </div>
+
+        <button
+          type="submit"
+          id="submit-btn"
+          class="w-full inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-medium px-6 py-3 rounded-xl transition-all text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          Submit Feedback
+        </button>
+      </form>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-white/[0.06] py-8">
+    <div class="max-w-6xl mx-auto px-6 text-center text-xs text-zinc-600">
+      &copy; 2026 Steel Motion LLC. All rights reserved. &mdash;
+      <a href="/terms" class="hover:text-zinc-400 transition-colors">Terms</a> &middot;
+      <a href="/privacy" class="hover:text-zinc-400 transition-colors">Privacy</a> &middot;
+      <a href="mailto:support@ironworksapp.ai" class="hover:text-zinc-400 transition-colors">support@ironworksapp.ai</a>
+    </div>
+  </footer>
+
+  <script>
+    // Pre-select type from URL param
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      const t = params.get('type');
+      if (t === 'feature') {
+        const radios = document.querySelectorAll('input[name="type"]');
+        radios.forEach(function(r) {
+          r.checked = r.value === 'feature';
+        });
+      }
+    })();
+
+    const form = document.getElementById('feedback-form');
+    const successMsg = document.getElementById('success-msg');
+    const errorMsg = document.getElementById('error-msg');
+    const submitBtn = document.getElementById('submit-btn');
+
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      errorMsg.classList.add('hidden');
+
+      const formData = new FormData(form);
+      const type = formData.get('type') || 'bug';
+      const name = (formData.get('name') || '').toString().trim();
+      const email = (formData.get('email') || '').toString().trim();
+      const subject = (formData.get('subject') || '').toString().trim();
+      const description = (formData.get('description') || '').toString().trim();
+
+      if (!email || !subject || !description) return;
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
+
+      try {
+        const res = await fetch('https://app.ironworksapp.ai/api/support/tickets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type,
+            subject,
+            body: description,
+            senderName: name || undefined,
+            senderEmail: email,
+          }),
+        });
+
+        if (!res.ok) {
+          const payload = await res.json().catch(() => null);
+          throw new Error((payload && payload.error) || 'Submission failed');
+        }
+
+        form.classList.add('hidden');
+        successMsg.classList.remove('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch (err) {
+        errorMsg.classList.remove('hidden');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Feedback';
+      }
+    });
+  </script>
+</body>
+</html>

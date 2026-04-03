@@ -65,3 +65,5 @@ export { userInvites } from "./user_invites.js";
 export { companySubscriptions } from "./subscriptions.js";
 export { messagingBridges } from "./messaging_bridges.js";
 export { webhookEvents } from "./webhook_events.js";
+export { analyticsSnapshots } from "./analytics_snapshots.js";
+export { supportTickets, supportTicketComments } from "./support_tickets.js";

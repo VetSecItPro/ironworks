@@ -421,6 +421,20 @@
       "when": 1775527200000,
       "tag": "0059_llm_auth_method",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1775613600000,
+      "tag": "0060_analytics_snapshots",
+      "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1775700000000,
+      "tag": "0061_support_tickets",
+      "breakpoints": true
     }
   ]
 }

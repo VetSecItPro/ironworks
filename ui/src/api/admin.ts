@@ -105,6 +105,47 @@ export interface AdminAuditEntry {
   createdAt: string;
 }
 
+export interface AnalyticsDataPoint {
+  label: string;
+  value: number;
+}
+
+export interface AdminAnalyticsData {
+  mrr: AnalyticsDataPoint[];
+  signups: AnalyticsDataPoint[];
+  churn: AnalyticsDataPoint[];
+  agentUtilization: AnalyticsDataPoint[];
+}
+
+export interface AdminCurrentMetrics {
+  mrrCents: number;
+  mrrGrowthPct: number;
+  totalSignups: number;
+  churnRatePct: number;
+}
+
+export interface SupportTicketComment {
+  id: string;
+  body: string;
+  authorName: string | null;
+  authorEmail: string;
+  isAdmin: boolean;
+  createdAt: string;
+}
+
+export interface SupportTicket {
+  id: string;
+  type: "bug" | "feature";
+  status: "open" | "in-progress" | "resolved";
+  subject: string;
+  body: string;
+  userEmail: string;
+  userName: string | null;
+  companyName: string | null;
+  createdAt: string;
+  comments?: SupportTicketComment[];
+}
+
 /* ── API Client ───────────────────────────────────────────────── */
 
 export const adminApi = {
@@ -119,4 +160,19 @@ export const adminApi = {
   getMonitoring: () => api.get<AdminMonitoringMetrics>("/admin/monitoring"),
   getAuditLog: (limit?: number) =>
     api.get<AdminAuditEntry[]>(`/admin/audit-log?limit=${limit ?? 100}`),
+  // Analytics
+  getAnalytics: (days?: number) =>
+    api.get<AdminAnalyticsData>(`/admin/analytics?days=${days ?? 90}`),
+  exportAnalytics: () => {
+    window.location.href = "/api/admin/analytics/export";
+  },
+  getCurrentMetrics: () => api.get<AdminCurrentMetrics>("/admin/analytics/current"),
+  // Support
+  getSupportTickets: () => api.get<SupportTicket[]>("/admin/support/tickets"),
+  getSupportTicket: (id: string) =>
+    api.get<SupportTicket>(`/admin/support/tickets/${id}`),
+  replyToTicket: (id: string, body: string) =>
+    api.post<void>(`/admin/support/tickets/${id}/comments`, { body }),
+  updateTicketStatus: (id: string, status: SupportTicket["status"]) =>
+    api.patch<void>(`/admin/support/tickets/${id}`, { status }),
 };

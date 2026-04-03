@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FeedbackModal } from "./FeedbackModal";
 import { useQuery } from "@tanstack/react-query";
 import { Moon, Settings, Sun } from "lucide-react";
 import { Link, Outlet, useLocation, useNavigate, useParams } from "@/lib/router";
@@ -71,6 +72,7 @@ export function Layout() {
   const lastMainScrollTop = useRef(0);
   const [mobileNavVisible, setMobileNavVisible] = useState(true);
   const [instanceSettingsTarget, setInstanceSettingsTarget] = useState<string>(() => readRememberedInstanceSettingsPath());
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const nextTheme = theme === "dark" ? "light" : "dark";
   const matchedCompany = useMemo(() => {
     if (!companyPrefix) return null;
@@ -343,41 +345,25 @@ export function Layout() {
             </main>
             <PropertiesPanel />
           </div>
-          <footer className="flex items-center justify-between px-4 py-1.5 border-t border-border text-xs text-muted-foreground shrink-0">
-            <span>IronWorks by Steel Motion LLC</span>
-            <div className="flex items-center gap-2">
-              <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>
-              <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
-              <Link to="/aup" className="hover:text-foreground transition-colors">AUP</Link>
-              <Link to="/dpa" className="hover:text-foreground transition-colors">DPA</Link>
-              <Link to="/sla" className="hover:text-foreground transition-colors">SLA</Link>
-              <CookieSettingsLink />
+          <footer className="flex items-center justify-center gap-3 px-4 py-1 border-t border-border text-[11px] text-muted-foreground shrink-0">
+            <span className="opacity-60">IronWorks</span>
+            <span className="text-border/50">·</span>
+            <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>
+            <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
+            <Link to="/aup" className="hover:text-foreground transition-colors">AUP</Link>
+            <span className="text-border/50">·</span>
+            <button type="button" onClick={() => setFeedbackOpen(true)} className="hover:text-foreground transition-colors">Report a Bug</button>
               {isInstanceAdmin && (
                 <>
-                  <span className="text-border">|</span>
-                  <Button variant="ghost" size="icon-sm" className="text-muted-foreground" asChild>
-                    <Link
-                      to={instanceSettingsTarget}
-                      aria-label="Settings"
-                      title="Settings"
-                    >
-                      <Settings className="h-3.5 w-3.5" />
-                    </Link>
-                  </Button>
+                  <span className="text-border/50">·</span>
+                  <Link to={instanceSettingsTarget} className="hover:text-foreground transition-colors" title="Settings">Settings</Link>
+                  <Link to="/manage" className="hover:text-foreground transition-colors" title="Admin">Admin</Link>
                 </>
               )}
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                className="text-muted-foreground"
-                onClick={toggleTheme}
-                aria-label={`Switch to ${nextTheme} mode`}
-                title={`Switch to ${nextTheme} mode`}
-              >
-                {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-              </Button>
-            </div>
+              <span className="text-border/50">·</span>
+              <button type="button" onClick={toggleTheme} className="hover:text-foreground transition-colors" aria-label={`Switch to ${nextTheme} mode`}>
+                {theme === "dark" ? "Light" : "Dark"}
+              </button>
           </footer>
         </div>
       </div>
@@ -387,6 +373,7 @@ export function Layout() {
       <NewProjectDialog />
       <NewGoalDialog />
       <NewAgentDialog />
+      <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
       <ToastViewport />
     </div>
   );

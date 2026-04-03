@@ -54,6 +54,8 @@ const AdminCompanies = lazy(() => import("./pages/admin/AdminCompanies"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminMonitoring = lazy(() => import("./pages/admin/AdminMonitoring"));
 const AdminAuditLog = lazy(() => import("./pages/admin/AdminAuditLog"));
+const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
+const AdminSupport = lazy(() => import("./pages/admin/AdminSupport"));
 import { CookieConsentBanner } from "./components/CookieConsent";
 import { PrivacyPolicy } from "./pages/PrivacyPolicy";
 import { TermsOfService } from "./pages/TermsOfService";
@@ -368,6 +370,8 @@ export function App() {
             <Route path="users" element={<LazyPage variant="list"><AdminUsers /></LazyPage>} />
             <Route path="monitoring" element={<LazyPage><AdminMonitoring /></LazyPage>} />
             <Route path="audit" element={<LazyPage><AdminAuditLog /></LazyPage>} />
+            <Route path="analytics" element={<LazyPage><AdminAnalytics /></LazyPage>} />
+            <Route path="support" element={<LazyPage><AdminSupport /></LazyPage>} />
           </Route>
           <Route path="companies" element={<UnprefixedBoardRedirect />} />
           <Route path="issues" element={<UnprefixedBoardRedirect />} />

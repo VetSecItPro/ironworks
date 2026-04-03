@@ -13,9 +13,12 @@ import {
   activityLog,
   instanceUserRoles,
   authSessions,
+  analyticsSnapshots,
 } from "@ironworksai/db";
 import { assertInstanceAdmin } from "./authz.js";
 import { notFound } from "../errors.js";
+import { gatherLiveMetrics } from "../services/analytics.js";
+import { supportAdminRoutes } from "./support.js";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -527,6 +530,104 @@ export function adminRoutes(db: Db) {
 
     res.json(rows);
   });
+
+  // ── GET /api/admin/analytics ──────────────────────────────────────────────
+  // Returns the last 90 days of daily snapshots for charting.
+  router.get("/analytics", async (req, res) => {
+    assertInstanceAdmin(req);
+
+    const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    const cutoffDate = ninetyDaysAgo
+      .toLocaleDateString("en-US", {
+        timeZone: "America/Chicago",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      })
+      .split("/");
+    const cutoffStr = `${cutoffDate[2]}-${cutoffDate[0]}-${cutoffDate[1]}`;
+
+    const rows = await db
+      .select()
+      .from(analyticsSnapshots)
+      .where(gte(analyticsSnapshots.snapshotDate, cutoffStr))
+      .orderBy(analyticsSnapshots.snapshotDate);
+
+    res.json(rows);
+  });
+
+  // ── GET /api/admin/analytics/export ──────────────────────────────────────
+  // Returns ALL snapshots as CSV with Content-Disposition header.
+  router.get("/analytics/export", async (req, res) => {
+    assertInstanceAdmin(req);
+
+    const rows = await db
+      .select()
+      .from(analyticsSnapshots)
+      .orderBy(analyticsSnapshots.snapshotDate);
+
+    const headers = [
+      "snapshot_date",
+      "total_companies",
+      "total_users",
+      "total_agents",
+      "mrr_cents",
+      "new_signups",
+      "churn_count",
+      "total_issues",
+      "total_runs",
+      "success_rate",
+      "created_at",
+    ];
+
+    const csvLines = [
+      headers.join(","),
+      ...rows.map((r) =>
+        [
+          r.snapshotDate,
+          r.totalCompanies,
+          r.totalUsers,
+          r.totalAgents,
+          r.mrrCents,
+          r.newSignups,
+          r.churnCount,
+          r.totalIssues,
+          r.totalRuns,
+          r.successRate.toFixed(4),
+          r.createdAt.toISOString(),
+        ].join(","),
+      ),
+    ];
+
+    const today = new Date()
+      .toLocaleDateString("en-US", {
+        timeZone: "America/Chicago",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      })
+      .split("/");
+    const todayStr = `${today[2]}-${today[0]}-${today[1]}`;
+
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="ironworks-analytics-${todayStr}.csv"`,
+    );
+    res.send(csvLines.join("\n"));
+  });
+
+  // ── GET /api/admin/analytics/current ─────────────────────────────────────
+  // Returns today's live metrics (same queries as snapshot but not stored).
+  router.get("/analytics/current", async (req, res) => {
+    assertInstanceAdmin(req);
+
+    const metrics = await gatherLiveMetrics(db);
+    res.json(metrics);
+  });
+
+  // ── Support ticket admin routes ──────────────────────────────────────────
+  router.use(supportAdminRoutes(db));
 
   return router;
 }

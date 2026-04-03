@@ -4,7 +4,9 @@ import { useTheme } from "@/context/ThemeContext";
 import {
   Activity,
   ArrowLeft,
+  BarChart2,
   Building2,
+  Headphones,
   LayoutDashboard,
   Moon,
   ScrollText,
@@ -28,6 +30,8 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/manage/users", label: "Users", icon: Users },
   { to: "/manage/monitoring", label: "Monitoring", icon: Server },
   { to: "/manage/audit", label: "Audit Log", icon: ScrollText },
+  { to: "/manage/analytics", label: "Analytics", icon: BarChart2 },
+  { to: "/manage/support", label: "Support", icon: Headphones },
 ];
 
 export default function AdminLayout() {
