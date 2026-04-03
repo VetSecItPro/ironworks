@@ -17,7 +17,7 @@ import { MetricCard } from "../components/MetricCard";
 import { EmptyState } from "../components/EmptyState";
 import { ActivityRow } from "../components/ActivityRow";
 import { cn, formatCents } from "../lib/utils";
-import { AlertTriangle, Bot, ChevronDown, ChevronRight, CircleDot, DollarSign, ShieldCheck, Swords, PauseCircle } from "lucide-react";
+import { AlertTriangle, Bot, ChevronDown, ChevronRight, CircleDot, DollarSign, ShieldCheck, Swords, PauseCircle, Users } from "lucide-react";
 import { ActiveAgentsPanel } from "../components/ActiveAgentsPanel";
 import { ChartCard, PriorityChart, IssueStatusChart } from "../components/ActivityCharts";
 import { PageSkeleton } from "../components/PageSkeleton";
@@ -157,6 +157,13 @@ export function Dashboard() {
   const { data: costsByAgent } = useQuery({
     queryKey: [...queryKeys.costs(selectedCompanyId!), "by-agent"],
     queryFn: () => costsApi.byAgent(selectedCompanyId!),
+    enabled: !!selectedCompanyId,
+    staleTime: 30_000,
+  });
+
+  const { data: headcount } = useQuery({
+    queryKey: queryKeys.headcount(selectedCompanyId!),
+    queryFn: () => agentsApi.headcount(selectedCompanyId!),
     enabled: !!selectedCompanyId,
     staleTime: 30_000,
   });
@@ -395,7 +402,16 @@ export function Dashboard() {
           )}
 
           {/* ── 2. STATS ROW ── */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-3">
+            {headcount && (
+              <MetricCard
+                icon={Users}
+                value={headcount.fte + headcount.contractor}
+                label="Headcount"
+                to="/agents"
+                description={<span>{headcount.fte} Full-Time, {headcount.contractor} Contractors</span>}
+              />
+            )}
             <MetricCard
               icon={Bot}
               value={data.agents.active + data.agents.running + data.agents.paused + data.agents.error}
