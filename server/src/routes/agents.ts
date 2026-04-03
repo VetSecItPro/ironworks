@@ -1419,24 +1419,32 @@ export function agentRoutes(db: Db) {
     const tier = subRow?.planTier ?? "starter";
     const limits = PLAN_AGENT_LIMITS[tier] ?? PLAN_AGENT_LIMITS["starter"]!;
 
-    const [headcountRow] = await db
-      .select({
-        fte: sql<number>`count(*) filter (where ${agentsTable.employmentType} = 'full_time' and ${agentsTable.status} != 'terminated')`,
-        contractor: sql<number>`count(*) filter (where ${agentsTable.employmentType} = 'contractor' and ${agentsTable.status} != 'terminated')`,
-      })
-      .from(agentsTable)
-      .where(eq(agentsTable.companyId, companyId));
+    // Only run headcount query if there's actually a limit to enforce
+    const fteLimit = limits.fte;
+    const contractorLimit = limits.contractor;
+    if (
+      (resolvedEmploymentType === "full_time" && fteLimit !== -1) ||
+      (resolvedEmploymentType === "contractor" && contractorLimit !== -1)
+    ) {
+      const [headcountRow] = await db
+        .select({
+          fte: sql<number>`count(*) filter (where ${agentsTable.employmentType} = 'full_time' and ${agentsTable.status} != 'terminated')`,
+          contractor: sql<number>`count(*) filter (where ${agentsTable.employmentType} = 'contractor' and ${agentsTable.status} != 'terminated')`,
+        })
+        .from(agentsTable)
+        .where(eq(agentsTable.companyId, companyId));
 
-    const fteCount = Number(headcountRow?.fte ?? 0);
-    const contractorCount = Number(headcountRow?.contractor ?? 0);
+      const fteCount = Number(headcountRow?.fte ?? 0);
+      const contractorCount = Number(headcountRow?.contractor ?? 0);
 
-    if (resolvedEmploymentType === "full_time" && limits.fte !== -1 && fteCount >= limits.fte) {
-      res.status(403).json({ error: `Full-time agent limit reached (${limits.fte}) for ${tier} plan. Upgrade to add more full-time agents.` });
-      return;
-    }
-    if (resolvedEmploymentType === "contractor" && limits.contractor !== -1 && contractorCount >= limits.contractor) {
-      res.status(403).json({ error: `Contractor agent limit reached (${limits.contractor}) for ${tier} plan. Upgrade to add more contractors.` });
-      return;
+      if (resolvedEmploymentType === "full_time" && fteLimit !== -1 && fteCount >= fteLimit) {
+        res.status(403).json({ error: `Full-time agent limit reached (${fteLimit}) for ${tier} plan. Upgrade to add more full-time agents.` });
+        return;
+      }
+      if (resolvedEmploymentType === "contractor" && contractorLimit !== -1 && contractorCount >= contractorLimit) {
+        res.status(403).json({ error: `Contractor agent limit reached (${contractorLimit}) for ${tier} plan. Upgrade to add more contractors.` });
+        return;
+      }
     }
 
     // Auto-budget: determine default before create so we can pass it in
