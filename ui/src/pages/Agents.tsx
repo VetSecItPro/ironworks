@@ -18,7 +18,7 @@ import { PageTabBar } from "../components/PageTabBar";
 import { Tabs } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Bot, Plus, List, GitBranch, Search, SlidersHorizontal } from "lucide-react";
+import { Bot, Plus, List, GitBranch, Search, SlidersHorizontal, UserPlus } from "lucide-react";
 import { AGENT_ROLE_LABELS, DEPARTMENTS, DEPARTMENT_LABELS, type Agent, type Department } from "@ironworksai/shared";
 import { EmploymentBadge } from "../components/EmploymentBadge";
 import { AgentIcon } from "../components/AgentIconPicker";
@@ -68,7 +68,7 @@ function filterOrgTree(nodes: OrgNode[], tab: FilterTab, showTerminated: boolean
 
 export function Agents() {
   const { selectedCompanyId } = useCompany();
-  const { openNewAgent } = useDialog();
+  const { openNewAgent, openHireAgent } = useDialog();
   const { setBreadcrumbs } = useBreadcrumbs();
   const navigate = useNavigate();
   const location = useLocation();
@@ -143,7 +143,7 @@ export function Agents() {
   const filteredOrg = filterOrgTree(orgTree ?? [], tab, showTerminated);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Tabs value={tab} onValueChange={(v) => navigate(`/agents/${v}`)}>
           <PageTabBar
@@ -238,6 +238,10 @@ export function Agents() {
               </button>
             </div>
           )}
+          <Button size="sm" variant="outline" onClick={openHireAgent}>
+            <UserPlus className="h-3.5 w-3.5 mr-1.5" />
+            Hire Agent
+          </Button>
           <Button size="sm" variant="outline" onClick={openNewAgent}>
             <Plus className="h-3.5 w-3.5 mr-1.5" />
             New Agent
@@ -249,7 +253,7 @@ export function Agents() {
         <p className="text-xs text-muted-foreground">{filtered.length} agent{filtered.length !== 1 ? "s" : ""}</p>
       )}
 
-      {error && <p className="text-sm text-destructive">{error.message}</p>}
+      {error && <p role="alert" className="text-sm text-destructive">{error.message}</p>}
 
       {agents && agents.length === 0 && (
         <EmptyState
@@ -264,9 +268,10 @@ export function Agents() {
       {effectiveView === "list" && filtered.length > 0 && (
         <div className="border border-border">
           {filtered.map((agent) => {
+            const isTerminated = agent.status === "terminated";
             return (
+              <div key={agent.id} className={cn(isTerminated && "opacity-50")}>
               <EntityRow
-                key={agent.id}
                 title={agent.name}
                 subtitle={`${roleLabels[agent.role] ?? agent.role}${agent.title ? ` - ${agent.title}` : ""}`}
                 to={agentUrl(agent)}
@@ -280,7 +285,7 @@ export function Agents() {
                           : getRoleLevel(agent.role) === "management"
                             ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
                             : "bg-muted text-muted-foreground",
-                        getAgentRingClass(agent.role),
+                        getAgentRingClass(agent.role, (agent as unknown as Record<string, unknown>).employmentType as string | undefined),
                       )}
                     >
                       <AgentIcon icon={agent.icon} className="h-3.5 w-3.5" />
@@ -323,10 +328,16 @@ export function Agents() {
                       <span className="w-20 flex justify-end">
                         <StatusBadge status={agent.status} />
                       </span>
+                      {isTerminated && (
+                        <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium bg-muted text-muted-foreground">
+                          Terminated
+                        </span>
+                      )}
                     </div>
                   </div>
                 }
               />
+              </div>
             );
           })}
         </div>
@@ -376,9 +387,10 @@ function OrgTreeNode({
   const agent = agentMap.get(node.id);
 
   const statusColor = agentStatusDot[node.status] ?? agentStatusDotDefault;
+  const isTerminated = node.status === "terminated";
 
   return (
-    <div style={{ paddingLeft: depth * 24 }}>
+    <div style={{ paddingLeft: depth * 24 }} className={cn(isTerminated && "opacity-50")}>
       <Link
         to={agent ? agentUrl(agent) : `/agents/${node.id}`}
         className="flex items-center gap-3 px-3 py-2 hover:bg-accent/30 transition-colors w-full text-left no-underline text-inherit"
@@ -392,7 +404,7 @@ function OrgTreeNode({
                 : getRoleLevel(node.role) === "management"
                   ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
                   : "bg-muted text-muted-foreground",
-              getAgentRingClass(node.role),
+              getAgentRingClass(node.role, (agent as unknown as Record<string, unknown> | undefined)?.employmentType as string | undefined),
             )}
           >
             <AgentIcon icon={agent?.icon} className="h-3.5 w-3.5" />
@@ -442,6 +454,11 @@ function OrgTreeNode({
             <span className="w-20 flex justify-end">
               <StatusBadge status={node.status} />
             </span>
+            {isTerminated && (
+              <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium bg-muted text-muted-foreground">
+                Terminated
+              </span>
+            )}
           </div>
         </div>
       </Link>

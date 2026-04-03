@@ -16,8 +16,9 @@ import { queryKeys } from "../lib/queryKeys";
 import { MetricCard } from "../components/MetricCard";
 import { EmptyState } from "../components/EmptyState";
 import { ActivityRow } from "../components/ActivityRow";
+import { Button } from "@/components/ui/button";
 import { cn, formatCents } from "../lib/utils";
-import { AlertTriangle, Bot, ChevronDown, ChevronRight, CircleDot, DollarSign, ShieldCheck, Swords, PauseCircle, Users } from "lucide-react";
+import { AlertTriangle, Bot, ChevronDown, ChevronRight, CircleDot, DollarSign, ShieldCheck, Swords, PauseCircle, Users, UserPlus } from "lucide-react";
 import { ActiveAgentsPanel } from "../components/ActiveAgentsPanel";
 import { ChartCard, PriorityChart, IssueStatusChart } from "../components/ActivityCharts";
 import { PageSkeleton } from "../components/PageSkeleton";
@@ -99,7 +100,7 @@ function isAggregated(item: import("@ironworksai/shared").ActivityEvent | Aggreg
 
 export function Dashboard() {
   const { selectedCompanyId, companies } = useCompany();
-  const { openOnboarding } = useDialog();
+  const { openOnboarding, openHireAgent } = useDialog();
   const { setBreadcrumbs } = useBreadcrumbs();
   const [animatedActivityIds, setAnimatedActivityIds] = useState<Set<string>>(new Set());
   const [expandedAgg, setExpandedAgg] = useState<Set<string>>(new Set());
@@ -361,7 +362,7 @@ export function Dashboard() {
     <div className="space-y-6">
       <WelcomeBanner />
       <ApiKeyOnboardingBanner />
-      {error && <p className="text-sm text-destructive">{error.message}</p>}
+      {error && <p role="alert" className="text-sm text-destructive">{error.message}</p>}
 
       {hasNoAgents && (
         <div className="flex items-center justify-between gap-3 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 dark:border-amber-500/25 dark:bg-amber-950/60">
@@ -404,13 +405,24 @@ export function Dashboard() {
           {/* ── 2. STATS ROW ── */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-2 sm:gap-3">
             {headcount && (
-              <MetricCard
-                icon={Users}
-                value={headcount.fte + headcount.contractor}
-                label="Headcount"
-                to="/agents"
-                description={<span>{headcount.fte} Full-Time, {headcount.contractor} Contractors</span>}
-              />
+              <div className="relative">
+                <MetricCard
+                  icon={Users}
+                  value={headcount.fte + headcount.contractor}
+                  label="Headcount"
+                  to="/agents"
+                  description={<span>{headcount.fte} Full-Time, {headcount.contractor} Contractors</span>}
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute top-2 right-2 h-6 w-6 p-0"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); openHireAgent(); }}
+                  title="Hire agent"
+                >
+                  <UserPlus className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             )}
             <MetricCard
               icon={Bot}
@@ -544,16 +556,16 @@ export function Dashboard() {
                           {a.rating}
                         </span>
                         <span className="truncate">{a.name}</span>
-                        <span className="text-right text-muted-foreground">
+                        <span className="text-right text-muted-foreground tabular-nums">
                           {a.costPerTask !== null ? formatCents(Math.round(a.costPerTask)) : "—"}
                         </span>
-                        <span className="text-right text-muted-foreground">
+                        <span className="text-right text-muted-foreground tabular-nums">
                           {a.avgCloseH !== null ? `${a.avgCloseH.toFixed(1)}h` : "—"}
                         </span>
                       </div>
                     ))}
                   </div>
-                  <div className="border-t border-border/50 pt-2 space-y-1 text-sm text-muted-foreground">
+                  <div className="border-t border-border/50 pt-2 space-y-1 text-sm text-muted-foreground tabular-nums">
                     <div className="flex justify-between">
                       <span>Team avg</span>
                       <span>{teamAvgCostPerTask !== null ? `${formatCents(Math.round(teamAvgCostPerTask))}/task` : "—"}</span>
@@ -582,7 +594,7 @@ export function Dashboard() {
                             <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: p.color }} />
                             <span className="truncate">{p.name}</span>
                           </div>
-                          <span className="text-muted-foreground shrink-0">{p.percent}%</span>
+                          <span className="text-muted-foreground shrink-0 tabular-nums">{p.percent}%</span>
                         </div>
                         <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                           <div

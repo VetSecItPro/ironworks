@@ -12,6 +12,8 @@ import { PageSkeleton } from "../components/PageSkeleton";
 import { AgentIcon } from "../components/AgentIconPicker";
 import { Download, Network, Upload } from "lucide-react";
 import { AGENT_ROLE_LABELS, type Agent } from "@ironworksai/shared";
+import { getRoleLevel, getAgentRingClass } from "../lib/role-icons";
+import { cn } from "../lib/utils";
 
 // Layout constants
 const CARD_W = 200;
@@ -407,8 +409,16 @@ export function OrgChart() {
               <div className="flex items-center px-4 py-3 gap-3">
                 {/* Agent icon + status dot */}
                 <div className="relative shrink-0">
-                  <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center">
-                    <AgentIcon icon={agent?.icon} className="h-4.5 w-4.5 text-foreground/70" />
+                  <div className={cn(
+                    "w-9 h-9 rounded-full flex items-center justify-center",
+                    getRoleLevel(node.role) === "executive"
+                      ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                      : getRoleLevel(node.role) === "management"
+                        ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                        : "bg-muted text-foreground/70",
+                    getAgentRingClass(node.role, (agent as unknown as Record<string, unknown> | undefined)?.employmentType as string | undefined),
+                  )}>
+                    <AgentIcon icon={agent?.icon} className="h-4.5 w-4.5" />
                   </div>
                   <span
                     className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card"
