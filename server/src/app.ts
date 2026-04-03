@@ -43,6 +43,7 @@ import { goalStatsRoutes } from "./routes/goal-stats.js";
 import { aiGoalBreakdownRoutes } from "./routes/ai-goal-breakdown.js";
 import { messagingRoutes, emailWebhookRoutes } from "./routes/messaging.js";
 import { slimRoutes } from "./routes/slim.js";
+import { adminRoutes } from "./routes/admin.js";
 // Plugin system disabled — not needed for V1 productization
 // import { pluginRoutes } from "./routes/plugins.js";
 // import { pluginUiStaticRoutes } from "./routes/plugin-ui-static.js";
@@ -262,6 +263,7 @@ export async function createApp(
   api.post("/companies/:companyId/assets", enforceStorageLimit(db));
   api.post("/companies/:companyId/assets/*path", enforceStorageLimit(db));
 
+  api.use("/admin", adminRoutes(db));
   api.use("/companies", companyRoutes(db, opts.storageService));
   api.use(companySkillRoutes(db));
   api.use(agentRoutes(db));

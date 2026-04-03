@@ -47,6 +47,13 @@ const InstanceGeneralSettings = lazy(() => import("./pages/InstanceGeneralSettin
 const InstanceSettings = lazy(() => import("./pages/InstanceSettings").then(m => ({ default: m.InstanceSettings })));
 const InstanceExperimentalSettings = lazy(() => import("./pages/InstanceExperimentalSettings").then(m => ({ default: m.InstanceExperimentalSettings })));
 const PrivacySettings = lazy(() => import("./pages/PrivacySettings").then(m => ({ default: m.PrivacySettings })));
+// Admin panel — lazy loaded, instance admin only
+const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminCompanies = lazy(() => import("./pages/admin/AdminCompanies"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminMonitoring = lazy(() => import("./pages/admin/AdminMonitoring"));
+const AdminAuditLog = lazy(() => import("./pages/admin/AdminAuditLog"));
 import { CookieConsentBanner } from "./components/CookieConsent";
 import { PrivacyPolicy } from "./pages/PrivacyPolicy";
 import { TermsOfService } from "./pages/TermsOfService";
@@ -354,6 +361,13 @@ export function App() {
             <Route path="experimental" element={<LazyPage><InstanceExperimentalSettings /></LazyPage>} />
             <Route path="plugins" element={<LazyPage><PluginManager /></LazyPage>} />
             <Route path="plugins/:pluginId" element={<LazyPage><PluginSettings /></LazyPage>} />
+          </Route>
+          <Route path="manage" element={<LazyPage><AdminLayout /></LazyPage>}>
+            <Route index element={<LazyPage variant="dashboard"><AdminDashboard /></LazyPage>} />
+            <Route path="companies" element={<LazyPage variant="list"><AdminCompanies /></LazyPage>} />
+            <Route path="users" element={<LazyPage variant="list"><AdminUsers /></LazyPage>} />
+            <Route path="monitoring" element={<LazyPage><AdminMonitoring /></LazyPage>} />
+            <Route path="audit" element={<LazyPage><AdminAuditLog /></LazyPage>} />
           </Route>
           <Route path="companies" element={<UnprefixedBoardRedirect />} />
           <Route path="issues" element={<UnprefixedBoardRedirect />} />
