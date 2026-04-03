@@ -57,3 +57,4 @@ tests/release-smoke/playwright-report/
 .redteam-reports/
 .design-reports/
 .security-reports/
+.perf/

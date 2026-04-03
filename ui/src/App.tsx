@@ -3,7 +3,7 @@ import { Navigate, Outlet, Route, Routes, useLocation, useParams } from "@/lib/r
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Layout } from "./components/Layout";
-import { OnboardingWizard } from "./components/OnboardingWizard";
+const OnboardingWizard = lazy(() => import("./components/OnboardingWizard").then(m => ({ default: m.OnboardingWizard })));
 import { PageSkeleton } from "./components/PageSkeleton";
 import { authApi } from "./api/auth";
 import { healthApi } from "./api/health";
@@ -16,8 +16,8 @@ import { Issues } from "./pages/Issues";
 import { Routines } from "./pages/Routines";
 import { Goals } from "./pages/Goals";
 import { Approvals } from "./pages/Approvals";
-import { Playbooks } from "./pages/Playbooks";
-import { Library } from "./pages/Library";
+const Playbooks = lazy(() => import("./pages/Playbooks").then(m => ({ default: m.Playbooks })));
+const Library = lazy(() => import("./pages/Library").then(m => ({ default: m.Library })));
 import { Inbox } from "./pages/Inbox";
 import { Activity } from "./pages/Activity";
 // Lazily loaded — detail / heavy pages
@@ -158,8 +158,8 @@ function boardRoutes() {
       <Route path="company/export/*" element={<LazyPage><CompanyExport /></LazyPage>} />
       <Route path="company/import" element={<LazyPage><CompanyImport /></LazyPage>} />
       <Route path="skills/*" element={<LazyPage><CompanySkills /></LazyPage>} />
-      <Route path="library" element={<Library />} />
-      <Route path="playbooks" element={<Playbooks />} />
+      <Route path="library" element={<LazyPage variant="list"><Library /></LazyPage>} />
+      <Route path="playbooks" element={<LazyPage variant="list"><Playbooks /></LazyPage>} />
       <Route path="privacy-settings" element={<LazyPage><PrivacySettings /></LazyPage>} />
       <Route path="settings" element={<LegacySettingsRedirect />} />
       <Route path="settings/*" element={<LegacySettingsRedirect />} />
@@ -403,7 +403,7 @@ export function App() {
           <Route path="*" element={<NotFoundPage scope="global" />} />
         </Route>
       </Routes>
-      <OnboardingWizard />
+      <Suspense fallback={null}><OnboardingWizard /></Suspense>
       <CookieConsentBanner />
     </>
   );

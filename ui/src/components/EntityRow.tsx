@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 import { Link } from "@/lib/router";
 import { cn } from "../lib/utils";
 
@@ -14,7 +14,7 @@ interface EntityRowProps {
   className?: string;
 }
 
-export function EntityRow({
+export const EntityRow = memo(function EntityRow({
   leading,
   identifier,
   title,
@@ -66,4 +66,4 @@ export function EntityRow({
       {content}
     </div>
   );
-}
+});
