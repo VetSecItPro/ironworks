@@ -1,5 +1,7 @@
 node_modules/
 dist/
+# Landing site pre-built CSS must be committed (served directly from VDS, no build step)
+!landing/dist/
 .env
 *.tsbuildinfo
 drizzle/meta/

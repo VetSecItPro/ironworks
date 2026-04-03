@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+@source "../**/*.html";
+
+@theme {
+  --font-family-sans: 'Geist', system-ui, -apple-system, sans-serif;
+  --font-family-mono: 'Geist Mono', 'JetBrains Mono', monospace;
+  --font-family-display: 'Cabinet Grotesk', 'Geist', system-ui, sans-serif;
+
+  --color-surface-0: #0a0a0a;
+  --color-surface-1: #141414;
+  --color-surface-2: #1e1e1e;
+  --color-surface-3: #282828;
+
+  --color-accent: #3b82f6;
+  --color-accent-dim: #1d4ed8;
+}
