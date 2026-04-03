@@ -363,7 +363,7 @@ export function Dashboard() {
             <p className="text-sm text-amber-900 dark:text-amber-100">You have no agents.</p>
           </div>
           <button
-            onClick={() => openOnboarding({ initialStep: 2, companyId: selectedCompanyId! })}
+            onClick={() => openOnboarding({ initialStep: 3, companyId: selectedCompanyId! })}
             className="text-sm font-medium text-amber-700 hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-100 underline underline-offset-2 shrink-0"
           >
             Create one here
@@ -395,7 +395,7 @@ export function Dashboard() {
           )}
 
           {/* ── 2. STATS ROW ── */}
-          <div className="grid grid-cols-2 xl:grid-cols-4 gap-1 sm:gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
             <MetricCard
               icon={Bot}
               value={data.agents.active + data.agents.running + data.agents.paused + data.agents.error}
@@ -466,7 +466,7 @@ export function Dashboard() {
           )}
 
           {/* ── 4. METRICS ROW ── */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {/* Today's Spend */}
             <div className="rounded-xl border border-border p-4 space-y-3">
               <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Today's Spend</h4>
