@@ -1040,6 +1040,39 @@ export function agentRoutes(db: Db) {
     );
   });
 
+  /**
+   * GET /api/agents/:id/inbox-lite
+   * Returns minimal inbox data for the given agent (issue IDs, titles, status only).
+   * Intended for the heartbeat to cheaply check active work without full payloads.
+   */
+  router.get("/agents/:id/inbox-lite", async (req, res) => {
+    const id = req.params.id as string;
+    const agent = await svc.getById(id);
+    if (!agent) {
+      res.status(404).json({ error: "Agent not found" });
+      return;
+    }
+    assertCompanyAccess(req, agent.companyId);
+
+    const issuesSvc = issueService(db);
+    const rows = await issuesSvc.list(agent.companyId, {
+      assigneeAgentId: id,
+      status: "todo,in_progress,blocked",
+    });
+
+    res.json(
+      rows.map((issue) => ({
+        id: issue.id,
+        identifier: issue.identifier,
+        title: issue.title,
+        status: issue.status,
+        priority: issue.priority,
+        projectId: issue.projectId,
+        updatedAt: issue.updatedAt,
+      })),
+    );
+  });
+
   router.get("/agents/:id", async (req, res) => {
     const id = req.params.id as string;
     const agent = await svc.getById(id);

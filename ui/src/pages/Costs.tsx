@@ -172,7 +172,7 @@ export function Costs() {
   const { setBreadcrumbs } = useBreadcrumbs();
   const queryClient = useQueryClient();
 
-  const [mainTab, setMainTab] = useState<"overview" | "budgets" | "providers" | "billers" | "finance" | "projects" | "tokens" | "departments">("overview");
+  const [mainTab, setMainTab] = useState<"overview" | "budgets" | "providers" | "billers" | "finance" | "projects" | "tokens" | "departments" | "analysis">("overview");
   const [activeProvider, setActiveProvider] = useState("all");
   const [activeBiller, setActiveBiller] = useState("all");
   const [showNewFinanceEvent, setShowNewFinanceEvent] = useState(false);
@@ -334,6 +334,13 @@ export function Costs() {
     queryKey: ["executive", "cost-allocation", companyId],
     queryFn: () => executiveApi.costAllocation(companyId),
     enabled: !!selectedCompanyId && mainTab === "overview",
+    staleTime: 60_000,
+  });
+
+  const { data: budgetForecastData } = useQuery({
+    queryKey: ["executive", "budget-forecast", companyId],
+    queryFn: () => executiveApi.budgetForecast(companyId),
+    enabled: !!selectedCompanyId && (mainTab === "overview" || mainTab === "analysis"),
     staleTime: 60_000,
   });
 
@@ -739,6 +746,7 @@ export function Costs() {
           <TabsTrigger value="finance">Finance</TabsTrigger>
           <TabsTrigger value="tokens">Token Usage</TabsTrigger>
           <TabsTrigger value="departments">Departments</TabsTrigger>
+          <TabsTrigger value="analysis">Analysis</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-4 space-y-4">
@@ -1704,6 +1712,99 @@ export function Costs() {
                 )}
               </CardContent>
             </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="analysis" className="mt-4 space-y-4">
+          {/* Budget Forecast Card */}
+          {budgetForecastData && (
+            <Card>
+              <CardHeader className="px-5 pt-5 pb-2">
+                <CardTitle className="text-base">Budget Forecast</CardTitle>
+                <CardDescription>
+                  Projected month-end spend based on current daily run rate.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="px-5 pb-5 pt-2 space-y-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <MetricTile
+                    label="Month-to-Date"
+                    value={formatCents(budgetForecastData.currentMonthSpend)}
+                    subtitle="Spend so far this month"
+                    icon={DollarSign}
+                  />
+                  <MetricTile
+                    label="Projected Month-End"
+                    value={formatCents(budgetForecastData.projectedMonthEnd)}
+                    subtitle="At current daily rate"
+                    icon={TrendingUp}
+                  />
+                  <MetricTile
+                    label="Monthly Budget"
+                    value={budgetForecastData.monthlyBudget ? formatCents(budgetForecastData.monthlyBudget) : "None set"}
+                    subtitle="Company budget limit"
+                    icon={Coins}
+                  />
+                  <MetricTile
+                    label="Days Until Exhausted"
+                    value={budgetForecastData.daysUntilBudgetExhausted !== null ? `${budgetForecastData.daysUntilBudgetExhausted}d` : "N/A"}
+                    subtitle={budgetForecastData.monthlyBudget ? "At current rate" : "No budget set"}
+                    icon={Flame}
+                  />
+                </div>
+                <div className={cn(
+                  "rounded-lg border px-4 py-3 text-sm",
+                  budgetForecastData.trend === "under" ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400" :
+                  budgetForecastData.trend === "on_track" ? "border-blue-500/30 bg-blue-500/5 text-blue-600 dark:text-blue-400" :
+                  "border-red-500/30 bg-red-500/5 text-red-600 dark:text-red-400",
+                )}>
+                  <span className="font-semibold">
+                    {budgetForecastData.trend === "under" ? "Under Budget" :
+                     budgetForecastData.trend === "on_track" ? "On Track" :
+                     "Over Budget"}
+                    {" - "}
+                  </span>
+                  {budgetForecastData.recommendation}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Cost Allocation Analysis */}
+          {costAllocation && costAllocation.length > 0 && (
+            <Card>
+              <CardHeader className="px-5 pt-5 pb-2">
+                <CardTitle className="text-base">Top Cost Drivers by Project</CardTitle>
+                <CardDescription>
+                  Projects with the highest agent cost this month.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="px-5 pb-5 pt-2 space-y-3">
+                {(() => {
+                  const maxCost = Math.max(...costAllocation.map((r) => r.costCents), 1);
+                  return costAllocation.slice(0, 10).map((row) => (
+                    <div key={row.projectId} className="space-y-1">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-medium truncate max-w-[60%]">{row.projectName}</span>
+                        <span className="font-mono text-xs text-muted-foreground">
+                          {formatCents(row.costCents)} - {row.issueCount} issue{row.issueCount !== 1 ? "s" : ""}
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-primary/60 rounded-full transition-[width] duration-500"
+                          style={{ width: `${(row.costCents / maxCost) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  ));
+                })()}
+              </CardContent>
+            </Card>
+          )}
+
+          {!budgetForecastData && !costAllocation && (
+            <EmptyState icon={DollarSign} message="No analysis data available yet." />
           )}
         </TabsContent>
       </Tabs>

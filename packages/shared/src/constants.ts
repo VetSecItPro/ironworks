@@ -930,6 +930,24 @@ export type OutputTokenCategory = keyof typeof DEFAULT_OUTPUT_TOKEN_LIMITS;
 
 export const DEFAULT_SKILL_ALLOWLIST = ["ironworks"] as const;
 
+// ── Model Routing Defaults ────────────────────────────────────────────────────
+// Default model cascade per provider family and task complexity tier.
+// "routine" uses the cheapest model; "standard" and "complex" use the
+// configured/capable model. Import TaskComplexity from model-routing.ts.
+
+export const MODEL_ROUTING_DEFAULTS: Record<string, Record<"routine" | "standard" | "complex", string>> = {
+  anthropic: {
+    routine: "claude-haiku-4-5-20251001",
+    standard: "claude-sonnet-4-20250514",
+    complex: "claude-sonnet-4-20250514",
+  },
+  openai: {
+    routine: "gpt-4o-mini",
+    standard: "gpt-4o",
+    complex: "gpt-4o",
+  },
+} as const;
+
 // ── Agent Lifecycle Stages ────────────────────────────────────────────────────
 
 export const AGENT_LIFECYCLE_STAGES = ["draft", "pilot", "production", "retired"] as const;

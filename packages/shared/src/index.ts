@@ -99,6 +99,7 @@ export {
   AGENT_LIFECYCLE_STAGES,
   AGENT_LIFECYCLE_LABELS,
   type AgentLifecycleStage,
+  MODEL_ROUTING_DEFAULTS,
   type OutputTokenCategory,
   type CompanyStatus,
   type DeploymentMode,

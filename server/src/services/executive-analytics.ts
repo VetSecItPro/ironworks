@@ -951,6 +951,109 @@ export function executiveAnalyticsService(db: Db) {
 }
 
 // ---------------------------------------------------------------------------
+// Budget Forecast
+// ---------------------------------------------------------------------------
+
+export interface BudgetForecastResult {
+  currentMonthSpend: number;
+  projectedMonthEnd: number;
+  monthlyBudget: number | null;
+  daysUntilBudgetExhausted: number | null;
+  trend: "under" | "on_track" | "over";
+  recommendation: string;
+}
+
+/**
+ * Project current-month spend to end of month and assess budget health.
+ * Uses daily average from spend so far this month to project month-end total.
+ */
+export async function budgetForecast(
+  db: Db,
+  companyId: string,
+): Promise<BudgetForecastResult> {
+  const now = new Date();
+
+  // Month boundaries (UTC)
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const monthEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+  const daysInMonth = Math.round((monthEnd.getTime() - monthStart.getTime()) / (1000 * 60 * 60 * 24));
+  const dayOfMonth = Math.max(
+    1,
+    Math.round((now.getTime() - monthStart.getTime()) / (1000 * 60 * 60 * 24)),
+  );
+  const daysRemaining = Math.max(0, daysInMonth - dayOfMonth);
+
+  // Current month spend so far
+  const [mtdRow] = await db
+    .select({ total: sql<number>`coalesce(sum(${costEvents.costCents}), 0)::int` })
+    .from(costEvents)
+    .where(
+      and(
+        eq(costEvents.companyId, companyId),
+        gte(costEvents.occurredAt, monthStart),
+        lt(costEvents.occurredAt, now),
+      ),
+    );
+  const currentMonthSpend = Number(mtdRow?.total ?? 0);
+
+  // Daily average this month
+  const dailyAvg = dayOfMonth > 0 ? currentMonthSpend / dayOfMonth : 0;
+
+  // Projected month-end total
+  const projectedMonthEnd = Math.round(currentMonthSpend + dailyAvg * daysRemaining);
+
+  // Monthly budget from company settings
+  const [company] = await db
+    .select({ budgetMonthlyCents: companies.budgetMonthlyCents })
+    .from(companies)
+    .where(eq(companies.id, companyId))
+    .limit(1);
+  const monthlyBudget: number | null =
+    company?.budgetMonthlyCents && company.budgetMonthlyCents > 0
+      ? company.budgetMonthlyCents
+      : null;
+
+  // Days until budget exhausted
+  let daysUntilBudgetExhausted: number | null = null;
+  if (monthlyBudget !== null && dailyAvg > 0) {
+    const remaining = Math.max(0, monthlyBudget - currentMonthSpend);
+    daysUntilBudgetExhausted = Math.round(remaining / dailyAvg);
+  }
+
+  // Trend classification
+  let trend: "under" | "on_track" | "over";
+  let recommendation: string;
+
+  if (monthlyBudget === null) {
+    // No budget set - classify by projection vs prior logic
+    trend = "on_track";
+    recommendation = `Projected month-end spend is $${(projectedMonthEnd / 100).toFixed(2)} at the current daily rate. Set a monthly budget to enable variance tracking.`;
+  } else {
+    const projectionRatio = projectedMonthEnd / monthlyBudget;
+    if (projectionRatio < 0.9) {
+      trend = "under";
+      recommendation = `On track - projected to use ${Math.round(projectionRatio * 100)}% of budget. Remaining capacity may support additional agent workloads.`;
+    } else if (projectionRatio <= 1.1) {
+      trend = "on_track";
+      recommendation = `Budget tracking well - projected to use ${Math.round(projectionRatio * 100)}% of the $${(monthlyBudget / 100).toFixed(2)} budget. Monitor daily spend rate.`;
+    } else {
+      trend = "over";
+      const overageAmount = ((projectedMonthEnd - monthlyBudget) / 100).toFixed(2);
+      recommendation = `Over budget - projected $${overageAmount} over the $${(monthlyBudget / 100).toFixed(2)} budget. Review high-spend agents and consider rate limiting or pausing non-critical work.`;
+    }
+  }
+
+  return {
+    currentMonthSpend,
+    projectedMonthEnd,
+    monthlyBudget,
+    daysUntilBudgetExhausted,
+    trend,
+    recommendation,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Standalone exports
 // ---------------------------------------------------------------------------
 

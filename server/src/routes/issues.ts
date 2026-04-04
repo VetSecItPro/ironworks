@@ -1741,5 +1741,72 @@ export function issueRoutes(db: Db, storage: StorageService) {
     res.json({ ok: true });
   });
 
+  // ── Heartbeat Delta APIs ───────────────────────────────────────────────────
+  // Lightweight endpoints for the heartbeat to use instead of fetching full
+  // issue data. Returns minimal payloads to reduce context assembly tokens.
+
+  /**
+   * GET /api/issues/:id/comments?since=TIMESTAMP
+   * Returns only comments created after the given ISO timestamp.
+   */
+  router.get("/issues/:id/comments-since", async (req, res) => {
+    const id = req.params.id as string;
+    const since = typeof req.query.since === "string" ? req.query.since.trim() : null;
+    const issue = await svc.getById(id);
+    if (!issue) {
+      res.status(404).json({ error: "Issue not found" });
+      return;
+    }
+    assertCompanyAccess(req, issue.companyId);
+
+    const sinceDate = since ? new Date(since) : null;
+    if (since && !sinceDate || (sinceDate && isNaN(sinceDate.getTime()))) {
+      res.status(400).json({ error: "Invalid since timestamp" });
+      return;
+    }
+
+    const allComments = await svc.listComments(id, { order: "asc", limit: 100 });
+    const filtered = sinceDate
+      ? allComments.filter((c) => new Date(c.createdAt) > sinceDate)
+      : allComments;
+
+    res.json(filtered);
+  });
+
+  /**
+   * GET /api/issues/:id/heartbeat-context
+   * Returns compact issue context: title, status, last 3 comments, assignee.
+   */
+  router.get("/issues/:id/heartbeat-context", async (req, res) => {
+    const id = req.params.id as string;
+    const issue = await svc.getById(id);
+    if (!issue) {
+      res.status(404).json({ error: "Issue not found" });
+      return;
+    }
+    assertCompanyAccess(req, issue.companyId);
+
+    const recentComments = await svc.listComments(id, { order: "desc", limit: 3 });
+
+    res.json({
+      id: issue.id,
+      identifier: issue.identifier,
+      title: issue.title,
+      status: issue.status,
+      priority: issue.priority,
+      assigneeAgentId: issue.assigneeAgentId,
+      projectId: issue.projectId,
+      goalId: issue.goalId,
+      updatedAt: issue.updatedAt,
+      recentComments: recentComments.map((c) => ({
+        id: c.id,
+        body: c.body,
+        authorAgentId: c.authorAgentId,
+        authorUserId: c.authorUserId,
+        createdAt: c.createdAt,
+      })),
+    });
+  });
+
   return router;
 }

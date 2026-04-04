@@ -9,7 +9,7 @@ import { hiringApi } from "../api/hiring";
 import { approvalsApi } from "../api/approvals";
 import { activityApi } from "../api/activity";
 import { executiveApi } from "../api/executive";
-import type { RiskItem, PermissionMatrixData } from "../api/executive";
+import type { DORAMetrics, RiskItem, PermissionMatrixData } from "../api/executive";
 import { useCompany } from "../context/CompanyContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { queryKeys } from "../lib/queryKeys";
@@ -35,6 +35,7 @@ import {
   Activity,
   Lock,
   Check,
+  Cpu,
 } from "lucide-react";
 import type { Agent } from "@ironworksai/shared";
 
@@ -138,6 +139,13 @@ export function BoardBriefing() {
   const { data: permissionMatrix } = useQuery({
     queryKey: ["executive", "permission-matrix", selectedCompanyId!],
     queryFn: () => executiveApi.permissionMatrix(selectedCompanyId!),
+    enabled: !!selectedCompanyId,
+    staleTime: 60_000,
+  });
+
+  const { data: doraMetrics } = useQuery({
+    queryKey: ["executive", "dora-metrics", selectedCompanyId!],
+    queryFn: () => executiveApi.doraMetrics(selectedCompanyId!),
     enabled: !!selectedCompanyId,
     staleTime: 60_000,
   });
@@ -645,7 +653,46 @@ export function BoardBriefing() {
         </div>
       )}
 
-      {/* 9. Recent Activity */}
+      {/* 9. Engineering Metrics (DORA) */}
+      {doraMetrics && (
+        <div className="rounded-xl border border-border p-5 space-y-4">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+            <Cpu className="h-3.5 w-3.5" />
+            Engineering Metrics
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <DORAMetricBlock
+              label="Deployment Frequency"
+              value={`${doraMetrics.deploymentFrequency.toFixed(1)}/day`}
+              tier={doraMetrics.deploymentFrequency >= 1 ? "elite" : doraMetrics.deploymentFrequency >= 0.14 ? "high" : doraMetrics.deploymentFrequency >= 0.03 ? "medium" : "low"}
+              description="Heartbeat runs per day (proxy)"
+            />
+            <DORAMetricBlock
+              label="Lead Time"
+              value={doraMetrics.leadTime < 60 ? `${doraMetrics.leadTime}m` : `${Math.round(doraMetrics.leadTime / 60)}h`}
+              tier={doraMetrics.leadTime <= 60 ? "elite" : doraMetrics.leadTime <= 1440 ? "high" : doraMetrics.leadTime <= 10080 ? "medium" : "low"}
+              description="Avg issue created to done"
+            />
+            <DORAMetricBlock
+              label="Change Failure Rate"
+              value={`${doraMetrics.changeFailureRate.toFixed(1)}%`}
+              tier={doraMetrics.changeFailureRate <= 5 ? "elite" : doraMetrics.changeFailureRate <= 10 ? "high" : doraMetrics.changeFailureRate <= 15 ? "medium" : "low"}
+              description="Cancelled / total issues"
+            />
+            <DORAMetricBlock
+              label="Mean Time to Recovery"
+              value={doraMetrics.meanTimeToRecovery < 60 ? `${doraMetrics.meanTimeToRecovery}m` : `${Math.round(doraMetrics.meanTimeToRecovery / 60)}h`}
+              tier={doraMetrics.meanTimeToRecovery <= 60 ? "elite" : doraMetrics.meanTimeToRecovery <= 1440 ? "high" : doraMetrics.meanTimeToRecovery <= 10080 ? "medium" : "low"}
+              description="Critical/high issue resolution time"
+            />
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            DORA tiers: green = Elite, blue = High, amber = Medium, red = Low. Based on last 30 days.
+          </p>
+        </div>
+      )}
+
+      {/* 10. Recent Activity */}
       {recentActivity.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
@@ -670,6 +717,41 @@ export function BoardBriefing() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function DORAMetricBlock({
+  label,
+  value,
+  tier,
+  description,
+}: {
+  label: string;
+  value: string;
+  tier: "elite" | "high" | "medium" | "low";
+  description: string;
+}) {
+  const tierColors: Record<string, string> = {
+    elite: "text-emerald-400",
+    high: "text-blue-400",
+    medium: "text-amber-400",
+    low: "text-red-400",
+  };
+  const tierLabels: Record<string, string> = {
+    elite: "Elite",
+    high: "High",
+    medium: "Medium",
+    low: "Low",
+  };
+  return (
+    <div className="rounded-lg bg-muted/30 px-3 py-3 space-y-1">
+      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className={cn("text-xl font-bold tabular-nums", tierColors[tier])}>{value}</p>
+      <p className="text-[10px] text-muted-foreground">{description}</p>
+      <span className={cn("inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded", tierColors[tier], "bg-current/10")}>
+        {tierLabels[tier]}
+      </span>
     </div>
   );
 }

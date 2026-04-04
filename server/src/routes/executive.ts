@@ -2,7 +2,9 @@ import { Router } from "express";
 import type { Db } from "@ironworksai/db";
 import { agents } from "@ironworksai/db";
 import { and, eq, ne, inArray } from "drizzle-orm";
-import { executiveAnalyticsService, departmentSpendingSummary } from "../services/executive-analytics.js";
+import { executiveAnalyticsService, budgetForecast, departmentSpendingSummary } from "../services/executive-analytics.js";
+import { computeDORAMetrics } from "../services/dora-metrics.js";
+import { getMemoryHealth } from "../services/agent-memory.js";
 import { logActivity } from "../services/activity-log.js";
 import { heartbeatService } from "../services/heartbeat.js";
 import { tokenAnalyticsService } from "../services/token-analytics.js";
@@ -267,6 +269,32 @@ export function executiveRoutes(db: Db) {
     const actor = getActorInfo(req);
     const updated = await updateRiskSettings(db, companyId, req.body as Record<string, unknown>, actor.actorId);
     res.json(updated);
+  });
+
+  // -- CTO: DORA Metrics --
+  router.get("/companies/:companyId/dora-metrics", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+    const days = req.query.days ? Number(req.query.days) : 30;
+    const data = await computeDORAMetrics(db, companyId, days);
+    res.json(data);
+  });
+
+  // -- Budget Forecast --
+  router.get("/companies/:companyId/budget-forecast", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+    const data = await budgetForecast(db, companyId);
+    res.json(data);
+  });
+
+  // -- Memory Health --
+  router.get("/companies/:companyId/agents/:agentId/memory-health", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    const agentId = req.params.agentId as string;
+    assertCompanyAccess(req, companyId);
+    const data = await getMemoryHealth(db, agentId);
+    res.json(data);
   });
 
   return router;

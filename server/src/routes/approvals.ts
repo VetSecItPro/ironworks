@@ -21,6 +21,7 @@ import { and, eq } from "drizzle-orm";
 import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
 import { redactEventPayload } from "../redaction.js";
 import { extractLessonFromRejection } from "../services/agent-reflection.js";
+import { generateMeetingMinutes } from "../services/agent-workspace.js";
 
 function redactApprovalPayload<T extends { payload: Record<string, unknown> }>(approval: T): T {
   return {
@@ -229,6 +230,16 @@ export function approvalRoutes(db: Db) {
           });
         }
       }
+
+      // Auto-generate meeting minutes if the approval has substantive discussion
+      generateMeetingMinutes(db, {
+        companyId: approval.companyId,
+        sourceType: "approval",
+        sourceId: approval.id,
+        title: `${approval.type} Approval`,
+      }).catch((err) =>
+        logger.warn({ err, approvalId: approval.id }, "meeting minutes generation failed (approve)"),
+      );
     }
 
     res.json(redactApprovalPayload(approval));
@@ -286,6 +297,16 @@ export function approvalRoutes(db: Db) {
           logger.warn({ err, approvalId: approval.id }, "failed to extract lesson from rejection"),
         );
       }
+
+      // Auto-generate meeting minutes if the approval has substantive discussion
+      generateMeetingMinutes(db, {
+        companyId: approval.companyId,
+        sourceType: "approval",
+        sourceId: approval.id,
+        title: `${approval.type} Approval`,
+      }).catch((err) =>
+        logger.warn({ err, approvalId: approval.id }, "meeting minutes generation failed (reject)"),
+      );
     }
 
     res.json(redactApprovalPayload(approval));

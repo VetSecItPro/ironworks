@@ -5,6 +5,45 @@ import { notFound } from "../errors.js";
 
 const MAX_BODY_BYTES = 102_400; // 100KB
 
+// ── KB Page Summary Cache ─────────────────────────────────────────────────────
+// In-memory cache for KB page summaries assembled during heartbeat context
+// assembly. Avoids re-reading full page bodies on every heartbeat tick.
+
+const KB_SUMMARY_CACHE = new Map<string, { summary: string; cachedAt: number }>();
+const KB_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Return a cached KB page summary if it exists and is not stale.
+ * Returns null if the cache is cold or the entry has expired.
+ */
+export function getCachedKBSummary(pageId: string): string | null {
+  const entry = KB_SUMMARY_CACHE.get(pageId);
+  if (!entry) return null;
+  if (Date.now() - entry.cachedAt > KB_CACHE_TTL_MS) {
+    KB_SUMMARY_CACHE.delete(pageId);
+    return null;
+  }
+  return entry.summary;
+}
+
+/**
+ * Store a KB page summary in the in-memory cache.
+ * Old entries are lazily evicted when they are next read.
+ */
+export function cacheKBSummary(pageId: string, summary: string): void {
+  KB_SUMMARY_CACHE.set(pageId, { summary, cachedAt: Date.now() });
+}
+
+/**
+ * Invalidate the summary cache for a specific page.
+ * Call this whenever a page is updated so the next heartbeat picks up fresh content.
+ */
+export function invalidateKBSummaryCache(pageId: string): void {
+  KB_SUMMARY_CACHE.delete(pageId);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 function slugify(title: string): string {
   return title
     .toLowerCase()

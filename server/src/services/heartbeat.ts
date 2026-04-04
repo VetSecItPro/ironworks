@@ -61,6 +61,12 @@ import {
   resolveSessionCompactionPolicy,
   type SessionCompactionPolicy,
 } from "@ironworksai/adapter-utils";
+import {
+  classifyTaskComplexity,
+  selectModelForComplexity,
+  shouldEscalateModel,
+  logEscalationSignal,
+} from "./model-routing.js";
 
 const MAX_LIVE_LOG_CHUNK_BYTES = 8 * 1024;
 const HEARTBEAT_MAX_CONCURRENT_RUNS_DEFAULT = 1;
@@ -2876,6 +2882,31 @@ export function heartbeatService(db: Db) {
         });
       };
 
+      // ── Model Routing Cascade ────────────────────────────────────────────
+      const runtimeConfigAny = runtimeConfig as Record<string, unknown>;
+      const routingEnabled = typeof runtimeConfigAny.modelRoutingEnabled === "boolean"
+        ? runtimeConfigAny.modelRoutingEnabled
+        : true;
+      const configuredModel = typeof runtimeConfigAny.model === "string" ? runtimeConfigAny.model : "";
+      const taskComplexity = classifyTaskComplexity({
+        wakeReason: typeof context.wakeReason === "string" ? context.wakeReason : "",
+        hasNewComments: typeof context.wakeCommentId === "string" && context.wakeCommentId.length > 0,
+        issueCount: Array.isArray(context.issueIds) ? context.issueIds.length : (typeof context.issueId === "string" && context.issueId.length > 0 ? 1 : 0),
+        isApprovalNeeded: typeof context.approvalId === "string" && context.approvalId.length > 0,
+      });
+      const routedModel = selectModelForComplexity(taskComplexity, configuredModel, routingEnabled);
+      const routingApplied = routedModel && routedModel !== configuredModel;
+      if (routingApplied) {
+        logger.info(
+          { agentId: agent.id, runId: run.id, complexity: taskComplexity, from: configuredModel, to: routedModel },
+          "[model-routing] Model overridden by complexity routing",
+        );
+      }
+      const routedRuntimeConfig = routingApplied
+        ? { ...runtimeConfig, model: routedModel }
+        : runtimeConfig;
+      // ─────────────────────────────────────────────────────────────────────
+
       const adapter = getServerAdapter(agent.adapterType);
       const authToken = adapter.supportsLocalAgentJwt
         ? createLocalAgentJwt(agent.id, agent.companyId, agent.adapterType, run.id)
@@ -2895,7 +2926,7 @@ export function heartbeatService(db: Db) {
         runId: run.id,
         agent,
         runtime: runtimeForAdapter,
-        config: runtimeConfig,
+        config: routedRuntimeConfig,
         context,
         onLog,
         onMeta: onAdapterMeta,
@@ -2904,6 +2935,17 @@ export function heartbeatService(db: Db) {
         },
         authToken: authToken ?? undefined,
       });
+
+      // ── Confidence-Based Escalation Check ────────────────────────────────
+      // Only check when a cheap model was used (routing changed the model).
+      if (routingApplied && taskComplexity === "routine") {
+        const responseSummary = adapterResult.summary ?? "";
+        if (shouldEscalateModel(responseSummary)) {
+          logEscalationSignal(agent.id, run.id, "cheap-model uncertainty detected in summary");
+        }
+      }
+      // ─────────────────────────────────────────────────────────────────────
+
       const adapterManagedRuntimeServices = adapterResult.runtimeServices
         ? await persistAdapterManagedRuntimeServices({
             db,

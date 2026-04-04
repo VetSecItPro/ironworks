@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull, lt, lte, sql } from "drizzle-orm";
+import { and, asc, eq, isNotNull, isNull, lt, lte, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { agentMemoryEntries } from "@ironworksai/db";
 import { logger } from "../middleware/logger.js";
@@ -270,6 +270,102 @@ export async function decayStaleMemories(db: Db): Promise<void> {
       "decayed stale memory entries",
     );
   }
+}
+
+// ── Memory Health ───────────────────────────────────────────────────────────
+
+export interface MemoryHealthResult {
+  totalEntries: number;
+  activeEntries: number;
+  archivedEntries: number;
+  avgConfidence: number;
+  staleCount: number;
+  coverageGaps: string[];
+}
+
+/**
+ * Assess the health of an agent's memory store.
+ *
+ * Reports:
+ *   - Active vs archived entry counts
+ *   - Average confidence score
+ *   - Stale entries (not accessed in 30+ days)
+ *   - Coverage gaps (categories with fewer than 3 active entries)
+ */
+export async function getMemoryHealth(
+  db: Db,
+  agentId: string,
+): Promise<MemoryHealthResult> {
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  // Total entries
+  const [totalRow] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(agentMemoryEntries)
+    .where(eq(agentMemoryEntries.agentId, agentId));
+  const totalEntries = Number(totalRow?.count ?? 0);
+
+  // Active entries (not archived)
+  const [activeRow] = await db
+    .select({
+      count: sql<number>`count(*)::int`,
+      avgConfidence: sql<number>`coalesce(avg(${agentMemoryEntries.confidence}), 0)::int`,
+    })
+    .from(agentMemoryEntries)
+    .where(
+      and(
+        eq(agentMemoryEntries.agentId, agentId),
+        isNull(agentMemoryEntries.archivedAt),
+      ),
+    );
+  const activeEntries = Number(activeRow?.count ?? 0);
+  const avgConfidence = Number(activeRow?.avgConfidence ?? 0);
+  const archivedEntries = totalEntries - activeEntries;
+
+  // Stale: active entries not accessed in 30+ days
+  const [staleRow] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(agentMemoryEntries)
+    .where(
+      and(
+        eq(agentMemoryEntries.agentId, agentId),
+        isNull(agentMemoryEntries.archivedAt),
+        isNotNull(agentMemoryEntries.lastAccessedAt),
+        lte(agentMemoryEntries.lastAccessedAt, thirtyDaysAgo),
+      ),
+    );
+  const staleCount = Number(staleRow?.count ?? 0);
+
+  // Coverage gaps: categories with < 3 active entries
+  const categoryCounts = await db
+    .select({
+      category: agentMemoryEntries.category,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(agentMemoryEntries)
+    .where(
+      and(
+        eq(agentMemoryEntries.agentId, agentId),
+        isNull(agentMemoryEntries.archivedAt),
+      ),
+    )
+    .groupBy(agentMemoryEntries.category);
+
+  const coverageGaps: string[] = [];
+  for (const row of categoryCounts) {
+    if (Number(row.count) < 3 && row.category) {
+      coverageGaps.push(row.category);
+    }
+  }
+
+  return {
+    totalEntries,
+    activeEntries,
+    archivedEntries,
+    avgConfidence,
+    staleCount,
+    coverageGaps,
+  };
 }
 
 /**

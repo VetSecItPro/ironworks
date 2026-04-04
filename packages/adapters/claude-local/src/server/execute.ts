@@ -30,6 +30,69 @@ import {
 } from "./parse.js";
 import { resolveClaudeDesiredSkillNames } from "./skills.js";
 
+// ── Prompt Caching Helpers ────────────────────────────────────────────────────
+//
+// The Anthropic API supports cache_control: { type: "ephemeral" } on message
+// blocks for up to 4 breakpoints per request (tools list, system prompt, and
+// up to 2 stable conversation context blocks). This enables the following
+// savings profile:
+//
+//   Breakpoint 1: last tool definition in the tools array
+//   Breakpoint 2: system prompt
+//   Breakpoint 3: last stable context block (recent messages boundary)
+//
+// LIMITATION: The claude-local adapter shells out to the Claude CLI binary
+// (`claude --print - --output-format stream-json`). The CLI manages its own
+// API calls internally and does not currently expose a flag to inject
+// cache_control hints into individual message blocks. As a result, we cannot
+// set breakpoints from the adapter layer.
+//
+// TODO(prompt-caching): When the Claude CLI adds a --cache-breakpoints or
+// equivalent flag, or when we switch to direct Anthropic SDK calls, wire
+// injectCacheBreakpoints() output into the API call. Track at:
+// https://github.com/anthropics/claude-code/issues (upstream CLI feature req)
+
+/**
+ * Build a config hint that documents cache breakpoint intent.
+ * Currently a no-op because the CLI does not expose a way to pass
+ * cache_control to individual message blocks. Retained as the integration
+ * point for when the CLI adds support.
+ */
+export function injectCacheBreakpoints(config: Record<string, unknown>): Record<string, unknown> {
+  // TODO(prompt-caching): Set cache_control on the last tool definition,
+  // system prompt, and the stable context boundary when the Claude CLI
+  // exposes a mechanism to do so. For now we attach a metadata flag so
+  // downstream telemetry can track that caching was requested.
+  return { ...config, cacheBreakpoints: true };
+}
+
+// ── Compaction API Header ─────────────────────────────────────────────────────
+//
+// The Anthropic API supports automatic context compaction via:
+//   anthropic-beta: compact-2026-01-12
+//
+// LIMITATION: Same as above - the claude-local adapter shells out to the CLI
+// which manages API headers internally. The CLI has its own compaction logic
+// (--max-turns, session management). Direct header injection is not possible
+// from this layer.
+//
+// TODO(compaction): If/when the Claude CLI exposes --enable-compaction or a
+// beta-header passthrough, wire enableCompaction from config into the args.
+
+/**
+ * Return true when automatic context compaction should be enabled for this run.
+ * The model string is checked for Anthropic model identifiers.
+ * Currently informational only; see the compaction limitation note above.
+ */
+export function resolveCompactionEnabled(config: Record<string, unknown>): boolean {
+  const explicit = config.enableCompaction;
+  if (typeof explicit === "boolean") return explicit;
+  // Default: enable for Anthropic models
+  const model = typeof config.model === "string" ? config.model.toLowerCase() : "";
+  return model.startsWith("claude") || model === "";
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 const __moduleDir = path.dirname(fileURLToPath(import.meta.url));
 
 /**
@@ -334,6 +397,12 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     graceSec,
     extraArgs,
   } = runtimeConfig;
+
+  // Apply prompt caching hints and compaction config.
+  // See the limitation notes above: these are informational/metadata flags
+  // until the Claude CLI exposes mechanisms to pass them to the API layer.
+  const configWithCacheHints = injectCacheBreakpoints(config);
+  const _compactionEnabled = resolveCompactionEnabled(configWithCacheHints);
   const effectiveEnv = Object.fromEntries(
     Object.entries({ ...process.env, ...env }).filter(
       (entry): entry is [string, string] => typeof entry[1] === "string",

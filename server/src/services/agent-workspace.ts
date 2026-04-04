@@ -1,6 +1,6 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, asc, eq, isNull } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import { knowledgePages, knowledgePageRevisions } from "@ironworksai/db";
+import { agents, approvalComments, approvals, issueComments, issues, knowledgePages, knowledgePageRevisions } from "@ironworksai/db";
 import { logger } from "../middleware/logger.js";
 
 // ── Workspace Templates ─────────────────────────────────────────────────────
@@ -413,6 +413,211 @@ export async function createDecisionRecord(
     { companyId, agentId, title, status },
     "created decision record knowledge page",
   );
+}
+
+/**
+ * Auto-generate a meeting minutes KB page from an approval or issue thread.
+ *
+ * For approvals: triggers when the approval has 3+ comments/decision notes.
+ * For issue threads: triggers when the issue has 5+ comments.
+ * Saves the document with document_type "meeting-minutes" to the primary
+ * agent's workspace (the requesting agent for approvals, the assignee for issues).
+ */
+export async function generateMeetingMinutes(
+  db: Db,
+  opts: {
+    companyId: string;
+    sourceType: "approval" | "issue_thread";
+    sourceId: string;
+    title: string;
+  },
+): Promise<void> {
+  const { companyId, sourceType, sourceId, title } = opts;
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("en-CA", { timeZone: "America/Chicago" });
+
+  if (sourceType === "approval") {
+    // Load approval + comments
+    const [approval] = await db
+      .select({
+        id: approvals.id,
+        type: approvals.type,
+        status: approvals.status,
+        decisionNote: approvals.decisionNote,
+        decidedByUserId: approvals.decidedByUserId,
+        decidedAt: approvals.decidedAt,
+        requestedByAgentId: approvals.requestedByAgentId,
+      })
+      .from(approvals)
+      .where(and(eq(approvals.id, sourceId), eq(approvals.companyId, companyId)))
+      .limit(1);
+
+    if (!approval) {
+      logger.warn({ sourceId, companyId }, "approval not found for meeting minutes");
+      return;
+    }
+
+    const comments = await db
+      .select({
+        body: approvalComments.body,
+        authorAgentId: approvalComments.authorAgentId,
+        authorUserId: approvalComments.authorUserId,
+        createdAt: approvalComments.createdAt,
+      })
+      .from(approvalComments)
+      .where(eq(approvalComments.approvalId, sourceId))
+      .orderBy(asc(approvalComments.createdAt));
+
+    const commentCount = comments.length + (approval.decisionNote ? 1 : 0);
+    if (commentCount < 3) {
+      logger.debug({ sourceId, commentCount }, "approval does not have enough comments for meeting minutes");
+      return;
+    }
+
+    // Collect unique participants
+    const participantIds = new Set<string>();
+    if (approval.requestedByAgentId) participantIds.add(approval.requestedByAgentId);
+    for (const c of comments) {
+      if (c.authorAgentId) participantIds.add(c.authorAgentId);
+    }
+
+    // Resolve participant names
+    const participantNames: string[] = [];
+    if (participantIds.size > 0) {
+      const agentRows = await db
+        .select({ id: agents.id, name: agents.name })
+        .from(agents)
+        .where(and(eq(agents.companyId, companyId)));
+      const nameMap = new Map(agentRows.map((a) => [a.id, a.name]));
+      for (const id of participantIds) {
+        const name = nameMap.get(id);
+        if (name) participantNames.push(name);
+      }
+    }
+    if (approval.decidedByUserId && approval.decidedByUserId !== "board") {
+      participantNames.push(`User: ${approval.decidedByUserId}`);
+    }
+
+    const discussionPoints = comments.map((c, i) => {
+      const author = c.authorAgentId
+        ? `Agent`
+        : c.authorUserId
+        ? `User`
+        : "Unknown";
+      return `${i + 1}. [${author}]: ${c.body.slice(0, 300)}${c.body.length > 300 ? "..." : ""}`;
+    });
+
+    const body = [
+      `# Meeting Minutes: ${title}`,
+      "",
+      `**Date:** ${dateStr}`,
+      `**Source:** Approval ${sourceId.slice(0, 8)} (${approval.type})`,
+      `**Outcome:** ${approval.status}`,
+      "",
+      "## Participants",
+      ...(participantNames.length > 0 ? participantNames.map((n) => `- ${n}`) : ["- Not recorded"]),
+      "",
+      "## Key Discussion Points",
+      ...(discussionPoints.length > 0 ? discussionPoints : ["- No comments recorded"]),
+      "",
+      "## Decision",
+      approval.status === "approved" ? "- Approved" : approval.status === "rejected" ? "- Rejected" : `- Status: ${approval.status}`,
+      ...(approval.decisionNote ? [`- Note: ${approval.decisionNote}`] : []),
+      "",
+      "## Decision Made By",
+      approval.decidedByUserId ? `- ${approval.decidedByUserId}` : "- Not recorded",
+      ...(approval.decidedAt
+        ? [`- Decided at: ${new Date(approval.decidedAt).toLocaleString("en-US", { timeZone: "America/Chicago" })}`]
+        : []),
+    ].join("\n");
+
+    // Save to requesting agent's workspace
+    if (approval.requestedByAgentId) {
+      const slugBase = `meeting-minutes-approval-${sourceId.replace(/-/g, "").slice(0, 12)}`;
+      await createAgentDocument(db, {
+        agentId: approval.requestedByAgentId,
+        companyId,
+        title: `Meeting Minutes: ${title}`,
+        content: body,
+        documentType: "meeting-minutes",
+        slug: slugBase,
+        visibility: "private",
+        autoGenerated: true,
+        createdByUserId: "system",
+      });
+      logger.info({ companyId, sourceId, agentId: approval.requestedByAgentId }, "generated approval meeting minutes");
+    }
+  } else {
+    // issue_thread: load issue + comments
+    const [issue] = await db
+      .select({
+        id: issues.id,
+        title: issues.title,
+        status: issues.status,
+        assigneeAgentId: issues.assigneeAgentId,
+        priority: issues.priority,
+      })
+      .from(issues)
+      .where(and(eq(issues.id, sourceId), eq(issues.companyId, companyId)))
+      .limit(1);
+
+    if (!issue) {
+      logger.warn({ sourceId, companyId }, "issue not found for meeting minutes");
+      return;
+    }
+
+    const comments = await db
+      .select({
+        body: issueComments.body,
+        authorAgentId: issueComments.authorAgentId,
+        authorUserId: issueComments.authorUserId,
+        createdAt: issueComments.createdAt,
+      })
+      .from(issueComments)
+      .where(eq(issueComments.issueId, sourceId))
+      .orderBy(asc(issueComments.createdAt));
+
+    if (comments.length < 5) {
+      logger.debug({ sourceId, commentCount: comments.length }, "issue does not have enough comments for meeting minutes");
+      return;
+    }
+
+    const discussionPoints = comments.map((c, i) => {
+      const author = c.authorAgentId ? "Agent" : c.authorUserId ? "User" : "Unknown";
+      return `${i + 1}. [${author}]: ${c.body.slice(0, 300)}${c.body.length > 300 ? "..." : ""}`;
+    });
+
+    const body = [
+      `# Discussion Summary: ${issue.title}`,
+      "",
+      `**Date:** ${dateStr}`,
+      `**Issue:** ${sourceId.slice(0, 8)}`,
+      `**Status:** ${issue.status}`,
+      `**Priority:** ${issue.priority ?? "unset"}`,
+      "",
+      "## Discussion Points",
+      ...discussionPoints,
+      "",
+      "## Summary",
+      `This issue thread had ${comments.length} comments covering the above discussion points.`,
+    ].join("\n");
+
+    if (issue.assigneeAgentId) {
+      const slugBase = `meeting-minutes-issue-${sourceId.replace(/-/g, "").slice(0, 12)}`;
+      await createAgentDocument(db, {
+        agentId: issue.assigneeAgentId,
+        companyId,
+        title: `Discussion Summary: ${issue.title}`,
+        content: body,
+        documentType: "meeting-minutes",
+        slug: slugBase,
+        visibility: "private",
+        autoGenerated: true,
+        createdByUserId: "system",
+      });
+      logger.info({ companyId, sourceId, agentId: issue.assigneeAgentId }, "generated issue thread meeting minutes");
+    }
+  }
 }
 
 /**

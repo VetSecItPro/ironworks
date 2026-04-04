@@ -196,6 +196,31 @@ export interface CompanyRiskSettings {
   autoResolveTimeoutHours: number;
 }
 
+export interface DORAMetrics {
+  deploymentFrequency: number;
+  leadTime: number;
+  changeFailureRate: number;
+  meanTimeToRecovery: number;
+}
+
+export interface BudgetForecast {
+  currentMonthSpend: number;
+  projectedMonthEnd: number;
+  monthlyBudget: number | null;
+  daysUntilBudgetExhausted: number | null;
+  trend: "under" | "on_track" | "over";
+  recommendation: string;
+}
+
+export interface MemoryHealth {
+  totalEntries: number;
+  activeEntries: number;
+  archivedEntries: number;
+  avgConfidence: number;
+  staleCount: number;
+  coverageGaps: string[];
+}
+
 export const executiveApi = {
   unitEconomics: (companyId: string) =>
     api.get<UnitEconomics>(`/companies/${companyId}/executive/unit-economics`),
@@ -275,4 +300,13 @@ export const executiveApi = {
 
   updateRiskSettings: (companyId: string, settings: Partial<CompanyRiskSettings>) =>
     api.patch<CompanyRiskSettings>(`/companies/${companyId}/risk-settings`, settings),
+
+  doraMetrics: (companyId: string, days = 30) =>
+    api.get<DORAMetrics>(`/companies/${companyId}/dora-metrics?days=${days}`),
+
+  budgetForecast: (companyId: string) =>
+    api.get<BudgetForecast>(`/companies/${companyId}/budget-forecast`),
+
+  memoryHealth: (companyId: string, agentId: string) =>
+    api.get<MemoryHealth>(`/companies/${companyId}/agents/${agentId}/memory-health`),
 };

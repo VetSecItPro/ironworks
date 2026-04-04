@@ -1,6 +1,6 @@
-import { and, eq, gte, ne, sql } from "drizzle-orm";
+import { and, desc, eq, gte, isNotNull, ne, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import { agents, issues, costEvents, agentMemoryEntries, companies, goals, goalKeyResults, approvals } from "@ironworksai/db";
+import { agents, issues, costEvents, agentMemoryEntries, companies, goals, goalKeyResults, approvals, heartbeatRuns } from "@ironworksai/db";
 import { computePerformanceScore } from "./performance-score.js";
 import { createAgentDocument } from "./agent-workspace.js";
 import { logger } from "../middleware/logger.js";
@@ -980,6 +980,95 @@ export async function generateCFOWeeklyReport(
   const doneThisWeek = Number(issuesDoneThisWeek[0]?.count ?? 0);
   const costPerIssue = doneThisWeek > 0 ? currentWeekCents / doneThisWeek : 0;
 
+  // -- Token Usage Summary --
+  // Total tokens this week
+  const [tokenTotals] = await db
+    .select({
+      totalInput: sql<number>`coalesce(sum(${costEvents.inputTokens}), 0)::int`,
+      totalOutput: sql<number>`coalesce(sum(${costEvents.outputTokens}), 0)::int`,
+      totalCached: sql<number>`coalesce(sum(${costEvents.cachedInputTokens}), 0)::int`,
+    })
+    .from(costEvents)
+    .where(
+      and(
+        eq(costEvents.companyId, companyId),
+        gte(costEvents.occurredAt, sevenDaysAgo),
+      ),
+    );
+  const totalInputTokens = Number(tokenTotals?.totalInput ?? 0);
+  const totalOutputTokens = Number(tokenTotals?.totalOutput ?? 0);
+  const totalCachedTokens = Number(tokenTotals?.totalCached ?? 0);
+  const totalTokens = totalInputTokens + totalOutputTokens + totalCachedTokens;
+  const cacheHitRate = totalInputTokens + totalCachedTokens > 0
+    ? Math.round((totalCachedTokens / (totalInputTokens + totalCachedTokens)) * 100)
+    : 0;
+
+  // Token cost breakdown by model
+  const tokenByModel = await db
+    .select({
+      model: costEvents.model,
+      inputTokens: sql<number>`coalesce(sum(${costEvents.inputTokens}), 0)::int`,
+      outputTokens: sql<number>`coalesce(sum(${costEvents.outputTokens}), 0)::int`,
+      costCents: sql<number>`coalesce(sum(${costEvents.costCents}), 0)::int`,
+    })
+    .from(costEvents)
+    .where(
+      and(
+        eq(costEvents.companyId, companyId),
+        gte(costEvents.occurredAt, sevenDaysAgo),
+        isNotNull(costEvents.model),
+      ),
+    )
+    .groupBy(costEvents.model)
+    .orderBy(desc(sql`sum(${costEvents.costCents})`));
+
+  // Most token-hungry agents (top 5)
+  const tokenByAgent = await db
+    .select({
+      agentName: agents.name,
+      agentRole: agents.role,
+      totalTokens: sql<number>`coalesce(sum(${costEvents.inputTokens}) + sum(${costEvents.outputTokens}) + sum(${costEvents.cachedInputTokens}), 0)::int`,
+      costCents: sql<number>`coalesce(sum(${costEvents.costCents}), 0)::int`,
+    })
+    .from(costEvents)
+    .innerJoin(agents, eq(costEvents.agentId, agents.id))
+    .where(
+      and(
+        eq(costEvents.companyId, companyId),
+        gte(costEvents.occurredAt, sevenDaysAgo),
+      ),
+    )
+    .groupBy(agents.name, agents.role)
+    .orderBy(desc(sql`sum(${costEvents.inputTokens}) + sum(${costEvents.outputTokens}) + sum(${costEvents.cachedInputTokens})`))
+    .limit(5);
+
+  // Model cost recommendations
+  const modelRecommendations: string[] = [];
+  for (const row of tokenByModel) {
+    const model = row.model ?? "unknown";
+    const tokens = Number(row.inputTokens) + Number(row.outputTokens);
+    const cost = Number(row.costCents);
+    // Recommend downgrade if high-cost premium model is used heavily
+    const isPremium = model.includes("opus") || model.includes("gpt-4o") || model.includes("gemini-pro");
+    const isLowCostAlternativeAvailable = isPremium && tokens > 100_000;
+    if (isLowCostAlternativeAvailable) {
+      const suggestion = model.includes("opus")
+        ? "claude-sonnet"
+        : model.includes("gpt-4o")
+        ? "gpt-4o-mini"
+        : "gemini-flash";
+      modelRecommendations.push(
+        `- ${model} used ${tokens.toLocaleString()} tokens at $${centsToDollars(cost)}. Consider ${suggestion} for routine tasks to reduce cost.`,
+      );
+    }
+  }
+  if (modelRecommendations.length === 0 && tokenByModel.length > 0) {
+    modelRecommendations.push("- Model selection looks efficient. No downgrade opportunities identified.");
+  }
+  if (tokenByModel.length === 0) {
+    modelRecommendations.push("- No token data available for this period.");
+  }
+
   const markdown = [
     "# CFO Weekly Financial Report",
     `**Period:** ${periodStart} to ${periodEnd}`,
@@ -1017,6 +1106,27 @@ export async function generateCFOWeeklyReport(
     ...(monthlyBudgetCents > 0 && mtdCents > monthlyBudgetCents * 0.8
       ? ["- WARNING: Month-to-date spend exceeds 80% of monthly budget."]
       : []),
+    "",
+    "## Token Usage Summary",
+    `- Total Tokens Consumed: ${totalTokens.toLocaleString()} (input: ${totalInputTokens.toLocaleString()}, output: ${totalOutputTokens.toLocaleString()}, cached: ${totalCachedTokens.toLocaleString()})`,
+    `- Cache Hit Rate: ${cacheHitRate}%`,
+    "",
+    "### Token Cost by Model",
+    "| Model | Input Tokens | Output Tokens | Cost |",
+    "|---|---|---|---|",
+    ...(tokenByModel.length > 0
+      ? tokenByModel.map((r) => `| ${r.model ?? "unknown"} | ${Number(r.inputTokens).toLocaleString()} | ${Number(r.outputTokens).toLocaleString()} | $${centsToDollars(Number(r.costCents))} |`)
+      : ["| No data | - | - | - |"]),
+    "",
+    "### Most Token-Hungry Agents (Top 5)",
+    "| Agent | Role | Total Tokens | Cost |",
+    "|---|---|---|---|",
+    ...(tokenByAgent.length > 0
+      ? tokenByAgent.map((r) => `| ${r.agentName} | ${r.agentRole} | ${Number(r.totalTokens).toLocaleString()} | $${centsToDollars(Number(r.costCents))} |`)
+      : ["| No data | - | - | - |"]),
+    "",
+    "### Model Selection Recommendations",
+    ...modelRecommendations,
   ].join("\n");
 
   // Save to CFO workspace

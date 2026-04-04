@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { agentMemoryApi, type AgentMemoryEntry } from "../../api/agentMemory";
+import { executiveApi } from "../../api/executive";
 import { queryKeys } from "../../lib/queryKeys";
 import { cn, relativeTime } from "../../lib/utils";
 import { Button } from "@/components/ui/button";
@@ -198,6 +199,13 @@ export function AgentMemoryTab({
     enabled: !!companyId && !!agentId,
   });
 
+  const { data: memoryHealth } = useQuery({
+    queryKey: ["memory-health", companyId, agentId],
+    queryFn: () => executiveApi.memoryHealth(companyId, agentId),
+    enabled: !!companyId && !!agentId,
+    staleTime: 60_000,
+  });
+
   const addMutation = useMutation({
     mutationFn: (data: { memoryType: string; category: string; content: string }) =>
       agentMemoryApi.create(companyId, agentId, data),
@@ -218,6 +226,49 @@ export function AgentMemoryTab({
 
   return (
     <div className="space-y-4">
+      {/* Memory Health Indicator */}
+      {memoryHealth && (
+        <div className="border border-border rounded-lg p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+          <div className="col-span-2 sm:col-span-3 md:col-span-6 flex items-center gap-1.5 mb-1">
+            <Brain className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Memory Health</span>
+          </div>
+          <div className="space-y-0.5">
+            <p className="text-[10px] uppercase text-muted-foreground tracking-wide">Active</p>
+            <p className="text-lg font-bold tabular-nums">{memoryHealth.activeEntries}</p>
+          </div>
+          <div className="space-y-0.5">
+            <p className="text-[10px] uppercase text-muted-foreground tracking-wide">Archived</p>
+            <p className="text-lg font-bold tabular-nums text-muted-foreground">{memoryHealth.archivedEntries}</p>
+          </div>
+          <div className="space-y-0.5">
+            <p className="text-[10px] uppercase text-muted-foreground tracking-wide">Avg Confidence</p>
+            <p className={cn(
+              "text-lg font-bold tabular-nums",
+              memoryHealth.avgConfidence >= 70 ? "text-emerald-400" :
+              memoryHealth.avgConfidence >= 40 ? "text-amber-400" : "text-red-400",
+            )}>
+              {memoryHealth.avgConfidence}%
+            </p>
+          </div>
+          <div className="space-y-0.5">
+            <p className="text-[10px] uppercase text-muted-foreground tracking-wide">Stale</p>
+            <p className={cn(
+              "text-lg font-bold tabular-nums",
+              memoryHealth.staleCount === 0 ? "" : memoryHealth.staleCount < 10 ? "text-amber-400" : "text-red-400",
+            )}>
+              {memoryHealth.staleCount}
+            </p>
+          </div>
+          {memoryHealth.coverageGaps.length > 0 && (
+            <div className="col-span-2 space-y-0.5">
+              <p className="text-[10px] uppercase text-muted-foreground tracking-wide">Coverage Gaps</p>
+              <p className="text-xs text-amber-400 leading-relaxed">{memoryHealth.coverageGaps.slice(0, 4).join(", ")}</p>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Brain className="h-4 w-4 text-muted-foreground" />
