@@ -43,7 +43,7 @@ export { checkAndGrantAchievements, checkAllAgentAchievements, runAllAchievement
 export { createAgentWorkspace, archiveAgentWorkspace, createAgentDocument, getAgentDocuments, createPostMortem, createDecisionRecord } from "./agent-workspace.js";
 export { createHiringRecord, createTerminationRecord, createPerformanceReview, createEmploymentHistoryEntry } from "./hr-personnel.js";
 export { saveSessionState, getLatestSessionState, buildMorningBriefing } from "./session-state.js";
-export { generateAgentWeeklyReport, generateCompanyWeeklyReport, generateRetrospective, generateHRWeeklyReport, generateCFOWeeklyReport, generateBoardMeetingPacket, runWeeklyReports, runAllWeeklyReports } from "./weekly-reports.js";
+export { generateAgentWeeklyReport, generateCompanyWeeklyReport, generateRetrospective, generateHRWeeklyReport, generateCFOWeeklyReport, generateBoardMeetingPacket, runWeeklyReports, runAllWeeklyReports, generateMonthlyCostSummary, runAllMonthlyCostSummaries } from "./weekly-reports.js";
 export { generateDailyStandup, runDailyStandups, runAllDailyStandups } from "./daily-standup.js";
 export { getVelocityData, type VelocityWeek } from "./velocity.js";
 export { seedSystemRoleTemplates } from "./seed-role-templates.js";

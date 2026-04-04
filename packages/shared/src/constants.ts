@@ -396,6 +396,17 @@ export const ROLE_PERMISSIONS: Record<MembershipRole, readonly PermissionKey[]> 
   viewer: [],
 } as const;
 
+// ── Human Agency Slider ────────────────────────────────────────────────────────
+
+export const AUTONOMY_LEVELS = [
+  { key: "h1", label: "Full Autonomy", description: "Agent acts without human review" },
+  { key: "h2", label: "Post-Review", description: "Agent acts, human reviews after" },
+  { key: "h3", label: "Pre-Approval", description: "Agent proposes, human approves before action" },
+  { key: "h4", label: "Supervised", description: "Agent assists, human makes all decisions" },
+  { key: "h5", label: "Human Only", description: "Human performs task, agent provides information only" },
+] as const;
+export type AutonomyLevel = (typeof AUTONOMY_LEVELS)[number]["key"];
+
 /** Actions that each role is allowed to perform (UI-level role checks). */
 export const ROLE_ACTIONS = {
   owner: ["manage_billing", "invite_users", "manage_roles", "create_issues", "edit_kb", "comment", "view_all"],
@@ -918,3 +929,15 @@ export type OutputTokenCategory = keyof typeof DEFAULT_OUTPUT_TOKEN_LIMITS;
 // Default skill set loaded for agents when no explicit allowlist is configured.
 
 export const DEFAULT_SKILL_ALLOWLIST = ["ironworks"] as const;
+
+// ── Agent Lifecycle Stages ────────────────────────────────────────────────────
+
+export const AGENT_LIFECYCLE_STAGES = ["draft", "pilot", "production", "retired"] as const;
+export type AgentLifecycleStage = (typeof AGENT_LIFECYCLE_STAGES)[number];
+
+export const AGENT_LIFECYCLE_LABELS: Record<AgentLifecycleStage, string> = {
+  draft: "Draft",
+  pilot: "Pilot",
+  production: "Production",
+  retired: "Retired",
+};

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BookOpen,
+  Bot,
   ChevronDown,
   ChevronRight,
   Clock,
@@ -26,6 +27,8 @@ import {
   type LibraryContributor,
   type LibraryFileMeta,
 } from "../api/library";
+import { knowledgeApi, type KnowledgePage } from "../api/knowledge";
+import { agentsApi, type AgentSlim } from "../api/agents";
 import { useCompany } from "../context/CompanyContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { useToast } from "../context/ToastContext";
@@ -118,6 +121,271 @@ function visibilityIcon(visibility: string) {
     default:
       return Eye;
   }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Document Type / Auto Badges                                        */
+/* ------------------------------------------------------------------ */
+
+const DOC_TYPE_COLORS: Record<string, string> = {
+  "weekly-report":  "bg-blue-500/10 text-blue-500",
+  "monthly-report": "bg-indigo-500/10 text-indigo-400",
+  "post-mortem":    "bg-red-500/10 text-red-500",
+  "decision":       "bg-amber-500/10 text-amber-500",
+  "board-packet":   "bg-purple-500/10 text-purple-400",
+  "hiring-record":  "bg-green-500/10 text-green-500",
+  "folder":         "bg-muted text-muted-foreground",
+};
+
+function DocTypeBadge({ documentType }: { documentType: string | null }) {
+  if (!documentType || documentType === "folder") return null;
+  const label = documentType.replace(/-/g, " ");
+  const color = DOC_TYPE_COLORS[documentType] ?? "bg-muted text-muted-foreground";
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium shrink-0",
+        color,
+      )}
+    >
+      {label}
+    </span>
+  );
+}
+
+function AutoBadge() {
+  return (
+    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium shrink-0 bg-muted text-muted-foreground">
+      Auto
+    </span>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Agent Workspaces Panel                                             */
+/* ------------------------------------------------------------------ */
+
+interface AgentWorkspacePanelProps {
+  companyId: string;
+  agents: AgentSlim[];
+  selectedAgentId: string | null;
+  onSelectAgent: (agentId: string | null) => void;
+}
+
+function AgentWorkspacePanel({
+  companyId,
+  agents,
+  selectedAgentId,
+  onSelectAgent,
+}: AgentWorkspacePanelProps) {
+  // For each agent, count their workspace pages (excluding folder-type pages)
+  const pageCounts = useQueries({
+    queries: agents.map((agent) => ({
+      queryKey: queryKeys.knowledge.byAgent(companyId, agent.id),
+      queryFn: () => knowledgeApi.listByAgent(companyId, agent.id),
+      enabled: !!companyId,
+    })),
+  });
+
+  if (agents.length === 0) return null;
+
+  return (
+    <div className="border-b border-border">
+      <div className="px-3 py-2 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+        Agent Workspaces
+      </div>
+      <div className="pb-1">
+        {/* All documents option */}
+        <button
+          onClick={() => onSelectAgent(null)}
+          className={cn(
+            "flex items-center gap-2 w-full text-left px-3 py-1.5 text-[13px] hover:bg-accent/50 transition-colors",
+            selectedAgentId === null && "bg-accent text-accent-foreground font-medium",
+          )}
+        >
+          <Users className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <span className="truncate flex-1">All documents</span>
+        </button>
+
+        {agents.map((agent, i) => {
+          const result = pageCounts[i];
+          const pages = result?.data ?? [];
+          const docCount = pages.filter((p) => p.documentType !== "folder").length;
+
+          return (
+            <button
+              key={agent.id}
+              onClick={() => onSelectAgent(agent.id)}
+              className={cn(
+                "flex items-center gap-2 w-full text-left px-3 py-1.5 text-[13px] hover:bg-accent/50 transition-colors",
+                selectedAgentId === agent.id && "bg-accent text-accent-foreground font-medium",
+              )}
+            >
+              <Bot className="h-4 w-4 shrink-0 text-blue-400" />
+              <div className="min-w-0 flex-1">
+                <div className="truncate">{agent.name}</div>
+                <div className="text-[11px] text-muted-foreground truncate">{agent.role}</div>
+              </div>
+              {docCount > 0 && (
+                <span className="text-[10px] text-muted-foreground shrink-0 ml-auto">
+                  {docCount}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Workspace Documents Viewer                                         */
+/* ------------------------------------------------------------------ */
+
+interface WorkspaceDocViewerProps {
+  companyId: string;
+  agentId: string;
+  agentName: string;
+  onSelectPage: (pageId: string, title: string) => void;
+  selectedPageId: string | null;
+}
+
+const DOC_TYPE_GROUPS: Record<string, string> = {
+  "weekly-report":  "Weekly Reports",
+  "monthly-report": "Monthly Reports",
+  "post-mortem":    "Post-Mortems",
+  "decision":       "Decision Records",
+  "board-packet":   "Board Packets",
+  "hiring-record":  "Hiring Records",
+};
+
+function WorkspaceDocViewer({
+  companyId,
+  agentId,
+  agentName,
+  onSelectPage,
+  selectedPageId,
+}: WorkspaceDocViewerProps) {
+  const { data: pages, isLoading } = useQuery({
+    queryKey: queryKeys.knowledge.byAgent(companyId, agentId),
+    queryFn: () => knowledgeApi.listByAgent(companyId, agentId),
+    enabled: !!companyId && !!agentId,
+  });
+
+  if (isLoading) {
+    return <div className="p-3"><PageSkeleton variant="list" /></div>;
+  }
+
+  const docs = (pages ?? []).filter((p) => p.documentType !== "folder");
+
+  if (docs.length === 0) {
+    return (
+      <div className="px-3 py-6 text-center">
+        <p className="text-sm text-muted-foreground">No documents yet</p>
+        <p className="text-xs text-muted-foreground mt-1">{agentName} has not created any workspace documents.</p>
+      </div>
+    );
+  }
+
+  // Group by document type
+  const grouped = new Map<string, KnowledgePage[]>();
+  for (const page of docs) {
+    const group = page.documentType ?? "note";
+    if (!grouped.has(group)) grouped.set(group, []);
+    grouped.get(group)!.push(page);
+  }
+
+  return (
+    <div className="py-1">
+      {Array.from(grouped.entries()).map(([docType, groupPages]) => (
+        <div key={docType}>
+          <div className="px-3 pt-2 pb-1 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+            {DOC_TYPE_GROUPS[docType] ?? docType.replace(/-/g, " ")}
+          </div>
+          {groupPages.map((page) => (
+            <button
+              key={page.id}
+              onClick={() => onSelectPage(page.id, page.title)}
+              className={cn(
+                "flex items-center gap-2 w-full text-left px-3 py-1.5 text-[13px] hover:bg-accent/50 transition-colors",
+                selectedPageId === page.id && "bg-accent text-accent-foreground font-medium",
+              )}
+            >
+              <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="truncate flex-1 min-w-0">{page.title}</span>
+              <div className="flex items-center gap-1 shrink-0">
+                {page.autoGenerated && <AutoBadge />}
+                <DocTypeBadge documentType={page.documentType} />
+              </div>
+            </button>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Knowledge Page Viewer                                              */
+/* ------------------------------------------------------------------ */
+
+function KnowledgePageViewer({
+  companyId,
+  pageId,
+}: {
+  companyId: string;
+  pageId: string;
+}) {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["knowledge-page", pageId],
+    queryFn: () => knowledgeApi.get(pageId),
+    enabled: !!pageId,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+        Loading document...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-full text-sm text-destructive">
+        {error instanceof Error ? error.message : "Failed to load document"}
+      </div>
+    );
+  }
+
+  if (!data) return null;
+
+  return (
+    <div className="h-full flex flex-col">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-muted/20 shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-sm font-medium truncate">{data.title}</span>
+          <div className="flex items-center gap-1 shrink-0">
+            {data.autoGenerated && <AutoBadge />}
+            <DocTypeBadge documentType={data.documentType} />
+          </div>
+        </div>
+        <span className="text-xs text-muted-foreground shrink-0">
+          {new Date(data.updatedAt).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })}
+        </span>
+      </div>
+      <ScrollArea className="flex-1 min-h-0">
+        <div className="p-6 max-w-none">
+          <MarkdownBody>{data.body}</MarkdownBody>
+        </div>
+      </ScrollArea>
+    </div>
+  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -418,6 +686,11 @@ export function Library() {
   const [searchInput, setSearchInput] = useState("");
   const [searchContent, setSearchContent] = useState(false);
 
+  // Workspace state: null = file tree view, string = agent workspace view
+  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+  // Selected knowledge page (used in workspace view)
+  const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
+
   const dirPaths = useMemo(() => ["", ...Array.from(expandedDirs)], [expandedDirs]);
 
   const treeQueries = useQueries({
@@ -444,6 +717,16 @@ export function Library() {
       pushToast({ title: "Scan failed", body: "Could not scan library", tone: "error" });
     },
   });
+
+  const { data: agentsData } = useQuery({
+    queryKey: ["agents-slim", selectedCompanyId],
+    queryFn: () => agentsApi.slim(selectedCompanyId!),
+    enabled: !!selectedCompanyId,
+  });
+  const workspaceAgents = useMemo(
+    () => (agentsData ?? []).filter((a) => a.status !== "terminated"),
+    [agentsData],
+  );
 
   const childEntries = useMemo(() => {
     const map = new Map<string, LibraryEntry[]>();
@@ -508,7 +791,7 @@ export function Library() {
 
       {/* Two-pane content */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
-      {/* Left pane: File tree */}
+      {/* Left pane: File tree + Agent Workspaces */}
       <div className="w-72 shrink-0 border-r border-border flex flex-col bg-background">
         {/* Search */}
         <div className="px-2 py-2 border-b border-border shrink-0">
@@ -548,86 +831,124 @@ export function Library() {
           </label>
         </div>
 
-        {/* Tree / Search results */}
         <ScrollArea className="flex-1 min-h-0">
-          {searchQuery && searchResults ? (
-            <div className="py-1">
-              <div className="px-3 py-1.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                {searchResults.results.length} result{searchResults.results.length !== 1 ? "s" : ""}
-              </div>
-              {searchResults.results.map((entry) => {
-                const Icon = entry.kind === "directory" ? Folder : fileIcon(entry.name);
-                return (
-                  <button
-                    key={entry.path}
-                    onClick={() => {
-                      if (entry.kind === "file") {
-                        setSelectedFile(entry.path);
-                        setSearchQuery("");
-                        setSearchInput("");
-                      }
-                    }}
-                    className="flex items-center gap-1.5 w-full text-left px-3 py-1.5 text-[13px] hover:bg-accent/50 transition-colors"
-                  >
-                    <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate">{entry.name}</div>
-                      <div className="text-[11px] text-muted-foreground truncate">
-                        {entry.path}
-                      </div>
-                      {entry.matchContext && (
-                        <div className="text-[11px] text-muted-foreground/70 truncate mt-0.5 italic">
-                          {entry.matchContext}
-                        </div>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-              {searchResults.results.length === 0 && (
-                <div className="px-3 py-4 text-sm text-muted-foreground text-center">
-                  No files found
-                </div>
-              )}
-            </div>
-          ) : rootLoading ? (
-            <div className="p-3">
-              <PageSkeleton variant="list" />
-            </div>
-          ) : rootError ? (
-            <div className="p-3 text-sm text-destructive">
-              {rootError instanceof Error ? rootError.message : "Failed to load library"}
-            </div>
-          ) : rootEntries.length === 0 ? (
-            <div className="px-3 py-8 text-center">
-              <Folder className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">Library is empty</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Files created by agents will appear here
-              </p>
-            </div>
+          {/* Agent Workspaces section */}
+          <AgentWorkspacePanel
+            companyId={selectedCompanyId!}
+            agents={workspaceAgents}
+            selectedAgentId={selectedAgentId}
+            onSelectAgent={(id) => {
+              setSelectedAgentId(id);
+              setSelectedPageId(null);
+              if (id !== null) {
+                // Clear file selection when switching to workspace view
+                setSelectedFile(null);
+              }
+            }}
+          />
+
+          {/* Workspace documents list (when an agent is selected) */}
+          {selectedAgentId !== null ? (
+            <WorkspaceDocViewer
+              companyId={selectedCompanyId!}
+              agentId={selectedAgentId}
+              agentName={workspaceAgents.find((a) => a.id === selectedAgentId)?.name ?? "Agent"}
+              onSelectPage={(pageId) => setSelectedPageId(pageId)}
+              selectedPageId={selectedPageId}
+            />
           ) : (
-            <div className="py-1">
-              {rootEntries.map((entry) => (
-                <TreeNode
-                  key={entry.path}
-                  entry={entry}
-                  depth={0}
-                  selectedPath={selectedFile}
-                  expandedDirs={expandedDirs}
-                  onToggleDir={toggleDir}
-                  onSelectFile={setSelectedFile}
-                  childEntries={childEntries}
-                />
-              ))}
-            </div>
+            /* File tree / Search results */
+            searchQuery && searchResults ? (
+              <div className="py-1">
+                <div className="px-3 py-1.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                  {searchResults.results.length} result{searchResults.results.length !== 1 ? "s" : ""}
+                </div>
+                {searchResults.results.map((entry) => {
+                  const Icon = entry.kind === "directory" ? Folder : fileIcon(entry.name);
+                  return (
+                    <button
+                      key={entry.path}
+                      onClick={() => {
+                        if (entry.kind === "file") {
+                          setSelectedFile(entry.path);
+                          setSearchQuery("");
+                          setSearchInput("");
+                        }
+                      }}
+                      className="flex items-center gap-1.5 w-full text-left px-3 py-1.5 text-[13px] hover:bg-accent/50 transition-colors"
+                    >
+                      <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate">{entry.name}</div>
+                        <div className="text-[11px] text-muted-foreground truncate">
+                          {entry.path}
+                        </div>
+                        {entry.matchContext && (
+                          <div className="text-[11px] text-muted-foreground/70 truncate mt-0.5 italic">
+                            {entry.matchContext}
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+                {searchResults.results.length === 0 && (
+                  <div className="px-3 py-4 text-sm text-muted-foreground text-center">
+                    No files found
+                  </div>
+                )}
+              </div>
+            ) : rootLoading ? (
+              <div className="p-3">
+                <PageSkeleton variant="list" />
+              </div>
+            ) : rootError ? (
+              <div className="p-3 text-sm text-destructive">
+                {rootError instanceof Error ? rootError.message : "Failed to load library"}
+              </div>
+            ) : rootEntries.length === 0 ? (
+              <div className="px-3 py-8 text-center">
+                <Folder className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">Library is empty</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Files created by agents will appear here
+                </p>
+              </div>
+            ) : (
+              <div className="py-1">
+                {rootEntries.map((entry) => (
+                  <TreeNode
+                    key={entry.path}
+                    entry={entry}
+                    depth={0}
+                    selectedPath={selectedFile}
+                    expandedDirs={expandedDirs}
+                    onToggleDir={toggleDir}
+                    onSelectFile={setSelectedFile}
+                    childEntries={childEntries}
+                  />
+                ))}
+              </div>
+            )
           )}
         </ScrollArea>
       </div>
 
-      {/* Right pane: File reader */}
+      {/* Right pane: File reader or Knowledge page viewer */}
       <div className="flex-1 min-w-0 bg-background">
-        {selectedFile ? (
+        {selectedAgentId !== null && selectedPageId ? (
+          <KnowledgePageViewer companyId={selectedCompanyId!} pageId={selectedPageId} />
+        ) : selectedAgentId !== null ? (
+          <div className="flex flex-col items-center justify-center h-full text-center px-6">
+            <Bot className="h-12 w-12 text-muted-foreground/20 mb-3" />
+            <p className="text-sm font-medium text-muted-foreground">
+              Select a document to view
+            </p>
+            <p className="text-xs text-muted-foreground mt-1 max-w-xs">
+              Browse the workspace documents on the left to view reports and records created by this agent.
+            </p>
+          </div>
+        ) : selectedFile ? (
           <FileViewer companyId={selectedCompanyId} filePath={selectedFile} />
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-center px-6">

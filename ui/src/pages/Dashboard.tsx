@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@/lib/router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { dashboardApi } from "../api/dashboard";
 import { activityApi } from "../api/activity";
 import { issuesApi } from "../api/issues";
@@ -13,6 +13,7 @@ import { hiringApi } from "../api/hiring";
 import { approvalsApi } from "../api/approvals";
 import { announcementsApi } from "../api/announcements";
 import { velocityApi, type VelocityWeek } from "../api/velocity";
+import { executiveApi, type SmartAlert } from "../api/executive";
 import { useCompany } from "../context/CompanyContext";
 import { useDialog } from "../context/DialogContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
@@ -324,6 +325,22 @@ export function Dashboard() {
     queryFn: () => velocityApi.get(selectedCompanyId!, 12),
     enabled: !!selectedCompanyId,
     staleTime: 60_000,
+  });
+
+  const queryClient = useQueryClient();
+
+  const { data: smartAlerts } = useQuery({
+    queryKey: ["alerts", selectedCompanyId!],
+    queryFn: () => executiveApi.getAlerts(selectedCompanyId!, "medium"),
+    enabled: !!selectedCompanyId,
+    staleTime: 30_000,
+  });
+
+  const resolveAlertMutation = useMutation({
+    mutationFn: (alertId: string) => executiveApi.resolveAlert(selectedCompanyId!, alertId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["alerts", selectedCompanyId!] });
+    },
   });
 
   /* ── Maps ── */
@@ -704,6 +721,62 @@ export function Dashboard() {
                     </div>
                     <span className="text-xs text-amber-400 shrink-0">View run</span>
                   </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── ALERTS ── */}
+          {smartAlerts && smartAlerts.length > 0 && (
+            <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.04] p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold uppercase tracking-wide flex items-center gap-2 text-amber-400">
+                  <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+                  Alerts
+                  <span className="inline-flex items-center justify-center rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold min-w-[18px] px-1.5 py-0.5">
+                    {smartAlerts.length}
+                  </span>
+                </h3>
+              </div>
+              <div className="space-y-1.5">
+                {smartAlerts.map((alert: SmartAlert) => (
+                  <div
+                    key={alert.id}
+                    className={cn(
+                      "flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-sm",
+                      alert.severity === "critical"
+                        ? "border-red-500/20 bg-red-500/[0.06]"
+                        : alert.severity === "high"
+                          ? "border-amber-500/20 bg-amber-500/[0.06]"
+                          : "border-yellow-500/20 bg-yellow-500/[0.06]",
+                    )}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span
+                        className={cn(
+                          "h-2 w-2 shrink-0 rounded-full",
+                          alert.severity === "critical"
+                            ? "bg-red-500"
+                            : alert.severity === "high"
+                              ? "bg-amber-500"
+                              : "bg-yellow-500",
+                        )}
+                      />
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{alert.title}</p>
+                        {alert.description && (
+                          <p className="text-xs text-muted-foreground truncate">{alert.description}</p>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      className="text-xs text-muted-foreground hover:text-foreground shrink-0 transition-colors underline underline-offset-2"
+                      onClick={() => resolveAlertMutation.mutate(alert.id)}
+                      disabled={resolveAlertMutation.isPending}
+                    >
+                      Resolve
+                    </button>
+                  </div>
                 ))}
               </div>
             </div>

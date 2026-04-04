@@ -143,6 +143,7 @@ export const queryKeys = {
   },
   knowledge: {
     list: (companyId: string) => ["companies", companyId, "knowledge"] as const,
+    byAgent: (companyId: string, agentId: string) => ["companies", companyId, "knowledge", "agent", agentId] as const,
   },
   announcements: {
     list: (companyId: string) => ["announcements", companyId] as const,

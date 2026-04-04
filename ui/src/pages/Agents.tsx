@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from "@/lib/router";
 import { useQuery } from "@tanstack/react-query";
 import { agentsApi, type OrgNode } from "../api/agents";
 import { heartbeatsApi } from "../api/heartbeats";
+import { issuesApi } from "../api/issues";
 import { useCompany } from "../context/CompanyContext";
 import { useDialog } from "../context/DialogContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
@@ -18,8 +19,8 @@ import { PageTabBar } from "../components/PageTabBar";
 import { Tabs } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Bot, Plus, List, LayoutGrid, GitBranch, Search, SlidersHorizontal, UserPlus } from "lucide-react";
-import { AGENT_ROLE_LABELS, DEPARTMENTS, DEPARTMENT_LABELS, type Agent, type Department } from "@ironworksai/shared";
+import { Bot, Plus, List, LayoutGrid, GitBranch, Search, SlidersHorizontal, UserPlus, Layers } from "lucide-react";
+import { AGENT_ROLE_LABELS, AGENT_LIFECYCLE_STAGES, AGENT_LIFECYCLE_LABELS, DEPARTMENTS, DEPARTMENT_LABELS, type Agent, type Department, type AgentLifecycleStage } from "@ironworksai/shared";
 import { EmploymentBadge } from "../components/EmploymentBadge";
 import { AgentIcon } from "../components/AgentIconPicker";
 import { getRoleLevel, getAgentRingClass } from "../lib/role-icons";
@@ -75,9 +76,9 @@ export function Agents() {
   const { isMobile } = useSidebar();
   const pathSegment = location.pathname.split("/").pop() ?? "all";
   const tab: FilterTab = (pathSegment === "all" || pathSegment === "active" || pathSegment === "paused" || pathSegment === "error") ? pathSegment : "all";
-  const [view, setView] = useState<"list" | "grid" | "org">("org");
+  const [view, setView] = useState<"list" | "grid" | "org" | "pipeline">("org");
   const forceListView = isMobile;
-  const effectiveView: "list" | "grid" | "org" = forceListView ? "list" : view;
+  const effectiveView: "list" | "grid" | "org" | "pipeline" = forceListView ? "list" : view;
   const [showTerminated, setShowTerminated] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [agentSearch, setAgentSearch] = useState("");
@@ -103,6 +104,13 @@ export function Agents() {
     refetchInterval: 15_000,
   });
 
+  const { data: issues } = useQuery({
+    queryKey: queryKeys.issues.list(selectedCompanyId!),
+    queryFn: () => issuesApi.list(selectedCompanyId!),
+    enabled: !!selectedCompanyId && effectiveView === "pipeline",
+    staleTime: 30_000,
+  });
+
   // Map agentId -> first live run + live run count
   const liveRunByAgent = useMemo(() => {
     const map = new Map<string, { runId: string; liveCount: number }>();
@@ -123,6 +131,27 @@ export function Agents() {
     for (const a of agents ?? []) map.set(a.id, a);
     return map;
   }, [agents]);
+
+  // Count completed issues per agent (done status)
+  const completedIssuesByAgent = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const issue of issues ?? []) {
+      if (issue.status !== "done") continue;
+      const assigneeId = (issue as unknown as Record<string, unknown>).assigneeAgentId as string | null;
+      if (!assigneeId) continue;
+      map.set(assigneeId, (map.get(assigneeId) ?? 0) + 1);
+    }
+    return map;
+  }, [issues]);
+
+  function deriveLifecycleStage(agent: Agent): AgentLifecycleStage {
+    if (agent.status === "terminated") return "retired";
+    const completedCount = completedIssuesByAgent.get(agent.id) ?? 0;
+    if (agent.status === "active" || agent.status === "running") {
+      return completedCount >= 5 ? "production" : "pilot";
+    }
+    return "draft";
+  }
 
   useEffect(() => {
     setBreadcrumbs([{ label: "Agents" }]);
@@ -262,6 +291,16 @@ export function Agents() {
                 title="Org chart view"
               >
                 <GitBranch className="h-3.5 w-3.5" />
+              </button>
+              <button
+                className={cn(
+                  "p-1.5 transition-colors",
+                  effectiveView === "pipeline" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50"
+                )}
+                onClick={() => setView("pipeline")}
+                title="Pipeline view"
+              >
+                <Layers className="h-3.5 w-3.5" />
               </button>
             </div>
           )}
@@ -477,6 +516,69 @@ export function Agents() {
         <p className="text-sm text-muted-foreground text-center py-8">
           No organizational hierarchy defined.
         </p>
+      )}
+
+      {/* Pipeline view */}
+      {effectiveView === "pipeline" && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {AGENT_LIFECYCLE_STAGES.map((stage) => {
+            const stageAgents = (agents ?? []).filter(
+              (a) => deriveLifecycleStage(a) === stage,
+            );
+            return (
+              <div key={stage} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    {AGENT_LIFECYCLE_LABELS[stage]}
+                  </h3>
+                  <span className="text-[10px] font-medium text-muted-foreground bg-muted rounded-full px-1.5 py-0.5">
+                    {stageAgents.length}
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {stageAgents.length === 0 ? (
+                    <p className="text-xs text-muted-foreground py-4 text-center border border-dashed border-border rounded-md">
+                      No agents
+                    </p>
+                  ) : (
+                    stageAgents.map((agent) => (
+                      <Link
+                        key={agent.id}
+                        to={agentUrl(agent)}
+                        className={cn(
+                          "block rounded-md border border-border p-3 hover:bg-accent/30 transition-colors no-underline text-inherit space-y-2",
+                          agent.status === "terminated" && "opacity-50",
+                        )}
+                      >
+                        <div className="flex items-center gap-2">
+                          <AgentIcon icon={agent.icon} className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          <span className="text-sm font-medium truncate">{agent.name}</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {roleLabels[agent.role] ?? agent.role}
+                        </div>
+                        <span
+                          className={cn(
+                            "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                            stage === "production"
+                              ? "bg-green-500/15 text-green-600 dark:text-green-400"
+                              : stage === "pilot"
+                                ? "bg-blue-500/15 text-blue-600 dark:text-blue-400"
+                                : stage === "draft"
+                                  ? "bg-muted text-muted-foreground"
+                                  : "bg-muted/50 text-muted-foreground line-through",
+                          )}
+                        >
+                          {AGENT_LIFECYCLE_LABELS[stage]}
+                        </span>
+                      </Link>
+                    ))
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       )}
     </div>
   );

@@ -22,7 +22,8 @@ export function knowledgeRoutes(db: Db) {
     const search = typeof req.query.q === "string" ? req.query.q : undefined;
     const visibility = typeof req.query.visibility === "string" ? req.query.visibility : undefined;
     const department = typeof req.query.department === "string" ? req.query.department : undefined;
-    const pages = await svc.list(companyId, { search, visibility, department });
+    const agentId = typeof req.query.agentId === "string" ? req.query.agentId : undefined;
+    const pages = await svc.list(companyId, { search, visibility, department, agentId });
     res.json(pages);
   });
 

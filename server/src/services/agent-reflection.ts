@@ -2,6 +2,7 @@ import { and, eq, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { agentMemoryEntries, agents, heartbeatRuns, issueLabels, issues, labels } from "@ironworksai/db";
 import { logger } from "../middleware/logger.js";
+import { createDecisionRecord } from "./agent-workspace.js";
 
 // ── Agent Reflection Services ──────────────────────────────────────────────
 //
@@ -108,6 +109,68 @@ export async function performPostTaskReflection(
       confidence: 75,
       lastAccessedAt: now,
     });
+  }
+
+  // Auto-create Architecture Decision Records for technical roles on completed issues
+  if (opts.outcome === "completed") {
+    try {
+      // Resolve agent role
+      const [agentRow] = await db
+        .select({ role: agents.role })
+        .from(agents)
+        .where(eq(agents.id, opts.agentId))
+        .limit(1);
+
+      const role = (agentRow?.role ?? "").toLowerCase().replace(/[\s_-]+/g, "");
+      const isTechnicalRole =
+        role.includes("cto") ||
+        role.includes("seniorengineer") ||
+        role.includes("engineer") ||
+        role.includes("devops") ||
+        role.includes("developer") ||
+        role.includes("architect");
+
+      if (isTechnicalRole) {
+        const TECHNICAL_KEYWORDS = [
+          "architecture", "design", "infrastructure", "migration",
+          "database", "api", "schema", "deploy", "refactor",
+          "integration", "service", "protocol", "specification",
+        ];
+        const haystack = `${opts.issueTitle}`.toLowerCase();
+        const hasTechnicalContent = TECHNICAL_KEYWORDS.some((kw) => haystack.includes(kw));
+
+        if (hasTechnicalContent) {
+          // Fetch full issue description for richer context
+          const [issueRow] = await db
+            .select({ description: issues.description })
+            .from(issues)
+            .where(eq(issues.id, opts.issueId))
+            .limit(1);
+
+          const context = issueRow?.description
+            ? `Issue: ${opts.issueTitle}\n\n${issueRow.description.slice(0, 800)}`
+            : `Issue: ${opts.issueTitle}`;
+
+          await createDecisionRecord(db, {
+            companyId: opts.companyId,
+            agentId: opts.agentId,
+            title: opts.issueTitle,
+            context,
+            decision: `This decision was recorded automatically upon completion of the issue: "${opts.issueTitle}".`,
+            consequences: "Review this ADR and update with detailed context, alternatives considered, and long-term implications.",
+            status: "accepted",
+          });
+
+          logger.info(
+            { agentId: opts.agentId, issueId: opts.issueId, role },
+            "auto-created architecture decision record",
+          );
+        }
+      }
+    } catch (err) {
+      // ADR creation is best-effort; don't fail the reflection
+      logger.warn({ err, agentId: opts.agentId, issueId: opts.issueId }, "failed to auto-create ADR");
+    }
   }
 
   logger.info(

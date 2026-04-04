@@ -4,7 +4,7 @@ import type { Db } from "@ironworksai/db";
 import { captureAnalyticsSnapshot } from "../services/analytics.js";
 import { checkContractorLifecycles } from "../services/contractor-lifecycle.js";
 import { decayStaleMemories } from "../services/agent-memory.js";
-import { runAllWeeklyReports } from "../services/weekly-reports.js";
+import { runAllWeeklyReports, runAllMonthlyCostSummaries } from "../services/weekly-reports.js";
 import { runAllDailyStandups } from "../services/daily-standup.js";
 import { captureAllPerformanceSnapshots } from "../services/performance-score.js";
 import { runAllAchievementChecks } from "../services/achievements.js";
@@ -662,9 +662,11 @@ export function startRetentionScheduler(db: Db): NodeJS.Timeout {
   // Check every minute whether it's time to run CT-scheduled jobs.
   // Weekly reports: Sunday 18:00 CT
   // Daily standups: every day 08:00 CT
+  // Monthly cost summaries: 1st of each month 06:00 CT
   const MINUTE_MS = 60 * 1000;
   let lastStandupDate = "";
   let lastWeeklyDate = "";
+  let lastMonthlyDate = "";
 
   setInterval(() => {
     const now = new Date();
@@ -707,6 +709,15 @@ export function startRetentionScheduler(db: Db): NodeJS.Timeout {
       // Performance snapshots captured alongside weekly reports
       captureAllPerformanceSnapshots(db).catch((err) =>
         logger.error({ err }, "scheduled performance snapshots failed"),
+      );
+    }
+
+    // Monthly cost summaries on the 1st of each month at 06:00 CT
+    const ctDay = parseInt(dateKey.slice(-2), 10);
+    if (ctDay === 1 && ctHour === 6 && ctMinute === 0 && lastMonthlyDate !== dateKey) {
+      lastMonthlyDate = dateKey;
+      runAllMonthlyCostSummaries(db).catch((err) =>
+        logger.error({ err }, "scheduled monthly cost summaries failed"),
       );
     }
   }, MINUTE_MS);

@@ -1464,3 +1464,274 @@ export async function runAllWeeklyReports(db: Db): Promise<void> {
 
   logger.info({ companiesProcessed: allCompanies.length }, "weekly reports run complete");
 }
+
+// ── CFO Monthly Cost Summary ──────────────────────────────────────────────
+
+/**
+ * Generate a monthly cost summary for the CFO covering the full calendar month.
+ * Saves to CFO workspace with document_type "monthly-report" and returns the markdown.
+ */
+export async function generateMonthlyCostSummary(
+  db: Db,
+  companyId: string,
+): Promise<string> {
+  const now = new Date();
+
+  // Compute first and last day of the previous full month in CT
+  const ctNow = new Date(
+    now.toLocaleString("en-US", { timeZone: "America/Chicago" }),
+  );
+  const monthStart = new Date(ctNow.getFullYear(), ctNow.getMonth() - 1, 1);
+  const monthEnd = new Date(ctNow.getFullYear(), ctNow.getMonth(), 0, 23, 59, 59, 999);
+
+  // Also compute two months ago for month-over-month comparison
+  const prevMonthStart = new Date(ctNow.getFullYear(), ctNow.getMonth() - 2, 1);
+  const prevMonthEnd = new Date(ctNow.getFullYear(), ctNow.getMonth() - 1, 0, 23, 59, 59, 999);
+
+  const monthLabel = monthStart.toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+    timeZone: "America/Chicago",
+  });
+  const periodStart = formatDateCT(monthStart);
+  const periodEnd = formatDateCT(monthEnd);
+
+  // 1. Total spend this month
+  const totalSpendResult = await db
+    .select({ total: sql<number>`coalesce(sum(${costEvents.costCents}), 0)::int` })
+    .from(costEvents)
+    .where(
+      and(
+        eq(costEvents.companyId, companyId),
+        gte(costEvents.occurredAt, monthStart),
+        sql`${costEvents.occurredAt} <= ${monthEnd}`,
+      ),
+    );
+  const totalCents = Number(totalSpendResult[0]?.total ?? 0);
+
+  // 2. Total spend last month (for MoM comparison)
+  const prevSpendResult = await db
+    .select({ total: sql<number>`coalesce(sum(${costEvents.costCents}), 0)::int` })
+    .from(costEvents)
+    .where(
+      and(
+        eq(costEvents.companyId, companyId),
+        gte(costEvents.occurredAt, prevMonthStart),
+        sql`${costEvents.occurredAt} <= ${prevMonthEnd}`,
+      ),
+    );
+  const prevTotalCents = Number(prevSpendResult[0]?.total ?? 0);
+  const momChange = prevTotalCents > 0
+    ? Math.round(((totalCents - prevTotalCents) / prevTotalCents) * 100)
+    : 0;
+  const momLabel = momChange > 0 ? `+${momChange}%` : `${momChange}%`;
+
+  // 3. Spend by department
+  const deptSpend = await db
+    .select({
+      department: agents.department,
+      total: sql<number>`coalesce(sum(${costEvents.costCents}), 0)::int`,
+    })
+    .from(costEvents)
+    .innerJoin(agents, eq(costEvents.agentId, agents.id))
+    .where(
+      and(
+        eq(costEvents.companyId, companyId),
+        gte(costEvents.occurredAt, monthStart),
+        sql`${costEvents.occurredAt} <= ${monthEnd}`,
+      ),
+    )
+    .groupBy(agents.department)
+    .orderBy(sql`sum(${costEvents.costCents}) desc`);
+
+  // 4. Spend by agent (top 10)
+  const agentSpend = await db
+    .select({
+      agentId: costEvents.agentId,
+      agentName: agents.name,
+      agentRole: agents.role,
+      budgetCents: agents.budgetMonthlyCents,
+      total: sql<number>`coalesce(sum(${costEvents.costCents}), 0)::int`,
+    })
+    .from(costEvents)
+    .innerJoin(agents, eq(costEvents.agentId, agents.id))
+    .where(
+      and(
+        eq(costEvents.companyId, companyId),
+        gte(costEvents.occurredAt, monthStart),
+        sql`${costEvents.occurredAt} <= ${monthEnd}`,
+      ),
+    )
+    .groupBy(costEvents.agentId, agents.name, agents.role, agents.budgetMonthlyCents)
+    .orderBy(sql`sum(${costEvents.costCents}) desc`)
+    .limit(10);
+
+  // 5. Issues completed this month (for cost-per-issue)
+  const issuesCompletedResult = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(issues)
+    .where(
+      and(
+        eq(issues.companyId, companyId),
+        eq(issues.status, "done"),
+        gte(issues.completedAt, monthStart),
+        sql`${issues.completedAt} <= ${monthEnd}`,
+      ),
+    );
+  const issuesCompleted = Number(issuesCompletedResult[0]?.count ?? 0);
+  const costPerIssue = issuesCompleted > 0
+    ? centsToDollars(Math.round(totalCents / issuesCompleted))
+    : "N/A";
+
+  // 6. Issues completed last month (MoM cost-per-issue)
+  const prevIssuesResult = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(issues)
+    .where(
+      and(
+        eq(issues.companyId, companyId),
+        eq(issues.status, "done"),
+        gte(issues.completedAt, prevMonthStart),
+        sql`${issues.completedAt} <= ${prevMonthEnd}`,
+      ),
+    );
+  const prevIssuesCompleted = Number(prevIssuesResult[0]?.count ?? 0);
+  const prevCostPerIssue = prevIssuesCompleted > 0 && prevTotalCents > 0
+    ? centsToDollars(Math.round(prevTotalCents / prevIssuesCompleted))
+    : "N/A";
+
+  // 7. Budget utilization: sum of budgetMonthlyCents across all active agents
+  const budgetResult = await db
+    .select({
+      totalBudget: sql<number>`coalesce(sum(${agents.budgetMonthlyCents}), 0)::int`,
+    })
+    .from(agents)
+    .where(
+      and(
+        eq(agents.companyId, companyId),
+        ne(agents.status, "terminated"),
+        sql`${agents.budgetMonthlyCents} > 0`,
+      ),
+    );
+  const totalBudgetCents = Number(budgetResult[0]?.totalBudget ?? 0);
+  const budgetUtilization = totalBudgetCents > 0
+    ? `${Math.round((totalCents / totalBudgetCents) * 100)}%`
+    : "No budgets set";
+
+  // 8. Recommendations
+  const recommendations: string[] = [];
+  const overBudgetAgents = agentSpend.filter(
+    (a) => a.budgetCents > 0 && a.total > a.budgetCents,
+  );
+  if (overBudgetAgents.length > 0) {
+    const names = overBudgetAgents.map((a) => a.agentName).join(", ");
+    recommendations.push(`- Agents over monthly budget: ${names}. Review task assignments and model selection.`);
+  }
+  const underutilizedAgents = agentSpend.filter(
+    (a) => a.budgetCents > 0 && a.total < a.budgetCents * 0.1,
+  );
+  if (underutilizedAgents.length > 0) {
+    const names = underutilizedAgents.map((a) => a.agentName).join(", ");
+    recommendations.push(`- Potentially underutilized agents (under 10% budget used): ${names}.`);
+  }
+  if (momChange > 20) {
+    recommendations.push(`- Month-over-month spend increased ${momChange}%. Investigate high-cost agents and task volume.`);
+  }
+  if (recommendations.length === 0) {
+    recommendations.push("- No critical cost concerns this month. Continue current operating cadence.");
+  }
+
+  // Build markdown
+  const deptRows = deptSpend.map(
+    (d) => `| ${d.department ?? "Unassigned"} | $${centsToDollars(d.total)} |`,
+  );
+
+  const agentRows = agentSpend.map((a, i) => {
+    const budget = a.budgetCents > 0 ? `$${centsToDollars(a.budgetCents)}` : "none";
+    const over = a.budgetCents > 0 && a.total > a.budgetCents ? " (OVER)" : "";
+    return `${i + 1}. ${a.agentName} (${a.agentRole}) - $${centsToDollars(a.total)} / ${budget}${over}`;
+  });
+
+  const markdown = [
+    `# CFO Monthly Cost Summary: ${monthLabel}`,
+    `**Period:** ${periodStart} to ${periodEnd}`,
+    `**Generated:** ${now.toLocaleString("en-US", { timeZone: "America/Chicago" })}`,
+    "",
+    "## Total Spend",
+    `- This month: $${centsToDollars(totalCents)}`,
+    `- Last month: $${centsToDollars(prevTotalCents)}`,
+    `- Month-over-month: ${momLabel}`,
+    `- Budget utilization: ${budgetUtilization}`,
+    "",
+    "## Spend by Department",
+    "| Department | Spend |",
+    "|---|---|",
+    ...deptRows,
+    "",
+    "## Top 10 Agents by Spend",
+    ...(agentRows.length > 0 ? agentRows : ["No cost data available"]),
+    "",
+    "## Cost per Issue",
+    `- This month: $${costPerIssue} (${issuesCompleted} issues completed)`,
+    `- Last month: $${prevCostPerIssue} (${prevIssuesCompleted} issues completed)`,
+    "",
+    "## Recommendations",
+    ...recommendations,
+  ].join("\n");
+
+  // Save to CFO agent's workspace
+  const [cfoAgent] = await db
+    .select({ id: agents.id })
+    .from(agents)
+    .where(
+      and(
+        eq(agents.companyId, companyId),
+        sql`lower(${agents.role}) like '%cfo%'`,
+        ne(agents.status, "terminated"),
+      ),
+    )
+    .limit(1);
+
+  if (cfoAgent) {
+    const monthSlug = monthStart.toLocaleDateString("en-CA", { timeZone: "America/Chicago" }).slice(0, 7).replace("-", "");
+    const slug = `cfo-monthly-cost-summary-${monthSlug}`;
+    await createAgentDocument(db, {
+      agentId: cfoAgent.id,
+      companyId,
+      title: `CFO Monthly Cost Summary: ${monthLabel}`,
+      content: markdown,
+      documentType: "monthly-report",
+      slug,
+      visibility: "private",
+      autoGenerated: true,
+      createdByUserId: "system",
+    });
+  }
+
+  logger.info(
+    { companyId, month: monthLabel },
+    "generated CFO monthly cost summary",
+  );
+
+  return markdown;
+}
+
+/**
+ * Run monthly cost summaries for ALL companies.
+ */
+export async function runAllMonthlyCostSummaries(db: Db): Promise<void> {
+  const allCompanies = await db
+    .select({ id: companies.id })
+    .from(companies)
+    .where(ne(companies.status, "pending_erasure"));
+
+  for (const company of allCompanies) {
+    try {
+      await generateMonthlyCostSummary(db, company.id);
+    } catch (err) {
+      logger.error({ err, companyId: company.id }, "failed to run monthly cost summary for company");
+    }
+  }
+
+  logger.info({ companiesProcessed: allCompanies.length }, "monthly cost summaries run complete");
+}
