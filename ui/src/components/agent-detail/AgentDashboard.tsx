@@ -10,10 +10,12 @@ import { Button } from "@/components/ui/button";
 import { formatCents, formatTokens, formatDate, relativeTime, cn } from "../../lib/utils";
 import { agentsApi } from "../../api/agents";
 import { queryKeys } from "../../lib/queryKeys";
-import { Clock, AlertTriangle } from "lucide-react";
+import { Clock, AlertTriangle, CheckCircle2, Circle } from "lucide-react";
 import {
   DEPARTMENT_LABELS,
   TERMINATION_REASONS,
+  AUTONOMY_LEVELS,
+  type AutonomyLevel,
   type Department,
   type TerminationReason,
 } from "@ironworksai/shared";
@@ -169,6 +171,71 @@ function CostsSection({
   );
 }
 
+// ── Onboarding Checklist ─────────────────────────────────────────────────────
+
+function OnboardingChecklist({
+  agent,
+  assignedIssues,
+  runs,
+}: {
+  agent: AgentDetailRecord;
+  assignedIssues: { id: string; status: string }[];
+  runs: HeartbeatRun[];
+}) {
+  const ext = agent as unknown as Record<string, unknown>;
+  const hiredAt = ext.hiredAt as string | null;
+  if (!hiredAt) return null;
+  const ageMs = Date.now() - new Date(hiredAt).getTime();
+  const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+  if (ageMs > sevenDaysMs) return null;
+
+  const hasPermissionGrants = (agent.access?.grants?.length ?? 0) > 0;
+  const hasAdapterConfig =
+    agent.adapterConfig != null &&
+    Object.keys(agent.adapterConfig).length > 0;
+  const hasCompletedIssue = assignedIssues.some((i) => i.status === "done");
+  // Workspace folders: inferred from runs that produced workspace operations or any run succeeded
+  const hasSucceededRun = runs.some((r) => r.status === "succeeded");
+
+  const items: Array<{ label: string; done: boolean }> = [
+    { label: "Data access provisioned", done: hasPermissionGrants },
+    { label: "Tools assigned", done: hasAdapterConfig },
+    { label: "First run completed", done: hasSucceededRun },
+    { label: "Knowledge base seeded", done: hasCompletedIssue },
+  ];
+
+  const allDone = items.every((i) => i.done);
+
+  return (
+    <div className="rounded-xl border border-border p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Onboarding Status
+        </h3>
+        {allDone && (
+          <span className="text-xs text-emerald-500 font-medium">Complete</span>
+        )}
+      </div>
+      <ul className="space-y-2">
+        {items.map((item) => (
+          <li key={item.label} className="flex items-center gap-2 text-sm">
+            {item.done ? (
+              <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+            ) : (
+              <Circle className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40" />
+            )}
+            <span className={item.done ? "text-foreground" : "text-muted-foreground"}>
+              {item.label}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+// ── Employment Card ───────────────────────────────────────────────────────────
+
 function EmploymentCard({
   agent,
   companyId,
@@ -187,6 +254,10 @@ function EmploymentCard({
   const contractEndCondition = ext.contractEndCondition as string | null;
   const contractEndAt = ext.contractEndAt as string | null;
   const contractBudgetCents = ext.contractBudgetCents as number | null;
+  const autonomyLevel = (ext.autonomyLevel as AutonomyLevel | null) ?? null;
+  const autonomyInfo = autonomyLevel
+    ? AUTONOMY_LEVELS.find((l) => l.key === autonomyLevel) ?? null
+    : null;
 
   const terminateMutation = useMutation({
     mutationFn: () => agentsApi.terminateWithReason(companyId, agent.id, terminationReason),
@@ -225,6 +296,17 @@ function EmploymentCard({
           <div>
             <span className="text-xs text-muted-foreground block">Hired</span>
             <span className="text-sm mt-1 block">{formatDate(hiredAt)}</span>
+          </div>
+        )}
+        {autonomyInfo && (
+          <div className="col-span-2">
+            <span className="text-xs text-muted-foreground block">Autonomy Level</span>
+            <div className="mt-1 flex items-center gap-2">
+              <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
+                {autonomyInfo.key.toUpperCase()} - {autonomyInfo.label}
+              </span>
+              <span className="text-xs text-muted-foreground">{autonomyInfo.description}</span>
+            </div>
           </div>
         )}
         {performanceScore != null && (
@@ -282,22 +364,45 @@ function EmploymentCard({
               onClick={() => setShowTerminateConfirm(true)}
             >
               <AlertTriangle className="h-3.5 w-3.5 mr-1" />
-              Terminate Agent
+              {employmentType === "full_time" ? "Decommission Agent" : "Terminate Agent"}
             </Button>
           ) : (
-            <div className="space-y-2">
-              <p className="text-xs text-muted-foreground">
-                Select a reason and confirm termination. This cannot be undone.
+            <div className="space-y-3">
+              <p className="text-xs font-medium text-muted-foreground">
+                The following actions will occur on {employmentType === "full_time" ? "decommission" : "termination"}:
               </p>
-              <select
-                value={terminationReason}
-                onChange={(e) => setTerminationReason(e.target.value)}
-                className="w-full text-xs bg-transparent border border-border rounded px-2 py-1.5"
-              >
-                {TERMINATION_REASONS.map((r) => (
-                  <option key={r} value={r}>{reasonLabels[r] ?? r}</option>
-                ))}
-              </select>
+              <ul className="space-y-1 text-xs text-muted-foreground">
+                <li className="flex items-start gap-1.5">
+                  <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-muted-foreground/50 shrink-0" />
+                  Memory entries will be archived
+                </li>
+                {employmentType === "contractor" && (
+                  <li className="flex items-start gap-1.5">
+                    <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-muted-foreground/50 shrink-0" />
+                    Workspace will be archived
+                  </li>
+                )}
+                <li className="flex items-start gap-1.5">
+                  <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-muted-foreground/50 shrink-0" />
+                  Active issues will be unassigned
+                </li>
+                <li className="flex items-start gap-1.5">
+                  <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-muted-foreground/50 shrink-0" />
+                  A termination record will be created
+                </li>
+              </ul>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">Reason</label>
+                <select
+                  value={terminationReason}
+                  onChange={(e) => setTerminationReason(e.target.value)}
+                  className="w-full text-xs bg-transparent border border-border rounded px-2 py-1.5"
+                >
+                  {TERMINATION_REASONS.map((r) => (
+                    <option key={r} value={r}>{reasonLabels[r] ?? r}</option>
+                  ))}
+                </select>
+              </div>
               <div className="flex items-center gap-2">
                 <Button
                   variant="destructive"
@@ -305,7 +410,11 @@ function EmploymentCard({
                   onClick={() => terminateMutation.mutate()}
                   disabled={terminateMutation.isPending}
                 >
-                  {terminateMutation.isPending ? "Terminating..." : "Confirm Terminate"}
+                  {terminateMutation.isPending
+                    ? "Processing..."
+                    : employmentType === "full_time"
+                    ? "Confirm Decommission"
+                    : "Confirm Terminate"}
                 </Button>
                 <Button
                   variant="ghost"
@@ -346,6 +455,9 @@ export function AgentDashboard({
 }) {
   return (
     <div className="space-y-8">
+      {/* Onboarding Status - only shown for newly hired agents */}
+      <OnboardingChecklist agent={agent} assignedIssues={assignedIssues} runs={runs} />
+
       {/* Employment */}
       <EmploymentCard agent={agent} companyId={agent.companyId} />
 

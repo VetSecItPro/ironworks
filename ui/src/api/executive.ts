@@ -169,6 +169,33 @@ export interface PermissionMatrixData {
   }>;
 }
 
+export type AlertSeverity = "low" | "medium" | "high" | "critical";
+
+export interface SmartAlert {
+  id: string;
+  severity: AlertSeverity;
+  category: string;
+  title: string;
+  description: string;
+  agentId: string | null;
+  issueId: string | null;
+  autoResolved: boolean;
+  createdAt: string;
+}
+
+export interface DepartmentSpendingRow {
+  department: string;
+  agentCount: number;
+  totalSpend: number;
+  avgPerAgent: number;
+}
+
+export interface CompanyRiskSettings {
+  spendingAlertThresholdCents: number;
+  performanceAlertThreshold: number;
+  autoResolveTimeoutHours: number;
+}
+
 export const executiveApi = {
   unitEconomics: (companyId: string) =>
     api.get<UnitEconomics>(`/companies/${companyId}/executive/unit-economics`),
@@ -233,4 +260,19 @@ export const executiveApi = {
     api.get<PermissionMatrixData>(
       `/companies/${companyId}/permission-matrix`,
     ),
+
+  getAlerts: (companyId: string, severity: AlertSeverity = "medium") =>
+    api.get<SmartAlert[]>(`/companies/${companyId}/alerts?severity=${severity}`),
+
+  resolveAlert: (companyId: string, alertId: string) =>
+    api.post<{ ok: boolean }>(`/companies/${companyId}/alerts/${alertId}/resolve`, {}),
+
+  departmentSpending: (companyId: string) =>
+    api.get<DepartmentSpendingRow[]>(`/companies/${companyId}/department-spending`),
+
+  getRiskSettings: (companyId: string) =>
+    api.get<CompanyRiskSettings>(`/companies/${companyId}/risk-settings`),
+
+  updateRiskSettings: (companyId: string, settings: Partial<CompanyRiskSettings>) =>
+    api.patch<CompanyRiskSettings>(`/companies/${companyId}/risk-settings`, settings),
 };

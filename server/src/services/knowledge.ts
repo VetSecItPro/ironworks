@@ -45,13 +45,16 @@ export interface KnowledgePageUpdateInput {
 
 export function knowledgeService(db: Db) {
   return {
-    async list(companyId: string, opts?: { search?: string; visibility?: string; department?: string }) {
+    async list(companyId: string, opts?: { search?: string; visibility?: string; department?: string; agentId?: string }) {
       const conditions = [eq(knowledgePages.companyId, companyId)];
       if (opts?.visibility && opts.visibility !== "all") {
         conditions.push(eq(knowledgePages.visibility, opts.visibility));
       }
       if (opts?.department && opts.department !== "all") {
         conditions.push(eq(knowledgePages.department, opts.department));
+      }
+      if (opts?.agentId) {
+        conditions.push(eq(knowledgePages.agentId, opts.agentId));
       }
       if (opts?.search?.trim()) {
         const q = `%${opts.search.trim()}%`;

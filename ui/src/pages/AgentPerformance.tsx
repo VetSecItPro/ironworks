@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "@/lib/router";
 import { useQuery } from "@tanstack/react-query";
 import { agentsApi } from "../api/agents";
+import { agentMemoryApi } from "../api/agentMemory";
 import { issuesApi } from "../api/issues";
 import { costsApi } from "../api/costs";
 import { projectsApi } from "../api/projects";
@@ -180,6 +181,7 @@ export function AgentPerformance() {
   const [sortField, setSortField] = useState<SortField>("rating");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+  const [trendAgentId, setTrendAgentId] = useState<string>("");
 
   useEffect(() => {
     setBreadcrumbs([{ label: "Agent Performance" }]);
@@ -216,6 +218,36 @@ export function AgentPerformance() {
     enabled: !!selectedCompanyId,
     staleTime: 60_000,
   });
+
+  const effectiveTrendAgentId = trendAgentId || (agents?.[0]?.id ?? "");
+
+  const { data: trendMemory } = useQuery({
+    queryKey: queryKeys.agentMemory.list(selectedCompanyId!, effectiveTrendAgentId),
+    queryFn: () => agentMemoryApi.list(selectedCompanyId!, effectiveTrendAgentId),
+    enabled: !!selectedCompanyId && !!effectiveTrendAgentId,
+    staleTime: 60_000,
+  });
+
+  const trendSnapshots = useMemo(() => {
+    if (!trendMemory) return [];
+    return trendMemory
+      .filter((m) => m.category === "performance_snapshot")
+      .map((m) => {
+        let score: number | null = null;
+        try {
+          const parsed = JSON.parse(m.content) as Record<string, unknown>;
+          const s = parsed.score ?? parsed.performance_score ?? parsed.ratingScore;
+          if (typeof s === "number") score = Math.min(100, Math.max(0, s));
+        } catch {
+          const match = m.content.match(/\b(\d{1,3})\b/);
+          if (match) score = Math.min(100, Math.max(0, Number(match[1])));
+        }
+        return { date: new Date(m.createdAt), score };
+      })
+      .filter((s): s is { date: Date; score: number } => s.score !== null)
+      .sort((a, b) => a.date.getTime() - b.date.getTime())
+      .slice(-12);
+  }, [trendMemory]);
 
   const rows = useMemo(
     () => computeAgentPerformance(agents ?? [], issues ?? [], costsByAgent ?? [], range),
@@ -362,6 +394,37 @@ export function AgentPerformance() {
 
       {/* Insights */}
       {rows.length > 0 && <PerformanceInsights rows={rows} />}
+
+      {/* Performance Score Trend */}
+      {rows.length > 0 && agents && agents.length > 0 && (
+        <div className="rounded-xl border border-border p-4 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Performance Score Trend</h4>
+            <Select
+              value={effectiveTrendAgentId}
+              onValueChange={setTrendAgentId}
+            >
+              <SelectTrigger className="w-[200px] h-8 text-xs">
+                <SelectValue placeholder="Select agent" />
+              </SelectTrigger>
+              <SelectContent>
+                {agents.filter((a) => a.status !== "terminated").map((a) => (
+                  <SelectItem key={a.id} value={a.id}>
+                    {a.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {trendSnapshots.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No performance snapshots found. Agents write memory entries with category "performance_snapshot" to populate this chart.
+            </p>
+          ) : (
+            <PerformanceTrendChart snapshots={trendSnapshots} />
+          )}
+        </div>
+      )}
 
       {/* Table */}
       {sorted.length === 0 ? (
@@ -967,6 +1030,136 @@ function KpiCard({ label, value, color }: { label: string; value: string; color?
       <p className="text-xs text-muted-foreground uppercase tracking-wider">{label}</p>
       <p className={cn("text-2xl font-bold tabular-nums", color)}>{value}</p>
     </div>
+  );
+}
+
+/* ── Performance Trend SVG Line Chart ── */
+
+const TREND_W = 600;
+const TREND_H = 180;
+const TREND_PAD = { top: 16, right: 24, bottom: 36, left: 44 };
+const TREND_INNER_W = TREND_W - TREND_PAD.left - TREND_PAD.right;
+const TREND_INNER_H = TREND_H - TREND_PAD.top - TREND_PAD.bottom;
+
+function PerformanceTrendChart({
+  snapshots,
+}: {
+  snapshots: Array<{ date: Date; score: number }>;
+}) {
+  const scores = snapshots.map((s) => s.score);
+  const minScore = Math.max(0, Math.min(...scores) - 10);
+  const maxScore = Math.min(100, Math.max(...scores) + 10);
+  const range = Math.max(maxScore - minScore, 10);
+
+  const yTicks = 4;
+
+  function xPos(i: number) {
+    return TREND_PAD.left + (i / Math.max(snapshots.length - 1, 1)) * TREND_INNER_W;
+  }
+
+  function yPos(score: number) {
+    return TREND_PAD.top + TREND_INNER_H - ((score - minScore) / range) * TREND_INNER_H;
+  }
+
+  const polyline = snapshots
+    .map((s, i) => `${xPos(i)},${yPos(s.score)}`)
+    .join(" ");
+
+  const areaPath = [
+    `M ${xPos(0)} ${yPos(snapshots[0]!.score)}`,
+    ...snapshots.slice(1).map((s, i) => `L ${xPos(i + 1)} ${yPos(s.score)}`),
+    `L ${xPos(snapshots.length - 1)} ${TREND_PAD.top + TREND_INNER_H}`,
+    `L ${xPos(0)} ${TREND_PAD.top + TREND_INNER_H}`,
+    "Z",
+  ].join(" ");
+
+  return (
+    <svg
+      viewBox={`0 0 ${TREND_W} ${TREND_H}`}
+      className="w-full"
+      style={{ height: TREND_H }}
+      aria-hidden="true"
+    >
+      <defs>
+        <linearGradient id="trend-fill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#6366f1" stopOpacity={0.25} />
+          <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
+        </linearGradient>
+      </defs>
+
+      {/* Y grid lines */}
+      {Array.from({ length: yTicks + 1 }, (_, i) => {
+        const val = minScore + (range / yTicks) * i;
+        const y = yPos(val);
+        return (
+          <g key={i}>
+            <line
+              x1={TREND_PAD.left}
+              y1={y}
+              x2={TREND_W - TREND_PAD.right}
+              y2={y}
+              stroke="currentColor"
+              strokeOpacity={0.08}
+              strokeWidth={1}
+            />
+            <text
+              x={TREND_PAD.left - 6}
+              y={y + 4}
+              textAnchor="end"
+              fontSize={10}
+              className="fill-muted-foreground"
+              fontFamily="var(--font-sans)"
+            >
+              {Math.round(val)}
+            </text>
+          </g>
+        );
+      })}
+
+      {/* Area fill */}
+      <path d={areaPath} fill="url(#trend-fill)" />
+
+      {/* Line */}
+      <polyline
+        points={polyline}
+        fill="none"
+        stroke="#6366f1"
+        strokeWidth={2}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+
+      {/* Data points */}
+      {snapshots.map((s, i) => (
+        <circle
+          key={i}
+          cx={xPos(i)}
+          cy={yPos(s.score)}
+          r={3}
+          fill="#6366f1"
+        />
+      ))}
+
+      {/* X-axis labels */}
+      {snapshots.map((s, i) => {
+        if (snapshots.length > 6 && i !== 0 && i !== snapshots.length - 1 && i % 3 !== 0) return null;
+        const d = s.date;
+        const label = `${d.getMonth() + 1}/${d.getDate()}`;
+        return (
+          <text
+            key={i}
+            x={xPos(i)}
+            y={TREND_H - 6}
+            textAnchor="middle"
+            fontSize={10}
+            className="fill-muted-foreground"
+            fontFamily="var(--font-sans)"
+          >
+            {label}
+          </text>
+        );
+      })}
+    </svg>
   );
 }
 

@@ -5,6 +5,7 @@ import { useCompany } from "../context/CompanyContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { useToast } from "../context/ToastContext";
 import { companiesApi } from "../api/companies";
+import { agentsApi } from "../api/agents";
 import { privacyApi } from "../api/privacy";
 import { accessApi } from "../api/access";
 import { assetsApi } from "../api/assets";
@@ -13,7 +14,7 @@ import { memberApi } from "../api/userInvites";
 import { queryKeys } from "../lib/queryKeys";
 import { useMeAccess } from "../hooks/useMeAccess";
 import { Button } from "@/components/ui/button";
-import { Settings, Check, Download, Upload, UserPlus, Key, Shield, Trash2, AlertTriangle, Database, Users, Plus, Pencil, X } from "lucide-react";
+import { Settings, Check, Download, Upload, UserPlus, Key, Shield, Trash2, AlertTriangle, Database, Users, Plus, Pencil, X, SlidersHorizontal, Building2 } from "lucide-react";
 import { MessagingSetup } from "../components/MessagingSetup";
 import { CompanyPatternIcon } from "../components/CompanyPatternIcon";
 import { InviteUserDialog } from "../components/InviteUserDialog";
@@ -32,8 +33,11 @@ import {
   DEPARTMENT_LABELS,
   EMPLOYMENT_TYPES,
   EMPLOYMENT_TYPE_LABELS,
+  AUTONOMY_LEVELS,
+  type AutonomyLevel,
 } from "@ironworksai/shared";
 import { roleTemplatesApi, type RoleTemplate } from "../api/roleTemplates";
+import { executiveApi, type CompanyRiskSettings } from "../api/executive";
 
 type AgentSnippetInput = {
   onboardingTextUrl: string;
@@ -68,6 +72,18 @@ export function CompanySettings() {
   }, [selectedCompany]);
 
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+
+  // Default autonomy level — persisted per-company in localStorage
+  const autonomyStorageKey = selectedCompanyId ? `ironworks:autonomy:${selectedCompanyId}` : null;
+  const [defaultAutonomy, setDefaultAutonomy] = useState<AutonomyLevel>(() => {
+    if (!autonomyStorageKey) return "h3";
+    return (localStorage.getItem(autonomyStorageKey) as AutonomyLevel) ?? "h3";
+  });
+  function handleAutonomyChange(level: AutonomyLevel) {
+    setDefaultAutonomy(level);
+    if (autonomyStorageKey) localStorage.setItem(autonomyStorageKey, level);
+    pushToast({ title: "Default autonomy level updated", tone: "success" });
+  }
   const { isInstanceAdmin, getRoleForCompany } = useMeAccess();
   const myRole = selectedCompanyId ? getRoleForCompany(selectedCompanyId) : "member";
   const canManageMembers = myRole === "owner" || myRole === "admin" || isInstanceAdmin;
@@ -811,6 +827,55 @@ export function CompanySettings() {
         </Link>
       </div>
 
+      {/* Default Autonomy Level */}
+      <div className="space-y-4">
+        <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+          <SlidersHorizontal className="h-3.5 w-3.5" />
+          Default Autonomy Level
+        </div>
+        <div className="rounded-md border border-border px-4 py-4 space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Set the default level of human oversight applied to new agents in this company.
+          </p>
+          <div className="space-y-2">
+            {AUTONOMY_LEVELS.map((level) => (
+              <label
+                key={level.key}
+                className={`flex items-start gap-3 rounded-lg border px-3 py-2.5 cursor-pointer transition-colors ${
+                  defaultAutonomy === level.key
+                    ? "border-indigo-500/60 bg-indigo-500/5"
+                    : "border-border hover:border-border/80 hover:bg-muted/30"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="autonomy-level"
+                  value={level.key}
+                  checked={defaultAutonomy === level.key}
+                  onChange={() => handleAutonomyChange(level.key)}
+                  className="mt-0.5 h-3.5 w-3.5 shrink-0 accent-indigo-500"
+                />
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono font-semibold text-indigo-400 uppercase">
+                      {level.key.toUpperCase()}
+                    </span>
+                    <span className="text-sm font-medium">{level.label}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">{level.description}</p>
+                </div>
+              </label>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Department Templates */}
+      <DepartmentTemplatesSection companyId={selectedCompanyId!} />
+
+      {/* Risk Thresholds */}
+      <RiskThresholdsSection companyId={selectedCompanyId!} />
+
       {/* Talent Pool */}
       <TalentPoolSection companyId={selectedCompanyId!} />
 
@@ -1094,6 +1159,261 @@ function TalentPoolSection({ companyId }: { companyId: string }) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+/* ── Department Templates Section ── */
+
+interface DeptTemplate {
+  key: string;
+  name: string;
+  description: string;
+  roles: Array<{ title: string; role: string; icon: string }>;
+}
+
+const DEPT_TEMPLATES: DeptTemplate[] = [
+  {
+    key: "engineering",
+    name: "Engineering",
+    description: "Core technical team: a CTO to lead, plus a senior engineer and DevOps agent.",
+    roles: [
+      { title: "CTO", role: "cto", icon: "cpu" },
+      { title: "Senior Engineer", role: "engineer", icon: "code" },
+      { title: "DevOps Engineer", role: "devops", icon: "server" },
+    ],
+  },
+  {
+    key: "marketing",
+    name: "Marketing",
+    description: "Brand and growth team: a CMO plus a content and analyst agent.",
+    roles: [
+      { title: "CMO", role: "cmo", icon: "megaphone" },
+      { title: "Content Marketer", role: "specialist", icon: "pen-line" },
+      { title: "Marketing Analyst", role: "analyst", icon: "target" },
+    ],
+  },
+  {
+    key: "finance",
+    name: "Finance",
+    description: "Financial operations: a CFO and a finance analyst to track spend and reporting.",
+    roles: [
+      { title: "CFO", role: "cfo", icon: "dollar-sign" },
+      { title: "Finance Analyst", role: "analyst", icon: "scale" },
+    ],
+  },
+  {
+    key: "legal",
+    name: "Legal",
+    description: "Compliance and legal: a compliance director and legal counsel.",
+    roles: [
+      { title: "Compliance Director", role: "director", icon: "gavel" },
+      { title: "Legal Counsel", role: "specialist", icon: "scale" },
+    ],
+  },
+  {
+    key: "support",
+    name: "Support",
+    description: "Customer-facing support: a support manager and two specialist agents.",
+    roles: [
+      { title: "Support Manager", role: "manager", icon: "users" },
+      { title: "Support Specialist", role: "specialist", icon: "message-square" },
+    ],
+  },
+];
+
+/* ── Risk Thresholds Section ── */
+
+function RiskThresholdsSection({ companyId }: { companyId: string }) {
+  const queryClient = useQueryClient();
+  const { pushToast } = useToast();
+
+  const { data: settings } = useQuery({
+    queryKey: ["risk-settings", companyId],
+    queryFn: () => executiveApi.getRiskSettings(companyId),
+    enabled: !!companyId,
+  });
+
+  const [spendDollars, setSpendDollars] = useState("");
+  const [perfThreshold, setPerfThreshold] = useState("");
+  const [resolveHours, setResolveHours] = useState("");
+
+  useEffect(() => {
+    if (!settings) return;
+    setSpendDollars(String((settings.spendingAlertThresholdCents / 100).toFixed(0)));
+    setPerfThreshold(String(settings.performanceAlertThreshold));
+    setResolveHours(String(settings.autoResolveTimeoutHours));
+  }, [settings]);
+
+  const saveMutation = useMutation({
+    mutationFn: () =>
+      executiveApi.updateRiskSettings(companyId, {
+        spendingAlertThresholdCents: Math.round(parseFloat(spendDollars) * 100),
+        performanceAlertThreshold: parseInt(perfThreshold, 10),
+        autoResolveTimeoutHours: parseInt(resolveHours, 10),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["risk-settings", companyId] });
+      pushToast({ title: "Risk thresholds saved", tone: "success" });
+    },
+    onError: () => {
+      pushToast({ title: "Failed to save risk thresholds", tone: "error" });
+    },
+  });
+
+  return (
+    <div className="space-y-4">
+      <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+        <AlertTriangle className="h-3.5 w-3.5" />
+        Risk Thresholds
+      </h2>
+      <div className="rounded-md border border-border px-4 py-4 space-y-4">
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium">Spending alert threshold (per run)</label>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">$</span>
+            <input
+              type="number"
+              min={1}
+              step={1}
+              value={spendDollars}
+              onChange={(e) => setSpendDollars(e.target.value)}
+              className="w-28 rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">Alert fires when a single agent run exceeds this amount.</p>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium">Performance alert threshold</label>
+          <input
+            type="number"
+            min={0}
+            max={100}
+            value={perfThreshold}
+            onChange={(e) => setPerfThreshold(e.target.value)}
+            className="w-28 rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
+          />
+          <p className="text-xs text-muted-foreground">Agents scoring below this threshold trigger a medium alert.</p>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium">Auto-resolve timeout (hours)</label>
+          <input
+            type="number"
+            min={1}
+            value={resolveHours}
+            onChange={(e) => setResolveHours(e.target.value)}
+            className="w-28 rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
+          />
+          <p className="text-xs text-muted-foreground">Low-severity alerts are auto-resolved after this many hours.</p>
+        </div>
+
+        <div className="flex items-center gap-2 pt-1">
+          <button
+            className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-60"
+            onClick={() => saveMutation.mutate()}
+            disabled={saveMutation.isPending}
+          >
+            {saveMutation.isPending ? "Saving..." : "Save thresholds"}
+          </button>
+          {saveMutation.isSuccess && (
+            <span className="flex items-center gap-1 text-xs text-green-600">
+              <Check className="h-3 w-3" />
+              Saved
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DepartmentTemplatesSection({ companyId }: { companyId: string }) {
+  const { pushToast } = useToast();
+  const queryClient = useQueryClient();
+  const [deployingKey, setDeployingKey] = useState<string | null>(null);
+
+  const hireMutation = useMutation({
+    mutationFn: async (template: DeptTemplate) => {
+      const results: unknown[] = [];
+      for (const r of template.roles) {
+        const result = await agentsApi.hire(companyId, {
+          name: r.title,
+          role: r.role,
+          icon: r.icon,
+          employmentType: "full_time",
+          department: template.key,
+        });
+        results.push(result);
+      }
+      return results;
+    },
+    onSuccess: (_, template) => {
+      setDeployingKey(null);
+      pushToast({
+        title: `${template.name} department created`,
+        body: `${template.roles.length} agents hired`,
+        tone: "success",
+      });
+      queryClient.invalidateQueries({ queryKey: ["agents", companyId] });
+    },
+    onError: (err: Error, template) => {
+      setDeployingKey(null);
+      pushToast({
+        title: `Failed to create ${template.name} department`,
+        body: err.message,
+        tone: "error",
+      });
+    },
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+        <Building2 className="h-3.5 w-3.5" />
+        Department Templates
+      </div>
+      <p className="text-sm text-muted-foreground">
+        Quickly create a pre-configured set of agents for a department. Each template hires the suggested roles via the standard hiring workflow.
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {DEPT_TEMPLATES.map((template) => (
+          <div
+            key={template.key}
+            className="rounded-md border border-border px-4 py-3 space-y-2"
+          >
+            <div>
+              <p className="text-sm font-medium">{template.name}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{template.description}</p>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {template.roles.map((r) => (
+                <span
+                  key={r.role + r.title}
+                  className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-medium bg-muted text-muted-foreground"
+                >
+                  {r.title}
+                </span>
+              ))}
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={hireMutation.isPending && deployingKey === template.key}
+              onClick={() => {
+                setDeployingKey(template.key);
+                hireMutation.mutate(template);
+              }}
+            >
+              <Plus className="h-3.5 w-3.5 mr-1.5" />
+              {hireMutation.isPending && deployingKey === template.key
+                ? "Creating..."
+                : "Create Department"}
+            </Button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

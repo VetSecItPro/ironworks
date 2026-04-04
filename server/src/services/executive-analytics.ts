@@ -949,3 +949,45 @@ export function executiveAnalyticsService(db: Db) {
     },
   };
 }
+
+// ---------------------------------------------------------------------------
+// Standalone exports
+// ---------------------------------------------------------------------------
+
+export interface DepartmentSpendingRow {
+  department: string;
+  agentCount: number;
+  totalSpend: number;
+  avgPerAgent: number;
+}
+
+/**
+ * Per-department spending summary: joins cost_events through agents.
+ * Agents with no department are grouped under "unassigned".
+ */
+export async function departmentSpendingSummary(
+  db: Db,
+  companyId: string,
+): Promise<DepartmentSpendingRow[]> {
+  const rows = await db
+    .select({
+      department: sql<string>`coalesce(${agents.department}, 'unassigned')`,
+      agentCount: sql<number>`count(distinct ${agents.id})::int`,
+      totalCents: sql<number>`coalesce(sum(${costEvents.costCents}), 0)::int`,
+    })
+    .from(agents)
+    .leftJoin(costEvents, eq(costEvents.agentId, agents.id))
+    .where(eq(agents.companyId, companyId))
+    .groupBy(sql`coalesce(${agents.department}, 'unassigned')`);
+
+  return rows.map((r) => {
+    const count = Number(r.agentCount);
+    const total = Number(r.totalCents);
+    return {
+      department: r.department,
+      agentCount: count,
+      totalSpend: total,
+      avgPerAgent: count > 0 ? Math.round(total / count) : 0,
+    };
+  });
+}

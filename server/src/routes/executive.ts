@@ -2,11 +2,13 @@ import { Router } from "express";
 import type { Db } from "@ironworksai/db";
 import { agents } from "@ironworksai/db";
 import { and, eq, ne, inArray } from "drizzle-orm";
-import { executiveAnalyticsService } from "../services/executive-analytics.js";
+import { executiveAnalyticsService, departmentSpendingSummary } from "../services/executive-analytics.js";
 import { logActivity } from "../services/activity-log.js";
 import { heartbeatService } from "../services/heartbeat.js";
 import { tokenAnalyticsService } from "../services/token-analytics.js";
 import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
+import { getPendingAlerts, resolveAlert, type AlertSeverity } from "../services/smart-alerts.js";
+import { getRiskSettings, updateRiskSettings } from "../services/company-risk-settings.js";
 
 export function executiveRoutes(db: Db) {
   const router = Router();
@@ -220,6 +222,51 @@ export function executiveRoutes(db: Db) {
       tokenAnalytics.analyzeTokenWaste(agentId, companyId, periodDays),
     ]);
     res.json({ summary, waste });
+  });
+
+  // -- Smart Alerts: list pending --
+  router.get("/companies/:companyId/alerts", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+    const minSeverity = (req.query.severity as AlertSeverity | undefined) ?? "medium";
+    const alerts = await getPendingAlerts(db, companyId, minSeverity);
+    res.json(alerts);
+  });
+
+  // -- Smart Alerts: resolve --
+  router.post("/companies/:companyId/alerts/:alertId/resolve", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    const alertId = req.params.alertId as string;
+    assertCompanyAccess(req, companyId);
+    const actor = getActorInfo(req);
+    await resolveAlert(db, companyId, alertId, actor.actorId);
+    res.json({ ok: true });
+  });
+
+  // -- Department Spending --
+  router.get("/companies/:companyId/department-spending", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+    const data = await departmentSpendingSummary(db, companyId);
+    res.json(data);
+  });
+
+  // -- Risk Settings: get --
+  router.get("/companies/:companyId/risk-settings", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+    const settings = await getRiskSettings(db, companyId);
+    res.json(settings);
+  });
+
+  // -- Risk Settings: update --
+  router.patch("/companies/:companyId/risk-settings", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+    assertBoard(req);
+    const actor = getActorInfo(req);
+    const updated = await updateRiskSettings(db, companyId, req.body as Record<string, unknown>, actor.actorId);
+    res.json(updated);
   });
 
   return router;
