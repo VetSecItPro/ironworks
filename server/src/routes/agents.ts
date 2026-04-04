@@ -1521,6 +1521,9 @@ export function agentRoutes(db: Db) {
     // Employment model fields from request body
     const hiredByUserId = req.actor.type === "board" ? (req.actor.userId ?? null) : null;
 
+    // Task 1: Least-privilege enforcement - new agents start with EMPTY permission grants.
+    // The board must explicitly grant permissions via the permission system before the agent
+    // can access company resources. This is intentional: zero-trust by default.
     const createdAgent = await svc.create(companyId, {
       ...createInput,
       adapterConfig: normalizedAdapterConfig,

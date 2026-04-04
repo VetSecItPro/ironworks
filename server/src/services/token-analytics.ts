@@ -2,6 +2,7 @@ import { and, desc, eq, gte, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { agents, costEvents, heartbeatRuns } from "@ironworksai/db";
 import { DEFAULT_OUTPUT_TOKEN_LIMITS } from "@ironworksai/shared";
+// heartbeatRuns is used in tokenUsageByPromptTemplate (Task 7)
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -323,6 +324,70 @@ export function tokenAnalyticsService(db: Db) {
     analyzeTokenWaste,
     getCompanyTokenSummary,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Task 7: Token Usage per Prompt Template
+// ---------------------------------------------------------------------------
+
+/**
+ * Group heartbeat runs by the classified task type derived from the
+ * context snapshot stored on each run, then compute average token usage.
+ *
+ * Task type is read from the contextSnapshot.ironworksTaskType field that
+ * the heartbeat service writes when assembling context (see Task 5 in heartbeat.ts).
+ * Falls back to "routine_check" when the field is absent.
+ */
+export async function tokenUsageByPromptTemplate(
+  db: Db,
+  companyId: string,
+  periodDays = 30,
+): Promise<Array<{
+  templateType: string;
+  avgInputTokens: number;
+  avgOutputTokens: number;
+  runCount: number;
+}>> {
+  const since = new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000);
+
+  // Join heartbeat_runs (for the task type stored in contextSnapshot) with
+  // cost_events (for token counts). We group by run first then aggregate.
+  const rows = await db
+    .select({
+      runId: costEvents.heartbeatRunId,
+      inputTokens: sql<number>`coalesce(sum(${costEvents.inputTokens}), 0)::int`,
+      outputTokens: sql<number>`coalesce(sum(${costEvents.outputTokens}), 0)::int`,
+      taskType: sql<string>`coalesce(${heartbeatRuns.contextSnapshot}->>'ironworksTaskType', 'routine_check')`,
+    })
+    .from(costEvents)
+    .innerJoin(heartbeatRuns, eq(costEvents.heartbeatRunId, heartbeatRuns.id))
+    .where(
+      and(
+        eq(costEvents.companyId, companyId),
+        gte(costEvents.occurredAt, since),
+      ),
+    )
+    .groupBy(costEvents.heartbeatRunId, heartbeatRuns.contextSnapshot);
+
+  // Aggregate by task type in JS (small data set after grouping)
+  const byType = new Map<string, { totalInput: number; totalOutput: number; count: number }>();
+  for (const row of rows) {
+    const key = row.taskType ?? "routine_check";
+    const existing = byType.get(key) ?? { totalInput: 0, totalOutput: 0, count: 0 };
+    existing.totalInput += Number(row.inputTokens);
+    existing.totalOutput += Number(row.outputTokens);
+    existing.count += 1;
+    byType.set(key, existing);
+  }
+
+  return Array.from(byType.entries())
+    .map(([templateType, agg]) => ({
+      templateType,
+      avgInputTokens: agg.count > 0 ? Math.round(agg.totalInput / agg.count) : 0,
+      avgOutputTokens: agg.count > 0 ? Math.round(agg.totalOutput / agg.count) : 0,
+      runCount: agg.count,
+    }))
+    .sort((a, b) => b.runCount - a.runCount);
 }
 
 // ---------------------------------------------------------------------------

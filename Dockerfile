@@ -5,6 +5,26 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 RUN corepack enable
 
+# ── pgvector build stage ─────────────────────────────────────────────────────
+# node:22-slim is Debian bookworm-slim. postgresql-server-dev-all is available
+# via the official Debian bookworm postgresql packages. We compile pgvector
+# v0.8.0 from source and install it so the embedded Postgres instance can load
+# the extension with CREATE EXTENSION vector.
+#
+# Note: this build stage is separate so the build tools are not present in the
+# final production image — only the compiled .so and sql/control files are
+# copied across.
+FROM base AS pgvector-build
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    postgresql-server-dev-all \
+    git \
+  && git clone --branch v0.8.0 https://github.com/pgvector/pgvector.git /tmp/pgvector \
+  && cd /tmp/pgvector && make && make install \
+  && apt-get purge -y build-essential git \
+  && apt-get autoremove -y \
+  && rm -rf /var/lib/apt/lists/* /tmp/pgvector
+
 FROM base AS deps
 WORKDIR /app
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
@@ -42,6 +62,21 @@ COPY --chown=node:node --from=build /app /app
 RUN npm install --global --omit=dev @anthropic-ai/claude-code@latest @openai/codex@latest opencode-ai \
   && mkdir -p /ironworks \
   && chown node:node /ironworks
+
+# Copy pgvector extension files from the build stage into the system Postgres
+# extension directory. The embedded Postgres instance will pick these up when
+# CREATE EXTENSION vector is called. The postgresql-server-dev-all install above
+# put them under /usr/share/postgresql/<version>/extension and
+# /usr/lib/postgresql/<version>/lib - we copy both trees.
+#
+# We also need libpq at runtime (already present in node:22-slim via libpq5 dep
+# of postgresql-client). The .so file requires postgresql-common at runtime;
+# install only the runtime dependency here (no dev headers).
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends postgresql-common \
+  && rm -rf /var/lib/apt/lists/*
+COPY --from=pgvector-build /usr/share/postgresql /usr/share/postgresql
+COPY --from=pgvector-build /usr/lib/postgresql /usr/lib/postgresql
 
 ENV NODE_ENV=production \
   HOME=/ironworks \

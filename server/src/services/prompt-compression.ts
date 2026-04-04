@@ -92,11 +92,22 @@ const HORIZONTAL_RULE_RE = /^[ \t]*[-*_]{3,}[ \t]*$/gm;
  */
 const TRAILING_WHITESPACE_RE = /[ \t]+$/gm;
 
-/** Collapse 3+ consecutive blank lines down to 2. */
+/** Collapse 2+ consecutive blank lines down to 1 (more aggressive than before). */
 const EXCESS_BLANK_LINES_RE = /\n{3,}/g;
 
 /** Collapse runs of 3+ spaces (not at line start, to preserve indentation). */
 const INLINE_SPACES_RE = /(?<=\S)[ \t]{2,}(?=\S)/g;
+
+// ── Task 6: Aggressive boilerplate removal ───────────────────────────────────
+
+/**
+ * Copyright / license headers: lines starting with Copyright, Licensed under,
+ * or the "(c)" copyright symbol. Matches the whole line.
+ */
+const COPYRIGHT_LINE_RE = /^[ \t]*(Copyright\b|Licensed under\b|\(c\)\s)/gim;
+
+/** HTML comments: <!-- ... --> (non-greedy, may span lines). */
+const HTML_COMMENT_RE = /<!--[\s\S]*?-->/g;
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
@@ -124,34 +135,55 @@ export function compressPrompt(
     replaceFiller?: boolean;
     /** Set false to keep markdown horizontal rules. Default true. */
     removeHorizontalRules?: boolean;
+    /** Set false to keep copyright/license header lines. Default true. */
+    removeCopyrightHeaders?: boolean;
+    /** Set false to keep HTML comments. Default true. */
+    removeHtmlComments?: boolean;
   },
 ): CompressionResult {
   const opts = {
     replaceFiller: options?.replaceFiller ?? true,
     removeHorizontalRules: options?.removeHorizontalRules ?? true,
+    removeCopyrightHeaders: options?.removeCopyrightHeaders ?? true,
+    removeHtmlComments: options?.removeHtmlComments ?? true,
   };
 
   const originalBytes = Buffer.byteLength(text, "utf8");
   let out = text;
 
-  // 1. Remove horizontal rules (visual-only markup)
+  // 1. Remove HTML comments (<!-- ... -->) before any other processing
+  if (opts.removeHtmlComments) {
+    out = out.replace(HTML_COMMENT_RE, "");
+  }
+
+  // 2. Remove copyright / license header lines
+  if (opts.removeCopyrightHeaders) {
+    out = out
+      .split("\n")
+      .filter((line) => !COPYRIGHT_LINE_RE.test(line))
+      .join("\n");
+    // Reset lastIndex after using the flag-'g' regex in test()
+    COPYRIGHT_LINE_RE.lastIndex = 0;
+  }
+
+  // 3. Remove horizontal rules (visual-only markup)
   if (opts.removeHorizontalRules) {
     out = out.replace(HORIZONTAL_RULE_RE, "");
   }
 
-  // 2. Filler phrase substitution
+  // 4. Filler phrase substitution
   if (opts.replaceFiller) {
     for (const [pattern, replacement] of FILLER_REPLACEMENTS) {
       out = out.replace(pattern, replacement);
     }
   }
 
-  // 3. Structural whitespace cleanup
+  // 5. Structural whitespace cleanup
   out = out.replace(TRAILING_WHITESPACE_RE, ""); // trailing whitespace per line
   out = out.replace(INLINE_SPACES_RE, " ");       // extra inline spaces
-  out = out.replace(EXCESS_BLANK_LINES_RE, "\n\n"); // excess blank lines
+  out = out.replace(EXCESS_BLANK_LINES_RE, "\n\n"); // collapse 3+ blank lines to 1 blank line
 
-  // 4. Trim leading/trailing whitespace of the entire string
+  // 6. Trim leading/trailing whitespace of the entire string
   out = out.trim();
 
   const compressedBytes = Buffer.byteLength(out, "utf8");

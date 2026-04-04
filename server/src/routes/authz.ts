@@ -3,6 +3,7 @@ import type { Request } from "express";
 import type { Db } from "@ironworksai/db";
 import { companyMemberships } from "@ironworksai/db";
 import { forbidden, unauthorized } from "../errors.js";
+import { logActivity } from "../services/activity-log.js";
 
 export function assertBoard(req: Request) {
   if (req.actor.type !== "board") {
@@ -73,8 +74,59 @@ export async function assertCanWrite(req: Request, companyId: string, db: Db): P
       .then((rows) => rows[0] ?? null);
 
     if (membership?.membershipRole === "viewer") {
+      // Task 2: Unauthorized access alert - surface in dashboard alerts feed
+      const actorId = req.actor.userId ?? "unknown-user";
+      void logActivity(db, {
+        companyId,
+        actorType: "system",
+        actorId: "security",
+        action: "security.unauthorized_access",
+        entityType: "access_control",
+        entityId: companyId,
+        details: {
+          actorId,
+          actorType: "user",
+          requiredPermission: "write",
+          resourceCompanyId: companyId,
+          reason: "viewer_write_denied",
+        },
+      }).catch(() => {});
       throw forbidden("Viewers have read-only access");
     }
+  }
+}
+
+/**
+ * Assert read access - no additional restriction beyond company access for now.
+ * Logs unauthorized access if company access check throws.
+ */
+export async function assertCanRead(req: Request, companyId: string, db: Db): Promise<void> {
+  try {
+    assertCompanyAccess(req, companyId);
+  } catch (err) {
+    // Task 2: Unauthorized access alert before re-throwing
+    const actorId =
+      req.actor.type === "agent"
+        ? (req.actor.agentId ?? "unknown-agent")
+        : req.actor.type === "board"
+          ? (req.actor.userId ?? "unknown-user")
+          : "anonymous";
+    void logActivity(db, {
+      companyId,
+      actorType: "system",
+      actorId: "security",
+      action: "security.unauthorized_access",
+      entityType: "access_control",
+      entityId: companyId,
+      details: {
+        actorId,
+        actorType: req.actor.type,
+        requiredPermission: "read",
+        resourceCompanyId: companyId,
+        reason: "company_access_denied",
+      },
+    }).catch(() => {});
+    throw err;
   }
 }
 
