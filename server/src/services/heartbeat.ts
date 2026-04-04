@@ -14,6 +14,10 @@ import {
   heartbeatRunEvents,
   heartbeatRuns,
   issues,
+  issueLabels,
+  knowledgePages,
+  labels,
+  principalPermissionGrants,
   projects,
   projectWorkspaces,
 } from "@ironworksai/db";
@@ -103,6 +107,45 @@ function classifyContextTier(contextSnapshot: Record<string, unknown>): ContextT
   // Minimal tier: timer wake, no new comments, agent is idle checking
   return "minimal";
 }
+// ── Task 5: Task-Type Prompt Templates ────────────────────────────────────────
+//
+// Controls how much context is assembled for each run based on the classified
+// task type derived from the issue's labels and title.
+
+type TaskTemplateType = "answer_question" | "write_code" | "write_report" | "review_document" | "routine_check";
+
+const PROMPT_TEMPLATES: Record<TaskTemplateType, { maxContext: number; includeMemories: number; includeDocuments: number }> = {
+  answer_question: { maxContext: 2000, includeMemories: 3, includeDocuments: 2 },
+  write_code:      { maxContext: 4000, includeMemories: 5, includeDocuments: 3 },
+  write_report:    { maxContext: 8000, includeMemories: 10, includeDocuments: 5 },
+  review_document: { maxContext: 4000, includeMemories: 5, includeDocuments: 5 },
+  routine_check:   { maxContext: 500,  includeMemories: 0, includeDocuments: 0 },
+} as const;
+
+/** Classify the task type from issue labels and title text. */
+function classifyTaskType(issueTitle: string, labelNames: string[]): TaskTemplateType {
+  const titleLower = issueTitle.toLowerCase();
+  const allText = [titleLower, ...labelNames.map((l) => l.toLowerCase())].join(" ");
+
+  // Code-related
+  if (/\b(bug|fix|implement|refactor|test|code|build|deploy|ci|pr|pull request|feature)\b/.test(allText)) {
+    return "write_code";
+  }
+  // Report-related
+  if (/\b(report|analysis|analyse|analyze|research|audit|review weekly|weekly|summary|findings)\b/.test(allText)) {
+    return "write_report";
+  }
+  // Document review
+  if (/\b(review|feedback|approve|assess|evaluate)\b/.test(allText)) {
+    return "review_document";
+  }
+  // Questions
+  if (/\b(question|answer|how|what|why|explain|clarify)\b/.test(allText)) {
+    return "answer_question";
+  }
+  return "routine_check";
+}
+
 const DEFERRED_WAKE_CONTEXT_KEY = "_ironworksWakeContext";
 const DETACHED_PROCESS_ERROR_CODE = "process_detached";
 const startLocksByAgent = new Map<string, Promise<void>>();
@@ -2369,6 +2412,37 @@ export function heartbeatService(db: Db) {
     const sessionCodec = getAdapterSessionCodec(agent.adapterType);
     const issueId = readNonEmptyString(context.issueId);
 
+    // ── Task 1: Least-Privilege Pre-Execution Warning ────────────────────────
+    // Before execution, warn if a non-CEO agent has zero permission grants.
+    // We allow execution to proceed (agents still need to work on their issues),
+    // but log the warning so the board can grant appropriate permissions.
+    try {
+      const agentRoleLower = (agent.role ?? "").toLowerCase();
+      const isCeoRole = /\b(ceo|chief executive)\b/.test(agentRoleLower);
+      if (!isCeoRole) {
+        const [grantCountRow] = await db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(principalPermissionGrants)
+          .where(
+            and(
+              eq(principalPermissionGrants.companyId, agent.companyId),
+              eq(principalPermissionGrants.principalType, "agent"),
+              eq(principalPermissionGrants.principalId, agent.id),
+            ),
+          );
+        const grantCount = Number(grantCountRow?.count ?? 0);
+        if (grantCount === 0) {
+          logger.warn(
+            { agentId: agent.id, companyId: agent.companyId, role: agent.role },
+            "[least-privilege] Agent has zero permission grants - board should explicitly grant permissions",
+          );
+        }
+      }
+    } catch (err) {
+      logger.debug({ err, agentId: agent.id }, "least-privilege check failed, skipping");
+    }
+    // ── End Least-Privilege Warning ──────────────────────────────────────────
+
     // ── Autonomy Enforcement ────────────────────────────────────────────────
     // h3 (Pre-Approval): create an approval request instead of executing when
     //   the task involves creating or modifying issues.
@@ -2974,6 +3048,110 @@ export function heartbeatService(db: Db) {
       logger.debug({ err, agentId: agent.id }, "context utilization check failed, skipping");
     }
 
+    // ── Task 5: Task-Type Prompt Template Classification ─────────────────────
+    // Classify the current task from issue labels/title and store the template
+    // type in context for downstream use (token-analytics Task 7 reads it).
+    try {
+      if (issueId && issueContext) {
+        // Fetch label names for this issue
+        const issueLabelRows = await db
+          .select({ name: labels.name })
+          .from(issueLabels)
+          .innerJoin(labels, eq(issueLabels.labelId, labels.id))
+          .where(eq(issueLabels.issueId, issueId));
+        const labelNames = issueLabelRows.map((r) => r.name);
+        const taskType = classifyTaskType(issueContext.title ?? "", labelNames);
+        context.ironworksTaskType = taskType;
+        // Expose the template parameters so adapters can respect them
+        context.ironworksPromptTemplate = PROMPT_TEMPLATES[taskType];
+      } else if (!issueId) {
+        // Timer/on-demand wake with no issue = routine check
+        context.ironworksTaskType = "routine_check";
+        context.ironworksPromptTemplate = PROMPT_TEMPLATES.routine_check;
+      }
+    } catch (err) {
+      logger.debug({ err, agentId: agent.id }, "task type classification failed, skipping");
+    }
+
+    // ── Task 4: Agent References Own Documents ───────────────────────────────
+    // Inject the agent's most recent knowledge pages as "Your Recent Documents".
+    // Only for non-routine tasks where the agent might benefit from context.
+    try {
+      const taskType = typeof context.ironworksTaskType === "string" ? context.ironworksTaskType : "routine_check";
+      if (taskType !== "routine_check") {
+        const recentDocs = await db
+          .select({
+            title: knowledgePages.title,
+            body: knowledgePages.body,
+          })
+          .from(knowledgePages)
+          .where(
+            and(
+              eq(knowledgePages.agentId, agent.id),
+              eq(knowledgePages.companyId, agent.companyId),
+              sql`${knowledgePages.updatedAt} IS NOT NULL`,
+            ),
+          )
+          .orderBy(desc(knowledgePages.updatedAt))
+          .limit(5);
+
+        if (recentDocs.length > 0) {
+          const docLines = recentDocs.map(
+            (doc) => `- **${doc.title}**: ${doc.body.slice(0, 200)}${doc.body.length > 200 ? "..." : ""}`,
+          );
+          context.ironworksRecentDocuments = `## Your Recent Documents\n${docLines.join("\n")}`;
+        }
+      }
+    } catch (err) {
+      logger.debug({ err, agentId: agent.id }, "agent recent documents injection failed, skipping");
+    }
+
+    // ── Task 9: Batch Similar Tasks ──────────────────────────────────────────
+    // If this run has no specific issue but the agent has multiple queued issues
+    // of the same type, combine a brief summary into the context prompt so the
+    // agent can address several at once and reduce total LLM calls.
+    try {
+      if (!issueId) {
+        // Find queued issues for this agent of the same type as the current task
+        const taskType = typeof context.ironworksTaskType === "string" ? context.ironworksTaskType : null;
+        if (taskType && taskType !== "routine_check") {
+          const queuedIssues = await db
+            .select({
+              id: issues.id,
+              identifier: issues.identifier,
+              title: issues.title,
+            })
+            .from(issues)
+            .where(
+              and(
+                eq(issues.companyId, agent.companyId),
+                eq(issues.assigneeAgentId, agent.id),
+                sql`${issues.status} in ('todo', 'in_progress')`,
+              ),
+            )
+            .orderBy(desc(issues.createdAt))
+            .limit(5);
+
+          if (queuedIssues.length > 1) {
+            const taskList = queuedIssues
+              .map((i, idx) => `${idx + 1}. [${i.identifier ?? i.id.slice(0, 8)}] ${i.title}`)
+              .join("\n");
+            context.ironworksBatchedTasks = [
+              `You have ${queuedIssues.length} similar tasks to address:`,
+              taskList,
+              "Address each briefly and efficiently in this session.",
+            ].join("\n");
+            logger.info(
+              { agentId: agent.id, batchCount: queuedIssues.length, taskType },
+              "[batch-tasks] Batching similar tasks into single run",
+            );
+          }
+        }
+      }
+    } catch (err) {
+      logger.debug({ err, agentId: agent.id }, "batch tasks assembly failed, skipping");
+    }
+
     context.ironworksWorkspace = {
       cwd: executionWorkspace.cwd,
       source: executionWorkspace.source,
@@ -3285,6 +3463,52 @@ export function heartbeatService(db: Db) {
         }
       }
       // ─────────────────────────────────────────────────────────────────────
+
+      // ── Task 8: Streaming Response Cutoff ────────────────────────────────
+      // If the output contains a clear completion marker followed by >500 chars
+      // of padding content, truncate at the marker to save tokens on future runs.
+      {
+        const output = adapterResult.summary ?? "";
+        if (output.length > 0) {
+          const COMPLETION_MARKERS = [
+            "Task complete",
+            "Issue resolved",
+            "No further action needed",
+          ] as const;
+          for (const marker of COMPLETION_MARKERS) {
+            const markerIdx = output.indexOf(marker);
+            if (markerIdx !== -1) {
+              const afterMarker = output.slice(markerIdx + marker.length);
+              if (afterMarker.length > 500) {
+                // Truncate at the marker and log the token-saving event
+                (adapterResult as unknown as Record<string, unknown>).summary = output.slice(0, markerIdx + marker.length);
+                logger.info(
+                  {
+                    agentId: agent.id,
+                    runId: run.id,
+                    marker,
+                    truncatedChars: afterMarker.length,
+                  },
+                  "[output-cutoff] Truncated output at completion marker to save tokens",
+                );
+                await logActivity(db, {
+                  companyId: agent.companyId,
+                  actorType: "system",
+                  actorId: agent.id,
+                  agentId: agent.id,
+                  runId: run.id,
+                  action: "agent.output_truncated",
+                  entityType: "heartbeat_run",
+                  entityId: run.id,
+                  details: { marker, truncatedChars: afterMarker.length, reason: "completion_marker_cutoff" },
+                }).catch(() => {});
+                break;
+              }
+            }
+          }
+        }
+      }
+      // ── End Streaming Response Cutoff ─────────────────────────────────────
 
       const adapterManagedRuntimeServices = adapterResult.runtimeServices
         ? await persistAdapterManagedRuntimeServices({

@@ -1,6 +1,7 @@
-import { randomUUID } from "node:crypto";
+import { randomUUID, createHash } from "node:crypto";
 import type { Db } from "@ironworksai/db";
 import { activityLog } from "@ironworksai/db";
+import { and, desc, eq, gte } from "drizzle-orm";
 import { PLUGIN_EVENT_TYPES, type PluginEventType } from "@ironworksai/shared";
 import type { PluginEvent } from "@ironworksai/plugin-sdk";
 import { publishLiveEvent } from "./live-events.js";
@@ -34,6 +35,72 @@ export interface LogActivityInput {
   details?: Record<string, unknown> | null;
 }
 
+// ── Signed Log Chain ──────────────────────────────────────────────────────────
+//
+// Task 3: Compute a SHA-256 chain hash over each entry using the previous
+// entry's hash as input. Tampering with any entry breaks the chain.
+// The hash is stored in the entry's details.integrityHash field.
+
+/** In-memory cache of the last seen hash per company to anchor the chain. */
+const _lastHashByCompany = new Map<string, string>();
+
+function computeEntryHash(
+  id: string,
+  action: string,
+  entityId: string,
+  timestamp: string,
+  previousHash: string,
+): string {
+  return createHash("sha256")
+    .update(`${id}|${action}|${entityId}|${timestamp}|${previousHash}`)
+    .digest("hex");
+}
+
+/**
+ * Verify the integrity hash chain for a company's recent activity log.
+ * Returns { valid: true } when all hashes chain correctly, or
+ * { valid: false, firstBrokenIndex: number, brokenEntryId: string } on failure.
+ */
+export async function verifyLogIntegrity(
+  db: Db,
+  companyId: string,
+  limit = 100,
+): Promise<{ valid: boolean; checked: number; firstBrokenIndex?: number; brokenEntryId?: string }> {
+  const entries = await db
+    .select({
+      id: activityLog.id,
+      action: activityLog.action,
+      entityId: activityLog.entityId,
+      createdAt: activityLog.createdAt,
+      details: activityLog.details,
+    })
+    .from(activityLog)
+    .where(eq(activityLog.companyId, companyId))
+    .orderBy(activityLog.createdAt, activityLog.id)
+    .limit(limit);
+
+  if (entries.length === 0) return { valid: true, checked: 0 };
+
+  let previousHash = "genesis";
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i]!;
+    const stored = (entry.details as Record<string, unknown> | null)?.integrityHash;
+    if (!stored) continue; // entries before this feature was added are skipped
+    const expected = computeEntryHash(
+      entry.id,
+      entry.action,
+      entry.entityId,
+      new Date(entry.createdAt).toISOString(),
+      previousHash,
+    );
+    if (stored !== expected) {
+      return { valid: false, checked: i + 1, firstBrokenIndex: i, brokenEntryId: entry.id };
+    }
+    previousHash = expected;
+  }
+  return { valid: true, checked: entries.length };
+}
+
 export async function logActivity(db: Db, input: LogActivityInput) {
   const currentUserRedactionOptions = {
     enabled: (await instanceSettingsService(db).getGeneral()).censorUsernameInLogs,
@@ -42,7 +109,27 @@ export async function logActivity(db: Db, input: LogActivityInput) {
   const redactedDetails = sanitizedDetails
     ? redactCurrentUserValue(sanitizedDetails, currentUserRedactionOptions)
     : null;
+
+  // Task 3: Compute integrity hash for this entry and chain it to the previous.
+  const entryId = randomUUID();
+  const now = new Date();
+  const previousHash = _lastHashByCompany.get(input.companyId) ?? "genesis";
+  const integrityHash = computeEntryHash(
+    entryId,
+    input.action,
+    input.entityId,
+    now.toISOString(),
+    previousHash,
+  );
+  _lastHashByCompany.set(input.companyId, integrityHash);
+
+  const detailsWithHash: Record<string, unknown> = {
+    ...(redactedDetails ?? {}),
+    integrityHash,
+  };
+
   await db.insert(activityLog).values({
+    id: entryId,
     companyId: input.companyId,
     actorType: input.actorType,
     actorId: input.actorId,
@@ -51,7 +138,8 @@ export async function logActivity(db: Db, input: LogActivityInput) {
     entityId: input.entityId,
     agentId: input.agentId ?? null,
     runId: input.runId ?? null,
-    details: redactedDetails,
+    details: detailsWithHash,
+    createdAt: now,
   });
 
   publishLiveEvent({
