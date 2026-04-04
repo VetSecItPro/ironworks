@@ -120,6 +120,55 @@ export interface AgentTokenAnalytics {
   waste: TokenWasteAnalysis;
 }
 
+export interface AgentSecurityProfile {
+  permissions: string[];
+  dataScopes: string[];
+  toolAuthorizations: string[];
+  recentAccessLog: Array<{ action: string; timestamp: string; details: string }>;
+}
+
+export interface ComplianceExportData {
+  exportedAt: string;
+  companyId: string;
+  periodFrom: string;
+  periodTo: string;
+  allActions: Array<{
+    id: string;
+    companyId: string;
+    actorType: string;
+    actorId: string;
+    action: string;
+    entityType: string;
+    entityId: string;
+    agentId: string | null;
+    details: Record<string, unknown> | null;
+    createdAt: string;
+  }>;
+  approvalDecisions: Array<Record<string, unknown>>;
+  hiringTerminationEvents: Array<Record<string, unknown>>;
+  costEvents: Array<Record<string, unknown>>;
+  agentConfigurations: Array<Record<string, unknown>>;
+  summary: {
+    totalActions: number;
+    totalApprovals: number;
+    totalHiringTerminations: number;
+    totalCostEvents: number;
+    totalAgents: number;
+  };
+}
+
+export interface PermissionMatrixData {
+  permissions: string[];
+  agents: Array<{
+    agentId: string;
+    name: string;
+    role: string;
+    status: string;
+    department: string | null;
+    permissions: Record<string, boolean>;
+  }>;
+}
+
 export const executiveApi = {
   unitEconomics: (companyId: string) =>
     api.get<UnitEconomics>(`/companies/${companyId}/executive/unit-economics`),
@@ -156,5 +205,32 @@ export const executiveApi = {
   agentTokenAnalytics: (companyId: string, agentId: string, periodDays = 30) =>
     api.get<AgentTokenAnalytics>(
       `/companies/${companyId}/token-analytics/${agentId}?periodDays=${periodDays}`,
+    ),
+
+  agentSecurityProfile: (companyId: string, agentId: string) =>
+    api.get<AgentSecurityProfile>(
+      `/companies/${companyId}/agents/${agentId}/security-profile`,
+    ),
+
+  complianceExport: (companyId: string, from?: string, to?: string) => {
+    const params = new URLSearchParams();
+    if (from) params.set("from", from);
+    if (to) params.set("to", to);
+    const qs = params.toString();
+    return api.get<ComplianceExportData>(
+      `/companies/${companyId}/compliance-export${qs ? `?${qs}` : ""}`,
+    );
+  },
+
+  complianceExportCsv: (companyId: string, from?: string, to?: string) => {
+    const params = new URLSearchParams({ format: "csv" });
+    if (from) params.set("from", from);
+    if (to) params.set("to", to);
+    window.location.href = `/api/companies/${companyId}/compliance-export?${params.toString()}`;
+  },
+
+  permissionMatrix: (companyId: string) =>
+    api.get<PermissionMatrixData>(
+      `/companies/${companyId}/permission-matrix`,
     ),
 };

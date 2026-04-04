@@ -16,6 +16,8 @@ import {
   logActivity,
   secretService,
 } from "../services/index.js";
+import { hiringRequests } from "@ironworksai/db";
+import { and, eq } from "drizzle-orm";
 import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
 import { redactEventPayload } from "../redaction.js";
 import { extractLessonFromRejection } from "../services/agent-reflection.js";
@@ -147,6 +149,24 @@ export function approvalRoutes(db: Db) {
         },
       });
 
+      // Sync linked hiring request status when a hire_agent approval is approved
+      if (approval.type === "hire_agent") {
+        const payload = approval.payload as Record<string, unknown>;
+        const hiringRequestId = typeof payload.hiringRequestId === "string" ? payload.hiringRequestId : null;
+        if (hiringRequestId) {
+          await db
+            .update(hiringRequests)
+            .set({ status: "approved", updatedAt: new Date() })
+            .where(
+              and(
+                eq(hiringRequests.id, hiringRequestId),
+                eq(hiringRequests.companyId, approval.companyId),
+              ),
+            )
+            .catch((err) => logger.warn({ err, hiringRequestId }, "failed to sync hiring request status on approval"));
+        }
+      }
+
       if (approval.requestedByAgentId) {
         try {
           const wakeRun = await heartbeat.wakeup(approval.requestedByAgentId, {
@@ -233,6 +253,24 @@ export function approvalRoutes(db: Db) {
         entityId: approval.id,
         details: { type: approval.type },
       });
+
+      // Sync linked hiring request status when a hire_agent approval is rejected
+      if (approval.type === "hire_agent") {
+        const payload = approval.payload as Record<string, unknown>;
+        const hiringRequestId = typeof payload.hiringRequestId === "string" ? payload.hiringRequestId : null;
+        if (hiringRequestId) {
+          await db
+            .update(hiringRequests)
+            .set({ status: "rejected", updatedAt: new Date() })
+            .where(
+              and(
+                eq(hiringRequests.id, hiringRequestId),
+                eq(hiringRequests.companyId, approval.companyId),
+              ),
+            )
+            .catch((err) => logger.warn({ err, hiringRequestId }, "failed to sync hiring request status on rejection"));
+        }
+      }
 
       // Extract lesson from rejection for the requesting agent
       if (approval.requestedByAgentId && req.body.decisionNote) {

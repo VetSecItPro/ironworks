@@ -41,7 +41,8 @@ export { buildOnboardingPacket, type OnboardingPacket } from "./contractor-onboa
 export { computePerformanceScore, updateAllPerformanceScores, computeAgentUtilization, capturePerformanceSnapshot, captureAllPerformanceSnapshots } from "./performance-score.js";
 export { checkAndGrantAchievements, checkAllAgentAchievements, runAllAchievementChecks, ACHIEVEMENTS, type Achievement } from "./achievements.js";
 export { createAgentWorkspace, archiveAgentWorkspace, createAgentDocument, getAgentDocuments, createPostMortem, createDecisionRecord } from "./agent-workspace.js";
-export { createHiringRecord, createTerminationRecord, createPerformanceReview } from "./hr-personnel.js";
+export { createHiringRecord, createTerminationRecord, createPerformanceReview, createEmploymentHistoryEntry } from "./hr-personnel.js";
+export { saveSessionState, getLatestSessionState, buildMorningBriefing } from "./session-state.js";
 export { generateAgentWeeklyReport, generateCompanyWeeklyReport, generateRetrospective, generateHRWeeklyReport, generateCFOWeeklyReport, generateBoardMeetingPacket, runWeeklyReports, runAllWeeklyReports } from "./weekly-reports.js";
 export { generateDailyStandup, runDailyStandups, runAllDailyStandups } from "./daily-standup.js";
 export { getVelocityData, type VelocityWeek } from "./velocity.js";

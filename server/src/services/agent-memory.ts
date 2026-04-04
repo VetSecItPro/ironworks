@@ -13,6 +13,63 @@ import { logger } from "../middleware/logger.js";
 
 const DEFAULT_MEMORY_CAP = 500;
 
+// ── Role-Specific Memory Categories ────────────────────────────────────────
+const ROLE_MEMORY_CATEGORIES: Record<string, string[]> = {
+  ceo: ["strategic_decision", "company_direction", "board_decision"],
+  cto: ["architecture_decision", "technical_standard", "tech_debt_note"],
+  cfo: ["financial_insight", "budget_decision", "cost_optimization"],
+  cmo: ["campaign_result", "brand_insight", "content_strategy"],
+  vphr: ["hiring_decision", "performance_insight", "org_change"],
+  vp_hr: ["hiring_decision", "performance_insight", "org_change"],
+  compliancedirector: ["compliance_finding", "regulatory_update", "audit_note"],
+  compliance_director: ["compliance_finding", "regulatory_update", "audit_note"],
+  legalcounsel: ["legal_risk", "contract_review", "regulatory_opinion"],
+  legal_counsel: ["legal_risk", "contract_review", "regulatory_opinion"],
+  seniorengineer: ["code_decision", "project_retrospective", "technical_learning"],
+  senior_engineer: ["code_decision", "project_retrospective", "technical_learning"],
+  devopsengineer: ["infra_decision", "deployment_note", "reliability_learning"],
+  devops_engineer: ["infra_decision", "deployment_note", "reliability_learning"],
+  securityengineer: ["security_finding", "threat_assessment", "hardening_note"],
+  security_engineer: ["security_finding", "threat_assessment", "hardening_note"],
+  uxdesigner: ["design_decision", "user_insight", "accessibility_note"],
+  ux_designer: ["design_decision", "user_insight", "accessibility_note"],
+  contentmarketer: ["content_performance", "audience_insight", "style_decision"],
+  content_marketer: ["content_performance", "audience_insight", "style_decision"],
+};
+
+/**
+ * Resolve memory categories for an agent role. Falls back to generic
+ * task_history / technical_decision if the role is not recognized.
+ */
+function resolveRoleCategoriesForTaskHistory(role: string): string {
+  const normalized = role.toLowerCase().replace(/[\s-]+/g, "_");
+  const categories = ROLE_MEMORY_CATEGORIES[normalized];
+  if (categories && categories.length > 0) {
+    return categories[0]!; // Primary category for the role
+  }
+  // Also try without underscores
+  const noUnderscores = normalized.replace(/_/g, "");
+  const altCategories = ROLE_MEMORY_CATEGORIES[noUnderscores];
+  if (altCategories && altCategories.length > 0) {
+    return altCategories[0]!;
+  }
+  return "task_history";
+}
+
+function resolveRoleCategoriesForTechnical(role: string): string {
+  const normalized = role.toLowerCase().replace(/[\s-]+/g, "_");
+  const categories = ROLE_MEMORY_CATEGORIES[normalized];
+  if (categories && categories.length > 1) {
+    return categories[1]!; // Secondary category for the role
+  }
+  const noUnderscores = normalized.replace(/_/g, "");
+  const altCategories = ROLE_MEMORY_CATEGORIES[noUnderscores];
+  if (altCategories && altCategories.length > 1) {
+    return altCategories[1]!;
+  }
+  return "technical_decision";
+}
+
 /**
  * Extract memories from a completed issue and store as episodic entries.
  *
@@ -28,22 +85,25 @@ export async function extractMemoriesFromIssue(
   issueId: string,
   issueTitle: string,
   issueOutcome: string,
+  agentRole?: string,
 ): Promise<void> {
   const now = new Date();
+  const role = agentRole ?? "general";
 
-  // Always create a task history entry
+  // Always create a task history entry with role-specific category
+  const taskCategory = resolveRoleCategoriesForTaskHistory(role);
   await db.insert(agentMemoryEntries).values({
     agentId,
     companyId,
     memoryType: "episodic",
-    category: "task_history",
+    category: taskCategory,
     content: `Completed: ${issueTitle}. Outcome: ${issueOutcome}`,
     sourceIssueId: issueId,
     confidence: 80,
     lastAccessedAt: now,
   });
 
-  // Create a technical decision entry if the description suggests technical work
+  // Create a secondary entry if the description suggests domain-specific work
   const technicalTerms = [
     "api", "database", "migration", "schema", "deploy", "config",
     "endpoint", "query", "index", "cache", "auth", "token",
@@ -58,11 +118,12 @@ export async function extractMemoriesFromIssue(
   );
 
   if (hasTechnicalContent) {
+    const techCategory = resolveRoleCategoriesForTechnical(role);
     await db.insert(agentMemoryEntries).values({
       agentId,
       companyId,
       memoryType: "episodic",
-      category: "technical_decision",
+      category: techCategory,
       content: `Technical work on: ${issueTitle}. Details: ${issueOutcome}`,
       sourceIssueId: issueId,
       confidence: 75,
@@ -71,7 +132,7 @@ export async function extractMemoriesFromIssue(
   }
 
   logger.info(
-    { agentId, issueId, hasTechnicalContent },
+    { agentId, issueId, hasTechnicalContent, taskCategory },
     "extracted memories from completed issue",
   );
 }

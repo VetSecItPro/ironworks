@@ -20,7 +20,15 @@ import {
 import { cn, formatDate } from "../lib/utils";
 import { timeAgo } from "../lib/timeAgo";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   BookOpen,
+  Building2,
   ChevronLeft,
   Clock,
   Edit3,
@@ -31,6 +39,8 @@ import {
   Search,
   Trash2,
   Undo2,
+  User,
+  Users,
   X,
 } from "lucide-react";
 
@@ -48,6 +58,8 @@ export function KnowledgeBase() {
   const [editBody, setEditBody] = useState("");
   const [creating, setCreating] = useState(false);
   const [newTitle, setNewTitle] = useState("");
+  const [newDepartment, setNewDepartment] = useState("");
+  const [departmentFilter, setDepartmentFilter] = useState("all");
   const [showHistory, setShowHistory] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const editBodyRef = useRef<HTMLTextAreaElement>(null);
@@ -57,8 +69,8 @@ export function KnowledgeBase() {
   }, [setBreadcrumbs]);
 
   const { data: pages, isLoading, error: pagesError } = useQuery({
-    queryKey: queryKeys.knowledge.list(selectedCompanyId!),
-    queryFn: () => knowledgeApi.list(selectedCompanyId!),
+    queryKey: [...queryKeys.knowledge.list(selectedCompanyId!), departmentFilter],
+    queryFn: () => knowledgeApi.list(selectedCompanyId!, undefined, departmentFilter),
     enabled: !!selectedCompanyId,
   });
 
@@ -79,13 +91,27 @@ export function KnowledgeBase() {
     return (pages ?? []).filter((p) => p.title.toLowerCase().includes(q) || p.body.toLowerCase().includes(q));
   }, [pages, search]);
 
+  // Extract unique departments from all pages for the filter dropdown
+  const departments = useMemo(() => {
+    const depts = new Set<string>();
+    for (const p of pages ?? []) {
+      if (p.department) depts.add(p.department);
+    }
+    return [...depts].sort();
+  }, [pages]);
+
   const createPage = useMutation({
-    mutationFn: () => knowledgeApi.create(selectedCompanyId!, { title: newTitle.trim() }),
+    mutationFn: () =>
+      knowledgeApi.create(selectedCompanyId!, {
+        title: newTitle.trim(),
+        department: newDepartment || undefined,
+      }),
     onSuccess: (page) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.knowledge.list(selectedCompanyId!) });
       setSelectedPageId(page.id);
       setCreating(false);
       setNewTitle("");
+      setNewDepartment("");
       setEditing(true);
       setEditTitle(page.title);
       setEditBody(page.body);
@@ -159,6 +185,19 @@ export function KnowledgeBase() {
             <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search..." className="pl-7 text-xs h-8" />
           </div>
+          {departments.length > 0 && (
+            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+              <SelectTrigger className="h-7 text-xs">
+                <SelectValue placeholder="All departments" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All departments</SelectItem>
+                {departments.map((d) => (
+                  <SelectItem key={d} value={d}>{d}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
         {creating && (
@@ -171,11 +210,17 @@ export function KnowledgeBase() {
               autoFocus
               onKeyDown={(e) => { if (e.key === "Enter" && newTitle.trim()) createPage.mutate(); if (e.key === "Escape") setCreating(false); }}
             />
+            <Input
+              value={newDepartment}
+              onChange={(e) => setNewDepartment(e.target.value)}
+              placeholder="Department scope (optional)..."
+              className="text-xs h-8"
+            />
             <div className="flex items-center gap-1">
               <Button size="sm" className="h-7 text-xs" disabled={!newTitle.trim() || createPage.isPending} onClick={() => createPage.mutate()}>
                 {createPage.isPending ? "Creating..." : "Create"}
               </Button>
-              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => { setCreating(false); setNewTitle(""); }}>Cancel</Button>
+              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => { setCreating(false); setNewTitle(""); setNewDepartment(""); }}>Cancel</Button>
             </div>
           </div>
         )}
@@ -201,7 +246,24 @@ export function KnowledgeBase() {
                 onClick={() => { setSelectedPageId(page.id); setEditing(false); setShowHistory(false); }}
               >
                 <div className="text-sm font-medium truncate">{page.title}</div>
-                <div className="text-[10px] text-muted-foreground mt-0.5">{timeAgo(page.updatedAt)}</div>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-[10px] text-muted-foreground">{timeAgo(page.updatedAt)}</span>
+                  {page.agentId && (
+                    <span className="inline-flex items-center gap-0.5 text-[9px] font-medium bg-purple-500/10 text-purple-400 px-1.5 py-0.5 rounded-full">
+                      <User className="h-2.5 w-2.5" />Agent
+                    </span>
+                  )}
+                  {!page.agentId && page.department && (
+                    <span className="inline-flex items-center gap-0.5 text-[9px] font-medium bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded-full">
+                      <Users className="h-2.5 w-2.5" />{page.department}
+                    </span>
+                  )}
+                  {!page.agentId && !page.department && (
+                    <span className="inline-flex items-center gap-0.5 text-[9px] font-medium bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">
+                      <Building2 className="h-2.5 w-2.5" />Company
+                    </span>
+                  )}
+                </div>
               </button>
             ))
           )}
@@ -273,6 +335,22 @@ export function KnowledgeBase() {
               <span>Updated {timeAgo(selectedPage.updatedAt)}</span>
               <span>·</span>
               <span className="capitalize">{selectedPage.visibility}</span>
+              {selectedPage.department && (
+                <>
+                  <span>·</span>
+                  <span className="inline-flex items-center gap-0.5 text-blue-400">
+                    <Users className="h-2.5 w-2.5" />{selectedPage.department}
+                  </span>
+                </>
+              )}
+              {selectedPage.agentId && (
+                <>
+                  <span>·</span>
+                  <span className="inline-flex items-center gap-0.5 text-purple-400">
+                    <User className="h-2.5 w-2.5" />Agent-scoped
+                  </span>
+                </>
+              )}
             </div>
 
             {/* Content area */}

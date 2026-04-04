@@ -1,6 +1,17 @@
 import { and, desc, eq, gte, inArray, isNotNull, lt, ne, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import { agents, companies, costEvents, goals, heartbeatRuns, issues, projects } from "@ironworksai/db";
+import {
+  activityLog,
+  agents,
+  companies,
+  companySkills,
+  costEvents,
+  goals,
+  heartbeatRuns,
+  issues,
+  principalPermissionGrants,
+  projects,
+} from "@ironworksai/db";
 import { SLA_TARGETS } from "@ironworksai/shared";
 import type { IssuePriority, RiskLevel } from "@ironworksai/shared";
 
@@ -453,6 +464,261 @@ export function executiveAnalyticsService(db: Db) {
         countByLevel,
         risks: risks.slice(0, 25), // Cap at 25 items
       };
+    },
+
+    /**
+     * Per-agent security profile: permissions, data scopes, tool authorizations, access log.
+     */
+    agentSecurityProfile: async (agentId: string): Promise<{
+      permissions: string[];
+      dataScopes: string[];
+      toolAuthorizations: string[];
+      recentAccessLog: Array<{ action: string; timestamp: Date; details: string }>;
+    }> => {
+      // 1. Permissions from principal_permission_grants
+      const permissionRows = await db
+        .select({ permissionKey: principalPermissionGrants.permissionKey })
+        .from(principalPermissionGrants)
+        .where(
+          and(
+            eq(principalPermissionGrants.principalType, "agent"),
+            eq(principalPermissionGrants.principalId, agentId),
+          ),
+        );
+      const permissions = permissionRows.map((r) => r.permissionKey);
+
+      // 2. Data scopes: company + projects the agent can access
+      const [agentRow] = await db
+        .select({
+          companyId: agents.companyId,
+          adapterConfig: agents.adapterConfig,
+          capabilities: agents.capabilities,
+        })
+        .from(agents)
+        .where(eq(agents.id, agentId))
+        .limit(1);
+
+      const dataScopes: string[] = [];
+      if (agentRow) {
+        // Agent has access to its own company
+        const [companyRow] = await db
+          .select({ name: companies.name })
+          .from(companies)
+          .where(eq(companies.id, agentRow.companyId))
+          .limit(1);
+        if (companyRow) {
+          dataScopes.push(`company:${companyRow.name}`);
+        }
+
+        // List projects the agent has touched (assigned issues)
+        const projectRows = await db
+          .selectDistinct({ projectName: projects.name, projectId: projects.id })
+          .from(issues)
+          .innerJoin(projects, eq(issues.projectId, projects.id))
+          .where(eq(issues.assigneeAgentId, agentId))
+          .limit(20);
+
+        for (const p of projectRows) {
+          dataScopes.push(`project:${p.projectName}`);
+        }
+      }
+
+      // 3. Tool authorizations: from adapter config + company skills
+      const toolAuthorizations: string[] = [];
+      if (agentRow) {
+        const config = agentRow.adapterConfig as Record<string, unknown>;
+        if (config.tools && Array.isArray(config.tools)) {
+          for (const tool of config.tools) {
+            if (typeof tool === "string") toolAuthorizations.push(tool);
+            else if (tool && typeof tool === "object" && "name" in tool) {
+              toolAuthorizations.push(String((tool as { name: string }).name));
+            }
+          }
+        }
+        if (agentRow.capabilities) {
+          const caps = agentRow.capabilities.split(",").map((c: string) => c.trim()).filter(Boolean);
+          for (const cap of caps) {
+            if (!toolAuthorizations.includes(cap)) toolAuthorizations.push(cap);
+          }
+        }
+
+        // Skills assigned to the company
+        const skillRows = await db
+          .select({ skillName: companySkills.name })
+          .from(companySkills)
+          .where(eq(companySkills.companyId, agentRow.companyId))
+          .limit(50);
+        for (const s of skillRows) {
+          toolAuthorizations.push(`skill:${s.skillName}`);
+        }
+      }
+
+      // 4. Recent access log: last 20 activity log entries for this agent
+      const logRows = await db
+        .select({
+          action: activityLog.action,
+          createdAt: activityLog.createdAt,
+          details: activityLog.details,
+        })
+        .from(activityLog)
+        .where(eq(activityLog.agentId, agentId))
+        .orderBy(desc(activityLog.createdAt))
+        .limit(20);
+
+      const recentAccessLog = logRows.map((r) => ({
+        action: r.action,
+        timestamp: r.createdAt,
+        details: r.details ? JSON.stringify(r.details) : "",
+      }));
+
+      return { permissions, dataScopes, toolAuthorizations, recentAccessLog };
+    },
+
+    /**
+     * Compliance export: all auditable events in a date range for SOC 2 evidence.
+     */
+    complianceExport: async (companyId: string, from: Date, to: Date) => {
+      // 1. All agent actions in the period
+      const allActivity = await db
+        .select()
+        .from(activityLog)
+        .where(
+          and(
+            eq(activityLog.companyId, companyId),
+            gte(activityLog.createdAt, from),
+            lt(activityLog.createdAt, to),
+          ),
+        )
+        .orderBy(desc(activityLog.createdAt))
+        .limit(5000);
+
+      // 2. Approval decisions
+      const approvalActions = allActivity.filter(
+        (a) =>
+          a.action.includes("approval") ||
+          a.action.includes("approved") ||
+          a.action.includes("rejected"),
+      );
+
+      // 3. Hiring/termination events
+      const hiringTermEvents = allActivity.filter(
+        (a) =>
+          a.action.includes("hire") ||
+          a.action.includes("terminated") ||
+          a.action.includes("termination") ||
+          a.action.includes("onboard"),
+      );
+
+      // 4. Cost events
+      const costRows = await db
+        .select()
+        .from(costEvents)
+        .where(
+          and(
+            eq(costEvents.companyId, companyId),
+            gte(costEvents.occurredAt, from),
+            lt(costEvents.occurredAt, to),
+          ),
+        )
+        .orderBy(desc(costEvents.occurredAt))
+        .limit(5000);
+
+      // 5. Agent configurations at time of export
+      const agentConfigs = await db
+        .select({
+          id: agents.id,
+          name: agents.name,
+          role: agents.role,
+          status: agents.status,
+          adapterType: agents.adapterType,
+          adapterConfig: agents.adapterConfig,
+          permissions: agents.permissions,
+          department: agents.department,
+          employmentType: agents.employmentType,
+          budgetMonthlyCents: agents.budgetMonthlyCents,
+          spentMonthlyCents: agents.spentMonthlyCents,
+        })
+        .from(agents)
+        .where(eq(agents.companyId, companyId));
+
+      return {
+        exportedAt: new Date().toISOString(),
+        companyId,
+        periodFrom: from.toISOString(),
+        periodTo: to.toISOString(),
+        allActions: allActivity,
+        approvalDecisions: approvalActions,
+        hiringTerminationEvents: hiringTermEvents,
+        costEvents: costRows,
+        agentConfigurations: agentConfigs,
+        summary: {
+          totalActions: allActivity.length,
+          totalApprovals: approvalActions.length,
+          totalHiringTerminations: hiringTermEvents.length,
+          totalCostEvents: costRows.length,
+          totalAgents: agentConfigs.length,
+        },
+      };
+    },
+
+    /**
+     * Permission matrix: all agents and their permission grants.
+     */
+    permissionMatrix: async (companyId: string) => {
+      const companyAgents = await db
+        .select({
+          id: agents.id,
+          name: agents.name,
+          role: agents.role,
+          status: agents.status,
+          department: agents.department,
+        })
+        .from(agents)
+        .where(
+          and(
+            eq(agents.companyId, companyId),
+            ne(agents.status, "terminated"),
+          ),
+        )
+        .orderBy(agents.name);
+
+      const allGrants = await db
+        .select({
+          principalId: principalPermissionGrants.principalId,
+          permissionKey: principalPermissionGrants.permissionKey,
+        })
+        .from(principalPermissionGrants)
+        .where(
+          and(
+            eq(principalPermissionGrants.companyId, companyId),
+            eq(principalPermissionGrants.principalType, "agent"),
+          ),
+        );
+
+      // Build a set of all distinct permission keys
+      const allPermissions = [...new Set(allGrants.map((g) => g.permissionKey))].sort();
+
+      // Build a lookup: agentId -> Set<permissionKey>
+      const grantsByAgent = new Map<string, Set<string>>();
+      for (const g of allGrants) {
+        if (!grantsByAgent.has(g.principalId)) {
+          grantsByAgent.set(g.principalId, new Set());
+        }
+        grantsByAgent.get(g.principalId)!.add(g.permissionKey);
+      }
+
+      const matrix = companyAgents.map((agent) => ({
+        agentId: agent.id,
+        name: agent.name,
+        role: agent.role,
+        status: agent.status,
+        department: agent.department,
+        permissions: Object.fromEntries(
+          allPermissions.map((perm) => [perm, grantsByAgent.get(agent.id)?.has(perm) ?? false]),
+        ),
+      }));
+
+      return { permissions: allPermissions, agents: matrix };
     },
 
     /**

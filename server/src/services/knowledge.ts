@@ -31,6 +31,7 @@ export interface KnowledgePageInput {
   body?: string;
   visibility?: "company" | "project" | "private";
   projectId?: string | null;
+  department?: string | null;
 }
 
 export interface KnowledgePageUpdateInput {
@@ -38,15 +39,19 @@ export interface KnowledgePageUpdateInput {
   body?: string;
   visibility?: "company" | "project" | "private";
   projectId?: string | null;
+  department?: string | null;
   changeSummary?: string;
 }
 
 export function knowledgeService(db: Db) {
   return {
-    async list(companyId: string, opts?: { search?: string; visibility?: string }) {
+    async list(companyId: string, opts?: { search?: string; visibility?: string; department?: string }) {
       const conditions = [eq(knowledgePages.companyId, companyId)];
       if (opts?.visibility && opts.visibility !== "all") {
         conditions.push(eq(knowledgePages.visibility, opts.visibility));
+      }
+      if (opts?.department && opts.department !== "all") {
+        conditions.push(eq(knowledgePages.department, opts.department));
       }
       if (opts?.search?.trim()) {
         const q = `%${opts.search.trim()}%`;
@@ -90,6 +95,7 @@ export function knowledgeService(db: Db) {
           body,
           visibility: input.visibility ?? "company",
           projectId: input.projectId ?? null,
+          department: input.department ?? null,
           revisionNumber: 1,
           createdByAgentId: actor.agentId ?? null,
           createdByUserId: actor.userId ?? null,
@@ -134,6 +140,7 @@ export function knowledgeService(db: Db) {
           body: nextBody,
           visibility: input.visibility ?? existing.visibility,
           projectId: input.projectId === undefined ? existing.projectId : input.projectId,
+          department: input.department === undefined ? existing.department : input.department,
           revisionNumber: nextRevision,
           updatedByAgentId: actor.agentId ?? null,
           updatedByUserId: actor.userId ?? null,

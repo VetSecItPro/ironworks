@@ -54,6 +54,7 @@ import {
 } from "./execution-workspace-policy.js";
 import { instanceSettingsService } from "./instance-settings.js";
 import { logActivity } from "./activity-log.js";
+import { buildMorningBriefing, saveSessionState, getLatestSessionState } from "./session-state.js";
 import { redactCurrentUserText, redactCurrentUserValue } from "../log-redaction.js";
 import {
   hasSessionCompactionThresholds,
@@ -64,6 +65,37 @@ import {
 const MAX_LIVE_LOG_CHUNK_BYTES = 8 * 1024;
 const HEARTBEAT_MAX_CONCURRENT_RUNS_DEFAULT = 1;
 const HEARTBEAT_MAX_CONCURRENT_RUNS_MAX = 10;
+
+// ── Tiered Context Classification ──────────────────────────────────────────
+type ContextTier = "minimal" | "standard" | "full";
+
+function classifyContextTier(contextSnapshot: Record<string, unknown>): ContextTier {
+  const wakeReason = typeof contextSnapshot.wakeReason === "string" ? contextSnapshot.wakeReason : null;
+  const source = typeof contextSnapshot.wakeSource === "string" ? contextSnapshot.wakeSource : null;
+  const issueId = typeof contextSnapshot.issueId === "string" ? contextSnapshot.issueId : null;
+  const commentId = typeof contextSnapshot.wakeCommentId === "string" ? contextSnapshot.wakeCommentId : null;
+  const approvalId = typeof contextSnapshot.approvalId === "string" ? contextSnapshot.approvalId : null;
+
+  // Full tier: approvals, complex tasks, or multiple issues
+  if (approvalId || wakeReason === "approval_approved" || wakeReason === "approval_rejected") {
+    return "full";
+  }
+  const issueIds = Array.isArray(contextSnapshot.issueIds) ? contextSnapshot.issueIds : null;
+  if (issueIds && issueIds.length > 1) {
+    return "full";
+  }
+
+  // Standard tier: new comment or issue assigned
+  if (commentId || wakeReason === "comment" || wakeReason === "assignment") {
+    return "standard";
+  }
+  if (issueId && source !== "timer") {
+    return "standard";
+  }
+
+  // Minimal tier: timer wake, no new comments, agent is idle checking
+  return "minimal";
+}
 const DEFERRED_WAKE_CONTEXT_KEY = "_ironworksWakeContext";
 const DETACHED_PROCESS_ERROR_CODE = "process_detached";
 const startLocksByAgent = new Map<string, Promise<void>>();
@@ -2582,6 +2614,30 @@ export function heartbeatService(db: Db) {
       }
     }
 
+    // Inject session state and morning briefing based on context tier
+    const contextTier = classifyContextTier(context);
+    context.ironworksContextTier = contextTier;
+    try {
+      if (contextTier === "minimal") {
+        // Minimal: session state + current issue title only
+        const sessionState = await getLatestSessionState(db, agent.id);
+        if (sessionState) {
+          context.ironworksSessionState = {
+            lastAction: sessionState.lastAction,
+            pendingWork: sessionState.pendingWork,
+          };
+        }
+      } else if (contextTier === "standard" || contextTier === "full") {
+        // Standard and full: inject the morning briefing
+        const briefing = await buildMorningBriefing(db, agent.id, agent.companyId);
+        if (briefing) {
+          context.ironworksMorningBriefing = briefing;
+        }
+      }
+    } catch (err) {
+      logger.warn({ err, agentId: agent.id }, "failed to build session context for run");
+    }
+
     context.ironworksWorkspace = {
       cwd: executionWorkspace.cwd,
       source: executionWorkspace.source,
@@ -3035,6 +3091,25 @@ export function heartbeatService(db: Db) {
               lastError: outcome === "succeeded" ? null : (adapterResult.errorMessage ?? "run_failed"),
             });
           }
+        }
+      }
+      // Save session state for next run pickup (best-effort)
+      if (finalizedRun) {
+        try {
+          const resultSummary = summarizeHeartbeatRunResultJson(adapterResult.resultJson ?? null);
+          const summaryText = typeof resultSummary?.summary === "string"
+            ? resultSummary.summary
+            : `Run ${outcome}`;
+          await saveSessionState(db, {
+            agentId: agent.id,
+            companyId: agent.companyId,
+            issueId: issueId ?? null,
+            summary: summaryText,
+            lastAction: `heartbeat run ${run.id.slice(0, 8)} - ${outcome}`,
+            pendingWork: outcome === "succeeded" ? null : `Previous run ${outcome} - may need retry`,
+          });
+        } catch (sessionStateErr) {
+          logger.warn({ err: sessionStateErr, runId }, "failed to save session state after run");
         }
       }
       await finalizeAgentStatus(agent.id, outcome);

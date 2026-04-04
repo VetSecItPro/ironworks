@@ -21,7 +21,8 @@ export function knowledgeRoutes(db: Db) {
     assertCompanyAccess(req, companyId);
     const search = typeof req.query.q === "string" ? req.query.q : undefined;
     const visibility = typeof req.query.visibility === "string" ? req.query.visibility : undefined;
-    const pages = await svc.list(companyId, { search, visibility });
+    const department = typeof req.query.department === "string" ? req.query.department : undefined;
+    const pages = await svc.list(companyId, { search, visibility, department });
     res.json(pages);
   });
 
@@ -47,14 +48,14 @@ export function knowledgeRoutes(db: Db) {
     const companyId = req.params.companyId as string;
     assertCompanyAccess(req, companyId);
     const actor = getActorInfo(req);
-    const { title, body, visibility, projectId } = req.body;
+    const { title, body, visibility, projectId, department } = req.body;
     if (!title || typeof title !== "string" || title.trim().length === 0) {
       res.status(400).json({ error: "Title is required" }); return;
     }
     if (title.trim().length > 200) {
       res.status(400).json({ error: "Title must be 200 characters or less" }); return;
     }
-    const page = await svc.create(companyId, { title, body, visibility, projectId }, actorForService(actor));
+    const page = await svc.create(companyId, { title, body, visibility, projectId, department }, actorForService(actor));
     await logActivity(db, {
       companyId,
       actorType: actor.actorType,
@@ -73,8 +74,8 @@ export function knowledgeRoutes(db: Db) {
     if (!page) { res.status(404).json({ error: "Page not found" }); return; }
     assertCompanyAccess(req, page.companyId);
     const actor = getActorInfo(req);
-    const { title, body, visibility, projectId, changeSummary } = req.body;
-    const updated = await svc.update(page.id, { title, body, visibility, projectId, changeSummary }, actorForService(actor));
+    const { title, body, visibility, projectId, department, changeSummary } = req.body;
+    const updated = await svc.update(page.id, { title, body, visibility, projectId, department, changeSummary }, actorForService(actor));
     await logActivity(db, {
       companyId: page.companyId,
       actorType: actor.actorType,

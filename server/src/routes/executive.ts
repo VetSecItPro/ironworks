@@ -139,6 +139,67 @@ export function executiveRoutes(db: Db) {
     });
   });
 
+  // -- Agent Security Profile --
+  router.get("/companies/:companyId/agents/:agentId/security-profile", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    const agentId = req.params.agentId as string;
+    assertCompanyAccess(req, companyId);
+    const data = await analytics.agentSecurityProfile(agentId);
+    res.json(data);
+  });
+
+  // -- Compliance Export (JSON) --
+  router.get("/companies/:companyId/compliance-export", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+
+    const fromStr = req.query.from as string | undefined;
+    const toStr = req.query.to as string | undefined;
+    const format = req.query.format as string | undefined;
+
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const from = fromStr ? new Date(fromStr) : thirtyDaysAgo;
+    const to = toStr ? new Date(toStr) : now;
+
+    const data = await analytics.complianceExport(companyId, from, to);
+
+    if (format === "csv") {
+      // Convert to CSV: flatten all actions into rows
+      const rows: string[] = [];
+      rows.push("timestamp,actor_type,actor_id,action,entity_type,entity_id,agent_id,details");
+
+      for (const entry of data.allActions) {
+        const detailsStr = entry.details ? JSON.stringify(entry.details).replace(/"/g, '""') : "";
+        rows.push([
+          entry.createdAt instanceof Date ? entry.createdAt.toISOString() : String(entry.createdAt),
+          entry.actorType,
+          entry.actorId,
+          entry.action,
+          entry.entityType,
+          entry.entityId,
+          entry.agentId ?? "",
+          `"${detailsStr}"`,
+        ].join(","));
+      }
+
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", `attachment; filename="compliance-export-${from.toISOString().slice(0, 10)}-to-${to.toISOString().slice(0, 10)}.csv"`);
+      res.send(rows.join("\n"));
+      return;
+    }
+
+    res.json(data);
+  });
+
+  // -- Permission Matrix --
+  router.get("/companies/:companyId/permission-matrix", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+    const data = await analytics.permissionMatrix(companyId);
+    res.json(data);
+  });
+
   // -- Token Analytics: Company-wide --
   router.get("/companies/:companyId/token-analytics", async (req, res) => {
     const companyId = req.params.companyId as string;

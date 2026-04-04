@@ -55,6 +55,7 @@ import {
   archiveAgentWorkspace as archiveAgentWorkspaceService,
   createHiringRecord as createHiringRecordService,
   createTerminationRecord as createTerminationRecordService,
+  createEmploymentHistoryEntry,
   buildOnboardingPacket,
 } from "../services/index.js";
 import { conflict, forbidden, notFound, unprocessable } from "../errors.js";
@@ -1363,6 +1364,17 @@ export function agentRoutes(db: Db) {
           hiredByUserId: actor.actorType === "user" ? actor.actorId : null,
           hiredByAgentId: actor.actorType === "agent" ? actor.actorId : null,
         });
+        await createEmploymentHistoryEntry(db, {
+          companyId,
+          agentId: agent.id,
+          agentName: agent.name,
+          eventType: "hired",
+          details: [
+            `Agent created and hired directly (no approval required).`,
+            `Role: ${agent.role}`,
+            `Employment Type: ${(agent as Record<string, unknown>).employmentType as string ?? "full_time"}`,
+          ].join("\n"),
+        });
       } catch (err) {
         // Non-fatal: workspace/personnel record creation should not block hiring
         console.error("Failed to create agent workspace or hiring record:", err);
@@ -2124,6 +2136,45 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
       details: summarizeAgentUpdateDetails(patchData),
     });
 
+    // Employment history: department change
+    if (
+      Object.prototype.hasOwnProperty.call(patchData, "department") &&
+      agent.department !== existing.department
+    ) {
+      createEmploymentHistoryEntry(db, {
+        companyId: agent.companyId,
+        agentId: agent.id,
+        agentName: agent.name,
+        eventType: "department_change",
+        details: [
+          `Department changed from "${existing.department ?? "unassigned"}" to "${agent.department ?? "unassigned"}".`,
+        ].join("\n"),
+      }).catch((err) =>
+        logger.warn({ err, agentId: agent.id }, "failed to create employment history for department change"),
+      );
+    }
+
+    // Employment history: significant performance score change (>10 points)
+    if (
+      Object.prototype.hasOwnProperty.call(patchData, "performanceScore") &&
+      typeof agent.performanceScore === "number" &&
+      typeof existing.performanceScore === "number" &&
+      Math.abs(agent.performanceScore - existing.performanceScore) > 10
+    ) {
+      createEmploymentHistoryEntry(db, {
+        companyId: agent.companyId,
+        agentId: agent.id,
+        agentName: agent.name,
+        eventType: "performance_review",
+        details: [
+          `Performance score changed from ${existing.performanceScore} to ${agent.performanceScore}.`,
+          `Change: ${agent.performanceScore - existing.performanceScore > 0 ? "+" : ""}${agent.performanceScore - existing.performanceScore} points.`,
+        ].join("\n"),
+      }).catch((err) =>
+        logger.warn({ err, agentId: agent.id }, "failed to create employment history for performance change"),
+      );
+    }
+
     res.json(agent);
   });
 
@@ -2200,6 +2251,13 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
         terminatedAgentId: agent.id,
         terminatedAgentName: agent.name,
         reason: "manual_termination",
+      });
+      await createEmploymentHistoryEntry(db, {
+        companyId: agent.companyId,
+        agentId: agent.id,
+        agentName: agent.name,
+        eventType: "terminated",
+        details: "Agent terminated via board action (manual termination).",
       });
     } catch (err) {
       console.error("Failed to archive workspace or create termination record:", err);
@@ -2715,6 +2773,13 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
         terminatedAgentId: agentId,
         terminatedAgentName: result.name,
         reason: terminationReason as string,
+      });
+      await createEmploymentHistoryEntry(db, {
+        companyId,
+        agentId,
+        agentName: result.name,
+        eventType: "terminated",
+        details: `Agent terminated. Reason: ${terminationReason as string}.`,
       });
     } catch (err) {
       console.error("Failed to archive workspace or create termination record:", err);

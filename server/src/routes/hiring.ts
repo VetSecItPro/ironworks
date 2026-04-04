@@ -15,11 +15,12 @@ import {
 } from "@ironworksai/shared";
 import { badRequest, notFound, unprocessable } from "../errors.js";
 import { assertCanWrite, assertCompanyAccess, getActorInfo } from "./authz.js";
-import { logActivity, createAgentWorkspace, createHiringRecord, buildOnboardingPacket } from "../services/index.js";
+import { logActivity, createAgentWorkspace, createHiringRecord, buildOnboardingPacket, approvalService, createEmploymentHistoryEntry } from "../services/index.js";
 import { logger } from "../middleware/logger.js";
 
 export function hiringRoutes(db: Db) {
   const router = Router();
+  const approvalsSvc = approvalService(db);
 
   // ── GET /companies/:companyId/hiring-requests ───────────────────────────────
   router.get("/companies/:companyId/hiring-requests", async (req, res) => {
@@ -155,7 +156,34 @@ export function hiringRoutes(db: Db) {
     if (Array.isArray(onboardingKbPageIds)) updates.onboardingKbPageIds = onboardingKbPageIds;
     if (typeof reportsToAgentId === "string") updates.reportsToAgentId = reportsToAgentId;
     // Allow promoting from draft to pending
-    if (typeof status === "string" && status === "pending") updates.status = "pending";
+    const promotingToPending = typeof status === "string" && status === "pending";
+    if (promotingToPending) updates.status = "pending";
+
+    // When promoting to pending, create a linked approval
+    if (promotingToPending) {
+      const actor = getActorInfo(req);
+      const approval = await approvalsSvc.create(companyId, {
+        type: "hire_agent",
+        requestedByAgentId: existing.requestedByAgentId,
+        requestedByUserId: actor.actorType === "user" ? actor.actorId : null,
+        payload: {
+          hiringRequestId: id,
+          role: typeof updates.role === "string" ? updates.role : existing.role,
+          title: typeof updates.title === "string" ? updates.title : existing.title,
+          employmentType: typeof updates.employmentType === "string" ? updates.employmentType : existing.employmentType,
+          department: typeof updates.department === "string" ? updates.department : existing.department,
+          justification: typeof updates.justification === "string" ? updates.justification : existing.justification,
+        },
+        status: "pending",
+        decisionNote: null,
+        decidedByUserId: null,
+        decidedAt: null,
+        updatedAt: new Date(),
+      });
+      if (approval) {
+        updates.approvalId = approval.id;
+      }
+    }
 
     const updated = await db
       .update(hiringRequests)
@@ -306,6 +334,18 @@ export function hiringRoutes(db: Db) {
         employmentType: result.agent.employmentType ?? "full_time",
         hiredByUserId: actor.actorType === "user" ? actor.actorId : null,
         hiredByAgentId: actor.actorType === "agent" ? actor.actorId : null,
+      });
+      await createEmploymentHistoryEntry(db, {
+        companyId,
+        agentId: result.agent.id,
+        agentName: result.agent.name,
+        eventType: "hired",
+        details: [
+          `Agent hired via fulfillment of hiring request ${id}.`,
+          `Role: ${result.agent.role}`,
+          `Employment Type: ${result.agent.employmentType ?? "full_time"}`,
+          `Department: ${result.agent.department ?? "unassigned"}`,
+        ].join("\n"),
       });
     } catch (err) {
       // Non-fatal: workspace/personnel record creation should not block hiring

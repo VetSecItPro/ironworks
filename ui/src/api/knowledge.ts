@@ -14,6 +14,8 @@ export interface KnowledgePage {
   createdByUserId: string | null;
   updatedByAgentId: string | null;
   updatedByUserId: string | null;
+  agentId: string | null;
+  department: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -32,8 +34,13 @@ export interface KnowledgePageRevision {
 }
 
 export const knowledgeApi = {
-  list: (companyId: string, q?: string) =>
-    api.get<KnowledgePage[]>(`/companies/${companyId}/knowledge${q ? `?q=${encodeURIComponent(q)}` : ""}`),
+  list: (companyId: string, q?: string, department?: string) => {
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    if (department && department !== "all") params.set("department", department);
+    const qs = params.toString();
+    return api.get<KnowledgePage[]>(`/companies/${companyId}/knowledge${qs ? `?${qs}` : ""}`);
+  },
 
   get: (pageId: string) =>
     api.get<KnowledgePage>(`/knowledge/${pageId}`),
@@ -41,7 +48,7 @@ export const knowledgeApi = {
   getBySlug: (companyId: string, slug: string) =>
     api.get<KnowledgePage>(`/companies/${companyId}/knowledge/slug/${encodeURIComponent(slug)}`),
 
-  create: (companyId: string, data: { title: string; body?: string; visibility?: string; projectId?: string }) =>
+  create: (companyId: string, data: { title: string; body?: string; visibility?: string; projectId?: string; department?: string }) =>
     api.post<KnowledgePage>(`/companies/${companyId}/knowledge`, data),
 
   update: (pageId: string, data: { title?: string; body?: string; visibility?: string; projectId?: string; changeSummary?: string }) =>
