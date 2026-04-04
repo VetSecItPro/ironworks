@@ -2,7 +2,7 @@ import { Router, type Request } from "express";
 import { generateKeyPairSync, randomUUID } from "node:crypto";
 import path from "node:path";
 import type { Db } from "@ironworksai/db";
-import { agents as agentsTable, agentMemoryEntries, companies, companySubscriptions, heartbeatRuns } from "@ironworksai/db";
+import { agents as agentsTable, agentMemoryEntries, companies, companySubscriptions, heartbeatRuns, issues as issuesTable } from "@ironworksai/db";
 import { and, desc, eq, inArray, not, sql } from "drizzle-orm";
 import {
   agentSkillSyncSchema,
@@ -2220,6 +2220,55 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
         logger.warn({ err, agentId: agent.id }, "failed to create employment history for performance change"),
       );
     }
+
+    // Lifecycle transition gate: pilot -> production when 5 completed issues threshold is crossed
+    void (async () => {
+      try {
+        const PILOT_ISSUE_THRESHOLD = 5;
+        const [countRow] = await db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(issuesTable)
+          .where(
+            and(
+              eq(issuesTable.companyId, agent.companyId),
+              eq(issuesTable.assigneeAgentId, agent.id),
+              eq(issuesTable.status, "done"),
+            ),
+          );
+        const completedCount = Number(countRow?.count ?? 0);
+
+        // Check if count just crossed the threshold (i.e., agent is still in pilot stage)
+        // We use the metadata field to track whether we've already fired this transition.
+        const metadataAny = (agent.metadata as Record<string, unknown> | null) ?? {};
+        const alreadyPromoted = metadataAny.pilotThresholdMet === true;
+
+        if (!alreadyPromoted && completedCount >= PILOT_ISSUE_THRESHOLD) {
+          // Mark transition in metadata to prevent duplicate activity entries
+          await db
+            .update(agentsTable)
+            .set({ metadata: { ...metadataAny, pilotThresholdMet: true }, updatedAt: new Date() })
+            .where(eq(agentsTable.id, agent.id));
+
+          await logActivity(db, {
+            companyId: agent.companyId,
+            actorType: "system",
+            actorId: agent.id,
+            agentId: agent.id,
+            action: "agent.lifecycle_transition",
+            entityType: "agent",
+            entityId: agent.id,
+            details: {
+              from: "pilot",
+              to: "production",
+              trigger: `Completed ${completedCount} issues (threshold: ${PILOT_ISSUE_THRESHOLD})`,
+              message: `Agent ${agent.name} has completed ${completedCount} issues and is ready to graduate from pilot to production.`,
+            },
+          });
+        }
+      } catch (err) {
+        logger.warn({ err, agentId: agent.id }, "failed to check pilot lifecycle transition");
+      }
+    })();
 
     res.json(agent);
   });

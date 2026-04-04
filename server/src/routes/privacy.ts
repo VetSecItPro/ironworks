@@ -4,6 +4,7 @@ import type { Db } from "@ironworksai/db";
 import { captureAnalyticsSnapshot } from "../services/analytics.js";
 import { checkContractorLifecycles } from "../services/contractor-lifecycle.js";
 import { decayStaleMemories } from "../services/agent-memory.js";
+import { generatePromptOptimizationSuggestion } from "../services/agent-reflection.js";
 import { runAllWeeklyReports, runAllMonthlyCostSummaries } from "../services/weekly-reports.js";
 import { runAllDailyStandups } from "../services/daily-standup.js";
 import { captureAllPerformanceSnapshots } from "../services/performance-score.js";
@@ -609,6 +610,27 @@ export async function runRetentionCleanup(db: Db): Promise<{
 }
 
 /**
+ * Run prompt optimization suggestion generation for all active agents
+ * across all companies. Called weekly on Sunday.
+ */
+async function runAllPromptOptimizations(db: Db): Promise<void> {
+  const allAgents = await db
+    .select({ id: agents.id, companyId: agents.companyId })
+    .from(agents)
+    .where(eq(agents.status, "active"));
+
+  for (const agent of allAgents) {
+    try {
+      await generatePromptOptimizationSuggestion(db, agent.id);
+    } catch (err) {
+      logger.warn({ err, agentId: agent.id }, "prompt optimization suggestion failed for agent");
+    }
+  }
+
+  logger.info({ agentCount: allAgents.length }, "prompt optimization suggestions complete");
+}
+
+/**
  * Start the daily retention cleanup scheduler.
  * Call this from server startup.
  */
@@ -709,6 +731,10 @@ export function startRetentionScheduler(db: Db): NodeJS.Timeout {
       // Performance snapshots captured alongside weekly reports
       captureAllPerformanceSnapshots(db).catch((err) =>
         logger.error({ err }, "scheduled performance snapshots failed"),
+      );
+      // Self-optimization suggestions generated weekly on Sunday alongside reports
+      runAllPromptOptimizations(db).catch((err) =>
+        logger.error({ err }, "scheduled prompt optimization suggestions failed"),
       );
     }
 

@@ -30,6 +30,25 @@ import {
 } from "./parse.js";
 import { resolveClaudeDesiredSkillNames } from "./skills.js";
 
+// ── Prompt Caching TTL Strategy ──────────────────────────────────────────────
+//
+// Anthropic prompt caching TTL strategy (for direct API integration):
+//
+//   Tools + system prompt: use 1h TTL (changes rarely; same across runs)
+//   Conversation context:  use 5min TTL (changes every run)
+//
+// These constants are informational config values for the current CLI-based
+// adapter. They will be wired into cache_control blocks when we switch to
+// direct Anthropic SDK calls (see TODO below).
+
+// Tools list and system prompt are stable across runs for a given agent.
+// Cache them aggressively to maximize prompt cache hit rates.
+export const STABLE_CACHE_TTL = "1h";
+
+// Per-run conversation context changes on every heartbeat execution.
+// Use the minimum TTL; this is the Anthropic API default for ephemeral blocks.
+export const DYNAMIC_CACHE_TTL = "5min"; // default
+
 // ── Prompt Caching Helpers ────────────────────────────────────────────────────
 //
 // The Anthropic API supports cache_control: { type: "ephemeral" } on message

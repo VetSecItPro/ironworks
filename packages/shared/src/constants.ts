@@ -914,13 +914,16 @@ export const COST_CIRCUIT_BREAKER_MULTIPLIER = 3;
 
 // ── Output Token Budget Caps ─────────────────────────────────────────────────
 // Configurable max_tokens limits by task category to control BYOK LLM spend.
+// These only constrain OVERHEAD (status checks, simple replies). Real work product
+// gets generous limits. Agents producing deliverables (reports, code, documents)
+// should never be cut short by output caps.
 
 export const DEFAULT_OUTPUT_TOKEN_LIMITS = {
-  heartbeat_status: 1024,
-  simple_response: 2048,
-  code_generation: 4096,
-  analysis_report: 8192,
-  uncapped: 16384,
+  heartbeat_status: 1024,    // Timer wake, just checking in
+  simple_response: 4096,     // Replying to a comment
+  code_generation: 16384,    // Writing code, creating files
+  analysis_report: 32768,    // Reports, research, documents (10+ pages OK)
+  uncapped: 65536,           // No classification match - generous default
 } as const;
 
 export type OutputTokenCategory = keyof typeof DEFAULT_OUTPUT_TOKEN_LIMITS;
@@ -959,3 +962,15 @@ export const AGENT_LIFECYCLE_LABELS: Record<AgentLifecycleStage, string> = {
   production: "Production",
   retired: "Retired",
 };
+
+// ── Progressive Budget Gates ──────────────────────────────────────────────────
+// Daily spend caps (in cents) per lifecycle stage.
+// -1 means unlimited / custom budget applies.
+
+export const BUDGET_GATES = {
+  sandbox: 1000,    // $10/day in cents
+  pilot: 10000,     // $100/day in cents
+  production: -1,   // custom/unlimited
+} as const;
+
+export type BudgetGateStage = keyof typeof BUDGET_GATES;

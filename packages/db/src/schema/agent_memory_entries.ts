@@ -1,4 +1,5 @@
 import {
+  customType,
   pgTable,
   uuid,
   text,
@@ -8,6 +9,30 @@ import {
 } from "drizzle-orm/pg-core";
 import { agents } from "./agents.js";
 import { companies } from "./companies.js";
+
+// Custom Drizzle type for pgvector's vector(N) column.
+// Uses `number[] | null` in TypeScript. The SQL representation is
+// `vector(1536)`. On databases without pgvector installed the column
+// will not exist, so all reads/writes are guarded at the service layer.
+const vectorColumn = customType<{ data: number[]; notNull: false; default: false }>({
+  dataType() {
+    return "vector(1536)";
+  },
+  toDriver(value: number[]): string {
+    return `[${value.join(",")}]`;
+  },
+  fromDriver(value: unknown): number[] {
+    if (typeof value === "string") {
+      return value
+        .replace(/^\[/, "")
+        .replace(/\]$/, "")
+        .split(",")
+        .map((v) => parseFloat(v));
+    }
+    if (Array.isArray(value)) return value as number[];
+    return [];
+  },
+});
 
 export const agentMemoryEntries = pgTable(
   "agent_memory_entries",
@@ -26,6 +51,8 @@ export const agentMemoryEntries = pgTable(
     expiresAt: timestamp("expires_at", { withTimezone: true }),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    // Nullable embedding vector - populated by embedding pipeline; null when pgvector unavailable.
+    embedding: vectorColumn("embedding"),
   },
   (table) => ({
     agentTypeIdx: index("agent_memory_entries_agent_type_idx").on(table.agentId, table.memoryType),

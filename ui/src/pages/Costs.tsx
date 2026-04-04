@@ -344,6 +344,20 @@ export function Costs() {
     staleTime: 60_000,
   });
 
+  const { data: deptBudgetVsActual } = useQuery({
+    queryKey: ["executive", "dept-budget-vs-actual", companyId],
+    queryFn: () => executiveApi.departmentBudgetVsActual(companyId),
+    enabled: !!selectedCompanyId && mainTab === "analysis",
+    staleTime: 60_000,
+  });
+
+  const { data: agentEfficiency } = useQuery({
+    queryKey: ["executive", "agent-efficiency", companyId],
+    queryFn: () => executiveApi.agentEfficiencyRankings(companyId),
+    enabled: !!selectedCompanyId && mainTab === "analysis",
+    staleTime: 60_000,
+  });
+
   function toggleAgent(agentId: string) {
     setExpandedAgents((prev) => {
       const next = new Set(prev);
@@ -1803,7 +1817,106 @@ export function Costs() {
             </Card>
           )}
 
-          {!budgetForecastData && !costAllocation && (
+          {/* Department Budget vs Actual */}
+          {deptBudgetVsActual && deptBudgetVsActual.length > 0 && (
+            <Card>
+              <CardHeader className="px-5 pt-5 pb-2">
+                <CardTitle className="text-base">Budget vs Actual by Department</CardTitle>
+                <CardDescription>
+                  Month-to-date actual spend compared to monthly budget allocation per department.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="px-5 pb-5 pt-2 space-y-2">
+                {deptBudgetVsActual.map((row) => {
+                  const hasBudget = row.budget !== null && row.budget > 0;
+                  const overBudget = hasBudget && row.variance > 0;
+                  const utilizationPct = hasBudget ? Math.min(100, Math.round((row.actual / row.budget!) * 100)) : null;
+                  return (
+                    <div key={row.department} className="space-y-1">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-medium">{row.department}</span>
+                        <span className="flex items-center gap-2 text-xs">
+                          <span className="text-muted-foreground">
+                            {formatCents(row.actual)}
+                            {hasBudget && ` / ${formatCents(row.budget!)}`}
+                          </span>
+                          {hasBudget && (
+                            <span className={cn(
+                              "font-semibold",
+                              overBudget ? "text-red-400" : "text-emerald-400",
+                            )}>
+                              {overBudget ? "+" : ""}{formatCents(row.variance)}
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                      {hasBudget && utilizationPct !== null && (
+                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className={cn(
+                              "h-full rounded-full transition-[width] duration-500",
+                              utilizationPct >= 100 ? "bg-red-500" :
+                              utilizationPct >= 80 ? "bg-amber-500" : "bg-emerald-500",
+                            )}
+                            style={{ width: `${utilizationPct}%` }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Agent Cost Efficiency Rankings */}
+          {agentEfficiency && agentEfficiency.length > 0 && (
+            <Card>
+              <CardHeader className="px-5 pt-5 pb-2">
+                <CardTitle className="text-base">Agent Cost Efficiency Rankings</CardTitle>
+                <CardDescription>
+                  Agents ranked by cost-per-completed-issue this month. Lower cost = higher ranking.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="px-5 pb-5 pt-2">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-left">
+                      <th className="pb-2 pr-4 font-semibold text-muted-foreground">#</th>
+                      <th className="pb-2 pr-4 font-semibold text-muted-foreground">Agent</th>
+                      <th className="pb-2 pr-4 font-semibold text-muted-foreground text-right">Issues Done</th>
+                      <th className="pb-2 pr-4 font-semibold text-muted-foreground text-right">Cost / Issue</th>
+                      <th className="pb-2 font-semibold text-muted-foreground text-right">Score</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/50">
+                    {agentEfficiency.slice(0, 15).map((row, idx) => (
+                      <tr key={row.agentId}>
+                        <td className="py-1.5 pr-4 text-muted-foreground tabular-nums">{idx + 1}</td>
+                        <td className="py-1.5 pr-4 font-medium truncate max-w-[180px]">{row.agentName}</td>
+                        <td className="py-1.5 pr-4 text-right tabular-nums">{row.issuesCompleted}</td>
+                        <td className="py-1.5 pr-4 text-right tabular-nums">
+                          {formatCents(row.costPerIssue)}
+                        </td>
+                        <td className="py-1.5 text-right tabular-nums">
+                          <span className={cn(
+                            "font-semibold",
+                            row.performanceScore >= 80 ? "text-emerald-400" :
+                            row.performanceScore >= 60 ? "text-blue-400" :
+                            row.performanceScore >= 40 ? "text-amber-400" : "text-red-400",
+                          )}>
+                            {row.performanceScore}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+          )}
+
+          {!budgetForecastData && !costAllocation && !deptBudgetVsActual && !agentEfficiency && (
             <EmptyState icon={DollarSign} message="No analysis data available yet." />
           )}
         </TabsContent>

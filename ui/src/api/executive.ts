@@ -221,6 +221,41 @@ export interface MemoryHealth {
   coverageGaps: string[];
 }
 
+export interface DepartmentImpactRow {
+  department: string;
+  issuesCompleted: number;
+  totalCost: number;
+  humanHoursEquivalent: number;
+}
+
+export interface DepartmentBudgetVsActualRow {
+  department: string;
+  budget: number | null;
+  actual: number;
+  variance: number;
+}
+
+export interface AgentEfficiencyRow {
+  agentId: string;
+  agentName: string;
+  costPerIssue: number;
+  issuesCompleted: number;
+  performanceScore: number;
+}
+
+export interface HumanOverrideRate {
+  totalRuns: number;
+  overriddenRuns: number;
+  overrideRate: number;
+}
+
+export interface ContextWindowUtilization {
+  modelContextSize: number;
+  avgInputTokens: number;
+  utilizationPct: number;
+  isApproachingLimit: boolean;
+}
+
 export const executiveApi = {
   unitEconomics: (companyId: string) =>
     api.get<UnitEconomics>(`/companies/${companyId}/executive/unit-economics`),
@@ -309,4 +344,19 @@ export const executiveApi = {
 
   memoryHealth: (companyId: string, agentId: string) =>
     api.get<MemoryHealth>(`/companies/${companyId}/agents/${agentId}/memory-health`),
+
+  departmentImpact: (companyId: string, periodDays = 30) =>
+    api.get<DepartmentImpactRow[]>(`/companies/${companyId}/department-impact?periodDays=${periodDays}`),
+
+  departmentBudgetVsActual: (companyId: string) =>
+    api.get<DepartmentBudgetVsActualRow[]>(`/companies/${companyId}/department-budget-vs-actual`),
+
+  agentEfficiencyRankings: (companyId: string) =>
+    api.get<AgentEfficiencyRow[]>(`/companies/${companyId}/agent-efficiency-rankings`),
+
+  humanOverrideRate: (companyId: string, periodDays = 30) =>
+    api.get<HumanOverrideRate>(`/companies/${companyId}/human-override-rate?periodDays=${periodDays}`),
+
+  contextWindowUtilization: (companyId: string, agentId: string) =>
+    api.get<ContextWindowUtilization>(`/companies/${companyId}/agents/${agentId}/context-window`),
 };

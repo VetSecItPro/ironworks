@@ -2,12 +2,22 @@ import { Router } from "express";
 import type { Db } from "@ironworksai/db";
 import { agents } from "@ironworksai/db";
 import { and, eq, ne, inArray } from "drizzle-orm";
-import { executiveAnalyticsService, budgetForecast, departmentSpendingSummary, modelHealthCheck } from "../services/executive-analytics.js";
+import {
+  executiveAnalyticsService,
+  budgetForecast,
+  departmentSpendingSummary,
+  modelHealthCheck,
+  departmentImpact,
+  departmentBudgetVsActual,
+  agentEfficiencyRankings,
+  humanOverrideRate,
+  systemHealthSummary,
+} from "../services/executive-analytics.js";
 import { computeDORAMetrics } from "../services/dora-metrics.js";
 import { getMemoryHealth } from "../services/agent-memory.js";
 import { logActivity } from "../services/activity-log.js";
 import { heartbeatService } from "../services/heartbeat.js";
-import { tokenAnalyticsService } from "../services/token-analytics.js";
+import { tokenAnalyticsService, contextWindowUtilization } from "../services/token-analytics.js";
 import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
 import { getPendingAlerts, resolveAlert, type AlertSeverity } from "../services/smart-alerts.js";
 import { getRiskSettings, updateRiskSettings } from "../services/company-risk-settings.js";
@@ -302,6 +312,57 @@ export function executiveRoutes(db: Db) {
     const companyId = req.params.companyId as string;
     assertCompanyAccess(req, companyId);
     const data = await modelHealthCheck(db, companyId);
+    res.json(data);
+  });
+
+  // -- Department Impact --
+  router.get("/companies/:companyId/department-impact", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+    const periodDays = req.query.periodDays ? Number(req.query.periodDays) : 30;
+    const data = await departmentImpact(db, companyId, periodDays);
+    res.json(data);
+  });
+
+  // -- Department Budget vs Actual --
+  router.get("/companies/:companyId/department-budget-vs-actual", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+    const data = await departmentBudgetVsActual(db, companyId);
+    res.json(data);
+  });
+
+  // -- Agent Efficiency Rankings --
+  router.get("/companies/:companyId/agent-efficiency-rankings", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+    const data = await agentEfficiencyRankings(db, companyId);
+    res.json(data);
+  });
+
+  // -- Human Override Rate --
+  router.get("/companies/:companyId/human-override-rate", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+    const periodDays = req.query.periodDays ? Number(req.query.periodDays) : 30;
+    const data = await humanOverrideRate(db, companyId, periodDays);
+    res.json(data);
+  });
+
+  // -- Context Window Utilization (per-agent) --
+  router.get("/companies/:companyId/agents/:agentId/context-window", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    const agentId = req.params.agentId as string;
+    assertCompanyAccess(req, companyId);
+    const data = await contextWindowUtilization(db, agentId);
+    res.json(data);
+  });
+
+  // -- System Health Summary --
+  router.get("/companies/:companyId/system-health", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+    const data = await systemHealthSummary(db, companyId);
     res.json(data);
   });
 

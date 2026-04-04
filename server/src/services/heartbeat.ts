@@ -10,6 +10,7 @@ import {
   agentRuntimeState,
   agentTaskSessions,
   agentWakeupRequests,
+  costEvents,
   heartbeatRunEvents,
   heartbeatRuns,
   issues,
@@ -54,7 +55,7 @@ import {
 } from "./execution-workspace-policy.js";
 import { instanceSettingsService } from "./instance-settings.js";
 import { logActivity } from "./activity-log.js";
-import { buildMorningBriefing, saveSessionState, getLatestSessionState } from "./session-state.js";
+import { buildMorningBriefing, detectContextDrift, saveSessionState, getLatestSessionState } from "./session-state.js";
 import { redactCurrentUserText, redactCurrentUserValue } from "../log-redaction.js";
 import {
   hasSessionCompactionThresholds,
@@ -691,6 +692,83 @@ function isSameTaskScope(left: string | null, right: string | null) {
   return (left ?? null) === (right ?? null);
 }
 
+// ── Tool Output Compression ────────────────────────────────────────────────────
+//
+// Limits verbose tool results before they enter the agent context window.
+// Strips metadata noise, retains the actionable content, and truncates to
+// MAX_TOOL_OUTPUT_CHARS with a "[truncated]" marker if the result is too long.
+
+const MAX_TOOL_OUTPUT_CHARS = 2000;
+
+/**
+ * Compress a tool's raw output string to reduce context window consumption.
+ *
+ * Rules per tool type:
+ *   - issue_comments / list_issue_comments: strip metadata fields, keep author + body + timestamp
+ *   - read_file / cat: keep only first/changed sections (heuristic: first 1500 chars)
+ *   - http_request / api_call: extract only top-level value fields, drop nested metadata
+ *   - All: truncate total length to MAX_TOOL_OUTPUT_CHARS
+ */
+export function compressToolOutput(toolName: string, output: string): string {
+  if (!output || output.length === 0) return output;
+
+  const lowerTool = toolName.toLowerCase();
+  let compressed = output;
+
+  // Issue comments: strip metadata, keep author + content + timestamp
+  if (lowerTool.includes("comment") || lowerTool.includes("issue_comment")) {
+    try {
+      const parsed = JSON.parse(output) as unknown;
+      const items = Array.isArray(parsed) ? parsed : [parsed];
+      const stripped = items.map((item: unknown) => {
+        if (typeof item !== "object" || item === null) return item;
+        const r = item as Record<string, unknown>;
+        return {
+          author: r.author ?? r.authorName ?? r.user ?? r.login ?? null,
+          body: r.body ?? r.content ?? r.text ?? null,
+          createdAt: r.createdAt ?? r.created_at ?? r.timestamp ?? null,
+        };
+      });
+      compressed = JSON.stringify(stripped);
+    } catch {
+      // Not JSON - leave as-is for truncation below
+    }
+  }
+
+  // File reads: keep only first 1500 chars (changed sections heuristic)
+  if (lowerTool.includes("read_file") || lowerTool === "cat" || lowerTool.includes("file_read")) {
+    compressed = compressed.slice(0, 1500);
+    if (output.length > 1500) {
+      compressed += "\n...[file truncated - showing first 1500 chars]";
+    }
+  }
+
+  // API / HTTP responses: extract top-level string/number fields, drop nested objects
+  if (lowerTool.includes("http") || lowerTool.includes("api_call") || lowerTool.includes("fetch")) {
+    try {
+      const parsed = JSON.parse(output) as unknown;
+      if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
+        const flat: Record<string, unknown> = {};
+        for (const [key, val] of Object.entries(parsed as Record<string, unknown>)) {
+          if (typeof val === "string" || typeof val === "number" || typeof val === "boolean") {
+            flat[key] = val;
+          }
+        }
+        compressed = JSON.stringify(flat);
+      }
+    } catch {
+      // Not JSON
+    }
+  }
+
+  // Final: hard cap at MAX_TOOL_OUTPUT_CHARS
+  if (compressed.length > MAX_TOOL_OUTPUT_CHARS) {
+    compressed = compressed.slice(0, MAX_TOOL_OUTPUT_CHARS) + " [truncated]";
+  }
+
+  return compressed;
+}
+
 function isTrackedLocalChildProcessAdapter(adapterType: string) {
   return SESSIONED_LOCAL_ADAPTERS.has(adapterType);
 }
@@ -847,6 +925,12 @@ function resolveMaxOutputTokens(
   context: Record<string, unknown>,
   source: string | null,
 ): number {
+  // Budget throttle: if 80% of daily gate was hit, the cap was stored in context
+  const throttledCap = typeof context.ironworksBudgetThrottledTokenCap === "number" && context.ironworksBudgetThrottledTokenCap > 0
+    ? context.ironworksBudgetThrottledTokenCap
+    : null;
+  if (throttledCap) return throttledCap;
+
   // Allow per-agent override via adapterConfig.maxOutputTokens
   const explicit = typeof config.maxOutputTokens === "number" && config.maxOutputTokens > 0
     ? config.maxOutputTokens
@@ -2377,6 +2461,94 @@ export function heartbeatService(db: Db) {
       await finalizeAgentStatus(agent.id, "cancelled");
       return;
     }
+    // ── Progressive Budget Gates ─────────────────────────────────────────────
+    // Check if the agent's daily spend exceeds the gate for its lifecycle stage.
+    // If >100% of gate: cancel run and pause agent.
+    // If >80% of gate: reduce maxOutputTokens by 50% (throttle).
+    {
+      const { BUDGET_GATES } = await import("@ironworksai/shared");
+      const agentMeta = (agent.metadata as Record<string, unknown> | null) ?? {};
+      const lifecycleStage = typeof agentMeta.lifecycleStage === "string"
+        ? agentMeta.lifecycleStage as keyof typeof BUDGET_GATES
+        : "pilot";
+      const dailyGateCents = BUDGET_GATES[lifecycleStage] ?? BUDGET_GATES.pilot;
+
+      if (dailyGateCents > 0) {
+        const todayStart = new Date();
+        todayStart.setUTCHours(0, 0, 0, 0);
+        const [spendRow] = await db
+          .select({ totalCents: sql<number>`coalesce(sum(${costEvents.costCents}), 0)::int` })
+          .from(costEvents)
+          .where(
+            and(
+              eq(costEvents.agentId, agent.id),
+              eq(costEvents.companyId, agent.companyId),
+              gte(costEvents.occurredAt, todayStart),
+            ),
+          );
+        const dailySpendCents = Number(spendRow?.totalCents ?? 0);
+
+        if (dailySpendCents >= dailyGateCents) {
+          // Hard stop: pause agent and cancel run
+          await db
+            .update(agents)
+            .set({ status: "paused", pauseReason: "budget", pausedAt: new Date(), updatedAt: new Date() })
+            .where(eq(agents.id, agent.id));
+
+          await setRunStatus(run.id, "cancelled", {
+            error: `Daily budget gate exceeded: $${(dailySpendCents / 100).toFixed(2)} of $${(dailyGateCents / 100).toFixed(2)} limit for ${lifecycleStage} stage`,
+            errorCode: "budget_gate_exceeded",
+            finishedAt: new Date(),
+          });
+          await logActivity(db, {
+            companyId: agent.companyId,
+            actorType: "system",
+            actorId: agent.id,
+            agentId: agent.id,
+            runId: run.id,
+            action: "agent.paused",
+            entityType: "agent",
+            entityId: agent.id,
+            details: {
+              reason: "budget_gate_exceeded",
+              lifecycleStage,
+              dailySpendCents,
+              dailyGateCents,
+            },
+          });
+          return;
+        }
+
+        if (dailySpendCents >= dailyGateCents * 0.8) {
+          // Throttle: halve the output token cap and log
+          const originalCap = resolveMaxOutputTokens(parseObject(agent.adapterConfig), context, run.invocationSource ?? null);
+          const throttledCap = Math.max(256, Math.floor(originalCap * 0.5));
+          // Store throttle cap in context for resolveMaxOutputTokens to pick up
+          (context as Record<string, unknown>).ironworksBudgetThrottledTokenCap = throttledCap;
+
+          await logActivity(db, {
+            companyId: agent.companyId,
+            actorType: "system",
+            actorId: agent.id,
+            agentId: agent.id,
+            runId: run.id,
+            action: "agent.throttled",
+            entityType: "agent",
+            entityId: agent.id,
+            details: {
+              reason: "budget_gate_80pct",
+              lifecycleStage,
+              dailySpendCents,
+              dailyGateCents,
+              originalTokenCap: originalCap,
+              throttledTokenCap: throttledCap,
+            },
+          });
+        }
+      }
+    }
+    // ── End Progressive Budget Gates ──────────────────────────────────────────
+
     // ── End Autonomy Enforcement ─────────────────────────────────────────────
     const issueContext = issueId
       ? await db
@@ -2736,6 +2908,70 @@ export function heartbeatService(db: Db) {
       }
     } catch (err) {
       logger.warn({ err, agentId: agent.id }, "failed to build session context for run");
+    }
+
+    // Every 5th run: check for context drift and inject refocus prompt if detected.
+    // Uses a modular check on total completed/finalized runs to spread load.
+    try {
+      const [runCountRow] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(heartbeatRuns)
+        .where(
+          and(
+            eq(heartbeatRuns.agentId, agent.id),
+            eq(heartbeatRuns.companyId, agent.companyId),
+          ),
+        );
+      const totalRuns = Number(runCountRow?.count ?? 0);
+      if (totalRuns % 5 === 0 && totalRuns > 0) {
+        const currentObjective =
+          typeof context.issueTitle === "string" ? context.issueTitle :
+          typeof context.taskKey === "string" ? context.taskKey :
+          typeof context.wakeReason === "string" ? context.wakeReason : "";
+        if (currentObjective) {
+          const driftResult = await detectContextDrift(db, agent.id, currentObjective);
+          if (driftResult.driftDetected && driftResult.recommendation) {
+            context.ironworksDriftWarning = driftResult.recommendation;
+          }
+        }
+      }
+    } catch (err) {
+      logger.debug({ err, agentId: agent.id }, "context drift check failed, skipping");
+    }
+
+    // Agent Self-Awareness of Context Limits
+    // If the agent has been consuming a significant fraction of the model's context
+    // window in recent runs, inject an advisory note to encourage concise responses.
+    try {
+      const agentRuntimeSnapshot = await getRuntimeState(agent.id);
+      if (agentRuntimeSnapshot) {
+        // Estimate last-run input from stored cumulative total and run count
+        const totalInput = Number(agentRuntimeSnapshot.totalInputTokens ?? 0);
+        const runHistory = await db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(heartbeatRuns)
+          .where(
+            and(
+              eq(heartbeatRuns.agentId, agent.id),
+              eq(heartbeatRuns.companyId, agent.companyId),
+              eq(heartbeatRuns.status, "succeeded"),
+            ),
+          );
+        const completedRuns = Number(runHistory[0]?.count ?? 1);
+        const avgInputPerRun = completedRuns > 0 ? Math.round(totalInput / completedRuns) : 0;
+
+        // Default context window is 200k for Claude models
+        const MODEL_DEFAULT_CONTEXT = 200_000;
+        const utilizationPct = MODEL_DEFAULT_CONTEXT > 0
+          ? Math.round((avgInputPerRun / MODEL_DEFAULT_CONTEXT) * 100)
+          : 0;
+
+        if (utilizationPct > 70) {
+          context.ironworksContextNote = `Note: Your context window is ${utilizationPct}% full. Be concise in your responses. Focus on the most important information.`;
+        }
+      }
+    } catch (err) {
+      logger.debug({ err, agentId: agent.id }, "context utilization check failed, skipping");
     }
 
     context.ironworksWorkspace = {

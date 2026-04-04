@@ -1,8 +1,8 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { agentMemoryEntries, agents, heartbeatRuns, issueLabels, issues, labels } from "@ironworksai/db";
 import { logger } from "../middleware/logger.js";
-import { createDecisionRecord } from "./agent-workspace.js";
+import { createDecisionRecord, updateTechDebtRegister } from "./agent-workspace.js";
 
 // ── Agent Reflection Services ──────────────────────────────────────────────
 //
@@ -170,6 +170,75 @@ export async function performPostTaskReflection(
     } catch (err) {
       // ADR creation is best-effort; don't fail the reflection
       logger.warn({ err, agentId: opts.agentId, issueId: opts.issueId }, "failed to auto-create ADR");
+    }
+  }
+
+  // Tech Debt Register: if any label is "tech_debt", append an entry
+  if (opts.outcome === "completed" && issueSkills.some((s) => s.labelName === "tech_debt")) {
+    try {
+      const [issueDetail] = await db
+        .select({ description: issues.description })
+        .from(issues)
+        .where(eq(issues.id, opts.issueId))
+        .limit(1);
+
+      const [agentRow] = await db
+        .select({ role: agents.role })
+        .from(agents)
+        .where(eq(agents.id, opts.agentId))
+        .limit(1);
+
+      const description = issueDetail?.description
+        ? issueDetail.description.replace(/\n+/g, " ").slice(0, 200)
+        : `Completed by ${agentRow?.role ?? "agent"}.`;
+
+      await updateTechDebtRegister(db, opts.companyId, {
+        title: opts.issueTitle,
+        severity: "medium",
+        description,
+      });
+    } catch (err) {
+      logger.warn({ err, agentId: opts.agentId, issueId: opts.issueId }, "failed to update tech debt register");
+    }
+  }
+
+  // Quality review: assess whether the agent's completed output meets quality bar.
+  // Runs on completed issues only - uses the issue description as content proxy.
+  if (opts.outcome === "completed") {
+    try {
+      const [issueForQuality] = await db
+        .select({ description: issues.description })
+        .from(issues)
+        .where(eq(issues.id, opts.issueId))
+        .limit(1);
+
+      const contentToReview = issueForQuality?.description
+        ? `${opts.issueTitle}\n\n${issueForQuality.description}`
+        : opts.issueTitle;
+
+      const qualityResult = reviewOutputQuality(contentToReview);
+
+      if (!qualityResult.isAcceptable) {
+        const now = new Date();
+        await db.insert(agentMemoryEntries).values({
+          agentId: opts.agentId,
+          companyId: opts.companyId,
+          memoryType: "episodic",
+          category: "quality_flag",
+          content: `Output quality below threshold (score: ${qualityResult.score}/100) for task "${opts.issueTitle}". Issues: ${qualityResult.issues.join(" ")} - Flagged for human review.`,
+          sourceIssueId: opts.issueId,
+          confidence: 60,
+          lastAccessedAt: now,
+        });
+
+        logger.warn(
+          { agentId: opts.agentId, issueId: opts.issueId, score: qualityResult.score, qualityIssues: qualityResult.issues },
+          "agent output flagged for quality review",
+        );
+      }
+    } catch (err) {
+      // Quality review is best-effort; don't fail the reflection
+      logger.debug({ err, agentId: opts.agentId, issueId: opts.issueId }, "quality review failed");
     }
   }
 
@@ -383,4 +452,316 @@ export async function createHandoffIssue(
     },
     "created structured handoff issue",
   );
+}
+
+// ── Agent Output Quality Review ───────────────────────────────────────────
+
+export interface OutputQualityResult {
+  score: number;       // 0-100
+  isAcceptable: boolean; // score >= 60
+  issues: string[];
+}
+
+// Common filler phrases used for boilerplate detection
+const FILLER_PHRASES = [
+  "i hope this helps",
+  "please let me know",
+  "feel free to",
+  "as mentioned",
+  "as noted above",
+  "in conclusion",
+  "in summary",
+  "to summarize",
+  "thank you for",
+  "thanks for",
+  "i'd be happy to",
+  "i would be happy to",
+  "don't hesitate to",
+  "do not hesitate to",
+  "looking forward to",
+  "best regards",
+  "kind regards",
+  "sincerely",
+  "hope that helps",
+  "let me know if you need",
+];
+
+/**
+ * Heuristic quality review of agent output content.
+ * Does NOT call an LLM - uses rule-based checks.
+ *
+ * Scoring:
+ *   - Starts at 100 and deducts for each failing check
+ *   - Length < 50 chars: -40 (likely empty/stub response)
+ *   - Single line with no structure: -20
+ *   - No headings for long content (>300 chars): -10
+ *   - Ends mid-sentence: -20
+ *   - High boilerplate ratio (>60%): -30
+ */
+export function reviewOutputQuality(content: string): OutputQualityResult {
+  const qualityIssues: string[] = [];
+  let score = 100;
+
+  const trimmed = content.trim();
+  const charCount = trimmed.length;
+  const lineCount = trimmed.split("\n").filter((l) => l.trim().length > 0).length;
+
+  // Check 1: Length
+  if (charCount < 50) {
+    score -= 40;
+    qualityIssues.push(`Content too short (${charCount} chars). Minimum is 50 chars for a meaningful response.`);
+  }
+
+  // Check 2: Structure - single line with no paragraphs for longer content
+  if (charCount > 100 && lineCount <= 1) {
+    score -= 20;
+    qualityIssues.push("Response is a single line with no structure. Consider using paragraphs or headings.");
+  }
+
+  // Check 3: Headings for longer reports
+  if (charCount > 300) {
+    const hasHeadings = /^#{1,6}\s+\S/m.test(trimmed) || /^[A-Z][^\n]{5,50}\n[-=]{3,}/m.test(trimmed);
+    if (!hasHeadings) {
+      score -= 10;
+      qualityIssues.push("Long response lacks headings or clear sections.");
+    }
+  }
+
+  // Check 4: Ends mid-sentence (no terminal punctuation on last non-empty line)
+  const lastLine = trimmed.split("\n").filter((l) => l.trim().length > 0).pop() ?? "";
+  const lastChar = lastLine.trimEnd().slice(-1);
+  const validTerminators = new Set([".", "!", "?", ":", ";", ")", "]", "`", '"', "'"]);
+  // Markdown code blocks or list items ending with content are acceptable
+  const isCodeBlock = lastLine.trim().startsWith("```") || lastLine.trim().startsWith("~~~");
+  const isListItem = /^[-*+\d.]\s/.test(lastLine.trim());
+  if (charCount > 100 && !validTerminators.has(lastChar) && !isCodeBlock && !isListItem) {
+    score -= 20;
+    qualityIssues.push("Response appears to end mid-sentence (no terminal punctuation on last line).");
+  }
+
+  // Check 5: Boilerplate ratio
+  const lowerContent = trimmed.toLowerCase();
+  const wordCount = lowerContent.split(/\s+/).length;
+  if (wordCount > 10) {
+    let fillerWordCount = 0;
+    for (const phrase of FILLER_PHRASES) {
+      const phraseWords = phrase.split(/\s+/).length;
+      let searchFrom = 0;
+      while (true) {
+        const idx = lowerContent.indexOf(phrase, searchFrom);
+        if (idx === -1) break;
+        fillerWordCount += phraseWords;
+        searchFrom = idx + phrase.length;
+      }
+    }
+    const fillerRatio = fillerWordCount / wordCount;
+    if (fillerRatio > 0.6) {
+      score -= 30;
+      qualityIssues.push(
+        `High boilerplate ratio (${(fillerRatio * 100).toFixed(0)}% filler phrases). Response may lack substantive content.`,
+      );
+    }
+  }
+
+  const finalScore = Math.max(0, Math.min(100, score));
+  return {
+    score: finalScore,
+    isAcceptable: finalScore >= 60,
+    issues: qualityIssues,
+  };
+}
+
+// ── Karpathy Self-Optimization Loop ──────────────────────────────────────
+
+export interface PromptOptimizationResult {
+  currentPromptHash: string;
+  suggestedChange: string | null;
+  reasoning: string;
+}
+
+/**
+ * Analyze recent agent performance and suggest prompt improvements.
+ * Heuristic-based, no AI calls. Results are saved as a "prompt_suggestion"
+ * memory entry for human review.
+ *
+ * Analyzes:
+ *   1. Success rate on last 20 completed/cancelled issues
+ *   2. Average run count per issue (from heartbeat runs)
+ *   3. Recurring mistake_learning memory entries (suggests prompt gaps)
+ */
+export async function generatePromptOptimizationSuggestion(
+  db: Db,
+  agentId: string,
+): Promise<PromptOptimizationResult> {
+  // Resolve current agent for prompt hash
+  const [agentRow] = await db
+    .select({ role: agents.role, name: agents.name, companyId: agents.companyId })
+    .from(agents)
+    .where(eq(agents.id, agentId))
+    .limit(1);
+
+  if (!agentRow) {
+    return {
+      currentPromptHash: "unknown",
+      suggestedChange: null,
+      reasoning: "Agent not found.",
+    };
+  }
+
+  // Derive a stable hash from role + name (no crypto import needed)
+  const promptSeed = `${agentRow.role ?? "unknown"}:${agentRow.name ?? "unknown"}`;
+  const currentPromptHash = simpleHash(promptSeed);
+
+  // Fetch last 20 resolved issues for this agent
+  const recentIssues = await db
+    .select({
+      id: issues.id,
+      status: issues.status,
+    })
+    .from(issues)
+    .where(
+      and(
+        eq(issues.assigneeAgentId, agentId),
+        sql`${issues.status} IN ('done', 'cancelled')`,
+      ),
+    )
+    .orderBy(desc(issues.completedAt))
+    .limit(20);
+
+  const total = recentIssues.length;
+  const completed = recentIssues.filter((i) => i.status === "done").length;
+  const successRate = total > 0 ? completed / total : 1;
+
+  // Average run count per issue (count heartbeat runs per issue)
+  let avgRunCount = 0;
+  if (total > 0) {
+    const issueIds = recentIssues.map((i) => i.id);
+    const runCounts = await db
+      .select({
+        count: sql<number>`count(*)::int`,
+      })
+      .from(heartbeatRuns)
+      .where(
+        and(
+          eq(heartbeatRuns.agentId, agentId),
+          sql`${heartbeatRuns.contextSnapshot}->>'issueId' = ANY(ARRAY[${sql.join(issueIds.map((id) => sql`${id}`), sql`, `)}])`,
+        ),
+      );
+    const totalRuns = Number(runCounts[0]?.count ?? 0);
+    avgRunCount = totalRuns / total;
+  }
+
+  // Recurring mistake_learning entries suggest specific prompt gaps
+  const mistakeEntries = await db
+    .select({ content: agentMemoryEntries.content })
+    .from(agentMemoryEntries)
+    .where(
+      and(
+        eq(agentMemoryEntries.agentId, agentId),
+        eq(agentMemoryEntries.category, "mistake_learning"),
+        isNull(agentMemoryEntries.archivedAt),
+      ),
+    )
+    .orderBy(desc(agentMemoryEntries.createdAt))
+    .limit(10);
+
+  // Build suggestion
+  const suggestions: string[] = [];
+
+  if (successRate < 0.7 && total >= 3) {
+    suggestions.push(
+      `Add more specific instructions for the most common failing task types. ` +
+      `Success rate is ${(successRate * 100).toFixed(0)}% (${completed}/${total} tasks).`,
+    );
+  }
+
+  if (avgRunCount > 8) {
+    suggestions.push(
+      `Consider breaking complex tasks into sub-tasks. ` +
+      `Average run count is ${avgRunCount.toFixed(1)} per task (threshold: 8).`,
+    );
+  }
+
+  if (mistakeEntries.length >= 3) {
+    // Extract keywords from mistake entries to identify patterns
+    const mistakeTexts = mistakeEntries.map((e) => e.content).join(" ");
+    const keywords = extractTopKeywords(mistakeTexts, 5);
+    if (keywords.length > 0) {
+      suggestions.push(
+        `Add explicit "DO NOT" instructions for recurring issues. ` +
+        `Recurring patterns in mistake log: ${keywords.join(", ")}.`,
+      );
+    }
+  }
+
+  const suggestedChange = suggestions.length > 0 ? suggestions.join(" ") : null;
+  const reasoning = total < 3
+    ? `Insufficient task history (${total} resolved tasks). Rerun after more tasks complete.`
+    : [
+        `Analyzed ${total} recent tasks.`,
+        `Success rate: ${(successRate * 100).toFixed(0)}%.`,
+        `Avg runs/task: ${avgRunCount.toFixed(1)}.`,
+        `Mistake entries: ${mistakeEntries.length}.`,
+      ].join(" ");
+
+  // Save as prompt_suggestion memory entry for human review
+  if (suggestedChange) {
+    const now = new Date();
+    await db.insert(agentMemoryEntries).values({
+      agentId,
+      companyId: agentRow.companyId,
+      memoryType: "semantic",
+      category: "prompt_suggestion",
+      content: `Prompt optimization suggestion (hash: ${currentPromptHash}): ${suggestedChange} Reasoning: ${reasoning}`,
+      confidence: 65,
+      lastAccessedAt: now,
+    });
+
+    logger.info(
+      { agentId, successRate, avgRunCount, mistakeCount: mistakeEntries.length },
+      "generated prompt optimization suggestion",
+    );
+  }
+
+  return { currentPromptHash, suggestedChange, reasoning };
+}
+
+// ── Reflection helpers ─────────────────────────────────────────────────────
+
+/** Simple non-crypto hash for stable agent prompt fingerprinting. */
+function simpleHash(input: string): string {
+  let hash = 0x811c9dc5; // FNV-1a offset basis
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i);
+    hash = (hash * 0x01000193) >>> 0; // FNV prime, keep as 32-bit unsigned
+  }
+  return hash.toString(16).padStart(8, "0");
+}
+
+const KEYWORD_STOP_WORDS = new Set([
+  "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for",
+  "of", "with", "by", "from", "is", "was", "are", "were", "be", "been",
+  "being", "have", "has", "had", "do", "does", "did", "will", "would",
+  "could", "should", "may", "might", "shall", "can", "not", "this",
+  "that", "these", "those", "it", "its", "as", "if", "so", "up", "out",
+  "task", "issue", "work", "agent", "completed", "cancelled", "attempted",
+]);
+
+/** Extract top N keywords by frequency from a text blob. */
+function extractTopKeywords(text: string, n: number): string[] {
+  const freq = new Map<string, number>();
+  const words = text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length >= 4 && !KEYWORD_STOP_WORDS.has(w));
+
+  for (const word of words) {
+    freq.set(word, (freq.get(word) ?? 0) + 1);
+  }
+
+  return [...freq.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, n)
+    .map(([word]) => word);
 }

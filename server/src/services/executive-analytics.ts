@@ -3,6 +3,7 @@ import type { Db } from "@ironworksai/db";
 import {
   activityLog,
   agents,
+  approvals,
   companies,
   companySkills,
   costEvents,
@@ -1155,4 +1156,380 @@ export async function departmentSpendingSummary(
       avgPerAgent: count > 0 ? Math.round(total / count) : 0,
     };
   });
+}
+
+// ---------------------------------------------------------------------------
+// Task 2: Per-department impact breakdown
+// ---------------------------------------------------------------------------
+
+export interface DepartmentImpactRow {
+  department: string;
+  issuesCompleted: number;
+  totalCost: number;
+  humanHoursEquivalent: number;
+}
+
+/**
+ * Per-department impact: completed issues, total cost, and human-hours
+ * equivalent (2 hours per completed issue).
+ */
+export async function departmentImpact(
+  db: Db,
+  companyId: string,
+  periodDays = 30,
+): Promise<DepartmentImpactRow[]> {
+  const since = new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000);
+
+  const issueRows = await db
+    .select({
+      department: sql<string>`coalesce(${agents.department}, 'Unassigned')`,
+      issuesCompleted: sql<number>`count(*)::int`,
+    })
+    .from(issues)
+    .innerJoin(agents, eq(issues.assigneeAgentId, agents.id))
+    .where(
+      and(
+        eq(issues.companyId, companyId),
+        eq(issues.status, "done"),
+        isNotNull(issues.completedAt),
+        gte(issues.completedAt, since),
+      ),
+    )
+    .groupBy(sql`coalesce(${agents.department}, 'Unassigned')`);
+
+  const costRows = await db
+    .select({
+      department: sql<string>`coalesce(${agents.department}, 'Unassigned')`,
+      totalCents: sql<number>`coalesce(sum(${costEvents.costCents}), 0)::int`,
+    })
+    .from(costEvents)
+    .innerJoin(agents, eq(costEvents.agentId, agents.id))
+    .where(
+      and(
+        eq(costEvents.companyId, companyId),
+        gte(costEvents.occurredAt, since),
+      ),
+    )
+    .groupBy(sql`coalesce(${agents.department}, 'Unassigned')`);
+
+  const costMap = new Map<string, number>();
+  for (const r of costRows) {
+    costMap.set(r.department, Number(r.totalCents));
+  }
+
+  return issueRows.map((r) => {
+    const completed = Number(r.issuesCompleted);
+    const totalCost = costMap.get(r.department) ?? 0;
+    return {
+      department: r.department,
+      issuesCompleted: completed,
+      totalCost,
+      humanHoursEquivalent: completed * 2,
+    };
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Task 4: Budget vs Actual by Department
+// ---------------------------------------------------------------------------
+
+export interface DepartmentBudgetVsActualRow {
+  department: string;
+  budget: number | null;
+  actual: number;
+  variance: number;
+}
+
+/**
+ * Budget vs actual for each department this calendar month.
+ * Budget is the sum of agent budgetMonthlyCents in each department.
+ */
+export async function departmentBudgetVsActual(
+  db: Db,
+  companyId: string,
+): Promise<DepartmentBudgetVsActualRow[]> {
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const budgetRows = await db
+    .select({
+      department: sql<string>`coalesce(${agents.department}, 'Unassigned')`,
+      budgetCents: sql<number>`coalesce(sum(${agents.budgetMonthlyCents}), 0)::int`,
+    })
+    .from(agents)
+    .where(
+      and(
+        eq(agents.companyId, companyId),
+        ne(agents.status, "terminated"),
+      ),
+    )
+    .groupBy(sql`coalesce(${agents.department}, 'Unassigned')`);
+
+  const actualRows = await db
+    .select({
+      department: sql<string>`coalesce(${agents.department}, 'Unassigned')`,
+      actualCents: sql<number>`coalesce(sum(${costEvents.costCents}), 0)::int`,
+    })
+    .from(costEvents)
+    .innerJoin(agents, eq(costEvents.agentId, agents.id))
+    .where(
+      and(
+        eq(costEvents.companyId, companyId),
+        gte(costEvents.occurredAt, monthStart),
+      ),
+    )
+    .groupBy(sql`coalesce(${agents.department}, 'Unassigned')`);
+
+  const actualMap = new Map<string, number>();
+  for (const r of actualRows) {
+    actualMap.set(r.department, Number(r.actualCents));
+  }
+
+  return budgetRows.map((r) => {
+    const budget = Number(r.budgetCents) > 0 ? Number(r.budgetCents) : null;
+    const actual = actualMap.get(r.department) ?? 0;
+    return {
+      department: r.department,
+      budget,
+      actual,
+      variance: budget !== null ? actual - budget : actual,
+    };
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Task 5: Agent Cost Efficiency Rankings
+// ---------------------------------------------------------------------------
+
+export interface AgentEfficiencyRow {
+  agentId: string;
+  agentName: string;
+  costPerIssue: number;
+  issuesCompleted: number;
+  performanceScore: number;
+}
+
+/**
+ * Rank agents by cost-per-completed-issue (lower is better).
+ * Agents with zero completed issues are excluded.
+ * performanceScore is a composite: 50% from cost rank, 50% from volume rank.
+ */
+export async function agentEfficiencyRankings(
+  db: Db,
+  companyId: string,
+): Promise<AgentEfficiencyRow[]> {
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const issueRows = await db
+    .select({
+      agentId: issues.assigneeAgentId,
+      agentName: agents.name,
+      issuesCompleted: sql<number>`count(*)::int`,
+    })
+    .from(issues)
+    .innerJoin(agents, eq(issues.assigneeAgentId, agents.id))
+    .where(
+      and(
+        eq(issues.companyId, companyId),
+        eq(issues.status, "done"),
+        isNotNull(issues.completedAt),
+        gte(issues.completedAt, monthStart),
+      ),
+    )
+    .groupBy(issues.assigneeAgentId, agents.name);
+
+  if (issueRows.length === 0) return [];
+
+  const agentIds = issueRows
+    .map((r) => r.agentId)
+    .filter((id): id is string => id !== null);
+
+  const costRows = await db
+    .select({
+      agentId: costEvents.agentId,
+      totalCents: sql<number>`coalesce(sum(${costEvents.costCents}), 0)::int`,
+    })
+    .from(costEvents)
+    .where(
+      and(
+        eq(costEvents.companyId, companyId),
+        inArray(costEvents.agentId, agentIds),
+        gte(costEvents.occurredAt, monthStart),
+      ),
+    )
+    .groupBy(costEvents.agentId);
+
+  const costMap = new Map<string, number>();
+  for (const r of costRows) {
+    costMap.set(r.agentId, Number(r.totalCents));
+  }
+
+  const rows = issueRows
+    .filter((r): r is typeof r & { agentId: string } => r.agentId !== null)
+    .map((r) => {
+      const completed = Number(r.issuesCompleted);
+      const totalCost = costMap.get(r.agentId) ?? 0;
+      const costPerIssue = completed > 0 ? Math.round(totalCost / completed) : totalCost;
+      return { agentId: r.agentId, agentName: r.agentName, costPerIssue, issuesCompleted: completed };
+    });
+
+  // Sort ascending by cost-per-issue, then compute performance score (0-100)
+  rows.sort((a, b) => a.costPerIssue - b.costPerIssue);
+  const n = rows.length;
+
+  return rows.map((r, idx) => {
+    // Cost rank score: best (idx=0) = 100, worst = 0
+    const costRankScore = n > 1 ? Math.round(((n - 1 - idx) / (n - 1)) * 100) : 100;
+    // Volume rank score based on issuesCompleted
+    const maxIssues = Math.max(...rows.map((x) => x.issuesCompleted), 1);
+    const volumeScore = Math.round((r.issuesCompleted / maxIssues) * 100);
+    const performanceScore = Math.round(costRankScore * 0.5 + volumeScore * 0.5);
+    return { ...r, performanceScore };
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Task 6: Human Override Rate Tracking
+// ---------------------------------------------------------------------------
+
+export interface HumanOverrideRate {
+  totalRuns: number;
+  overriddenRuns: number;
+  overrideRate: number;
+}
+
+/**
+ * Fraction of heartbeat runs in the period that triggered a human approval
+ * or were manually overridden/cancelled by a user.
+ */
+export async function humanOverrideRate(
+  db: Db,
+  companyId: string,
+  periodDays = 30,
+): Promise<HumanOverrideRate> {
+  const since = new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000);
+
+  const [runRow] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(heartbeatRuns)
+    .where(
+      and(
+        eq(heartbeatRuns.companyId, companyId),
+        gte(heartbeatRuns.startedAt, since),
+      ),
+    );
+  const totalRuns = Number(runRow?.count ?? 0);
+
+  // Count approvals (pending OR decided) that were linked to runs in this period
+  const [approvalRow] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(approvals)
+    .where(
+      and(
+        eq(approvals.companyId, companyId),
+        gte(approvals.createdAt, since),
+      ),
+    );
+  const overriddenRuns = Number(approvalRow?.count ?? 0);
+
+  const overrideRate = totalRuns > 0
+    ? Math.round((overriddenRuns / totalRuns) * 10000) / 100
+    : 0;
+
+  return { totalRuns, overriddenRuns, overrideRate };
+}
+
+// ── System Health Summary ─────────────────────────────────────────────────────
+
+export interface SystemHealthSummary {
+  activeAgents: number;
+  pausedAgents: number;
+  errorAgents: number;
+  avgResponseTime: number;
+  failureRate: number;
+  lastHeartbeatAt: Date | null;
+}
+
+/**
+ * Returns a real-time snapshot of the system health for a company.
+ * Used by the Board Briefing "System Status" indicator.
+ */
+export async function systemHealthSummary(
+  db: Db,
+  companyId: string,
+): Promise<SystemHealthSummary> {
+  const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+  // Agent status counts
+  const agentRows = await db
+    .select({ status: agents.status, lastHeartbeatAt: agents.lastHeartbeatAt })
+    .from(agents)
+    .where(and(eq(agents.companyId, companyId), ne(agents.status, "terminated")));
+
+  let activeAgents = 0;
+  let pausedAgents = 0;
+  let errorAgents = 0;
+  let latestHeartbeat: Date | null = null;
+
+  for (const row of agentRows) {
+    if (row.status === "active" || row.status === "idle" || row.status === "running") {
+      activeAgents++;
+    } else if (row.status === "paused" || row.status === "pending_approval") {
+      pausedAgents++;
+    } else if (row.status === "error") {
+      errorAgents++;
+    }
+    if (row.lastHeartbeatAt) {
+      if (!latestHeartbeat || row.lastHeartbeatAt > latestHeartbeat) {
+        latestHeartbeat = row.lastHeartbeatAt;
+      }
+    }
+  }
+
+  // Average run duration (ms) in the last 24h
+  const [durationRow] = await db
+    .select({
+      avgMs: sql<number>`coalesce(
+        avg(extract(epoch from (${heartbeatRuns.finishedAt} - ${heartbeatRuns.startedAt})) * 1000),
+        0
+      )::int`,
+    })
+    .from(heartbeatRuns)
+    .where(
+      and(
+        eq(heartbeatRuns.companyId, companyId),
+        isNotNull(heartbeatRuns.finishedAt),
+        gte(heartbeatRuns.startedAt, since24h),
+      ),
+    );
+
+  // Failure rate in the last 24h
+  const [totalRow] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(heartbeatRuns)
+    .where(and(eq(heartbeatRuns.companyId, companyId), gte(heartbeatRuns.startedAt, since24h)));
+
+  const [failedRow] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(heartbeatRuns)
+    .where(
+      and(
+        eq(heartbeatRuns.companyId, companyId),
+        gte(heartbeatRuns.startedAt, since24h),
+        eq(heartbeatRuns.status, "failed"),
+      ),
+    );
+
+  const totalRuns = Number(totalRow?.count ?? 0);
+  const failedRuns = Number(failedRow?.count ?? 0);
+
+  return {
+    activeAgents,
+    pausedAgents,
+    errorAgents,
+    avgResponseTime: Number(durationRow?.avgMs ?? 0),
+    failureRate: totalRuns > 0 ? Math.round((failedRuns / totalRuns) * 10000) / 100 : 0,
+    lastHeartbeatAt: latestHeartbeat,
+  };
 }

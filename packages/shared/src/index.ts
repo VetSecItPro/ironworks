@@ -99,6 +99,8 @@ export {
   AGENT_LIFECYCLE_STAGES,
   AGENT_LIFECYCLE_LABELS,
   type AgentLifecycleStage,
+  BUDGET_GATES,
+  type BudgetGateStage,
   MODEL_ROUTING_DEFAULTS,
   type OutputTokenCategory,
   type CompanyStatus,

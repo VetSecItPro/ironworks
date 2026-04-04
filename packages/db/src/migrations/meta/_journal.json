@@ -456,6 +456,13 @@
       "when": 1775959200000,
       "tag": "0064_goal_key_results",
       "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1775959200001,
+      "tag": "0065_agent_memory_vector",
+      "breakpoints": true
     }
   ]
 }

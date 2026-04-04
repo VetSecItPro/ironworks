@@ -38,5 +38,47 @@ services:
     volumes:
       - "${IRONWORKS_DATA_DIR:-./data/docker-ironworks}:/ironworks"
 
+# ── Helicone AI Gateway - Evaluation: NOT ADDED ──────────────────────────────
+#
+# Evaluated 2026-04-03 against IronWorks feature set.
+#
+# What Helicone provides:
+#   - Request-level LLM tracing, cost tracking, token usage analytics
+#   - Response caching (Redis/S3 backed), rate limiting, load balancing
+#   - Multi-provider routing (100+ LLM providers via OpenAI-compat interface)
+#   - A dashboard UI for querying traces (requires ClickHouse + MinIO + Postgres)
+#   - ~64 MB Rust binary, <5 ms P95 gateway overhead
+#
+# Why we are NOT adding it:
+#   1. IronWorks already implements the core value: token-analytics.ts tracks
+#      input/output/cache tokens and cost per agent; model-routing.ts handles
+#      complexity-based model selection; token-analytics.ts has waste detection
+#      and recommendations. Adding Helicone would duplicate all of this.
+#   2. Full self-hosted Helicone (with dashboard) requires ClickHouse + MinIO +
+#      Supabase/Postgres. That is 3-4 additional containers on the same VDS
+#      that already runs IronWorks + Postgres. Not justified for a private
+#      single-tenant deployment.
+#   3. The lightweight ai-gateway binary (routing only, no dashboard) would add
+#      <5 ms but only saves latency if we are routing across providers that
+#      IronWorks doesn't already route. We do route (claude-local, gemini-local,
+#      openai-compatible) without going through a proxy.
+#   4. The Helicone dashboard SaaS tier is useful for multi-tenant hosted
+#      services where an external observability UI is needed. When IronWorks
+#      ships as a hosted product with a client portal, revisit Helicone as the
+#      observability backend for the War Room / CFO views. At that point the
+#      ai-gateway binary (port 8787) is a drop-in addition with no schema deps.
+#
+# To add in the future (routing-only, no dashboard):
+#
+#   helicone-gateway:
+#     image: helicone/ai-gateway:latest
+#     restart: unless-stopped
+#     ports:
+#       - "127.0.0.1:8787:8787"
+#     environment:
+#       HELICONE_API_KEY: "${HELICONE_API_KEY:-}"
+#     # Then set OPENAI_BASE_URL=http://helicone-gateway:8787/v1 in ironworks env
+# ─────────────────────────────────────────────────────────────────────────────
+
 volumes:
   postgres-data:

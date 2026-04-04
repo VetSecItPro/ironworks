@@ -1,7 +1,10 @@
-import { and, asc, eq, isNotNull, isNull, lt, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, isNull, lt, lte, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { agentMemoryEntries } from "@ironworksai/db";
 import { logger } from "../middleware/logger.js";
+
+// Re-export AgentMemoryEntry type for callers
+export type AgentMemoryEntry = typeof agentMemoryEntries.$inferSelect;
 
 // ── Agent Memory Services ───────────────────────────────────────────────────
 //
@@ -425,4 +428,249 @@ export async function enforceMemoryCap(
       "enforced memory cap by archiving low-confidence entries",
     );
   }
+}
+
+// ── Vector-Aware Memory Retrieval ───────────────────────────────────────────
+
+/**
+ * Check whether the pgvector extension is installed on the current database.
+ * Returns false on any error so callers degrade gracefully.
+ */
+async function isPgvectorAvailable(db: Db): Promise<boolean> {
+  try {
+    const rows = await db.execute(
+      sql`SELECT 1 FROM pg_extension WHERE extname = 'vector'`,
+    );
+    return (rows as unknown[]).length > 0;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Find memory entries relevant to a query using either pgvector cosine
+ * similarity (when available) or Postgres full-text search as fallback.
+ *
+ * No external API calls are made. Embeddings are populated by a separate
+ * background pipeline. Until then, only the full-text path is active.
+ */
+export async function findRelevantMemories(
+  db: Db,
+  agentId: string,
+  queryText: string,
+  limit = 5,
+): Promise<AgentMemoryEntry[]> {
+  const vectorAvailable = await isPgvectorAvailable(db);
+
+  if (vectorAvailable) {
+    // Vector path: attempt similarity search. Falls back to FTS if this agent
+    // has no embeddings yet (embedding IS NULL for all entries).
+    try {
+      const withEmbeddings = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(agentMemoryEntries)
+        .where(
+          and(
+            eq(agentMemoryEntries.agentId, agentId),
+            isNull(agentMemoryEntries.archivedAt),
+            sql`${agentMemoryEntries.embedding} IS NOT NULL`,
+          ),
+        );
+
+      const embeddingCount = Number(withEmbeddings[0]?.count ?? 0);
+      if (embeddingCount > 0) {
+        // Embeddings exist - run cosine similarity search.
+        // This branch is used once the embedding pipeline populates the column.
+        // For now we pass through to FTS since no embeddings are generated yet.
+        logger.debug({ agentId, embeddingCount }, "vector search available but embedding pipeline not yet active; using FTS");
+      }
+    } catch (err) {
+      logger.debug({ err, agentId }, "vector similarity check failed, falling back to FTS");
+    }
+  }
+
+  // Full-text search fallback (also the primary path until embeddings exist)
+  return findRelevantMemoriesByFts(db, agentId, queryText, limit);
+}
+
+/**
+ * Find relevant memories using Postgres full-text search (ts_rank).
+ * Extracts significant keywords from the query, builds a tsquery, and
+ * ranks active entries by relevance.
+ */
+async function findRelevantMemoriesByFts(
+  db: Db,
+  agentId: string,
+  queryText: string,
+  limit: number,
+): Promise<AgentMemoryEntry[]> {
+  // Strip common English stop words and short tokens to build a tsquery
+  const STOP_WORDS = new Set([
+    "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for",
+    "of", "with", "by", "from", "is", "was", "are", "were", "be", "been",
+    "being", "have", "has", "had", "do", "does", "did", "will", "would",
+    "could", "should", "may", "might", "shall", "can", "not", "this",
+    "that", "these", "those", "it", "its", "as", "if", "so", "up", "out",
+  ]);
+
+  const keywords = queryText
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length >= 3 && !STOP_WORDS.has(w))
+    .slice(0, 10); // cap to avoid overly complex tsquery
+
+  if (keywords.length === 0) {
+    // No usable keywords - return most recent entries instead
+    return db
+      .select()
+      .from(agentMemoryEntries)
+      .where(
+        and(
+          eq(agentMemoryEntries.agentId, agentId),
+          isNull(agentMemoryEntries.archivedAt),
+        ),
+      )
+      .orderBy(desc(agentMemoryEntries.lastAccessedAt))
+      .limit(limit);
+  }
+
+  const tsQueryStr = keywords.join(" | ");
+
+  try {
+    const results = await db
+      .select({
+        id: agentMemoryEntries.id,
+        agentId: agentMemoryEntries.agentId,
+        companyId: agentMemoryEntries.companyId,
+        memoryType: agentMemoryEntries.memoryType,
+        category: agentMemoryEntries.category,
+        content: agentMemoryEntries.content,
+        sourceIssueId: agentMemoryEntries.sourceIssueId,
+        sourceProjectId: agentMemoryEntries.sourceProjectId,
+        confidence: agentMemoryEntries.confidence,
+        accessCount: agentMemoryEntries.accessCount,
+        lastAccessedAt: agentMemoryEntries.lastAccessedAt,
+        expiresAt: agentMemoryEntries.expiresAt,
+        archivedAt: agentMemoryEntries.archivedAt,
+        createdAt: agentMemoryEntries.createdAt,
+        embedding: agentMemoryEntries.embedding,
+        rank: sql<number>`ts_rank(
+          to_tsvector('english', ${agentMemoryEntries.content}),
+          to_tsquery('english', ${tsQueryStr})
+        )`.as("rank"),
+      })
+      .from(agentMemoryEntries)
+      .where(
+        and(
+          eq(agentMemoryEntries.agentId, agentId),
+          isNull(agentMemoryEntries.archivedAt),
+          sql`to_tsvector('english', ${agentMemoryEntries.content}) @@ to_tsquery('english', ${tsQueryStr})`,
+        ),
+      )
+      .orderBy(sql`rank DESC`)
+      .limit(limit);
+
+    // Strip the rank field before returning typed entries
+    return results.map(({ rank: _rank, ...entry }) => entry);
+  } catch (err) {
+    // ts_rank query can fail if the tsquery syntax is invalid; degrade gracefully
+    logger.warn({ err, agentId }, "FTS memory search failed, returning recent entries");
+    return db
+      .select()
+      .from(agentMemoryEntries)
+      .where(
+        and(
+          eq(agentMemoryEntries.agentId, agentId),
+          isNull(agentMemoryEntries.archivedAt),
+        ),
+      )
+      .orderBy(desc(agentMemoryEntries.lastAccessedAt))
+      .limit(limit);
+  }
+}
+
+// ── Three-Tier Contextual Memory ────────────────────────────────────────────
+
+/**
+ * Retrieve memories across three tiers for a given task context:
+ *
+ *   Tier 1 - Working memory: most recent session_state entry (always included)
+ *   Tier 2 - Semantic memory: keyword-matched entries via full-text search (top 5)
+ *   Tier 3 - Vector memory: cosine similarity search if pgvector available (top 5)
+ *
+ * Entries are deduplicated by id and capped to maxEntries (default 10).
+ */
+export async function getContextualMemories(
+  db: Db,
+  agentId: string,
+  taskContext: string,
+  maxEntries = 10,
+): Promise<AgentMemoryEntry[]> {
+  const seen = new Set<string>();
+  const results: AgentMemoryEntry[] = [];
+
+  const add = (entries: AgentMemoryEntry[]) => {
+    for (const entry of entries) {
+      if (!seen.has(entry.id)) {
+        seen.add(entry.id);
+        results.push(entry);
+      }
+    }
+  };
+
+  // Tier 1: Working memory - most recent session state
+  try {
+    const working = await db
+      .select()
+      .from(agentMemoryEntries)
+      .where(
+        and(
+          eq(agentMemoryEntries.agentId, agentId),
+          eq(agentMemoryEntries.memoryType, "procedural"),
+          eq(agentMemoryEntries.category, "session_state"),
+          isNull(agentMemoryEntries.archivedAt),
+        ),
+      )
+      .orderBy(desc(agentMemoryEntries.createdAt))
+      .limit(1);
+    add(working);
+  } catch (err) {
+    logger.warn({ err, agentId }, "tier-1 working memory retrieval failed");
+  }
+
+  // Tier 2: Semantic memory - full-text keyword search
+  try {
+    const semantic = await findRelevantMemoriesByFts(db, agentId, taskContext, 5);
+    add(semantic);
+  } catch (err) {
+    logger.warn({ err, agentId }, "tier-2 semantic memory retrieval failed");
+  }
+
+  // Tier 3: Vector memory - similarity search when pgvector is available
+  const vectorAvailable = await isPgvectorAvailable(db).catch(() => false);
+  if (vectorAvailable) {
+    try {
+      // Only run vector search if embeddings are populated
+      const [embRow] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(agentMemoryEntries)
+        .where(
+          and(
+            eq(agentMemoryEntries.agentId, agentId),
+            isNull(agentMemoryEntries.archivedAt),
+            sql`${agentMemoryEntries.embedding} IS NOT NULL`,
+          ),
+        );
+      if (Number(embRow?.count ?? 0) > 0) {
+        // Vector similarity search is active once embeddings are populated.
+        // Placeholder: embedding pipeline will inject embeddings separately.
+        logger.debug({ agentId }, "tier-3 vector search: embeddings present but pipeline not yet wired");
+      }
+    } catch (err) {
+      logger.debug({ err, agentId }, "tier-3 vector check failed, skipping");
+    }
+  }
+
+  return results.slice(0, maxEntries);
 }

@@ -861,6 +861,71 @@ export async function generateHRWeeklyReport(
   return markdown;
 }
 
+// ── Token Savings Helper ───────────────────────────────────────────────────
+
+/**
+ * Build the "Token Savings" lines for the CFO weekly report.
+ *
+ * Three savings vectors are estimated:
+ *   1. KB caching   - cached input tokens already tracked in cost_events
+ *   2. Tiered context injection - heuristic: 15% of total input is saved
+ *      by injecting only relevant context rather than the full conversation
+ *   3. Model routing - tokens processed by a cheap model (haiku, mini, flash)
+ *      that could have run on a premium model; savings = price delta applied
+ *
+ * Pricing references (micro-cents per token, approximate public rates):
+ *   claude-haiku / gpt-4o-mini / gemini-flash  ~$0.25/M input  → 0.025 micro-cents/tok
+ *   claude-sonnet / gpt-4o / gemini-pro        ~$3.00/M input  → 0.3   micro-cents/tok
+ * Savings per cheap-model token = 0.3 - 0.025 = 0.275 micro-cents ≈ 27.5 cents/M tokens
+ */
+function buildTokenSavingsSection(
+  cachedTokens: number,
+  tokenByModel: Array<{ model: string | null; inputTokens: number; outputTokens: number; costCents: number }>,
+  issuesDone: number,
+): string[] {
+  // 1. KB caching savings
+  //    Cached tokens would otherwise be billed at the same rate as input tokens.
+  //    Average blended input rate across models: ~$1.50/M tokens (0.00015 cents/token)
+  const avgInputRateCentsPerToken = 0.00015;
+  const cachingSavedCents = Math.round(cachedTokens * avgInputRateCentsPerToken);
+
+  // 2. Tiered context injection savings (15% of all input tokens as heuristic)
+  const totalInputTokens = tokenByModel.reduce((s, r) => s + Number(r.inputTokens), 0);
+  const contextInjectionSavedTokens = Math.round(totalInputTokens * 0.15);
+  const contextInjectionSavedCents = Math.round(contextInjectionSavedTokens * avgInputRateCentsPerToken);
+
+  // 3. Model routing savings
+  const cheapModelNames = ["haiku", "mini", "flash", "lite", "nano"];
+  const premiumInputRateCentsPerToken = 0.0003; // ~$3/M
+  const cheapInputRateCentsPerToken = 0.0000025; // ~$0.25/M
+  const savingsRatePerToken = premiumInputRateCentsPerToken - cheapInputRateCentsPerToken;
+  let routingSavedTokens = 0;
+  for (const row of tokenByModel) {
+    const model = (row.model ?? "").toLowerCase();
+    const isCheap = cheapModelNames.some((m) => model.includes(m));
+    if (isCheap) {
+      routingSavedTokens += Number(row.inputTokens) + Number(row.outputTokens);
+    }
+  }
+  const routingSavedCents = Math.round(routingSavedTokens * savingsRatePerToken);
+
+  const totalSavedCents = cachingSavedCents + contextInjectionSavedCents + routingSavedCents;
+
+  const lines: string[] = [
+    `- KB Caching: ${cachedTokens.toLocaleString()} tokens served from cache (est. $${centsToDollars(cachingSavedCents)} saved)`,
+    `- Tiered Context Injection: est. ${contextInjectionSavedTokens.toLocaleString()} tokens avoided (est. $${centsToDollars(contextInjectionSavedCents)} saved)`,
+    `- Model Routing: ${routingSavedTokens.toLocaleString()} tokens routed to cost-efficient models (est. $${centsToDollars(routingSavedCents)} saved)`,
+    `- **Estimated Savings This Week: ${(cachedTokens + contextInjectionSavedTokens + routingSavedTokens).toLocaleString()} tokens ($${centsToDollars(totalSavedCents)})**`,
+  ];
+
+  if (issuesDone > 0) {
+    const savedPerIssue = Math.round(totalSavedCents / issuesDone);
+    lines.push(`- Savings per Completed Issue: $${centsToDollars(savedPerIssue)}`);
+  }
+
+  return lines;
+}
+
 // ── CFO Weekly Report ─────────────────────────────────────────────────────
 
 /**
@@ -1127,6 +1192,13 @@ export async function generateCFOWeeklyReport(
     "",
     "### Model Selection Recommendations",
     ...modelRecommendations,
+    "",
+    "## Token Savings",
+    ...buildTokenSavingsSection(
+      totalCachedTokens,
+      tokenByModel as Array<{ model: string | null; inputTokens: number; outputTokens: number; costCents: number }>,
+      doneThisWeek,
+    ),
   ].join("\n");
 
   // Save to CFO workspace
