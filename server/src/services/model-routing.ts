@@ -1,6 +1,38 @@
 import { MODEL_ROUTING_DEFAULTS } from "@ironworksai/shared";
 import { logger } from "../middleware/logger.js";
 
+/**
+ * Comprehensive model selection table for Ollama Cloud.
+ * Maps task type keys to primary model with rationale.
+ * Use these keys to pick a model when constructing one-shot prompts
+ * rather than going through the full routing cascade.
+ */
+export const OLLAMA_CLOUD_MODEL_TABLE: Record<
+  string,
+  { primary: string; description: string }
+> = {
+  // C-Suite strategic decisions
+  ceo_strategy: { primary: "kimi-k2.5:cloud", description: "Best agentic reasoning" },
+  cto_architecture: { primary: "deepseek-v3.2:cloud", description: "Strongest technical reasoning" },
+  cfo_analysis: { primary: "deepseek-v3.2:cloud", description: "Numerical analysis" },
+  cmo_content: { primary: "kimi-k2.5:cloud", description: "Creative content" },
+
+  // Code generation
+  code_generation: { primary: "devstral-2:cloud", description: "Best coding model (Mistral)" },
+  code_review: { primary: "deepseek-v3.2:cloud", description: "Deep code analysis" },
+
+  // Writing and reports
+  report_writing: { primary: "kimi-k2.5:cloud", description: "Strong multimodal writing" },
+  legal_review: { primary: "deepseek-v3.2:cloud", description: "Precise reasoning for legal" },
+
+  // Routine operations
+  heartbeat_status: { primary: "qwen3.5:27b-cloud", description: "Fast, cheap status checks" },
+  issue_triage: { primary: "qwen3.5:27b-cloud", description: "Quick classification" },
+
+  // General fallback
+  default: { primary: "kimi-k2.5:cloud", description: "Best all-around" },
+};
+
 export type TaskComplexity = "routine" | "standard" | "complex";
 
 /**
