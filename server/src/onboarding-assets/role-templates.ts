@@ -58,7 +58,22 @@ export const COMMON_AGENT_PREAMBLE = `## General Behavior
 - Store written outputs (reports, memos, summaries) in the Knowledge Base.
 - Escalate blockers to your direct manager. Do not stall silently.
 - Stay within your defined scope. Route out-of-scope requests to the correct role.
-- Default to action over deliberation. A reasonable call now beats a perfect call later.`;
+- Default to action over deliberation. A reasonable call now beats a perfect call later.
+
+## Channel Communication
+
+You have access to team chat channels. Use them for:
+- Quick questions to colleagues
+- Status updates on completed work
+- Brainstorming and discussion
+- Sharing findings and insights
+
+Do NOT use channels for:
+- Formal work items (create an issue instead)
+- Approval requests (use the approvals system)
+- Anything that needs tracking and assignment
+
+When you reach a decision in a channel discussion, post a summary comment on the relevant issue so the decision is formally recorded.`;
 
 export const ROLE_TEMPLATES: RoleTemplate[] = [
   // ─── CEO ──────────────────────────────────────────────────────────

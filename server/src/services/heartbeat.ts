@@ -60,6 +60,7 @@ import {
 import { instanceSettingsService } from "./instance-settings.js";
 import { logActivity } from "./activity-log.js";
 import { buildMorningBriefing, detectContextDrift, saveSessionState, getLatestSessionState } from "./session-state.js";
+import { findAgentDepartmentChannel, findCompanyChannel, getRecentMessages, postMessage as postChannelMessage } from "./channels.js";
 import { webSearch, isResearchTask, extractSearchQuery } from "./web-search.js";
 import { redactCurrentUserText, redactCurrentUserValue } from "../log-redaction.js";
 import {
@@ -3025,6 +3026,43 @@ export function heartbeatService(db: Db) {
       logger.warn({ err, agentId: agent.id }, "failed to build session context for run");
     }
 
+    // Inject recent channel messages so agents stay aware of team activity.
+    // CEO reads the #company channel (last 10). All others read their department
+    // channel (last 5). Failures are non-fatal - never block agent work.
+    try {
+      const agentRoleLower = (agent.role ?? "").toLowerCase();
+      const isCeo = /\b(ceo|chief executive)\b/.test(agentRoleLower);
+      if (isCeo) {
+        const companyChannel = await findCompanyChannel(db, agent.companyId);
+        if (companyChannel) {
+          const msgs = await getRecentMessages(db, companyChannel.id, 10);
+          if (msgs.length > 0) {
+            context.ironworksCompanyChannelUpdates = msgs.map((m) => ({
+              author: m.authorAgentId ?? m.authorUserId ?? "system",
+              body: m.body,
+              type: m.messageType,
+              at: m.createdAt,
+            }));
+          }
+        }
+      } else {
+        const deptChannel = await findAgentDepartmentChannel(db, agent.companyId, agent.department ?? null);
+        if (deptChannel) {
+          const msgs = await getRecentMessages(db, deptChannel.id, 5);
+          if (msgs.length > 0) {
+            context.ironworksTeamChannelUpdates = msgs.map((m) => ({
+              author: m.authorAgentId ?? m.authorUserId ?? "system",
+              body: m.body,
+              type: m.messageType,
+              at: m.createdAt,
+            }));
+          }
+        }
+      }
+    } catch (err) {
+      logger.debug({ err, agentId: agent.id }, "channel context injection failed, skipping");
+    }
+
     // Every 5th run: check for context drift and inject refocus prompt if detected.
     // Uses a modular check on total completed/finalized runs to spread load.
     try {
@@ -3936,6 +3974,28 @@ export function heartbeatService(db: Db) {
           });
         } catch (sessionStateErr) {
           logger.warn({ err: sessionStateErr, runId }, "failed to save session state after run");
+        }
+
+        // Post a status update to the agent's department channel after successful work.
+        // Non-fatal - a channel error must never block agent execution.
+        if (outcome === "succeeded" && issueId) {
+          try {
+            const issueTitle = typeof issueContext?.title === "string" ? issueContext.title : null;
+            if (issueTitle) {
+              const deptChannel = await findAgentDepartmentChannel(db, agent.companyId, agent.department ?? null);
+              if (deptChannel) {
+                await postChannelMessage(db, {
+                  channelId: deptChannel.id,
+                  companyId: agent.companyId,
+                  authorAgentId: agent.id,
+                  body: `Completed work on: ${issueTitle}`,
+                  messageType: "status_update",
+                });
+              }
+            }
+          } catch (channelErr) {
+            logger.debug({ err: channelErr, agentId: agent.id }, "post-run channel message failed, skipping");
+          }
         }
 
         // PDCA: Act phase - log any adjustments made post-run

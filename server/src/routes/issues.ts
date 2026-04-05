@@ -39,6 +39,7 @@ import { queueIssueAssignmentWakeup } from "../services/issue-assignment-wakeup.
 import { playbookExecutionService } from "../services/playbook-execution.js";
 import { recalculateGoalProgress } from "../services/goal-progress.js";
 import { performPostTaskReflection } from "../services/agent-reflection.js";
+import { findCompanyChannel, postMessage as postChannelMessage } from "../services/channels.js";
 
 const MAX_ISSUE_COMMENT_LIMIT = 500;
 
@@ -915,6 +916,23 @@ export function issueRoutes(db: Db, storage: StorageService) {
       requestedByActorType: actor.actorType,
       requestedByActorId: actor.actorId,
     });
+
+    // Post to #company channel about issue creation (non-fatal).
+    void (async () => {
+      try {
+        const companyChannel = await findCompanyChannel(db, companyId);
+        if (companyChannel) {
+          await postChannelMessage(db, {
+            channelId: companyChannel.id,
+            companyId,
+            authorAgentId: actor.agentId ?? undefined,
+            body: `Created issue: ${issue.title}`,
+            messageType: "status_update",
+            linkedIssueId: issue.id,
+          });
+        }
+      } catch { /* non-fatal */ }
+    })();
 
     res.status(201).json(issue);
   });

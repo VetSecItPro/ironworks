@@ -22,6 +22,7 @@ import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
 import { redactEventPayload } from "../redaction.js";
 import { extractLessonFromRejection } from "../services/agent-reflection.js";
 import { generateMeetingMinutes } from "../services/agent-workspace.js";
+import { findCompanyChannel, postMessage as postChannelMessage } from "../services/channels.js";
 
 function redactApprovalPayload<T extends { payload: Record<string, unknown> }>(approval: T): T {
   return {
@@ -240,6 +241,22 @@ export function approvalRoutes(db: Db) {
       }).catch((err) =>
         logger.warn({ err, approvalId: approval.id }, "meeting minutes generation failed (approve)"),
       );
+
+      // Post decision to #company channel (non-fatal).
+      void (async () => {
+        try {
+          const companyChannel = await findCompanyChannel(db, approval.companyId);
+          if (companyChannel) {
+            await postChannelMessage(db, {
+              channelId: companyChannel.id,
+              companyId: approval.companyId,
+              authorUserId: req.body.decidedByUserId ?? undefined,
+              body: `Approval approved: ${approval.type}`,
+              messageType: "decision",
+            });
+          }
+        } catch { /* non-fatal */ }
+      })();
     }
 
     res.json(redactApprovalPayload(approval));
@@ -307,6 +324,22 @@ export function approvalRoutes(db: Db) {
       }).catch((err) =>
         logger.warn({ err, approvalId: approval.id }, "meeting minutes generation failed (reject)"),
       );
+
+      // Post decision to #company channel (non-fatal).
+      void (async () => {
+        try {
+          const companyChannel = await findCompanyChannel(db, approval.companyId);
+          if (companyChannel) {
+            await postChannelMessage(db, {
+              channelId: companyChannel.id,
+              companyId: approval.companyId,
+              authorUserId: req.body.decidedByUserId ?? undefined,
+              body: `Approval rejected: ${approval.type}`,
+              messageType: "decision",
+            });
+          }
+        } catch { /* non-fatal */ }
+      })();
     }
 
     res.json(redactApprovalPayload(approval));

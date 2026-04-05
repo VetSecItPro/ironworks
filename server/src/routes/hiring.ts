@@ -17,6 +17,7 @@ import { badRequest, notFound, unprocessable } from "../errors.js";
 import { assertCanWrite, assertCompanyAccess, getActorInfo } from "./authz.js";
 import { logActivity, createAgentWorkspace, createHiringRecord, buildOnboardingPacket, approvalService, createEmploymentHistoryEntry } from "../services/index.js";
 import { logger } from "../middleware/logger.js";
+import { findCompanyChannel, postMessage as postChannelMessage } from "../services/channels.js";
 
 export function hiringRoutes(db: Db) {
   const router = Router();
@@ -351,6 +352,21 @@ export function hiringRoutes(db: Db) {
       // Non-fatal: workspace/personnel record creation should not block hiring
       console.error("Failed to create agent workspace or hiring record:", err);
     }
+
+    // Announce hire to #company channel (non-fatal).
+    void (async () => {
+      try {
+        const companyChannel = await findCompanyChannel(db, companyId);
+        if (companyChannel) {
+          await postChannelMessage(db, {
+            channelId: companyChannel.id,
+            companyId,
+            body: `Welcome ${result.agent.name} (${result.agent.role}) to the team!`,
+            messageType: "announcement",
+          });
+        }
+      } catch { /* non-fatal */ }
+    })();
 
     res.status(201).json(result);
   });

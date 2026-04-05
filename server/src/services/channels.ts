@@ -129,6 +129,66 @@ export async function getMessages(
     .limit(limit);
 }
 
+/**
+ * Find the #company channel for a company. Returns the channel or null if it
+ * doesn't exist yet (channels are created lazily on first agent join).
+ */
+export async function findCompanyChannel(
+  db: Db,
+  companyId: string,
+): Promise<{ id: string } | null> {
+  return db
+    .select({ id: agentChannels.id })
+    .from(agentChannels)
+    .where(
+      and(
+        eq(agentChannels.companyId, companyId),
+        eq(agentChannels.scopeType, "company"),
+        sql`${agentChannels.scopeId} IS NULL`,
+      ),
+    )
+    .then((rows) => rows[0] ?? null);
+}
+
+/**
+ * Find the department channel for a given department. Returns null if the
+ * channel doesn't exist yet or if department is null/empty.
+ */
+export async function findAgentDepartmentChannel(
+  db: Db,
+  companyId: string,
+  department: string | null,
+): Promise<{ id: string } | null> {
+  if (!department) return null;
+  return db
+    .select({ id: agentChannels.id })
+    .from(agentChannels)
+    .where(
+      and(
+        eq(agentChannels.companyId, companyId),
+        eq(agentChannels.scopeType, "department"),
+        eq(agentChannels.scopeId, department),
+      ),
+    )
+    .then((rows) => rows[0] ?? null);
+}
+
+/** Get last N messages from a channel for context injection, oldest first. */
+export async function getRecentMessages(
+  db: Db,
+  channelId: string,
+  limit: number,
+): Promise<Message[]> {
+  const rows = await db
+    .select()
+    .from(channelMessages)
+    .where(eq(channelMessages.channelId, channelId))
+    .orderBy(desc(channelMessages.createdAt))
+    .limit(limit);
+  // Return in chronological order (oldest first)
+  return rows.reverse();
+}
+
 /** Post a message to a channel. */
 export async function postMessage(
   db: Db,

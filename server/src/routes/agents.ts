@@ -67,7 +67,7 @@ import { redactCurrentUserValue } from "../log-redaction.js";
 import { renderOrgChartSvg, renderOrgChartPng, type OrgNode, type OrgChartStyle, ORG_CHART_STYLES } from "./org-chart-svg.js";
 import { instanceSettingsService } from "../services/instance-settings.js";
 import { ensureLibraryAgentFolder } from "../services/playbook-execution.js";
-import { autoJoinAgentChannels } from "../services/channels.js";
+import { autoJoinAgentChannels, findCompanyChannel, postMessage as postChannelMessage } from "../services/channels.js";
 import { runClaudeLogin } from "@ironworksai/adapter-claude-local/server";
 import {
   DEFAULT_CODEX_LOCAL_BYPASS_APPROVALS_AND_SANDBOX,
@@ -2390,6 +2390,21 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
       console.error("Failed to archive workspace or create termination record:", err);
     }
 
+    // Announce termination to #company channel (non-fatal).
+    void (async () => {
+      try {
+        const companyChannel = await findCompanyChannel(db, agent.companyId);
+        if (companyChannel) {
+          await postChannelMessage(db, {
+            channelId: companyChannel.id,
+            companyId: agent.companyId,
+            body: `${agent.name} has been terminated. Reason: manual_termination`,
+            messageType: "announcement",
+          });
+        }
+      } catch { /* non-fatal */ }
+    })();
+
     res.json(agent);
   });
 
@@ -2911,6 +2926,21 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
     } catch (err) {
       console.error("Failed to archive workspace or create termination record:", err);
     }
+
+    // Announce termination to #company channel (non-fatal).
+    void (async () => {
+      try {
+        const companyChannel = await findCompanyChannel(db, companyId);
+        if (companyChannel) {
+          await postChannelMessage(db, {
+            channelId: companyChannel.id,
+            companyId,
+            body: `${result.name} has been terminated. Reason: ${terminationReason as string}`,
+            messageType: "announcement",
+          });
+        }
+      } catch { /* non-fatal */ }
+    })();
 
     res.json(result);
   });
