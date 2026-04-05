@@ -29,11 +29,21 @@ import { cn } from "../lib/utils";
 import { HelpBeacon } from "./HelpBeacon";
 import {
   Plus,
+  Check,
   ChevronDown,
   ChevronRight,
   AlertTriangle,
   Minus as MinusIcon,
+  X,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useDialog } from "../context/DialogContext";
 import type { Issue } from "@ironworksai/shared";
 
@@ -96,6 +106,90 @@ interface Agent {
 }
 
 /* ── Props ── */
+
+/* ── Column Health Indicator ── */
+
+function ColumnHealthIndicator({ issues }: { issues: Issue[] }) {
+  if (issues.length === 0) return null;
+  const now = Date.now();
+  const ages = issues.map((i) => (now - new Date(i.createdAt).getTime()) / (1000 * 60 * 60 * 24));
+  const avgAge = ages.reduce((a, b) => a + b, 0) / ages.length;
+  const color = avgAge > 14 ? "bg-red-500" : avgAge > 7 ? "bg-amber-500" : "bg-emerald-500";
+  const label = avgAge < 1 ? "<1d" : `${Math.round(avgAge)}d`;
+  return (
+    <span className="flex items-center gap-1 text-[9px] text-muted-foreground/60" title={`Average card age: ${label}`}>
+      <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", color)} />
+      {label} avg
+    </span>
+  );
+}
+
+/* ── Bulk Operations Bar ── */
+
+function BulkOperationsBar({
+  selectedCount,
+  agents,
+  onChangeStatus,
+  onChangeAssignee,
+  onChangePriority,
+  onClear,
+}: {
+  selectedCount: number;
+  agents?: Agent[];
+  onChangeStatus: (status: string) => void;
+  onChangeAssignee: (agentId: string) => void;
+  onChangePriority: (priority: string) => void;
+  onClear: () => void;
+}) {
+  if (selectedCount === 0) return null;
+  return (
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 rounded-lg border border-border bg-background/95 backdrop-blur-sm px-4 py-2 shadow-lg">
+      <span className="text-sm font-medium">{selectedCount} selected</span>
+      <Select onValueChange={onChangeStatus}>
+        <SelectTrigger className="h-7 w-auto min-w-[100px] text-xs">
+          <SelectValue placeholder="Status" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="backlog">Backlog</SelectItem>
+          <SelectItem value="todo">Todo</SelectItem>
+          <SelectItem value="in_progress">In Progress</SelectItem>
+          <SelectItem value="in_review">In Review</SelectItem>
+          <SelectItem value="done">Done</SelectItem>
+        </SelectContent>
+      </Select>
+      {agents && agents.length > 0 && (
+        <Select onValueChange={onChangeAssignee}>
+          <SelectTrigger className="h-7 w-auto min-w-[100px] text-xs">
+            <SelectValue placeholder="Assignee" />
+          </SelectTrigger>
+          <SelectContent>
+            {agents.map((a) => (
+              <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+      <Select onValueChange={onChangePriority}>
+        <SelectTrigger className="h-7 w-auto min-w-[80px] text-xs">
+          <SelectValue placeholder="Priority" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="critical">Critical</SelectItem>
+          <SelectItem value="high">High</SelectItem>
+          <SelectItem value="medium">Medium</SelectItem>
+          <SelectItem value="low">Low</SelectItem>
+        </SelectContent>
+      </Select>
+      <button
+        onClick={onClear}
+        className="ml-1 rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+        aria-label="Clear selection"
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
 
 interface KanbanBoardProps {
   issues: Issue[];
@@ -179,6 +273,8 @@ const KanbanColumn = memo(function KanbanColumn({
         {overLimit && (
           <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />
         )}
+
+        <ColumnHealthIndicator issues={issues} />
 
         <button
           onClick={onQuickCreate}
@@ -313,8 +409,39 @@ export function KanbanBoard({
   onUpdateIssue,
 }: KanbanBoardProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [collapsedColumns, setCollapsedColumns] = useState<Set<string>>(new Set());
   const [collapsedLanes, setCollapsedLanes] = useState<Set<string>>(new Set());
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const handleBulkStatus = useCallback((status: string) => {
+    for (const id of selectedIds) {
+      onUpdateIssue(id, { status });
+    }
+    setSelectedIds(new Set());
+  }, [selectedIds, onUpdateIssue]);
+
+  const handleBulkAssignee = useCallback((assigneeAgentId: string) => {
+    for (const id of selectedIds) {
+      onUpdateIssue(id, { assigneeAgentId });
+    }
+    setSelectedIds(new Set());
+  }, [selectedIds, onUpdateIssue]);
+
+  const handleBulkPriority = useCallback((priority: string) => {
+    for (const id of selectedIds) {
+      onUpdateIssue(id, { priority });
+    }
+    setSelectedIds(new Set());
+  }, [selectedIds, onUpdateIssue]);
   const [swimlaneMode, setSwimlaneMode] = useState<SwimlaneMode>(() => {
     try {
       return (localStorage.getItem("kanban:swimlaneMode") as SwimlaneMode) ?? "none";
@@ -541,6 +668,16 @@ export function KanbanBoard({
       <div className="flex items-center gap-3">
         <SwimlaneToggle mode={swimlaneMode} onChange={setSwimlaneMode} />
       </div>
+
+      {/* Bulk operations bar */}
+      <BulkOperationsBar
+        selectedCount={selectedIds.size}
+        agents={agents}
+        onChangeStatus={handleBulkStatus}
+        onChangeAssignee={handleBulkAssignee}
+        onChangePriority={handleBulkPriority}
+        onClear={() => setSelectedIds(new Set())}
+      />
 
       <DndContext
         sensors={sensors}

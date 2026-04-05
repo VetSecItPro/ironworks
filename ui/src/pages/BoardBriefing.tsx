@@ -44,6 +44,7 @@ import {
   LineChart,
   Brain,
   Printer,
+  Download,
 } from "lucide-react";
 import type { Agent } from "@ironworksai/shared";
 
@@ -349,10 +350,25 @@ export function BoardBriefing() {
             <button
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border border-border text-muted-foreground hover:text-foreground transition-colors print:hidden"
               onClick={() => window.print()}
-              aria-label="Print or save as PDF"
+              aria-label="Print briefing"
             >
               <Printer className="h-3.5 w-3.5" />
-              Print / PDF
+              Print
+            </button>
+            <button
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 transition-colors print:hidden"
+              onClick={() => {
+                // Trigger browser print dialog which allows "Save as PDF"
+                const style = document.createElement("style");
+                style.textContent = "@media print { @page { size: A4; margin: 1cm; } }";
+                document.head.appendChild(style);
+                window.print();
+                setTimeout(() => document.head.removeChild(style), 1000);
+              }}
+              aria-label="Export as PDF"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Export PDF
             </button>
             <div
               className="flex items-center gap-1 border border-border rounded-md overflow-hidden shrink-0 print:hidden"

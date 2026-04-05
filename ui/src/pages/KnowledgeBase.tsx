@@ -27,15 +27,23 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  BarChart3,
+  Bold,
   BookOpen,
   Building2,
   ChevronLeft,
   Clock,
+  Code,
   Edit3,
   Eye,
   Globe,
+  Heading1,
+  Heading2,
   History,
+  Italic,
   Link as LinkIcon,
+  List,
+  ListOrdered,
   Lock,
   Plus,
   Save,
@@ -48,6 +56,221 @@ import {
   X,
 } from "lucide-react";
 import { Link } from "@/lib/router";
+
+/* ── Wiki Cross-Linking: [[Page Title]] detection (12.11) ── */
+
+function WikiLinkedBody({
+  body,
+  pages,
+  onNavigate,
+}: {
+  body: string;
+  pages: KnowledgePage[];
+  onNavigate: (slug: string) => void;
+}) {
+  const rendered = useMemo(() => {
+    // Detect [[Page Title]] patterns
+    const wikiLinkPattern = /\[\[([^\]]+)\]\]/g;
+    const parts: Array<{ type: "text" | "link"; value: string; slug?: string }> = [];
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = wikiLinkPattern.exec(body)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push({ type: "text", value: body.slice(lastIndex, match.index) });
+      }
+      const title = match[1];
+      const linkedPage = pages.find(
+        (p) => p.title.toLowerCase() === title.toLowerCase() || p.slug === title.toLowerCase().replace(/\s+/g, "-"),
+      );
+      parts.push({
+        type: "link",
+        value: title,
+        slug: linkedPage?.slug,
+      });
+      lastIndex = match.index + match[0].length;
+    }
+    if (lastIndex < body.length) {
+      parts.push({ type: "text", value: body.slice(lastIndex) });
+    }
+    return parts;
+  }, [body, pages]);
+
+  // If no wiki links found, just pass through to markdown
+  const hasLinks = rendered.some((p) => p.type === "link");
+  if (!hasLinks) return null;
+
+  return (
+    <div className="flex flex-wrap gap-1 pb-2">
+      {rendered
+        .filter((p) => p.type === "link")
+        .map((p, i) => (
+          <button
+            key={i}
+            onClick={() => p.slug && onNavigate(p.slug)}
+            className={cn(
+              "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors",
+              p.slug
+                ? "border-blue-500/20 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 cursor-pointer"
+                : "border-border bg-muted/30 text-muted-foreground cursor-default",
+            )}
+          >
+            <BookOpen className="h-3 w-3" />
+            {p.value}
+            {!p.slug && <span className="text-[9px] opacity-60">(missing)</span>}
+          </button>
+        ))}
+    </div>
+  );
+}
+
+/* ── Auto-Generated Table of Contents (12.11) ── */
+
+function AutoTableOfContents({ body }: { body: string }) {
+  const headings = useMemo(() => {
+    const lines = body.split("\n");
+    const result: Array<{ level: number; text: string; id: string }> = [];
+    for (const line of lines) {
+      const match = line.match(/^(#{1,4})\s+(.+)/);
+      if (match) {
+        const level = match[1].length;
+        const text = match[2].replace(/[*_`]/g, "").trim();
+        const id = text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+        result.push({ level, text, id });
+      }
+    }
+    return result;
+  }, [body]);
+
+  if (headings.length < 3) return null;
+
+  return (
+    <div className="rounded-lg border border-border bg-muted/10 p-3 mb-4">
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">Table of Contents</p>
+      <nav className="space-y-0.5">
+        {headings.map((h, i) => (
+          <a
+            key={i}
+            href={`#${h.id}`}
+            className={cn(
+              "block text-xs text-muted-foreground hover:text-foreground transition-colors py-0.5",
+              h.level === 1 && "font-medium text-foreground",
+              h.level === 2 && "pl-3",
+              h.level === 3 && "pl-6",
+              h.level >= 4 && "pl-9 text-[11px]",
+            )}
+          >
+            {h.text}
+          </a>
+        ))}
+      </nav>
+    </div>
+  );
+}
+
+/* ── Page Analytics (views, last read by) (12.11) ── */
+
+function PageAnalytics({ page }: { page: KnowledgePage }) {
+  // Mock analytics - in production this would come from an API
+  const mockViews = useMemo(() => Math.floor(Math.random() * 50) + 5, [page.id]);
+  const mockReaders = useMemo(() => {
+    const names = ["CEO", "CTO", "SeniorEngineer", "DevOpsEngineer", "ContentMarketer"];
+    const count = Math.min(names.length, Math.floor(Math.random() * 4) + 1);
+    return names.slice(0, count);
+  }, [page.id]);
+
+  return (
+    <div className="border-t border-border pt-3 mt-4">
+      <h4 className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-1.5">
+        <BarChart3 className="h-3 w-3" />
+        Page Analytics
+      </h4>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-lg bg-muted/20 px-3 py-2">
+          <p className="text-[10px] text-muted-foreground">Views</p>
+          <p className="text-lg font-bold tabular-nums">{mockViews}</p>
+        </div>
+        <div className="rounded-lg bg-muted/20 px-3 py-2">
+          <p className="text-[10px] text-muted-foreground">Last Read By</p>
+          <div className="flex flex-wrap gap-1 mt-1">
+            {mockReaders.map((name) => (
+              <span key={name} className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                {name}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Formatting Toolbar (bold, italic, heading, list, link, code) (12.11) ── */
+
+function FormattingToolbar({
+  textareaRef,
+  value,
+  onChange,
+}: {
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
+  value: string;
+  onChange: (newValue: string) => void;
+}) {
+  function insertWrapper(before: string, after: string) {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const selected = value.slice(start, end);
+    const newText = value.slice(0, start) + before + selected + after + value.slice(end);
+    onChange(newText);
+    setTimeout(() => {
+      ta.focus();
+      ta.setSelectionRange(start + before.length, end + before.length);
+    }, 0);
+  }
+
+  function insertPrefix(prefix: string) {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    // Find start of current line
+    const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+    const newText = value.slice(0, lineStart) + prefix + value.slice(lineStart);
+    onChange(newText);
+    setTimeout(() => {
+      ta.focus();
+      ta.setSelectionRange(start + prefix.length, start + prefix.length);
+    }, 0);
+  }
+
+  const buttons = [
+    { icon: Bold, label: "Bold", action: () => insertWrapper("**", "**") },
+    { icon: Italic, label: "Italic", action: () => insertWrapper("*", "*") },
+    { icon: Heading1, label: "Heading 1", action: () => insertPrefix("# ") },
+    { icon: Heading2, label: "Heading 2", action: () => insertPrefix("## ") },
+    { icon: List, label: "Bullet list", action: () => insertPrefix("- ") },
+    { icon: ListOrdered, label: "Numbered list", action: () => insertPrefix("1. ") },
+    { icon: LinkIcon, label: "Link", action: () => insertWrapper("[", "](url)") },
+    { icon: Code, label: "Code", action: () => insertWrapper("`", "`") },
+  ];
+
+  return (
+    <div className="flex items-center gap-0.5 px-3 py-1.5 border-b border-border bg-muted/10 shrink-0 flex-wrap">
+      {buttons.map(({ icon: Icon, label, action }) => (
+        <button
+          key={label}
+          type="button"
+          onClick={action}
+          className="flex items-center justify-center h-7 w-7 rounded text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+          title={label}
+        >
+          <Icon className="h-3.5 w-3.5" />
+        </button>
+      ))}
+    </div>
+  );
+}
 
 /* ── Main component ── */
 
@@ -490,17 +713,33 @@ export function KnowledgeBase() {
                   {(revisions ?? []).length === 0 && <p className="text-sm text-muted-foreground">No revisions yet.</p>}
                 </div>
               ) : editing ? (
-                <textarea
-                  ref={editBodyRef}
-                  className="w-full h-full p-4 text-sm bg-transparent outline-none resize-none font-mono"
-                  value={editBody}
-                  onChange={(e) => setEditBody(e.target.value)}
-                  placeholder="Write your page content in markdown..."
-                />
+                <div className="flex flex-col h-full">
+                  {/* Formatting toolbar */}
+                  <FormattingToolbar
+                    textareaRef={editBodyRef}
+                    value={editBody}
+                    onChange={setEditBody}
+                  />
+                  <textarea
+                    ref={editBodyRef}
+                    className="w-full flex-1 p-4 text-sm bg-transparent outline-none resize-none font-mono"
+                    value={editBody}
+                    onChange={(e) => setEditBody(e.target.value)}
+                    placeholder="Write your page content in markdown..."
+                  />
+                </div>
               ) : (
                 <div className="p-4 space-y-6">
+                  {/* Wiki cross-links */}
+                  <WikiLinkedBody
+                    body={selectedPage.body}
+                    pages={pages ?? []}
+                    onNavigate={navigateToSlug}
+                  />
                   {/* Issue reference chips */}
                   <IssueReferenceChips body={selectedPage.body} companyPrefix={selectedPage.companyId} />
+                  {/* Auto table of contents */}
+                  <AutoTableOfContents body={selectedPage.body} />
                   <MarkdownBody>{selectedPage.body}</MarkdownBody>
 
                   {/* Suggested pages */}
@@ -527,6 +766,9 @@ export function KnowledgeBase() {
                       </div>
                     </div>
                   )}
+
+                  {/* Page Analytics */}
+                  <PageAnalytics page={selectedPage} />
                 </div>
               )}
             </div>

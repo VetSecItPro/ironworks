@@ -9,7 +9,15 @@ interface PageSkeletonProps {
     | "approvals"
     | "costs"
     | "inbox"
-    | "org-chart";
+    | "org-chart"
+    | "library"
+    | "knowledge-base"
+    | "playbooks"
+    | "channel"
+    | "deliverables"
+    | "billing"
+    | "company-settings"
+    | "board-briefing";
 }
 
 export function PageSkeleton({ variant = "list" }: PageSkeletonProps) {

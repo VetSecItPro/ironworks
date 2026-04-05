@@ -16,10 +16,23 @@ import { ThemeProvider } from "./context/ThemeContext";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { initPluginBridge } from "./plugins/bridge-init";
 import { PluginLauncherProvider } from "./plugins/launchers";
+import { PowerModeProvider } from "./components/ProgressiveDisclosure";
+import { isCompactMode, applyAccentColor, loadAccentColor } from "./components/PersonalPreferences";
 import "@mdxeditor/editor/style.css";
 import "./index.css";
 
 initPluginBridge(React, ReactDOM);
+
+// Apply compact mode if saved
+if (isCompactMode()) {
+  document.documentElement.classList.add("compact");
+}
+
+// Apply saved accent color
+const savedAccent = loadAccentColor();
+if (savedAccent) {
+  applyAccentColor(savedAccent);
+}
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
@@ -51,9 +64,11 @@ createRoot(document.getElementById("root")!).render(
                     <SidebarProvider>
                       <PanelProvider>
                         <PluginLauncherProvider>
-                          <DialogProvider>
-                            <App />
-                          </DialogProvider>
+                          <PowerModeProvider>
+                            <DialogProvider>
+                              <App />
+                            </DialogProvider>
+                          </PowerModeProvider>
                         </PluginLauncherProvider>
                       </PanelProvider>
                     </SidebarProvider>

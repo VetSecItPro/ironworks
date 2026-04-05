@@ -19,7 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronDown, ChevronRight, Download, History } from "lucide-react";
+import { Calendar, ChevronDown, ChevronRight, Download, Filter, History } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { cn } from "../lib/utils";
 import { exportToCSV } from "../lib/exportCSV";
 import type { Agent, ActivityEvent } from "@ironworksai/shared";
@@ -129,11 +130,75 @@ const ACTION_LABELS: Record<string, string> = {
 
 /* ─── Main Component ─────────────────────────────────────────── */
 
+/* ── Activity Heatmap (GitHub-style) ── */
+
+function ActivityHeatmap({ events }: { events: ActivityEvent[] }) {
+  // Build 52-week x 7-day grid
+  const weeks = 26; // 6 months
+  const now = new Date();
+  const grid: number[][] = [];
+  for (let w = 0; w < weeks; w++) {
+    const week: number[] = [];
+    for (let d = 0; d < 7; d++) {
+      const dayOffset = (weeks - 1 - w) * 7 + (6 - d);
+      const date = new Date(now.getTime() - dayOffset * 86400000);
+      const dayStr = date.toISOString().slice(0, 10);
+      const count = events.filter((e) => new Date(e.createdAt).toISOString().slice(0, 10) === dayStr).length;
+      week.push(count);
+    }
+    grid.push(week);
+  }
+  const maxCount = Math.max(...grid.flat(), 1);
+
+  function cellColor(count: number): string {
+    if (count === 0) return "bg-muted/40";
+    const intensity = count / maxCount;
+    if (intensity > 0.75) return "bg-emerald-500";
+    if (intensity > 0.5) return "bg-emerald-400";
+    if (intensity > 0.25) return "bg-emerald-300 dark:bg-emerald-600";
+    return "bg-emerald-200 dark:bg-emerald-700";
+  }
+
+  return (
+    <div className="rounded-lg border border-border p-4 space-y-2">
+      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+        <Calendar className="h-3.5 w-3.5" />
+        Activity Density (6 months)
+      </h4>
+      <div className="flex gap-0.5 overflow-x-auto">
+        {grid.map((week, wi) => (
+          <div key={wi} className="flex flex-col gap-0.5">
+            {week.map((count, di) => (
+              <div
+                key={di}
+                className={cn("h-2.5 w-2.5 rounded-[2px]", cellColor(count))}
+                title={`${count} events`}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground">
+        <span>Less</span>
+        <div className="h-2 w-2 rounded-[2px] bg-muted/40" />
+        <div className="h-2 w-2 rounded-[2px] bg-emerald-200 dark:bg-emerald-700" />
+        <div className="h-2 w-2 rounded-[2px] bg-emerald-300 dark:bg-emerald-600" />
+        <div className="h-2 w-2 rounded-[2px] bg-emerald-400" />
+        <div className="h-2 w-2 rounded-[2px] bg-emerald-500" />
+        <span>More</span>
+      </div>
+    </div>
+  );
+}
+
 export function Activity() {
   usePageTitle("Activity");
   const { selectedCompanyId } = useCompany();
   const { setBreadcrumbs } = useBreadcrumbs();
   const [filter, setFilter] = useState("all");
+  const [agentFilter, setAgentFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [expandedAgg, setExpandedAgg] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -191,13 +256,22 @@ export function Activity() {
     return map;
   }, [issues]);
 
-  // Filter
+  // Multi-filter: type + agent + date range
   const filtered = useMemo(() => {
     if (!data) return null;
-    return filter !== "all"
-      ? data.filter((e) => e.entityType === filter)
-      : data;
-  }, [data, filter]);
+    let result = data;
+    if (filter !== "all") result = result.filter((e) => e.entityType === filter);
+    if (agentFilter !== "all") result = result.filter((e) => e.actorType === "agent" && e.actorId === agentFilter);
+    if (dateFrom) {
+      const fromTs = new Date(dateFrom).getTime();
+      result = result.filter((e) => new Date(e.createdAt).getTime() >= fromTs);
+    }
+    if (dateTo) {
+      const toTs = new Date(dateTo).getTime() + 86400000; // end of day
+      result = result.filter((e) => new Date(e.createdAt).getTime() < toTs);
+    }
+    return result;
+  }, [data, filter, agentFilter, dateFrom, dateTo]);
 
   // Aggregate and group by time
   const groupedItems = useMemo(() => {
@@ -289,8 +363,38 @@ export function Activity() {
               ))}
             </SelectContent>
           </Select>
+          {agents && agents.length > 0 && (
+            <Select value={agentFilter} onValueChange={setAgentFilter}>
+              <SelectTrigger className="w-[140px] h-8 text-xs">
+                <SelectValue placeholder="All agents" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All agents</SelectItem>
+                {agents.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <Input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="w-[130px] h-8 text-xs"
+            placeholder="From"
+          />
+          <Input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="w-[130px] h-8 text-xs"
+            placeholder="To"
+          />
         </div>
       </div>
+
+      {/* Activity Heatmap */}
+      {data && data.length > 0 && <ActivityHeatmap events={data} />}
 
       {error && <p className="text-sm text-destructive">{error.message}</p>}
 
@@ -307,10 +411,15 @@ export function Activity() {
                 {timeGroup}
               </div>
 
-              <div className="border border-border rounded-lg divide-y divide-border overflow-hidden">
-                {items.map((item) =>
+              <div className="border border-border rounded-lg overflow-hidden relative">
+                {/* Timeline rail */}
+                <div className="absolute left-5 top-0 bottom-0 w-px bg-border/50 hidden sm:block" />
+
+                {items.map((item, idx) =>
                   isAggregated(item) ? (
-                    <div key={item.key}>
+                    <div key={item.key} className="relative">
+                      {/* Timeline dot */}
+                      <div className="absolute left-[17px] top-4 h-2 w-2 rounded-full bg-muted-foreground/40 border-2 border-background z-10 hidden sm:block" />
                       <button
                         onClick={() => {
                           setExpandedAgg((prev) => {
@@ -367,13 +476,17 @@ export function Activity() {
                       )}
                     </div>
                   ) : (
-                    <ActivityRow
-                      key={item.id}
-                      event={item}
-                      agentMap={agentMap}
-                      entityNameMap={entityNameMap}
-                      entityTitleMap={entityTitleMap}
-                    />
+                    <div key={item.id} className="relative">
+                      {/* Timeline dot */}
+                      <div className="absolute left-[17px] top-4 h-2 w-2 rounded-full bg-blue-500/60 border-2 border-background z-10 hidden sm:block" />
+                      <ActivityRow
+                        event={item}
+                        agentMap={agentMap}
+                        entityNameMap={entityNameMap}
+                        entityTitleMap={entityTitleMap}
+                        className="sm:pl-10 border-b border-border last:border-b-0"
+                      />
+                    </div>
                   ),
                 )}
               </div>

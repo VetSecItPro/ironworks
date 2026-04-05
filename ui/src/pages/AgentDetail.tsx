@@ -30,12 +30,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+  MessageSquare,
   MoreHorizontal,
   Plus,
   Copy,
   CopyPlus,
   RotateCcw,
   Trash2,
+  X,
 } from "lucide-react";
 import { AgentIcon, AgentIconPicker } from "../components/AgentIconPicker";
 import { EmploymentBadge } from "../components/EmploymentBadge";
@@ -77,6 +79,7 @@ export function AgentDetail() {
   const needsDashboardData = activeView === "dashboard";
   const needsRunData = activeView === "runs" || Boolean(urlRunId);
   const shouldLoadHeartbeats = needsDashboardData || needsRunData;
+  const [chatSlideOpen, setChatSlideOpen] = useState(false);
   const [configDirty, setConfigDirty] = useState(false);
   const [configSaving, setConfigSaving] = useState(false);
   const saveConfigActionRef = useRef<(() => void) | null>(null);
@@ -685,6 +688,42 @@ export function AgentDetail() {
           />
         </div>
       ) : null}
+
+      {/* Persistent Chat Button (slide-out, not tab switch) */}
+      {activeView !== "chat" && resolvedCompanyId && (
+        <>
+          <button
+            onClick={() => setChatSlideOpen(!chatSlideOpen)}
+            className={cn(
+              "fixed bottom-6 right-6 z-40 flex items-center justify-center h-12 w-12 rounded-full shadow-lg transition-all duration-200",
+              chatSlideOpen
+                ? "bg-foreground text-background"
+                : "bg-foreground text-background hover:scale-105",
+            )}
+            aria-label="Chat with agent"
+          >
+            {chatSlideOpen ? <X className="h-5 w-5" /> : <MessageSquare className="h-5 w-5" />}
+          </button>
+
+          {/* Chat slide-out panel */}
+          {chatSlideOpen && (
+            <div className="fixed inset-y-0 right-0 z-30 w-[400px] max-w-[90vw] border-l border-border bg-background shadow-xl animate-in slide-in-from-right duration-200">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                <span className="text-sm font-medium">Chat with {agent.name}</span>
+                <button
+                  onClick={() => setChatSlideOpen(false)}
+                  className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="h-[calc(100vh-52px)]">
+                <AgentChat agent={agent} companyId={resolvedCompanyId} />
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

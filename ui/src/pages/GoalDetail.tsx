@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "@/lib/router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { goalsApi } from "../api/goals";
+import { activityApi } from "../api/activity";
+import { agentsApi } from "../api/agents";
 import { issuesApi } from "../api/issues";
 import { projectsApi } from "../api/projects";
 import { assetsApi } from "../api/assets";
@@ -17,12 +19,13 @@ import { GoalTree } from "../components/GoalTree";
 import { StatusBadge } from "../components/StatusBadge";
 import { InlineEditor } from "../components/InlineEditor";
 import { EntityRow } from "../components/EntityRow";
+import { ActivityRow } from "../components/ActivityRow";
 import { PageSkeleton } from "../components/PageSkeleton";
 import { projectUrl } from "../lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle2, Circle, Loader2, PanelRightClose, PanelRightOpen, Plus, ShieldAlert, Target, Trash2 } from "lucide-react";
+import { CheckCircle2, Circle, History, Loader2, PanelRightClose, PanelRightOpen, Plus, ShieldAlert, Target, Trash2 } from "lucide-react";
 import { cn } from "../lib/utils";
 import type { Goal, Issue, Project } from "@ironworksai/shared";
 
@@ -158,6 +161,40 @@ export function GoalDetail() {
   });
 
   const goalIssues = (allIssues ?? []).filter((i: Issue) => i.goalId === goalId);
+
+  // Activity for linked issues
+  const goalIssueIds = new Set(goalIssues.map((i: Issue) => i.id));
+  const { data: allActivity } = useQuery({
+    queryKey: queryKeys.activity(resolvedCompanyId!),
+    queryFn: () => activityApi.list(resolvedCompanyId!),
+    enabled: !!resolvedCompanyId,
+    staleTime: 30_000,
+  });
+  const { data: allAgents } = useQuery({
+    queryKey: queryKeys.agents.list(resolvedCompanyId!),
+    queryFn: () => agentsApi.list(resolvedCompanyId!),
+    enabled: !!resolvedCompanyId,
+  });
+  const goalActivity = (allActivity ?? []).filter((e) =>
+    (e.entityType === "issue" && goalIssueIds.has(e.entityId)) ||
+    (e.entityType === "goal" && e.entityId === goalId)
+  ).slice(0, 30);
+  const agentMap = useMemo(() => {
+    const map = new Map<string, import("@ironworksai/shared").Agent>();
+    for (const a of allAgents ?? []) map.set(a.id, a);
+    return map;
+  }, [allAgents]);
+  const entityNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const i of allIssues ?? []) map.set(`issue:${i.id}`, (i as Issue).identifier ?? i.id.slice(0, 8));
+    if (goal) map.set(`goal:${goal.id}`, goal.title);
+    return map;
+  }, [allIssues, goal]);
+  const entityTitleMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const i of allIssues ?? []) map.set(`issue:${i.id}`, i.title);
+    return map;
+  }, [allIssues]);
 
   // Key Results
   const { data: keyResults } = useQuery({
@@ -369,6 +406,9 @@ export function GoalDetail() {
           <TabsTrigger value="projects">
             Projects ({linkedProjects.length})
           </TabsTrigger>
+          <TabsTrigger value="activity">
+            Activity ({goalActivity.length})
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="issues" className="mt-4 space-y-3">
@@ -556,6 +596,27 @@ export function GoalDetail() {
                   subtitle={project.description ?? undefined}
                   to={projectUrl(project)}
                   trailing={<StatusBadge status={project.status} />}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="activity" className="mt-4">
+          {goalActivity.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 py-8 text-muted-foreground">
+              <History className="h-5 w-5" />
+              <p className="text-sm">No activity yet for this goal or its linked issues.</p>
+            </div>
+          ) : (
+            <div className="border border-border rounded-lg divide-y divide-border overflow-hidden">
+              {goalActivity.map((event) => (
+                <ActivityRow
+                  key={event.id}
+                  event={event}
+                  agentMap={agentMap}
+                  entityNameMap={entityNameMap}
+                  entityTitleMap={entityTitleMap}
                 />
               ))}
             </div>

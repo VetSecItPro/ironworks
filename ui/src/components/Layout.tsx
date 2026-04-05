@@ -21,6 +21,12 @@ import { MobileBottomNav } from "./MobileBottomNav";
 import { WorktreeBanner } from "./WorktreeBanner";
 import { DevRestartBanner } from "./DevRestartBanner";
 import { AskAIButton } from "./AskAIButton";
+import { NotificationCenter, NotificationBell, useNotifications } from "./NotificationCenter";
+import { SampleDataBanner } from "./SampleDataToggle";
+import { GuidedTour, useGuidedTour, isFirstRun, markFirstRunSeen } from "./GuidedTour";
+import { WelcomeScreen, hasSeenWelcome } from "./WelcomeScreen";
+import { FirstLoginWizard, hasCompletedFirstLogin, type FirstLoginData } from "./FirstLoginWizard";
+import { useChordNavigation } from "../hooks/useKeyboardPowerUser";
 import { useDialog } from "../context/DialogContext";
 import { usePanel } from "../context/PanelContext";
 import { useCompany } from "../context/CompanyContext";
@@ -77,6 +83,12 @@ export function Layout() {
   const [instanceSettingsTarget, setInstanceSettingsTarget] = useState<string>(() => readRememberedInstanceSettingsPath());
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [changelogOpen, setChangelogOpen] = useState(false);
+  const [notifCenterOpen, setNotifCenterOpen] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(() => !hasSeenWelcome());
+  const [showFirstLogin, setShowFirstLogin] = useState(() => !hasCompletedFirstLogin() && hasSeenWelcome());
+  const guidedTour = useGuidedTour();
+  const notifs = useNotifications();
   const nextTheme = theme === "dark" ? "light" : "dark";
   const matchedCompany = useMemo(() => {
     if (!companyPrefix) return null;
@@ -154,6 +166,13 @@ export function Layout() {
     onNewIssue: () => openNewIssue(),
     onToggleSidebar: toggleSidebar,
     onTogglePanel: togglePanel,
+    onToggleFocusMode: () => setFocusMode((prev) => !prev),
+  });
+
+  // Chord navigation: g then d/i/a/p etc.
+  useChordNavigation({
+    onNavigate: (path) => navigate(path),
+    enabled: true,
   });
 
   useEffect(() => {
@@ -268,12 +287,22 @@ export function Layout() {
     }
   }, [location.hash, location.pathname, location.search]);
 
+  // Welcome screen for first-time users
+  if (showWelcome) {
+    return <WelcomeScreen onComplete={() => {
+      setShowWelcome(false);
+      if (!hasCompletedFirstLogin()) setShowFirstLogin(true);
+    }} />;
+  }
+
   return (
     <div
       className={cn(
         "bg-background text-foreground pt-[env(safe-area-inset-top)]",
         isMobile ? "min-h-dvh" : "flex h-dvh flex-col overflow-hidden",
       )}
+      role="application"
+      aria-label="IronWorks Application"
     >
       <a
         href="#main-content"
@@ -281,6 +310,7 @@ export function Layout() {
       >
         Skip to Main Content
       </a>
+      <SampleDataBanner />
       <WorktreeBanner />
       <DevRestartBanner devServer={health?.devServer} />
       <div className={cn("min-h-0 flex-1", isMobile ? "w-full" : "flex overflow-hidden")}>
@@ -294,7 +324,8 @@ export function Layout() {
         )}
 
         {isMobile ? (
-          <div
+          <nav
+            aria-label="Main navigation"
             className={cn(
               "fixed inset-y-0 left-0 z-50 flex flex-col overflow-hidden pt-[env(safe-area-inset-top)] transition-transform duration-100 ease-out",
               sidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -304,9 +335,16 @@ export function Layout() {
               <CompanyRail />
               {isInstanceSettingsRoute ? <InstanceSidebar /> : <Sidebar />}
             </div>
-          </div>
+          </nav>
         ) : (
-          <div className="flex h-full flex-col shrink-0">
+          <nav
+            aria-label="Main navigation"
+            data-tour="sidebar"
+            className={cn(
+              "flex h-full flex-col shrink-0 transition-all duration-200",
+              focusMode && "hidden",
+            )}
+          >
             <div className="flex flex-1 min-h-0">
               <CompanyRail />
               <div
@@ -318,17 +356,29 @@ export function Layout() {
                 {isInstanceSettingsRoute ? <InstanceSidebar /> : <Sidebar />}
               </div>
             </div>
-          </div>
+          </nav>
         )}
 
         <div className={cn("flex min-w-0 flex-col", isMobile ? "w-full" : "h-full flex-1")}>
-          <div
+          <header
             className={cn(
               isMobile && "sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85",
+              focusMode && !isMobile && "hidden",
             )}
+            role="banner"
           >
-            <BreadcrumbBar />
-          </div>
+            <div className="flex items-center">
+              <div className="flex-1 min-w-0">
+                <BreadcrumbBar />
+              </div>
+              <div className="flex items-center gap-1 pr-4 shrink-0">
+                <NotificationBell
+                  unreadCount={notifs.unreadCount}
+                  onClick={() => setNotifCenterOpen(true)}
+                />
+              </div>
+            </div>
+          </header>
           <div className={cn(isMobile ? "block" : "flex flex-1 min-h-0")}>
             <main
               id="main-content"
@@ -351,7 +401,7 @@ export function Layout() {
             </main>
             <PropertiesPanel />
           </div>
-          <footer className="flex items-center justify-center gap-3 px-4 py-1 border-t border-border text-[11px] text-muted-foreground shrink-0 print:hidden">
+          <footer role="contentinfo" className="flex items-center justify-center gap-3 px-4 py-1 border-t border-border text-[11px] text-muted-foreground shrink-0 print:hidden">
             <span className="opacity-60">IronWorks</span>
             <span className="text-border/50">·</span>
             <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>
@@ -383,6 +433,33 @@ export function Layout() {
       <HireAgentDialog />
       <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
       <ChangelogModal open={changelogOpen} onOpenChange={setChangelogOpen} />
+      <NotificationCenter
+        open={notifCenterOpen}
+        onClose={() => setNotifCenterOpen(false)}
+        notifications={notifs.notifications}
+        onMarkRead={notifs.markRead}
+        onMarkAllRead={notifs.markAllRead}
+        onRemove={notifs.removeNotification}
+        onClearAll={notifs.clearAll}
+        onMuteEntity={notifs.muteEntity}
+      />
+      <GuidedTour
+        active={guidedTour.active}
+        currentStep={guidedTour.step}
+        onNext={guidedTour.next}
+        onPrev={guidedTour.prev}
+        onDismiss={guidedTour.dismiss}
+      />
+      <FirstLoginWizard
+        open={showFirstLogin}
+        onComplete={() => {
+          setShowFirstLogin(false);
+          if (!guidedTour.completed && isFirstRun()) {
+            markFirstRunSeen();
+            guidedTour.start();
+          }
+        }}
+      />
       <ToastViewport />
       <AskAIButton />
     </div>

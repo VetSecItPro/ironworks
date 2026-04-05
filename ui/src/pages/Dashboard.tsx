@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "@/lib/router";
+import { Link, useNavigate } from "@/lib/router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { dashboardApi } from "../api/dashboard";
 import { activityApi } from "../api/activity";
@@ -23,13 +23,116 @@ import { EmptyState } from "../components/EmptyState";
 import { ActivityRow } from "../components/ActivityRow";
 import { Button } from "@/components/ui/button";
 import { cn, formatCents } from "../lib/utils";
-import { AlertTriangle, Bot, Briefcase, ChevronDown, ChevronRight, CircleDot, DollarSign, Megaphone, Radio, ShieldCheck, Swords, PauseCircle, Users, UserPlus, Zap } from "lucide-react";
+import { AlertTriangle, Bot, Briefcase, ChevronDown, ChevronRight, CircleDot, DollarSign, Megaphone, Play, Plus, Radio, ShieldCheck, Swords, PauseCircle, Users, UserPlus, Zap } from "lucide-react";
 import { ActiveAgentsPanel } from "../components/ActiveAgentsPanel";
 import { ChartCard, PriorityChart, IssueStatusChart } from "../components/ActivityCharts";
 import { PageSkeleton } from "../components/PageSkeleton";
 import type { Agent, Issue, LiveEvent } from "@ironworksai/shared";
 import { PluginSlotOutlet } from "@/plugins/slots";
 import { computeAgentPerformance } from "./AgentPerformance";
+
+/* ── Quick Action FAB ── */
+
+function QuickActionFAB({
+  onCreateIssue,
+  onInvokeAgent,
+  onRunPlaybook,
+}: {
+  onCreateIssue: () => void;
+  onInvokeAgent: () => void;
+  onRunPlaybook: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="fixed bottom-6 right-6 z-40">
+      {open && (
+        <div className="absolute bottom-14 right-0 flex flex-col gap-2 items-end animate-in fade-in slide-in-from-bottom-2 duration-150">
+          <button
+            onClick={() => { onCreateIssue(); setOpen(false); }}
+            className="flex items-center gap-2 rounded-full bg-background border border-border px-4 py-2 text-sm font-medium shadow-lg hover:bg-accent transition-colors whitespace-nowrap"
+          >
+            <CircleDot className="h-3.5 w-3.5" />
+            Create Issue
+          </button>
+          <button
+            onClick={() => { onInvokeAgent(); setOpen(false); }}
+            className="flex items-center gap-2 rounded-full bg-background border border-border px-4 py-2 text-sm font-medium shadow-lg hover:bg-accent transition-colors whitespace-nowrap"
+          >
+            <Play className="h-3.5 w-3.5" />
+            Invoke Agent
+          </button>
+          <button
+            onClick={() => { onRunPlaybook(); setOpen(false); }}
+            className="flex items-center gap-2 rounded-full bg-background border border-border px-4 py-2 text-sm font-medium shadow-lg hover:bg-accent transition-colors whitespace-nowrap"
+          >
+            <Zap className="h-3.5 w-3.5" />
+            Run Playbook
+          </button>
+        </div>
+      )}
+      <button
+        onClick={() => setOpen(!open)}
+        className={cn(
+          "flex items-center justify-center h-12 w-12 rounded-full shadow-lg transition-all duration-200",
+          open
+            ? "bg-foreground text-background rotate-45"
+            : "bg-foreground text-background hover:scale-105",
+        )}
+        aria-label="Quick actions"
+      >
+        <Plus className="h-5 w-5" />
+      </button>
+    </div>
+  );
+}
+
+/* ── Section Last-Updated Timestamp ── */
+
+function LastUpdatedBadge({ dataUpdatedAt }: { dataUpdatedAt?: number }) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 5000);
+    return () => clearInterval(id);
+  }, []);
+  if (!dataUpdatedAt) return null;
+  const seconds = Math.max(0, Math.floor((now - dataUpdatedAt) / 1000));
+  const label =
+    seconds < 5 ? "just now" :
+    seconds < 60 ? `${seconds}s ago` :
+    seconds < 3600 ? `${Math.floor(seconds / 60)}m ago` :
+    `${Math.floor(seconds / 3600)}h ago`;
+  return (
+    <span className="text-[10px] text-muted-foreground/60 tabular-nums">
+      Updated {label}
+    </span>
+  );
+}
+
+/* ── Efficiency Mini-Bar ── */
+
+function EfficiencyMiniBar({ value, max, color }: { value: number; max: number; color: string }) {
+  const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0;
+  return (
+    <div className="flex items-center gap-1.5 w-full">
+      <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+        <div className={cn("h-full rounded-full transition-[width] duration-300", color)} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
 import { WelcomeBanner } from "../components/WelcomeBanner";
 import { ApiKeyOnboardingBanner } from "../components/ApiKeyOnboardingBanner";
 import { GettingStartedChecklist } from "../components/GettingStartedChecklist";
@@ -114,9 +217,10 @@ function isAggregated(item: import("@ironworksai/shared").ActivityEvent | Aggreg
   return "count" in item && "key" in item;
 }
 
-/* ── Velocity Chart ── */
+/* ── Velocity Chart (interactive with tooltips + click-to-filter) ── */
 
-function VelocityChart({ weeks }: { weeks: VelocityWeek[] }) {
+function VelocityChart({ weeks, onWeekClick }: { weeks: VelocityWeek[]; onWeekClick?: (weekStart: string) => void }) {
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const maxVal = Math.max(...weeks.map((w) => w.issuesCompleted + w.issuesCancelled), 1);
   const chartW = 400;
   const chartH = 120;
@@ -137,10 +241,27 @@ function VelocityChart({ weeks }: { weeks: VelocityWeek[] }) {
           const d = new Date(w.weekStart);
           const label = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
           const showLabel = i === 0 || i === weeks.length - 1 || i % 3 === 0;
+          const isHovered = hoveredIdx === i;
 
           return (
-            <g key={w.weekStart}>
-              <title>{label}: {w.issuesCompleted} completed, {w.issuesCancelled} cancelled</title>
+            <g
+              key={w.weekStart}
+              style={{ cursor: onWeekClick ? "pointer" : "default" }}
+              onMouseEnter={() => setHoveredIdx(i)}
+              onMouseLeave={() => setHoveredIdx(null)}
+              onClick={() => onWeekClick?.(w.weekStart)}
+            >
+              {/* Hover highlight background */}
+              {isHovered && (
+                <rect
+                  x={x - 1}
+                  y={0}
+                  width={barW + 2}
+                  height={chartH}
+                  className="fill-accent/30"
+                  rx={2}
+                />
+              )}
               {completedH > 0 && (
                 <rect
                   x={x}
@@ -148,7 +269,7 @@ function VelocityChart({ weeks }: { weeks: VelocityWeek[] }) {
                   width={barW}
                   height={completedH}
                   rx={2}
-                  className="fill-emerald-500"
+                  className={isHovered ? "fill-emerald-400" : "fill-emerald-500"}
                 />
               )}
               {cancelledH > 0 && (
@@ -181,6 +302,28 @@ function VelocityChart({ weeks }: { weeks: VelocityWeek[] }) {
                   {label}
                 </text>
               )}
+              {/* Tooltip */}
+              {isHovered && (
+                <g>
+                  <rect
+                    x={Math.max(0, Math.min(chartW - 110, x + barW / 2 - 55))}
+                    y={Math.max(0, chartH - totalH - 36)}
+                    width={110}
+                    height={28}
+                    rx={4}
+                    className="fill-popover stroke-border"
+                    strokeWidth={0.5}
+                  />
+                  <text
+                    x={Math.max(55, Math.min(chartW - 55, x + barW / 2))}
+                    y={Math.max(12, chartH - totalH - 18)}
+                    textAnchor="middle"
+                    className="fill-foreground text-[7px] font-medium"
+                  >
+                    {label}: {w.issuesCompleted}done, {w.issuesCancelled}cancelled
+                  </text>
+                </g>
+              )}
             </g>
           );
         })}
@@ -194,6 +337,9 @@ function VelocityChart({ weeks }: { weeks: VelocityWeek[] }) {
           <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30 shrink-0" />
           Cancelled
         </span>
+        {onWeekClick && (
+          <span className="ml-auto text-[9px] text-muted-foreground/60">Click a bar to filter issues</span>
+        )}
       </div>
     </div>
   );
@@ -237,7 +383,8 @@ function DepartmentMiniChart({ departments }: { departments: Array<{ name: strin
 export function Dashboard() {
   usePageTitle("War Room");
   const { selectedCompanyId, companies } = useCompany();
-  const { openOnboarding, openHireAgent } = useDialog();
+  const navigate = useNavigate();
+  const { openOnboarding, openHireAgent, openNewIssue } = useDialog();
   const { setBreadcrumbs } = useBreadcrumbs();
   const [animatedActivityIds, setAnimatedActivityIds] = useState<Set<string>>(new Set());
   const [expandedAgg, setExpandedAgg] = useState<Set<string>>(new Set());
@@ -648,6 +795,11 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6">
+      <QuickActionFAB
+        onCreateIssue={() => openNewIssue()}
+        onInvokeAgent={() => navigate("/agents")}
+        onRunPlaybook={() => navigate("/playbooks")}
+      />
       <WelcomeBanner />
       <ApiKeyOnboardingBanner />
       <GettingStartedChecklist />
@@ -884,7 +1036,10 @@ export function Dashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {/* Today's Spend */}
             <div className="rounded-xl border border-border p-4 space-y-3">
-              <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Today's Spend</h4>
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Today's Spend</h4>
+                <LastUpdatedBadge dataUpdatedAt={Date.now()} />
+              </div>
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-bold tabular-nums">{formatCents(todaySpendCents)}</span>
                 <span className="text-sm text-muted-foreground">today</span>
@@ -916,41 +1071,42 @@ export function Dashboard() {
             {/* Agent Efficiency */}
             <div className="rounded-xl border border-border p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Agent Efficiency</h4>
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">Agent Efficiency <LastUpdatedBadge dataUpdatedAt={Date.now()} /></h4>
                 <Link to="/performance" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Details</Link>
               </div>
               {agentEfficiency.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No agent cost data yet.</p>
               ) : (
                 <>
-                  <div className="space-y-1">
-                    <div className="grid grid-cols-[24px_1fr_50px_45px] gap-1 text-[10px] text-muted-foreground uppercase tracking-wider pb-1 border-b border-border/50">
-                      <span></span>
-                      <span>Agent</span>
-                      <span className="text-right">$/task</span>
-                      <span className="text-right">Time</span>
-                    </div>
-                    {agentEfficiency.map((a) => (
-                      <div key={a.agentId} className="grid grid-cols-[24px_1fr_50px_45px] gap-1 text-sm py-0.5 items-center">
-                        <span className={cn(
-                          "inline-flex items-center justify-center h-5 w-5 rounded text-[10px] font-bold",
-                          a.rating === "A" ? "text-emerald-400 bg-emerald-500/10" :
-                          a.rating === "B" ? "text-blue-400 bg-blue-500/10" :
-                          a.rating === "C" ? "text-amber-400 bg-amber-500/10" :
-                          a.rating === "D" ? "text-orange-400 bg-orange-500/10" :
-                          "text-red-400 bg-red-500/10",
-                        )}>
-                          {a.rating}
-                        </span>
-                        <span className="truncate">{a.name}</span>
-                        <span className="text-right text-muted-foreground tabular-nums">
-                          {a.costPerTask !== null ? formatCents(Math.round(a.costPerTask)) : "—"}
-                        </span>
-                        <span className="text-right text-muted-foreground tabular-nums">
-                          {a.avgCloseH !== null ? `${a.avgCloseH.toFixed(1)}h` : "—"}
-                        </span>
-                      </div>
-                    ))}
+                  <div className="space-y-2">
+                    {agentEfficiency.map((a) => {
+                      const maxScore = 100;
+                      const barColor = a.ratingScore >= 80 ? "bg-emerald-500" : a.ratingScore >= 50 ? "bg-amber-500" : "bg-red-500";
+                      return (
+                        <div key={a.agentId} className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className={cn(
+                              "inline-flex items-center justify-center h-5 w-5 rounded text-[10px] font-bold shrink-0",
+                              a.rating === "A" ? "text-emerald-400 bg-emerald-500/10" :
+                              a.rating === "B" ? "text-blue-400 bg-blue-500/10" :
+                              a.rating === "C" ? "text-amber-400 bg-amber-500/10" :
+                              a.rating === "D" ? "text-orange-400 bg-orange-500/10" :
+                              "text-red-400 bg-red-500/10",
+                            )}>
+                              {a.rating}
+                            </span>
+                            <span className="text-sm truncate flex-1">{a.name}</span>
+                            <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">{a.ratingScore}</span>
+                          </div>
+                          <EfficiencyMiniBar value={a.ratingScore} max={maxScore} color={barColor} />
+                          <div className="flex items-center gap-3 text-[10px] text-muted-foreground tabular-nums">
+                            <span>{a.costPerTask !== null ? `${formatCents(Math.round(a.costPerTask))}/task` : "-"}</span>
+                            <span>{a.avgCloseH !== null ? `${a.avgCloseH.toFixed(1)}h avg` : "-"}</span>
+                            <span>{a.tasksDone} done</span>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                   <div className="border-t border-border/50 pt-2 space-y-1 text-sm text-muted-foreground tabular-nums">
                     <div className="flex justify-between">
@@ -1150,7 +1306,10 @@ export function Dashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Velocity Chart */}
             <div className="rounded-xl border border-border p-4 space-y-3">
-              <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Team Velocity (12 weeks)</h4>
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Team Velocity (12 weeks)</h4>
+                <LastUpdatedBadge dataUpdatedAt={Date.now()} />
+              </div>
               {!velocity || velocity.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No velocity data yet.</p>
               ) : (

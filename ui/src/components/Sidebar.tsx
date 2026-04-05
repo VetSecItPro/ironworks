@@ -294,8 +294,8 @@ export function Sidebar() {
         </div>
 
         <SidebarSection label="Operations">
-          {matchLabel("Issues") && <SidebarNavItem to="/issues" label="Issues" icon={CircleDot} />}
-          {matchLabel("Goals") && <SidebarNavItem to="/goals" label="Goals" icon={Target} />}
+          {matchLabel("Issues") && <SidebarNavItem to="/issues" label="Issues" icon={CircleDot} data-tour="issues" />}
+          {matchLabel("Goals") && <SidebarNavItem to="/goals" label="Goals" icon={Target} data-tour="goals" />}
           {matchLabel("Routines") && <SidebarNavItem to="/routines" label="Routines" icon={Repeat} />}
           {matchLabel("Playbooks") && <SidebarNavItem to="/playbooks" label="Playbooks" icon={BookTemplate} featureDot={shouldShowDot("/playbooks")} />}
           {matchLabel("Automation") && <SidebarNavItem to="/automation" label="Automation" icon={Zap} />}
@@ -346,9 +346,9 @@ export function Sidebar() {
           </SidebarSection>
         )}
 
-        {!q && <SidebarProjects />}
+        {!q && <div data-tour="projects"><SidebarProjects /></div>}
 
-        {!q && <SidebarAgents />}
+        {!q && <div data-tour="agents"><SidebarAgents /></div>}
 
         <SidebarSection label="Company">
           {matchLabel("Org Chart") && <SidebarNavItem to="/org" label="Org Chart" icon={Network} />}

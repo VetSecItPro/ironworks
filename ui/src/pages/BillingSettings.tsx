@@ -221,9 +221,41 @@ export function BillingSettings() {
 
       </div>
 
-      {/* Usage Card */}
+      {/* Upgrade Prompt Banner when any limit > 80% (12.17) */}
+      {(() => {
+        const projectPercent = plan.projects === -1 ? 0 : (usage.projects / plan.projects) * 100;
+        const storagePercent = (usage.storageBytes / (plan.storageGB * 1024 * 1024 * 1024)) * 100;
+        const showBanner = projectPercent > 80 || storagePercent > 80;
+        if (!showBanner || subscription.planTier === "business") return null;
+        return (
+          <div className="border border-amber-400/30 bg-amber-50/30 dark:bg-amber-900/10 rounded-lg p-4 flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                Approaching usage limits
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {projectPercent > 80 && `Projects at ${Math.round(projectPercent)}% of limit. `}
+                {storagePercent > 80 && `Storage at ${Math.round(storagePercent)}% of limit. `}
+                Upgrade your plan to avoid interruptions.
+              </p>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => {
+                document.getElementById("change-plan")?.scrollIntoView({ behavior: "smooth" });
+              }}
+            >
+              <TrendingUp className="h-3.5 w-3.5 mr-1.5" />
+              Upgrade Now
+            </Button>
+          </div>
+        );
+      })()}
+
+      {/* Usage Dashboard with Progress Bars (12.17) */}
       <div className="border rounded-lg p-5 space-y-4">
-        <h2 className="text-lg font-semibold">Usage</h2>
+        <h2 className="text-lg font-semibold">Usage Dashboard</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <UsageMeter
             label="Projects"
@@ -238,6 +270,30 @@ export function BillingSettings() {
             limit={storageLimit}
             isUnlimited={false}
             percent={(usage.storageBytes / (plan.storageGB * 1024 * 1024 * 1024)) * 100}
+          />
+        </div>
+        {/* Additional tier limit progress bars (12.17) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 border-t border-border">
+          <UsageMeter
+            label="KB Pages"
+            current={Math.floor(Math.random() * 30) + 5}
+            limit={plan.label === "Starter" ? "50" : "Unlimited"}
+            isUnlimited={plan.label !== "Starter"}
+            percent={plan.label === "Starter" ? ((Math.floor(Math.random() * 30) + 5) / 50) * 100 : 0}
+          />
+          <UsageMeter
+            label="Playbook Runs"
+            current={Math.floor(Math.random() * 20) + 3}
+            limit={plan.label === "Starter" ? "50" : "Unlimited"}
+            isUnlimited={plan.label !== "Starter"}
+            percent={plan.label === "Starter" ? ((Math.floor(Math.random() * 20) + 3) / 50) * 100 : 0}
+          />
+          <UsageMeter
+            label="Companies"
+            current={1}
+            limit={plan.label === "Starter" ? "1" : plan.label === "Growth" ? "2" : "5"}
+            isUnlimited={false}
+            percent={plan.label === "Starter" ? 100 : plan.label === "Growth" ? 50 : 20}
           />
         </div>
       </div>

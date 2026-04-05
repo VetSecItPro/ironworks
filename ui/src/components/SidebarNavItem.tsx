@@ -16,6 +16,7 @@ interface SidebarNavItemProps {
   alert?: boolean;
   liveCount?: number;
   featureDot?: boolean;
+  "data-tour"?: string;
 }
 
 export function SidebarNavItem({
@@ -31,6 +32,7 @@ export function SidebarNavItem({
   alert = false,
   liveCount,
   featureDot = false,
+  "data-tour": dataTour,
 }: SidebarNavItemProps) {
   const { isMobile, setSidebarOpen } = useSidebar();
 
@@ -38,6 +40,7 @@ export function SidebarNavItem({
     <NavLink
       to={to}
       end={end}
+      data-tour={dataTour}
       onClick={() => { if (isMobile) setSidebarOpen(false); }}
       className={({ isActive }) =>
         cn(

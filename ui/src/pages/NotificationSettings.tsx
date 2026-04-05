@@ -2,7 +2,13 @@ import { useEffect, useState } from "react";
 import { useBreadcrumbs } from "@/context/BreadcrumbContext";
 import { usePageTitle } from "../hooks/usePageTitle";
 import { Button } from "@/components/ui/button";
-import { Bell, BellOff, Check, Clock } from "lucide-react";
+import { Bell, BellOff, Check, Clock, Mail, Smartphone, VolumeX } from "lucide-react";
+import {
+  loadDigestFrequency,
+  saveDigestFrequency,
+  requestPushPermission,
+  type DigestFrequency,
+} from "../components/NotificationCenter";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -21,6 +27,9 @@ interface NotificationPrefs {
   dndEnabled: boolean;
   dndFrom: string;
   dndTo: string;
+  emailDigest: DigestFrequency;
+  pushEnabled: boolean;
+  mutedEntities: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -60,6 +69,9 @@ function loadPrefs(): NotificationPrefs {
     dndEnabled: false,
     dndFrom: "22:00",
     dndTo: "08:00",
+    emailDigest: loadDigestFrequency(),
+    pushEnabled: false,
+    mutedEntities: [],
   };
   for (const cat of CATEGORIES) {
     defaults.channels[cat.key] = "both";
@@ -173,6 +185,90 @@ export function NotificationSettings() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Email Digest */}
+      <div className="rounded-lg border border-border p-4 space-y-4">
+        <div className="flex items-center gap-2">
+          <Mail className="h-4 w-4 text-muted-foreground" />
+          <div>
+            <div className="text-sm font-medium">Email Digest</div>
+            <div className="text-xs text-muted-foreground">
+              Choose how often to receive email notification summaries
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 pl-6">
+          {(["realtime", "hourly", "daily"] as const).map((freq) => (
+            <button
+              key={freq}
+              type="button"
+              onClick={() => {
+                setPrefs((prev) => ({ ...prev, emailDigest: freq }));
+                saveDigestFrequency(freq);
+                setSaved(false);
+              }}
+              className={`rounded-md border px-3 py-1.5 text-xs transition-colors ${
+                prefs.emailDigest === freq
+                  ? "border-foreground bg-foreground/5 font-medium"
+                  : "border-border text-muted-foreground hover:border-foreground/30"
+              }`}
+            >
+              {freq === "realtime" ? "Real-time" : freq === "hourly" ? "Hourly" : "Daily morning summary"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Browser Push Notifications */}
+      <div className="rounded-lg border border-border p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Smartphone className="h-4 w-4 text-muted-foreground" />
+            <div>
+              <div className="text-sm font-medium">Browser Push Notifications</div>
+              <div className="text-xs text-muted-foreground">
+                Receive push notifications for critical items (agent failures, approvals)
+              </div>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              const result = await requestPushPermission();
+              setPrefs((prev) => ({ ...prev, pushEnabled: result === "granted" }));
+              setSaved(false);
+            }}
+            className="text-xs"
+          >
+            {prefs.pushEnabled ? "Enabled" : "Enable Push"}
+          </Button>
+        </div>
+      </div>
+
+      {/* Muted Entities */}
+      <div className="rounded-lg border border-border p-4 space-y-4">
+        <div className="flex items-center gap-2">
+          <VolumeX className="h-4 w-4 text-muted-foreground" />
+          <div>
+            <div className="text-sm font-medium">Muted Entities</div>
+            <div className="text-xs text-muted-foreground">
+              Agents, projects, or channels you have muted. Unmute them from the notification center.
+            </div>
+          </div>
+        </div>
+        {prefs.mutedEntities.length === 0 ? (
+          <p className="text-xs text-muted-foreground pl-6">No muted entities</p>
+        ) : (
+          <div className="flex flex-wrap gap-1 pl-6">
+            {prefs.mutedEntities.map((id) => (
+              <span key={id} className="rounded-full border border-border px-2 py-0.5 text-xs">
+                {id.slice(0, 12)}...
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Do Not Disturb */}

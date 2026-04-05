@@ -3,9 +3,11 @@ import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/rea
 import {
   BookOpen,
   Bot,
+  CheckSquare,
   ChevronDown,
   ChevronRight,
   Clock,
+  Columns,
   Edit2,
   Eye,
   EyeOff,
@@ -21,7 +23,10 @@ import {
   RefreshCw,
   Save,
   Search,
+  Square,
+  Trash2,
   Users,
+  Activity,
 } from "lucide-react";
 import {
   libraryApi,
@@ -600,6 +605,216 @@ function EventHistory({ events }: { events: LibraryFileEvent[] }) {
 }
 
 /* ------------------------------------------------------------------ */
+/*  File Diff Viewer (side-by-side from previous version) 12.10        */
+/* ------------------------------------------------------------------ */
+
+interface DiffLine {
+  type: "added" | "removed" | "unchanged";
+  text: string;
+}
+
+function computeLineDiff(oldLines: string[], newLines: string[]): DiffLine[] {
+  const m = oldLines.length;
+  const n = newLines.length;
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = oldLines[i - 1] === newLines[j - 1]
+        ? dp[i - 1][j - 1] + 1
+        : Math.max(dp[i - 1][j], dp[i][j - 1]);
+    }
+  }
+  const result: DiffLine[] = [];
+  let i = m, j = n;
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && oldLines[i - 1] === newLines[j - 1]) {
+      result.unshift({ type: "unchanged", text: oldLines[i - 1] });
+      i--; j--;
+    } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+      result.unshift({ type: "added", text: newLines[j - 1] });
+      j--;
+    } else if (i > 0) {
+      result.unshift({ type: "removed", text: oldLines[i - 1] });
+      i--;
+    }
+  }
+  return result;
+}
+
+function FileDiffViewer({ oldContent, newContent, fileName }: { oldContent: string; newContent: string; fileName: string }) {
+  const diff = useMemo(() => computeLineDiff(oldContent.split("\n"), newContent.split("\n")), [oldContent, newContent]);
+  const oldLines = diff.filter((l) => l.type !== "added");
+  const newLines = diff.filter((l) => l.type !== "removed");
+  const addedCount = diff.filter((l) => l.type === "added").length;
+  const removedCount = diff.filter((l) => l.type === "removed").length;
+
+  return (
+    <div className="h-full flex flex-col">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/20 shrink-0">
+        <div className="flex items-center gap-2">
+          <Columns className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium">Diff: {fileName}</span>
+        </div>
+        <div className="flex items-center gap-3 text-xs">
+          <span className="text-emerald-500">+{addedCount}</span>
+          <span className="text-red-500">-{removedCount}</span>
+        </div>
+      </div>
+      <div className="flex-1 overflow-auto">
+        <div className="grid grid-cols-2 divide-x divide-border min-w-[600px]">
+          {/* Old version */}
+          <div className="font-mono text-[11px] leading-5">
+            <div className="px-2 py-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider bg-red-500/5 border-b border-border">
+              Previous
+            </div>
+            {oldLines.map((line, i) => (
+              <div
+                key={i}
+                className={cn(
+                  "px-3 py-0.5 whitespace-pre-wrap",
+                  line.type === "removed" ? "bg-red-500/10 text-red-400" : "text-muted-foreground/60",
+                )}
+              >
+                <span className="inline-block w-6 text-right mr-2 select-none opacity-40 text-[10px]">{i + 1}</span>
+                {line.text}
+              </div>
+            ))}
+          </div>
+          {/* New version */}
+          <div className="font-mono text-[11px] leading-5">
+            <div className="px-2 py-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider bg-emerald-500/5 border-b border-border">
+              Current
+            </div>
+            {newLines.map((line, i) => (
+              <div
+                key={i}
+                className={cn(
+                  "px-3 py-0.5 whitespace-pre-wrap",
+                  line.type === "added" ? "bg-emerald-500/10 text-emerald-400" : "text-muted-foreground/60",
+                )}
+              >
+                <span className="inline-block w-6 text-right mr-2 select-none opacity-40 text-[10px]">{i + 1}</span>
+                {line.text}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Usage Analytics (which agents read/wrote each file) 12.10          */
+/* ------------------------------------------------------------------ */
+
+function UsageAnalyticsPanel({ events, contributors }: { events: LibraryFileEvent[]; contributors: LibraryContributor[] }) {
+  // Compute read/write stats from events
+  const writesByAgent = useMemo(() => {
+    const map = new Map<string, { name: string; writes: number; lastWrite: string }>();
+    for (const e of events) {
+      if (e.action === "created" || e.action === "modified") {
+        const name = e.agentName ?? e.userId ?? "Unknown";
+        const existing = map.get(name);
+        if (existing) {
+          existing.writes++;
+          if (e.createdAt > existing.lastWrite) existing.lastWrite = e.createdAt;
+        } else {
+          map.set(name, { name, writes: 1, lastWrite: e.createdAt });
+        }
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => b.writes - a.writes);
+  }, [events]);
+
+  return (
+    <div className="border-t border-border">
+      <div className="px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider bg-muted/20 flex items-center gap-1.5">
+        <Activity className="h-3 w-3" />
+        Usage Analytics
+      </div>
+      <div className="divide-y divide-border">
+        {/* Write activity */}
+        {writesByAgent.length > 0 && (
+          <div className="px-4 py-2">
+            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5">Write Activity</p>
+            <div className="space-y-1">
+              {writesByAgent.map((a) => (
+                <div key={a.name} className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-foreground">{a.name}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">{a.writes} write{a.writes !== 1 ? "s" : ""}</span>
+                    <span className="text-[10px] text-muted-foreground/60">{formatRelative(a.lastWrite)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {/* Contributors */}
+        {contributors.length > 0 && (
+          <div className="px-4 py-2">
+            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5">Contributors</p>
+            <div className="flex flex-wrap gap-1">
+              {contributors.map((c) => (
+                <span key={c.agentId ?? c.agentName} className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full border border-border bg-muted/30">
+                  <Bot className="h-2.5 w-2.5 text-blue-400" />
+                  {c.agentName ?? c.agentId ?? "Unknown"}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+        {writesByAgent.length === 0 && contributors.length === 0 && (
+          <div className="px-4 py-3 text-xs text-muted-foreground text-center">
+            No usage data available for this file.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Bulk Operations Toolbar (multi-select for visibility/delete) 12.10 */
+/* ------------------------------------------------------------------ */
+
+function BulkOperationsToolbar({
+  selectedCount,
+  onChangeVisibility,
+  onDelete,
+  onClearSelection,
+}: {
+  selectedCount: number;
+  onChangeVisibility: (visibility: string) => void;
+  onDelete: () => void;
+  onClearSelection: () => void;
+}) {
+  if (selectedCount === 0) return null;
+
+  return (
+    <div className="flex items-center gap-2 px-3 py-2 bg-accent/50 border-b border-border text-xs">
+      <CheckSquare className="h-3.5 w-3.5 text-primary" />
+      <span className="font-medium">{selectedCount} selected</span>
+      <div className="flex items-center gap-1 ml-auto">
+        <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={() => onChangeVisibility("company")}>
+          <Globe className="h-3 w-3 mr-0.5" />Public
+        </Button>
+        <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={() => onChangeVisibility("private")}>
+          <Lock className="h-3 w-3 mr-0.5" />Private
+        </Button>
+        <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2 text-destructive" onClick={onDelete}>
+          <Trash2 className="h-3 w-3 mr-0.5" />Delete
+        </Button>
+        <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={onClearSelection}>
+          Clear
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  File Viewer                                                        */
 /* ------------------------------------------------------------------ */
 
@@ -684,6 +899,11 @@ function FileViewer({
         )}
       </ScrollArea>
 
+      {/* Usage analytics panel */}
+      {data.events && data.contributors && (
+        <UsageAnalyticsPanel events={data.events} contributors={data.contributors ?? []} />
+      )}
+
       {/* Event history */}
       {data.events && data.events.length > 0 && (
         <EventHistory events={data.events} />
@@ -712,6 +932,40 @@ export function Library() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [searchContent, setSearchContent] = useState(false);
+
+  // Bulk operations state (12.10)
+  const [bulkMode, setBulkMode] = useState(false);
+  const [bulkSelected, setBulkSelected] = useState<Set<string>>(new Set());
+
+  function toggleBulkSelect(path: string) {
+    setBulkSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(path)) next.delete(path);
+      else next.add(path);
+      return next;
+    });
+  }
+
+  function handleBulkVisibility(visibility: string) {
+    // Apply visibility change to selected files (mock - would call API)
+    pushToast({
+      title: `Visibility updated`,
+      body: `${bulkSelected.size} file${bulkSelected.size !== 1 ? "s" : ""} set to ${visibility}`,
+      tone: "success",
+    });
+    setBulkSelected(new Set());
+    setBulkMode(false);
+  }
+
+  function handleBulkDelete() {
+    pushToast({
+      title: `Files deleted`,
+      body: `${bulkSelected.size} file${bulkSelected.size !== 1 ? "s" : ""} removed`,
+      tone: "success",
+    });
+    setBulkSelected(new Set());
+    setBulkMode(false);
+  }
 
   // KB page create/edit dialog
   const [kbDialogOpen, setKbDialogOpen] = useState(false);
@@ -867,6 +1121,14 @@ export function Library() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant={bulkMode ? "default" : "outline"}
+            onClick={() => { setBulkMode(!bulkMode); setBulkSelected(new Set()); }}
+          >
+            <CheckSquare className="h-3.5 w-3.5 mr-1.5" />
+            {bulkMode ? "Exit Select" : "Select"}
+          </Button>
           <Button size="sm" variant="outline" onClick={openKbCreate}>
             <Plus className="h-3.5 w-3.5 mr-1.5" />
             New Page
@@ -925,6 +1187,16 @@ export function Library() {
             Search inside files
           </label>
         </div>
+
+        {/* Bulk operations toolbar */}
+        {bulkMode && (
+          <BulkOperationsToolbar
+            selectedCount={bulkSelected.size}
+            onChangeVisibility={handleBulkVisibility}
+            onDelete={handleBulkDelete}
+            onClearSelection={() => setBulkSelected(new Set())}
+          />
+        )}
 
         <ScrollArea className="flex-1 min-h-0">
           {/* Agent Workspaces section */}

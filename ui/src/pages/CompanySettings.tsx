@@ -60,8 +60,27 @@ const SETTINGS_SECTIONS = [
   { id: "model-routing", label: "Model Routing" },
   { id: "cost-alerts", label: "Cost Alerts" },
   { id: "webhooks", label: "Webhooks" },
+  { id: "integrations", label: "Integrations" },
+  { id: "audit-trail", label: "Audit Trail" },
   { id: "data-privacy", label: "Data & Privacy" },
   { id: "danger-zone", label: "Danger Zone" },
+];
+
+// Audit trail mock data (12.16)
+interface AuditEntry {
+  section: string;
+  changedBy: string;
+  changedAt: string;
+  field: string;
+  oldValue?: string;
+  newValue?: string;
+}
+
+const MOCK_AUDIT_TRAIL: AuditEntry[] = [
+  { section: "general", changedBy: "Admin", changedAt: "2026-03-28T14:30:00Z", field: "Company Name", oldValue: "Acme Corp", newValue: "Acme AI Corp" },
+  { section: "security", changedBy: "CTO", changedAt: "2026-03-25T09:15:00Z", field: "Require Approval", oldValue: "false", newValue: "true" },
+  { section: "autonomy", changedBy: "Admin", changedAt: "2026-03-20T16:00:00Z", field: "Default Autonomy", oldValue: "h3", newValue: "h2" },
+  { section: "cost-alerts", changedBy: "CFO", changedAt: "2026-03-18T11:30:00Z", field: "Monthly Threshold", oldValue: "$300", newValue: "$500" },
 ];
 
 const COST_ALERT_STORAGE_KEY = (companyId: string) => `ironworks:cost-alerts:${companyId}`;
@@ -649,6 +668,37 @@ export function CompanySettings() {
         </div>
       </div>
 
+      {/* Validation preview before saving (12.16) */}
+      {generalDirty && (
+        <div className="rounded-md border border-amber-400/30 bg-amber-50/30 dark:bg-amber-900/10 px-4 py-3 space-y-2 text-xs">
+          <p className="font-medium text-amber-700 dark:text-amber-400">Pending changes preview:</p>
+          <div className="space-y-1">
+            {companyName !== (selectedCompany?.name ?? "") && (
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Name:</span>
+                <span className="text-red-400 line-through">{selectedCompany?.name}</span>
+                <span className="text-emerald-400">{companyName}</span>
+              </div>
+            )}
+            {description !== (selectedCompany?.description ?? "") && (
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Description:</span>
+                <span className="text-emerald-400">{description || "(empty)"}</span>
+              </div>
+            )}
+            {brandColor !== (selectedCompany?.brandColor ?? "") && (
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Brand Color:</span>
+                <span className="text-emerald-400">{brandColor || "(empty)"}</span>
+                {brandColor && (
+                  <span className="inline-block h-3 w-3 rounded" style={{ backgroundColor: brandColor }} />
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Save button for General + Appearance */}
       {generalDirty && (
         <div className="flex items-center gap-2">
@@ -1059,6 +1109,91 @@ export function CompanySettings() {
       {/* Webhooks */}
       <div id="webhooks" className="space-y-4 scroll-mt-6">
         <WebhooksSettings />
+      </div>
+
+      {/* Integration Hub (12.16) */}
+      <div id="integrations" className="space-y-4 scroll-mt-6">
+        <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+          <SlidersHorizontal className="h-3.5 w-3.5" />
+          Integration Hub
+        </div>
+        <div className="rounded-md border border-border px-4 py-4 space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Connect external tools and services to your company via webhooks and API integrations.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[
+              { name: "Slack", status: "available", description: "Send notifications and alerts" },
+              { name: "GitHub", status: "available", description: "Sync repos and pull requests" },
+              { name: "Jira", status: "coming_soon", description: "Two-way issue sync" },
+              { name: "PagerDuty", status: "available", description: "Alert routing and escalation" },
+              { name: "Datadog", status: "coming_soon", description: "Metrics and monitoring" },
+              { name: "Zapier", status: "available", description: "Connect to 5000+ apps" },
+            ].map((integration) => (
+              <div key={integration.name} className="flex items-center gap-3 p-3 rounded-md border border-border hover:bg-accent/20 transition-colors">
+                <div className="h-8 w-8 rounded bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground">
+                  {integration.name.slice(0, 2)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">{integration.name}</span>
+                    {integration.status === "coming_soon" && (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">Coming soon</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">{integration.description}</p>
+                </div>
+                {integration.status === "available" && (
+                  <Button size="sm" variant="outline" className="h-7 text-xs shrink-0">Connect</Button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Audit Trail (12.16) */}
+      <div id="audit-trail" className="space-y-4 scroll-mt-6">
+        <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+          <Eye className="h-3.5 w-3.5" />
+          Audit Trail
+        </div>
+        <div className="rounded-md border border-border overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b bg-muted/30">
+                <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs">Section</th>
+                <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs">Field</th>
+                <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs">Changed By</th>
+                <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs">Date</th>
+                <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs">Change</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {MOCK_AUDIT_TRAIL.map((entry, i) => (
+                <tr key={i} className="hover:bg-muted/20 transition-colors">
+                  <td className="px-4 py-2.5 text-xs capitalize">{entry.section.replace(/-/g, " ")}</td>
+                  <td className="px-4 py-2.5 text-xs font-medium">{entry.field}</td>
+                  <td className="px-4 py-2.5 text-xs text-muted-foreground">{entry.changedBy}</td>
+                  <td className="px-4 py-2.5 text-xs text-muted-foreground">
+                    {new Date(entry.changedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  </td>
+                  <td className="px-4 py-2.5 text-xs">
+                    {entry.oldValue && (
+                      <span className="text-red-400 line-through mr-1">{entry.oldValue}</span>
+                    )}
+                    {entry.newValue && (
+                      <span className="text-emerald-400">{entry.newValue}</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Shows the last 50 configuration changes. Full audit log available in the admin panel.
+        </p>
       </div>
 
       {/* Data & Privacy */}

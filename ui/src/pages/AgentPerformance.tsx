@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "@/lib/router";
 import { useQuery } from "@tanstack/react-query";
 import { agentsApi } from "../api/agents";
@@ -184,6 +184,7 @@ export function AgentPerformance() {
   const [range, setRange] = useState<TimeRange>("30d");
   const [sortField, setSortField] = useState<SortField>("rating");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string>("");
   const [trendAgentId, setTrendAgentId] = useState<string>("");
   const [showDeptAgg, setShowDeptAgg] = useState(false);
@@ -421,6 +422,29 @@ export function AgentPerformance() {
           </div>
         </div>
       </div>
+
+      {/* Performance Alert Banner */}
+      {(() => {
+        const bigDrops = rows.filter((r) => {
+          const prev = prevScoreMap.get(r.agentId);
+          return prev !== undefined && r.tasksDone > 0 && prev - r.ratingScore >= 15;
+        });
+        if (bigDrops.length === 0) return null;
+        return (
+          <div className="flex items-start gap-3 rounded-lg border border-red-500/20 bg-red-500/[0.04] px-4 py-3">
+            <TrendingDown className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium">Significant rating changes detected</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {bigDrops.map((r) => {
+                  const prev = prevScoreMap.get(r.agentId) ?? 0;
+                  return `${r.name} dropped ${prev - r.ratingScore} points`;
+                }).join("; ")}
+              </p>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Leaderboard Highlights */}
       {(topPerformer || mostImproved) && (
@@ -698,9 +722,13 @@ export function AgentPerformance() {
               </thead>
               <tbody className="divide-y divide-border">
                 {sorted.map((row) => (
-                  <tr key={row.agentId} className="hover:bg-accent/30 transition-colors">
+                  <React.Fragment key={row.agentId}>
+                  <tr
+                    className="hover:bg-accent/30 transition-colors cursor-pointer"
+                    onClick={() => setExpandedRowId(expandedRowId === row.agentId ? null : row.agentId)}
+                  >
                     <td className="px-4 py-3">
-                      <Link to={agentUrl({ id: row.agentId, urlKey: null } as any)} className="no-underline text-inherit">
+                      <Link to={agentUrl({ id: row.agentId, urlKey: null } as any)} className="no-underline text-inherit" onClick={(e) => e.stopPropagation()}>
                         <Identity name={row.name} size="sm" />
                       </Link>
                     </td>
@@ -755,6 +783,42 @@ export function AgentPerformance() {
                       ) : null}
                     </td>
                   </tr>
+                  {expandedRowId === row.agentId && (
+                    <tr>
+                      <td colSpan={9} className="bg-muted/20 px-6 py-4">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div className="space-y-1">
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Throughput</p>
+                            <p className="text-lg font-bold tabular-nums">{row.throughput > 0 ? row.throughput.toFixed(2) : "0"}</p>
+                            <p className="text-[10px] text-muted-foreground">tasks/day</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Composite Score</p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-lg font-bold tabular-nums">{row.ratingScore}</p>
+                              <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden max-w-[80px]">
+                                <div
+                                  className={cn("h-full rounded-full", row.ratingScore >= 80 ? "bg-emerald-500" : row.ratingScore >= 50 ? "bg-amber-500" : "bg-red-500")}
+                                  style={{ width: `${row.ratingScore}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">In Progress</p>
+                            <p className="text-lg font-bold tabular-nums">{row.tasksInProgress}</p>
+                            <p className="text-[10px] text-muted-foreground">active tasks</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Total Spend</p>
+                            <p className="text-lg font-bold tabular-nums">{formatCents(row.totalSpendCents)}</p>
+                            <p className="text-[10px] text-muted-foreground">{row.tasksDone > 0 ? `${formatCents(Math.round(row.totalSpendCents / row.tasksDone))}/task` : "no tasks"}</p>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>

@@ -28,6 +28,14 @@ import {
   History,
   SquarePen,
   Plus,
+  BookOpen,
+  FileText,
+  Settings,
+  Keyboard,
+  BarChart3,
+  Shield,
+  Users,
+  Layers,
 } from "lucide-react";
 import { Identity } from "./Identity";
 import { agentUrl, projectUrl } from "../lib/utils";
@@ -104,7 +112,7 @@ export function CommandPalette() {
     <CommandDialog open={open} onOpenChange={(v) => {
         setOpen(v);
         if (v && isMobile) setSidebarOpen(false);
-      }}>
+      }} data-tour="command-palette">
       <CommandInput
         placeholder="Search issues, agents, projects..."
         value={query}
@@ -145,34 +153,78 @@ export function CommandPalette() {
           <CommandItem onSelect={() => go("/dashboard")}>
             <LayoutDashboard className="mr-2 h-4 w-4" />
             Dashboard
+            <span className="ml-auto text-xs text-muted-foreground">g d</span>
           </CommandItem>
           <CommandItem onSelect={() => go("/inbox")}>
             <Inbox className="mr-2 h-4 w-4" />
             Inbox
+            <span className="ml-auto text-xs text-muted-foreground">g n</span>
           </CommandItem>
           <CommandItem onSelect={() => go("/issues")}>
             <CircleDot className="mr-2 h-4 w-4" />
             Issues
+            <span className="ml-auto text-xs text-muted-foreground">g i</span>
           </CommandItem>
           <CommandItem onSelect={() => go("/projects")}>
             <Hexagon className="mr-2 h-4 w-4" />
             Projects
+            <span className="ml-auto text-xs text-muted-foreground">g p</span>
           </CommandItem>
           <CommandItem onSelect={() => go("/goals")}>
             <Target className="mr-2 h-4 w-4" />
             Goals
+            <span className="ml-auto text-xs text-muted-foreground">g o</span>
           </CommandItem>
           <CommandItem onSelect={() => go("/agents")}>
             <Bot className="mr-2 h-4 w-4" />
             Agents
+            <span className="ml-auto text-xs text-muted-foreground">g a</span>
           </CommandItem>
           <CommandItem onSelect={() => go("/costs")}>
             <DollarSign className="mr-2 h-4 w-4" />
             Costs
+            <span className="ml-auto text-xs text-muted-foreground">g c</span>
           </CommandItem>
           <CommandItem onSelect={() => go("/activity")}>
             <History className="mr-2 h-4 w-4" />
             Activity
+          </CommandItem>
+        </CommandGroup>
+
+        <CommandSeparator />
+
+        <CommandGroup heading="More Pages">
+          <CommandItem onSelect={() => go("/playbooks")}>
+            <FileText className="mr-2 h-4 w-4" />
+            Playbooks
+            <span className="ml-auto text-xs text-muted-foreground">g b</span>
+          </CommandItem>
+          <CommandItem onSelect={() => go("/library")}>
+            <BookOpen className="mr-2 h-4 w-4" />
+            Library
+            <span className="ml-auto text-xs text-muted-foreground">g l</span>
+          </CommandItem>
+          <CommandItem onSelect={() => go("/performance")}>
+            <BarChart3 className="mr-2 h-4 w-4" />
+            Performance
+          </CommandItem>
+          <CommandItem onSelect={() => go("/audit-log")}>
+            <Shield className="mr-2 h-4 w-4" />
+            Audit Log
+          </CommandItem>
+          <CommandItem onSelect={() => go("/org")}>
+            <Users className="mr-2 h-4 w-4" />
+            Org Chart
+          </CommandItem>
+          <CommandItem onSelect={() => go("/company/settings")}>
+            <Settings className="mr-2 h-4 w-4" />
+            Company Settings
+            <span className="ml-auto text-xs text-muted-foreground">g s</span>
+          </CommandItem>
+          <CommandItem onSelect={() => go("/keyboard-shortcuts")}>
+            <Keyboard className="mr-2 h-4 w-4" />
+            Keyboard Shortcuts
+            <span className="ml-auto text-xs text-muted-foreground">g k</span>
           </CommandItem>
         </CommandGroup>
 

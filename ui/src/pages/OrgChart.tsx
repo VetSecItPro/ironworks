@@ -3,6 +3,7 @@ import { Link, useNavigate } from "@/lib/router";
 import { useQuery } from "@tanstack/react-query";
 import { agentsApi, type OrgNode } from "../api/agents";
 import { issuesApi } from "../api/issues";
+import { hiringApi } from "../api/hiring";
 import { expertiseMapApi, type AgentExpertiseProfile } from "../api/expertiseMap";
 import { useCompany } from "../context/CompanyContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
@@ -12,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "../components/EmptyState";
 import { PageSkeleton } from "../components/PageSkeleton";
 import { AgentIcon } from "../components/AgentIconPicker";
-import { Copy, Download, Network, Upload } from "lucide-react";
+import { Copy, Download, Network, Upload, UserPlus, Users } from "lucide-react";
 import { AGENT_ROLE_LABELS, DEPARTMENT_LABELS, type Agent, type Issue } from "@ironworksai/shared";
 import { getRoleLevel, getAgentRingClass } from "../lib/role-icons";
 import { cn } from "../lib/utils";
@@ -204,6 +205,14 @@ export function OrgChart() {
     queryFn: () => expertiseMapApi.skills(selectedCompanyId!),
     enabled: !!selectedCompanyId,
     staleTime: 120_000,
+  });
+
+  // Hiring requests for vacant position placeholders (12.14)
+  const { data: hiringRequests } = useQuery({
+    queryKey: queryKeys.hiring.list(selectedCompanyId!),
+    queryFn: () => hiringApi.list(selectedCompanyId!),
+    enabled: !!selectedCompanyId,
+    staleTime: 60_000,
   });
 
   const skillsByAgent = useMemo(() => {
@@ -499,6 +508,53 @@ export function OrgChart() {
         </button>
       </div>
 
+      {/* Minimap overlay (12.14) */}
+      {allNodes.length > 5 && (
+        <div className="absolute bottom-3 left-3 z-10 w-36 h-24 rounded border border-border bg-background/80 backdrop-blur-sm overflow-hidden pointer-events-none">
+          <svg width="100%" height="100%" viewBox={`0 0 ${bounds.width} ${bounds.height}`} preserveAspectRatio="xMidYMid meet">
+            {/* Minimap edges */}
+            {edges.map(({ parent, child }) => (
+              <line
+                key={`mm-${parent.id}-${child.id}`}
+                x1={parent.x + CARD_W / 2}
+                y1={parent.y + CARD_H / 2}
+                x2={child.x + CARD_W / 2}
+                y2={child.y + CARD_H / 2}
+                stroke="var(--border)"
+                strokeWidth={3}
+              />
+            ))}
+            {/* Minimap nodes */}
+            {allNodes.map((node) => (
+              <rect
+                key={`mm-${node.id}`}
+                x={node.x}
+                y={node.y}
+                width={CARD_W}
+                height={CARD_H}
+                rx={4}
+                fill="var(--primary)"
+                opacity={0.4}
+              />
+            ))}
+            {/* Viewport indicator */}
+            {containerRef.current && (
+              <rect
+                x={-pan.x / zoom}
+                y={-pan.y / zoom}
+                width={containerRef.current.clientWidth / zoom}
+                height={containerRef.current.clientHeight / zoom}
+                fill="none"
+                stroke="var(--primary)"
+                strokeWidth={4}
+                rx={4}
+                opacity={0.6}
+              />
+            )}
+          </svg>
+        </div>
+      )}
+
       {/* SVG layer for edges */}
       <svg
         className="absolute inset-0 pointer-events-none"
@@ -507,6 +563,18 @@ export function OrgChart() {
           height: "100%",
         }}
       >
+        {/* Background grid for blueprint feel (12.14) */}
+        <defs>
+          <pattern id="blueprint-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="var(--border)" strokeWidth="0.3" opacity="0.5" />
+          </pattern>
+          <pattern id="blueprint-grid-major" width="200" height="200" patternUnits="userSpaceOnUse">
+            <path d="M 200 0 L 0 0 0 200" fill="none" stroke="var(--border)" strokeWidth="0.6" opacity="0.3" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#blueprint-grid)" />
+        <rect width="100%" height="100%" fill="url(#blueprint-grid-major)" />
+
         <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
           {/* Department background groupings */}
           {departmentGroups.map(({ nodes: dNodes, dept }) => {
@@ -671,6 +739,13 @@ export function OrgChart() {
                       </span>
                     );
                   })()}
+                  {/* Span of control metric for managers (12.14) */}
+                  {node.children.length > 0 && (
+                    <span className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 mt-1">
+                      <Users className="h-2.5 w-2.5" />
+                      {node.children.length} report{node.children.length !== 1 ? "s" : ""}
+                    </span>
+                  )}
                   {/* Skill tags from expertise map */}
                   {(() => {
                     const profile = skillsByAgent.get(node.id);
@@ -724,6 +799,28 @@ export function OrgChart() {
           );
         })}
       </div>
+    {/* Vacant position placeholders for open hiring requests (12.14) */}
+    {(hiringRequests ?? []).filter((h: { status: string }) => h.status === "pending" || h.status === "pending_approval").length > 0 && (
+      <div className="absolute bottom-3 right-3 z-10 max-w-xs print:hidden">
+        <div className="rounded-lg border border-dashed border-amber-400/50 bg-amber-50/50 dark:bg-amber-900/10 p-3 space-y-2">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1">
+            <UserPlus className="h-3 w-3" />
+            Open Positions
+          </p>
+          {(hiringRequests ?? [])
+            .filter((h: { status: string }) => h.status === "pending" || h.status === "pending_approval")
+            .slice(0, 4)
+            .map((h: { id: string; role: string; title?: string }) => (
+              <div key={h.id} className="flex items-center gap-2 text-xs">
+                <div className="h-6 w-6 rounded-full border-2 border-dashed border-amber-400/50 flex items-center justify-center">
+                  <UserPlus className="h-3 w-3 text-amber-400/50" />
+                </div>
+                <span className="text-muted-foreground">{h.title ?? roleLabel(h.role)}</span>
+              </div>
+            ))}
+        </div>
+      </div>
+    )}
     </div>
     </div>
   );

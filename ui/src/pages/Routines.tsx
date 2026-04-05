@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@/lib/router";
-import { ChevronDown, ChevronRight, Filter, MoreHorizontal, Plus, Repeat, Search } from "lucide-react";
+import { AlertTriangle, CalendarDays, ChevronDown, ChevronRight, Filter, LayoutGrid, LayoutList, MoreHorizontal, Plus, Repeat, Search } from "lucide-react";
 import { usePageTitle } from "../hooks/usePageTitle";
 import { routinesApi } from "../api/routines";
 import { agentsApi } from "../api/agents";
@@ -11,6 +11,7 @@ import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { useToast } from "../context/ToastContext";
 import { queryKeys } from "../lib/queryKeys";
 import { getRecentAssigneeIds, sortAgentsByRecency, trackRecentAssignee } from "../lib/recent-assignees";
+import { cn } from "../lib/utils";
 import { EmptyState } from "../components/EmptyState";
 import { PageSkeleton } from "../components/PageSkeleton";
 import { AgentIcon } from "../components/AgentIconPicker";
@@ -64,6 +65,212 @@ function nextRoutineStatus(currentStatus: string, enabled: boolean) {
   return enabled ? "active" : "paused";
 }
 
+/* ── Routine Health Indicator (late runs) ── */
+
+function RoutineHealthBadge({ lastRunAt, status }: { lastRunAt?: string | Date | null; status: string }) {
+  if (status !== "active") return null;
+  if (!lastRunAt) return null;
+  const lastRun = new Date(lastRunAt).getTime();
+  const hoursSinceRun = (Date.now() - lastRun) / (1000 * 60 * 60);
+  // Consider "late" if active routine hasn't run in 48+ hours
+  if (hoursSinceRun < 48) return null;
+  return (
+    <span className="inline-flex items-center gap-1 text-[10px] text-amber-500" title={`Last run ${Math.round(hoursSinceRun)}h ago`}>
+      <AlertTriangle className="h-3 w-3" />
+      Late
+    </span>
+  );
+}
+
+/* ── Schedule Calendar View (weekly blocks) ── */
+
+function ScheduleCalendarView({
+  routines,
+  agentById,
+  onRoutineClick,
+}: {
+  routines: Array<{ id: string; title: string; status: string; assigneeAgentId: string | null; triggers?: Array<{ enabled: boolean; nextRunAt?: string | null; schedule?: string | null }> }>;
+  agentById: Map<string, { id: string; name: string; icon?: string | null }>;
+  onRoutineClick: (id: string) => void;
+}) {
+  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const hours = Array.from({ length: 24 }, (_, i) => i);
+
+  // Parse routine schedules into day/hour slots
+  type Slot = { routineId: string; title: string; agentName: string; day: number; hour: number };
+  const slots: Slot[] = [];
+
+  for (const routine of routines) {
+    if (routine.status !== "active") continue;
+    for (const trigger of routine.triggers ?? []) {
+      if (!trigger.enabled || !trigger.schedule) continue;
+      const parts = trigger.schedule.trim().split(/\s+/);
+      if (parts.length !== 5) continue;
+      const [min, hr, , , dow] = parts;
+      const hourNum = hr === "*" ? 0 : parseInt(hr, 10);
+      const agent = routine.assigneeAgentId ? agentById.get(routine.assigneeAgentId) : null;
+
+      if (dow === "*" || dow === "1-5") {
+        // Runs on multiple days
+        const runDays = dow === "*" ? [0, 1, 2, 3, 4, 5, 6] : [0, 1, 2, 3, 4];
+        for (const d of runDays) {
+          slots.push({ routineId: routine.id, title: routine.title, agentName: agent?.name ?? "-", day: d, hour: hourNum });
+        }
+      } else if (/^\d$/.test(dow)) {
+        const d = parseInt(dow, 10);
+        // Convert: 0=Sun -> index 6, 1=Mon -> index 0, etc.
+        const dayIdx = d === 0 ? 6 : d - 1;
+        slots.push({ routineId: routine.id, title: routine.title, agentName: agent?.name ?? "-", day: dayIdx, hour: hourNum });
+      }
+    }
+  }
+
+  // Group by day and hour
+  const grid = new Map<string, Slot[]>();
+  for (const slot of slots) {
+    const key = `${slot.day}-${slot.hour}`;
+    if (!grid.has(key)) grid.set(key, []);
+    grid.get(key)!.push(slot);
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <div className="min-w-[700px]">
+        {/* Day headers */}
+        <div className="grid grid-cols-[60px_repeat(7,1fr)] gap-px bg-border/30">
+          <div className="bg-background" />
+          {days.map((day) => (
+            <div key={day} className="bg-background px-2 py-1.5 text-xs font-medium text-muted-foreground text-center">
+              {day}
+            </div>
+          ))}
+        </div>
+        {/* Hour rows - show only hours 6-22 */}
+        {hours.filter((h) => h >= 6 && h <= 22).map((hour) => (
+          <div key={hour} className="grid grid-cols-[60px_repeat(7,1fr)] gap-px bg-border/10 min-h-[28px]">
+            <div className="bg-background flex items-center justify-end pr-2 text-[10px] text-muted-foreground/60">
+              {hour === 0 ? "12AM" : hour < 12 ? `${hour}AM` : hour === 12 ? "12PM" : `${hour - 12}PM`}
+            </div>
+            {days.map((_, dayIdx) => {
+              const key = `${dayIdx}-${hour}`;
+              const cellSlots = grid.get(key) ?? [];
+              return (
+                <div key={dayIdx} className="bg-background p-0.5 min-h-[28px]">
+                  {cellSlots.map((slot, si) => (
+                    <button
+                      key={si}
+                      onClick={() => onRoutineClick(slot.routineId)}
+                      className="block w-full text-left text-[9px] rounded px-1 py-0.5 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors truncate"
+                      title={`${slot.title} (${slot.agentName})`}
+                    >
+                      {slot.title}
+                    </button>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── Visual Cron Builder ── */
+
+function VisualCronBuilder({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (cron: string) => void;
+}) {
+  const daysOfWeek = [
+    { value: "1", label: "Mon" },
+    { value: "2", label: "Tue" },
+    { value: "3", label: "Wed" },
+    { value: "4", label: "Thu" },
+    { value: "5", label: "Fri" },
+    { value: "6", label: "Sat" },
+    { value: "0", label: "Sun" },
+  ];
+
+  const parts = value.trim().split(/\s+/);
+  const isValid = parts.length === 5;
+  const minute = isValid ? parts[0] : "0";
+  const hour = isValid ? parts[1] : "10";
+  const dow = isValid ? parts[4] : "*";
+
+  const selectedDays = new Set(
+    dow === "*" ? daysOfWeek.map((d) => d.value) :
+    dow === "1-5" ? ["1", "2", "3", "4", "5"] :
+    dow.split(",")
+  );
+
+  const toggleDay = (dayVal: string) => {
+    const next = new Set(selectedDays);
+    if (next.has(dayVal)) next.delete(dayVal);
+    else next.add(dayVal);
+    const dowStr = next.size === 7 ? "*" : next.size === 0 ? "*" : Array.from(next).sort().join(",");
+    onChange(`${minute} ${hour} * * ${dowStr}`);
+  };
+
+  return (
+    <div className="space-y-3 rounded-lg border border-border p-3">
+      <div className="text-xs font-medium text-muted-foreground">Visual Schedule</div>
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground">At</span>
+        <select
+          className="text-xs bg-transparent border border-border rounded px-2 py-1"
+          value={hour}
+          onChange={(e) => onChange(`${minute} ${e.target.value} * * ${dow}`)}
+        >
+          {Array.from({ length: 24 }, (_, i) => (
+            <option key={i} value={String(i)}>
+              {i === 0 ? "12 AM" : i < 12 ? `${i} AM` : i === 12 ? "12 PM" : `${i - 12} PM`}
+            </option>
+          ))}
+        </select>
+        <span className="text-xs text-muted-foreground">:</span>
+        <select
+          className="text-xs bg-transparent border border-border rounded px-2 py-1"
+          value={minute}
+          onChange={(e) => onChange(`${e.target.value} ${hour} * * ${dow}`)}
+        >
+          {Array.from({ length: 12 }, (_, i) => (
+            <option key={i} value={String(i * 5)}>
+              {String(i * 5).padStart(2, "0")}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="flex items-center gap-1">
+        <span className="text-xs text-muted-foreground mr-1">On:</span>
+        {daysOfWeek.map((day) => (
+          <button
+            key={day.value}
+            type="button"
+            onClick={() => toggleDay(day.value)}
+            className={cn(
+              "h-7 w-9 rounded text-[10px] font-medium transition-colors",
+              selectedDays.has(day.value)
+                ? "bg-foreground text-background"
+                : "bg-muted text-muted-foreground hover:bg-accent",
+            )}
+          >
+            {day.label}
+          </button>
+        ))}
+      </div>
+      <div className="text-[10px] font-mono text-muted-foreground/60">
+        Cron: {value}
+      </div>
+    </div>
+  );
+}
+
+type RoutineViewMode = "list" | "calendar";
+
 export function Routines() {
   usePageTitle("Routines");
   const { selectedCompanyId } = useCompany();
@@ -72,6 +279,7 @@ export function Routines() {
   const navigate = useNavigate();
   const { pushToast } = useToast();
   const [routineSearch, setRoutineSearch] = useState("");
+  const [routineViewMode, setRoutineViewMode] = useState<RoutineViewMode>("list");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "paused" | "draft" | "archived">("all");
   const [agentFilter, setAgentFilter] = useState<string>("all");
   const descriptionEditorRef = useRef<MarkdownEditorRef>(null);
@@ -538,7 +746,39 @@ export function Routines() {
               </SelectContent>
             </Select>
           )}
+          {/* View mode toggle */}
+          <div className="flex items-center rounded-md border border-border overflow-hidden ml-auto">
+            <button
+              className={cn(
+                "flex items-center justify-center h-8 w-8 transition-colors",
+                routineViewMode === "list" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50",
+              )}
+              onClick={() => setRoutineViewMode("list")}
+              title="List view"
+            >
+              <LayoutList className="h-3.5 w-3.5" />
+            </button>
+            <button
+              className={cn(
+                "flex items-center justify-center h-8 w-8 transition-colors",
+                routineViewMode === "calendar" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50",
+              )}
+              onClick={() => setRoutineViewMode("calendar")}
+              title="Calendar view"
+            >
+              <CalendarDays className="h-3.5 w-3.5" />
+            </button>
+          </div>
         </div>
+      )}
+
+      {/* Calendar View */}
+      {routineViewMode === "calendar" && (routines ?? []).length > 0 && (
+        <ScheduleCalendarView
+          routines={(routines ?? []) as any}
+          agentById={agentById as any}
+          onRoutineClick={(id) => navigate(`/routines/${id}`)}
+        />
       )}
 
       <div>
@@ -550,7 +790,7 @@ export function Routines() {
             />
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className={cn("overflow-x-auto", routineViewMode === "calendar" && "hidden")}>
             <table className="min-w-full text-sm">
               <thead>
                 <tr className="text-left text-xs text-muted-foreground border-b border-border">
@@ -626,7 +866,10 @@ export function Routines() {
                         )}
                       </td>
                       <td className="px-3 py-2.5 text-muted-foreground">
-                        <div>{formatLastRunTimestamp(routine.lastRun?.triggeredAt)}</div>
+                        <div className="flex items-center gap-2">
+                          {formatLastRunTimestamp(routine.lastRun?.triggeredAt)}
+                          <RoutineHealthBadge lastRunAt={routine.lastRun?.triggeredAt} status={routine.status} />
+                        </div>
                         {routine.lastRun ? (
                           <>
                             <div className="mt-1 text-xs">{routine.lastRun.status.replaceAll("_", " ")}</div>

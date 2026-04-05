@@ -3,7 +3,17 @@ import { Link } from "@/lib/router";
 import { useBreadcrumbs } from "@/context/BreadcrumbContext";
 import { useToast } from "@/context/ToastContext";
 import { Button } from "@/components/ui/button";
-import { User, Lock, Globe, Check, AlertTriangle, Bell } from "lucide-react";
+import { User, Lock, Globe, Check, AlertTriangle, Bell, Layers, Palette, Keyboard } from "lucide-react";
+import {
+  AccentColorPicker,
+  CompactModeToggle,
+  WidgetLayoutEditor,
+  loadWidgetLayout,
+  saveWidgetLayout,
+  type WidgetConfig,
+} from "../components/PersonalPreferences";
+import { PowerModeToggle } from "../components/ProgressiveDisclosure";
+import { SampleDataToggle } from "../components/SampleDataToggle";
 
 // ---------------------------------------------------------------------------
 // Timezone options (major US + international zones)
@@ -325,6 +335,46 @@ export function ProfileSettings() {
               Password changed
             </span>
           )}
+        </div>
+      </div>
+
+      {/* Appearance & Preferences */}
+      <div className="rounded-lg border border-border p-5 space-y-5">
+        <div className="flex items-center gap-2">
+          <Palette className="h-4 w-4 text-muted-foreground" />
+          <h2 className="text-lg font-semibold">Appearance & Preferences</h2>
+        </div>
+
+        <AccentColorPicker />
+
+        <div className="flex items-center gap-4 flex-wrap">
+          <CompactModeToggle />
+          <PowerModeToggle />
+          <SampleDataToggle />
+        </div>
+      </div>
+
+      {/* Dashboard Layout */}
+      <div className="rounded-lg border border-border p-5 space-y-5">
+        <WidgetLayoutEditor
+          widgets={loadWidgetLayout()}
+          onChange={(widgets: WidgetConfig[]) => saveWidgetLayout(widgets)}
+        />
+      </div>
+
+      {/* Keyboard shortcuts link */}
+      <div className="rounded-lg border border-border p-5">
+        <div className="flex items-center gap-2">
+          <Keyboard className="h-4 w-4 text-muted-foreground" />
+          <div className="flex-1">
+            <div className="text-sm font-medium">Keyboard Shortcuts</div>
+            <div className="text-xs text-muted-foreground">
+              View and customize all keyboard shortcuts
+            </div>
+          </div>
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/keyboard-shortcuts">View Shortcuts</Link>
+          </Button>
         </div>
       </div>
     </div>

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useParams, Link } from "@/lib/router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Send, Crown, Pin, PinOff, ChevronDown, ChevronRight, BarChart2, Brain, GitPullRequest, Users, MessageSquare, CircleDot, CheckCircle2, ShieldAlert, X } from "lucide-react";
+import { Send, Crown, Pin, PinOff, ChevronDown, ChevronRight, BarChart2, Brain, GitPullRequest, Users, MessageSquare, CircleDot, CheckCircle2, ShieldAlert, X, Search, CheckCheck } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { useCompany } from "../context/CompanyContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { channelsApi } from "../api/channels";
@@ -47,7 +48,7 @@ function RoleBadge({ role, employmentType }: { role?: string | null; employmentT
   );
 }
 
-// ---- Message type badge ----
+// ---- Message type badge + colored left border ----
 const MESSAGE_TYPE_STYLES: Record<string, string> = {
   status_update: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
   question: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
@@ -56,6 +57,17 @@ const MESSAGE_TYPE_STYLES: Record<string, string> = {
   announcement: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
   deliberation_start: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400",
   deliberation_summary: "bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400",
+};
+
+// Colored left border by message type (12.15)
+const MESSAGE_TYPE_BORDER: Record<string, string> = {
+  status_update: "border-l-blue-400",
+  question: "border-l-amber-400",
+  decision: "border-l-green-400",
+  escalation: "border-l-red-400",
+  announcement: "border-l-purple-400",
+  deliberation_start: "border-l-indigo-400",
+  deliberation_summary: "border-l-teal-400",
 };
 
 function MessageTypeBadge({ type }: { type: string }) {
@@ -207,11 +219,18 @@ function MessageRow({ msg, agentMap, issueMap, replyMap, onPin, onUnpin, isPinne
   const replyTo = msg.replyToId ? replyMap.get(msg.replyToId) : null;
   const linkedIssue = msg.linkedIssueId ? issueMap.get(msg.linkedIssueId) : null;
 
+  // Determine left border color by message type (12.15)
+  const borderClass = msg.messageType && msg.messageType !== "message"
+    ? MESSAGE_TYPE_BORDER[msg.messageType] ?? ""
+    : "";
+
   return (
     <div
       className={cn(
         "group relative flex gap-3 px-4 py-2 hover:bg-accent/30 transition-colors",
-        isBoard && "border-l-2 border-amber-400 bg-amber-50/30 dark:bg-amber-900/10",
+        // Colored left border for message types (12.15)
+        borderClass && `border-l-[3px] ${borderClass}`,
+        isBoard && !borderClass && "border-l-[3px] border-l-amber-400 bg-amber-50/30 dark:bg-amber-900/10",
         isPinned && "bg-amber-50/20 dark:bg-amber-900/5",
       )}
     >
@@ -249,18 +268,18 @@ function MessageRow({ msg, agentMap, issueMap, replyMap, onPin, onUnpin, isPinne
         )}
       </div>
 
-      {/* Author icon */}
+      {/* Author icon - larger avatars (12.15) */}
       <div className="shrink-0 mt-0.5">
         {isBoard ? (
-          <div className="h-7 w-7 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-            <Crown className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+          <div className="h-9 w-9 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+            <Crown className="h-5 w-5 text-amber-600 dark:text-amber-400" />
           </div>
         ) : (
-          <div className="h-7 w-7 rounded-full bg-accent flex items-center justify-center">
+          <div className="h-9 w-9 rounded-full bg-accent flex items-center justify-center">
             <AgentIcon
               icon={agent?.icon ?? null}
               className={cn(
-                "h-4 w-4",
+                "h-5 w-5",
                 getRoleLevel(agent?.role) === "executive"
                   ? "text-amber-500 dark:text-amber-400"
                   : getRoleLevel(agent?.role) === "management"
@@ -442,6 +461,14 @@ export function ChannelView() {
   const [replyToId, setReplyToId] = useState<string | null>(null);
   const prevMessageCount = useRef(0);
   const [newMessageDividerIndex, setNewMessageDividerIndex] = useState<number | null>(null);
+  // Message search within channel (12.15)
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  // Unread tracking state (12.15) - computed after messages query below
+  const [lastReadTimestamp, setLastReadTimestamp] = useState<string | null>(() => {
+    if (!channelId) return null;
+    return localStorage.getItem(`ironworks:channel-last-read:${channelId}`);
+  });
 
   // Fetch channels list to find the current channel name
   const { data: channels } = useQuery({
@@ -459,6 +486,19 @@ export function ChannelView() {
     enabled: !!selectedCompanyId && !!channelId,
     refetchInterval: 5_000,
   });
+
+  // Unread tracking computed values (12.15)
+  const unreadCount = useMemo(() => {
+    if (!lastReadTimestamp) return 0;
+    return messages.filter((m) => m.createdAt > lastReadTimestamp).length;
+  }, [messages, lastReadTimestamp]);
+  function markAllRead() {
+    if (messages.length === 0) return;
+    const latest = messages[messages.length - 1].createdAt;
+    setLastReadTimestamp(latest);
+    if (channelId) localStorage.setItem(`ironworks:channel-last-read:${channelId}`, latest);
+    setNewMessageDividerIndex(null);
+  }
 
   // Fetch agents slim for name/icon resolution
   const { data: agentSlims = [] } = useQuery({
@@ -620,7 +660,15 @@ export function ChannelView() {
     },
   });
 
-  const filteredMessages = topLevelMessages.filter((m) => matchesFilter(m, filter));
+  const filteredMessages = useMemo(() => {
+    let msgs = topLevelMessages.filter((m) => matchesFilter(m, filter));
+    // Apply search filter (12.15)
+    if (searchTerm.trim()) {
+      const q = searchTerm.toLowerCase();
+      msgs = msgs.filter((m) => m.body.toLowerCase().includes(q));
+    }
+    return msgs;
+  }, [topLevelMessages, filter, searchTerm]);
 
   const channelName = channel?.name ?? channelId ?? "";
 
@@ -628,11 +676,39 @@ export function ChannelView() {
     <div className="flex flex-col h-full min-h-0">
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-3 border-b border-border shrink-0">
-        <h1 className="text-[15px] font-semibold text-foreground">
-          <span className="text-muted-foreground">#</span>
-          {channelName}
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-[15px] font-semibold text-foreground">
+            <span className="text-muted-foreground">#</span>
+            {channelName}
+          </h1>
+          {/* Unread badge (12.15) */}
+          {unreadCount > 0 && (
+            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-blue-500 text-white">
+              {unreadCount} new
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-1">
+          {/* Mark all read button (12.15) */}
+          {unreadCount > 0 && (
+            <button
+              onClick={markAllRead}
+              className="px-2 py-1 text-[11px] font-medium rounded-full text-blue-400 hover:bg-blue-500/10 transition-colors flex items-center gap-1"
+            >
+              <CheckCheck className="h-3 w-3" />
+              Mark read
+            </button>
+          )}
+          {/* Search toggle (12.15) */}
+          <button
+            onClick={() => setSearchOpen(!searchOpen)}
+            className={cn(
+              "p-1.5 rounded-full transition-colors",
+              searchOpen ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
+            )}
+          >
+            <Search className="h-3.5 w-3.5" />
+          </button>
           <button
             onClick={() => setFilter("all")}
             className={cn(
@@ -669,6 +745,28 @@ export function ChannelView() {
           </button>
         </div>
       </div>
+
+      {/* Message search bar (12.15) */}
+      {searchOpen && (
+        <div className="px-4 py-2 border-b border-border bg-muted/10 flex items-center gap-2">
+          <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <Input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search messages..."
+            className="h-7 text-xs border-0 bg-transparent shadow-none focus-visible:ring-0"
+            autoFocus
+          />
+          {searchTerm && (
+            <span className="text-[10px] text-muted-foreground shrink-0">
+              {filteredMessages.length} result{filteredMessages.length !== 1 ? "s" : ""}
+            </span>
+          )}
+          <button onClick={() => { setSearchOpen(false); setSearchTerm(""); }} className="text-muted-foreground hover:text-foreground">
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Messages / Analytics */}
       <div className="flex-1 min-h-0 overflow-y-auto py-2">

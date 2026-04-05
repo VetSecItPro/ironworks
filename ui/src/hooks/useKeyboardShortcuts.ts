@@ -2,11 +2,21 @@ import { useEffect } from "react";
 
 interface ShortcutHandlers {
   onNewIssue?: () => void;
+  onNewGoal?: () => void;
+  onNewPlaybook?: () => void;
   onToggleSidebar?: () => void;
   onTogglePanel?: () => void;
+  onToggleFocusMode?: () => void;
 }
 
-export function useKeyboardShortcuts({ onNewIssue, onToggleSidebar, onTogglePanel }: ShortcutHandlers) {
+export function useKeyboardShortcuts({
+  onNewIssue,
+  onNewGoal,
+  onNewPlaybook,
+  onToggleSidebar,
+  onTogglePanel,
+  onToggleFocusMode,
+}: ShortcutHandlers) {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       // Don't fire shortcuts when typing in inputs
@@ -15,26 +25,38 @@ export function useKeyboardShortcuts({ onNewIssue, onToggleSidebar, onTogglePane
         return;
       }
 
-      // C → New Issue
+      // Cmd+Shift+F -> Focus Mode
+      if (e.key === "f" && (e.metaKey || e.ctrlKey) && e.shiftKey) {
+        e.preventDefault();
+        onToggleFocusMode?.();
+        return;
+      }
+
+      // C -> New Issue
       if (e.key === "c" && !e.metaKey && !e.ctrlKey && !e.altKey) {
         e.preventDefault();
         onNewIssue?.();
       }
 
-      // [ → Toggle Sidebar
+      // [ -> Toggle Sidebar
       if (e.key === "[" && !e.metaKey && !e.ctrlKey) {
         e.preventDefault();
         onToggleSidebar?.();
       }
 
-      // ] → Toggle Panel
+      // ] -> Toggle Panel
       if (e.key === "]" && !e.metaKey && !e.ctrlKey) {
         e.preventDefault();
         onTogglePanel?.();
+      }
+
+      // ? -> Show keyboard shortcuts
+      if (e.key === "?" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        // Navigate handled by the component
       }
     }
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onNewIssue, onToggleSidebar, onTogglePanel]);
+  }, [onNewIssue, onNewGoal, onNewPlaybook, onToggleSidebar, onTogglePanel, onToggleFocusMode]);
 }

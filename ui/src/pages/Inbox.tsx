@@ -36,8 +36,11 @@ import {
 } from "@/components/ui/select";
 import {
   Archive,
+  Check,
+  CheckCircle2,
   Inbox as InboxIcon,
   AlertTriangle,
+  Wand2,
   XCircle,
   X,
   RotateCcw,
@@ -641,6 +644,51 @@ function JoinRequestInboxRow({
   );
 }
 
+/* ── Smart Suggestions Banner ── */
+
+function SmartSuggestionsBanner({
+  autoResolvableCount,
+  onAutoResolve,
+  isPending,
+}: {
+  autoResolvableCount: number;
+  onAutoResolve: () => void;
+  isPending: boolean;
+}) {
+  if (autoResolvableCount === 0) return null;
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-blue-500/20 bg-blue-500/[0.04] px-4 py-2.5">
+      <div className="flex items-center gap-2.5 min-w-0">
+        <Wand2 className="h-4 w-4 text-blue-400 shrink-0" />
+        <p className="text-sm">
+          <span className="font-medium">{autoResolvableCount} item{autoResolvableCount !== 1 ? "s" : ""}</span>
+          <span className="text-muted-foreground ml-1">can be auto-resolved (completed issues, resolved approvals)</span>
+        </p>
+      </div>
+      <Button
+        size="sm"
+        variant="outline"
+        className="shrink-0 h-8"
+        onClick={onAutoResolve}
+        disabled={isPending}
+      >
+        <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
+        {isPending ? "Resolving..." : "Auto-resolve all"}
+      </Button>
+    </div>
+  );
+}
+
+/* ── Server-side read state with localStorage fallback ── */
+
+async function syncReadStateToServer(issueId: string): Promise<void> {
+  try {
+    await fetch(`/api/issues/${issueId}/read`, { method: "POST" });
+  } catch {
+    // Server unavailable - localStorage fallback already handles this
+  }
+}
+
 export function Inbox() {
   usePageTitle("Inbox");
   const { selectedCompanyId } = useCompany();
@@ -983,6 +1031,15 @@ export function Inbox() {
     mutationFn: (id: string) => issuesApi.archiveFromInbox(id),
     onMutate: (id) => {
       setActionError(null);
+      // Slide-out animation: add class before removing
+      const el = document.querySelector(`[data-inbox-issue="${id}"]`);
+      if (el) {
+        (el as HTMLElement).style.transition = "opacity 300ms ease, transform 300ms ease, max-height 300ms ease";
+        (el as HTMLElement).style.opacity = "0";
+        (el as HTMLElement).style.transform = "translateX(100%)";
+        (el as HTMLElement).style.maxHeight = "0";
+        (el as HTMLElement).style.overflow = "hidden";
+      }
       setArchivingIssueIds((prev) => new Set(prev).add(id));
     },
     onSuccess: () => {
@@ -1039,7 +1096,11 @@ export function Inbox() {
   });
 
   const markReadMutation = useMutation({
-    mutationFn: (id: string) => issuesApi.markRead(id),
+    mutationFn: (id: string) => {
+      // Server-side read state with localStorage fallback
+      syncReadStateToServer(id).catch(() => {});
+      return issuesApi.markRead(id);
+    },
     onMutate: (id) => {
       setFadingOutIssues((prev) => new Set(prev).add(id));
     },
@@ -1298,6 +1359,26 @@ export function Inbox() {
           </div>
         )}
       </div>
+
+      {/* Smart Suggestions Banner */}
+      {tab === "mine" && (() => {
+        const doneIssues = issuesToRender.filter((i) => i.status === "done" && !archivingIssueIds.has(i.id));
+        const resolvedApprovals = approvalsToRender.filter((a) => a.status === "approved" || a.status === "rejected");
+        const autoResolvableCount = doneIssues.length + resolvedApprovals.length;
+        return (
+          <SmartSuggestionsBanner
+            autoResolvableCount={autoResolvableCount}
+            isPending={bulkArchiveMutation.isPending}
+            onAutoResolve={() => {
+              const ids = doneIssues.map((i) => i.id);
+              if (ids.length > 0) bulkArchiveMutation.mutate(ids);
+              for (const a of resolvedApprovals) {
+                dismiss(`approval:${a.id}`);
+              }
+            }}
+          />
+        );
+      })()}
 
       {approvalsError && <p role="alert" className="text-sm text-destructive">{approvalsError.message}</p>}
       {actionError && <p role="alert" className="text-sm text-destructive">{actionError}</p>}

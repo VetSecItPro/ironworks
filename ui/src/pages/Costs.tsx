@@ -885,6 +885,61 @@ export function Costs() {
                   </CardContent>
                 </Card>
 
+                {/* Spend Forecast */}
+                <Card>
+                  <CardHeader className="px-5 pt-5 pb-2">
+                    <CardTitle className="text-base">Spend Forecast</CardTitle>
+                    <CardDescription>Projected end-of-month spend based on current burn rate.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="px-5 pb-5 pt-2 space-y-3">
+                    {(() => {
+                      const currentSpend = spendData?.summary.spendCents ?? 0;
+                      const budget = spendData?.summary.budgetCents ?? 0;
+                      const now = new Date();
+                      const daysElapsed = Math.max(1, now.getDate());
+                      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+                      const burnRate = currentSpend / daysElapsed;
+                      const projected = Math.round(burnRate * daysInMonth);
+                      const overBudget = budget > 0 && projected > budget;
+                      const pctElapsed = (daysElapsed / daysInMonth) * 100;
+
+                      return (
+                        <>
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-2xl font-semibold tabular-nums">{formatCents(projected)}</span>
+                            <span className="text-sm text-muted-foreground">projected</span>
+                          </div>
+                          {budget > 0 && (
+                            <div className={cn("text-sm", overBudget ? "text-red-400" : "text-emerald-400")}>
+                              {overBudget ? `Over budget by ${formatCents(projected - budget)}` : `Under budget by ${formatCents(budget - projected)}`}
+                            </div>
+                          )}
+                          {/* Projection bar */}
+                          <div className="relative h-3 bg-muted rounded-full overflow-hidden">
+                            {/* Actual spend */}
+                            <div
+                              className="absolute top-0 bottom-0 left-0 bg-blue-500 rounded-l-full"
+                              style={{ width: `${Math.min(100, budget > 0 ? (currentSpend / budget) * 100 : pctElapsed)}%` }}
+                            />
+                            {/* Projected (dashed) */}
+                            <div
+                              className="absolute top-0 bottom-0 bg-blue-500/20 border-r-2 border-dashed border-blue-400"
+                              style={{
+                                left: `${Math.min(100, budget > 0 ? (currentSpend / budget) * 100 : pctElapsed)}%`,
+                                width: `${Math.min(100 - (budget > 0 ? (currentSpend / budget) * 100 : pctElapsed), budget > 0 ? ((projected - currentSpend) / budget) * 100 : 100 - pctElapsed)}%`,
+                              }}
+                            />
+                          </div>
+                          <div className="flex justify-between text-[10px] text-muted-foreground">
+                            <span>{formatCents(currentSpend)} actual</span>
+                            <span>{formatCents(burnRate)}/day burn rate</span>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </CardContent>
+                </Card>
+
                 {/* Finance Ledger */}
                 <Card>
                   <CardHeader className="px-5 pt-5 pb-2">
