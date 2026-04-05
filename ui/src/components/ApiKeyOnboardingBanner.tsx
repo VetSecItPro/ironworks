@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { secretsApi } from "../api/secrets";
+import { agentsApi } from "../api/agents";
 import { useCompany } from "../context/CompanyContext";
 import { useToast } from "../context/ToastContext";
 import { queryKeys } from "../lib/queryKeys";
@@ -43,12 +44,22 @@ export function ApiKeyOnboardingBanner() {
   const configuredKeys = new Set(
     secrets
       .filter((s: CompanySecret) =>
-        s.name === "ANTHROPIC_API_KEY" || s.name === "OPENAI_API_KEY",
+        PROVIDERS.some((p) => p.key === s.name),
       )
       .map((s: CompanySecret) => s.name),
   );
 
-  const hasAnyLlmKey = PROVIDERS.some((p) => configuredKeys.has(p.key));
+  // Also check if agents are using ollama_cloud adapter (uses server env var, not company secret)
+  const agentsQuery = useQuery({
+    queryKey: queryKeys.agents.list(selectedCompanyId ?? ""),
+    queryFn: () => agentsApi.list(selectedCompanyId!),
+    enabled: !!selectedCompanyId,
+  });
+  const hasOllamaCloudAgent = (agentsQuery.data ?? []).some(
+    (a) => (a as unknown as Record<string, unknown>).adapterType === "ollama_cloud"
+  );
+
+  const hasAnyLlmKey = PROVIDERS.some((p) => configuredKeys.has(p.key)) || hasOllamaCloudAgent;
 
   const saveMutation = useMutation({
     mutationFn: async () => {
