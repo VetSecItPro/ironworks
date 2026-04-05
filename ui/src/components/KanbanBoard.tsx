@@ -26,6 +26,7 @@ import { StatusIcon } from "./StatusIcon";
 import { Identity } from "./Identity";
 import { KanbanCard } from "./KanbanCard";
 import { cn } from "../lib/utils";
+import { HelpBeacon } from "./HelpBeacon";
 import {
   Plus,
   ChevronDown,
@@ -171,6 +172,9 @@ const KanbanColumn = memo(function KanbanColumn({
             <span className="text-muted-foreground/40">/{wipLimit}</span>
           )}
         </span>
+        {wipLimit !== undefined && (
+          <HelpBeacon text="WIP (Work In Progress) limits cap how many issues can be in this column at once. When the limit is reached, the count turns amber. Going over turns it red. This helps prevent overloading agents with too many concurrent tasks." />
+        )}
 
         {overLimit && (
           <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />

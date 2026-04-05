@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useParams, useNavigate, Link, Navigate, useBeforeUnload } from "@/lib/router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { trackFeatureUsed } from "../lib/analytics";
 import {
   agentsApi,
   type AgentPermissionUpdate,
@@ -185,6 +186,7 @@ export function AgentDetail() {
       }
     },
     onSuccess: (data, action) => {
+      if (action === "invoke") trackFeatureUsed("invoke_agent");
       setActionError(null);
       queryClient.invalidateQueries({ queryKey: queryKeys.agents.detail(routeAgentRef) });
       queryClient.invalidateQueries({ queryKey: queryKeys.agents.detail(agentLookupRef) });

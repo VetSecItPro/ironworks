@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, type ChangeEvent, type DragEvent } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { pickTextColorForSolidBg } from "@/lib/color-contrast";
+import { trackFeatureUsed } from "../lib/analytics";
 import { useDialog } from "../context/DialogContext";
 import { useCompany } from "../context/CompanyContext";
 import { executionWorkspacesApi } from "../api/execution-workspaces";
@@ -466,6 +467,7 @@ export function NewIssueDialog() {
       ...data
     }: { companyId: string; stagedFiles: StagedIssueFile[] } & Record<string, unknown>) => {
       const issue = await issuesApi.create(companyId, data);
+      trackFeatureUsed("create_issue");
       const failures: string[] = [];
 
       for (const stagedFile of pendingStagedFiles) {

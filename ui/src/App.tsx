@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Navigate, Outlet, Route, Routes, useLocation, useParams } from "@/lib/router";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -58,7 +58,9 @@ const AuditLog = lazy(() => import("./pages/AuditLog").then(m => ({ default: m.A
 const PlatformHealth = lazy(() => import("./pages/PlatformHealth").then(m => ({ default: m.PlatformHealth })));
 const SLASettings = lazy(() => import("./pages/SLASettings").then(m => ({ default: m.SLASettings })));
 const WorkflowSettings = lazy(() => import("./pages/WorkflowSettings").then(m => ({ default: m.WorkflowSettings })));
+const KeyboardShortcuts = lazy(() => import("./pages/KeyboardShortcuts").then(m => ({ default: m.KeyboardShortcuts })));
 const ProfileSettings = lazy(() => import("./pages/ProfileSettings").then(m => ({ default: m.ProfileSettings })));
+const ApiDocs = lazy(() => import("./pages/ApiDocs").then(m => ({ default: m.ApiDocs })));
 const NotificationSettings = lazy(() => import("./pages/NotificationSettings").then(m => ({ default: m.NotificationSettings })));
 const BillingSettingsPage = lazy(() => import("./pages/BillingSettings").then(m => ({ default: m.BillingSettings })));
 // Admin panel — lazy loaded, instance admin only
@@ -77,6 +79,7 @@ import { AcceptableUsePolicy } from "./pages/AcceptableUsePolicy";
 import { DataProcessingAgreement } from "./pages/DataProcessingAgreement";
 import { ServiceLevelAgreement } from "./pages/ServiceLevelAgreement";
 import { LegalIndex } from "./pages/LegalIndex";
+import { PricingPage } from "./pages/PricingPage";
 import { AuthPage } from "./pages/Auth";
 import { BoardClaimPage } from "./pages/BoardClaim";
 import { CliAuthPage } from "./pages/CliAuth";
@@ -88,10 +91,19 @@ import { useCompany } from "./context/CompanyContext";
 import { useDialog } from "./context/DialogContext";
 import { loadLastInboxTab } from "./lib/inbox";
 import { shouldRedirectCompanylessRouteToOnboarding } from "./lib/onboarding-route";
+import { trackPageView } from "./lib/analytics";
 
 // Suspense wrapper for lazy-loaded pages
 function LazyPage({ children, variant = "detail" }: { children: React.ReactNode; variant?: "detail" | "list" | "dashboard" }) {
   return <Suspense fallback={<PageSkeleton variant={variant} />}>{children}</Suspense>;
+}
+
+function PageViewTracker() {
+  const location = useLocation();
+  useEffect(() => {
+    trackPageView(location.pathname);
+  }, [location.pathname]);
+  return null;
 }
 
 function BootstrapPendingPage({ hasActiveInvite = false }: { hasActiveInvite?: boolean }) {
@@ -228,6 +240,7 @@ function boardRoutes() {
       <Route path="sla" element={<LazyPage><SLASettings /></LazyPage>} />
       <Route path="workflow" element={<LazyPage><WorkflowSettings /></LazyPage>} />
       <Route path="client-portal" element={<LazyPage><ClientPortal /></LazyPage>} />
+      <Route path="api-docs" element={<LazyPage><ApiDocs /></LazyPage>} />
       <Route path="marketplace" element={<LazyPage variant="list"><AgentMarketplace /></LazyPage>} />
       <Route path="channels/:channelId" element={<LazyPage><ChannelView /></LazyPage>} />
       <Route path="inbox" element={<InboxRootRedirect />} />
@@ -236,6 +249,7 @@ function boardRoutes() {
       <Route path="inbox/unread" element={<Inbox />} />
       <Route path="inbox/all" element={<Inbox />} />
       <Route path="inbox/new" element={<Navigate to="/inbox/mine" replace />} />
+      <Route path="keyboard-shortcuts" element={<LazyPage><KeyboardShortcuts /></LazyPage>} />
       <Route path="design-guide" element={<LazyPage><DesignGuide /></LazyPage>} />
       <Route path="tests/ux/runs" element={<LazyPage><RunTranscriptUxLab /></LazyPage>} />
       <Route path=":pluginRoutePath" element={<LazyPage><PluginPage /></LazyPage>} />
@@ -374,6 +388,7 @@ export function App() {
         <Route path="dpa" element={<DataProcessingAgreement />} />
         <Route path="sla" element={<ServiceLevelAgreement />} />
         <Route path="legal" element={<LegalIndex />} />
+        <Route path="pricing" element={<PricingPage />} />
         <Route path="auth" element={<AuthPage />} />
         <Route path="setup" element={<LazyPage><SetupPage /></LazyPage>} />
         <Route path="board-claim/:token" element={<BoardClaimPage />} />
@@ -425,6 +440,7 @@ export function App() {
           <Route path="playbooks" element={<UnprefixedBoardRedirect />} />
           <Route path="performance" element={<UnprefixedBoardRedirect />} />
           <Route path="knowledge" element={<UnprefixedBoardRedirect />} />
+          <Route path="api-docs" element={<UnprefixedBoardRedirect />} />
           <Route path="audit-log" element={<UnprefixedBoardRedirect />} />
           <Route path="tests/ux/runs" element={<UnprefixedBoardRedirect />} />
           <Route path=":companyPrefix" element={<Layout />}>
@@ -433,6 +449,7 @@ export function App() {
           <Route path="*" element={<NotFoundPage scope="global" />} />
         </Route>
       </Routes>
+      <PageViewTracker />
       <Suspense fallback={null}><OnboardingWizard /></Suspense>
       <CookieConsentBanner />
     </>

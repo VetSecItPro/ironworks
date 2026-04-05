@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { GOAL_STATUSES, GOAL_LEVELS } from "@ironworksai/shared";
+import { trackFeatureUsed } from "../lib/analytics";
 import { useDialog } from "../context/DialogContext";
 import { useCompany } from "../context/CompanyContext";
 import { goalsApi } from "../api/goals";
@@ -82,6 +83,7 @@ export function NewGoalDialog() {
     mutationFn: (data: Record<string, unknown>) =>
       goalsApi.create(selectedCompanyId!, data),
     onSuccess: () => {
+      trackFeatureUsed("create_goal");
       queryClient.invalidateQueries({ queryKey: queryKeys.goals.list(selectedCompanyId!) });
       reset();
       closeNewGoal();

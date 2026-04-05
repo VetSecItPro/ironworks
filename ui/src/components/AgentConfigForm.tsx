@@ -42,6 +42,7 @@ import { defaultCreateValues } from "./agent-config-defaults";
 import { getUIAdapter } from "../adapters";
 import { ClaudeLocalAdvancedFields } from "../adapters/claude-local/config-fields";
 import { MarkdownEditor } from "./MarkdownEditor";
+import { HelpBeacon } from "./HelpBeacon";
 import { ChoosePathButton } from "./PathInstructionsModal";
 import { OpenCodeLogoIcon } from "./OpenCodeLogoIcon";
 import { ReportsToPicker } from "./ReportsToPicker";
@@ -548,7 +549,11 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
         </div>
         <div className={cn(cards ? "border border-border rounded-lg p-4 space-y-3" : "px-4 pb-3 space-y-3")}>
           {showAdapterTypeField && (
-            <Field label="Adapter type" hint={help.adapterType}>
+            <div>
+              <div className="flex items-center gap-1.5 mb-1">
+                <label className="text-xs text-muted-foreground">Adapter type</label>
+                <HelpBeacon text="The adapter type determines which AI coding tool powers this agent. Claude Code, Codex, Gemini CLI, and others each have different capabilities, pricing, and model access. Choose based on the LLM provider you want to use." />
+              </div>
               <AdapterTypeDropdown
                 value={adapterType}
                 onChange={(t) => {
@@ -598,7 +603,7 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
                   }
                 }}
               />
-            </Field>
+            </div>
           )}
 
           {testEnvironment.error && (
@@ -869,8 +874,8 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
       {isCreate && showCreateRunPolicySection ? (
         <div className={cn(!cards && "border-b border-border")}>
           {cards
-            ? <h3 className="text-sm font-medium flex items-center gap-2 mb-3"><Heart className="h-3 w-3" /> Run Policy</h3>
-            : <div className="px-4 py-2 text-xs font-medium text-muted-foreground flex items-center gap-2"><Heart className="h-3 w-3" /> Run Policy</div>
+            ? <h3 className="text-sm font-medium flex items-center gap-2 mb-3"><Heart className="h-3 w-3" /> Run Policy <HelpBeacon text="The heartbeat interval controls how often this agent wakes up to check for new work. A shorter interval means faster response times but higher resource usage. 300 seconds (5 minutes) is a good default for most agents." /></h3>
+            : <div className="px-4 py-2 text-xs font-medium text-muted-foreground flex items-center gap-2"><Heart className="h-3 w-3" /> Run Policy <HelpBeacon text="The heartbeat interval controls how often this agent wakes up to check for new work. A shorter interval means faster response times but higher resource usage. 300 seconds (5 minutes) is a good default for most agents." /></div>
           }
           <div className={cn(cards ? "border border-border rounded-lg p-4 space-y-3" : "px-4 pb-3 space-y-3")}>
             <ToggleWithNumber

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   BarChart3,
   Inbox,
@@ -8,6 +8,7 @@ import {
   BookOpen,
   BookText,
   BookTemplate,
+  Code,
   DollarSign,
   FileText,
   History,
@@ -27,6 +28,9 @@ import {
   GitBranch,
   ExternalLink,
   Store,
+  ChevronDown,
+  Check,
+  Plus,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { NavLink } from "@/lib/router";
@@ -75,11 +79,42 @@ function useFeatureDots() {
 
 export function Sidebar() {
   const { openNewIssue } = useDialog();
-  const { selectedCompanyId, selectedCompany } = useCompany();
+  const { companies, selectedCompanyId, selectedCompany, setSelectedCompanyId } = useCompany();
   const { isMobile, setSidebarOpen } = useSidebar();
   const { markVisited, shouldShowDot } = useFeatureDots();
   const inboxBadge = useInboxBadge(selectedCompanyId);
   const [sidebarSearch, setSidebarSearch] = useState("");
+  const [companySwitcherOpen, setCompanySwitcherOpen] = useState(false);
+  const switcherRef = useRef<HTMLDivElement>(null);
+
+  // Close company switcher when clicking outside
+  useEffect(() => {
+    if (!companySwitcherOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (switcherRef.current && !switcherRef.current.contains(e.target as Node)) {
+        setCompanySwitcherOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [companySwitcherOpen]);
+
+  // Keyboard shortcut to toggle company switcher (Ctrl/Cmd + Shift + C)
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "c") {
+        e.preventDefault();
+        setCompanySwitcherOpen((prev) => !prev);
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  const activeCompanies = useMemo(
+    () => companies.filter((c) => c.status !== "archived"),
+    [companies],
+  );
 
   // Track sidebar navigation clicks to dismiss feature dots
   useEffect(() => {
@@ -135,18 +170,30 @@ export function Sidebar() {
 
   return (
     <aside className="w-60 h-full min-h-0 border-r border-border bg-background flex flex-col">
-      {/* Top bar: Company name (bold) + Search */}
+      {/* Top bar: Company switcher + Search */}
       <div className="shrink-0">
-        <div className="flex items-center gap-1 px-3 h-12">
-          {selectedCompany?.brandColor && (
-            <div
-              className="w-4 h-4 rounded-sm shrink-0 ml-1"
-              style={{ backgroundColor: selectedCompany.brandColor }}
-            />
-          )}
-          <span className="flex-1 text-sm font-bold text-foreground truncate pl-1">
-            {selectedCompany?.name ?? "Select company"}
-          </span>
+        <div className="flex items-center gap-1 px-3 h-12 relative" ref={switcherRef}>
+          <button
+            className="flex items-center gap-1.5 flex-1 min-w-0 rounded-md px-1.5 py-1 hover:bg-accent/50 transition-colors"
+            onClick={() => setCompanySwitcherOpen(!companySwitcherOpen)}
+          >
+            {selectedCompany?.logoUrl ? (
+              <img
+                src={selectedCompany.logoUrl}
+                alt=""
+                className="w-5 h-5 rounded-sm shrink-0 object-cover"
+              />
+            ) : selectedCompany?.brandColor ? (
+              <div
+                className="w-5 h-5 rounded-sm shrink-0"
+                style={{ backgroundColor: selectedCompany.brandColor }}
+              />
+            ) : null}
+            <span className="flex-1 text-sm font-bold text-foreground truncate text-left">
+              {selectedCompany?.name ?? "Select company"}
+            </span>
+            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          </button>
           <Button
             variant="ghost"
             size="icon-sm"
@@ -155,6 +202,58 @@ export function Sidebar() {
           >
             <Search className="h-4 w-4" />
           </Button>
+
+          {/* Company switcher dropdown */}
+          {companySwitcherOpen && (
+            <div className="absolute left-2 right-2 top-11 z-50 rounded-lg border border-border bg-popover shadow-lg py-1 max-h-64 overflow-y-auto">
+              <div className="px-3 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+                Switch company
+                <span className="float-right font-normal normal-case tracking-normal opacity-60">
+                  {navigator.platform?.includes("Mac") ? "\u2318" : "Ctrl"}+Shift+C
+                </span>
+              </div>
+              {activeCompanies.map((company) => (
+                <button
+                  key={company.id}
+                  className={cn(
+                    "flex items-center gap-2 w-full px-3 py-2 text-left text-sm transition-colors",
+                    company.id === selectedCompanyId
+                      ? "bg-accent text-foreground"
+                      : "hover:bg-accent/50 text-foreground/80",
+                  )}
+                  onClick={() => {
+                    setSelectedCompanyId(company.id);
+                    setCompanySwitcherOpen(false);
+                  }}
+                >
+                  {company.logoUrl ? (
+                    <img src={company.logoUrl} alt="" className="w-4 h-4 rounded-sm object-cover shrink-0" />
+                  ) : company.brandColor ? (
+                    <div className="w-4 h-4 rounded-sm shrink-0" style={{ backgroundColor: company.brandColor }} />
+                  ) : (
+                    <div className="w-4 h-4 rounded-sm shrink-0 bg-muted" />
+                  )}
+                  <span className="flex-1 truncate">{company.name}</span>
+                  {company.id === selectedCompanyId && (
+                    <Check className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
+                  )}
+                </button>
+              ))}
+              <div className="border-t border-border mt-1 pt-1">
+                <button
+                  className="flex items-center gap-2 w-full px-3 py-2 text-left text-sm text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
+                  onClick={() => {
+                    setCompanySwitcherOpen(false);
+                    // Navigate to onboarding to create a new company
+                    window.location.href = "/onboarding";
+                  }}
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Create New Company</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
         {/* Sidebar filter */}
         <div className="px-3 pb-1">
@@ -265,6 +364,7 @@ export function Sidebar() {
           {matchLabel("Workflow") && <SidebarNavItem to="/workflow" label="Workflow" icon={GitBranch} featureDot={shouldShowDot("/workflow")} />}
           {matchLabel("Marketplace") && <SidebarNavItem to="/marketplace" label="Marketplace" icon={Store} featureDot={shouldShowDot("/marketplace")} />}
           {matchLabel("Client Portal") && <SidebarNavItem to="/client-portal" label="Client Portal" icon={ExternalLink} featureDot={shouldShowDot("/client-portal")} />}
+          {matchLabel("API Docs") && <SidebarNavItem to="/api-docs" label="API Docs" icon={Code} featureDot={shouldShowDot("/api-docs")} />}
           {matchLabel("Settings") && <SidebarNavItem to="/company/settings" label="Settings" icon={Settings} />}
           {matchLabel("My Profile") && <SidebarNavItem to="/profile" label="My Profile" icon={User} />}
         </SidebarSection>
