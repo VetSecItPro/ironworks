@@ -359,12 +359,6 @@ export function Sidebar() {
           {matchLabel("Agent Performance") && <SidebarNavItem to="/performance" label="Agent Performance" icon={BarChart3} />}
           {matchLabel("Company Activity") && <SidebarNavItem to="/activity" label="Company Activity" icon={History} />}
           {matchLabel("Audit Log") && <SidebarNavItem to="/audit-log" label="Audit Log" icon={Shield} />}
-          {matchLabel("Platform Health") && <SidebarNavItem to="/platform-health" label="Platform Health" icon={HeartPulse} featureDot={shouldShowDot("/platform-health")} />}
-          {matchLabel("SLA Settings") && <SidebarNavItem to="/sla" label="SLA Settings" icon={Clock} featureDot={shouldShowDot("/sla")} />}
-          {matchLabel("Workflow") && <SidebarNavItem to="/workflow" label="Workflow" icon={GitBranch} featureDot={shouldShowDot("/workflow")} />}
-          {matchLabel("Marketplace") && <SidebarNavItem to="/marketplace" label="Marketplace" icon={Store} featureDot={shouldShowDot("/marketplace")} />}
-          {matchLabel("Client Portal") && <SidebarNavItem to="/client-portal" label="Client Portal" icon={ExternalLink} featureDot={shouldShowDot("/client-portal")} />}
-          {matchLabel("API Docs") && <SidebarNavItem to="/api-docs" label="API Docs" icon={Code} featureDot={shouldShowDot("/api-docs")} />}
           {matchLabel("Settings") && <SidebarNavItem to="/company/settings" label="Settings" icon={Settings} />}
           {matchLabel("My Profile") && <SidebarNavItem to="/profile" label="My Profile" icon={User} />}
         </SidebarSection>

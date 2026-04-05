@@ -442,6 +442,31 @@ export function App() {
           <Route path="knowledge" element={<UnprefixedBoardRedirect />} />
           <Route path="api-docs" element={<UnprefixedBoardRedirect />} />
           <Route path="audit-log" element={<UnprefixedBoardRedirect />} />
+          <Route path="workflow" element={<UnprefixedBoardRedirect />} />
+          <Route path="sla" element={<UnprefixedBoardRedirect />} />
+          <Route path="marketplace" element={<UnprefixedBoardRedirect />} />
+          <Route path="platform-health" element={<UnprefixedBoardRedirect />} />
+          <Route path="client-portal" element={<UnprefixedBoardRedirect />} />
+          <Route path="automation" element={<UnprefixedBoardRedirect />} />
+          <Route path="profile" element={<UnprefixedBoardRedirect />} />
+          <Route path="notifications" element={<UnprefixedBoardRedirect />} />
+          <Route path="billing" element={<UnprefixedBoardRedirect />} />
+          <Route path="keyboard-shortcuts" element={<UnprefixedBoardRedirect />} />
+          <Route path="hiring" element={<UnprefixedBoardRedirect />} />
+          <Route path="deliverables" element={<UnprefixedBoardRedirect />} />
+          <Route path="board-briefing" element={<UnprefixedBoardRedirect />} />
+          <Route path="costs" element={<UnprefixedBoardRedirect />} />
+          <Route path="activity" element={<UnprefixedBoardRedirect />} />
+          <Route path="org" element={<UnprefixedBoardRedirect />} />
+          <Route path="dashboard" element={<UnprefixedBoardRedirect />} />
+          <Route path="inbox" element={<UnprefixedBoardRedirect />} />
+          <Route path="inbox/*" element={<UnprefixedBoardRedirect />} />
+          <Route path="goals" element={<UnprefixedBoardRedirect />} />
+          <Route path="goals/*" element={<UnprefixedBoardRedirect />} />
+          <Route path="approvals" element={<UnprefixedBoardRedirect />} />
+          <Route path="approvals/*" element={<UnprefixedBoardRedirect />} />
+          <Route path="company/*" element={<UnprefixedBoardRedirect />} />
+          <Route path="privacy-settings" element={<UnprefixedBoardRedirect />} />
           <Route path="tests/ux/runs" element={<UnprefixedBoardRedirect />} />
           <Route path=":companyPrefix" element={<Layout />}>
             {boardRoutes()}
