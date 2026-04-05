@@ -348,35 +348,35 @@ export function Layout() {
               <CompanyRail />
               <div
                 className={cn(
-                  "overflow-hidden transition-[width] duration-100 ease-out relative",
+                  "overflow-hidden transition-[width] duration-100 ease-out",
                   !sidebarOpen && "w-0"
                 )}
                 style={sidebarOpen ? { width: sidebarWidth } : undefined}
               >
                 {isInstanceSettingsRoute ? <InstanceSidebar /> : <Sidebar />}
-                {/* Resize handle */}
-                {sidebarOpen && (
-                  <div
-                    className="absolute top-0 -right-1 w-3 h-full cursor-col-resize group z-10 flex items-center justify-center"
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      const startX = e.clientX;
-                      const startW = sidebarWidth;
-                      const onMove = (ev: MouseEvent) => {
-                        setSidebarWidth(startW + (ev.clientX - startX));
-                      };
-                      const onUp = () => {
-                        document.removeEventListener("mousemove", onMove);
-                        document.removeEventListener("mouseup", onUp);
-                      };
-                      document.addEventListener("mousemove", onMove);
-                      document.addEventListener("mouseup", onUp);
-                    }}
-                  >
-                    <div className="w-0.5 h-8 rounded-full bg-border group-hover:bg-ring/60 group-active:bg-ring transition-colors" />
-                  </div>
-                )}
               </div>
+              {/* Resize handle - outside overflow container so it's always clickable */}
+              {sidebarOpen && !isMobile && (
+                <div
+                  className="w-2 h-full cursor-col-resize group shrink-0 flex items-center justify-center hover:bg-accent/30 active:bg-accent/50 transition-colors"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    const startX = e.clientX;
+                    const startW = sidebarWidth;
+                    const onMove = (ev: MouseEvent) => {
+                      setSidebarWidth(startW + (ev.clientX - startX));
+                    };
+                    const onUp = () => {
+                      document.removeEventListener("mousemove", onMove);
+                      document.removeEventListener("mouseup", onUp);
+                    };
+                    document.addEventListener("mousemove", onMove);
+                    document.addEventListener("mouseup", onUp);
+                  }}
+                >
+                  <div className="w-0.5 h-10 rounded-full bg-border group-hover:bg-ring/60 group-active:bg-ring transition-colors" />
+                </div>
+              )}
             </div>
           </nav>
         )}
@@ -406,7 +406,7 @@ export function Layout() {
               id="main-content"
               tabIndex={-1}
               className={cn(
-                "flex-1 p-4 md:p-6",
+                "flex-1 px-4 py-3 md:px-5 md:py-4",
                 isMobile ? "overflow-visible pb-[calc(5rem+env(safe-area-inset-bottom))]" : "overflow-auto",
               )}
             >
@@ -416,9 +416,7 @@ export function Layout() {
                   requestedPrefix={companyPrefix ?? selectedCompany?.issuePrefix}
                 />
               ) : (
-                <div className="ironworks-container">
-                  <Outlet />
-                </div>
+                <Outlet />
               )}
             </main>
             <PropertiesPanel />
