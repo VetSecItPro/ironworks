@@ -59,7 +59,7 @@ function readRememberedInstanceSettingsPath(): string {
 }
 
 export function Layout() {
-  const { sidebarOpen, setSidebarOpen, toggleSidebar, isMobile } = useSidebar();
+  const { sidebarOpen, setSidebarOpen, toggleSidebar, isMobile, sidebarWidth, setSidebarWidth } = useSidebar();
   const { openNewIssue, openOnboarding } = useDialog();
   const { togglePanelVisible } = usePanel();
   const {
@@ -348,11 +348,32 @@ export function Layout() {
               <CompanyRail />
               <div
                 className={cn(
-                  "overflow-hidden transition-[width] duration-100 ease-out",
-                  sidebarOpen ? "w-60" : "w-0"
+                  "overflow-hidden transition-[width] duration-100 ease-out relative",
+                  !sidebarOpen && "w-0"
                 )}
+                style={sidebarOpen ? { width: sidebarWidth } : undefined}
               >
                 {isInstanceSettingsRoute ? <InstanceSidebar /> : <Sidebar />}
+                {/* Resize handle */}
+                {sidebarOpen && (
+                  <div
+                    className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-ring/30 active:bg-ring/50 transition-colors z-10"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      const startX = e.clientX;
+                      const startW = sidebarWidth;
+                      const onMove = (ev: MouseEvent) => {
+                        setSidebarWidth(startW + (ev.clientX - startX));
+                      };
+                      const onUp = () => {
+                        document.removeEventListener("mousemove", onMove);
+                        document.removeEventListener("mouseup", onUp);
+                      };
+                      document.addEventListener("mousemove", onMove);
+                      document.addEventListener("mouseup", onUp);
+                    }}
+                  />
+                )}
               </div>
             </div>
           </nav>
