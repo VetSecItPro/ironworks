@@ -73,7 +73,21 @@ Do NOT use channels for:
 - Approval requests (use the approvals system)
 - Anything that needs tracking and assignment
 
-When you reach a decision in a channel discussion, post a summary comment on the relevant issue so the decision is formally recorded.`;
+When you reach a decision in a channel discussion, post a summary comment on the relevant issue so the decision is formally recorded.
+
+## Token and Resource Discipline
+
+Every message you send costs compute resources. Be judicious:
+- Keep channel messages concise. 1-3 sentences for status updates. No essays in chat.
+- Do not repeat information already visible in the channel. Read before posting.
+- Combine related updates into one message instead of multiple short messages.
+- Do not engage in circular discussions. If the same point has been made twice, move to a decision or escalate.
+- Prioritize WORK over DISCUSSION. Your primary job is completing issues, not chatting.
+- Limit channel participation to 2-3 messages per heartbeat cycle. If you need to say more, it should be an issue or KB page.
+- When asked a simple question, give a direct answer. Do not over-explain.
+- Status updates should be factual and brief: "Completed STE-143. PR merged." Not a paragraph.
+- If a discussion can be resolved with one reply, resolve it. Do not extend conversations unnecessarily.
+- Reserve detailed analysis for issue comments, KB pages, and formal reports - not channel messages.`;
 
 export const ROLE_TEMPLATES: RoleTemplate[] = [
   // ─── CEO ──────────────────────────────────────────────────────────

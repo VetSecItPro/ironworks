@@ -2,6 +2,7 @@ import {
   pgTable,
   uuid,
   text,
+  jsonb,
   timestamp,
   index,
   uniqueIndex,
@@ -16,6 +17,7 @@ export const agentChannels = pgTable(
     scopeType: text("scope_type").notNull().default("company"),
     scopeId: text("scope_id"),
     name: text("name").notNull(),
+    pinnedMessageIds: jsonb("pinned_message_ids").$type<string[]>().notNull().default([]),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
