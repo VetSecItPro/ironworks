@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FeedbackModal } from "./FeedbackModal";
+import { BugReportModal } from "./BugReportModal";
 import { ChangelogModal, ChangelogTrigger } from "./ChangelogModal";
 import { useQuery } from "@tanstack/react-query";
-import { Moon, Settings, Sun } from "lucide-react";
+import { Bug, Moon, Settings, Sun } from "lucide-react";
 import { Link, Outlet, useLocation, useNavigate, useParams } from "@/lib/router";
 import { CookieSettingsLink } from "./CookieConsent";
 import { CompanyRail } from "./CompanyRail";
@@ -82,6 +83,7 @@ export function Layout() {
   const [mobileNavVisible, setMobileNavVisible] = useState(true);
   const [instanceSettingsTarget, setInstanceSettingsTarget] = useState<string>(() => readRememberedInstanceSettingsPath());
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [bugReportOpen, setBugReportOpen] = useState(false);
   const [changelogOpen, setChangelogOpen] = useState(false);
   const [notifCenterOpen, setNotifCenterOpen] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
@@ -428,7 +430,7 @@ export function Layout() {
             <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
             <Link to="/aup" className="hover:text-foreground transition-colors">AUP</Link>
             <span className="text-border/50">·</span>
-            <button type="button" onClick={() => setFeedbackOpen(true)} className="hover:text-foreground transition-colors">Report a Bug</button>
+            <button type="button" onClick={() => setBugReportOpen(true)} className="inline-flex items-center gap-1 hover:text-foreground transition-colors"><Bug className="h-3 w-3" />Report a Bug</button>
               <ChangelogTrigger onClick={() => setChangelogOpen(true)} />
               {isInstanceAdmin && (
                 <>
@@ -452,6 +454,7 @@ export function Layout() {
       <NewAgentDialog />
       <HireAgentDialog />
       <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
+      <BugReportModal open={bugReportOpen} onClose={() => setBugReportOpen(false)} />
       <ChangelogModal open={changelogOpen} onOpenChange={setChangelogOpen} />
       <NotificationCenter
         open={notifCenterOpen}

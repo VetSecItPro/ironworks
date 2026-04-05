@@ -5,6 +5,7 @@ import {
   Activity,
   ArrowLeft,
   BarChart2,
+  Bug,
   Building2,
   Headphones,
   LayoutDashboard,
@@ -32,6 +33,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/manage/audit", label: "Audit Log", icon: ScrollText },
   { to: "/manage/analytics", label: "Analytics", icon: BarChart2 },
   { to: "/manage/support", label: "Support", icon: Headphones },
+  { to: "/manage/bug-reports", label: "Bug Reports", icon: Bug },
 ];
 
 export default function AdminLayout() {

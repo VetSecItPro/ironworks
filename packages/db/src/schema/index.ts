@@ -75,3 +75,4 @@ export { agentChannels } from "./agent_channels.js";
 export { channelMessages } from "./channel_messages.js";
 export { channelMemberships } from "./channel_memberships.js";
 export { channelDeliberations, channelDeliberationPositions, channelDeliberationRebuttals } from "./channel_deliberations.js";
+export { bugReports } from "./bug_reports.js";
