@@ -357,7 +357,7 @@ export function Layout() {
                 {/* Resize handle */}
                 {sidebarOpen && (
                   <div
-                    className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-ring/30 active:bg-ring/50 transition-colors z-10"
+                    className="absolute top-0 -right-1 w-3 h-full cursor-col-resize group z-10 flex items-center justify-center"
                     onMouseDown={(e) => {
                       e.preventDefault();
                       const startX = e.clientX;
@@ -372,7 +372,9 @@ export function Layout() {
                       document.addEventListener("mousemove", onMove);
                       document.addEventListener("mouseup", onUp);
                     }}
-                  />
+                  >
+                    <div className="w-0.5 h-8 rounded-full bg-border group-hover:bg-ring/60 group-active:bg-ring transition-colors" />
+                  </div>
                 )}
               </div>
             </div>

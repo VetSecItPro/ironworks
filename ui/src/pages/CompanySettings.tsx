@@ -477,7 +477,7 @@ export function CompanySettings() {
     ]);
   }, [setBreadcrumbs, selectedCompany?.name]);
 
-  if (!selectedCompany) {
+  if (!selectedCompany || !selectedCompanyId) {
     return (
       <div className="text-sm text-muted-foreground">
         No company selected. Select a company from the switcher above.

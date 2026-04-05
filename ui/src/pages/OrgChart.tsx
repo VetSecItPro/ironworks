@@ -413,7 +413,7 @@ export function OrgChart() {
   }
 
   return (
-    <div className="flex flex-col" style={{ height: "calc(100vh - 80px)" }}>
+    <div className="flex flex-col -mx-6 -mt-4 -mb-6 px-2 pt-2" style={{ height: "calc(100vh - 48px)" }}>
     <div className="mb-2 flex items-center justify-start gap-2 shrink-0">
       <Link to="/company/import">
         <Button variant="outline" size="sm">
