@@ -10,6 +10,7 @@ import {
   agentRuntimeState,
   agentTaskSessions,
   agentWakeupRequests,
+  channelMessages,
   costEvents,
   heartbeatRunEvents,
   heartbeatRuns,
@@ -60,7 +61,7 @@ import {
 import { instanceSettingsService } from "./instance-settings.js";
 import { logActivity } from "./activity-log.js";
 import { buildMorningBriefing, detectContextDrift, saveSessionState, getLatestSessionState } from "./session-state.js";
-import { channelHealth, findAgentDepartmentChannel, findCompanyChannel, getPendingMentions, getRecentMessages, postMessage as postChannelMessage } from "./channels.js";
+import { agentCognitiveLoad, channelHealth, detectCrossChannelOverlap, ensureProjectChannel, findAgentDepartmentChannel, findCompanyChannel, generateOnboardingReplay, getHighSignalMessages, getPendingDeliberations, getPendingMentions, getRecentMessages, postMessage as postChannelMessage } from "./channels.js";
 import { webSearch, isResearchTask, extractSearchQuery } from "./web-search.js";
 import { redactCurrentUserText, redactCurrentUserValue } from "../log-redaction.js";
 import {
@@ -3027,15 +3028,17 @@ export function heartbeatService(db: Db) {
     }
 
     // Inject recent channel messages so agents stay aware of team activity.
-    // CEO reads the #company channel (last 10). All others read their department
-    // channel (last 5). Failures are non-fatal - never block agent work.
+    // Uses token-aware priority ordering (Feature 5 - Phase 8).
+    // CEO reads the #company channel. All others read their department channel.
+    // Failures are non-fatal - never block agent work.
     try {
+      const CHANNEL_TOKEN_BUDGET = 2000;
       const agentRoleLower = (agent.role ?? "").toLowerCase();
       const isCeo = /\b(ceo|chief executive)\b/.test(agentRoleLower);
       if (isCeo) {
         const companyChannel = await findCompanyChannel(db, agent.companyId);
         if (companyChannel) {
-          const msgs = await getRecentMessages(db, companyChannel.id, 10);
+          const msgs = await getHighSignalMessages(db, companyChannel.id, agent.id, CHANNEL_TOKEN_BUDGET);
           if (msgs.length > 0) {
             context.ironworksCompanyChannelUpdates = msgs.map((m) => ({
               author: m.authorAgentId ?? m.authorUserId ?? "system",
@@ -3048,7 +3051,7 @@ export function heartbeatService(db: Db) {
       } else {
         const deptChannel = await findAgentDepartmentChannel(db, agent.companyId, agent.department ?? null);
         if (deptChannel) {
-          const msgs = await getRecentMessages(db, deptChannel.id, 5);
+          const msgs = await getHighSignalMessages(db, deptChannel.id, agent.id, CHANNEL_TOKEN_BUDGET);
           if (msgs.length > 0) {
             context.ironworksTeamChannelUpdates = msgs.map((m) => ({
               author: m.authorAgentId ?? m.authorUserId ?? "system",
@@ -3061,6 +3064,38 @@ export function heartbeatService(db: Db) {
       }
     } catch (err) {
       logger.debug({ err, agentId: agent.id }, "channel context injection failed, skipping");
+    }
+
+    // Phase 8 - Feature 6: Private Scratchpad instruction.
+    // Reinforce concise posting discipline in the context assembly.
+    context.ironworksChannelPosting = "Think through your response privately before posting. Only post substantive messages.";
+
+    // Phase 8 - Feature 8: Conversation Replay for Onboarding.
+    // If the agent has never posted to any channel, inject a briefing of their
+    // department/company channel so they can onboard quickly.
+    try {
+      const [agentPostCount] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(channelMessages)
+        .where(eq(channelMessages.authorAgentId, agent.id));
+      const isNewToChannels = Number(agentPostCount?.count ?? 0) === 0;
+
+      if (isNewToChannels) {
+        const agentRoleLower = (agent.role ?? "").toLowerCase();
+        const isCeo = /\b(ceo|chief executive)\b/.test(agentRoleLower);
+        const targetChannel = isCeo
+          ? await findCompanyChannel(db, agent.companyId)
+          : await findAgentDepartmentChannel(db, agent.companyId, agent.department ?? null);
+
+        if (targetChannel) {
+          const replay = await generateOnboardingReplay(db, targetChannel.id);
+          if (replay.length > 0) {
+            context.ironworksOnboardingReplay = replay;
+          }
+        }
+      }
+    } catch (err) {
+      logger.debug({ err, agentId: agent.id }, "onboarding replay injection failed, skipping");
     }
 
     // Inject pending @mentions as high-priority context so agents respond to
@@ -3078,6 +3113,22 @@ export function heartbeatService(db: Db) {
       }
     } catch (err) {
       logger.debug({ err, agentId: agent.id }, "pending mentions injection failed, skipping");
+    }
+
+    // Inject pending deliberations so agents respond in parallel without waiting.
+    // Failures are non-fatal.
+    try {
+      const pendingDeliberations = await getPendingDeliberations(db, agent.id, agent.companyId);
+      if (pendingDeliberations.length > 0) {
+        context.ironworksPendingDeliberations = pendingDeliberations.map((d) => ({
+          deliberationId: d.deliberationId,
+          channel: `#${d.channelName}`,
+          topic: d.topic,
+          instruction: `You are invited to a deliberation on "${d.topic}". Post your position as a reply in #${d.channelName}.`,
+        }));
+      }
+    } catch (err) {
+      logger.debug({ err, agentId: agent.id }, "pending deliberations injection failed, skipping");
     }
 
     // Inject channel health status for department heads if the channel is not healthy.
@@ -3108,6 +3159,40 @@ export function heartbeatService(db: Db) {
       }
     } catch (err) {
       logger.debug({ err, agentId: agent.id }, "channel health injection failed, skipping");
+    }
+
+    // Phase 8 - Feature 10: Cognitive Load Balancing.
+    // VP HR gets a load report listing overloaded and underutilized agents.
+    try {
+      const isVpHr = /\b(vp|vice president|head|director)\b.*\b(hr|human resources|people)\b|\b(hr|human resources|people)\b.*\b(vp|vice president|head|director)\b/i.test(agent.role ?? "");
+      if (isVpHr) {
+        const allAgents = await db
+          .select({ id: agents.id, name: agents.name })
+          .from(agents)
+          .where(and(eq(agents.companyId, agent.companyId), eq(agents.status, "active")));
+
+        const loadResults = await Promise.all(
+          allAgents.map(async (a) => {
+            const load = await agentCognitiveLoad(db, a.id);
+            return { name: a.name, ...load };
+          }),
+        );
+
+        const overloaded = loadResults.filter((r) => r.loadScore > 80);
+        const underutilized = loadResults.filter((r) => r.loadScore < 20);
+
+        if (overloaded.length > 0 || underutilized.length > 0) {
+          context.ironworksCognitiveLoadReport = {
+            overloaded: overloaded.map((r) => ({ name: r.name, score: r.loadScore, openIssues: r.openIssues })),
+            underutilized: underutilized.map((r) => ({ name: r.name, score: r.loadScore, openIssues: r.openIssues })),
+            advisory: overloaded.length > 0
+              ? `${overloaded.map((r) => r.name).join(", ")} appear overloaded. Consider redistributing tasks.`
+              : `${underutilized.map((r) => r.name).join(", ")} have capacity for more work.`,
+          };
+        }
+      }
+    } catch (err) {
+      logger.debug({ err, agentId: agent.id }, "cognitive load report injection failed, skipping");
     }
 
     // Every 5th run: check for context drift and inject refocus prompt if detected.
@@ -4038,6 +4123,32 @@ export function heartbeatService(db: Db) {
                   body: `Completed work on: ${issueTitle}`,
                   messageType: "status_update",
                 });
+              }
+
+              // Phase 8 - Feature 9: Preemptive Communication.
+              // Also post a brief update to the project channel if the issue belongs to a project.
+              const projectId = issueContext?.projectId ?? null;
+              if (projectId) {
+                try {
+                  const projectRow = await db
+                    .select({ name: projects.name })
+                    .from(projects)
+                    .where(and(eq(projects.id, projectId), eq(projects.companyId, agent.companyId)))
+                    .then((rows) => rows[0] ?? null);
+
+                  if (projectRow) {
+                    const projectChannelId = await ensureProjectChannel(db, agent.companyId, projectId, projectRow.name);
+                    await postChannelMessage(db, {
+                      channelId: projectChannelId,
+                      companyId: agent.companyId,
+                      authorAgentId: agent.id,
+                      body: `Update on ${projectRow.name}: completed "${issueTitle}"`,
+                      messageType: "status_update",
+                    });
+                  }
+                } catch (projChannelErr) {
+                  logger.debug({ err: projChannelErr, agentId: agent.id }, "project channel post-run message failed, skipping");
+                }
               }
             }
           } catch (channelErr) {

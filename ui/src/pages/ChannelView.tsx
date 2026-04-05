@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, Link } from "@/lib/router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Send, Crown, Pin, PinOff, ChevronDown, ChevronRight, BarChart2 } from "lucide-react";
+import { Send, Crown, Pin, PinOff, ChevronDown, ChevronRight, BarChart2, Brain, GitPullRequest, Users } from "lucide-react";
 import { useCompany } from "../context/CompanyContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { channelsApi } from "../api/channels";
@@ -54,6 +54,8 @@ const MESSAGE_TYPE_STYLES: Record<string, string> = {
   decision: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-500",
   escalation: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
   announcement: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
+  deliberation_start: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400",
+  deliberation_summary: "bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400",
 };
 
 function MessageTypeBadge({ type }: { type: string }) {
@@ -85,6 +87,51 @@ function matchesFilter(msg: ChannelMessage, mode: FilterMode): boolean {
   return msg.messageType === "decision" || msg.messageType === "escalation";
 }
 
+// ---- Reasoning collapsible ----
+function ReasoningBlock({ reasoning }: { reasoning: string }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className="mt-1">
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <Brain className="h-3 w-3" />
+        {expanded ? "Hide reasoning" : "Show reasoning"}
+        {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+      </button>
+      {expanded && (
+        <div className="mt-1 ml-3 border-l-2 border-border pl-3 text-[12px] text-muted-foreground whitespace-pre-wrap break-words bg-muted/20 rounded-sm py-1 pr-2">
+          {reasoning}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---- Quorum Indicator (Feature 7) ----
+function QuorumIndicator({ companyId, channelId, messageId }: { companyId: string; channelId: string; messageId: string }) {
+  const { data } = useQuery({
+    queryKey: queryKeys.channels.quorum(companyId, channelId, messageId),
+    queryFn: () => channelsApi.quorum(companyId, channelId, messageId),
+    staleTime: 30_000,
+  });
+
+  if (!data || data.required.length === 0) return null;
+
+  return (
+    <div className={cn(
+      "flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full shrink-0 mt-0.5",
+      data.quorumReached
+        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+        : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+    )}>
+      <Users className="h-2.5 w-2.5" />
+      {data.responded.length}/{data.required.length}
+    </div>
+  );
+}
+
 // ---- Single message row ----
 interface MessageRowProps {
   msg: ChannelMessage;
@@ -94,9 +141,12 @@ interface MessageRowProps {
   onPin?: (messageId: string) => void;
   onUnpin?: (messageId: string) => void;
   isPinned?: boolean;
+  onCreateIssue?: (messageId: string) => void;
+  companyId?: string;
+  channelId?: string;
 }
 
-function MessageRow({ msg, agentMap, issueMap, replyMap, onPin, onUnpin, isPinned }: MessageRowProps) {
+function MessageRow({ msg, agentMap, issueMap, replyMap, onPin, onUnpin, isPinned, onCreateIssue, companyId, channelId }: MessageRowProps) {
   const isBoard = !msg.authorAgentId && !msg.authorUserId;
   const agent = msg.authorAgentId ? agentMap.get(msg.authorAgentId) : null;
   const authorName = isBoard ? "Board" : (agent?.name ?? "User");
@@ -111,16 +161,30 @@ function MessageRow({ msg, agentMap, issueMap, replyMap, onPin, onUnpin, isPinne
         isPinned && "bg-amber-50/20 dark:bg-amber-900/5",
       )}
     >
-      {/* Pin / unpin button shown on hover */}
-      {(onPin || onUnpin) && (
-        <button
-          onClick={() => isPinned ? onUnpin?.(msg.id) : onPin?.(msg.id)}
-          className="absolute right-3 top-2 hidden group-hover:flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-          title={isPinned ? "Unpin message" : "Pin message"}
-        >
-          {isPinned ? <PinOff className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
-        </button>
-      )}
+      {/* Action buttons shown on hover */}
+      <div className="absolute right-3 top-2 hidden group-hover:flex items-center gap-1.5">
+        {/* Create Issue button */}
+        {onCreateIssue && !msg.linkedIssueId && msg.messageType === "message" && (
+          <button
+            onClick={() => onCreateIssue(msg.id)}
+            className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+            title="Create issue from message"
+          >
+            <GitPullRequest className="h-3 w-3" />
+          </button>
+        )}
+        {/* Pin / unpin button */}
+        {(onPin || onUnpin) && (
+          <button
+            onClick={() => isPinned ? onUnpin?.(msg.id) : onPin?.(msg.id)}
+            className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+            title={isPinned ? "Unpin message" : "Pin message"}
+          >
+            {isPinned ? <PinOff className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
+          </button>
+        )}
+      </div>
+
       {/* Author icon */}
       <div className="shrink-0 mt-0.5">
         {isBoard ? (
@@ -164,6 +228,10 @@ function MessageRow({ msg, agentMap, issueMap, replyMap, onPin, onUnpin, isPinne
               BOARD
             </span>
           )}
+          {/* Quorum indicator for decision messages */}
+          {msg.messageType === "decision" && companyId && channelId && (
+            <QuorumIndicator companyId={companyId} channelId={channelId} messageId={msg.id} />
+          )}
           <span className="ml-auto text-[11px] text-muted-foreground shrink-0">
             {formatTime(msg.createdAt)}
           </span>
@@ -188,6 +256,9 @@ function MessageRow({ msg, agentMap, issueMap, replyMap, onPin, onUnpin, isPinne
         <p className="text-[13px] text-foreground/90 whitespace-pre-wrap break-words">
           {msg.body}
         </p>
+
+        {/* Transparent reasoning collapsible */}
+        {msg.reasoning && <ReasoningBlock reasoning={msg.reasoning} />}
 
         {/* Linked issue chip */}
         {linkedIssue && (
@@ -417,6 +488,17 @@ export function ChannelView() {
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   };
 
+  // Create issue from message mutation (Feature 2)
+  const createIssueMutation = useMutation({
+    mutationFn: (messageId: string) =>
+      channelsApi.createIssueFromMessage(selectedCompanyId!, channelId!, messageId, {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.channels.messages(selectedCompanyId!, channelId!),
+      });
+    },
+  });
+
   const filteredMessages = messages.filter((m) => matchesFilter(m, filter));
 
   const channelName = channel?.name ?? channelId ?? "";
@@ -527,6 +609,9 @@ export function ChannelView() {
                     isPinned={pinnedMessages.some((p) => p.id === msg.id)}
                     onPin={(id) => pinMutation.mutate(id)}
                     onUnpin={(id) => unpinMutation.mutate(id)}
+                    onCreateIssue={(id) => createIssueMutation.mutate(id)}
+                    companyId={selectedCompanyId!}
+                    channelId={channelId!}
                   />
                 ))}
               </>

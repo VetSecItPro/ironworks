@@ -24,6 +24,7 @@ export const channelMessages = pgTable(
     mentions: jsonb("mentions").$type<string[]>().notNull().default([]),
     linkedIssueId: uuid("linked_issue_id"),
     replyToId: uuid("reply_to_id").references((): AnyPgColumn => channelMessages.id, { onDelete: "set null" }),
+    reasoning: text("reasoning"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({

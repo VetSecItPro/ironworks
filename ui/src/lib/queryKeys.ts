@@ -190,6 +190,12 @@ export const queryKeys = {
       ["channels", companyId, channelId, "pinned"] as const,
     analytics: (companyId: string, channelId: string, periodDays?: number) =>
       ["channels", companyId, channelId, "analytics", periodDays ?? 30] as const,
+    expertiseMap: (companyId: string) =>
+      ["channels", companyId, "expertise-map"] as const,
+    summary: (companyId: string, channelId: string, days?: number) =>
+      ["channels", companyId, channelId, "summary", days ?? 7] as const,
+    quorum: (companyId: string, channelId: string, messageId: string) =>
+      ["channels", companyId, channelId, "quorum", messageId] as const,
   },
   plugins: {
     all: ["plugins"] as const,

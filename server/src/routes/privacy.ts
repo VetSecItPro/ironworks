@@ -6,6 +6,7 @@ import { checkContractorLifecycles } from "../services/contractor-lifecycle.js";
 import { decayStaleMemories } from "../services/agent-memory.js";
 import { generatePromptOptimizationSuggestion } from "../services/agent-reflection.js";
 import { runAllWeeklyReports, runAllMonthlyCostSummaries } from "../services/weekly-reports.js";
+import { postStandingAgendas } from "../services/standing-agendas.js";
 import { runAllDailyStandups } from "../services/daily-standup.js";
 import { captureAllPerformanceSnapshots } from "../services/performance-score.js";
 import { runAllAchievementChecks } from "../services/achievements.js";
@@ -685,10 +686,12 @@ export function startRetentionScheduler(db: Db): NodeJS.Timeout {
   // Weekly reports: Sunday 18:00 CT
   // Daily standups: every day 08:00 CT
   // Monthly cost summaries: 1st of each month 06:00 CT
+  // Standing agendas: Monday 09:00 CT
   const MINUTE_MS = 60 * 1000;
   let lastStandupDate = "";
   let lastWeeklyDate = "";
   let lastMonthlyDate = "";
+  let lastAgendaDate = "";
 
   setInterval(() => {
     const now = new Date();
@@ -708,6 +711,7 @@ export function startRetentionScheduler(db: Db): NodeJS.Timeout {
     const ctHour = hourMatch ? parseInt(hourMatch[1], 10) : -1;
     const ctMinute = hourMatch ? parseInt(hourMatch[2], 10) : -1;
     const isSunday = ctParts.startsWith("Sun");
+    const isMonday = ctParts.startsWith("Mon");
     const dateKey = now.toLocaleDateString("en-CA", { timeZone: "America/Chicago" });
 
     // Daily standups at 08:00 CT (run once per day)
@@ -744,6 +748,14 @@ export function startRetentionScheduler(db: Db): NodeJS.Timeout {
       lastMonthlyDate = dateKey;
       runAllMonthlyCostSummaries(db).catch((err) =>
         logger.error({ err }, "scheduled monthly cost summaries failed"),
+      );
+    }
+
+    // Standing agendas on Monday at 09:00 CT
+    if (isMonday && ctHour === 9 && ctMinute === 0 && lastAgendaDate !== dateKey) {
+      lastAgendaDate = dateKey;
+      postStandingAgendas(db).catch((err) =>
+        logger.error({ err }, "scheduled standing agendas failed"),
       );
     }
   }, MINUTE_MS);
