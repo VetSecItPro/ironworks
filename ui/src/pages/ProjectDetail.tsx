@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useParams, useNavigate, useLocation, Navigate } from "@/lib/router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { PROJECT_COLORS, isUuidLike, type BudgetPolicySummary } from "@ironworksai/shared";
+import { PROJECT_COLORS, isUuidLike, type BudgetPolicySummary, type Agent, type ActivityEvent } from "@ironworksai/shared";
 import { budgetsApi } from "../api/budgets";
 import { projectsApi } from "../api/projects";
 import { issuesApi } from "../api/issues";
 import { agentsApi } from "../api/agents";
 import { heartbeatsApi } from "../api/heartbeats";
 import { assetsApi } from "../api/assets";
+import { activityApi } from "../api/activity";
+import { ActivityRow } from "../components/ActivityRow";
 import { usePanel } from "../context/PanelContext";
 import { useCompany } from "../context/CompanyContext";
 import { useToast } from "../context/ToastContext";
@@ -27,7 +29,7 @@ import { PluginSlotMount, PluginSlotOutlet, usePluginSlots } from "@/plugins/slo
 
 /* ── Top-level tab types ── */
 
-type ProjectBaseTab = "overview" | "list" | "configuration" | "budget";
+type ProjectBaseTab = "overview" | "list" | "configuration" | "budget" | "activity";
 type ProjectPluginTab = `plugin:${string}`;
 type ProjectTab = ProjectBaseTab | ProjectPluginTab;
 
@@ -43,20 +45,27 @@ function resolveProjectTab(pathname: string, projectId: string): ProjectTab | nu
   if (tab === "overview") return "overview";
   if (tab === "configuration") return "configuration";
   if (tab === "budget") return "budget";
+  if (tab === "activity") return "activity";
   if (tab === "issues") return "list";
   return null;
 }
 
 /* ── Overview tab content ── */
 
+function formatBudgetCents(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
 function OverviewContent({
   project,
   onUpdate,
   imageUploadHandler,
+  budgetSummary,
 }: {
   project: { description: string | null; status: string; targetDate: string | null };
   onUpdate: (data: Record<string, unknown>) => void;
   imageUploadHandler?: (file: File) => Promise<string>;
+  budgetSummary?: BudgetPolicySummary;
 }) {
   return (
     <div className="space-y-6">
@@ -84,6 +93,42 @@ function OverviewContent({
           </div>
         )}
       </div>
+
+      {/* Budget allocation vs spent */}
+      {budgetSummary && budgetSummary.amount > 0 && (
+        <div className="rounded-lg border border-border p-4 space-y-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Budget</h3>
+          <div className="grid grid-cols-3 gap-4 text-sm">
+            <div>
+              <span className="text-muted-foreground text-xs">Allocated</span>
+              <p className="font-mono font-medium">{formatBudgetCents(budgetSummary.amount)}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground text-xs">Spent</span>
+              <p className="font-mono font-medium">{formatBudgetCents(budgetSummary.observedAmount)}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground text-xs">Remaining</span>
+              <p className={cn("font-mono font-medium", budgetSummary.remainingAmount < 0 ? "text-red-500" : "")}>
+                {formatBudgetCents(budgetSummary.remainingAmount)}
+              </p>
+            </div>
+          </div>
+          <div className="h-2 bg-muted rounded-full overflow-hidden">
+            <div
+              className={cn(
+                "h-full rounded-full transition-[width] duration-500",
+                budgetSummary.utilizationPercent > 90 ? "bg-red-500" :
+                budgetSummary.utilizationPercent > 70 ? "bg-amber-500" : "bg-emerald-500",
+              )}
+              style={{ width: `${Math.min(budgetSummary.utilizationPercent, 100)}%` }}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {budgetSummary.utilizationPercent.toFixed(1)}% utilized
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -197,6 +242,107 @@ function ProjectIssuesList({ projectId, companyId }: { projectId: string; compan
       viewStateKey={`ironworks:project-view:${projectId}`}
       onUpdateIssue={(id, data) => updateIssue.mutate({ id, data })}
     />
+  );
+}
+
+/* ── Activity tab for project ── */
+
+function ProjectActivityTab({ projectId, companyId }: { projectId: string; companyId: string }) {
+  const { data: activity, isLoading } = useQuery({
+    queryKey: [...queryKeys.activity(companyId), "project", projectId],
+    queryFn: () => activityApi.list(companyId, { entityType: "project", entityId: projectId }),
+    enabled: !!companyId && !!projectId,
+  });
+
+  const { data: agents } = useQuery({
+    queryKey: queryKeys.agents.list(companyId),
+    queryFn: () => agentsApi.list(companyId),
+    enabled: !!companyId,
+  });
+
+  const agentMap = useMemo(() => {
+    const map = new Map<string, Agent>();
+    for (const a of agents ?? []) map.set(a.id, a);
+    return map;
+  }, [agents]);
+
+  const entityNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const a of agents ?? []) map.set(`agent:${a.id}`, a.name);
+    return map;
+  }, [agents]);
+
+  // Also fetch all project-related issue activity
+  const { data: issueActivity } = useQuery({
+    queryKey: [...queryKeys.issues.listByProject(companyId, projectId), "activity"],
+    queryFn: async () => {
+      const issues = await issuesApi.list(companyId, { projectId });
+      const allActivity: ActivityEvent[] = [];
+      // Get activity for each issue in this project (via company activity filtered)
+      const companyActivity = await activityApi.list(companyId);
+      const projectIssueIds = new Set(issues.map((i) => i.id));
+      for (const evt of companyActivity) {
+        if (evt.entityType === "issue" && projectIssueIds.has(evt.entityId)) {
+          allActivity.push(evt);
+        }
+        if (evt.entityType === "project" && evt.entityId === projectId) {
+          allActivity.push(evt);
+        }
+      }
+      // Build name maps from issues
+      for (const i of issues) {
+        entityNameMap.set(`issue:${i.id}`, i.identifier ?? i.id.slice(0, 8));
+      }
+      return allActivity.sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+    },
+    enabled: !!companyId && !!projectId,
+  });
+
+  const combinedActivity = useMemo(() => {
+    const seen = new Set<string>();
+    const merged: ActivityEvent[] = [];
+    for (const evt of [...(activity ?? []), ...(issueActivity ?? [])]) {
+      if (!seen.has(evt.id)) {
+        seen.add(evt.id);
+        merged.push(evt);
+      }
+    }
+    return merged.sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+  }, [activity, issueActivity]);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="skeleton h-10 rounded-md" />
+        ))}
+      </div>
+    );
+  }
+
+  if (combinedActivity.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground py-8 text-center">
+        No activity recorded for this project yet.
+      </p>
+    );
+  }
+
+  return (
+    <div className="divide-y divide-border rounded-lg border border-border overflow-hidden">
+      {combinedActivity.slice(0, 50).map((evt) => (
+        <ActivityRow
+          key={evt.id}
+          event={evt}
+          agentMap={agentMap}
+          entityNameMap={entityNameMap}
+        />
+      ))}
+    </div>
   );
 }
 
@@ -359,6 +505,10 @@ export function ProjectDetail() {
       navigate(`/projects/${canonicalProjectRef}/budget`, { replace: true });
       return;
     }
+    if (activeTab === "activity") {
+      navigate(`/projects/${canonicalProjectRef}/activity`, { replace: true });
+      return;
+    }
     if (activeTab === "list") {
       if (filter) {
         navigate(`/projects/${canonicalProjectRef}/issues/${filter}`, { replace: true });
@@ -484,6 +634,9 @@ export function ProjectDetail() {
     if (cachedTab === "budget") {
       return <Navigate to={`/projects/${canonicalProjectRef}/budget`} replace />;
     }
+    if (cachedTab === "activity") {
+      return <Navigate to={`/projects/${canonicalProjectRef}/activity`} replace />;
+    }
     if (isProjectPluginTab(cachedTab)) {
       return <Navigate to={`/projects/${canonicalProjectRef}?tab=${encodeURIComponent(cachedTab)}`} replace />;
     }
@@ -507,6 +660,8 @@ export function ProjectDetail() {
       navigate(`/projects/${canonicalProjectRef}/overview`);
     } else if (tab === "budget") {
       navigate(`/projects/${canonicalProjectRef}/budget`);
+    } else if (tab === "activity") {
+      navigate(`/projects/${canonicalProjectRef}/activity`);
     } else if (tab === "configuration") {
       navigate(`/projects/${canonicalProjectRef}/configuration`);
     } else {
@@ -575,6 +730,7 @@ export function ProjectDetail() {
           items={[
             { value: "list", label: "Issues" },
             { value: "overview", label: "Overview" },
+            { value: "activity", label: "Activity" },
             { value: "configuration", label: "Configuration" },
             { value: "budget", label: "Budget" },
             ...pluginTabItems.map((item) => ({
@@ -592,6 +748,7 @@ export function ProjectDetail() {
         <OverviewContent
           project={project}
           onUpdate={(data) => updateProject.mutate(data)}
+          budgetSummary={projectBudgetSummary}
           imageUploadHandler={async (file) => {
             const asset = await uploadImage.mutateAsync(file);
             return asset.contentPath;
@@ -601,6 +758,10 @@ export function ProjectDetail() {
 
       {activeTab === "list" && project?.id && resolvedCompanyId && (
         <ProjectIssuesList projectId={project.id} companyId={resolvedCompanyId} />
+      )}
+
+      {activeTab === "activity" && project?.id && resolvedCompanyId && (
+        <ProjectActivityTab projectId={project.id} companyId={resolvedCompanyId} />
       )}
 
       {activeTab === "configuration" && (

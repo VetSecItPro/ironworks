@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FeedbackModal } from "./FeedbackModal";
+import { ChangelogModal, ChangelogTrigger } from "./ChangelogModal";
 import { useQuery } from "@tanstack/react-query";
 import { Moon, Settings, Sun } from "lucide-react";
 import { Link, Outlet, useLocation, useNavigate, useParams } from "@/lib/router";
@@ -19,6 +20,7 @@ import { ToastViewport } from "./ToastViewport";
 import { MobileBottomNav } from "./MobileBottomNav";
 import { WorktreeBanner } from "./WorktreeBanner";
 import { DevRestartBanner } from "./DevRestartBanner";
+import { AskAIButton } from "./AskAIButton";
 import { useDialog } from "../context/DialogContext";
 import { usePanel } from "../context/PanelContext";
 import { useCompany } from "../context/CompanyContext";
@@ -74,6 +76,7 @@ export function Layout() {
   const [mobileNavVisible, setMobileNavVisible] = useState(true);
   const [instanceSettingsTarget, setInstanceSettingsTarget] = useState<string>(() => readRememberedInstanceSettingsPath());
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [changelogOpen, setChangelogOpen] = useState(false);
   const nextTheme = theme === "dark" ? "light" : "dark";
   const matchedCompany = useMemo(() => {
     if (!companyPrefix) return null;
@@ -341,12 +344,14 @@ export function Layout() {
                   requestedPrefix={companyPrefix ?? selectedCompany?.issuePrefix}
                 />
               ) : (
-                <Outlet />
+                <div className="ironworks-container">
+                  <Outlet />
+                </div>
               )}
             </main>
             <PropertiesPanel />
           </div>
-          <footer className="flex items-center justify-center gap-3 px-4 py-1 border-t border-border text-[11px] text-muted-foreground shrink-0">
+          <footer className="flex items-center justify-center gap-3 px-4 py-1 border-t border-border text-[11px] text-muted-foreground shrink-0 print:hidden">
             <span className="opacity-60">IronWorks</span>
             <span className="text-border/50">·</span>
             <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>
@@ -354,6 +359,7 @@ export function Layout() {
             <Link to="/aup" className="hover:text-foreground transition-colors">AUP</Link>
             <span className="text-border/50">·</span>
             <button type="button" onClick={() => setFeedbackOpen(true)} className="hover:text-foreground transition-colors">Report a Bug</button>
+              <ChangelogTrigger onClick={() => setChangelogOpen(true)} />
               {isInstanceAdmin && (
                 <>
                   <span className="text-border/50">·</span>
@@ -376,7 +382,9 @@ export function Layout() {
       <NewAgentDialog />
       <HireAgentDialog />
       <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
+      <ChangelogModal open={changelogOpen} onOpenChange={setChangelogOpen} />
       <ToastViewport />
+      <AskAIButton />
     </div>
   );
 }

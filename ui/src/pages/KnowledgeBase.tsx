@@ -62,6 +62,7 @@ export function KnowledgeBase() {
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [showHistory, setShowHistory] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [compareRevision, setCompareRevision] = useState<number | null>(null);
   const editBodyRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -83,6 +84,12 @@ export function KnowledgeBase() {
     queryKey: ["knowledge", "revisions", selectedPageId],
     queryFn: () => knowledgeApi.listRevisions(selectedPageId!),
     enabled: !!selectedPageId && showHistory,
+  });
+
+  const { data: compareRevisionData } = useQuery({
+    queryKey: ["knowledge", "revision", selectedPageId, compareRevision],
+    queryFn: () => knowledgeApi.getRevision(selectedPageId!, compareRevision!),
+    enabled: !!selectedPageId && compareRevision !== null,
   });
 
   const filteredPages = useMemo(() => {
@@ -357,26 +364,58 @@ export function KnowledgeBase() {
             <div className="flex-1 overflow-y-auto">
               {showHistory ? (
                 <div className="p-4 space-y-2">
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">Revision History</h3>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Revision History</h3>
+                    {compareRevision !== null && (
+                      <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setCompareRevision(null)}>
+                        <X className="h-3 w-3 mr-1" />Close Diff
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Version diff view */}
+                  {compareRevision !== null && compareRevisionData && selectedPage && (
+                    <div className="rounded-lg border border-border p-3 mb-3 space-y-2">
+                      <div className="text-xs font-medium text-muted-foreground">
+                        Comparing: Revision #{compareRevision} vs Current (#{selectedPage.revisionNumber})
+                      </div>
+                      <SimpleDiff oldText={compareRevisionData.body} newText={selectedPage.body} />
+                    </div>
+                  )}
+
                   {(revisions ?? []).map((rev) => (
                     <div key={rev.id} className="flex items-center justify-between gap-2 rounded-lg border border-border p-3">
                       <div className="min-w-0">
                         <div className="text-sm font-medium">Revision #{rev.revisionNumber}</div>
                         <div className="text-xs text-muted-foreground">
-                          {rev.changeSummary ?? "No summary"} · {timeAgo(rev.createdAt)}
+                          {rev.changeSummary ?? "No summary"} - {timeAgo(rev.createdAt)}
                         </div>
                       </div>
-                      {rev.revisionNumber !== selectedPage.revisionNumber && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs shrink-0"
-                          disabled={revertPage.isPending}
-                          onClick={() => revertPage.mutate(rev.revisionNumber)}
-                        >
-                          <Undo2 className="h-3 w-3 mr-1" />Revert
-                        </Button>
-                      )}
+                      <div className="flex items-center gap-1 shrink-0">
+                        {rev.revisionNumber !== selectedPage.revisionNumber && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 text-xs"
+                              onClick={() => setCompareRevision(
+                                compareRevision === rev.revisionNumber ? null : rev.revisionNumber,
+                              )}
+                            >
+                              <Eye className="h-3 w-3 mr-1" />{compareRevision === rev.revisionNumber ? "Hide Diff" : "Compare"}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-xs"
+                              disabled={revertPage.isPending}
+                              onClick={() => revertPage.mutate(rev.revisionNumber)}
+                            >
+                              <Undo2 className="h-3 w-3 mr-1" />Revert
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   ))}
                   {(revisions ?? []).length === 0 && <p className="text-sm text-muted-foreground">No revisions yet.</p>}
@@ -429,4 +468,86 @@ export function KnowledgeBase() {
       </Dialog>
     </div>
   );
+}
+
+/**
+ * Simple line-by-line text diff component.
+ * Shows removed lines in red, added lines in green, unchanged lines dimmed.
+ */
+function SimpleDiff({ oldText, newText }: { oldText: string; newText: string }) {
+  const oldLines = oldText.split("\n");
+  const newLines = newText.split("\n");
+
+  // Simple LCS-based diff
+  const diff = computeLineDiff(oldLines, newLines);
+
+  return (
+    <div className="font-mono text-[11px] leading-5 overflow-x-auto max-h-64 overflow-y-auto rounded border border-border">
+      {diff.map((line, i) => (
+        <div
+          key={i}
+          className={cn(
+            "px-3 py-0.5 whitespace-pre-wrap",
+            line.type === "removed"
+              ? "bg-red-500/10 text-red-400"
+              : line.type === "added"
+                ? "bg-emerald-500/10 text-emerald-400"
+                : "text-muted-foreground/60",
+          )}
+        >
+          <span className="inline-block w-4 text-right mr-2 select-none opacity-50">
+            {line.type === "removed" ? "-" : line.type === "added" ? "+" : " "}
+          </span>
+          {line.text}
+        </div>
+      ))}
+      {diff.length === 0 && (
+        <div className="px-3 py-2 text-muted-foreground text-center">No differences found.</div>
+      )}
+    </div>
+  );
+}
+
+interface DiffLine {
+  type: "added" | "removed" | "unchanged";
+  text: string;
+}
+
+function computeLineDiff(oldLines: string[], newLines: string[]): DiffLine[] {
+  // Simple Myers-like diff using LCS
+  const m = oldLines.length;
+  const n = newLines.length;
+
+  // Build LCS table
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (oldLines[i - 1] === newLines[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
+  }
+
+  // Backtrack to build diff
+  const result: DiffLine[] = [];
+  let i = m;
+  let j = n;
+
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && oldLines[i - 1] === newLines[j - 1]) {
+      result.unshift({ type: "unchanged", text: oldLines[i - 1] });
+      i--;
+      j--;
+    } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+      result.unshift({ type: "added", text: newLines[j - 1] });
+      j--;
+    } else if (i > 0) {
+      result.unshift({ type: "removed", text: oldLines[i - 1] });
+      i--;
+    }
+  }
+
+  return result;
 }

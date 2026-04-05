@@ -25,6 +25,7 @@ import { IssueWorkspaceCard } from "../components/IssueWorkspaceCard";
 import { LiveRunWidget } from "../components/LiveRunWidget";
 import type { MentionOption } from "../components/MarkdownEditor";
 import { ScrollToBottom } from "../components/ScrollToBottom";
+import { SLATimer } from "../components/SLATimer";
 import { StatusIcon } from "../components/StatusIcon";
 import { PriorityIcon } from "../components/PriorityIcon";
 import { StatusBadge } from "../components/StatusBadge";
@@ -45,6 +46,7 @@ import {
   ChevronRight,
   Copy,
   EyeOff,
+  GitBranch,
   Hexagon,
   ListTree,
   MessageSquare,
@@ -54,6 +56,7 @@ import {
   SlidersHorizontal,
   Trash2,
 } from "lucide-react";
+import { IssueDependencyGraph } from "../components/IssueDependencyGraph";
 import type { ActivityEvent } from "@ironworksai/shared";
 import type { Agent, IssueAttachment } from "@ironworksai/shared";
 
@@ -483,7 +486,27 @@ export function IssueDetail() {
 
   const updateIssue = useMutation({
     mutationFn: (data: Record<string, unknown>) => issuesApi.update(issueId!, data),
-    onSuccess: () => {
+    onMutate: async (data) => {
+      // Optimistic update: immediately reflect status/priority changes
+      if (!issueId) return;
+      await queryClient.cancelQueries({ queryKey: queryKeys.issues.detail(issueId) });
+      const previousIssue = queryClient.getQueryData(queryKeys.issues.detail(issueId));
+      if (previousIssue && typeof previousIssue === "object") {
+        queryClient.setQueryData(queryKeys.issues.detail(issueId), {
+          ...previousIssue,
+          ...data,
+        });
+      }
+      return { previousIssue };
+    },
+    onError: (_err, _data, context) => {
+      // Revert on error
+      if (context?.previousIssue && issueId) {
+        queryClient.setQueryData(queryKeys.issues.detail(issueId), context.previousIssue);
+      }
+      pushToast({ title: "Failed to update issue", tone: "error" });
+    },
+    onSettled: () => {
       invalidateIssue();
     },
   });
@@ -716,6 +739,35 @@ export function IssueDetail() {
         </div>
       )}
 
+      {hasLiveRuns && (() => {
+        const activeAgentId = activeRun?.agentId ?? (liveRuns ?? [])[0]?.agentId;
+        const activeAgent = activeAgentId ? (agents ?? []).find((a) => a.id === activeAgentId) : null;
+        return (
+          <div className="flex items-center gap-2.5 rounded-md border border-cyan-500/30 bg-cyan-500/10 px-3.5 py-2.5 text-sm">
+            <span className="relative flex h-2.5 w-2.5 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500" />
+            </span>
+            <span className="text-cyan-700 dark:text-cyan-300 font-medium">
+              {activeAgent?.name ?? "An agent"} is actively working on this issue
+            </span>
+          </div>
+        );
+      })()}
+
+      {/* Active viewer indicator */}
+      <div className="flex items-center gap-1.5">
+        <div className="flex -space-x-1.5">
+          <div
+            className="h-5 w-5 rounded-full bg-foreground/80 border-2 border-background flex items-center justify-center text-[9px] font-medium text-background"
+            title="You"
+          >
+            U
+          </div>
+        </div>
+        <span className="text-[10px] text-muted-foreground">Viewing now</span>
+      </div>
+
       <div className="space-y-3">
         <div className="flex items-center gap-2 min-w-0 flex-wrap">
           <StatusIcon
@@ -870,6 +922,13 @@ export function IssueDetail() {
             return attachment.contentPath;
           }}
         />
+
+        {/* SLA countdown timer */}
+        <SLATimer
+          priority={issue.priority}
+          status={issue.status}
+          createdAt={typeof issue.createdAt === "string" ? issue.createdAt : new Date(issue.createdAt).toISOString()}
+        />
       </div>
 
       <PluginSlotOutlet
@@ -1016,6 +1075,10 @@ export function IssueDetail() {
             <ActivityIcon className="h-3.5 w-3.5" />
             Activity
           </TabsTrigger>
+          <TabsTrigger value="dependencies" className="gap-1.5">
+            <GitBranch className="h-3.5 w-3.5" />
+            Dependencies
+          </TabsTrigger>
           {issuePluginTabItems.map((item) => (
             <TabsTrigger key={item.value} value={item.value}>
               {item.label}
@@ -1125,6 +1188,10 @@ export function IssueDetail() {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="dependencies">
+          <IssueDependencyGraph issue={issue} allIssues={allIssues ?? []} />
         </TabsContent>
 
         {activePluginTab && (

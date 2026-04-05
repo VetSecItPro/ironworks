@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../lib/queryKeys";
 import { dashboardApi } from "../api/dashboard";
@@ -62,4 +62,37 @@ export function usePrefetch(companyId: string | null | undefined) {
       staleTime: STALE,
     });
   }, [companyId, queryClient]);
+}
+
+/**
+ * Returns an onMouseEnter handler that prefetches detail data for
+ * an issue or agent when the user hovers over a link.
+ */
+export function usePrefetchOnHover() {
+  const queryClient = useQueryClient();
+  const STALE = 30_000;
+
+  const prefetchIssue = useCallback(
+    (issueId: string) => {
+      queryClient.prefetchQuery({
+        queryKey: queryKeys.issues.detail(issueId),
+        queryFn: () => issuesApi.get(issueId),
+        staleTime: STALE,
+      });
+    },
+    [queryClient],
+  );
+
+  const prefetchAgent = useCallback(
+    (agentId: string, companyId?: string) => {
+      queryClient.prefetchQuery({
+        queryKey: queryKeys.agents.detail(agentId),
+        queryFn: () => agentsApi.get(agentId, companyId),
+        staleTime: STALE,
+      });
+    },
+    [queryClient],
+  );
+
+  return { prefetchIssue, prefetchAgent };
 }

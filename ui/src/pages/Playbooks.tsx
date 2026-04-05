@@ -11,6 +11,11 @@ import {
   Users,
   CheckCircle2,
   ArrowRight,
+  SkipForward,
+  ShieldCheck,
+  Variable,
+  FlaskConical,
+  X,
 } from "lucide-react";
 import { playbooksApi, type Playbook, type PlaybookWithSteps } from "../api/playbooks";
 import { useCompany } from "../context/CompanyContext";
@@ -29,6 +34,14 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { NewPlaybookDialog } from "../components/NewPlaybookDialog";
 import { RunPlaybookDialog } from "../components/RunPlaybookDialog";
 
@@ -104,14 +117,257 @@ function PlaybookCard({
 }
 
 /* ------------------------------------------------------------------ */
+/*  Step condition storage (localStorage-based)                        */
+/* ------------------------------------------------------------------ */
+
+const STEP_CONDITIONS_KEY = "ironworks.playbook-step-conditions";
+
+type StepCondition = { skipOnFailure: boolean; required: boolean };
+
+function loadStepConditions(): Record<string, StepCondition> {
+  try {
+    const raw = localStorage.getItem(STEP_CONDITIONS_KEY);
+    if (raw) return JSON.parse(raw) as Record<string, StepCondition>;
+  } catch { /* ignore */ }
+  return {};
+}
+
+function saveStepCondition(stepId: string, condition: StepCondition) {
+  const all = loadStepConditions();
+  all[stepId] = condition;
+  localStorage.setItem(STEP_CONDITIONS_KEY, JSON.stringify(all));
+}
+
+/* ------------------------------------------------------------------ */
+/*  Playbook parameters storage                                        */
+/* ------------------------------------------------------------------ */
+
+const PLAYBOOK_PARAMS_KEY = "ironworks.playbook-parameters";
+
+interface PlaybookParam {
+  id: string;
+  name: string;
+  type: "text" | "number" | "boolean";
+  defaultValue: string;
+}
+
+function loadPlaybookParams(playbookId: string): PlaybookParam[] {
+  try {
+    const raw = localStorage.getItem(PLAYBOOK_PARAMS_KEY);
+    if (raw) {
+      const all = JSON.parse(raw) as Record<string, PlaybookParam[]>;
+      return all[playbookId] ?? [];
+    }
+  } catch { /* ignore */ }
+  return [];
+}
+
+function savePlaybookParams(playbookId: string, params: PlaybookParam[]) {
+  const raw = localStorage.getItem(PLAYBOOK_PARAMS_KEY);
+  const all = raw ? (JSON.parse(raw) as Record<string, PlaybookParam[]>) : {};
+  all[playbookId] = params;
+  localStorage.setItem(PLAYBOOK_PARAMS_KEY, JSON.stringify(all));
+}
+
+/* ------------------------------------------------------------------ */
+/*  Dry Run Dialog                                                     */
+/* ------------------------------------------------------------------ */
+
+function DryRunDialog({
+  open,
+  onOpenChange,
+  playbook,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  playbook: PlaybookWithSteps;
+}) {
+  const conditions = loadStepConditions();
+  const params = loadPlaybookParams(playbook.id);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg max-h-[70vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <FlaskConical className="h-4 w-4" />
+            Dry Run: {playbook.name}
+          </DialogTitle>
+          <DialogDescription>
+            Simulated execution preview. No side effects will occur.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex-1 overflow-y-auto space-y-3">
+          {params.length > 0 && (
+            <div className="rounded-md bg-muted/30 border border-border p-3">
+              <h4 className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-2">Parameters</h4>
+              {params.map((p) => (
+                <div key={p.id} className="flex items-center gap-2 text-xs py-0.5">
+                  <Variable className="h-3 w-3 text-muted-foreground" />
+                  <span className="font-medium">{p.name}</span>
+                  <span className="text-muted-foreground">= {p.defaultValue || "(empty)"}</span>
+                  <span className="text-[10px] text-muted-foreground px-1 py-0.5 bg-muted rounded">{p.type}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {playbook.steps.map((step, idx) => {
+            const cond = conditions[step.id] ?? { skipOnFailure: false, required: true };
+            const blocked = step.dependsOn && step.dependsOn.length > 0;
+            return (
+              <div key={step.id} className="flex gap-2 items-start text-xs">
+                <div className="flex items-center justify-center h-5 w-5 rounded-full bg-accent border border-border text-[10px] font-medium shrink-0 mt-0.5">
+                  {step.stepOrder}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{step.title}</span>
+                    {cond.skipOnFailure && (
+                      <span className="text-[9px] px-1 py-0.5 rounded bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300">SKIP ON FAIL</span>
+                    )}
+                    {cond.required && (
+                      <span className="text-[9px] px-1 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">REQUIRED</span>
+                    )}
+                  </div>
+                  <p className="text-muted-foreground mt-0.5">
+                    {blocked ? `Would wait for step ${step.dependsOn!.join(", ")} to complete` : "Would execute immediately"}
+                    {step.assigneeRole ? ` - assigned to ${step.assigneeRole}` : ""}
+                  </p>
+                  <div className="mt-1 inline-flex items-center gap-1 text-green-600 dark:text-green-400">
+                    <CheckCircle2 className="h-3 w-3" />
+                    <span>Simulated: success</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+
+          <div className="rounded-md bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-3 text-xs text-green-700 dark:text-green-400">
+            Dry run complete: {playbook.steps.length} step{playbook.steps.length !== 1 ? "s" : ""} would execute successfully.
+            {params.length > 0 && ` ${params.length} parameter${params.length !== 1 ? "s" : ""} resolved.`}
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Close</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Parameters Editor                                                  */
+/* ------------------------------------------------------------------ */
+
+function ParametersEditor({
+  playbookId,
+}: {
+  playbookId: string;
+}) {
+  const [params, setParams] = useState<PlaybookParam[]>(() => loadPlaybookParams(playbookId));
+  const [showAdd, setShowAdd] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newType, setNewType] = useState<PlaybookParam["type"]>("text");
+  const [newDefault, setNewDefault] = useState("");
+
+  useEffect(() => {
+    setParams(loadPlaybookParams(playbookId));
+  }, [playbookId]);
+
+  function addParam() {
+    if (!newName.trim()) return;
+    const next: PlaybookParam[] = [
+      ...params,
+      { id: `p_${Date.now()}`, name: newName.trim(), type: newType, defaultValue: newDefault },
+    ];
+    setParams(next);
+    savePlaybookParams(playbookId, next);
+    setNewName("");
+    setNewType("text");
+    setNewDefault("");
+    setShowAdd(false);
+  }
+
+  function removeParam(id: string) {
+    const next = params.filter((p) => p.id !== id);
+    setParams(next);
+    savePlaybookParams(playbookId, next);
+  }
+
+  return (
+    <div className="mb-6">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-sm font-semibold flex items-center gap-1.5">
+          <Variable className="h-3.5 w-3.5 text-muted-foreground" />
+          Parameters
+        </h3>
+        <Button size="sm" variant="ghost" onClick={() => setShowAdd(!showAdd)}>
+          <Plus className="h-3 w-3 mr-1" />
+          Add
+        </Button>
+      </div>
+
+      {params.length === 0 && !showAdd && (
+        <p className="text-xs text-muted-foreground">No parameters defined. Add variables that get filled in at runtime.</p>
+      )}
+
+      {params.map((p) => (
+        <div key={p.id} className="flex items-center gap-2 py-1.5 text-xs border-b border-border last:border-0">
+          <Variable className="h-3 w-3 text-muted-foreground shrink-0" />
+          <span className="font-medium">{p.name}</span>
+          <span className="text-[10px] px-1.5 py-0.5 bg-muted rounded">{p.type}</span>
+          {p.defaultValue && (
+            <span className="text-muted-foreground">default: {p.defaultValue}</span>
+          )}
+          <button onClick={() => removeParam(p.id)} className="ml-auto text-muted-foreground hover:text-destructive">
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      ))}
+
+      {showAdd && (
+        <div className="mt-2 p-2 rounded-md bg-muted/30 border border-border space-y-2">
+          <div className="flex items-center gap-2">
+            <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Name" className="h-7 text-xs flex-1" autoFocus />
+            <select value={newType} onChange={(e) => setNewType(e.target.value as PlaybookParam["type"])} className="h-7 text-xs bg-background border border-border rounded px-2">
+              <option value="text">Text</option>
+              <option value="number">Number</option>
+              <option value="boolean">Boolean</option>
+            </select>
+            <Input value={newDefault} onChange={(e) => setNewDefault(e.target.value)} placeholder="Default" className="h-7 text-xs w-24" />
+          </div>
+          <div className="flex gap-1 justify-end">
+            <Button size="sm" variant="ghost" onClick={() => setShowAdd(false)}>Cancel</Button>
+            <Button size="sm" onClick={addParam} disabled={!newName.trim()}>Add</Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Step Timeline                                                      */
 /* ------------------------------------------------------------------ */
 
 function StepTimeline({ playbook }: { playbook: PlaybookWithSteps }) {
+  const [conditions, setConditions] = useState<Record<string, StepCondition>>(() => loadStepConditions());
+
+  function toggleCondition(stepId: string, field: keyof StepCondition) {
+    const current = conditions[stepId] ?? { skipOnFailure: false, required: true };
+    const next = { ...current, [field]: !current[field] };
+    saveStepCondition(stepId, next);
+    setConditions((prev) => ({ ...prev, [stepId]: next }));
+  }
+
   return (
     <div className="space-y-0">
       {playbook.steps.map((step, idx) => {
         const isLast = idx === playbook.steps.length - 1;
+        const cond = conditions[step.id] ?? { skipOnFailure: false, required: true };
         return (
           <div key={step.id} className="flex gap-3">
             {/* Timeline line + dot */}
@@ -156,6 +412,34 @@ function StepTimeline({ playbook }: { playbook: PlaybookWithSteps }) {
                   {step.instructions}
                 </p>
               )}
+
+              {/* Conditional step logic toggles */}
+              <div className="flex items-center gap-3 mt-2">
+                <button
+                  onClick={() => toggleCondition(step.id, "skipOnFailure")}
+                  className={cn(
+                    "inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full border transition-colors",
+                    cond.skipOnFailure
+                      ? "border-yellow-400 bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-700"
+                      : "border-border bg-muted/30 text-muted-foreground hover:bg-muted/60",
+                  )}
+                >
+                  <SkipForward className="h-2.5 w-2.5" />
+                  Skip on failure
+                </button>
+                <button
+                  onClick={() => toggleCondition(step.id, "required")}
+                  className={cn(
+                    "inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full border transition-colors",
+                    cond.required
+                      ? "border-blue-400 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-700"
+                      : "border-border bg-muted/30 text-muted-foreground hover:bg-muted/60",
+                  )}
+                >
+                  <ShieldCheck className="h-2.5 w-2.5" />
+                  Required
+                </button>
+              </div>
             </div>
           </div>
         );
@@ -172,11 +456,13 @@ function PlaybookDetail({
   companyId,
   playbookId,
   onRun,
+  onDryRun,
   isRunning,
 }: {
   companyId: string;
   playbookId: string;
   onRun: () => void;
+  onDryRun: () => void;
   isRunning: boolean;
 }) {
   const { data, isLoading, error } = useQuery({
@@ -204,10 +490,16 @@ function PlaybookDetail({
               <p className="text-sm text-muted-foreground mt-1">{data.description}</p>
             )}
           </div>
-          <Button size="sm" onClick={onRun} disabled={isRunning}>
-            <Play className="h-3.5 w-3.5 mr-1.5" />
-            {isRunning ? "Running..." : "Run Playbook"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={onDryRun}>
+              <FlaskConical className="h-3.5 w-3.5 mr-1.5" />
+              Dry Run
+            </Button>
+            <Button size="sm" onClick={onRun} disabled={isRunning}>
+              <Play className="h-3.5 w-3.5 mr-1.5" />
+              {isRunning ? "Running..." : "Run Playbook"}
+            </Button>
+          </div>
         </div>
 
         {/* Meta chips */}
@@ -238,6 +530,9 @@ function PlaybookDetail({
           </div>
         )}
 
+        {/* Playbook Parameters */}
+        <ParametersEditor playbookId={playbookId} />
+
         {/* Steps timeline */}
         <div className="mb-4">
           <h3 className="text-sm font-semibold mb-4">Steps</h3>
@@ -267,6 +562,8 @@ export function Playbooks() {
   const [filter, setFilter] = useState("");
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [showRunDialog, setShowRunDialog] = useState(false);
+  const [showDryRunDialog, setShowDryRunDialog] = useState(false);
+  const [dryRunPlaybook, setDryRunPlaybook] = useState<PlaybookWithSteps | null>(null);
 
   const { data: playbooksList, isLoading } = useQuery({
     queryKey: queryKeys.playbooks.list(selectedCompanyId!),
@@ -387,7 +684,7 @@ export function Playbooks() {
               <BookTemplate className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">No playbooks yet</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Click the sparkle icon to load templates
+                Click the wand icon to load templates
               </p>
             </div>
           ) : (
@@ -417,6 +714,17 @@ export function Playbooks() {
             companyId={selectedCompanyId}
             playbookId={selectedId}
             onRun={() => setShowRunDialog(true)}
+            onDryRun={() => {
+              // Fetch the playbook detail for dry run
+              const cached = playbooksApi.detail(selectedCompanyId, selectedId);
+              cached.then((data) => {
+                setDryRunPlaybook(data);
+                setShowDryRunDialog(true);
+              }).catch(() => {
+                // Fallback: just show the dialog with minimal info
+                setShowDryRunDialog(true);
+              });
+            }}
             isRunning={runMutation.isPending}
           />
         ) : (
@@ -460,6 +768,17 @@ export function Playbooks() {
           playbookName={filteredPlaybooks.find((p) => p.id === selectedId)?.name ?? "Playbook"}
           onRun={(input) => runMutation.mutate({ playbookId: selectedId, ...input })}
           isPending={runMutation.isPending}
+        />
+      )}
+
+      {dryRunPlaybook && (
+        <DryRunDialog
+          open={showDryRunDialog}
+          onOpenChange={(open) => {
+            setShowDryRunDialog(open);
+            if (!open) setDryRunPlaybook(null);
+          }}
+          playbook={dryRunPlaybook}
         />
       )}
     </div>

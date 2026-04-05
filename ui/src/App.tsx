@@ -47,12 +47,17 @@ const PluginManager = lazy(() => import("./pages/PluginManager").then(m => ({ de
 const PluginSettings = lazy(() => import("./pages/PluginSettings").then(m => ({ default: m.PluginSettings })));
 const PluginPage = lazy(() => import("./pages/PluginPage").then(m => ({ default: m.PluginPage })));
 const ChannelView = lazy(() => import("./pages/ChannelView").then(m => ({ default: m.ChannelView })));
+const ClientPortal = lazy(() => import("./pages/ClientPortal").then(m => ({ default: m.ClientPortal })));
+const AgentMarketplace = lazy(() => import("./pages/AgentMarketplace").then(m => ({ default: m.AgentMarketplace })));
 const InstanceGeneralSettings = lazy(() => import("./pages/InstanceGeneralSettings").then(m => ({ default: m.InstanceGeneralSettings })));
 const InstanceSettings = lazy(() => import("./pages/InstanceSettings").then(m => ({ default: m.InstanceSettings })));
 const InstanceExperimentalSettings = lazy(() => import("./pages/InstanceExperimentalSettings").then(m => ({ default: m.InstanceExperimentalSettings })));
 const PrivacySettings = lazy(() => import("./pages/PrivacySettings").then(m => ({ default: m.PrivacySettings })));
 const AutomationRules = lazy(() => import("./pages/AutomationRules").then(m => ({ default: m.AutomationRules })));
 const AuditLog = lazy(() => import("./pages/AuditLog").then(m => ({ default: m.AuditLog })));
+const PlatformHealth = lazy(() => import("./pages/PlatformHealth").then(m => ({ default: m.PlatformHealth })));
+const SLASettings = lazy(() => import("./pages/SLASettings").then(m => ({ default: m.SLASettings })));
+const WorkflowSettings = lazy(() => import("./pages/WorkflowSettings").then(m => ({ default: m.WorkflowSettings })));
 const ProfileSettings = lazy(() => import("./pages/ProfileSettings").then(m => ({ default: m.ProfileSettings })));
 const NotificationSettings = lazy(() => import("./pages/NotificationSettings").then(m => ({ default: m.NotificationSettings })));
 const BillingSettingsPage = lazy(() => import("./pages/BillingSettings").then(m => ({ default: m.BillingSettings })));
@@ -194,6 +199,7 @@ function boardRoutes() {
       <Route path="projects/:projectId/issues" element={<LazyPage><ProjectDetail /></LazyPage>} />
       <Route path="projects/:projectId/issues/:filter" element={<LazyPage><ProjectDetail /></LazyPage>} />
       <Route path="projects/:projectId/configuration" element={<LazyPage><ProjectDetail /></LazyPage>} />
+      <Route path="projects/:projectId/activity" element={<LazyPage><ProjectDetail /></LazyPage>} />
       <Route path="projects/:projectId/budget" element={<LazyPage><ProjectDetail /></LazyPage>} />
       <Route path="issues" element={<Issues />} />
       <Route path="issues/all" element={<Navigate to="/issues" replace />} />
@@ -218,6 +224,11 @@ function boardRoutes() {
       <Route path="knowledge" element={<LazyPage variant="list"><KnowledgeBase /></LazyPage>} />
       <Route path="activity" element={<Activity />} />
       <Route path="audit-log" element={<LazyPage variant="list"><AuditLog /></LazyPage>} />
+      <Route path="platform-health" element={<LazyPage><PlatformHealth /></LazyPage>} />
+      <Route path="sla" element={<LazyPage><SLASettings /></LazyPage>} />
+      <Route path="workflow" element={<LazyPage><WorkflowSettings /></LazyPage>} />
+      <Route path="client-portal" element={<LazyPage><ClientPortal /></LazyPage>} />
+      <Route path="marketplace" element={<LazyPage variant="list"><AgentMarketplace /></LazyPage>} />
       <Route path="channels/:channelId" element={<LazyPage><ChannelView /></LazyPage>} />
       <Route path="inbox" element={<InboxRootRedirect />} />
       <Route path="inbox/mine" element={<Inbox />} />

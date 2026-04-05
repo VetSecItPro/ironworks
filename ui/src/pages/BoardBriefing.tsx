@@ -18,6 +18,7 @@ import { formatCents, cn } from "../lib/utils";
 import { EmptyState } from "../components/EmptyState";
 import { ActivityRow } from "../components/ActivityRow";
 import { PageSkeleton } from "../components/PageSkeleton";
+import { CapacityPlanning } from "../components/CapacityPlanning";
 import { computeAgentPerformance } from "./AgentPerformance";
 import {
   FileText,
@@ -42,6 +43,7 @@ import {
   Megaphone,
   LineChart,
   Brain,
+  Printer,
 } from "lucide-react";
 import type { Agent } from "@ironworksai/shared";
 
@@ -343,23 +345,33 @@ export function BoardBriefing() {
               Generated for <span className="font-medium text-foreground">{selectedCompany?.name ?? "Company"}</span>
             </p>
           </div>
-          <div
-            className="flex items-center gap-1 border border-border rounded-md overflow-hidden shrink-0"
-            role="group"
-            aria-label="Briefing period"
-          >
-            {(["7d", "30d", "this_month"] as const).map((p) => (
-              <button
-                key={p}
-                className={cn(
-                  "px-3 py-1.5 text-xs transition-colors",
-                  period === p ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground",
-                )}
-                onClick={() => setPeriod(p)}
-              >
-                {PERIOD_LABELS[p]}
-              </button>
-            ))}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border border-border text-muted-foreground hover:text-foreground transition-colors print:hidden"
+              onClick={() => window.print()}
+              aria-label="Print or save as PDF"
+            >
+              <Printer className="h-3.5 w-3.5" />
+              Print / PDF
+            </button>
+            <div
+              className="flex items-center gap-1 border border-border rounded-md overflow-hidden shrink-0 print:hidden"
+              role="group"
+              aria-label="Briefing period"
+            >
+              {(["7d", "30d", "this_month"] as const).map((p) => (
+                <button
+                  key={p}
+                  className={cn(
+                    "px-3 py-1.5 text-xs transition-colors",
+                    period === p ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground",
+                  )}
+                  onClick={() => setPeriod(p)}
+                >
+                  {PERIOD_LABELS[p]}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -999,6 +1011,17 @@ export function BoardBriefing() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Capacity Planning & Forecasting */}
+      {issues && agents && (
+        <div className="rounded-lg border border-border bg-card p-5 space-y-4">
+          <h2 className="text-base font-semibold flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            Capacity Planning & Forecasting
+          </h2>
+          <CapacityPlanning issues={issues} agents={agents} />
         </div>
       )}
     </div>

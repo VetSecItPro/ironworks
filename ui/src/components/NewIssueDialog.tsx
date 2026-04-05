@@ -46,6 +46,7 @@ import {
   Paperclip,
   FileText,
   Loader2,
+  Wand2,
   X,
 } from "lucide-react";
 import { cn } from "../lib/utils";
@@ -54,6 +55,55 @@ import { issueStatusText, issueStatusTextDefault, priorityColor, priorityColorDe
 import { MarkdownEditor, type MarkdownEditorRef, type MentionOption } from "./MarkdownEditor";
 import { AgentIcon } from "./AgentIconPicker";
 import { InlineEntitySelector, type InlineEntityOption } from "./InlineEntitySelector";
+
+/* ------------------------------------------------------------------ */
+/*  Smart Priority Suggestion (keyword-based)                          */
+/* ------------------------------------------------------------------ */
+
+const PRIORITY_KEYWORDS: Record<string, string[]> = {
+  critical: ["urgent", "broken", "crash", "outage", "down", "emergency", "p0", "critical", "production down", "data loss", "security breach"],
+  high: ["bug", "error", "fail", "broken", "regression", "blocker", "important", "p1", "high"],
+  medium: ["feature", "improve", "update", "change", "enhance", "refactor", "p2"],
+  low: ["nice to have", "minor", "cosmetic", "typo", "cleanup", "chore", "p3", "low priority"],
+};
+
+function suggestPriority(title: string): string | null {
+  if (!title || title.length < 3) return null;
+  const lower = title.toLowerCase();
+  // Check from highest to lowest
+  for (const priority of ["critical", "high", "medium", "low"] as const) {
+    for (const keyword of PRIORITY_KEYWORDS[priority]) {
+      if (lower.includes(keyword)) return priority;
+    }
+  }
+  return null;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Duplicate Issue Detection (fuzzy match)                            */
+/* ------------------------------------------------------------------ */
+
+function normalizeForComparison(text: string): string {
+  return text.toLowerCase().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim();
+}
+
+function computeSimilarity(a: string, b: string): number {
+  if (!a || !b) return 0;
+  const wordsA = new Set(a.split(" ").filter((w) => w.length > 2));
+  const wordsB = new Set(b.split(" ").filter((w) => w.length > 2));
+  if (wordsA.size === 0 || wordsB.size === 0) return 0;
+  let matches = 0;
+  for (const word of wordsA) {
+    if (wordsB.has(word)) matches++;
+  }
+  return matches / Math.max(wordsA.size, wordsB.size);
+}
+
+interface SimilarIssue {
+  identifier: string;
+  title: string;
+  similarity: number;
+}
 
 const DRAFT_KEY = "ironworks:issue-draft";
 const DEBOUNCE_MS = 800;
@@ -322,6 +372,13 @@ export function NewIssueDialog() {
   const { data: goals } = useQuery({
     queryKey: queryKeys.goals.list(effectiveCompanyId!),
     queryFn: () => goalsApi.list(effectiveCompanyId!),
+    enabled: !!effectiveCompanyId && newIssueOpen,
+  });
+
+  // Fetch existing issues for duplicate detection
+  const { data: existingIssues } = useQuery({
+    queryKey: queryKeys.issues.list(effectiveCompanyId!),
+    queryFn: () => issuesApi.list(effectiveCompanyId!),
     enabled: !!effectiveCompanyId && newIssueOpen,
   });
 
@@ -838,6 +895,25 @@ export function NewIssueDialog() {
       })),
     [activeGoals],
   );
+  // Smart priority suggestion
+  const suggestedPriority = useMemo(() => suggestPriority(title), [title]);
+
+  // Duplicate issue detection
+  const similarIssues = useMemo<SimilarIssue[]>(() => {
+    if (!title || title.length < 5 || !existingIssues || existingIssues.length === 0) return [];
+    const normalizedTitle = normalizeForComparison(title);
+    if (normalizedTitle.length < 3) return [];
+    return existingIssues
+      .map((issue) => ({
+        identifier: issue.identifier ?? issue.id.slice(0, 8),
+        title: issue.title,
+        similarity: computeSimilarity(normalizedTitle, normalizeForComparison(issue.title)),
+      }))
+      .filter((match) => match.similarity >= 0.6)
+      .sort((a, b) => b.similarity - a.similarity)
+      .slice(0, 3);
+  }, [title, existingIssues]);
+
   const savedDraft = loadDraft();
   const hasSavedDraft = Boolean(savedDraft?.title.trim() || savedDraft?.description.trim());
   const canDiscardDraft = hasDraft || hasSavedDraft;
@@ -1044,6 +1120,39 @@ export function NewIssueDialog() {
             }}
             autoFocus
           />
+
+          {/* Smart priority suggestion */}
+          {suggestedPriority && !priority && (
+            <button
+              type="button"
+              className="mt-1 inline-flex items-center gap-1.5 text-[11px] px-2 py-1 rounded-md border border-dashed border-primary/40 bg-primary/5 text-primary hover:bg-primary/10 transition-colors"
+              onClick={() => setPriority(suggestedPriority)}
+            >
+              <Wand2 className="h-3 w-3" />
+              Suggested priority: <span className="font-semibold capitalize">{suggestedPriority}</span>
+              <span className="text-[10px] text-muted-foreground">(click to apply)</span>
+            </button>
+          )}
+
+          {/* Duplicate issue detection */}
+          {similarIssues.length > 0 && (
+            <div className="mt-1.5 space-y-1">
+              {similarIssues.map((match) => (
+                <div
+                  key={match.identifier}
+                  className="flex items-center gap-1.5 text-[11px] px-2 py-1 rounded-md border border-yellow-300 bg-yellow-50 text-yellow-800 dark:border-yellow-700 dark:bg-yellow-950/30 dark:text-yellow-300"
+                >
+                  <AlertTriangle className="h-3 w-3 shrink-0" />
+                  <span>
+                    Similar: <span className="font-mono font-medium">{match.identifier}</span> - {match.title}
+                  </span>
+                  <span className="text-[9px] ml-auto text-yellow-600 dark:text-yellow-500">
+                    {Math.round(match.similarity * 100)}% match
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="px-4 pb-2 shrink-0">

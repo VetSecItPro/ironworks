@@ -886,3 +886,153 @@ a.ironworks-project-mention-chip {
 [class*="_toolbarNodeKindSelectContainer_"] {
   z-index: 81 !important;
 }
+
+/* ── Print Stylesheet ── */
+@media print {
+  /* Hide navigation chrome */
+  nav,
+  aside,
+  header,
+  footer,
+  [data-slot="sidebar"],
+  [data-slot="company-rail"],
+  [data-slot="breadcrumb-bar"],
+  [data-slot="mobile-bottom-nav"],
+  [data-slot="toast-viewport"],
+  .print\\:hidden {
+    display: none !important;
+  }
+
+  /* Expand content to full width */
+  body {
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  html {
+    height: auto !important;
+  }
+
+  #root,
+  #root > *,
+  main {
+    overflow: visible !important;
+    height: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Remove flex layout constraints for print */
+  .flex.h-dvh,
+  .flex.overflow-hidden {
+    display: block !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  /* Page breaks at section boundaries */
+  .space-y-6 > section,
+  .space-y-6 > div {
+    page-break-inside: avoid;
+  }
+
+  h1, h2, h3 {
+    page-break-after: avoid;
+  }
+
+  table, figure, img {
+    page-break-inside: avoid;
+  }
+
+  /* Ensure readable colors in print */
+  * {
+    color: black !important;
+    background: white !important;
+    border-color: #ccc !important;
+    box-shadow: none !important;
+  }
+
+  /* Show link URLs in print */
+  a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.75em;
+    color: #666 !important;
+  }
+
+  a[href^="#"]::after,
+  a[href^="javascript:"]::after,
+  a.no-print-url::after {
+    content: none;
+  }
+
+  /* Remove animations */
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ── Responsive Breakpoints ── */
+
+/* Ultra-wide container constraint */
+.ironworks-container {
+  max-width: 1600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Tablet breakpoint: 768px */
+@media (max-width: 768px) {
+  /* Sidebar collapses (handled by SidebarContext / Layout isMobile) */
+  /* Content goes full width */
+  .md\\:grid-cols-2 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .md\\:grid-cols-3 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Compact table cells */
+  table th,
+  table td {
+    padding-left: 0.375rem;
+    padding-right: 0.375rem;
+  }
+}
+
+/* Mobile breakpoint: 375px */
+@media (max-width: 375px) {
+  /* Reduce padding */
+  main {
+    padding: 0.5rem !important;
+  }
+
+  /* Stack horizontal layouts vertically */
+  .flex-wrap-mobile {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .flex.items-center.justify-between {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  /* Smaller text on very small screens */
+  h1 {
+    font-size: 1.25rem !important;
+  }
+
+  h2 {
+    font-size: 1.125rem !important;
+  }
+
+  /* Compact cards */
+  .p-4,
+  .p-5 {
+    padding: 0.625rem !important;
+  }
+}

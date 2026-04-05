@@ -261,6 +261,8 @@ export function RoutineDetail() {
     priority: "medium",
     concurrencyPolicy: "coalesce_if_active",
     catchUpPolicy: "skip_missed",
+    runAfterId: undefined as string | undefined,
+    retryPolicy: "none" as string,
   });
   const activeTab = useMemo(() => getRoutineTabFromSearch(location.search), [location.search]);
 
@@ -309,6 +311,11 @@ export function RoutineDetail() {
     queryFn: () => projectsApi.list(selectedCompanyId!),
     enabled: !!selectedCompanyId,
   });
+  const { data: allRoutines } = useQuery({
+    queryKey: queryKeys.routines.list(selectedCompanyId!),
+    queryFn: () => routinesApi.list(selectedCompanyId!),
+    enabled: !!selectedCompanyId,
+  });
 
   const routineDefaults = useMemo(
     () =>
@@ -321,6 +328,8 @@ export function RoutineDetail() {
             priority: routine.priority,
             concurrencyPolicy: routine.concurrencyPolicy,
             catchUpPolicy: routine.catchUpPolicy,
+            runAfterId: (routine as unknown as Record<string, unknown>).runAfterId as string | undefined,
+            retryPolicy: ((routine as unknown as Record<string, unknown>).retryPolicy as string) ?? "none",
           }
         : null,
     [routine],
@@ -334,7 +343,9 @@ export function RoutineDetail() {
       editDraft.assigneeAgentId !== routineDefaults.assigneeAgentId ||
       editDraft.priority !== routineDefaults.priority ||
       editDraft.concurrencyPolicy !== routineDefaults.concurrencyPolicy ||
-      editDraft.catchUpPolicy !== routineDefaults.catchUpPolicy
+      editDraft.catchUpPolicy !== routineDefaults.catchUpPolicy ||
+      editDraft.runAfterId !== routineDefaults.runAfterId ||
+      editDraft.retryPolicy !== routineDefaults.retryPolicy
     );
   }, [editDraft, routineDefaults]);
 
@@ -839,6 +850,49 @@ export function RoutineDetail() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">{catchUpPolicyDescriptions[editDraft.catchUpPolicy]}</p>
+            </div>
+            <div className="space-y-2">
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Run After</p>
+              <Select
+                value={editDraft.runAfterId ?? "none"}
+                onValueChange={(value) => setEditDraft((current) => ({ ...current, runAfterId: value === "none" ? undefined : value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="None" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {(allRoutines ?? [])
+                    .filter((r) => r.id !== routineId)
+                    .map((r) => (
+                      <SelectItem key={r.id} value={r.id}>{r.title}</SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Chain this routine to run after another routine completes.</p>
+            </div>
+            <div className="space-y-2">
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Retry Policy</p>
+              <Select
+                value={editDraft.retryPolicy ?? "none"}
+                onValueChange={(value) => setEditDraft((current) => ({ ...current, retryPolicy: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No retries</SelectItem>
+                  <SelectItem value="retry_1">1 retry</SelectItem>
+                  <SelectItem value="retry_3">3 retries</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {editDraft.retryPolicy === "retry_1"
+                  ? "Retry once on failure before marking the run as failed."
+                  : editDraft.retryPolicy === "retry_3"
+                    ? "Retry up to 3 times on failure before marking the run as failed."
+                    : "No automatic retries. Failed runs remain failed."}
+              </p>
             </div>
           </div>
         </CollapsibleContent>

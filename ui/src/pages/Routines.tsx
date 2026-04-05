@@ -628,7 +628,18 @@ export function Routines() {
                       <td className="px-3 py-2.5 text-muted-foreground">
                         <div>{formatLastRunTimestamp(routine.lastRun?.triggeredAt)}</div>
                         {routine.lastRun ? (
-                          <div className="mt-1 text-xs">{routine.lastRun.status.replaceAll("_", " ")}</div>
+                          <>
+                            <div className="mt-1 text-xs">{routine.lastRun.status.replaceAll("_", " ")}</div>
+                            {routine.lastRun.failureReason ? (
+                              <div className="mt-0.5 text-[10px] text-red-500 truncate max-w-[200px]" title={routine.lastRun.failureReason}>
+                                {routine.lastRun.failureReason.slice(0, 60)}
+                              </div>
+                            ) : routine.lastRun.linkedIssue?.title ? (
+                              <div className="mt-0.5 text-[10px] text-muted-foreground/60 truncate max-w-[200px]" title={routine.lastRun.linkedIssue.title}>
+                                {routine.lastRun.linkedIssue.title.slice(0, 60)}
+                              </div>
+                            ) : null}
+                          </>
                         ) : null}
                       </td>
                       <td className="px-3 py-2.5 text-muted-foreground text-xs">

@@ -85,6 +85,36 @@ function formatVerb(action: string, details?: Record<string, unknown> | null): s
   return ACTION_VERBS[action] ?? action.replace(/[._]/g, " ");
 }
 
+const STATUS_BADGE_COLORS: Record<string, string> = {
+  todo: "bg-zinc-500/15 text-zinc-600 dark:text-zinc-400",
+  in_progress: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+  done: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+  cancelled: "bg-red-500/15 text-red-600 dark:text-red-400",
+  backlog: "bg-zinc-400/15 text-zinc-500 dark:text-zinc-500",
+  blocked: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+};
+
+function StatusTransitionBadges({ details }: { details: Record<string, unknown> | null }) {
+  if (!details) return null;
+  const previous = (details._previous ?? {}) as Record<string, unknown>;
+  if (details.status === undefined || !previous.status) return null;
+  const fromStatus = String(previous.status);
+  const toStatus = String(details.status);
+  const fromColor = STATUS_BADGE_COLORS[fromStatus] ?? "bg-muted text-muted-foreground";
+  const toColor = STATUS_BADGE_COLORS[toStatus] ?? "bg-muted text-muted-foreground";
+  return (
+    <span className="inline-flex items-center gap-1 ml-1">
+      <span className={cn("inline-block rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none", fromColor)}>
+        {fromStatus.replace(/_/g, " ")}
+      </span>
+      <span className="text-[10px] text-muted-foreground">&rarr;</span>
+      <span className={cn("inline-block rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-none", toColor)}>
+        {toStatus.replace(/_/g, " ")}
+      </span>
+    </span>
+  );
+}
+
 function entityLink(entityType: string, entityId: string, name?: string | null): string | null {
   switch (entityType) {
     case "issue": return `/issues/${name ?? entityId}`;
@@ -153,7 +183,10 @@ export const ActivityRow = memo(function ActivityRow({ event, agentMap, entityNa
         />
         <span className={cn("ml-1", verbColor)}>{verb} </span>
         {name && <span className="font-medium">{name}</span>}
-        {entityTitle && <span className="text-muted-foreground ml-1">— {entityTitle}</span>}
+        {event.action === "issue.updated" && details && (details._previous as Record<string, unknown> | undefined)?.status !== undefined && (
+          <StatusTransitionBadges details={details} />
+        )}
+        {entityTitle && <span className="text-muted-foreground ml-1">- {entityTitle}</span>}
       </p>
       <span className="text-xs text-muted-foreground shrink-0 pt-0.5">{timeAgo(event.createdAt)}</span>
     </div>
