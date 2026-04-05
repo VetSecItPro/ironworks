@@ -59,10 +59,19 @@ import {
   Loader2,
   ChevronDown,
   Pencil,
+  Plus,
   X
 } from "lucide-react";
+import { HelpBeacon } from "./HelpBeacon";
 
 type Step = 1 | 2 | 3 | 4 | 5;
+
+const TASK_TEMPLATES = [
+  { label: "Audit the codebase", title: "Audit the codebase", description: "Review the entire codebase for code quality, security issues, outdated dependencies, and architectural concerns. Produce a report with prioritized recommendations." },
+  { label: "Create marketing plan", title: "Create a marketing plan", description: "Develop a comprehensive marketing strategy including target audience analysis, channel selection, content calendar, and KPI targets for the next quarter." },
+  { label: "Review security posture", title: "Review security posture", description: "Perform a thorough security audit covering authentication, authorization, data handling, API security, and infrastructure. Flag critical issues and recommend fixes." },
+  { label: "Analyze team structure", title: "Analyze team structure", description: "Evaluate the current team composition, identify skill gaps, recommend hiring priorities, and suggest organizational improvements for better efficiency." },
+] as const;
 type AdapterType =
   | "claude_local"
   | "codex_local"
@@ -95,6 +104,51 @@ const LLM_PROVIDERS: readonly { key: string; label: string; secretName: string; 
 
 let rosterIdCounter = 0;
 function nextRosterId() { return `roster-${++rosterIdCounter}`; }
+
+const WIZARD_STORAGE_KEY = "ironworks_onboarding_wizard_state";
+
+interface WizardPersistedState {
+  step: Step;
+  companyName: string;
+  companyGoal: string;
+  llmProvider: string;
+  agentName: string;
+  adapterType: AdapterType;
+  taskTitle: string;
+  taskDescription: string;
+  extraTasks: { title: string; description: string }[];
+  step2Mode: "pack" | "manual";
+  selectedPackKey: string | null;
+  createdCompanyId: string | null;
+  createdCompanyPrefix: string | null;
+  createdAgentId: string | null;
+}
+
+function loadWizardState(): WizardPersistedState | null {
+  try {
+    const raw = localStorage.getItem(WIZARD_STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function saveWizardState(state: WizardPersistedState): void {
+  try {
+    localStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // Silently ignore
+  }
+}
+
+function clearWizardState(): void {
+  try {
+    localStorage.removeItem(WIZARD_STORAGE_KEY);
+  } catch {
+    // Silently ignore
+  }
+}
 
 const DEFAULT_TASK_DESCRIPTION = `You are the CEO. You set the direction for the company.
 
@@ -172,6 +226,7 @@ export function OnboardingWizard() {
   const [taskDescription, setTaskDescription] = useState(
     DEFAULT_TASK_DESCRIPTION
   );
+  const [extraTasks, setExtraTasks] = useState<{ title: string; description: string }[]>([]);
 
   // Auto-grow textarea for task description
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -230,6 +285,55 @@ export function OnboardingWizard() {
   useEffect(() => {
     if (step === 4) autoResizeTextarea();
   }, [step, taskDescription, autoResizeTextarea]);
+
+  // Persist wizard state to localStorage on every step change
+  useEffect(() => {
+    if (!effectiveOnboardingOpen) return;
+    saveWizardState({
+      step,
+      companyName,
+      companyGoal,
+      llmProvider,
+      agentName,
+      adapterType,
+      taskTitle,
+      taskDescription,
+      extraTasks,
+      step2Mode,
+      selectedPackKey,
+      createdCompanyId,
+      createdCompanyPrefix,
+      createdAgentId,
+    });
+  }, [
+    effectiveOnboardingOpen, step, companyName, companyGoal, llmProvider,
+    agentName, adapterType, taskTitle, taskDescription, extraTasks,
+    step2Mode, selectedPackKey, createdCompanyId, createdCompanyPrefix, createdAgentId,
+  ]);
+
+  // Restore wizard state from localStorage when opening
+  useEffect(() => {
+    if (!effectiveOnboardingOpen) return;
+    // Only restore if no explicit options were given (i.e., user refreshed mid-wizard)
+    if (effectiveOnboardingOptions.initialStep || effectiveOnboardingOptions.companyId) return;
+    const saved = loadWizardState();
+    if (!saved) return;
+    setStep(saved.step);
+    setCompanyName(saved.companyName);
+    setCompanyGoal(saved.companyGoal);
+    setLlmProvider(saved.llmProvider);
+    setAgentName(saved.agentName);
+    setAdapterType(saved.adapterType);
+    setTaskTitle(saved.taskTitle);
+    setTaskDescription(saved.taskDescription);
+    setExtraTasks(saved.extraTasks ?? []);
+    setStep2Mode(saved.step2Mode);
+    setSelectedPackKey(saved.selectedPackKey);
+    if (saved.createdCompanyId) setCreatedCompanyId(saved.createdCompanyId);
+    if (saved.createdCompanyPrefix) setCreatedCompanyPrefix(saved.createdCompanyPrefix);
+    if (saved.createdAgentId) setCreatedAgentId(saved.createdAgentId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveOnboardingOpen]);
 
   const { data: teamPacks } = useQuery({
     queryKey: ["team-templates", "packs"],
@@ -323,6 +427,7 @@ export function OnboardingWizard() {
   }, [filteredModels, adapterType]);
 
   function reset() {
+    clearWizardState();
     setStep(1);
     setLoading(false);
     setError(null);
@@ -345,6 +450,7 @@ export function OnboardingWizard() {
     setUnsetAnthropicLoading(false);
     setTaskTitle("Hire your first engineer and create a hiring plan");
     setTaskDescription(DEFAULT_TASK_DESCRIPTION);
+    setExtraTasks([]);
     setCreatedCompanyId(null);
     setCreatedCompanyPrefix(null);
     setCreatedCompanyGoalId(null);
@@ -715,6 +821,26 @@ export function OnboardingWizard() {
         );
         issueRef = issue.identifier ?? issue.id;
         setCreatedIssueRef(issueRef);
+
+        // Create any extra tasks added by the user
+        for (const extra of extraTasks) {
+          if (!extra.title.trim()) continue;
+          try {
+            await issuesApi.create(
+              createdCompanyId,
+              buildOnboardingIssuePayload({
+                title: extra.title,
+                description: extra.description,
+                assigneeAgentId: createdAgentId,
+                projectId,
+                goalId
+              })
+            );
+          } catch {
+            // Non-blocking: extra tasks are best-effort
+          }
+        }
+
         queryClient.invalidateQueries({
           queryKey: queryKeys.issues.list(createdCompanyId)
         });
@@ -992,14 +1118,19 @@ export function OnboardingWizard() {
                     </button>
                   </div>
 
+                  {/* Agent count guidance */}
+                  <p className="text-xs text-muted-foreground/80 bg-muted/30 rounded-md px-3 py-2">
+                    Start with 3-5 agents. You can always add more later.
+                  </p>
+
                   {/* Team Pack selection */}
                   {step2Mode === "pack" && (
                     <div className="space-y-3">
-                      {(teamPacks ?? []).map((pack) => (
+                      {(teamPacks ?? []).map((pack, packIdx) => (
                         <button
                           key={pack.key}
                           className={cn(
-                            "w-full text-left rounded-lg border p-4 transition-colors",
+                            "w-full text-left rounded-lg border p-4 transition-colors relative",
                             selectedPackKey === pack.key
                               ? "border-foreground bg-accent"
                               : "border-border hover:bg-accent/50",
@@ -1019,16 +1150,26 @@ export function OnboardingWizard() {
                           }}
                           disabled={packCreating}
                         >
+                          {packIdx === 0 && (
+                            <span className="absolute -top-2 right-3 bg-blue-500 text-white text-[9px] font-semibold px-2 py-0.5 rounded-full leading-none">
+                              Recommended
+                            </span>
+                          )}
                           <div className="flex items-center justify-between mb-1">
                             <span className="text-sm font-medium">{pack.name}</span>
                             <span className="text-xs text-muted-foreground">{pack.roleCount} agents</span>
                           </div>
                           <p className="text-xs text-muted-foreground">{pack.description}</p>
-                          <div className="flex flex-wrap gap-1 mt-2">
+                          <div className="mt-2 space-y-1">
                             {pack.roles.map((role) => (
-                              <span key={role.key} className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-                                {role.title}
-                              </span>
+                              <div key={role.key} className="flex items-start gap-2">
+                                <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground shrink-0">
+                                  {role.title}
+                                </span>
+                                <span className="text-[10px] text-muted-foreground/70 leading-relaxed">
+                                  {role.tagline}
+                                </span>
+                              </div>
                             ))}
                           </div>
                         </button>
@@ -1110,8 +1251,9 @@ export function OnboardingWizard() {
 
                   {/* Adapter type radio cards */}
                   <div>
-                    <label className="text-xs text-muted-foreground mb-2 block">
+                    <label className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
                       Adapter type
+                      <HelpBeacon text="The adapter determines which AI coding tool powers this agent. Claude Code and Codex are recommended for most use cases. Expand 'More' to see Gemini CLI, OpenCode, and other options." />
                     </label>
                     <div className="grid grid-cols-2 gap-2">
                       {[
@@ -1517,11 +1659,35 @@ export function OnboardingWizard() {
                     <div>
                       <h3 className="font-medium">Give it something to do</h3>
                       <p className="text-xs text-muted-foreground">
-                        Give your agent a small task to start with — a bug fix,
+                        Give your agent a small task to start with - a bug fix,
                         a research question, writing a script.
                       </p>
                     </div>
                   </div>
+
+                  {/* Task template dropdown */}
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">
+                      Quick start template
+                    </label>
+                    <select
+                      className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 text-foreground"
+                      value=""
+                      onChange={(e) => {
+                        const tpl = TASK_TEMPLATES.find((t) => t.title === e.target.value);
+                        if (tpl) {
+                          setTaskTitle(tpl.title);
+                          setTaskDescription(tpl.description);
+                        }
+                      }}
+                    >
+                      <option value="" disabled>Choose a common first task...</option>
+                      {TASK_TEMPLATES.map((tpl) => (
+                        <option key={tpl.title} value={tpl.title}>{tpl.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
                   <div>
                     <label className="text-xs text-muted-foreground mb-1 block">
                       Task title
@@ -1546,6 +1712,43 @@ export function OnboardingWizard() {
                       onChange={(e) => setTaskDescription(e.target.value)}
                     />
                   </div>
+
+                  {/* Extra tasks */}
+                  {extraTasks.map((extra, idx) => (
+                    <div key={idx} className="space-y-2 rounded-md border border-border p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-muted-foreground">Task {idx + 2}</span>
+                        <button
+                          type="button"
+                          className="text-muted-foreground hover:text-red-400 transition-colors"
+                          onClick={() => setExtraTasks((prev) => prev.filter((_, i) => i !== idx))}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      <input
+                        className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/50"
+                        placeholder="Task title"
+                        value={extra.title}
+                        onChange={(e) => setExtraTasks((prev) => prev.map((t, i) => i === idx ? { ...t, title: e.target.value } : t))}
+                      />
+                      <textarea
+                        className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/50 resize-none min-h-[60px]"
+                        placeholder="Description (optional)"
+                        value={extra.description}
+                        onChange={(e) => setExtraTasks((prev) => prev.map((t, i) => i === idx ? { ...t, description: e.target.value } : t))}
+                      />
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={() => setExtraTasks((prev) => [...prev, { title: "", description: "" }])}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Add another task
+                  </button>
                 </div>
               )}
 
@@ -1655,10 +1858,25 @@ export function OnboardingWizard() {
                 </div>
               )}
 
-              {/* Error */}
+              {/* Error with retry */}
               {error && (
-                <div className="mt-3">
+                <div className="mt-3 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2.5 space-y-2">
                   <p className="text-xs text-destructive">{error}</p>
+                  <button
+                    type="button"
+                    className="text-xs font-medium text-destructive hover:text-destructive/80 underline underline-offset-2 transition-colors"
+                    onClick={() => {
+                      setError(null);
+                      // Re-trigger the current step's action
+                      if (step === 1 && companyName.trim()) void handleStep1Next();
+                      else if (step === 2 && llmApiKey.trim()) void handleStep2LlmNext();
+                      else if (step === 3 && step2Mode === "pack" && selectedPackKey) void handlePackDeploy();
+                      else if (step === 3 && step2Mode === "manual" && agentName.trim()) void handleStep2Next();
+                      else if (step === 5) void handleLaunch();
+                    }}
+                  >
+                    Retry
+                  </button>
                 </div>
               )}
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { trackFeatureUsed } from "../lib/analytics";
 import {
   BookTemplate,
   ChevronRight,
@@ -575,6 +576,7 @@ export function Playbooks() {
     mutationFn: ({ playbookId, name, repoUrl }: { playbookId: string; name?: string; repoUrl?: string }) =>
       playbooksApi.run(selectedCompanyId!, playbookId, undefined /* projectId */, name, repoUrl),
     onSuccess: (data) => {
+      trackFeatureUsed("run_playbook");
       pushToast({
         title: "Playbook started",
         body: `${data.stepsCreated} tasks created`,

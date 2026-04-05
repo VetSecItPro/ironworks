@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "@/lib/router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { trackFeatureUsed } from "../lib/analytics";
 import { approvalsApi } from "../api/approvals";
 import { agentsApi } from "../api/agents";
 import { useCompany } from "../context/CompanyContext";
@@ -87,6 +88,7 @@ export function ApprovalDetail() {
   const approveMutation = useMutation({
     mutationFn: () => approvalsApi.approve(approvalId!),
     onSuccess: () => {
+      trackFeatureUsed("approve_request");
       setError(null);
       refresh();
       navigate(`/approvals/${approvalId}?resolved=approved`, { replace: true });

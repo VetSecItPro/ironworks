@@ -33,16 +33,21 @@ import {
   Clock,
   Edit3,
   Eye,
+  Globe,
   History,
+  Link as LinkIcon,
+  Lock,
   Plus,
   Save,
   Search,
+  ShieldCheck,
   Trash2,
   Undo2,
   User,
   Users,
   X,
 } from "lucide-react";
+import { Link } from "@/lib/router";
 
 /* ── Main component ── */
 
@@ -150,6 +155,40 @@ export function KnowledgeBase() {
       setShowHistory(false);
     },
   });
+
+  const updateVisibility = useMutation({
+    mutationFn: (visibility: string) =>
+      knowledgeApi.update(selectedPageId!, { visibility }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.knowledge.list(selectedCompanyId!) });
+    },
+  });
+
+  // Compute suggested pages based on title word overlap
+  const suggestedPages = useMemo(() => {
+    if (!selectedPage || !pages || pages.length < 2) return [];
+    const words = new Set(
+      selectedPage.title
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((w) => w.length > 3),
+    );
+    if (words.size === 0) return [];
+    const scored = (pages ?? [])
+      .filter((p) => p.id !== selectedPage.id)
+      .map((p) => {
+        const pWords = p.title.toLowerCase().split(/\s+/);
+        const overlap = pWords.filter((w) => words.has(w)).length;
+        // Also check body overlap for better matching
+        const bodyWords = p.body.toLowerCase().split(/\s+/).filter((w) => w.length > 3);
+        const bodyOverlap = bodyWords.filter((w) => words.has(w)).length;
+        return { page: p, score: overlap * 3 + Math.min(bodyOverlap, 3) };
+      })
+      .filter((s) => s.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
+    return scored.map((s) => s.page);
+  }, [selectedPage, pages]);
 
   function startEditing() {
     if (!selectedPage) return;
@@ -336,12 +375,42 @@ export function KnowledgeBase() {
             </div>
 
             {/* Page metadata */}
-            <div className="flex items-center gap-3 px-4 py-1.5 text-[10px] text-muted-foreground border-b border-border/50 shrink-0">
+            <div className="flex items-center gap-3 px-4 py-1.5 text-[10px] text-muted-foreground border-b border-border/50 shrink-0 flex-wrap">
               <span>Revision #{selectedPage.revisionNumber}</span>
               <span>·</span>
               <span>Updated {timeAgo(selectedPage.updatedAt)}</span>
               <span>·</span>
-              <span className="capitalize">{selectedPage.visibility}</span>
+              {/* Visibility dropdown */}
+              <Select
+                value={selectedPage.visibility}
+                onValueChange={(v) => updateVisibility.mutate(v)}
+              >
+                <SelectTrigger className="h-5 w-auto min-w-0 text-[10px] border-0 bg-transparent p-0 gap-1 shadow-none hover:bg-accent/50 rounded px-1.5">
+                  <span className="inline-flex items-center gap-1">
+                    {selectedPage.visibility === "company" && <Globe className="h-2.5 w-2.5" />}
+                    {selectedPage.visibility === "private" && <Lock className="h-2.5 w-2.5" />}
+                    {selectedPage.visibility === "project" && <ShieldCheck className="h-2.5 w-2.5" />}
+                    <SelectValue />
+                  </span>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="company">
+                    <span className="inline-flex items-center gap-1.5">
+                      <Globe className="h-3 w-3" />Everyone
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="private">
+                    <span className="inline-flex items-center gap-1.5">
+                      <Lock className="h-3 w-3" />Admins only
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="project">
+                    <span className="inline-flex items-center gap-1.5">
+                      <ShieldCheck className="h-3 w-3" />Specific agents
+                    </span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
               {selectedPage.department && (
                 <>
                   <span>·</span>
@@ -429,8 +498,35 @@ export function KnowledgeBase() {
                   placeholder="Write your page content in markdown..."
                 />
               ) : (
-                <div className="p-4">
+                <div className="p-4 space-y-6">
+                  {/* Issue reference chips */}
+                  <IssueReferenceChips body={selectedPage.body} companyPrefix={selectedPage.companyId} />
                   <MarkdownBody>{selectedPage.body}</MarkdownBody>
+
+                  {/* Suggested pages */}
+                  {suggestedPages.length > 0 && (
+                    <div className="border-t border-border pt-4 mt-6">
+                      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-1.5">
+                        <LinkIcon className="h-3 w-3" />Suggested Pages
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {suggestedPages.map((sp) => (
+                          <button
+                            key={sp.id}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent/50 transition-colors"
+                            onClick={() => {
+                              setSelectedPageId(sp.id);
+                              setEditing(false);
+                              setShowHistory(false);
+                            }}
+                          >
+                            <BookOpen className="h-3 w-3 text-muted-foreground" />
+                            {sp.title}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -467,6 +563,56 @@ export function KnowledgeBase() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+/**
+ * Detect issue references (e.g. PAP-123) in page body and render as linked chips.
+ */
+function IssueReferenceChips({ body, companyPrefix: _companyPrefix }: { body: string; companyPrefix: string }) {
+  const refs = useMemo(() => {
+    const pattern = /\b([A-Z]{2,6}-\d{1,6})\b/g;
+    const matches = new Set<string>();
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(body)) !== null) {
+      matches.add(match[1]);
+    }
+    return Array.from(matches);
+  }, [body]);
+
+  if (refs.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap gap-1.5 pb-2">
+      {refs.map((ref) => (
+        <Link
+          key={ref}
+          to={`/issues`}
+          className="inline-flex items-center gap-1 rounded-full border border-indigo-500/20 bg-indigo-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-indigo-400 hover:bg-indigo-500/20 transition-colors"
+        >
+          <CircleDotIcon className="h-3 w-3" />
+          {ref}
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+function CircleDotIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="12" r="1" />
+    </svg>
   );
 }
 
