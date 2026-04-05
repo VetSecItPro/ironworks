@@ -91,42 +91,43 @@ export function classifyTaskImportance(context: {
   const normalizedRole = agentRole.toLowerCase().replace(/[\s_-]+/g, "");
   const normalizedAssigner = assignedByRole.toLowerCase().replace(/[\s_-]+/g, "");
 
-  // CRITICAL: direct human input (via Nolan or direct) = always critical
-  if (assignedByHuman) return "critical";
+  // Classification is based on TASK CONTENT, not who assigned it.
+  // The CEO delegates everything - that alone doesn't make tasks important.
+  // What matters is what the task actually asks for.
 
-  // CRITICAL: task is a retry after rejection = escalate
-  if (isRetry) return "critical";
-
-  // CRITICAL: chat origin (user is talking directly to agent)
-  if (originKind === "chat") return "critical";
-
-  // CRITICAL: labels contain critical task labels
+  // CRITICAL: task content contains critical keywords (strategy, legal, compliance, etc.)
   const hasCriticalLabel = CRITICAL_TASK_LABELS.some((cl) =>
     lowerLabels.some((ll) => ll.includes(cl)),
   );
   if (hasCriticalLabel) return "critical";
 
-  // CRITICAL: C-suite + strategy/budget keywords in title
-  if (C_SUITE_ROLES.has(normalizedRole)) {
-    const criticalKeywords = ["strategy", "budget", "acquisition", "compliance", "legal", "memo", "report", "deliverable"];
-    if (criticalKeywords.some((kw) => lowerTitle.includes(kw))) return "critical";
-  }
+  const criticalKeywords = ["strategy", "acquisition", "compliance", "legal review", "financial report",
+    "client deliverable", "contract", "liability", "regulation", "audit", "memo to board"];
+  if (criticalKeywords.some((kw) => lowerTitle.includes(kw))) return "critical";
 
-  // IMPORTANT: assigned by CEO = minimum important (delegation chain)
-  if (normalizedAssigner === "ceo" || C_SUITE_ROLES.has(normalizedAssigner)) return "important";
+  // CRITICAL: retry after rejection = escalate (previous output wasn't good enough)
+  if (isRetry) return "critical";
 
-  // IMPORTANT: labels contain important task labels
+  // IMPORTANT: task content contains important keywords
   const hasImportantLabel = IMPORTANT_TASK_LABELS.some((il) =>
     lowerLabels.some((ll) => ll.includes(il)),
   );
   if (hasImportantLabel) return "important";
-  if (C_SUITE_ROLES.has(normalizedRole)) return "important";
+
+  const importantKeywords = ["report", "analysis", "proposal", "budget", "review", "plan",
+    "architecture", "hiring", "termination", "performance review", "deliverable"];
+  if (importantKeywords.some((kw) => lowerTitle.includes(kw))) return "important";
+
+  // IMPORTANT: approval-related tasks need quality
   if (isApprovalRelated) return "important";
 
-  // Standard: has an issue assigned
+  // STANDARD: chat (user talking to agent directly - wants a good answer but not necessarily council-level)
+  if (originKind === "chat") return "standard";
+
+  // STANDARD: has an issue assigned (normal work)
   if (issueTitle.trim().length > 0) return "standard";
 
-  // Routine: heartbeat status check
+  // ROUTINE: heartbeat status check, no real task
   return "routine";
 }
 
