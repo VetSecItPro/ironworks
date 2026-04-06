@@ -357,38 +357,46 @@ export function Layout() {
               >
                 {isInstanceSettingsRoute ? <InstanceSidebar /> : <Sidebar />}
               </div>
-              {/* Resize handle - always visible on desktop, dragging expands/collapses sidebar */}
-              {!isMobile && (
-                <div
-                  className="w-2 h-full cursor-col-resize group shrink-0 flex items-center justify-center hover:bg-accent/30 active:bg-accent/50 transition-colors"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    const startX = e.clientX;
-                    const startW = sidebarOpen ? sidebarWidth : 0;
-                    const onMove = (ev: MouseEvent) => {
-                      const newW = startW + (ev.clientX - startX);
-                      if (newW > 120 && !sidebarOpen) {
-                        setSidebarOpen(true);
-                        setSidebarWidth(Math.max(newW, 180));
-                      } else if (newW < 60 && sidebarOpen) {
-                        setSidebarOpen(false);
-                      } else if (sidebarOpen) {
-                        setSidebarWidth(newW);
-                      }
-                    };
-                    const onUp = () => {
-                      document.removeEventListener("mousemove", onMove);
-                      document.removeEventListener("mouseup", onUp);
-                    };
-                    document.addEventListener("mousemove", onMove);
-                    document.addEventListener("mouseup", onUp);
-                  }}
-                >
-                  <div className="w-0.5 h-10 rounded-full bg-border group-hover:bg-ring/60 group-active:bg-ring transition-colors" />
-                </div>
-              )}
             </div>
           </nav>
+        )}
+        {/* Sidebar resize handle - between nav and content, drag right = wider sidebar */}
+        {!isMobile && !focusMode && (
+          <div
+            className="w-1.5 h-full cursor-col-resize group shrink-0 flex items-center justify-center hover:bg-accent/40 active:bg-accent/60 transition-colors border-r border-border/30"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              const startX = e.clientX;
+              const startW = sidebarOpen ? sidebarWidth : 0;
+              const onMove = (ev: MouseEvent) => {
+                const newW = startW + (ev.clientX - startX);
+                if (newW > 120 && !sidebarOpen) {
+                  setSidebarOpen(true);
+                  setSidebarWidth(Math.max(newW, 180));
+                } else if (newW < 60 && sidebarOpen) {
+                  setSidebarOpen(false);
+                } else if (sidebarOpen) {
+                  setSidebarWidth(newW);
+                }
+              };
+              const onUp = () => {
+                document.removeEventListener("mousemove", onMove);
+                document.removeEventListener("mouseup", onUp);
+              };
+              document.addEventListener("mousemove", onMove);
+              document.addEventListener("mouseup", onUp);
+            }}
+            onDoubleClick={() => {
+              if (sidebarOpen) {
+                setSidebarWidth(260);
+              } else {
+                setSidebarOpen(true);
+                setSidebarWidth(260);
+              }
+            }}
+          >
+            <div className="w-0.5 h-12 rounded-full bg-border group-hover:bg-ring/60 group-active:bg-ring transition-colors" />
+          </div>
         )}
 
         <div className={cn("flex min-w-0 flex-col", isMobile ? "w-full" : "h-full flex-1")}>
