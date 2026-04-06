@@ -1148,6 +1148,13 @@ a.ironworks-project-mention-chip {
   animation: confetti-particle 600ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* Goal celebration confetti burst */
+@keyframes confetti-burst {
+  0% { opacity: 0; transform: scale(0); }
+  30% { opacity: 1; transform: scale(1.2); }
+  100% { opacity: 0; transform: scale(0.5); }
+}
+
 /* Progress bar smooth fill */
 .progress-bar-animated {
   transition: width 500ms cubic-bezier(0.16, 1, 0.3, 1);

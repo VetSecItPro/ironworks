@@ -3,8 +3,26 @@ import type { Db } from "@ironworksai/db";
 import { agentMemoryEntries } from "@ironworksai/db";
 import { logger } from "../middleware/logger.js";
 
-// Re-export AgentMemoryEntry type for callers
-export type AgentMemoryEntry = typeof agentMemoryEntries.$inferSelect;
+// Re-export AgentMemoryEntry type for callers (without embedding - optional pgvector column)
+export type AgentMemoryEntry = Omit<typeof agentMemoryEntries.$inferSelect, "embedding">;
+
+// Select all columns except `embedding` (pgvector column may not exist on all deployments)
+const memoryColumns = {
+  id: agentMemoryEntries.id,
+  agentId: agentMemoryEntries.agentId,
+  companyId: agentMemoryEntries.companyId,
+  memoryType: agentMemoryEntries.memoryType,
+  category: agentMemoryEntries.category,
+  content: agentMemoryEntries.content,
+  sourceIssueId: agentMemoryEntries.sourceIssueId,
+  sourceProjectId: agentMemoryEntries.sourceProjectId,
+  confidence: agentMemoryEntries.confidence,
+  accessCount: agentMemoryEntries.accessCount,
+  lastAccessedAt: agentMemoryEntries.lastAccessedAt,
+  expiresAt: agentMemoryEntries.expiresAt,
+  archivedAt: agentMemoryEntries.archivedAt,
+  createdAt: agentMemoryEntries.createdAt,
+};
 
 // ── Agent Memory Services ───────────────────────────────────────────────────
 //
@@ -523,7 +541,7 @@ async function findRelevantMemoriesByFts(
   if (keywords.length === 0) {
     // No usable keywords - return most recent entries instead
     return db
-      .select()
+      .select(memoryColumns)
       .from(agentMemoryEntries)
       .where(
         and(
@@ -577,7 +595,7 @@ async function findRelevantMemoriesByFts(
     // ts_rank query can fail if the tsquery syntax is invalid; degrade gracefully
     logger.warn({ err, agentId }, "FTS memory search failed, returning recent entries");
     return db
-      .select()
+      .select(memoryColumns)
       .from(agentMemoryEntries)
       .where(
         and(
@@ -622,7 +640,7 @@ export async function getContextualMemories(
   // Tier 1: Working memory - most recent session state
   try {
     const working = await db
-      .select()
+      .select(memoryColumns)
       .from(agentMemoryEntries)
       .where(
         and(

@@ -35,6 +35,250 @@ import { useNavigate } from "@/lib/router";
 import { useToast } from "../context/ToastContext";
 import type { Goal, GoalCheckIn, GoalHealthStatus, Issue, Project } from "@ironworksai/shared";
 
+/* ── Goal Quality Score (SMART) ── */
+
+interface SmartCriteria {
+  specific: boolean;
+  measurable: boolean;
+  achievable: boolean;
+  relevant: boolean;
+  timeBound: boolean;
+}
+
+function evaluateSmart(goal: Goal, keyResultCount: number): SmartCriteria {
+  return {
+    specific: !!goal.description && goal.description.trim().length > 0,
+    measurable: keyResultCount > 0,
+    achievable: (goal.confidence ?? 0) > 30,
+    relevant: !!goal.parentId || goal.level === "company",
+    timeBound: !!goal.targetDate,
+  };
+}
+
+function SmartQualityIndicator({ criteria }: { criteria: SmartCriteria }) {
+  const items: Array<{ key: keyof SmartCriteria; label: string }> = [
+    { key: "specific", label: "Specific (has description)" },
+    { key: "measurable", label: "Measurable (has key results)" },
+    { key: "achievable", label: "Achievable (confidence > 30)" },
+    { key: "relevant", label: "Relevant (has parent or is company-level)" },
+    { key: "timeBound", label: "Time-bound (has target date)" },
+  ];
+  const score = items.filter((i) => criteria[i.key]).length;
+
+  return (
+    <div className="flex items-center gap-1.5" title={`Goal Quality: ${score}/5 SMART criteria met`}>
+      <span className="text-[10px] text-muted-foreground font-medium mr-0.5">SMART</span>
+      {items.map((item) => (
+        <span
+          key={item.key}
+          className={cn(
+            "h-2 w-2 rounded-full transition-colors",
+            criteria[item.key] ? "bg-emerald-500" : "bg-muted-foreground/20",
+          )}
+          title={`${item.label}: ${criteria[item.key] ? "Met" : "Not met"}`}
+        />
+      ))}
+      <span className="text-[10px] text-muted-foreground tabular-nums ml-0.5">{score}/5</span>
+    </div>
+  );
+}
+
+/* ── Celebration Animation ── */
+
+function CelebrationOverlay({ show }: { show: boolean }) {
+  if (!show) return null;
+
+  return (
+    <div className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center">
+      <div className="animate-bounce text-6xl opacity-90">
+        <CheckCircle2 className="h-24 w-24 text-emerald-500 drop-shadow-lg" />
+      </div>
+      {/* Confetti particles */}
+      {Array.from({ length: 12 }).map((_, i) => {
+        const angle = (i * 30) * (Math.PI / 180);
+        const distance = 80 + Math.random() * 60;
+        const colors = ["bg-emerald-500", "bg-blue-500", "bg-amber-500", "bg-violet-500", "bg-rose-500"];
+        return (
+          <div
+            key={i}
+            className={cn("absolute h-2 w-2 rounded-full", colors[i % colors.length])}
+            style={{
+              left: `calc(50% + ${Math.cos(angle) * distance}px)`,
+              top: `calc(50% + ${Math.sin(angle) * distance}px)`,
+              animation: `confetti-burst 0.7s ease-out forwards`,
+              animationDelay: `${i * 30}ms`,
+              opacity: 0,
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── Burnup Chart ── */
+
+function GoalBurnupChart({ issues, targetDate, startDate: goalStartDate }: { issues: Issue[]; targetDate: string | null; startDate: string | null }) {
+  const total = issues.length;
+  if (total < 5) return null;
+
+  // Build completion timeline
+  const completedIssues = issues
+    .filter((i) => (i.status === "done" || i.status === "cancelled") && i.completedAt)
+    .map((i) => new Date(i.completedAt!).getTime())
+    .sort((a, b) => a - b);
+
+  // Build scope timeline (when issues were created)
+  const scopeEvents = issues
+    .map((i) => new Date(i.createdAt).getTime())
+    .sort((a, b) => a - b);
+
+  const createdDates = issues.map((i) => new Date(i.createdAt).getTime());
+  const startDate = goalStartDate ? new Date(goalStartDate).getTime() : Math.min(...createdDates);
+  const now = Date.now();
+  const endDate = targetDate ? Math.max(new Date(targetDate).getTime(), now) : now;
+  const range = endDate - startDate || 1;
+
+  // Build scope line points (cumulative issues created over time)
+  const scopePoints: Array<{ x: number; y: number }> = [];
+  let scopeCount = 0;
+  for (const ts of scopeEvents) {
+    scopeCount++;
+    const x = ((ts - startDate) / range) * 100;
+    scopePoints.push({ x: Math.min(100, Math.max(0, x)), y: scopeCount });
+  }
+  // Extend to now
+  const nowX = ((now - startDate) / range) * 100;
+  scopePoints.push({ x: Math.min(100, nowX), y: scopeCount });
+
+  // Build completed line points (cumulative completed over time)
+  const completedPoints: Array<{ x: number; y: number }> = [{ x: 0, y: 0 }];
+  let doneCount = 0;
+  for (const ts of completedIssues) {
+    doneCount++;
+    const x = ((ts - startDate) / range) * 100;
+    completedPoints.push({ x: Math.min(100, Math.max(0, x)), y: doneCount });
+  }
+  completedPoints.push({ x: Math.min(100, nowX), y: doneCount });
+
+  const svgW = 360;
+  const svgH = 110;
+  const maxY = Math.max(total, 1);
+
+  const toSvgPath = (points: Array<{ x: number; y: number }>) =>
+    points
+      .map((p, i) => `${i === 0 ? "M" : "L"} ${(p.x / 100) * svgW} ${svgH - 20 - (p.y / maxY) * (svgH - 30)}`)
+      .join(" ");
+
+  const scopePath = toSvgPath(scopePoints);
+  const completedPath = toSvgPath(completedPoints);
+  // Ideal line: diagonal from 0 to total
+  const idealPath = `M 0 ${svgH - 20} L ${svgW} ${svgH - 20 - (svgH - 30)}`;
+
+  const startLabel = new Date(startDate).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const endLabel = targetDate
+    ? new Date(targetDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+    : "Now";
+
+  return (
+    <div className="rounded-xl border border-border p-4 space-y-2">
+      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+        <BarChart3 className="h-3.5 w-3.5" />
+        Burnup
+      </h4>
+      <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-full" preserveAspectRatio="xMidYMid meet">
+        {/* Grid */}
+        <line x1="0" y1={svgH - 20} x2={svgW} y2={svgH - 20} className="stroke-muted/30" strokeWidth="0.5" />
+        <line x1="0" y1={(svgH - 20) / 2} x2={svgW} y2={(svgH - 20) / 2} className="stroke-muted/30" strokeWidth="0.5" />
+        <line x1="0" y1="10" x2={svgW} y2="10" className="stroke-muted/30" strokeWidth="0.5" />
+
+        {/* Y labels */}
+        <text x="2" y="8" className="fill-muted-foreground text-[7px]">{total}</text>
+        <text x="2" y={svgH - 16} className="fill-muted-foreground text-[7px]">0</text>
+
+        {/* Ideal line (dashed) */}
+        {targetDate && (
+          <path d={idealPath} fill="none" className="stroke-muted-foreground/30" strokeWidth="1" strokeDasharray="4 3" />
+        )}
+
+        {/* Scope line (total issues) */}
+        <path d={scopePath} fill="none" className="stroke-violet-500/60" strokeWidth="1.5" />
+
+        {/* Completed line */}
+        <path d={completedPath} fill="none" className="stroke-emerald-500" strokeWidth="2" />
+
+        {/* X labels */}
+        <text x="2" y={svgH - 2} className="fill-muted-foreground text-[7px]">{startLabel}</text>
+        <text x={svgW - 2} y={svgH - 2} textAnchor="end" className="fill-muted-foreground text-[7px]">{endLabel}</text>
+      </svg>
+      <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+        <span className="flex items-center gap-1">
+          <span className="h-0.5 w-3 bg-emerald-500 shrink-0" />
+          Completed
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="h-0.5 w-3 bg-violet-500/60 shrink-0" />
+          Total Scope
+        </span>
+        {targetDate && (
+          <span className="flex items-center gap-1">
+            <span className="h-0.5 w-3 bg-muted-foreground/30 shrink-0" />
+            Ideal
+          </span>
+        )}
+        <span className="ml-auto">{doneCount}/{total} done</span>
+      </div>
+    </div>
+  );
+}
+
+/* ── RACI Display ── */
+
+function RaciDisplay({
+  goal,
+  agentMap,
+  parentGoal,
+}: {
+  goal: Goal;
+  agentMap: Map<string, import("@ironworksai/shared").Agent>;
+  parentGoal?: Goal | null;
+}) {
+  const responsible = goal.ownerAgentId ? agentMap.get(goal.ownerAgentId) : null;
+  const accountableAgentId = parentGoal?.ownerAgentId ?? null;
+  const accountable = accountableAgentId ? agentMap.get(accountableAgentId) : null;
+
+  if (!responsible && !accountable) return null;
+
+  return (
+    <div className="flex items-center gap-3">
+      {responsible && (
+        <div className="flex items-center gap-1.5" title={`Responsible: ${responsible.name}`}>
+          <div className="h-6 w-6 rounded-full bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-[9px] font-bold text-blue-600 dark:text-blue-400">
+            R
+          </div>
+          <span className="text-xs text-muted-foreground truncate max-w-[100px]">{responsible.name}</span>
+        </div>
+      )}
+      {accountable && (
+        <div className="flex items-center gap-1.5" title={`Accountable: ${accountable.name}`}>
+          <div className="h-6 w-6 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-[9px] font-bold text-amber-600 dark:text-amber-400">
+            A
+          </div>
+          <span className="text-xs text-muted-foreground truncate max-w-[100px]">{accountable.name}</span>
+        </div>
+      )}
+      {!accountable && !parentGoal && (
+        <div className="flex items-center gap-1.5" title="Accountable: Company leadership (top-level goal)">
+          <div className="h-6 w-6 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-[9px] font-bold text-amber-600 dark:text-amber-400">
+            A
+          </div>
+          <span className="text-xs text-muted-foreground">Leadership</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Risk Assessment (12.55) ── */
 
 interface GoalRiskAssessment {
@@ -725,6 +969,32 @@ export function GoalDetail() {
     [goalIssues, goal?.targetDate],
   );
 
+  // SMART quality criteria
+  const smartCriteria = useMemo(
+    () => goal ? evaluateSmart(goal, (keyResults ?? []).length) : null,
+    [goal, keyResults],
+  );
+
+  // Parent goal for RACI
+  const parentGoal = useMemo(
+    () => goal?.parentId ? (allGoals ?? []).find((g) => g.id === goal.parentId) ?? null : null,
+    [goal?.parentId, allGoals],
+  );
+
+  // Celebration on achievement
+  const [showCelebration, setShowCelebration] = useState(false);
+  const prevStatusRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!goal) return;
+    if (prevStatusRef.current && prevStatusRef.current !== "achieved" && goal.status === "achieved") {
+      setShowCelebration(true);
+      pushToast({ title: `Goal achieved: ${goal.title}`, tone: "success" });
+      const timer = setTimeout(() => setShowCelebration(false), 2000);
+      return () => clearTimeout(timer);
+    }
+    prevStatusRef.current = goal.status;
+  }, [goal?.status]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const childGoals = (allGoals ?? []).filter((g) => g.parentId === goalId);
   const linkedProjects = (allProjects ?? []).filter((p) => {
     if (!goalId) return false;
@@ -770,14 +1040,16 @@ export function GoalDetail() {
 
   return (
     <div className={cn(twoPane ? "grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6" : "")}>
+    <CelebrationOverlay show={showCelebration} />
     <div className="space-y-6">
       <div className="space-y-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs uppercase text-muted-foreground">
             {goal.level}
           </span>
           <StatusBadge status={goal.status} />
           <GoalHealthBadge status={goal.healthStatus} />
+          {smartCriteria && <SmartQualityIndicator criteria={smartCriteria} />}
           <Button
             variant="outline"
             size="sm"
@@ -833,6 +1105,14 @@ export function GoalDetail() {
             {riskAssessment.blockedPercent > 0 && <div>{riskAssessment.blockedPercent}% blocked</div>}
           </div>
         </div>
+      )}
+
+      {/* RACI Co-ownership */}
+      <RaciDisplay goal={goal} agentMap={agentMap} parentGoal={parentGoal} />
+
+      {/* Burnup Chart (5+ issues) */}
+      {goalIssues.length >= 5 && (
+        <GoalBurnupChart issues={goalIssues} targetDate={goal.targetDate ?? null} startDate={goal.startDate ?? null} />
       )}
 
       {/* Burndown Chart */}

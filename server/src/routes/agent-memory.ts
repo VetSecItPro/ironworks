@@ -7,6 +7,24 @@ import { badRequest, notFound } from "../errors.js";
 import { assertCanWrite, assertCompanyAccess, getActorInfo } from "./authz.js";
 import { logActivity, createAgentDocument } from "../services/index.js";
 
+// Select all columns except `embedding` (pgvector column may not exist on all deployments)
+const memoryColumns = {
+  id: agentMemoryEntries.id,
+  agentId: agentMemoryEntries.agentId,
+  companyId: agentMemoryEntries.companyId,
+  memoryType: agentMemoryEntries.memoryType,
+  category: agentMemoryEntries.category,
+  content: agentMemoryEntries.content,
+  sourceIssueId: agentMemoryEntries.sourceIssueId,
+  sourceProjectId: agentMemoryEntries.sourceProjectId,
+  confidence: agentMemoryEntries.confidence,
+  accessCount: agentMemoryEntries.accessCount,
+  lastAccessedAt: agentMemoryEntries.lastAccessedAt,
+  expiresAt: agentMemoryEntries.expiresAt,
+  archivedAt: agentMemoryEntries.archivedAt,
+  createdAt: agentMemoryEntries.createdAt,
+};
+
 export function agentMemoryRoutes(db: Db) {
   const router = Router();
 
@@ -29,7 +47,7 @@ export function agentMemoryRoutes(db: Db) {
     await resolveAgent(companyId, agentId);
 
     const rows = await db
-      .select()
+      .select(memoryColumns)
       .from(agentMemoryEntries)
       .where(
         and(
@@ -110,7 +128,7 @@ export function agentMemoryRoutes(db: Db) {
     await resolveAgent(companyId, agentId);
 
     const existing = await db
-      .select()
+      .select(memoryColumns)
       .from(agentMemoryEntries)
       .where(
         and(
@@ -197,7 +215,7 @@ export function agentMemoryRoutes(db: Db) {
 
     // 1. Fetch the memory entry
     const existing = await db
-      .select()
+      .select(memoryColumns)
       .from(agentMemoryEntries)
       .where(
         and(
@@ -283,7 +301,7 @@ export function agentMemoryRoutes(db: Db) {
 
     // 1. Fetch the memory entry
     const existing = await db
-      .select()
+      .select(memoryColumns)
       .from(agentMemoryEntries)
       .where(
         and(

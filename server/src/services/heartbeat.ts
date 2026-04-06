@@ -18,6 +18,7 @@ import {
   issueLabels,
   knowledgePages,
   labels,
+  goals,
   principalPermissionGrants,
   projects,
   projectWorkspaces,
@@ -2680,6 +2681,7 @@ export function heartbeatService(db: Db) {
             assigneeAgentId: issues.assigneeAgentId,
             assigneeAdapterOverrides: issues.assigneeAdapterOverrides,
             executionWorkspaceSettings: issues.executionWorkspaceSettings,
+            goalId: issues.goalId,
           })
           .from(issues)
           .where(and(eq(issues.id, issueId), eq(issues.companyId, agent.companyId)))
@@ -3473,6 +3475,38 @@ export function heartbeatService(db: Db) {
       }
     } catch (err) {
       logger.debug({ err, agentId: agent.id }, "dependency context injection failed, skipping");
+    }
+
+    // ── Goal Context: inject goal info when issue is linked to a goal ──────
+    try {
+      const issueGoalId = issueContext?.goalId ?? null;
+      if (issueGoalId) {
+        const [goalRow] = await db
+          .select({
+            title: goals.title,
+            healthStatus: goals.healthStatus,
+            healthScore: goals.healthScore,
+            confidence: goals.confidence,
+            targetDate: goals.targetDate,
+          })
+          .from(goals)
+          .where(eq(goals.id, issueGoalId))
+          .limit(1);
+
+        if (goalRow) {
+          const targetDateStr = goalRow.targetDate
+            ? new Date(goalRow.targetDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+            : "Not set";
+          const healthLabel = (goalRow.healthStatus ?? "no_data").replace(/_/g, " ");
+          const progressNote = goalRow.healthScore != null ? `${goalRow.healthScore}%` : "unknown";
+          context.ironworksGoalContext =
+            `You are working on an issue that advances the goal "${goalRow.title}" ` +
+            `which is currently ${progressNote} complete with health status ${healthLabel}. ` +
+            `Target date: ${targetDateStr}. Confidence: ${goalRow.confidence ?? 50}%.`;
+        }
+      }
+    } catch (err) {
+      logger.debug({ err, agentId: agent.id }, "goal context injection failed, skipping");
     }
 
     context.ironworksWorkspace = {

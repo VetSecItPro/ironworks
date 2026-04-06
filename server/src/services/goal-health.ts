@@ -1,7 +1,9 @@
 import { eq, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import { goals, issues } from "@ironworksai/db";
+import { goals, issues, agents } from "@ironworksai/db";
 import type { GoalHealthStatus } from "@ironworksai/shared";
+import { ensureCompanyChannel, ensureDepartmentChannel, postMessage } from "./channels.js";
+import { logger } from "../middleware/logger.js";
 
 export interface HealthResult {
   score: number;
@@ -115,11 +117,75 @@ export async function computeGoalHealth(db: Db, goalId: string): Promise<HealthR
     status = "off_track";
   }
 
+  // Check for health transition before persisting
+  const previousStatus = goal.healthStatus as GoalHealthStatus | null;
+  const transitionedToWorse =
+    previousStatus === "on_track" && (status === "at_risk" || status === "off_track");
+
   // Persist to goals table
   await db
     .update(goals)
     .set({ healthScore: clampedScore, healthStatus: status, updatedAt: new Date() })
     .where(eq(goals.id, goalId));
 
+  // Escalation: post to channels when health degrades
+  if (transitionedToWorse) {
+    try {
+      await escalateGoalHealthChange(db, goal, status, clampedScore);
+    } catch (err) {
+      logger.warn({ err, goalId }, "goal health escalation failed (non-fatal)");
+    }
+  }
+
   return { score: clampedScore, status };
+}
+
+/**
+ * Post escalation messages when a goal transitions from on_track to at_risk/off_track.
+ */
+async function escalateGoalHealthChange(
+  db: Db,
+  goal: typeof goals.$inferSelect,
+  newStatus: GoalHealthStatus,
+  score: number,
+): Promise<void> {
+  const statusLabel = newStatus === "at_risk" ? "AT RISK" : "OFF TRACK";
+  const reason =
+    newStatus === "off_track"
+      ? "Progress has fallen significantly behind schedule."
+      : "Progress is slipping and may miss the target date.";
+  const body = `[${goal.title}] is now ${statusLabel}. Health score: ${score}. ${reason}`;
+
+  // Post to #company channel
+  const companyChannelId = await ensureCompanyChannel(db, goal.companyId);
+  await postMessage(db, {
+    channelId: companyChannelId,
+    companyId: goal.companyId,
+    body,
+    messageType: "alert",
+  });
+
+  // If goal has an owner agent, also post to their department channel
+  if (goal.ownerAgentId) {
+    const [ownerAgent] = await db
+      .select({ department: agents.department })
+      .from(agents)
+      .where(eq(agents.id, goal.ownerAgentId))
+      .limit(1);
+
+    if (ownerAgent?.department) {
+      const deptChannelId = await ensureDepartmentChannel(
+        db,
+        goal.companyId,
+        ownerAgent.department,
+      );
+      await postMessage(db, {
+        channelId: deptChannelId,
+        companyId: goal.companyId,
+        authorAgentId: goal.ownerAgentId,
+        body,
+        messageType: "alert",
+      });
+    }
+  }
 }

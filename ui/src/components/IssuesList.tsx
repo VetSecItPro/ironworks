@@ -24,7 +24,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { CircleDot, Plus, Filter, ArrowUpDown, Layers, Check, X, ChevronRight, ChevronUp, ChevronDown, List, Columns3, User, Search } from "lucide-react";
-import { KanbanBoard } from "./KanbanBoard";
+import { KanbanBoard, type KanbanGoalInfo } from "./KanbanBoard";
 import { useConfetti, useStaggeredEntry } from "../hooks/useMicroInteractions";
 import type { Issue } from "@ironworksai/shared";
 
@@ -222,6 +222,7 @@ interface IssuesListProps {
   };
   onSearchChange?: (search: string) => void;
   onUpdateIssue: (id: string, data: Record<string, unknown>) => void;
+  goalInfo?: KanbanGoalInfo | null;
 }
 
 interface IssuesSearchInputProps {
@@ -279,6 +280,7 @@ export function IssuesList({
   searchFilters,
   onSearchChange,
   onUpdateIssue,
+  goalInfo,
 }: IssuesListProps) {
   const { selectedCompanyId } = useCompany();
   const { openNewIssue } = useDialog();
@@ -913,6 +915,7 @@ export function IssuesList({
           agents={agents}
           liveIssueIds={liveIssueIds}
           onUpdateIssue={onUpdateIssue}
+          goalInfo={goalInfo}
         />
       ) : (
         <>

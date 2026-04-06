@@ -22,6 +22,9 @@ import { InlineEditor } from "../components/InlineEditor";
 import { StatusBadge } from "../components/StatusBadge";
 import { BudgetPolicyCard } from "../components/BudgetPolicyCard";
 import { IssuesList } from "../components/IssuesList";
+import type { KanbanGoalInfo } from "../components/KanbanBoard";
+import { goalsApi } from "../api/goals";
+import { goalProgressApi } from "../api/goalProgress";
 import { PageSkeleton } from "../components/PageSkeleton";
 import { PageTabBar } from "../components/PageTabBar";
 import { projectRouteRef, cn } from "../lib/utils";
@@ -214,7 +217,7 @@ function ColorPicker({
 
 /* ── List (issues) tab content ── */
 
-function ProjectIssuesList({ projectId, companyId }: { projectId: string; companyId: string }) {
+function ProjectIssuesList({ projectId, companyId, goalIds }: { projectId: string; companyId: string; goalIds?: string[] }) {
   const queryClient = useQueryClient();
 
   const { data: agents } = useQuery({
@@ -244,6 +247,29 @@ function ProjectIssuesList({ projectId, companyId }: { projectId: string; compan
     enabled: !!companyId,
   });
 
+  // Goal info for Kanban board header
+  const primaryGoalId = goalIds?.[0] ?? null;
+  const { data: primaryGoal } = useQuery({
+    queryKey: queryKeys.goals.detail(primaryGoalId!),
+    queryFn: () => goalsApi.get(primaryGoalId!),
+    enabled: !!primaryGoalId,
+    staleTime: 30_000,
+  });
+  const { data: goalProgress } = useQuery({
+    queryKey: ["goals", "progress-detail", primaryGoalId],
+    queryFn: () => goalProgressApi.detail(primaryGoalId!),
+    enabled: !!primaryGoalId,
+    staleTime: 30_000,
+  });
+
+  const goalInfo: KanbanGoalInfo | null = primaryGoal
+    ? {
+        title: primaryGoal.title,
+        healthStatus: primaryGoal.healthStatus ?? null,
+        progressPercent: goalProgress?.progressPercent ?? 0,
+      }
+    : null;
+
   const updateIssue = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
       issuesApi.update(id, data),
@@ -263,6 +289,7 @@ function ProjectIssuesList({ projectId, companyId }: { projectId: string; compan
       projectId={projectId}
       viewStateKey={`ironworks:project-view:${projectId}`}
       onUpdateIssue={(id, data) => updateIssue.mutate({ id, data })}
+      goalInfo={goalInfo}
     />
   );
 }
@@ -812,7 +839,7 @@ export function ProjectDetail() {
       )}
 
       {activeTab === "list" && project?.id && resolvedCompanyId && (
-        <ProjectIssuesList projectId={project.id} companyId={resolvedCompanyId} />
+        <ProjectIssuesList projectId={project.id} companyId={resolvedCompanyId} goalIds={project.goalIds} />
       )}
 
       {activeTab === "activity" && project?.id && resolvedCompanyId && (

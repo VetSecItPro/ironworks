@@ -191,11 +191,19 @@ function BulkOperationsBar({
   );
 }
 
+/** Optional goal info to show in board header when project has a linked goal */
+export interface KanbanGoalInfo {
+  title: string;
+  healthStatus: string | null;
+  progressPercent: number;
+}
+
 interface KanbanBoardProps {
   issues: Issue[];
   agents?: Agent[];
   liveIssueIds?: Set<string>;
   onUpdateIssue: (id: string, data: Record<string, unknown>) => void;
+  goalInfo?: KanbanGoalInfo | null;
 }
 
 /* ── Column Component ── */
@@ -402,11 +410,52 @@ function SwimlaneToggle({
 
 /* ── Main Board ── */
 
+/* ── Goal-Aware Board Header ── */
+
+const HEALTH_BADGE_COLORS: Record<string, string> = {
+  on_track: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+  at_risk: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+  off_track: "bg-red-500/10 text-red-600 dark:text-red-400",
+  achieved: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+};
+
+function GoalBoardHeader({ goalInfo }: { goalInfo: KanbanGoalInfo }) {
+  const healthLabel = goalInfo.healthStatus?.replace(/_/g, " ") ?? "";
+  const healthColor = HEALTH_BADGE_COLORS[goalInfo.healthStatus ?? ""] ?? "bg-muted text-muted-foreground";
+  const barColor =
+    goalInfo.progressPercent === 100
+      ? "bg-emerald-500"
+      : goalInfo.progressPercent > 50
+        ? "bg-blue-500"
+        : "bg-amber-500";
+
+  return (
+    <div className="rounded-lg border border-border px-4 py-2.5 space-y-1.5 bg-muted/20">
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-semibold truncate">{goalInfo.title}</span>
+        {healthLabel && (
+          <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0", healthColor)}>
+            {healthLabel}
+          </span>
+        )}
+        <span className="text-xs text-muted-foreground tabular-nums ml-auto shrink-0">{Math.round(goalInfo.progressPercent)}%</span>
+      </div>
+      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+        <div
+          className={cn("h-full rounded-full transition-[width] duration-300", barColor)}
+          style={{ width: `${Math.min(100, goalInfo.progressPercent)}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
 export function KanbanBoard({
   issues,
   agents,
   liveIssueIds,
   onUpdateIssue,
+  goalInfo,
 }: KanbanBoardProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -711,6 +760,9 @@ export function KanbanBoard({
 
   return (
     <div ref={boardRef} className="space-y-3">
+      {/* Goal-aware header */}
+      {goalInfo && <GoalBoardHeader goalInfo={goalInfo} />}
+
       {/* Toolbar: swimlane toggle */}
       <div className="flex items-center gap-3">
         <SwimlaneToggle mode={swimlaneMode} onChange={setSwimlaneMode} />
