@@ -261,11 +261,13 @@ export function CompanyRail() {
   }, [sidebarCompanies, orderedIds]);
 
   // Fetch subscription for the selected company to determine tier limits
+  // Silently fails if billing endpoint doesn't exist (no Polar/Stripe configured)
   const { data: subscriptionData } = useQuery({
     queryKey: queryKeys.billing.subscription(selectedCompanyId ?? ""),
-    queryFn: () => billingApi.getSubscription(selectedCompanyId!),
+    queryFn: () => billingApi.getSubscription(selectedCompanyId!).catch(() => null),
     enabled: !!selectedCompanyId,
     staleTime: 60_000,
+    retry: false,
   });
 
   const handleAddCompany = useCallback(() => {

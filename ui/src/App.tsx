@@ -467,6 +467,7 @@ export function App() {
           <Route path="goals/*" element={<UnprefixedBoardRedirect />} />
           <Route path="approvals" element={<UnprefixedBoardRedirect />} />
           <Route path="approvals/*" element={<UnprefixedBoardRedirect />} />
+          <Route path="channels/*" element={<UnprefixedBoardRedirect />} />
           <Route path="company/*" element={<UnprefixedBoardRedirect />} />
           <Route path="privacy-settings" element={<UnprefixedBoardRedirect />} />
           <Route path="tests/ux/runs" element={<UnprefixedBoardRedirect />} />

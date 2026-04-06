@@ -77,8 +77,9 @@ export function BillingSettings() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.billing.subscription(selectedCompanyId ?? ""),
-    queryFn: () => billingApi.getSubscription(selectedCompanyId!),
+    queryFn: () => billingApi.getSubscription(selectedCompanyId!).catch(() => null),
     enabled: !!selectedCompanyId,
+    retry: false,
   });
 
   const portalMutation = useMutation({
