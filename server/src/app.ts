@@ -141,7 +141,7 @@ export async function createApp(
     res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
     if (opts.uiMode !== "vite-dev") {
       res.setHeader("Content-Security-Policy",
-        "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com; frame-src 'none'; object-src 'none'; base-uri 'self'");
+        "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' ws: wss: https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com https://ollama.com; frame-src 'none'; object-src 'none'; base-uri 'self'");
     }
     next();
   });
