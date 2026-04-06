@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, isNotNull, isNull, lt, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, lt, lte, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { agentMemoryEntries } from "@ironworksai/db";
 import { logger } from "../middleware/logger.js";
@@ -257,7 +257,7 @@ export async function decayStaleMemories(db: Db): Promise<void> {
         isNull(agentMemoryEntries.archivedAt),
         lte(agentMemoryEntries.lastAccessedAt, thirtyDaysAgo),
         // Exclude entries already decayed in the 90-day pass above
-        sql`${agentMemoryEntries.lastAccessedAt} > ${ninetyDaysAgo}`,
+        gt(agentMemoryEntries.lastAccessedAt, ninetyDaysAgo),
       ),
     )
     .returning({ id: agentMemoryEntries.id });
