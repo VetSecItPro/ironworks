@@ -2,7 +2,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState, type ChangeEve
 import { Link, useLocation } from "react-router-dom";
 import type { IssueComment, Agent } from "@ironworksai/shared";
 import { Button } from "@/components/ui/button";
-import { Check, Copy, Paperclip, SmilePlus } from "lucide-react";
+import { Check, Copy, Paperclip, SmilePlus, X } from "lucide-react";
 import { Identity } from "./Identity";
 import { InlineEntitySelector, type InlineEntityOption } from "./InlineEntitySelector";
 import { MarkdownBody } from "./MarkdownBody";
@@ -410,6 +410,7 @@ export function CommentThread({
   const [reopen, setReopen] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [attaching, setAttaching] = useState(false);
+  const [pastedImage, setPastedImage] = useState<{ file: File; preview: string } | null>(null);
   const effectiveSuggestedAssigneeValue = suggestedAssigneeValue ?? currentAssigneeValue;
   const [reassignTarget, setReassignTarget] = useState(effectiveSuggestedAssigneeValue);
   const [highlightCommentId, setHighlightCommentId] = useState<string | null>(null);
@@ -532,6 +533,47 @@ export function CommentThread({
     }
   }
 
+  // Paste image handler: detect paste event with image data
+  async function handlePaste(e: { clipboardData: DataTransfer | null; preventDefault: () => void }) {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of Array.from(items)) {
+      if (item.type.startsWith("image/")) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (!file) continue;
+        const preview = URL.createObjectURL(file);
+        setPastedImage({ file, preview });
+        return;
+      }
+    }
+  }
+
+  async function handlePastedImageAttach() {
+    if (!pastedImage) return;
+    setAttaching(true);
+    try {
+      if (imageUploadHandler) {
+        const url = await imageUploadHandler(pastedImage.file);
+        const markdown = `![pasted image](${url})`;
+        setBody((prev) => prev ? `${prev}\n\n${markdown}` : markdown);
+      } else if (onAttachImage) {
+        await onAttachImage(pastedImage.file);
+      }
+    } finally {
+      setAttaching(false);
+      URL.revokeObjectURL(pastedImage.preview);
+      setPastedImage(null);
+    }
+  }
+
+  function dismissPastedImage() {
+    if (pastedImage) {
+      URL.revokeObjectURL(pastedImage.preview);
+      setPastedImage(null);
+    }
+  }
+
   const canSubmit = !submitting && !!body.trim();
 
   return (
@@ -550,7 +592,7 @@ export function CommentThread({
 
       {liveRunSlot}
 
-      <div className="space-y-2">
+      <div className="space-y-2" onPaste={handlePaste}>
         <MarkdownEditor
           ref={editorRef}
           value={body}
@@ -561,6 +603,22 @@ export function CommentThread({
           imageUploadHandler={imageUploadHandler}
           contentClassName="min-h-[60px] text-sm"
         />
+        {/* Pasted image preview */}
+        {pastedImage && (
+          <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 p-2">
+            <img src={pastedImage.preview} alt="Pasted" className="h-16 w-16 object-cover rounded" />
+            <div className="flex-1 text-xs text-muted-foreground">
+              <p>Image pasted from clipboard</p>
+              <p className="text-[10px]">{pastedImage.file.name} ({(pastedImage.file.size / 1024).toFixed(1)} KB)</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={handlePastedImageAttach} disabled={attaching}>
+              {attaching ? "Uploading..." : "Attach"}
+            </Button>
+            <Button variant="ghost" size="icon-sm" onClick={dismissPastedImage}>
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        )}
         <div className="flex items-center justify-end gap-3">
           {(imageUploadHandler || onAttachImage) && (
             <div className="mr-auto flex items-center gap-3">

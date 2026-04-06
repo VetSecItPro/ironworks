@@ -165,13 +165,13 @@ function ActivityHeatmap({ events }: { events: ActivityEvent[] }) {
         <Calendar className="h-3.5 w-3.5" />
         Activity Density (6 months)
       </h4>
-      <div className="flex gap-0.5 overflow-x-auto">
+      <div className="grid gap-[3px]" style={{ gridTemplateColumns: `repeat(${weeks}, 1fr)` }}>
         {grid.map((week, wi) => (
-          <div key={wi} className="flex flex-col gap-0.5">
+          <div key={wi} className="flex flex-col gap-[3px]">
             {week.map((count, di) => (
               <div
                 key={di}
-                className={cn("h-2.5 w-2.5 rounded-[2px]", cellColor(count))}
+                className={cn("aspect-square w-full min-w-[8px] rounded-[3px]", cellColor(count))}
                 title={`${count} events`}
               />
             ))}

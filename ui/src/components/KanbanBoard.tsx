@@ -629,13 +629,26 @@ export function KanbanBoard({
     [openNewIssue],
   );
 
-  /* ── Keyboard navigation ── */
+  /* ── Keyboard-accessible drag & drop ── */
   const boardRef = useRef<HTMLDivElement>(null);
+  const [kbDragId, setKbDragId] = useState<string | null>(null);
+  const [kbDragCol, setKbDragCol] = useState<number | null>(null);
+
+  const cancelKbDrag = useCallback(() => {
+    setKbDragId(null);
+    setKbDragCol(null);
+  }, []);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      // Only handle when board is focused or contains active element
       if (!boardRef.current?.contains(document.activeElement)) return;
+
+      // Escape cancels keyboard drag
+      if (e.key === "Escape" && kbDragId) {
+        e.preventDefault();
+        cancelKbDrag();
+        return;
+      }
 
       const cards = boardRef.current.querySelectorAll<HTMLElement>(
         "[data-kanban-card]",
@@ -646,6 +659,30 @@ export function KanbanBoard({
         (el) => el === document.activeElement || el.contains(document.activeElement),
       );
 
+      // In keyboard drag mode
+      if (kbDragId && kbDragCol !== null) {
+        if (e.key === "ArrowLeft") {
+          e.preventDefault();
+          const newCol = Math.max(0, kbDragCol - 1);
+          setKbDragCol(newCol);
+        } else if (e.key === "ArrowRight") {
+          e.preventDefault();
+          const newCol = Math.min(BOARD_STATUSES.length - 1, kbDragCol + 1);
+          setKbDragCol(newCol);
+        } else if (e.key === "Enter") {
+          // Drop the card
+          e.preventDefault();
+          const targetStatus = BOARD_STATUSES[kbDragCol];
+          const draggedIssue = issues.find((i) => i.id === kbDragId);
+          if (draggedIssue && targetStatus && targetStatus !== draggedIssue.status) {
+            onUpdateIssue(kbDragId, { status: targetStatus });
+          }
+          cancelKbDrag();
+        }
+        return;
+      }
+
+      // Normal navigation
       if (e.key === "ArrowDown" && currentIndex < cards.length - 1) {
         e.preventDefault();
         cards[currentIndex + 1]?.focus();
@@ -653,14 +690,24 @@ export function KanbanBoard({
         e.preventDefault();
         cards[currentIndex - 1]?.focus();
       } else if (e.key === "Enter" && currentIndex >= 0) {
-        const link = cards[currentIndex]?.querySelector("a");
-        if (link) link.click();
+        e.preventDefault();
+        // Pick up the card for keyboard drag
+        const cardEl = cards[currentIndex];
+        const issueId = cardEl?.getAttribute("data-kanban-card");
+        if (issueId) {
+          const issue = issues.find((i) => i.id === issueId);
+          if (issue) {
+            const colIdx = BOARD_STATUSES.indexOf(issue.status as BoardStatus);
+            setKbDragId(issueId);
+            setKbDragCol(colIdx >= 0 ? colIdx : 0);
+          }
+        }
       }
     }
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [kbDragId, kbDragCol, issues, onUpdateIssue, cancelKbDrag]);
 
   return (
     <div ref={boardRef} className="space-y-3">
@@ -678,6 +725,19 @@ export function KanbanBoard({
         onChangePriority={handleBulkPriority}
         onClear={() => setSelectedIds(new Set())}
       />
+
+      {/* Keyboard drag indicator */}
+      {kbDragId && kbDragCol !== null && (
+        <div className="flex items-center gap-2 rounded-lg border border-blue-500/30 bg-blue-500/5 px-3 py-2 text-sm">
+          <span className="font-medium">Moving card with keyboard</span>
+          <span className="text-muted-foreground">
+            Target: <strong>{statusLabel(BOARD_STATUSES[kbDragCol])}</strong>
+          </span>
+          <span className="ml-auto text-xs text-muted-foreground">
+            Left/Right to move, Enter to drop, Escape to cancel
+          </span>
+        </div>
+      )}
 
       <DndContext
         sensors={sensors}
