@@ -769,6 +769,84 @@ function AgentJournal({ companyId, agentId }: { companyId: string; agentId: stri
   );
 }
 
+/* ── Communication Style Badge (12.57) ── */
+
+const ROLE_COMM_STYLES: Record<string, { label: string; color: string }> = {
+  ceo: { label: "Business", color: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30" },
+  cto: { label: "Technical", color: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30" },
+  cfo: { label: "Concise", color: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/30" },
+  cmo: { label: "Verbose", color: "bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/30" },
+  engineer: { label: "Technical", color: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30" },
+  designer: { label: "Verbose", color: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30" },
+  marketer: { label: "Verbose", color: "bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/30" },
+  director: { label: "Business", color: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30" },
+  accountant: { label: "Concise", color: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/30" },
+  analyst: { label: "Technical", color: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30" },
+  researcher: { label: "Verbose", color: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/30" },
+};
+
+function CommunicationStyleBadge({ role }: { role: string }) {
+  const style = ROLE_COMM_STYLES[role] ?? { label: "Concise", color: "bg-muted text-muted-foreground border-border" };
+  return (
+    <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium ${style.color}`}>
+      {style.label}
+    </span>
+  );
+}
+
+/* ── Agent Schedule (12.57) ── */
+
+function AgentScheduleInfo({ agent, runs }: { agent: AgentDetailRecord; runs: HeartbeatRun[] }) {
+  const runtimeConfig = (agent.runtimeConfig ?? {}) as Record<string, unknown>;
+  const heartbeatInterval = runtimeConfig.heartbeatInterval as number | undefined;
+  const scheduleCron = runtimeConfig.schedule as string | undefined;
+
+  const lastRun = [...runs].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+  const nextRunEstimate = lastRun && heartbeatInterval ? new Date(new Date(lastRun.createdAt).getTime() + heartbeatInterval * 60 * 1000) : null;
+
+  return (
+    <div className="space-y-1.5 text-sm">
+      {heartbeatInterval ? (
+        <div className="flex items-center gap-2">
+          <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+          <span>Every {heartbeatInterval}min heartbeat</span>
+        </div>
+      ) : scheduleCron ? (
+        <div className="flex items-center gap-2">
+          <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="font-mono text-xs">{scheduleCron}</span>
+        </div>
+      ) : (
+        <span className="text-muted-foreground">On-demand only</span>
+      )}
+      {lastRun && <div className="text-xs text-muted-foreground">Last run: {relativeTime(lastRun.createdAt)}</div>}
+      {nextRunEstimate && nextRunEstimate.getTime() > Date.now() && (
+        <div className="text-xs text-muted-foreground">Next estimated: {relativeTime(nextRunEstimate)}</div>
+      )}
+    </div>
+  );
+}
+
+/* ── Succession Warning (12.78) ── */
+
+function SuccessionWarning({ agentName, issues }: { agentName: string; issues: { id: string; status: string }[] }) {
+  const openIssues = issues.filter((i) => i.status !== "done" && i.status !== "cancelled");
+  if (openIssues.length === 0) return null;
+
+  return (
+    <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 flex items-start gap-3">
+      <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+      <div className="text-sm">
+        <p className="font-medium text-amber-600 dark:text-amber-400">Succession Impact</p>
+        <p className="text-muted-foreground mt-0.5">
+          If {agentName} is removed, <strong>{openIssues.length}</strong> open issue{openIssues.length !== 1 ? "s" : ""} would be
+          unassigned.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export function AgentDashboard({
   agent,
   runs,
@@ -797,6 +875,21 @@ export function AgentDashboard({
 
       {/* Employment */}
       <EmploymentCard agent={agent} companyId={agent.companyId} />
+
+      {/* Communication Style & Schedule (12.57) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="rounded-lg border border-border p-4 space-y-2">
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Communication Style</h4>
+          <CommunicationStyleBadge role={agent.role} />
+        </div>
+        <div className="rounded-lg border border-border p-4 space-y-2">
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Schedule</h4>
+          <AgentScheduleInfo agent={agent} runs={runs} />
+        </div>
+      </div>
+
+      {/* Succession Warning (12.78) */}
+      <SuccessionWarning agentName={agent.name} issues={assignedIssues} />
 
       {/* Model Strategy */}
       <ModelStrategyCard agent={agent} />

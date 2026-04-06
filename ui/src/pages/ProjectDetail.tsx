@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useParams, useNavigate, useLocation, Navigate } from "@/lib/router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { PROJECT_COLORS, isUuidLike, type BudgetPolicySummary, type Agent, type ActivityEvent } from "@ironworksai/shared";
+import { CopyPlus } from "lucide-react";
+import { MarkdownBody } from "../components/MarkdownBody";
 import { budgetsApi } from "../api/budgets";
 import { projectsApi } from "../api/projects";
 import { issuesApi } from "../api/issues";
@@ -67,8 +69,28 @@ function OverviewContent({
   imageUploadHandler?: (file: File) => Promise<string>;
   budgetSummary?: BudgetPolicySummary;
 }) {
+  const readme = (project as Record<string, unknown>).readme as string | undefined;
   return (
     <div className="space-y-6">
+      {/* Project README (12.56) */}
+      <div className="rounded-xl border border-border p-4 space-y-3">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Project README</h3>
+        <InlineEditor
+          value={readme ?? ""}
+          onSave={(val) => onUpdate({ readme: val })}
+          as="p"
+          className="text-sm"
+          placeholder="Write a project README - describe purpose, setup instructions, architecture..."
+          multiline
+          imageUploadHandler={imageUploadHandler}
+        />
+        {readme ? (
+          <div className="border-t border-border pt-3">
+            <MarkdownBody className="prose prose-sm dark:prose-invert max-w-none">{readme}</MarkdownBody>
+          </div>
+        ) : null}
+      </div>
+
       <InlineEditor
         value={project.description ?? ""}
         onSave={(description) => onUpdate({ description })}
@@ -464,6 +486,29 @@ export function ProjectDetail() {
     },
   });
 
+  const cloneProject = useMutation({
+    mutationFn: async () => {
+      if (!project || !resolvedCompanyId) throw new Error("No project to clone");
+      return projectsApi.create(resolvedCompanyId, {
+        name: `${project.name} (Copy)`,
+        description: project.description,
+        color: project.color,
+        targetDate: project.targetDate,
+        status: "planned",
+      });
+    },
+    onSuccess: (cloned) => {
+      pushToast({ title: `Project cloned as "${cloned.name}"`, tone: "success" });
+      if (resolvedCompanyId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.projects.list(resolvedCompanyId) });
+      }
+      navigate(`/projects/${cloned.urlKey ?? cloned.id}`);
+    },
+    onError: () => {
+      pushToast({ title: "Failed to clone project", tone: "error" });
+    },
+  });
+
   const uploadImage = useMutation({
     mutationFn: async (file: File) => {
       if (!resolvedCompanyId) throw new Error("No company selected");
@@ -678,13 +723,23 @@ export function ProjectDetail() {
             onSelect={(color) => updateProject.mutate({ color })}
           />
         </div>
-        <div className="min-w-0 space-y-2">
-          <InlineEditor
-            value={project.name}
-            onSave={(name) => updateProject.mutate({ name })}
-            as="h2"
-            className="text-xl font-bold"
-          />
+        <div className="min-w-0 space-y-2 flex-1">
+          <div className="flex items-center gap-2">
+            <InlineEditor
+              value={project.name}
+              onSave={(name) => updateProject.mutate({ name })}
+              as="h2"
+              className="text-xl font-bold"
+            />
+            <button
+              className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-xs rounded-md border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+              onClick={() => cloneProject.mutate()}
+              disabled={cloneProject.isPending}
+            >
+              <CopyPlus className="h-3 w-3" />
+              {cloneProject.isPending ? "Cloning..." : "Clone"}
+            </button>
+          </div>
           {project.pauseReason === "budget" ? (
             <div className="inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-red-200">
               <span className="h-2 w-2 rounded-full bg-red-400" />

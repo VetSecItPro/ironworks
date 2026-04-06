@@ -25,9 +25,57 @@ import { projectUrl } from "../lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle2, Circle, History, Loader2, PanelRightClose, PanelRightOpen, Plus, ShieldAlert, Target, Trash2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Circle, CopyPlus, History, Loader2, PanelRightClose, PanelRightOpen, Plus, ShieldAlert, Target, Trash2 } from "lucide-react";
 import { cn } from "../lib/utils";
+import { useNavigate } from "@/lib/router";
+import { useToast } from "../context/ToastContext";
 import type { Goal, Issue, Project } from "@ironworksai/shared";
+
+/* ── Risk Assessment (12.55) ── */
+
+interface GoalRiskAssessment {
+  level: "low" | "medium" | "high" | "critical";
+  blockedPercent: number;
+  overdueCount: number;
+  totalIssues: number;
+  description: string;
+}
+
+function calculateGoalRisk(issues: Issue[], targetDate: string | null): GoalRiskAssessment {
+  const total = issues.length;
+  if (total === 0) return { level: "low", blockedPercent: 0, overdueCount: 0, totalIssues: 0, description: "No linked issues" };
+
+  const blockedCount = issues.filter((i) => i.status === "blocked").length;
+  const blockedPercent = Math.round((blockedCount / total) * 100);
+
+  let overdueCount = 0;
+  if (targetDate) {
+    const target = new Date(targetDate).getTime();
+    const now = Date.now();
+    if (now > target) {
+      overdueCount = issues.filter((i) => i.status !== "done" && i.status !== "cancelled").length;
+    }
+  }
+
+  let level: GoalRiskAssessment["level"] = "low";
+  if (blockedPercent >= 50 || overdueCount > total * 0.5) level = "critical";
+  else if (blockedPercent >= 30 || overdueCount > total * 0.25) level = "high";
+  else if (blockedPercent >= 15 || overdueCount > 0) level = "medium";
+
+  const parts: string[] = [];
+  if (blockedPercent > 0) parts.push(`${blockedPercent}% blocked`);
+  if (overdueCount > 0) parts.push(`${overdueCount} overdue`);
+  const description = parts.length > 0 ? parts.join(", ") : "On track";
+
+  return { level, blockedPercent, overdueCount, totalIssues: total, description };
+}
+
+const riskColors: Record<GoalRiskAssessment["level"], string> = {
+  low: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
+  medium: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30",
+  high: "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/30",
+  critical: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30",
+};
 
 /* ── Burndown Chart ── */
 
@@ -122,10 +170,12 @@ function GoalBurndownChart({ issues, targetDate }: { issues: Issue[]; targetDate
 export function GoalDetail() {
   const { goalId } = useParams<{ goalId: string }>();
   const { selectedCompanyId, setSelectedCompanyId } = useCompany();
-  const { openNewGoal } = useDialog();
+  const { openNewGoal, openNewIssue } = useDialog();
   const { openPanel, closePanel } = usePanel();
   const { setBreadcrumbs } = useBreadcrumbs();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const { pushToast } = useToast();
   const [twoPane, setTwoPane] = useState(() => {
     try { return localStorage.getItem("ironworks:goal-two-pane") === "true"; } catch { return false; }
   });
@@ -272,6 +322,35 @@ export function GoalDetail() {
     }
   });
 
+  const cloneGoal = useMutation({
+    mutationFn: async () => {
+      if (!goal || !resolvedCompanyId) throw new Error("No goal to clone");
+      return goalsApi.create(resolvedCompanyId, {
+        title: `${goal.title} (Copy)`,
+        description: goal.description,
+        level: goal.level,
+        status: "planned",
+        parentId: goal.parentId,
+        targetDate: goal.targetDate,
+      });
+    },
+    onSuccess: (cloned) => {
+      pushToast({ title: `Goal cloned as "${cloned.title}"`, tone: "success" });
+      if (resolvedCompanyId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.goals.list(resolvedCompanyId) });
+      }
+      navigate(`/goals/${cloned.id}`);
+    },
+    onError: () => {
+      pushToast({ title: "Failed to clone goal", tone: "error" });
+    },
+  });
+
+  const riskAssessment = useMemo(
+    () => calculateGoalRisk(goalIssues, goal?.targetDate ?? null),
+    [goalIssues, goal?.targetDate],
+  );
+
   const childGoals = (allGoals ?? []).filter((g) => g.parentId === goalId);
   const linkedProjects = (allProjects ?? []).filter((p) => {
     if (!goalId) return false;
@@ -324,9 +403,19 @@ export function GoalDetail() {
             {goal.level}
           </span>
           <StatusBadge status={goal.status} />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => cloneGoal.mutate()}
+            disabled={cloneGoal.isPending}
+            className="ml-auto"
+          >
+            <CopyPlus className="h-3.5 w-3.5 mr-1" />
+            {cloneGoal.isPending ? "Cloning..." : "Clone Goal"}
+          </Button>
           <button
             onClick={toggleTwoPane}
-            className="ml-auto hidden text-muted-foreground hover:text-foreground transition-colors lg:inline-flex"
+            className="hidden text-muted-foreground hover:text-foreground transition-colors lg:inline-flex"
             title={twoPane ? "Hide properties panel" : "Show properties panel"}
           >
             {twoPane ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
@@ -353,6 +442,23 @@ export function GoalDetail() {
           }}
         />
       </div>
+
+      {/* Risk Assessment (12.55) */}
+      {goalIssues.length > 0 && (
+        <div className={cn("rounded-lg border p-3 flex items-center gap-3", riskColors[riskAssessment.level])}>
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wide">Risk: {riskAssessment.level}</span>
+            </div>
+            <p className="text-xs mt-0.5">{riskAssessment.description}</p>
+          </div>
+          <div className="text-right text-xs shrink-0">
+            <div>{riskAssessment.totalIssues} issues</div>
+            {riskAssessment.blockedPercent > 0 && <div>{riskAssessment.blockedPercent}% blocked</div>}
+          </div>
+        </div>
+      )}
 
       {/* Burndown Chart */}
       {goalIssues.length > 0 && (
@@ -412,6 +518,12 @@ export function GoalDetail() {
         </TabsList>
 
         <TabsContent value="issues" className="mt-4 space-y-3">
+          <div className="flex justify-end mb-2">
+            <Button size="sm" variant="outline" onClick={() => openNewIssue({ goalId })}>
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              Create Issue
+            </Button>
+          </div>
           {goalIssues.length === 0 ? (
             <p className="text-sm text-muted-foreground">No issues linked to this goal yet.</p>
           ) : (

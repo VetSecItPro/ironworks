@@ -29,6 +29,7 @@ import { WelcomeScreen, hasSeenWelcome } from "./WelcomeScreen";
 // FirstLoginWizard removed - redundant with onboarding wizard
 import { useChordNavigation } from "../hooks/useKeyboardPowerUser";
 import { useDialog } from "../context/DialogContext";
+import { useToast } from "../context/ToastContext";
 import { usePanel } from "../context/PanelContext";
 import { useCompany } from "../context/CompanyContext";
 import { useSidebar } from "../context/SidebarContext";
@@ -37,6 +38,7 @@ import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { useCompanyPageMemory } from "../hooks/useCompanyPageMemory";
 import { usePrefetch } from "../hooks/usePrefetch";
 import { healthApi } from "../api/health";
+import { registerRateLimitToast } from "../api/client";
 import { shouldSyncCompanySelectionFromRoute } from "../lib/company-selection";
 import {
   DEFAULT_INSTANCE_SETTINGS_PATH,
@@ -74,6 +76,13 @@ export function Layout() {
   const { theme, toggleTheme } = useTheme();
   const { companyPrefix } = useParams<{ companyPrefix: string }>();
   usePrefetch(selectedCompanyId);
+  const { pushToast } = useToast();
+
+  // Register rate limit toast handler for the API client
+  useEffect(() => {
+    registerRateLimitToast((msg) => pushToast({ title: msg, tone: "warn" }));
+  }, [pushToast]);
+
   const navigate = useNavigate();
   const location = useLocation();
   const { isInstanceAdmin } = useMeAccess();

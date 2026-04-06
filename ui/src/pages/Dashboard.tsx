@@ -23,7 +23,7 @@ import { EmptyState } from "../components/EmptyState";
 import { ActivityRow } from "../components/ActivityRow";
 import { Button } from "@/components/ui/button";
 import { cn, formatCents } from "../lib/utils";
-import { AlertTriangle, Bot, Briefcase, ChevronDown, ChevronRight, CircleDot, DollarSign, Megaphone, Play, Plus, Radio, ShieldCheck, Swords, PauseCircle, Users, UserPlus, Zap } from "lucide-react";
+import { AlertTriangle, Bot, Briefcase, ChevronDown, ChevronRight, CircleDot, DollarSign, Megaphone, Play, Plus, Radio, ShieldCheck, Swords, PauseCircle, Users, UserPlus, X, Zap } from "lucide-react";
 import { ActiveAgentsPanel } from "../components/ActiveAgentsPanel";
 import { ChartCard, PriorityChart, IssueStatusChart } from "../components/ActivityCharts";
 import { PageSkeleton } from "../components/PageSkeleton";
@@ -374,6 +374,79 @@ function DepartmentMiniChart({ departments }: { departments: Array<{ name: strin
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+/* ── Quick Links Widget (12.58) ── */
+
+interface QuickLink { id: string; label: string; url: string }
+const QUICK_LINKS_KEY = "ironworks:quick-links";
+
+function QuickLinksWidget() {
+  const navigate = useNavigate();
+  const [links, setLinks] = useState<QuickLink[]>(() => {
+    try { const raw = localStorage.getItem(QUICK_LINKS_KEY); return raw ? JSON.parse(raw) : []; } catch { return []; }
+  });
+  const [adding, setAdding] = useState(false);
+  const [newLabel, setNewLabel] = useState("");
+  const [newUrl, setNewUrl] = useState("");
+  const save = (updated: QuickLink[]) => { setLinks(updated); try { localStorage.setItem(QUICK_LINKS_KEY, JSON.stringify(updated)); } catch { /* */ } };
+
+  return (
+    <div className="rounded-xl border border-border p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Quick Links</h4>
+        <button className="text-xs text-muted-foreground hover:text-foreground transition-colors" onClick={() => setAdding(true)}>+ Add</button>
+      </div>
+      {adding && (
+        <div className="flex items-center gap-2">
+          <input className="flex-1 border border-border rounded px-2 py-1 text-xs bg-transparent" placeholder="Label" value={newLabel} onChange={(e) => setNewLabel(e.target.value)} autoFocus />
+          <input className="flex-1 border border-border rounded px-2 py-1 text-xs bg-transparent" placeholder="/path" value={newUrl} onChange={(e) => setNewUrl(e.target.value)} />
+          <button className="text-xs px-2 py-1 rounded bg-primary text-primary-foreground" onClick={() => { if (newLabel.trim() && newUrl.trim()) { save([...links, { id: `ql-${Date.now()}`, label: newLabel.trim(), url: newUrl.trim() }]); setNewLabel(""); setNewUrl(""); setAdding(false); } }}>Save</button>
+          <button className="text-xs text-muted-foreground" onClick={() => { setAdding(false); setNewLabel(""); setNewUrl(""); }}>Cancel</button>
+        </div>
+      )}
+      {links.length === 0 && !adding ? (
+        <p className="text-sm text-muted-foreground">No quick links. Click + Add to create shortcuts.</p>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {links.map((link) => (
+            <div key={link.id} className="group inline-flex items-center gap-1">
+              <button className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent transition-colors" onClick={() => navigate(link.url)}>{link.label}</button>
+              <button className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity" onClick={() => save(links.filter((l) => l.id !== link.id))} aria-label={`Remove ${link.label}`}><X className="h-3 w-3" /></button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Recent Deliverables Widget (12.58) ── */
+
+function RecentDeliverablesWidget({ issues, agents }: { issues: Issue[]; agents: Agent[] }) {
+  const agentName = (id: string | null) => { if (!id) return "Unassigned"; return agents.find((a) => a.id === id)?.name ?? "Unknown"; };
+  const deliverables = useMemo(() => issues.filter((i) => i.status === "in_review" || (i.status === "done" && i.completedAt)).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()).slice(0, 5), [issues]);
+
+  return (
+    <div className="rounded-xl border border-border p-4 space-y-3">
+      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Recent Deliverables</h4>
+      {deliverables.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No deliverables awaiting review.</p>
+      ) : (
+        <div className="space-y-2">
+          {deliverables.map((issue) => (
+            <Link key={issue.id} to={`/issues/${issue.identifier ?? issue.id}`} className="flex items-center gap-2 rounded-md p-2 hover:bg-accent/50 transition-colors no-underline text-inherit">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium truncate">{issue.title}</p>
+                <p className="text-xs text-muted-foreground">{agentName(issue.assigneeAgentId)} - {issue.status === "in_review" ? "In Review" : "Completed"}</p>
+              </div>
+              <span className={cn("shrink-0 inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium", issue.status === "in_review" ? "bg-amber-500/10 text-amber-600 dark:text-amber-400" : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400")}>{issue.status === "in_review" ? "Review" : "Done"}</span>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -1339,6 +1412,12 @@ export function Dashboard() {
             className="grid gap-4 md:grid-cols-2"
             itemClassName="rounded-lg border bg-card p-4 shadow-sm"
           />
+
+          {/* Quick Links + Recent Deliverables (12.58) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <QuickLinksWidget />
+            <RecentDeliverablesWidget issues={issues ?? []} agents={agents ?? []} />
+          </div>
 
           {/* ── 6. RECENT ACTIVITY ── */}
           {aggregatedActivity.length > 0 && (

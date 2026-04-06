@@ -320,6 +320,41 @@ function issueExecutionWorkspaceModeForExistingWorkspace(mode: string | null | u
   return "shared_workspace";
 }
 
+/* ------------------------------------------------------------------ */
+/*  Issue Templates                                                     */
+/* ------------------------------------------------------------------ */
+
+const ISSUE_TEMPLATES = [
+  {
+    key: "bug",
+    label: "Bug Report",
+    titlePrefix: "[Bug] ",
+    description: `## Steps to Reproduce\n1. \n2. \n3. \n\n## Expected Behavior\n\n\n## Actual Behavior\n\n\n## Environment\n- Browser/OS: \n- Version: `,
+    priority: "high",
+  },
+  {
+    key: "feature",
+    label: "Feature Request",
+    titlePrefix: "[Feature] ",
+    description: `## Problem\nDescribe the problem this feature would solve.\n\n## Proposed Solution\n\n\n## Alternatives Considered\n\n\n## Additional Context\n`,
+    priority: "medium",
+  },
+  {
+    key: "research",
+    label: "Research Task",
+    titlePrefix: "[Research] ",
+    description: `## Objective\nWhat are we trying to learn or decide?\n\n## Key Questions\n- \n- \n\n## Resources\n- \n\n## Expected Output\nWhat deliverable should result from this research?\n`,
+    priority: "medium",
+  },
+  {
+    key: "chore",
+    label: "Chore",
+    titlePrefix: "[Chore] ",
+    description: `## Task Description\n\n\n## Acceptance Criteria\n- [ ] \n- [ ] \n\n## Notes\n`,
+    priority: "low",
+  },
+] as const;
+
 export function NewIssueDialog() {
   const { newIssueOpen, newIssueDefaults, closeNewIssue } = useDialog();
   const { companies, selectedCompanyId, selectedCompany } = useCompany();
@@ -1062,6 +1097,36 @@ export function NewIssueDialog() {
             <span>New issue</span>
           </div>
           <div className="flex items-center gap-1">
+            {/* Template dropdown */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-muted-foreground h-7 px-2 gap-1"
+                  disabled={createIssue.isPending}
+                >
+                  <FileText className="h-3 w-3" />
+                  Template
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-44 p-1" align="end">
+                {ISSUE_TEMPLATES.map((tpl) => (
+                  <button
+                    key={tpl.key}
+                    type="button"
+                    className="flex items-center gap-2 w-full px-2.5 py-1.5 text-xs rounded hover:bg-accent/50 text-left"
+                    onClick={() => {
+                      setTitle(tpl.titlePrefix);
+                      setDescription(tpl.description);
+                      setPriority(tpl.priority);
+                    }}
+                  >
+                    {tpl.label}
+                  </button>
+                ))}
+              </PopoverContent>
+            </Popover>
             <Button
               variant="ghost"
               size="icon-xs"
@@ -1083,11 +1148,13 @@ export function NewIssueDialog() {
           </div>
         </div>
 
-        {/* Title */}
+        {/* Title (required) */}
         <div className="px-4 pt-4 pb-2 shrink-0">
+          <label className="block text-xs text-muted-foreground mb-1 required-asterisk">Title</label>
           <textarea
             className="w-full text-lg font-semibold bg-transparent outline-none resize-none overflow-hidden placeholder:text-muted-foreground/50"
             placeholder="Issue title"
+            required
             rows={1}
             value={title}
             onChange={(e) => {

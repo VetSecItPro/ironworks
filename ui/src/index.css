@@ -244,6 +244,20 @@
   font-size: 0.9375rem;
 }
 
+/* Setup celebration animations */
+@keyframes scaleIn {
+  from { transform: scale(0); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+@keyframes fadeInCheck {
+  from { opacity: 0; transform: scale(0.5); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* ARIA live regions */
 .sr-only {
   position: absolute;
@@ -1090,5 +1104,98 @@ a.ironworks-project-mention-chip {
   .p-4,
   .p-5 {
     padding: 0.625rem !important;
+  }
+}
+
+/* ── Micro-Interactions ── */
+
+/* Smooth number transitions (rolling counter) */
+@keyframes number-roll-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes number-roll-down {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.number-roll-up {
+  animation: number-roll-up 250ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.number-roll-down {
+  animation: number-roll-down 250ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Staggered list item entry */
+@keyframes list-item-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.list-item-enter {
+  animation: list-item-enter 200ms ease-out both;
+}
+
+/* Status change confetti - small particle burst */
+@keyframes confetti-particle {
+  0% { opacity: 1; transform: translate(0, 0) scale(1); }
+  100% { opacity: 0; transform: translate(var(--confetti-x), var(--confetti-y)) scale(0); }
+}
+.confetti-particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: confetti-particle 600ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Progress bar smooth fill */
+.progress-bar-animated {
+  transition: width 500ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Tab switch cross-fade */
+@keyframes tab-content-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.tab-content-enter {
+  animation: tab-content-enter 150ms ease-out;
+}
+
+/* Scroll-triggered fade-in */
+@keyframes scroll-fade-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.scroll-fade-in {
+  animation: scroll-fade-in 400ms ease-out both;
+}
+
+/* Inline cell editing highlight */
+.inline-edit-cell {
+  transition: background-color 150ms ease, box-shadow 150ms ease;
+}
+.inline-edit-cell:hover {
+  background-color: color-mix(in oklab, var(--accent) 30%, transparent);
+}
+
+/* Required field asterisk */
+.required-asterisk::after {
+  content: " *";
+  color: oklch(0.577 0.245 27.325);
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .number-roll-up,
+  .number-roll-down,
+  .list-item-enter,
+  .confetti-particle,
+  .tab-content-enter,
+  .scroll-fade-in {
+    animation: none;
+  }
+  .progress-bar-animated {
+    transition: none;
   }
 }

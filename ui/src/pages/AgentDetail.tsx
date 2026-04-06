@@ -508,10 +508,26 @@ export function AgentDetail() {
                 className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50 text-destructive"
                 onClick={() => {
                   const openIssueCount = assignedIssues.filter((i) => i.status !== "done" && i.status !== "cancelled").length;
-                  const msg = openIssueCount > 0
-                    ? `This agent has ${openIssueCount} open issue(s) that will be orphaned. Reassign them from the Issues page after termination.\n\nTerminate ${agent?.name ?? "this agent"}?`
-                    : `Terminate ${agent?.name ?? "this agent"}? This cannot be undone.`;
-                  if (confirm(msg)) {
+                  const successionWarning = openIssueCount > 0
+                    ? `\n\nWARNING: ${openIssueCount} open issue(s) will be unassigned.`
+                    : "";
+                  const reason = prompt(
+                    `Exit Interview: ${agent?.name ?? "this agent"}\n\nPlease provide a reason for termination:${successionWarning}`,
+                    "",
+                  );
+                  if (reason !== null) {
+                    try {
+                      const exitInterviews = JSON.parse(localStorage.getItem("ironworks:exit-interviews") ?? "{}");
+                      exitInterviews[agent.id] = {
+                        agentName: agent.name,
+                        reason: reason || "No reason provided",
+                        date: new Date().toISOString(),
+                        openIssueCount,
+                      };
+                      localStorage.setItem("ironworks:exit-interviews", JSON.stringify(exitInterviews));
+                    } catch {
+                      /* ignore */
+                    }
                     agentAction.mutate("terminate");
                     setMoreOpen(false);
                   }

@@ -1,4 +1,5 @@
 import { startTransition, useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { Link } from "@/lib/router";
 import { useQuery } from "@tanstack/react-query";
 import { pickTextColorForPillBg } from "@/lib/color-contrast";
 import { useDialog } from "../context/DialogContext";
@@ -15,14 +16,16 @@ import { PriorityIcon } from "./PriorityIcon";
 import { EmptyState } from "./EmptyState";
 import { Identity } from "./Identity";
 import { IssueRow } from "./IssueRow";
+import { DeadlineCountdown } from "./DeadlineCountdown";
 import { PageSkeleton } from "./PageSkeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
-import { CircleDot, Plus, Filter, ArrowUpDown, Layers, Check, X, ChevronRight, List, Columns3, User, Search } from "lucide-react";
+import { CircleDot, Plus, Filter, ArrowUpDown, Layers, Check, X, ChevronRight, ChevronUp, ChevronDown, List, Columns3, User, Search } from "lucide-react";
 import { KanbanBoard } from "./KanbanBoard";
+import { useConfetti, useStaggeredEntry } from "../hooks/useMicroInteractions";
 import type { Issue } from "@ironworksai/shared";
 
 /* ── Helpers ── */
@@ -36,6 +39,11 @@ function statusLabel(status: string): string {
 
 /* ── View state ── */
 
+type SortSpec = {
+  field: "status" | "priority" | "title" | "created" | "updated";
+  dir: "asc" | "desc";
+};
+
 export type IssueViewState = {
   statuses: string[];
   priorities: string[];
@@ -44,9 +52,13 @@ export type IssueViewState = {
   projects: string[];
   sortField: "status" | "priority" | "title" | "created" | "updated";
   sortDir: "asc" | "desc";
+  /** Multi-column sort: secondary sorts applied when primary produces a tie. */
+  secondarySorts?: SortSpec[];
   groupBy: "status" | "priority" | "assignee" | "none";
   viewMode: "list" | "board";
   collapsedGroups: string[];
+  /** Column-specific filters */
+  columnFilters?: { title?: string; status?: string[]; priority?: string[] };
 };
 
 const defaultViewState: IssueViewState = {
@@ -57,9 +69,11 @@ const defaultViewState: IssueViewState = {
   projects: [],
   sortField: "updated",
   sortDir: "desc",
+  secondarySorts: [],
   groupBy: "none",
   viewMode: "list",
   collapsedGroups: [],
+  columnFilters: {},
 };
 
 const quickFilterPresets = [
@@ -112,26 +126,54 @@ function applyFilters(issues: Issue[], state: IssueViewState, currentUserId?: st
   return result;
 }
 
+function compareByField(a: Issue, b: Issue, field: string, dir: number): number {
+  switch (field) {
+    case "status":
+      return dir * (statusOrder.indexOf(a.status) - statusOrder.indexOf(b.status));
+    case "priority":
+      return dir * (priorityOrder.indexOf(a.priority) - priorityOrder.indexOf(b.priority));
+    case "title":
+      return dir * a.title.localeCompare(b.title);
+    case "created":
+      return dir * (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    case "updated":
+      return dir * (new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime());
+    default:
+      return 0;
+  }
+}
+
 function sortIssues(issues: Issue[], state: IssueViewState): Issue[] {
   const sorted = [...issues];
-  const dir = state.sortDir === "asc" ? 1 : -1;
+  const primaryDir = state.sortDir === "asc" ? 1 : -1;
+  const secondary = state.secondarySorts ?? [];
+
   sorted.sort((a, b) => {
-    switch (state.sortField) {
-      case "status":
-        return dir * (statusOrder.indexOf(a.status) - statusOrder.indexOf(b.status));
-      case "priority":
-        return dir * (priorityOrder.indexOf(a.priority) - priorityOrder.indexOf(b.priority));
-      case "title":
-        return dir * a.title.localeCompare(b.title);
-      case "created":
-        return dir * (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-      case "updated":
-        return dir * (new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime());
-      default:
-        return 0;
+    const primary = compareByField(a, b, state.sortField, primaryDir);
+    if (primary !== 0) return primary;
+    for (const sec of secondary) {
+      const result = compareByField(a, b, sec.field, sec.dir === "asc" ? 1 : -1);
+      if (result !== 0) return result;
     }
+    return 0;
   });
   return sorted;
+}
+
+function applyColumnFilters(issues: Issue[], columnFilters?: IssueViewState["columnFilters"]): Issue[] {
+  if (!columnFilters) return issues;
+  let result = issues;
+  if (columnFilters.title?.trim()) {
+    const q = columnFilters.title.trim().toLowerCase();
+    result = result.filter((i) => i.title.toLowerCase().includes(q));
+  }
+  if (columnFilters.status && columnFilters.status.length > 0) {
+    result = result.filter((i) => columnFilters.status!.includes(i.status));
+  }
+  if (columnFilters.priority && columnFilters.priority.length > 0) {
+    result = result.filter((i) => columnFilters.priority!.includes(i.priority));
+  }
+  return result;
 }
 
 function countActiveFilters(state: IssueViewState): number {
@@ -322,8 +364,51 @@ export function IssuesList({
   const filtered = useMemo(() => {
     const sourceIssues = normalizedIssueSearch.length > 0 ? searchedIssues : issues;
     const filteredByControls = applyFilters(sourceIssues, viewState, currentUserId);
-    return sortIssues(filteredByControls, viewState);
+    const filteredByColumns = applyColumnFilters(filteredByControls, viewState.columnFilters);
+    return sortIssues(filteredByColumns, viewState);
   }, [issues, searchedIssues, viewState, normalizedIssueSearch, currentUserId]);
+
+  // Inline editing state
+  const [editingCell, setEditingCell] = useState<{ issueId: string; field: "status" | "priority" } | null>(null);
+
+  // Multi-sort: shift+click adds secondary sort
+  const handleColumnHeaderClick = useCallback((field: IssueViewState["sortField"], shiftKey: boolean) => {
+    if (shiftKey) {
+      const existing = viewState.secondarySorts ?? [];
+      const alreadyIdx = existing.findIndex((s) => s.field === field);
+      if (alreadyIdx >= 0) {
+        const updated = [...existing];
+        updated[alreadyIdx] = { field, dir: updated[alreadyIdx].dir === "asc" ? "desc" : "asc" };
+        updateView({ secondarySorts: updated });
+      } else if (field !== viewState.sortField) {
+        updateView({ secondarySorts: [...existing, { field, dir: "asc" }] });
+      }
+    } else {
+      if (viewState.sortField === field) {
+        updateView({ sortDir: viewState.sortDir === "asc" ? "desc" : "asc", secondarySorts: [] });
+      } else {
+        updateView({ sortField: field, sortDir: "asc", secondarySorts: [] });
+      }
+    }
+  }, [viewState.sortField, viewState.sortDir, viewState.secondarySorts, updateView]);
+
+  const updateColumnFilter = useCallback((key: keyof NonNullable<IssueViewState["columnFilters"]>, value: unknown) => {
+    updateView({ columnFilters: { ...viewState.columnFilters, [key]: value } });
+  }, [viewState.columnFilters, updateView]);
+
+  const { trigger: triggerConfetti } = useConfetti();
+  const getStaggerStyle = useStaggeredEntry(filtered.length, 30);
+
+  const handleStatusChange = useCallback((issueId: string, newStatus: string, element?: HTMLElement | null) => {
+    onUpdateIssue(issueId, { status: newStatus });
+    if (newStatus === "done" && element) triggerConfetti(element);
+    setEditingCell(null);
+  }, [onUpdateIssue, triggerConfetti]);
+
+  const handlePriorityChange = useCallback((issueId: string, newPriority: string) => {
+    onUpdateIssue(issueId, { priority: newPriority });
+    setEditingCell(null);
+  }, [onUpdateIssue]);
 
   const { data: labels } = useQuery({
     queryKey: queryKeys.issues.labels(selectedCompanyId!),
@@ -775,6 +860,53 @@ export function IssuesList({
         />
       )}
 
+      {/* Mobile card layout (<768px) (12.40) */}
+      <div className="md:hidden space-y-2">
+        {!isLoading && filtered.length > 0 && filtered.map((issue) => (
+          <Link
+            key={`mobile-card-${issue.id}`}
+            to={`/issues/${issue.identifier ?? issue.id}`}
+            state={issueLinkState}
+            className="block rounded-lg border border-border bg-card p-3 space-y-2 hover:border-foreground/20 transition-colors no-underline text-foreground"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <StatusIcon status={issue.status} />
+                <span className="font-mono text-xs text-muted-foreground shrink-0">
+                  {issue.identifier ?? issue.id.slice(0, 8)}
+                </span>
+              </div>
+              <PriorityIcon priority={issue.priority} />
+            </div>
+            <p className="text-sm font-medium leading-tight">{issue.title}</p>
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>
+                {issue.assigneeAgentId && agentName(issue.assigneeAgentId)
+                  ? agentName(issue.assigneeAgentId)
+                  : "Unassigned"}
+              </span>
+              <div className="flex items-center gap-2">
+                {issue.targetDate && (
+                  <DeadlineCountdown targetDate={issue.targetDate} status={issue.status} />
+                )}
+                <span>{timeAgo(issue.updatedAt)}</span>
+              </div>
+            </div>
+            {liveIssueIds?.has(issue.id) && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-600 dark:text-blue-400">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500" />
+                </span>
+                Live
+              </span>
+            )}
+          </Link>
+        ))}
+      </div>
+
+      {/* Desktop list/board layout (>=768px) */}
+      <div className="hidden md:block">
       {viewState.viewMode === "board" ? (
         <KanbanBoard
           issues={filtered}
@@ -783,7 +915,112 @@ export function IssuesList({
           onUpdateIssue={onUpdateIssue}
         />
       ) : (
-        groupedContent.map((group) => (
+        <>
+        {/* Column headers with sort + column filters */}
+        <div className="flex items-center gap-2 border-b border-border px-2 py-1.5 text-xs text-muted-foreground select-none">
+          <div className="w-[60px] shrink-0" />
+          <div className="flex-1 min-w-0 flex items-center gap-1">
+            <button
+              className="flex items-center gap-1 hover:text-foreground transition-colors"
+              onClick={(e) => handleColumnHeaderClick("title", e.shiftKey)}
+              title="Click to sort, Shift+click for secondary sort"
+            >
+              <span className="font-medium">Title</span>
+              {viewState.sortField === "title" && (viewState.sortDir === "asc" ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />)}
+              {(viewState.secondarySorts ?? []).some((s) => s.field === "title") && <span className="text-[9px] tabular-nums text-blue-500">2</span>}
+            </button>
+            <input
+              className="ml-1 h-5 w-28 rounded border border-border bg-transparent px-1.5 text-xs outline-none placeholder:text-muted-foreground/50 focus:border-ring"
+              placeholder="Filter..."
+              value={viewState.columnFilters?.title ?? ""}
+              onChange={(e) => updateColumnFilter("title", e.target.value)}
+            />
+          </div>
+          <div className="w-[100px] shrink-0 flex items-center gap-1">
+            <button
+              className="flex items-center gap-1 hover:text-foreground transition-colors"
+              onClick={(e) => handleColumnHeaderClick("status", e.shiftKey)}
+              title="Click to sort, Shift+click for secondary sort"
+            >
+              <span className="font-medium">Status</span>
+              {viewState.sortField === "status" && (viewState.sortDir === "asc" ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />)}
+            </button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="p-0.5 rounded hover:bg-accent/50" title="Filter by status">
+                  <Filter className="h-3 w-3" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-40 p-1" align="start">
+                <div className="space-y-0.5">
+                  {statusOrder.map((s) => (
+                    <label key={s} className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer text-xs">
+                      <Checkbox
+                        checked={(viewState.columnFilters?.status ?? []).includes(s)}
+                        onCheckedChange={() => {
+                          const current = viewState.columnFilters?.status ?? [];
+                          updateColumnFilter("status", current.includes(s) ? current.filter((v: string) => v !== s) : [...current, s]);
+                        }}
+                      />
+                      <StatusIcon status={s} />
+                      <span>{statusLabel(s)}</span>
+                    </label>
+                  ))}
+                  {(viewState.columnFilters?.status ?? []).length > 0 && (
+                    <button className="w-full text-xs text-muted-foreground hover:text-foreground px-2 py-1" onClick={() => updateColumnFilter("status", [])}>Clear</button>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+          <div className="w-[100px] shrink-0 flex items-center gap-1">
+            <button
+              className="flex items-center gap-1 hover:text-foreground transition-colors"
+              onClick={(e) => handleColumnHeaderClick("priority", e.shiftKey)}
+              title="Click to sort, Shift+click for secondary sort"
+            >
+              <span className="font-medium">Priority</span>
+              {viewState.sortField === "priority" && (viewState.sortDir === "asc" ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />)}
+            </button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="p-0.5 rounded hover:bg-accent/50" title="Filter by priority">
+                  <Filter className="h-3 w-3" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-40 p-1" align="start">
+                <div className="space-y-0.5">
+                  {priorityOrder.map((p) => (
+                    <label key={p} className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer text-xs">
+                      <Checkbox
+                        checked={(viewState.columnFilters?.priority ?? []).includes(p)}
+                        onCheckedChange={() => {
+                          const current = viewState.columnFilters?.priority ?? [];
+                          updateColumnFilter("priority", current.includes(p) ? current.filter((v: string) => v !== p) : [...current, p]);
+                        }}
+                      />
+                      <PriorityIcon priority={p} />
+                      <span>{statusLabel(p)}</span>
+                    </label>
+                  ))}
+                  {(viewState.columnFilters?.priority ?? []).length > 0 && (
+                    <button className="w-full text-xs text-muted-foreground hover:text-foreground px-2 py-1" onClick={() => updateColumnFilter("priority", [])}>Clear</button>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+          <div className="w-[180px] shrink-0">
+            <button
+              className="flex items-center gap-1 hover:text-foreground transition-colors"
+              onClick={(e) => handleColumnHeaderClick("updated", e.shiftKey)}
+            >
+              <span className="font-medium">Updated</span>
+              {viewState.sortField === "updated" && (viewState.sortDir === "asc" ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />)}
+            </button>
+          </div>
+        </div>
+        {groupedContent.map((group) => (
           <Collapsible
             key={group.key}
             open={!viewState.collapsedGroups.includes(group.key)}
@@ -814,9 +1051,9 @@ export function IssuesList({
               </div>
             )}
             <CollapsibleContent>
-              {group.items.map((issue) => (
+              {group.items.map((issue, itemIndex) => (
+                <div key={issue.id} className="list-item-enter" style={getStaggerStyle(itemIndex)}>
                 <IssueRow
-                  key={issue.id}
                   issue={issue}
                   issueLinkState={issueLinkState}
                   desktopLeadingSpacer
@@ -836,7 +1073,7 @@ export function IssuesList({
                       )}
                       <StatusIcon
                         status={issue.status}
-                        onChange={(s) => onUpdateIssue(issue.id, { status: s })}
+                        onChange={(s) => handleStatusChange(issue.id, s, document.activeElement as HTMLElement)}
                       />
                     </span>
                   )}
@@ -856,7 +1093,7 @@ export function IssuesList({
                         />
                         <StatusIcon
                           status={issue.status}
-                          onChange={(s) => onUpdateIssue(issue.id, { status: s })}
+                          onChange={(s) => handleStatusChange(issue.id, s, document.activeElement as HTMLElement)}
                         />
                       </span>
                       <span className="shrink-0 font-mono text-xs text-muted-foreground">
@@ -878,6 +1115,20 @@ export function IssuesList({
                   mobileMeta={timeAgo(issue.updatedAt)}
                   desktopTrailing={(
                     <>
+                      {/* Inline-editable priority cell - double-click to change */}
+                      <span
+                        className="hidden items-center md:flex inline-edit-cell rounded px-1 py-0.5 cursor-pointer"
+                        onDoubleClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingCell({ issueId: issue.id, field: "priority" }); }}
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                        title="Double-click to change priority"
+                      >
+                        <PriorityIcon
+                          priority={issue.priority}
+                          onChange={editingCell?.issueId === issue.id && editingCell?.field === "priority"
+                            ? (p) => handlePriorityChange(issue.id, p)
+                            : undefined}
+                        />
+                      </span>
                       {issue.goalId && goalName(issue.goalId) && (
                         <span className="hidden items-center md:flex">
                           <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
@@ -933,6 +1184,11 @@ export function IssuesList({
                               +{(issue.labels ?? []).length - 3}
                             </span>
                           )}
+                        </span>
+                      )}
+                      {issue.targetDate && (
+                        <span className="hidden items-center md:flex">
+                          <DeadlineCountdown targetDate={issue.targetDate} status={issue.status} />
                         </span>
                       )}
                       <Popover
@@ -1042,11 +1298,23 @@ export function IssuesList({
                   )}
                   trailingMeta={<span className="hidden md:inline">{formatDate(issue.createdAt)}</span>}
                 />
+                </div>
               ))}
             </CollapsibleContent>
           </Collapsible>
-        ))
+        ))}
+        </>
       )}
+      </div>
+
+      {/* Mobile floating action button (12.40) */}
+      <button
+        className="md:hidden fixed bottom-6 right-6 z-40 flex items-center justify-center h-12 w-12 rounded-full bg-foreground text-background shadow-lg hover:scale-105 transition-transform"
+        onClick={() => openNewIssue(newIssueDefaults())}
+        aria-label="Create issue"
+      >
+        <Plus className="h-5 w-5" />
+      </button>
     </div>
   );
 }

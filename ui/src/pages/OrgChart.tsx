@@ -729,16 +729,17 @@ export function OrgChart() {
                       {departmentLabels[dept] ?? dept}
                     </span>
                   )}
-                  {agent && (() => {
-                    const modelRaw = agent.adapterConfig?.model as string | undefined;
+                  {agent ? (() => {
+                    const cfg = agent.adapterConfig as Record<string, unknown> | null;
+                    const modelRaw = cfg?.model as string | undefined;
                     const modelName = modelRaw ? modelRaw.replace(/:cloud$/, "") : null;
-                    const provider = adapterLabels[agent.adapterType] ?? agent.adapterType;
+                    const provider: string = adapterLabels[agent.adapterType] ?? agent.adapterType;
                     return (
                       <span className="text-[10px] text-muted-foreground/60 font-mono leading-tight mt-1.5">
                         {provider}{modelName ? ` - ${modelName}` : ""}
                       </span>
                     );
-                  })()}
+                  })() : null}
                   {/* Span of control metric for managers (12.14) */}
                   {node.children.length > 0 && (
                     <span className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 mt-1">
@@ -746,6 +747,12 @@ export function OrgChart() {
                       {node.children.length} report{node.children.length !== 1 ? "s" : ""}
                     </span>
                   )}
+                  {/* Members since date (12.69) */}
+                  {agent != null && typeof (agent as unknown as Record<string, unknown>).createdAt === "string" ? (
+                    <span className="text-[9px] text-muted-foreground/50 mt-0.5">
+                      Member since {new Date(String((agent as unknown as Record<string, unknown>).createdAt)).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+                    </span>
+                  ) : null}
                   {/* Skill tags from expertise map */}
                   {(() => {
                     const profile = skillsByAgent.get(node.id);
