@@ -2,6 +2,7 @@ import { Router, type Request } from "express";
 import { generateKeyPairSync, randomUUID } from "node:crypto";
 import path from "node:path";
 import type { Db } from "@ironworksai/db";
+import { ROLE_TEMPLATES, COMMON_AGENT_PREAMBLE } from "../onboarding-assets/role-templates.js";
 import { agents as agentsTable, agentMemoryEntries, companies, companySubscriptions, heartbeatRuns, issues as issuesTable } from "@ironworksai/db";
 import { and, desc, eq, inArray, not, sql } from "drizzle-orm";
 import {
@@ -1646,6 +1647,7 @@ export function agentRoutes(db: Db) {
         suggestedAdapter?: string | null;
         skills?: string[];
         agentsMd?: string | null; // AGENTS.md content
+        soulMd?: string | null;   // SOUL.md content
       }>;
       adapterType: string;
       adapterConfig: Record<string, unknown>;
@@ -1686,6 +1688,14 @@ export function agentRoutes(db: Db) {
       const reportsToAgentId =
         item.reportsTo ? (agentIdByTemplateKey.get(item.reportsTo) ?? null) : null;
 
+      // Resolve soul/agents content from the role template or explicit body fields
+      const roleTemplate = ROLE_TEMPLATES.find((t) => t.key === item.templateKey);
+      const soulContent = item.soulMd ?? roleTemplate?.soul ?? null;
+      const agentsContent = item.agentsMd ?? roleTemplate?.agents ?? null;
+      const resolvedAgentInstructions = agentsContent
+        ? `${COMMON_AGENT_PREAMBLE}\n\n${agentsContent}`
+        : null;
+
       const createdAgent = await svc.create(companyId, {
         name: item.name.trim() || item.title || item.role,
         role: item.role,
@@ -1703,6 +1713,8 @@ export function agentRoutes(db: Db) {
             maxConcurrentRuns: 1,
           },
         },
+        systemPrompt: soulContent,
+        agentInstructions: resolvedAgentInstructions,
         status: "idle",
         spentMonthlyCents: 0,
         lastHeartbeatAt: null,
@@ -2090,6 +2102,7 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
       "adapterType", "adapterConfig", "runtimeConfig", "replaceAdapterConfig",
       "budgetMonthlyCents", "status", "soulMd", "agentsMd",
       "department", "performanceScore",
+      "systemPrompt", "agentInstructions",
     ]);
     const rawBody = req.body as Record<string, unknown>;
     const patchData: Record<string, unknown> = {};

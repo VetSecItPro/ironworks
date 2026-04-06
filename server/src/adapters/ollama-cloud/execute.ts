@@ -23,10 +23,15 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     return typeof v === "string" ? v : "";
   }
 
-  // System prompt from agent instructions
-  const systemPrompt = strVal(context.systemPrompt) || strVal(context.ironworksSystemPrompt);
-  if (systemPrompt) {
+  // System prompt from DB agent instructions, falling back to legacy promptTemplate in config
+  const systemPrompt = strVal(context.systemPrompt) || strVal(context.ironworksSystemPrompt) || strVal(config.promptTemplate);
+  const agentInstructions = strVal(context.agentInstructions);
+  if (systemPrompt && agentInstructions) {
+    messages.push({ role: "system", content: `${systemPrompt}\n\n${agentInstructions}` });
+  } else if (systemPrompt) {
     messages.push({ role: "system", content: systemPrompt });
+  } else if (agentInstructions) {
+    messages.push({ role: "system", content: agentInstructions });
   }
 
   // Morning briefing / session context — redact secrets before sending to external API

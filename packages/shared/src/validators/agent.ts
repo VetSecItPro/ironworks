@@ -87,6 +87,8 @@ export const updateAgentSchema = createAgentSchema
     status: z.enum(AGENT_STATUSES).optional(),
     spentMonthlyCents: z.number().int().nonnegative().optional(),
     performanceScore: z.number().int().min(0).max(100).optional().nullable(),
+    systemPrompt: z.string().optional().nullable(),
+    agentInstructions: z.string().optional().nullable(),
   });
 
 export type UpdateAgent = z.infer<typeof updateAgentSchema>;

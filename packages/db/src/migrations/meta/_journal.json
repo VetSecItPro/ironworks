@@ -491,6 +491,13 @@
       "when": 1775959200005,
       "tag": "0075_goals_wave1",
       "breakpoints": true
+    },
+    {
+      "idx": 70,
+      "version": "7",
+      "when": 1775959200006,
+      "tag": "0076_agent_instructions",
+      "breakpoints": true
     }
   ]
 }

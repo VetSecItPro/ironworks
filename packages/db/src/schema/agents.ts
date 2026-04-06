@@ -47,6 +47,8 @@ export const agents = pgTable(
     department: text("department"),
     onboardingContextIds: jsonb("onboarding_context_ids").$type<string[]>().notNull().default([]),
     performanceScore: integer("performance_score"),
+    systemPrompt: text("system_prompt"),
+    agentInstructions: text("agent_instructions"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

@@ -80,6 +80,8 @@ export interface Agent {
   permissions: AgentPermissions;
   lastHeartbeatAt: Date | null;
   metadata: Record<string, unknown> | null;
+  systemPrompt: string | null;
+  agentInstructions: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

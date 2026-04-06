@@ -3005,6 +3005,15 @@ export function heartbeatService(db: Db) {
       }
     }
 
+    // Inject provider-agnostic agent instructions from DB columns into context
+    // so ALL adapter types (ollama_cloud, process, http, etc.) receive them.
+    if (typeof agent.systemPrompt === "string" && agent.systemPrompt) {
+      context.systemPrompt = agent.systemPrompt;
+    }
+    if (typeof agent.agentInstructions === "string" && agent.agentInstructions) {
+      context.agentInstructions = agent.agentInstructions;
+    }
+
     // Inject session state and morning briefing based on context tier
     const contextTier = classifyContextTier(context);
     context.ironworksContextTier = contextTier;
