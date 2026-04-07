@@ -954,9 +954,9 @@ export const MODEL_ROUTING_DEFAULTS: Record<string, Record<"routine" | "standard
     complex: "gpt-4o",
   },
   ollama: {
-    routine: "qwen3.5:27b-cloud",
-    standard: "kimi-k2.5:cloud",
-    complex: "deepseek-v3.2:cloud",
+    routine: "qwen3.5:397b",
+    standard: "kimi-k2.5",
+    complex: "deepseek-v3.2",
   },
 } as const;
 

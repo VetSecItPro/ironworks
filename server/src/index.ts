@@ -746,6 +746,26 @@ export async function startServer(): Promise<StartedServer> {
     logger.info("Quality drift checker armed (daily)");
   }
 
+  // ── Daily Ollama Cloud model health check ──
+  {
+    const { checkOllamaModelHealth } = await import("./services/ollama-health.js");
+    const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+    // First check 2 hours after startup, then daily
+    setTimeout(() => {
+      void checkOllamaModelHealth(db).catch((err) => {
+        logger.error({ err }, "Ollama model health check failed");
+      });
+      setInterval(() => {
+        void checkOllamaModelHealth(db).catch((err) => {
+          logger.error({ err }, "Ollama model health check failed");
+        });
+      }, ONE_DAY_MS);
+    }, 2 * 60 * 60 * 1000);
+
+    logger.info("Ollama model health checker armed (daily)");
+  }
+
   await new Promise<void>((resolveListen, rejectListen) => {
     const onError = (err: Error) => {
       server.off("error", onError);

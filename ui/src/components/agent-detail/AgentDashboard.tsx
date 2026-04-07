@@ -256,7 +256,7 @@ function ModelStrategyCard({ agent }: { agent: AgentDetailRecord }) {
   const runtimeConfig = (ext.runtimeConfig ?? {}) as Record<string, unknown>;
   const adapterConfig = (ext.adapterConfig ?? {}) as Record<string, unknown>;
   const modelStrategy = (runtimeConfig.modelStrategy as string) ?? "single";
-  const currentModel = (runtimeConfig.model as string) ?? (adapterConfig.model as string) ?? "kimi-k2.5:cloud";
+  const currentModel = (runtimeConfig.model as string) ?? (adapterConfig.model as string) ?? "kimi-k2.5";
   const strategyLabel = STRATEGY_LABELS[modelStrategy] ?? "Single Model";
   const strategyColor = STRATEGY_COLORS[modelStrategy] ?? STRATEGY_COLORS.single;
 

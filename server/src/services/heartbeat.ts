@@ -3893,7 +3893,7 @@ export function heartbeatService(db: Db) {
       const roleDefaults = ROLE_COUNCIL_DEFAULTS[normalizedAgentRole];
       const councilConfig: CouncilConfig = {
         strategy: (runtimeConfigAny.modelStrategy as string as "single" | "cascade" | "council") ?? roleDefaults?.strategy ?? "single",
-        primaryModel: routedModel || configuredModel || "kimi-k2.5:cloud",
+        primaryModel: routedModel || configuredModel || "kimi-k2.5",
         cascadeFallback: WESTERN_COUNCIL_MODELS.heavy,
         councilModels: roleDefaults?.councilModels ?? [WESTERN_COUNCIL_MODELS.heavy, WESTERN_COUNCIL_MODELS.light],
         qualityThreshold: 60,

@@ -243,18 +243,18 @@ export function OrgChart() {
     ]},
   ];
   const MOCK_AGENTS: Agent[] = [
-    { id: "m-ceo", name: "CEO", role: "ceo", title: "Chief Executive Officer", status: "active", icon: "crown", adapterType: "ollama_cloud", adapterConfig: { model: "kimi-k2.5:cloud" } },
-    { id: "m-cto", name: "CTO", role: "cto", title: "Chief Technology Officer", status: "active", icon: "code", adapterType: "ollama_cloud", adapterConfig: { model: "deepseek-v3.2:cloud" } },
-    { id: "m-cfo", name: "CFO", role: "cfo", title: "Chief Financial Officer", status: "active", icon: "dollar-sign", adapterType: "ollama_cloud", adapterConfig: { model: "deepseek-v3.2:cloud" } },
-    { id: "m-cmo", name: "CMO", role: "cmo", title: "Chief Marketing Officer", status: "active", icon: "megaphone", adapterType: "ollama_cloud", adapterConfig: { model: "kimi-k2.5:cloud" } },
-    { id: "m-vphr", name: "VPofHR", role: "director", title: "VP of Human Resources", status: "active", icon: "users", adapterType: "ollama_cloud", adapterConfig: { model: "qwen3.5:27b-cloud" } },
-    { id: "m-legal", name: "LegalCounsel", role: "director", title: "Legal Counsel", status: "active", icon: "gavel", adapterType: "ollama_cloud", adapterConfig: { model: "deepseek-v3.2:cloud" } },
-    { id: "m-comp", name: "ComplianceDirector", role: "director", title: "Compliance Director", status: "active", icon: "scale", adapterType: "ollama_cloud", adapterConfig: { model: "deepseek-v3.2:cloud" } },
-    { id: "m-eng", name: "SeniorEngineer", role: "engineer", title: "Senior Full-Stack Engineer", status: "active", icon: "terminal", adapterType: "ollama_cloud", adapterConfig: { model: "deepseek-v3.2:cloud" } },
-    { id: "m-devops", name: "DevOpsEngineer", role: "engineer", title: "DevOps & Infrastructure Engineer", status: "active", icon: "server", adapterType: "ollama_cloud", adapterConfig: { model: "deepseek-v3.2:cloud" } },
-    { id: "m-sec", name: "SecurityEngineer", role: "engineer", title: "Application Security Engineer", status: "active", icon: "shield", adapterType: "ollama_cloud", adapterConfig: { model: "deepseek-v3.2:cloud" } },
-    { id: "m-ux", name: "UXDesigner", role: "designer", title: "UX Designer", status: "idle", icon: "palette", adapterType: "ollama_cloud", adapterConfig: { model: "kimi-k2.5:cloud" } },
-    { id: "m-content", name: "ContentMarketer", role: "marketer", title: "Content Marketer", status: "active", icon: "pen-line", adapterType: "ollama_cloud", adapterConfig: { model: "qwen3.5:27b-cloud" } },
+    { id: "m-ceo", name: "CEO", role: "ceo", title: "Chief Executive Officer", status: "active", icon: "crown", adapterType: "ollama_cloud", adapterConfig: { model: "kimi-k2.5" } },
+    { id: "m-cto", name: "CTO", role: "cto", title: "Chief Technology Officer", status: "active", icon: "code", adapterType: "ollama_cloud", adapterConfig: { model: "deepseek-v3.2" } },
+    { id: "m-cfo", name: "CFO", role: "cfo", title: "Chief Financial Officer", status: "active", icon: "dollar-sign", adapterType: "ollama_cloud", adapterConfig: { model: "deepseek-v3.2" } },
+    { id: "m-cmo", name: "CMO", role: "cmo", title: "Chief Marketing Officer", status: "active", icon: "megaphone", adapterType: "ollama_cloud", adapterConfig: { model: "kimi-k2.5" } },
+    { id: "m-vphr", name: "VPofHR", role: "director", title: "VP of Human Resources", status: "active", icon: "users", adapterType: "ollama_cloud", adapterConfig: { model: "qwen3.5:397b" } },
+    { id: "m-legal", name: "LegalCounsel", role: "director", title: "Legal Counsel", status: "active", icon: "gavel", adapterType: "ollama_cloud", adapterConfig: { model: "deepseek-v3.2" } },
+    { id: "m-comp", name: "ComplianceDirector", role: "director", title: "Compliance Director", status: "active", icon: "scale", adapterType: "ollama_cloud", adapterConfig: { model: "deepseek-v3.2" } },
+    { id: "m-eng", name: "SeniorEngineer", role: "engineer", title: "Senior Full-Stack Engineer", status: "active", icon: "terminal", adapterType: "ollama_cloud", adapterConfig: { model: "deepseek-v3.2" } },
+    { id: "m-devops", name: "DevOpsEngineer", role: "engineer", title: "DevOps & Infrastructure Engineer", status: "active", icon: "server", adapterType: "ollama_cloud", adapterConfig: { model: "deepseek-v3.2" } },
+    { id: "m-sec", name: "SecurityEngineer", role: "engineer", title: "Application Security Engineer", status: "active", icon: "shield", adapterType: "ollama_cloud", adapterConfig: { model: "deepseek-v3.2" } },
+    { id: "m-ux", name: "UXDesigner", role: "designer", title: "UX Designer", status: "idle", icon: "palette", adapterType: "ollama_cloud", adapterConfig: { model: "kimi-k2.5" } },
+    { id: "m-content", name: "ContentMarketer", role: "marketer", title: "Content Marketer", status: "active", icon: "pen-line", adapterType: "ollama_cloud", adapterConfig: { model: "qwen3.5:397b" } },
   ] as unknown as Agent[];
 
   const useMockData = !orgTree || orgTree.length === 0;

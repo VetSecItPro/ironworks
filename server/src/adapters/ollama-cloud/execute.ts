@@ -9,7 +9,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   const apiUrl = asString(config.url, "https://ollama.com/api/chat");
   const envRecord = (config.env && typeof config.env === "object") ? config.env as Record<string, string> : {};
   const apiKey = asString(config.apiKey, envRecord.OLLAMA_API_KEY ?? process.env.OLLAMA_API_KEY ?? "");
-  const model = asString(config.model, "kimi-k2.5:cloud");
+  const model = asString(config.model, "kimi-k2.5");
   const maxTokens = typeof config.maxOutputTokens === "number" ? config.maxOutputTokens : 4096;
 
   if (!apiKey) {

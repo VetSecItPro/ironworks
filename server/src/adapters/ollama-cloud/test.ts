@@ -19,7 +19,7 @@ export async function testEnvironment(
 
   const envRecord = (config.env && typeof config.env === "object") ? config.env as Record<string, string> : {};
   const apiKey = asString(config.apiKey, envRecord.OLLAMA_API_KEY ?? process.env.OLLAMA_API_KEY ?? "");
-  const model = asString(config.model, "kimi-k2.5:cloud");
+  const model = asString(config.model, "kimi-k2.5");
 
   if (!apiKey) {
     checks.push({
