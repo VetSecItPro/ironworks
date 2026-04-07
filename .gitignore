@@ -62,3 +62,5 @@ tests/release-smoke/playwright-report/
 .mdmp/
 ironworks-features.md
 ironworks-todo.md
+.deps-reports/
+.playwright-mcp/

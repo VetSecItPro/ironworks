@@ -142,6 +142,35 @@ const setupSchema = z.object({
   }),
 });
 
+// SEC-003: Allowed origins for checkout redirect URLs.
+// Only same-origin app URLs and the official landing site are permitted.
+// This prevents open-redirect attacks where an attacker crafts a checkout
+// link that redirects users to a phishing site after payment.
+const ALLOWED_CHECKOUT_REDIRECT_ORIGINS = new Set([
+  "https://ironworksapp.ai",
+  "https://www.ironworksapp.ai",
+  "https://app.ironworksapp.ai",
+]);
+
+function validateRedirectUrl(rawUrl: string, fieldName: string): void {
+  let parsed: URL;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    throw badRequest(`${fieldName} must be a valid URL`);
+  }
+  // Allow localhost/127.0.0.1 for development environments only
+  const isLocalhost =
+    parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1";
+  const isDev = process.env.NODE_ENV !== "production";
+  if (isLocalhost && isDev) return;
+  if (!ALLOWED_CHECKOUT_REDIRECT_ORIGINS.has(parsed.origin)) {
+    throw badRequest(
+      `${fieldName} must point to an allowed domain (got: ${parsed.origin})`,
+    );
+  }
+}
+
 const checkoutCreateSchema = z.object({
   tier: z.enum(["starter", "growth", "business"]),
   successUrl: z.string().url("successUrl must be a valid URL"),
@@ -356,6 +385,10 @@ export function setupRoutes(db: Db) {
       throw badRequest(firstError, parsed.error.issues);
     }
     const { tier, successUrl, cancelUrl } = parsed.data;
+
+    // SEC-003: Validate redirect URLs are same-origin or whitelisted
+    validateRedirectUrl(successUrl, "successUrl");
+    validateRedirectUrl(cancelUrl, "cancelUrl");
 
     const plan = PLAN_DEFINITIONS[tier];
     if (!plan.productId) {

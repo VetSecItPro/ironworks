@@ -49,14 +49,14 @@ export function knowledgeRoutes(db: Db) {
     const companyId = req.params.companyId as string;
     assertCompanyAccess(req, companyId);
     const actor = getActorInfo(req);
-    const { title, body, visibility, projectId, department } = req.body;
+    const { title, body, visibility, projectId, department, folder } = req.body;
     if (!title || typeof title !== "string" || title.trim().length === 0) {
       res.status(400).json({ error: "Title is required" }); return;
     }
     if (title.trim().length > 200) {
       res.status(400).json({ error: "Title must be 200 characters or less" }); return;
     }
-    const page = await svc.create(companyId, { title, body, visibility, projectId, department }, actorForService(actor));
+    const page = await svc.create(companyId, { title, body, visibility, projectId, department, folder }, actorForService(actor));
     await logActivity(db, {
       companyId,
       actorType: actor.actorType,

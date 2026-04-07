@@ -86,6 +86,26 @@ export function Sidebar() {
   const [sidebarSearch, setSidebarSearch] = useState("");
   const [companySwitcherOpen, setCompanySwitcherOpen] = useState(false);
   const switcherRef = useRef<HTMLDivElement>(null);
+  const navRef = useRef<HTMLElement>(null);
+  const savedScrollTop = useRef(0);
+
+  // Preserve sidebar scroll position across route changes.
+  // Save on every scroll event, restore after React re-renders.
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    const handleScroll = () => { savedScrollTop.current = nav.scrollTop; };
+    nav.addEventListener("scroll", handleScroll, { passive: true });
+    return () => nav.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Restore scroll position after re-render (route change triggers re-render)
+  useEffect(() => {
+    const nav = navRef.current;
+    if (nav && savedScrollTop.current > 0) {
+      requestAnimationFrame(() => { nav.scrollTop = savedScrollTop.current; });
+    }
+  });
 
   // Close company switcher when clicking outside
   useEffect(() => {
@@ -267,7 +287,7 @@ export function Sidebar() {
         </div>
       </div>
 
-      <nav className="flex-1 min-h-0 overflow-y-auto scrollbar-auto-hide flex flex-col gap-4 px-3 py-2">
+      <nav ref={navRef} className="flex-1 min-h-0 overflow-y-auto scrollbar-auto-hide flex flex-col gap-4 px-3 py-2">
         <div className="flex flex-col gap-0.5">
           {matchLabel("War Room") && (
             <SidebarNavItem to="/dashboard" label="War Room" icon={LayoutDashboard} liveCount={liveRunCount} />

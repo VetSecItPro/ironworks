@@ -7,11 +7,14 @@ services:
   db:
     image: postgres:17-alpine
     environment:
-      POSTGRES_USER: ironworks
-      POSTGRES_PASSWORD: ironworks
-      POSTGRES_DB: ironworks
+      # DEV DEFAULTS ONLY - these are plaintext fallbacks for local development.
+      # NEVER use these defaults in production. Production must use docker-compose.production.yml
+      # with secrets injected via environment variables or a secrets manager.
+      POSTGRES_USER: "${POSTGRES_USER:-ironworks}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-ironworks}"
+      POSTGRES_DB: "${POSTGRES_DB:-ironworks}"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ironworks -d ironworks"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ironworks} -d ${POSTGRES_DB:-ironworks}"]
       interval: 2s
       timeout: 5s
       retries: 30
@@ -25,7 +28,8 @@ services:
     ports:
       - "3100:3100"
     environment:
-      DATABASE_URL: postgres://ironworks:ironworks@db:5432/ironworks
+      # DEV DEFAULT: override by setting POSTGRES_USER/POSTGRES_PASSWORD/POSTGRES_DB env vars
+      DATABASE_URL: "postgres://${POSTGRES_USER:-ironworks}:${POSTGRES_PASSWORD:-ironworks}@db:5432/${POSTGRES_DB:-ironworks}"
       PORT: "3100"
       SERVE_UI: "true"
       IRONWORKS_DEPLOYMENT_MODE: "authenticated"

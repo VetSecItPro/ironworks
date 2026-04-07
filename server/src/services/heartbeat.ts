@@ -89,6 +89,7 @@ import {
 } from "./model-council.js";
 import { CONFIDENCE_TAGGING_PROMPT } from "./confidence-tags.js";
 import { getQualityExamples } from "./quality-gate.js";
+import { sanitizeForPrompt, PROMPT_MAX_LENGTHS } from "../lib/prompt-security.js";
 
 const MAX_LIVE_LOG_CHUNK_BYTES = 8 * 1024;
 const HEARTBEAT_MAX_CONCURRENT_RUNS_DEFAULT = 1;
@@ -3157,13 +3158,17 @@ Keep messages concise and substantive. Do not post empty status updates. If you 
     try {
       const mentions = await getPendingMentions(db, agent.id, agent.companyId);
       if (mentions.length > 0) {
-        context.ironworksPendingMentions = mentions.map((m) => ({
-          channel: `#${m.channelName}`,
-          from: m.mentionedByName,
-          body: m.body,
-          at: m.createdAt,
-          instruction: `You were mentioned in #${m.channelName} by ${m.mentionedByName}: "${m.body}". Please respond in that channel.`,
-        }));
+        context.ironworksPendingMentions = mentions.map((m) => {
+          // LLM01-B: Sanitize raw mention body before injecting into agent context.
+          const safeBody = sanitizeForPrompt(m.body ?? "", PROMPT_MAX_LENGTHS.comment);
+          return {
+            channel: `#${m.channelName}`,
+            from: m.mentionedByName,
+            body: safeBody,
+            at: m.createdAt,
+            instruction: `You were mentioned in #${m.channelName} by ${m.mentionedByName}: "${safeBody}". Please respond in that channel.`,
+          };
+        });
       }
     } catch (err) {
       logger.debug({ err, agentId: agent.id }, "pending mentions injection failed, skipping");
@@ -3433,7 +3438,9 @@ Keep messages concise and substantive. Do not post empty status updates. If you 
         const searchResults = await webSearch(searchQuery, 3);
         if (searchResults.length > 0) {
           const resultLines = searchResults.map(
-            (r, i) => `${i + 1}. **${r.title}**\n   URL: ${r.url}\n   ${r.content.slice(0, 300)}${r.content.length > 300 ? "..." : ""}`,
+            // LLM01-C: Sanitize raw external web content before injection to prevent
+            // prompt injection attacks embedded in third-party web pages.
+            (r, i) => `${i + 1}. **${r.title}**\n   URL: ${r.url}\n   ${sanitizeForPrompt(r.content.slice(0, 300), 300)}`,
           );
           context.ironworksWebResearch = [
             `## Web Research - ${searchQuery}`,
@@ -4377,7 +4384,14 @@ Keep messages concise and substantive. Do not post empty status updates. If you 
           const postedChannels = new Set<string>();
           while ((channelMatch = channelPattern.exec(agentOutput)) !== null) {
             const channelName = channelMatch[1].trim().toLowerCase();
-            const messageBody = channelMatch[2].trim();
+            // LLM02-A: Strip any nested [CHANNEL] tags to prevent injection chaining,
+            // then apply a length cap to limit oversized LLM output from flooding channels.
+            let messageBody = channelMatch[2].trim()
+              .replace(/\[CHANNEL\s+#[\w-]+\]/gi, "")
+              .trim();
+            if (messageBody.length > 2000) {
+              messageBody = messageBody.slice(0, 2000);
+            }
             if (!messageBody || messageBody.length < 5 || postedChannels.has(channelName)) continue;
             postedChannels.add(channelName);
             // Find the target channel by name

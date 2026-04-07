@@ -32,12 +32,8 @@ jobs:
             git fetch origin master
             git reset --hard origin/master
 
-            echo "==> Rebuilding Docker image..."
-            sudo docker compose -f docker-compose.production.yml build --no-cache
-
-            echo "==> Restarting container..."
-            sudo docker compose -f docker-compose.production.yml down
-            sudo docker compose -f docker-compose.production.yml up -d
+            echo "==> Rebuilding and restarting container (no compose down - preserves volumes)..."
+            sudo docker compose -f docker-compose.production.yml up -d --build
 
             echo "==> Pruning old images..."
             sudo docker image prune -f

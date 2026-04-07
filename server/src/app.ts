@@ -144,8 +144,29 @@ export async function createApp(
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
     res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
     if (opts.uiMode !== "vite-dev") {
+      // SEC-HDR-001: Remove 'unsafe-inline' from script-src.
+      // The only inline script in the app is the theme-detection snippet in
+      // ui/index.html (lines 24-44). Its SHA-256 hash is listed explicitly so
+      // the browser allows it without opening the door to arbitrary inline JS.
+      // If the snippet ever changes, recompute the hash with:
+      //   node -e "const c=require('fs').readFileSync('ui/index.html','utf8');
+      //     const s=c.slice(c.indexOf('<script>\n')+9,c.indexOf('\n    </script>'));
+      //     const h=require('crypto').createHash('sha256').update(s).digest('base64');
+      //     console.log(\"'sha256-\"+h+\"'\")"
+      //
+      // style-src retains 'unsafe-inline' because React inline style={{}} props
+      // and Radix UI primitives inject styles at runtime. Removing it would
+      // require a full CSS-in-JS audit and nonce plumbing — deferred.
       res.setHeader("Content-Security-Policy",
-        "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' ws: wss: https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com https://ollama.com; frame-src 'none'; object-src 'none'; base-uri 'self'");
+        "default-src 'self'; " +
+        "script-src 'self' 'sha256-6vvXBpbC3dPDRTfAkvCMzs3MZCffSXiteXHKnMn1oCs='; " +
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+        "font-src 'self' https://fonts.gstatic.com data:; " +
+        "img-src 'self' data: blob:; " +
+        "connect-src 'self' ws: wss: https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com https://ollama.com; " +
+        "frame-src 'none'; " +
+        "object-src 'none'; " +
+        "base-uri 'self'");
     }
     next();
   });

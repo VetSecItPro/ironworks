@@ -8,9 +8,34 @@ import {
   redactEnvForLogs,
   runChildProcess,
 } from "../utils.js";
+import { sanitizeForPrompt, redactSecrets, PROMPT_MAX_LENGTHS } from "../../lib/prompt-security.js";
 
 export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExecutionResult> {
-  const { runId, agent, config, onLog, onMeta } = ctx;
+  const { runId, agent, config, onLog, onMeta, context } = ctx;
+
+  // LLM01-A: Sanitize user-controllable context fields before any downstream use.
+  // Even though the process adapter currently passes context via environment (not
+  // directly into a prompt), sanitizing here ensures that if args/env templating
+  // ever references these fields the values are already clean.
+  if (context && typeof context === "object") {
+    const ctx2 = context as Record<string, unknown>;
+    const strField = (v: unknown) => (typeof v === "string" ? v : "");
+    if (strField(ctx2.taskContext)) {
+      ctx2.taskContext = sanitizeForPrompt(redactSecrets(strField(ctx2.taskContext)), PROMPT_MAX_LENGTHS.taskContext);
+    }
+    if (strField(ctx2.latestComment)) {
+      ctx2.latestComment = sanitizeForPrompt(redactSecrets(strField(ctx2.latestComment)), PROMPT_MAX_LENGTHS.comment);
+    }
+    if (strField(ctx2.ironworksMorningBriefing)) {
+      ctx2.ironworksMorningBriefing = redactSecrets(strField(ctx2.ironworksMorningBriefing));
+    }
+    if (strField(ctx2.ironworksOnboardingContext)) {
+      ctx2.ironworksOnboardingContext = redactSecrets(strField(ctx2.ironworksOnboardingContext));
+    }
+    if (strField(ctx2.ironworksRecentDocuments)) {
+      ctx2.ironworksRecentDocuments = redactSecrets(strField(ctx2.ironworksRecentDocuments));
+    }
+  }
   const command = asString(config.command, "");
   if (!command) throw new Error("Process adapter missing command");
 

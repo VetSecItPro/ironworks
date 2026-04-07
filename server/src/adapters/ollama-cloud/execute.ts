@@ -67,6 +67,23 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     messages.push({ role: "user", content: latestComment });
   }
 
+  // LLM04-A: Enforce an aggregate character cap on the total prompt size.
+  // If the assembled messages exceed 100,000 chars, truncate the longest
+  // non-system messages (user/assistant) until we're within budget.
+  const PROMPT_CHAR_BUDGET = 100_000;
+  const totalChars = () => messages.reduce((sum, m) => sum + m.content.length, 0);
+  if (totalChars() > PROMPT_CHAR_BUDGET) {
+    console.warn(`[ollama-cloud] Prompt size ${totalChars()} chars exceeds budget of ${PROMPT_CHAR_BUDGET}; truncating longest non-system messages`);
+    const nonSystem = messages.filter((m) => m.role !== "system");
+    // Sort descending by length so we truncate the biggest messages first
+    nonSystem.sort((a, b) => b.content.length - a.content.length);
+    for (const msg of nonSystem) {
+      if (totalChars() <= PROMPT_CHAR_BUDGET) break;
+      const excess = totalChars() - PROMPT_CHAR_BUDGET;
+      msg.content = msg.content.slice(0, Math.max(0, msg.content.length - excess)) + "\n[content truncated for size]";
+    }
+  }
+
   // Try primary model, fall back to fallback model on 404/503
   async function callModel(model: string): Promise<{
     content: string;

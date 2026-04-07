@@ -53,7 +53,7 @@ export const knowledgeApi = {
   getBySlug: (companyId: string, slug: string) =>
     api.get<KnowledgePage>(`/companies/${companyId}/knowledge/slug/${encodeURIComponent(slug)}`),
 
-  create: (companyId: string, data: { title: string; body?: string; visibility?: string; projectId?: string; department?: string }) =>
+  create: (companyId: string, data: { title: string; body?: string; visibility?: string; projectId?: string; department?: string; folder?: string }) =>
     api.post<KnowledgePage>(`/companies/${companyId}/knowledge`, data),
 
   update: (pageId: string, data: { title?: string; body?: string; visibility?: string; projectId?: string; changeSummary?: string }) =>

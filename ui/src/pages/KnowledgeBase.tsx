@@ -136,7 +136,8 @@ function KBFolderTree({ pages, selectedPageId, onSelectPage, onBulkDelete }: {
     });
   };
 
-  const folderLabel = (name: string) => name.charAt(0).toUpperCase() + name.slice(1).replace(/-/g, " ");
+  const ACRONYM_FOLDERS: Record<string, string> = { hr: "HR", sla: "SLA", api: "API", it: "IT", qa: "QA" };
+  const folderLabel = (name: string) => ACRONYM_FOLDERS[name.toLowerCase()] ?? name.charAt(0).toUpperCase() + name.slice(1).replace(/-/g, " ");
 
   return (
     <div className="flex flex-col h-full">
@@ -484,6 +485,7 @@ export function KnowledgeBase() {
   const [creating, setCreating] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newDepartment, setNewDepartment] = useState("");
+  const [newFolder, setNewFolder] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [showHistory, setShowHistory] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -532,11 +534,26 @@ export function KnowledgeBase() {
     return [...depts].sort();
   }, [pages]);
 
+  // Extract existing folder names from page slugs for the folder picker
+  const existingFolders = useMemo(() => {
+    const folderSet = new Set<string>();
+    for (const p of pages ?? []) {
+      const slug = p.slug ?? "";
+      const slashIdx = slug.indexOf("/");
+      if (slashIdx > 0) folderSet.add(slug.substring(0, slashIdx));
+    }
+    return [...folderSet].sort();
+  }, [pages]);
+
+  const ACRONYM_FOLDERS: Record<string, string> = { hr: "HR", sla: "SLA", api: "API", it: "IT", qa: "QA" };
+  const folderDisplayName = (name: string) => ACRONYM_FOLDERS[name.toLowerCase()] ?? name.charAt(0).toUpperCase() + name.slice(1).replace(/-/g, " ");
+
   const createPage = useMutation({
     mutationFn: () =>
       knowledgeApi.create(selectedCompanyId!, {
         title: newTitle.trim(),
         department: newDepartment || undefined,
+        folder: (newFolder && newFolder !== "__root__") ? newFolder : undefined,
       }),
     onSuccess: (page) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.knowledge.list(selectedCompanyId!) });
@@ -544,6 +561,7 @@ export function KnowledgeBase() {
       setCreating(false);
       setNewTitle("");
       setNewDepartment("");
+      setNewFolder("");
       setEditing(true);
       setEditTitle(page.title);
       setEditBody(page.body);
@@ -676,17 +694,22 @@ export function KnowledgeBase() {
               autoFocus
               onKeyDown={(e) => { if (e.key === "Enter" && newTitle.trim()) createPage.mutate(); if (e.key === "Escape") setCreating(false); }}
             />
-            <Input
-              value={newDepartment}
-              onChange={(e) => setNewDepartment(e.target.value)}
-              placeholder="Department scope (optional)..."
-              className="text-xs h-8"
-            />
+            <Select value={newFolder} onValueChange={setNewFolder}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue placeholder="Folder (root)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__root__">Root (no folder)</SelectItem>
+                {existingFolders.map((f) => (
+                  <SelectItem key={f} value={f}>{folderDisplayName(f)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <div className="flex items-center gap-1">
               <Button size="sm" className="h-7 text-xs" disabled={!newTitle.trim() || createPage.isPending} onClick={() => createPage.mutate()}>
                 {createPage.isPending ? "Creating..." : "Create"}
               </Button>
-              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => { setCreating(false); setNewTitle(""); setNewDepartment(""); }}>Cancel</Button>
+              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => { setCreating(false); setNewTitle(""); setNewDepartment(""); setNewFolder(""); }}>Cancel</Button>
             </div>
           </div>
         )}

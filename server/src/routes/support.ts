@@ -74,8 +74,8 @@ export function supportPublicRoutes(db: Db) {
       body,
       email,
       name,
-      companyId,
-      userId,
+      companyId: bodyCompanyId,
+      userId: bodyUserId,
     } = req.body as {
       type?: string;
       subject?: string;
@@ -85,6 +85,18 @@ export function supportPublicRoutes(db: Db) {
       companyId?: string;
       userId?: string;
     };
+
+    // SEC-001: If the request is authenticated, ignore any userId/companyId from
+    // the body and use only the authenticated session values. Unauthenticated
+    // callers (e.g. the landing site contact form) may not supply these at all.
+    const authenticatedUserId =
+      req.actor?.type === "board" && req.actor.userId ? req.actor.userId : null;
+    const resolvedUserId = authenticatedUserId ?? null;
+    // companyId from body is only accepted when not authenticated, and only as
+    // a hint (it is not verified against any membership — purely informational).
+    // Authenticated users never have their companyId overridden from the body.
+    const resolvedCompanyId = authenticatedUserId ? null : (bodyCompanyId ?? null);
+    void bodyUserId; // always ignored — never trust client-supplied userId
 
     // FIND-001: proper email regex validation
     if (!email || typeof email !== "string" || !EMAIL_RE.test(email.trim())) {
@@ -110,8 +122,8 @@ export function supportPublicRoutes(db: Db) {
     const [ticket] = await db
       .insert(supportTickets)
       .values({
-        companyId: companyId ?? null,
-        userId: userId ?? null,
+        companyId: resolvedCompanyId,
+        userId: resolvedUserId,
         userEmail: email.trim(),
         userName: safeName || null,
         type: ticketType,

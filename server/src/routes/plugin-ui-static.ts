@@ -471,8 +471,18 @@ export function pluginUiStaticRoutes(db: Db, options: PluginUiStaticRouteOptions
       res.set("Content-Type", contentType);
     }
 
-    // Step 9: Set CORS headers (plugin UI may be loaded from different origin in dev)
-    res.set("Access-Control-Allow-Origin", "*");
+    // Step 9: Set CORS headers (restrict to same origin in production, allow any in dev)
+    const origin = req.get("Origin") ?? "";
+    const isDevMode = process.env.NODE_ENV !== "production";
+    if (isDevMode) {
+      res.set("Access-Control-Allow-Origin", "*");
+    } else if (origin) {
+      // Only reflect same-origin requests in production
+      const host = req.get("Host") ?? "";
+      if (origin.includes(host)) {
+        res.set("Access-Control-Allow-Origin", origin);
+      }
+    }
 
     // Step 10: Send the file
     // The plugin source can live in Git worktrees (e.g. ".worktrees/...").

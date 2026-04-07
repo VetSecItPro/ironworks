@@ -71,6 +71,8 @@ export interface KnowledgePageInput {
   visibility?: "company" | "project" | "private";
   projectId?: string | null;
   department?: string | null;
+  /** Optional folder prefix for the slug (e.g. "hr", "engineering", "projects/my-project"). */
+  folder?: string | null;
 }
 
 export interface KnowledgePageUpdateInput {
@@ -126,7 +128,10 @@ export function knowledgeService(db: Db) {
         throw new Error("Page body exceeds 100KB limit");
       }
 
-      const slug = await ensureUniqueSlug(db, companyId, slugify(input.title));
+      const baseSlug = slugify(input.title);
+      const folderPrefix = input.folder?.trim().replace(/\/+$/, "");
+      const rawSlug = folderPrefix ? `${folderPrefix}/${baseSlug}` : baseSlug;
+      const slug = await ensureUniqueSlug(db, companyId, rawSlug);
 
       const [page] = await db
         .insert(knowledgePages)
