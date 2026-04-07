@@ -7,6 +7,7 @@ import type { Db } from "@ironworksai/db";
 import type { BillingType } from "@ironworksai/shared";
 import {
   agents,
+  agentChannels,
   agentRuntimeState,
   agentTaskSessions,
   agentWakeupRequests,
@@ -3081,7 +3082,21 @@ export function heartbeatService(db: Db) {
 
     // Phase 8 - Feature 6: Private Scratchpad instruction.
     // Reinforce concise posting discipline in the context assembly.
-    context.ironworksChannelPosting = "Think through your response privately before posting. Only post substantive messages.";
+    // Agents post to channels by including [CHANNEL #name] blocks in their output.
+    context.ironworksChannelPosting = `You can post messages to team channels by including this format in your response:
+
+[CHANNEL #company] Your message here
+[CHANNEL #engineering] Your message here
+[CHANNEL #operations] Your message here
+
+Use channels to:
+- Share status updates on your current work
+- Respond to @mentions from teammates
+- Coordinate with other agents on cross-functional tasks
+- Report blockers or request help
+- Announce completed deliverables
+
+Keep messages concise and substantive. Do not post empty status updates. If you have nothing new to report, do not post.`;
 
     // Nolan Integration REQ-04: Inject confidence tagging instructions.
     context.ironworksConfidenceTagging = CONFIDENCE_TAGGING_PROMPT;
@@ -4350,6 +4365,43 @@ export function heartbeatService(db: Db) {
           } catch (channelErr) {
             logger.debug({ err: channelErr, agentId: agent.id }, "post-run channel message failed, skipping");
           }
+        }
+
+        // Extract and post agent-authored channel messages from the run output.
+        // Agents include [CHANNEL #name] blocks in their summary to post to channels.
+        // Non-fatal - channel posting errors must never block agent execution.
+        try {
+          const agentOutput = adapterResult.summary ?? "";
+          const channelPattern = /\[CHANNEL\s+#(\w[\w-]*)\]\s*(.+?)(?=\[CHANNEL\s+#|\[FACT\]|\[ASSESSMENT\]|\[SPECULATION\]|$)/gs;
+          let channelMatch: RegExpExecArray | null;
+          const postedChannels = new Set<string>();
+          while ((channelMatch = channelPattern.exec(agentOutput)) !== null) {
+            const channelName = channelMatch[1].trim().toLowerCase();
+            const messageBody = channelMatch[2].trim();
+            if (!messageBody || messageBody.length < 5 || postedChannels.has(channelName)) continue;
+            postedChannels.add(channelName);
+            // Find the target channel by name
+            const [targetChannel] = await db
+              .select({ id: agentChannels.id })
+              .from(agentChannels)
+              .where(and(
+                eq(agentChannels.companyId, agent.companyId),
+                sql`lower(${agentChannels.name}) = ${channelName}`,
+              ))
+              .limit(1);
+            if (targetChannel) {
+              await postChannelMessage(db, {
+                channelId: targetChannel.id,
+                companyId: agent.companyId,
+                authorAgentId: agent.id,
+                body: messageBody,
+                messageType: "message",
+              });
+              logger.info({ agentId: agent.id, channel: channelName, bodyLen: messageBody.length }, "agent posted to channel from run output");
+            }
+          }
+        } catch (channelExtractErr) {
+          logger.debug({ err: channelExtractErr, agentId: agent.id }, "channel message extraction from output failed, skipping");
         }
 
         // PDCA: Act phase - log any adjustments made post-run
