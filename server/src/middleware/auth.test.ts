@@ -91,7 +91,7 @@ function makeMiddleware(
   db?: any,
 ) {
   const database = db ?? makeMockDb();
-  return actorMiddleware(database, { deploymentMode, resolveSession });
+  return actorMiddleware(database, { deploymentMode: deploymentMode as any, resolveSession });
 }
 
 // Run the middleware and return the mutated req
