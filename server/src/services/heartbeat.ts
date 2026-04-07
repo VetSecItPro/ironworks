@@ -4211,6 +4211,28 @@ export function heartbeatService(db: Db) {
         await releaseIssueExecutionAndPromote(finalizedRun);
       }
 
+      // Extract and log agent decisions from the run result
+      if (finalizedRun && outcome === "succeeded" && adapterResult.resultJson) {
+        try {
+          const { extractDecisions, logDecisions } = await import("./decision-log.js");
+          const contextSnap = (finalizedRun.contextSnapshot ?? null) as Record<string, unknown> | null;
+          const decisions = extractDecisions(
+            adapterResult.resultJson as Record<string, unknown>,
+            contextSnap,
+          );
+          if (decisions.length > 0) {
+            await logDecisions(db, {
+              companyId: agent.companyId,
+              agentId: agent.id,
+              runId: finalizedRun.id,
+              decisions,
+            });
+          }
+        } catch (decisionLogErr) {
+          logger.debug({ err: decisionLogErr, runId }, "decision log extraction failed, skipping");
+        }
+      }
+
       if (finalizedRun) {
         await updateRuntimeState(agent, finalizedRun, adapterResult, {
           legacySessionId: nextSessionState.legacySessionId,

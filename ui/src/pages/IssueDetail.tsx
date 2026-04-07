@@ -529,8 +529,8 @@ export function IssueDetail() {
   });
 
   const addComment = useMutation({
-    mutationFn: ({ body, reopen }: { body: string; reopen?: boolean }) =>
-      issuesApi.addComment(issueId!, body, reopen),
+    mutationFn: ({ body, reopen, replyToId }: { body: string; reopen?: boolean; replyToId?: string | null }) =>
+      issuesApi.addComment(issueId!, body, reopen, undefined, replyToId),
     onSuccess: () => {
       invalidateIssue();
       queryClient.invalidateQueries({ queryKey: queryKeys.issues.comments(issueId!) });
@@ -1160,12 +1160,12 @@ export function IssueDetail() {
             currentAssigneeValue={actualAssigneeValue}
             suggestedAssigneeValue={suggestedAssigneeValue}
             mentions={mentionOptions}
-            onAdd={async (body, reopen, reassignment) => {
+            onAdd={async (body, reopen, reassignment, replyToId) => {
               if (reassignment) {
                 await addCommentAndReassign.mutateAsync({ body, reopen, reassignment });
                 return;
               }
-              await addComment.mutateAsync({ body, reopen });
+              await addComment.mutateAsync({ body, reopen, replyToId });
             }}
             imageUploadHandler={async (file) => {
               const attachment = await uploadAttachment.mutateAsync(file);

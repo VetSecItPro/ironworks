@@ -35,11 +35,14 @@ export function activityRoutes(db: Db) {
     const companyId = req.params.companyId as string;
     assertCompanyAccess(req, companyId);
 
+    const limitRaw = req.query.limit as string | undefined;
     const filters = {
       companyId,
       agentId: req.query.agentId as string | undefined,
       entityType: req.query.entityType as string | undefined,
       entityId: req.query.entityId as string | undefined,
+      action: req.query.action as string | undefined,
+      limit: limitRaw ? Math.min(Math.max(parseInt(limitRaw, 10) || 200, 1), 500) : undefined,
     };
     const result = await svc.list(filters);
     res.json(result);

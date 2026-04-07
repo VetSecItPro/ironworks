@@ -59,7 +59,7 @@ export function deliverableRoutes(db: Db) {
     await assertCanWrite(req, companyId, db);
 
     const id = req.params.id as string;
-    const { deliverableStatus } = req.body as { deliverableStatus?: string };
+    const { deliverableStatus, reviewerNote } = req.body as { deliverableStatus?: string; reviewerNote?: string };
 
     if (!deliverableStatus || !DELIVERABLE_STATUSES.includes(deliverableStatus as typeof DELIVERABLE_STATUSES[number])) {
       res.status(400).json({ error: `deliverableStatus must be one of: ${DELIVERABLE_STATUSES.join(", ")}` });
@@ -88,13 +88,15 @@ export function deliverableRoutes(db: Db) {
       return;
     }
 
+    const actor = getActorInfo(req);
+    const now = new Date();
+
     const [updated] = await db
       .update(knowledgePages)
-      .set({ deliverableStatus, updatedAt: new Date() })
+      .set({ deliverableStatus, updatedAt: now })
       .where(eq(knowledgePages.id, id))
       .returning();
 
-    const actor = getActorInfo(req);
     await logActivity(db, {
       companyId,
       actorType: actor.actorType,
@@ -102,10 +104,22 @@ export function deliverableRoutes(db: Db) {
       action: "deliverable.status_updated",
       entityType: "knowledge_page",
       entityId: id,
-      details: { title: existing.title, previousStatus: existing.deliverableStatus, newStatus: deliverableStatus },
+      details: {
+        title: existing.title,
+        previousStatus: existing.deliverableStatus,
+        newStatus: deliverableStatus,
+        ...(reviewerNote ? { reviewerNote } : {}),
+        reviewedByUserId: actor.actorType === "user" ? actor.actorId : null,
+        reviewedAt: now.toISOString(),
+      },
     });
 
-    res.json(updated);
+    res.json({
+      ...updated,
+      reviewerNote: reviewerNote ?? null,
+      reviewedByUserId: actor.actorType === "user" ? actor.actorId : null,
+      reviewedAt: now.toISOString(),
+    });
   });
 
   return router;

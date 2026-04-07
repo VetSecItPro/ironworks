@@ -419,6 +419,7 @@ export function createTestHarness(options: TestHarnessOptions): TestHarness {
           authorAgentId: null,
           authorUserId: null,
           body,
+          replyToId: null,
           createdAt: now,
           updatedAt: now,
         };

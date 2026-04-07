@@ -1038,7 +1038,7 @@ export const DELIVERABLE_DOCUMENT_TYPES = [
 
 export type DeliverableDocumentType = (typeof DELIVERABLE_DOCUMENT_TYPES)[number];
 
-export const DELIVERABLE_STATUSES = ["draft", "review", "approved", "delivered"] as const;
+export const DELIVERABLE_STATUSES = ["draft", "review", "approved", "delivered", "revision_requested", "rejected"] as const;
 export type DeliverableStatus = (typeof DELIVERABLE_STATUSES)[number];
 
 /** Western fallback models for council/cascade strategies. */

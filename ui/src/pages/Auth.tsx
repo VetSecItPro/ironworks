@@ -45,6 +45,7 @@ export function AuthPage() {
   usePageTitle(mode === "sign_in" ? "Sign In" : "Sign Up");
 
   const nextPath = useMemo(() => searchParams.get("next") || "/", [searchParams]);
+  const sessionExpired = searchParams.get("reason") === "session_expired";
   const { data: session, isLoading: isSessionLoading } = useQuery({
     queryKey: queryKeys.auth.session,
     queryFn: () => authApi.getSession(),
@@ -112,6 +113,14 @@ export function AuthPage() {
             <Hammer className="h-4 w-4 text-blue-500" aria-hidden="true" />
             <span className="text-sm font-medium">Ironworks</span>
           </div>
+
+          {sessionExpired && (
+            <div className="mb-4 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2">
+              <p className="text-sm text-amber-700 dark:text-amber-400">
+                Your session has expired. Please sign in again.
+              </p>
+            </div>
+          )}
 
           <h1 className="text-xl font-semibold">
             {mode === "sign_in" ? "Sign in to Ironworks" : "Create your Ironworks account"}

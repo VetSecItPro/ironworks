@@ -2,7 +2,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState, type ChangeEve
 import { Link, useLocation } from "react-router-dom";
 import type { IssueComment, Agent } from "@ironworksai/shared";
 import { Button } from "@/components/ui/button";
-import { Check, Copy, Paperclip, SmilePlus, X } from "lucide-react";
+import { Check, Copy, CornerDownRight, Paperclip, Reply, SmilePlus, X } from "lucide-react";
 import { Identity } from "./Identity";
 import { InlineEntitySelector, type InlineEntityOption } from "./InlineEntitySelector";
 import { MarkdownBody } from "./MarkdownBody";
@@ -160,7 +160,7 @@ interface CommentThreadProps {
   linkedRuns?: LinkedRunItem[];
   companyId?: string | null;
   projectId?: string | null;
-  onAdd: (body: string, reopen?: boolean, reassignment?: CommentReassignment) => Promise<void>;
+  onAdd: (body: string, reopen?: boolean, reassignment?: CommentReassignment, replyToId?: string | null) => Promise<void>;
   issueStatus?: string;
   agentMap?: Map<string, Agent>;
   imageUploadHandler?: (file: File) => Promise<string>;
@@ -243,6 +243,132 @@ type TimelineItem =
   | { kind: "comment"; id: string; createdAtMs: number; comment: CommentWithRunMeta }
   | { kind: "run"; id: string; createdAtMs: number; run: LinkedRunItem };
 
+// ---------------------------------------------------------------------------
+// Single comment card (used for both top-level and reply comments)
+// ---------------------------------------------------------------------------
+
+function CommentCard({
+  comment,
+  agentMap,
+  companyId,
+  projectId,
+  highlightCommentId,
+  reactions,
+  onToggleReaction,
+  onReply,
+  depth = 0,
+}: {
+  comment: CommentWithRunMeta;
+  agentMap?: Map<string, Agent>;
+  companyId?: string | null;
+  projectId?: string | null;
+  highlightCommentId?: string | null;
+  reactions: ReactionMap;
+  onToggleReaction: (commentId: string, emoji: string) => void;
+  onReply?: (commentId: string) => void;
+  depth?: number;
+}) {
+  const isHighlighted = highlightCommentId === comment.id;
+  return (
+    <div
+      id={`comment-${comment.id}`}
+      className={`border p-3 overflow-hidden min-w-0 rounded-sm transition-colors duration-1000 ${isHighlighted ? "border-primary/50 bg-primary/5" : "border-border"} ${depth > 0 ? "ml-6 border-l-2 border-l-primary/20" : ""}`}
+    >
+      <div className="flex items-center justify-between mb-1">
+        {comment.authorAgentId ? (
+          <Link to={`/agents/${comment.authorAgentId}`} className="hover:underline">
+            <Identity
+              name={agentMap?.get(comment.authorAgentId)?.name ?? comment.authorAgentId.slice(0, 8)}
+              size="sm"
+            />
+          </Link>
+        ) : (
+          <Identity name="You" size="sm" />
+        )}
+        <span className="flex items-center gap-1.5">
+          {companyId ? (
+            <PluginSlotOutlet
+              slotTypes={["commentContextMenuItem"]}
+              entityType="comment"
+              context={{
+                companyId,
+                projectId: projectId ?? null,
+                entityId: comment.id,
+                entityType: "comment",
+                parentEntityId: comment.issueId,
+              }}
+              className="flex flex-wrap items-center gap-1.5"
+              itemClassName="inline-flex"
+              missingBehavior="placeholder"
+            />
+          ) : null}
+          {onReply && depth === 0 && (
+            <button
+              type="button"
+              onClick={() => onReply(comment.id)}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+              title="Reply to this comment"
+            >
+              <Reply className="h-3 w-3" />
+            </button>
+          )}
+          <a
+            href={`#comment-${comment.id}`}
+            className="text-xs text-muted-foreground hover:text-foreground hover:underline transition-colors"
+          >
+            {formatDateTime(comment.createdAt)}
+          </a>
+          <CopyMarkdownButton text={comment.body} />
+        </span>
+      </div>
+      <MarkdownBody className="text-sm">{comment.body}</MarkdownBody>
+      <ReactionBar
+        commentId={comment.id}
+        reactions={reactions[comment.id]}
+        onToggle={onToggleReaction}
+      />
+      {companyId ? (
+        <div className="mt-2 space-y-2">
+          <PluginSlotOutlet
+            slotTypes={["commentAnnotation"]}
+            entityType="comment"
+            context={{
+              companyId,
+              projectId: projectId ?? null,
+              entityId: comment.id,
+              entityType: "comment",
+              parentEntityId: comment.issueId,
+            }}
+            className="space-y-2"
+            itemClassName="rounded-md"
+            missingBehavior="placeholder"
+          />
+        </div>
+      ) : null}
+      {comment.runId && (
+        <div className="mt-2 pt-2 border-t border-border/60">
+          {comment.runAgentId ? (
+            <Link
+              to={`/agents/${comment.runAgentId}/runs/${comment.runId}`}
+              className="inline-flex items-center rounded-md border border-border bg-accent/30 px-2 py-1 text-[10px] font-mono text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
+            >
+              run {comment.runId.slice(0, 8)}
+            </Link>
+          ) : (
+            <span className="inline-flex items-center rounded-md border border-border bg-accent/30 px-2 py-1 text-[10px] font-mono text-muted-foreground">
+              run {comment.runId.slice(0, 8)}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Timeline list with threaded replies
+// ---------------------------------------------------------------------------
+
 const TimelineList = memo(function TimelineList({
   timeline,
   agentMap,
@@ -251,6 +377,8 @@ const TimelineList = memo(function TimelineList({
   highlightCommentId,
   reactions,
   onToggleReaction,
+  onReply,
+  commentsByParent,
 }: {
   timeline: TimelineItem[];
   agentMap?: Map<string, Agent>;
@@ -259,6 +387,8 @@ const TimelineList = memo(function TimelineList({
   highlightCommentId?: string | null;
   reactions: ReactionMap;
   onToggleReaction: (commentId: string, emoji: string) => void;
+  onReply?: (commentId: string) => void;
+  commentsByParent: Map<string, CommentWithRunMeta[]>;
 }) {
   if (timeline.length === 0) {
     return <p className="text-sm text-muted-foreground">No comments or runs yet.</p>;
@@ -297,90 +427,33 @@ const TimelineList = memo(function TimelineList({
         }
 
         const comment = item.comment;
-        const isHighlighted = highlightCommentId === comment.id;
+        const replies = commentsByParent.get(comment.id) ?? [];
         return (
-          <div
-            key={comment.id}
-            id={`comment-${comment.id}`}
-            className={`border p-3 overflow-hidden min-w-0 rounded-sm transition-colors duration-1000 ${isHighlighted ? "border-primary/50 bg-primary/5" : "border-border"}`}
-          >
-            <div className="flex items-center justify-between mb-1">
-              {comment.authorAgentId ? (
-                <Link to={`/agents/${comment.authorAgentId}`} className="hover:underline">
-                  <Identity
-                    name={agentMap?.get(comment.authorAgentId)?.name ?? comment.authorAgentId.slice(0, 8)}
-                    size="sm"
-                  />
-                </Link>
-              ) : (
-                <Identity name="You" size="sm" />
-              )}
-              <span className="flex items-center gap-1.5">
-                {companyId ? (
-                  <PluginSlotOutlet
-                    slotTypes={["commentContextMenuItem"]}
-                    entityType="comment"
-                    context={{
-                      companyId,
-                      projectId: projectId ?? null,
-                      entityId: comment.id,
-                      entityType: "comment",
-                      parentEntityId: comment.issueId,
-                    }}
-                    className="flex flex-wrap items-center gap-1.5"
-                    itemClassName="inline-flex"
-                    missingBehavior="placeholder"
-                  />
-                ) : null}
-                <a
-                  href={`#comment-${comment.id}`}
-                  className="text-xs text-muted-foreground hover:text-foreground hover:underline transition-colors"
-                >
-                  {formatDateTime(comment.createdAt)}
-                </a>
-                <CopyMarkdownButton text={comment.body} />
-              </span>
-            </div>
-            <MarkdownBody className="text-sm">{comment.body}</MarkdownBody>
-            <ReactionBar
-              commentId={comment.id}
-              reactions={reactions[comment.id]}
-              onToggle={onToggleReaction}
+          <div key={comment.id} className="space-y-2">
+            <CommentCard
+              comment={comment}
+              agentMap={agentMap}
+              companyId={companyId}
+              projectId={projectId}
+              highlightCommentId={highlightCommentId}
+              reactions={reactions}
+              onToggleReaction={onToggleReaction}
+              onReply={onReply}
+              depth={0}
             />
-            {companyId ? (
-              <div className="mt-2 space-y-2">
-                <PluginSlotOutlet
-                  slotTypes={["commentAnnotation"]}
-                  entityType="comment"
-                  context={{
-                    companyId,
-                    projectId: projectId ?? null,
-                    entityId: comment.id,
-                    entityType: "comment",
-                    parentEntityId: comment.issueId,
-                  }}
-                  className="space-y-2"
-                  itemClassName="rounded-md"
-                  missingBehavior="placeholder"
-                />
-              </div>
-            ) : null}
-            {comment.runId && (
-              <div className="mt-2 pt-2 border-t border-border/60">
-                {comment.runAgentId ? (
-                  <Link
-                    to={`/agents/${comment.runAgentId}/runs/${comment.runId}`}
-                    className="inline-flex items-center rounded-md border border-border bg-accent/30 px-2 py-1 text-[10px] font-mono text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
-                  >
-                    run {comment.runId.slice(0, 8)}
-                  </Link>
-                ) : (
-                  <span className="inline-flex items-center rounded-md border border-border bg-accent/30 px-2 py-1 text-[10px] font-mono text-muted-foreground">
-                    run {comment.runId.slice(0, 8)}
-                  </span>
-                )}
-              </div>
-            )}
+            {replies.map((reply) => (
+              <CommentCard
+                key={reply.id}
+                comment={reply}
+                agentMap={agentMap}
+                companyId={companyId}
+                projectId={projectId}
+                highlightCommentId={highlightCommentId}
+                reactions={reactions}
+                onToggleReaction={onToggleReaction}
+                depth={1}
+              />
+            ))}
           </div>
         );
       })}
@@ -414,14 +487,41 @@ export function CommentThread({
   const effectiveSuggestedAssigneeValue = suggestedAssigneeValue ?? currentAssigneeValue;
   const [reassignTarget, setReassignTarget] = useState(effectiveSuggestedAssigneeValue);
   const [highlightCommentId, setHighlightCommentId] = useState<string | null>(null);
+  const [replyToId, setReplyToId] = useState<string | null>(null);
   const editorRef = useRef<MarkdownEditorRef>(null);
   const attachInputRef = useRef<HTMLInputElement | null>(null);
   const draftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const location = useLocation();
   const hasScrolledRef = useRef(false);
 
+  // Separate top-level comments from replies
+  const { commentsByParent, topLevelComments } = useMemo(() => {
+    const byParent = new Map<string, CommentWithRunMeta[]>();
+    const topLevel: CommentWithRunMeta[] = [];
+    for (const comment of comments) {
+      if (comment.replyToId) {
+        const existing = byParent.get(comment.replyToId) ?? [];
+        existing.push(comment);
+        byParent.set(comment.replyToId, existing);
+      } else {
+        topLevel.push(comment);
+      }
+    }
+    // Sort replies by creation time
+    for (const [, replies] of byParent) {
+      replies.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    }
+    return { commentsByParent: byParent, topLevelComments: topLevel };
+  }, [comments]);
+
+  // Find the comment being replied to
+  const replyToComment = useMemo(() => {
+    if (!replyToId) return null;
+    return comments.find((c) => c.id === replyToId) ?? null;
+  }, [replyToId, comments]);
+
   const timeline = useMemo<TimelineItem[]>(() => {
-    const commentItems: TimelineItem[] = comments.map((comment) => ({
+    const commentItems: TimelineItem[] = topLevelComments.map((comment) => ({
       kind: "comment",
       id: comment.id,
       createdAtMs: new Date(comment.createdAt).getTime(),
@@ -438,7 +538,7 @@ export function CommentThread({
       if (a.kind === b.kind) return a.id.localeCompare(b.id);
       return a.kind === "comment" ? -1 : 1;
     });
-  }, [comments, linkedRuns]);
+  }, [topLevelComments, linkedRuns]);
 
   // Build mention options from agent map (exclude terminated agents)
   const mentions = useMemo<MentionOption[]>(() => {
@@ -504,10 +604,11 @@ export function CommentThread({
 
     setSubmitting(true);
     try {
-      await onAdd(trimmed, reopen ? true : undefined, reassignment ?? undefined);
+      await onAdd(trimmed, reopen ? true : undefined, reassignment ?? undefined, replyToId);
       setBody("");
       if (draftKey) clearDraft(draftKey);
       setReopen(true);
+      setReplyToId(null);
       setReassignTarget(effectiveSuggestedAssigneeValue);
     } finally {
       setSubmitting(false);
@@ -588,16 +689,45 @@ export function CommentThread({
         highlightCommentId={highlightCommentId}
         reactions={reactions}
         onToggleReaction={toggleReaction}
+        onReply={(commentId) => {
+          setReplyToId(commentId);
+          editorRef.current?.focus();
+        }}
+        commentsByParent={commentsByParent}
       />
 
       {liveRunSlot}
 
       <div className="space-y-2" onPaste={handlePaste}>
+        {replyToComment && (
+          <div className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 text-xs">
+            <CornerDownRight className="h-3 w-3 text-muted-foreground shrink-0" />
+            <span className="text-muted-foreground">
+              Replying to{" "}
+              <span className="font-medium text-foreground">
+                {replyToComment.authorAgentId
+                  ? (agentMap?.get(replyToComment.authorAgentId)?.name ?? "Agent")
+                  : "You"}
+              </span>
+            </span>
+            <span className="flex-1 truncate text-muted-foreground">
+              {replyToComment.body.slice(0, 80)}{replyToComment.body.length > 80 ? "..." : ""}
+            </span>
+            <button
+              type="button"
+              onClick={() => setReplyToId(null)}
+              className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
+              title="Cancel reply"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        )}
         <MarkdownEditor
           ref={editorRef}
           value={body}
           onChange={setBody}
-          placeholder="Leave a comment..."
+          placeholder={replyToId ? "Write a reply..." : "Leave a comment..."}
           mentions={mentions}
           onSubmit={handleSubmit}
           imageUploadHandler={imageUploadHandler}
@@ -688,7 +818,7 @@ export function CommentThread({
             />
           )}
           <Button size="sm" disabled={!canSubmit} onClick={handleSubmit}>
-            {submitting ? "Posting..." : "Comment"}
+            {submitting ? "Posting..." : replyToId ? "Reply" : "Comment"}
           </Button>
         </div>
       </div>

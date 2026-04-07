@@ -7,6 +7,8 @@ export interface ActivityFilters {
   agentId?: string;
   entityType?: string;
   entityId?: string;
+  action?: string;
+  limit?: number;
 }
 
 export function activityService(db: Db) {
@@ -23,6 +25,9 @@ export function activityService(db: Db) {
       }
       if (filters.entityId) {
         conditions.push(eq(activityLog.entityId, filters.entityId));
+      }
+      if (filters.action) {
+        conditions.push(eq(activityLog.action, filters.action));
       }
 
       return db
@@ -45,7 +50,7 @@ export function activityService(db: Db) {
           ),
         )
         .orderBy(desc(activityLog.createdAt))
-        .limit(200)
+        .limit(filters.limit ?? 200)
         .then((rows) => rows.map((r) => r.activityLog));
     },
 

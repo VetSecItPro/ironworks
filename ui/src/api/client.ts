@@ -56,6 +56,14 @@ async function requestWithRetry<T>(path: string, init?: RequestInit): Promise<T>
         continue;
       }
 
+      // Expired session (401) - redirect to auth with return URL
+      if (err.status === 401) {
+        const currentUrl = window.location.pathname + window.location.search;
+        const params = new URLSearchParams({ next: currentUrl, reason: "session_expired" });
+        window.location.href = `/auth?${params.toString()}`;
+        return new Promise<T>(() => {});
+      }
+
       // Non-retryable error
       throw err;
     }

@@ -22,6 +22,9 @@ export const deliverablesApi = {
     return api.get<Deliverable[]>(`/companies/${companyId}/deliverables${params}`);
   },
 
-  updateStatus: (companyId: string, id: string, deliverableStatus: string) =>
-    api.patch<Deliverable>(`/companies/${companyId}/deliverables/${id}`, { deliverableStatus }),
+  updateStatus: (companyId: string, id: string, deliverableStatus: string, reviewerNote?: string) =>
+    api.patch<Deliverable>(`/companies/${companyId}/deliverables/${id}`, {
+      deliverableStatus,
+      ...(reviewerNote ? { reviewerNote } : {}),
+    }),
 };

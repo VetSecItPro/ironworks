@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CheckCircle2,
@@ -13,6 +13,7 @@ import {
   Send,
   RotateCcw,
   X,
+  XCircle,
 } from "lucide-react";
 import { MarkdownBody } from "../components/MarkdownBody";
 import { deliverablesApi, type Deliverable } from "../api/deliverables";
@@ -36,6 +37,8 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   review: { label: "Pending Review", className: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400" },
   approved: { label: "Approved", className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400" },
   delivered: { label: "Delivered", className: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400" },
+  revision_requested: { label: "Revision Requested", className: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400" },
+  rejected: { label: "Rejected", className: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" },
 };
 
 const DOC_TYPE_LABELS: Record<string, string> = {
@@ -74,80 +77,145 @@ function formatDate(dateStr: string): string {
 interface DeliverableRowProps {
   deliverable: Deliverable;
   onApprove: (id: string) => void;
-  onRequestRevision: (id: string) => void;
+  onRequestRevision: (id: string, note: string) => void;
+  onReject: (id: string, note: string) => void;
+  onDeliver: (id: string) => void;
   isUpdating: boolean;
 }
 
-function DeliverableRow({ deliverable, onApprove, onRequestRevision, isUpdating }: DeliverableRowProps) {
+function DeliverableRow({ deliverable, onApprove, onRequestRevision, onReject, onDeliver, isUpdating }: DeliverableRowProps) {
   const docTypeLabel = DOC_TYPE_LABELS[deliverable.documentType ?? ""] ?? deliverable.documentType ?? "Document";
   const isInReview = deliverable.deliverableStatus === "review";
+  const [showNoteFor, setShowNoteFor] = useState<"revision" | "reject" | null>(null);
+  const [reviewerNote, setReviewerNote] = useState("");
+  const noteRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (showNoteFor && noteRef.current) noteRef.current.focus();
+  }, [showNoteFor]);
+
+  const handleSubmitNote = () => {
+    if (!reviewerNote.trim()) return;
+    if (showNoteFor === "revision") onRequestRevision(deliverable.id, reviewerNote.trim());
+    if (showNoteFor === "reject") onReject(deliverable.id, reviewerNote.trim());
+    setReviewerNote("");
+    setShowNoteFor(null);
+  };
+
+  const existingNote = (deliverable as unknown as { reviewerNote?: string }).reviewerNote ?? null;
 
   return (
-    <div className="flex items-center gap-4 px-4 py-3 border-b border-border last:border-0 hover:bg-accent/20 transition-colors">
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <Link
-            to={`/knowledge/${deliverable.id}`}
-            className="text-sm font-medium hover:underline truncate"
-          >
-            {deliverable.title}
-          </Link>
-          <span className="text-[11px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0">
-            {docTypeLabel}
-          </span>
-        </div>
-        <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-          {deliverable.agentName && (
-            <span className="flex items-center gap-1">
-              <FileText className="h-3 w-3" />
-              {deliverable.agentName}
+    <div className="px-4 py-3 border-b border-border last:border-0 hover:bg-accent/20 transition-colors">
+      <div className="flex items-center gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link
+              to={`/knowledge/${deliverable.id}`}
+              className="text-sm font-medium hover:underline truncate"
+            >
+              {deliverable.title}
+            </Link>
+            <span className="text-[11px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0">
+              {docTypeLabel}
             </span>
+          </div>
+          <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+            {deliverable.agentName && (
+              <span className="flex items-center gap-1">
+                <FileText className="h-3 w-3" />
+                {deliverable.agentName}
+              </span>
+            )}
+            <span className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              {formatDate(deliverable.updatedAt)}
+            </span>
+          </div>
+          {existingNote && (
+            <div className="mt-1.5 text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1 border border-border">
+              <span className="font-medium">Reviewer note:</span> {existingNote}
+            </div>
           )}
-          <span className="flex items-center gap-1">
-            <Clock className="h-3 w-3" />
-            {formatDate(deliverable.updatedAt)}
-          </span>
         </div>
-      </div>
 
-      <StatusBadge status={deliverable.deliverableStatus} />
+        <StatusBadge status={deliverable.deliverableStatus} />
 
-      {isInReview && (
-        <div className="flex items-center gap-2 shrink-0">
+        {isInReview && (
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs text-red-600 hover:bg-red-500/10 hover:text-red-600 border-red-200 dark:border-red-800 dark:text-red-400"
+              disabled={isUpdating}
+              onClick={() => setShowNoteFor(showNoteFor === "reject" ? null : "reject")}
+            >
+              <XCircle className="h-3 w-3 mr-1" />
+              Reject
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs"
+              disabled={isUpdating}
+              onClick={() => setShowNoteFor(showNoteFor === "revision" ? null : "revision")}
+            >
+              <RotateCcw className="h-3 w-3 mr-1" />
+              Revise
+            </Button>
+            <Button
+              size="sm"
+              className="h-7 text-xs"
+              disabled={isUpdating}
+              onClick={() => onApprove(deliverable.id)}
+            >
+              <CheckCircle2 className="h-3 w-3 mr-1" />
+              Approve
+            </Button>
+          </div>
+        )}
+        {deliverable.deliverableStatus === "approved" && (
           <Button
             size="sm"
             variant="outline"
-            className="h-7 text-xs"
+            className="h-7 text-xs shrink-0"
             disabled={isUpdating}
-            onClick={() => onRequestRevision(deliverable.id)}
+            onClick={() => onDeliver(deliverable.id)}
           >
-            <RotateCcw className="h-3 w-3 mr-1" />
-            Revise
+            <Send className="h-3 w-3 mr-1" />
+            Mark Delivered
           </Button>
-          <Button
-            size="sm"
-            className="h-7 text-xs"
-            disabled={isUpdating}
-            onClick={() => onApprove(deliverable.id)}
-          >
-            <CheckCircle2 className="h-3 w-3 mr-1" />
-            Approve
-          </Button>
+        )}
+      </div>
+
+      {showNoteFor && (
+        <div className="mt-2 flex gap-2">
+          <textarea
+            ref={noteRef}
+            value={reviewerNote}
+            onChange={(e) => setReviewerNote(e.target.value)}
+            placeholder={showNoteFor === "reject" ? "Reason for rejection..." : "What needs to be revised..."}
+            className="flex-1 rounded border border-border bg-transparent px-2 py-1.5 text-xs resize-none h-16"
+          />
+          <div className="flex flex-col gap-1">
+            <Button
+              size="sm"
+              variant={showNoteFor === "reject" ? "destructive" : "outline"}
+              className="h-7 text-xs"
+              disabled={isUpdating || !reviewerNote.trim()}
+              onClick={handleSubmitNote}
+            >
+              {showNoteFor === "reject" ? "Confirm Reject" : "Request Revision"}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 text-xs"
+              onClick={() => { setShowNoteFor(null); setReviewerNote(""); }}
+            >
+              Cancel
+            </Button>
+          </div>
         </div>
-      )}
-      {deliverable.deliverableStatus === "approved" && (
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 text-xs shrink-0"
-          disabled={isUpdating}
-          onClick={() => {
-            deliverablesApi.updateStatus(deliverable.companyId, deliverable.id, "delivered");
-          }}
-        >
-          <Send className="h-3 w-3 mr-1" />
-          Mark Delivered
-        </Button>
       )}
     </div>
   );
@@ -347,8 +415,8 @@ export function Deliverables() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) =>
-      deliverablesApi.updateStatus(selectedCompanyId!, id, status),
+    mutationFn: ({ id, status, reviewerNote }: { id: string; status: string; reviewerNote?: string }) =>
+      deliverablesApi.updateStatus(selectedCompanyId!, id, status, reviewerNote),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["deliverables", selectedCompanyId] });
       queryClient.invalidateQueries({ queryKey: queryKeys.sidebarBadges(selectedCompanyId!) });
@@ -386,6 +454,8 @@ export function Deliverables() {
               <SelectItem value="review">Pending Review</SelectItem>
               <SelectItem value="approved">Approved</SelectItem>
               <SelectItem value="delivered">Delivered</SelectItem>
+              <SelectItem value="revision_requested">Revision Requested</SelectItem>
+              <SelectItem value="rejected">Rejected</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -407,7 +477,9 @@ export function Deliverables() {
                     deliverable={d}
                     isUpdating={updateMutation.isPending}
                     onApprove={(id) => updateMutation.mutate({ id, status: "approved" })}
-                    onRequestRevision={(id) => updateMutation.mutate({ id, status: "draft" })}
+                    onRequestRevision={(id, note) => updateMutation.mutate({ id, status: "revision_requested", reviewerNote: note })}
+                    onReject={(id, note) => updateMutation.mutate({ id, status: "rejected", reviewerNote: note })}
+                    onDeliver={(id) => updateMutation.mutate({ id, status: "delivered" })}
                   />
                 </div>
                 {/* Preview button (12.20) */}

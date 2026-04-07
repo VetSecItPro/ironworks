@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, index } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, index, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { companies } from "./companies.js";
 import { issues } from "./issues.js";
 import { agents } from "./agents.js";
@@ -12,6 +12,7 @@ export const issueComments = pgTable(
     authorAgentId: uuid("author_agent_id").references(() => agents.id),
     authorUserId: text("author_user_id"),
     body: text("body").notNull(),
+    replyToId: uuid("reply_to_id").references((): AnyPgColumn => issueComments.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -29,5 +30,6 @@ export const issueComments = pgTable(
       table.issueId,
       table.createdAt,
     ),
+    replyToIdx: index("issue_comments_reply_to_idx").on(table.replyToId),
   }),
 );

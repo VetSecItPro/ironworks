@@ -70,13 +70,14 @@ export const issuesApi = {
     }),
   release: (id: string) => api.post<Issue>(`/issues/${id}/release`, {}),
   listComments: (id: string) => api.get<IssueComment[]>(`/issues/${id}/comments`),
-  addComment: (id: string, body: string, reopen?: boolean, interrupt?: boolean) =>
+  addComment: (id: string, body: string, reopen?: boolean, interrupt?: boolean, replyToId?: string | null) =>
     api.post<IssueComment>(
       `/issues/${id}/comments`,
       {
         body,
         ...(reopen === undefined ? {} : { reopen }),
         ...(interrupt === undefined ? {} : { interrupt }),
+        ...(replyToId ? { replyToId } : {}),
       },
     ),
   listDocuments: (id: string) => api.get<IssueDocument[]>(`/issues/${id}/documents`),

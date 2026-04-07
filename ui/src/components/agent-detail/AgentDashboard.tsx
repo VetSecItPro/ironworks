@@ -769,6 +769,78 @@ function AgentJournal({ companyId, agentId }: { companyId: string; agentId: stri
   );
 }
 
+/* ── Decision Log (agent.decision activity entries) ── */
+
+function DecisionLog({ companyId, agentId }: { companyId: string; agentId: string }) {
+  const { data: activity } = useQuery({
+    queryKey: [...queryKeys.activity(companyId), "decisions", agentId],
+    queryFn: () => activityApi.list(companyId, { agentId, action: "agent.decision", limit: 20 }),
+    enabled: !!companyId && !!agentId,
+    staleTime: 60_000,
+  });
+
+  const decisions = useMemo(() => {
+    return (activity ?? []).map((e) => {
+      const details = (e.details ?? {}) as Record<string, unknown>;
+      return {
+        id: e.id,
+        createdAt: e.createdAt,
+        decision: String(details.decision ?? ""),
+        reasoning: details.reasoning ? String(details.reasoning) : null,
+        alternatives: Array.isArray(details.alternativesConsidered)
+          ? (details.alternativesConsidered as unknown[]).map(String)
+          : null,
+        issueId: details.issueId ? String(details.issueId) : null,
+        issueTitle: details.issueTitle ? String(details.issueTitle) : null,
+      };
+    }).filter((d) => d.decision.length > 0);
+  }, [activity]);
+
+  if (decisions.length === 0) return null;
+
+  return (
+    <div className="rounded-lg border border-border p-4 space-y-3">
+      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+        <MessageSquare className="h-3.5 w-3.5" />
+        Decision Log
+      </h4>
+      <div className="space-y-3">
+        {decisions.map((d) => (
+          <div key={d.id} className="border border-border rounded-md p-3 space-y-1.5">
+            <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+              <Clock className="h-3 w-3" />
+              <span>{formatDate(d.createdAt instanceof Date ? d.createdAt.toISOString() : String(d.createdAt))}</span>
+              {d.issueTitle && (
+                <>
+                  <span className="text-muted-foreground/40">|</span>
+                  {d.issueId ? (
+                    <Link to={`/issues/${d.issueId}`} className="hover:underline text-inherit">
+                      {d.issueTitle}
+                    </Link>
+                  ) : (
+                    <span>{d.issueTitle}</span>
+                  )}
+                </>
+              )}
+            </div>
+            <p className="text-sm">{d.decision}</p>
+            {d.reasoning && (
+              <p className="text-xs text-muted-foreground">
+                <span className="font-medium">Why:</span> {d.reasoning}
+              </p>
+            )}
+            {d.alternatives && d.alternatives.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                <span className="font-medium">Alternatives:</span> {d.alternatives.join(", ")}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ── Communication Style Badge (12.57) ── */
 
 const ROLE_COMM_STYLES: Record<string, { label: string; color: string }> = {
@@ -959,6 +1031,9 @@ export function AgentDashboard({
 
       {/* Agent Journal */}
       <AgentJournal companyId={agent.companyId} agentId={agentId} />
+
+      {/* Decision Log */}
+      <DecisionLog companyId={agent.companyId} agentId={agentId} />
 
       {/* Costs */}
       <div className="space-y-3">

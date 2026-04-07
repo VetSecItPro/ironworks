@@ -155,6 +155,7 @@ export interface IssueComment {
   authorAgentId: string | null;
   authorUserId: string | null;
   body: string;
+  replyToId: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
