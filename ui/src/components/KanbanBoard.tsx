@@ -117,7 +117,7 @@ function ColumnHealthIndicator({ issues }: { issues: Issue[] }) {
   const color = avgAge > 14 ? "bg-red-500" : avgAge > 7 ? "bg-amber-500" : "bg-emerald-500";
   const label = avgAge < 1 ? "<1d" : `${Math.round(avgAge)}d`;
   return (
-    <span className="flex items-center gap-1 text-[9px] text-muted-foreground/60" title={`Average card age: ${label}`}>
+    <span className="flex items-center gap-1 text-[10px] text-muted-foreground/80" title={`Average card age: ${label}`}>
       <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", color)} />
       {label} avg
     </span>
@@ -266,7 +266,7 @@ const KanbanColumn = memo(function KanbanColumn({
               ? "bg-red-500/20 text-red-500"
               : atLimit
                 ? "bg-amber-500/20 text-amber-500"
-                : "text-muted-foreground/60",
+                : "text-muted-foreground/80",
           )}
         >
           {count}
@@ -326,7 +326,7 @@ const KanbanColumn = memo(function KanbanColumn({
 
           {issues.length === 0 && (
             <div className="flex items-center justify-center h-20 border-2 border-dashed border-border/40 rounded-lg">
-              <span className="text-xs text-muted-foreground/50">No items</span>
+              <span className="text-xs text-muted-foreground/70">No items</span>
             </div>
           )}
         </div>

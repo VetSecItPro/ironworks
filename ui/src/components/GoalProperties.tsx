@@ -99,7 +99,7 @@ function AgentPickerButton({
       </PopoverTrigger>
       <PopoverContent className="w-52 p-1" align="end">
         <input
-          className="mb-1 w-full border-b border-border bg-transparent px-2 py-1.5 text-xs outline-none placeholder:text-muted-foreground/50"
+          className="mb-1 w-full border-b border-border bg-transparent px-2 py-1.5 text-xs outline-none placeholder:text-muted-foreground/70"
           placeholder="Search agents..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}

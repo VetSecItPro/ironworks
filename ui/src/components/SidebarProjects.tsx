@@ -180,7 +180,7 @@ export function SidebarProjects() {
           <CollapsibleTrigger className="flex items-center gap-1 flex-1 min-w-0">
             <ChevronRight
               className={cn(
-                "h-3 w-3 text-muted-foreground/60 transition-transform md:opacity-0 md:group-hover:opacity-100",
+                "h-3 w-3 text-muted-foreground/80 transition-transform md:opacity-0 md:group-hover:opacity-100",
                 open && "rotate-90"
               )}
             />
@@ -193,7 +193,7 @@ export function SidebarProjects() {
               e.stopPropagation();
               openNewProject();
             }}
-            className="flex items-center justify-center h-4 w-4 rounded text-muted-foreground/60 hover:text-foreground hover:bg-accent/50 transition-colors"
+            className="flex items-center justify-center h-4 w-4 rounded text-muted-foreground/80 hover:text-foreground hover:bg-accent/50 transition-colors"
             aria-label="New project"
           >
             <Plus className="h-3 w-3" />

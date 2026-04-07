@@ -134,7 +134,7 @@ export function SLATimer({ priority, status, createdAt, className }: SLATimerPro
         <span className={cn("font-mono tabular-nums", responseBreached && "font-semibold")}>
           {formatCountdown(responseRemaining)}
         </span>
-        {responseBreached && <span className="text-[9px] uppercase font-bold">BREACHED</span>}
+        {responseBreached && <span className="text-[10px] uppercase font-bold">BREACHED</span>}
       </div>
 
       {/* Resolution SLA */}
@@ -155,7 +155,7 @@ export function SLATimer({ priority, status, createdAt, className }: SLATimerPro
         <span className={cn("font-mono tabular-nums", resolutionBreached && "font-semibold")}>
           {formatCountdown(resolutionRemaining)}
         </span>
-        {resolutionBreached && <span className="text-[9px] uppercase font-bold">BREACHED</span>}
+        {resolutionBreached && <span className="text-[10px] uppercase font-bold">BREACHED</span>}
       </div>
     </div>
   );

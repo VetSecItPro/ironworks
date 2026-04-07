@@ -177,7 +177,7 @@ export function InviteUserDialog({
             {multiMode ? (
               <textarea
                 id="invite-email"
-                className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/50"
+                className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/70"
                 placeholder={"user1@example.com\nuser2@example.com\nuser3@example.com"}
                 rows={4}
                 value={multiEmails}
@@ -189,7 +189,7 @@ export function InviteUserDialog({
                 id="invite-email"
                 type="email"
                 inputMode="email"
-                className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/50"
+                className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/70"
                 placeholder="user@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}

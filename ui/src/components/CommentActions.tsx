@@ -122,7 +122,7 @@ export function EditHistoryViewer({ commentId, open, onClose }: EditHistoryViewe
           <History className="h-3 w-3" />
           Edit history ({history.length} revision{history.length !== 1 ? "s" : ""})
         </div>
-        <button type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground">
+        <button type="button" aria-label="Close edit history" onClick={onClose} className="text-muted-foreground hover:text-foreground">
           <X className="h-3 w-3" />
         </button>
       </div>

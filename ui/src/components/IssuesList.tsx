@@ -817,7 +817,7 @@ export function IssuesList({
               </PopoverTrigger>
               <PopoverContent className="w-56 p-1" align="end">
                 <input
-                  className="mb-1 w-full border-b border-border bg-transparent px-2 py-1.5 text-xs outline-none placeholder:text-muted-foreground/50"
+                  className="mb-1 w-full border-b border-border bg-transparent px-2 py-1.5 text-xs outline-none placeholder:text-muted-foreground/70"
                   placeholder="Search assignees..."
                   value={bulkAssigneeSearch}
                   onChange={(e) => setBulkAssigneeSearch(e.target.value)}
@@ -930,10 +930,10 @@ export function IssuesList({
             >
               <span className="font-medium">Title</span>
               {viewState.sortField === "title" && (viewState.sortDir === "asc" ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />)}
-              {(viewState.secondarySorts ?? []).some((s) => s.field === "title") && <span className="text-[9px] tabular-nums text-blue-500">2</span>}
+              {(viewState.secondarySorts ?? []).some((s) => s.field === "title") && <span className="text-[10px] tabular-nums text-blue-500">2</span>}
             </button>
             <input
-              className="ml-1 h-5 w-28 rounded border border-border bg-transparent px-1.5 text-xs outline-none placeholder:text-muted-foreground/50 focus:border-ring"
+              className="ml-1 h-5 w-28 rounded border border-border bg-transparent px-1.5 text-xs outline-none placeholder:text-muted-foreground/70 focus:border-ring"
               placeholder="Filter..."
               value={viewState.columnFilters?.title ?? ""}
               onChange={(e) => updateColumnFilter("title", e.target.value)}
@@ -1235,7 +1235,7 @@ export function IssuesList({
                           onPointerDownOutside={() => setAssigneeSearch("")}
                         >
                           <input
-                            className="mb-1 w-full border-b border-border bg-transparent px-2 py-1.5 text-xs outline-none placeholder:text-muted-foreground/50"
+                            className="mb-1 w-full border-b border-border bg-transparent px-2 py-1.5 text-xs outline-none placeholder:text-muted-foreground/70"
                             placeholder="Search assignees..."
                             value={assigneeSearch}
                             onChange={(e) => setAssigneeSearch(e.target.value)}

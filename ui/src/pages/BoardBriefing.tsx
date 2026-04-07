@@ -621,7 +621,7 @@ export function BoardBriefing() {
               </div>
             </div>
             {pendingHiring.length === 0 && pendingApprovals.length === 0 && (
-              <p className="text-sm text-muted-foreground/60 pt-1">No pending decisions. All clear.</p>
+              <p className="text-sm text-muted-foreground/80 pt-1">No pending decisions. All clear.</p>
             )}
           </div>
         </div>
@@ -1078,7 +1078,7 @@ export function BoardBriefing() {
                       title={`${t.messageCount} messages, ${t.decisionCount} decisions`}
                     >
                       <span className="capitalize">{t.topic}</span>
-                      <span className="text-muted-foreground/60">
+                      <span className="text-muted-foreground/80">
                         {t.messageCount + t.decisionCount * 2}
                       </span>
                     </span>

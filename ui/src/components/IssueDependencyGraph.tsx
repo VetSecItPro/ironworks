@@ -360,7 +360,7 @@ export function IssueDependencyGraph({ issue, allIssues }: IssueDependencyGraphP
                   </span>
                   <span className="truncate">{b.title}</span>
                   {criticalPath.has(b.id) && (
-                    <span className="ml-auto text-[9px] font-medium text-amber-500">CRITICAL</span>
+                    <span className="ml-auto text-[10px] font-medium text-amber-500">CRITICAL</span>
                   )}
                 </Link>
               ))}
@@ -389,7 +389,7 @@ export function IssueDependencyGraph({ issue, allIssues }: IssueDependencyGraphP
                   </span>
                   <span className="truncate">{b.title}</span>
                   {criticalPath.has(b.id) && (
-                    <span className="ml-auto text-[9px] font-medium text-amber-500">CRITICAL</span>
+                    <span className="ml-auto text-[10px] font-medium text-amber-500">CRITICAL</span>
                   )}
                 </Link>
               ))}

@@ -1093,7 +1093,7 @@ export function NewIssueDialog() {
                 ))}
               </PopoverContent>
             </Popover>
-            <span className="text-muted-foreground/60">&rsaquo;</span>
+            <span className="text-muted-foreground/80">&rsaquo;</span>
             <span>New issue</span>
           </div>
           <div className="flex items-center gap-1">
@@ -1152,7 +1152,7 @@ export function NewIssueDialog() {
         <div className="px-4 pt-4 pb-2 shrink-0">
           <label className="block text-xs text-muted-foreground mb-1 required-asterisk">Title</label>
           <textarea
-            className="w-full text-lg font-semibold bg-transparent outline-none resize-none overflow-hidden placeholder:text-muted-foreground/50"
+            className="w-full text-lg font-semibold bg-transparent outline-none resize-none overflow-hidden placeholder:text-muted-foreground/70"
             placeholder="Issue title"
             required
             rows={1}
@@ -1215,7 +1215,7 @@ export function NewIssueDialog() {
                   <span>
                     Similar: <span className="font-mono font-medium">{match.identifier}</span> - {match.title}
                   </span>
-                  <span className="text-[9px] ml-auto text-yellow-600 dark:text-yellow-500">
+                  <span className="text-[10px] ml-auto text-yellow-600 dark:text-yellow-500">
                     {Math.round(match.similarity * 100)}% match
                   </span>
                 </div>

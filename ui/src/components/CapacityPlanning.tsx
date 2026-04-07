@@ -106,7 +106,7 @@ function BacklogBurnUpChart({ issues }: { issues: Issue[] }) {
             <text
               x={padding.left - 5}
               y={scaleY(v)}
-              className="fill-muted-foreground text-[8px]"
+              className="fill-muted-foreground text-[10px]"
               textAnchor="end"
               dominantBaseline="middle"
             >
@@ -130,7 +130,7 @@ function BacklogBurnUpChart({ issues }: { issues: Issue[] }) {
             x={scaleX(i)}
             y={chartHeight - 5}
             className={cn(
-              "text-[8px]",
+              "text-[10px]",
               d.label.startsWith("P") ? "fill-amber-500" : "fill-muted-foreground",
             )}
             textAnchor="middle"

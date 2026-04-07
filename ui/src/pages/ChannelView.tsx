@@ -22,27 +22,27 @@ function RoleBadge({ role, employmentType }: { role?: string | null; employmentT
 
   if (employmentType === "contractor") {
     return (
-      <span className="text-[9px] font-medium px-1 py-0 rounded-full leading-tight border border-dashed border-amber-500 text-amber-600 dark:text-amber-400 shrink-0">
+      <span className="text-[10px] font-medium px-1 py-0 rounded-full leading-tight border border-dashed border-amber-500 text-amber-600 dark:text-amber-400 shrink-0">
         CTR
       </span>
     );
   }
   if (level === "executive") {
     return (
-      <span className="text-[9px] font-medium px-1 py-0 rounded-full leading-tight bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 shrink-0">
+      <span className="text-[10px] font-medium px-1 py-0 rounded-full leading-tight bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 shrink-0">
         C
       </span>
     );
   }
   if (level === "management") {
     return (
-      <span className="text-[9px] font-medium px-1 py-0 rounded-full leading-tight bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 shrink-0">
+      <span className="text-[10px] font-medium px-1 py-0 rounded-full leading-tight bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 shrink-0">
         M
       </span>
     );
   }
   return (
-    <span className="text-[9px] font-medium px-1 py-0 rounded-full leading-tight bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-500 shrink-0">
+    <span className="text-[10px] font-medium px-1 py-0 rounded-full leading-tight bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-500 shrink-0">
       FTE
     </span>
   );
@@ -310,7 +310,7 @@ function MessageRow({ msg, agentMap, issueMap, replyMap, onPin, onUnpin, isPinne
             <RoleBadge role={agent.role} employmentType={agent.employmentType} />
           )}
           {isBoard && (
-            <span className="text-[9px] font-medium px-1 py-0 rounded-full leading-tight bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-300 dark:border-amber-700 shrink-0">
+            <span className="text-[10px] font-medium px-1 py-0 rounded-full leading-tight bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-300 dark:border-amber-700 shrink-0">
               BOARD
             </span>
           )}

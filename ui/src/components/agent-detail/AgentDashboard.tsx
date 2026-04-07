@@ -710,7 +710,7 @@ function KnowledgeMap({ companyId, agentId }: { companyId: string; agentId: stri
               style={{ fontSize: `${size}px` }}
             >
               <span className="font-medium">{cat.name.replace(/_/g, " ")}</span>
-              <span className="text-muted-foreground/60 tabular-nums">{cat.count}</span>
+              <span className="text-muted-foreground/80 tabular-nums">{cat.count}</span>
             </span>
           );
         })}
@@ -761,7 +761,7 @@ function AgentJournal({ companyId, agentId }: { companyId: string; agentId: stri
                 `${count} ${action}${count !== 1 ? "s" : ""}`
               ).join(", ")}
             </span>
-            <span className="text-[10px] text-muted-foreground/60 ml-1">({day.total} total)</span>
+            <span className="text-[10px] text-muted-foreground/80 ml-1">({day.total} total)</span>
           </div>
         ))}
       </div>

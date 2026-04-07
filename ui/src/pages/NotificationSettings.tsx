@@ -291,6 +291,7 @@ export function NotificationSettings() {
             }`}
             role="switch"
             aria-checked={prefs.dndEnabled}
+            aria-label="Do Not Disturb"
           >
             <span
               className={`pointer-events-none inline-block h-5 w-5 transform rounded-full shadow ring-0 transition duration-200 ease-in-out ${

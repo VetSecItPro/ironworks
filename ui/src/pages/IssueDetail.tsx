@@ -819,7 +819,7 @@ export function IssueDetail() {
       <div className="flex items-center gap-1.5">
         <div className="flex -space-x-1.5">
           <div
-            className="h-5 w-5 rounded-full bg-foreground/80 border-2 border-background flex items-center justify-center text-[9px] font-medium text-background"
+            className="h-5 w-5 rounded-full bg-foreground/80 border-2 border-background flex items-center justify-center text-[10px] font-medium text-background"
             title="You"
           >
             U

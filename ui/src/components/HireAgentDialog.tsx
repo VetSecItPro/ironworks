@@ -205,6 +205,8 @@ export function HireAgentDialog() {
           <div className="flex items-center gap-2">
             {step > 1 && (
               <button
+                type="button"
+                aria-label="Go back"
                 className="text-muted-foreground hover:text-foreground transition-colors"
                 onClick={() => {
                   if (showTalentPool) {

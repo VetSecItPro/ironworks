@@ -1166,7 +1166,7 @@ function CompanySettingsInner() {
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">{integration.name}</span>
                     {integration.status === "coming_soon" && (
-                      <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">Coming soon</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">Coming soon</span>
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground">{integration.description}</p>

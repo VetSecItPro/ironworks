@@ -1316,7 +1316,7 @@ function EnvVarEditor({
         );
       })}
       {sealError && <p className="text-[11px] text-destructive">{sealError}</p>}
-      <p className="text-[11px] text-muted-foreground/60">
+      <p className="text-[11px] text-muted-foreground/80">
         IRONWORKS_* variables are injected automatically at runtime.
       </p>
     </div>
@@ -1401,7 +1401,7 @@ function ModelDropdown({
         </PopoverTrigger>
         <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-1" align="start">
           <input
-            className="w-full px-2 py-1.5 text-xs bg-transparent outline-none border-b border-border mb-1 placeholder:text-muted-foreground/50"
+            className="w-full px-2 py-1.5 text-xs bg-transparent outline-none border-b border-border mb-1 placeholder:text-muted-foreground/70"
             placeholder="Search models..."
             value={modelSearch}
             onChange={(e) => setModelSearch(e.target.value)}

@@ -39,7 +39,7 @@ function UsageCard({
         <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {label}
         </h4>
-        <Icon className="h-4 w-4 text-muted-foreground/50" />
+        <Icon className="h-4 w-4 text-muted-foreground/70" />
       </div>
       <div className="flex items-baseline gap-1.5">
         <span className={cn("text-2xl font-bold tabular-nums", textColor)}>{pct}%</span>
@@ -77,7 +77,7 @@ function StatCard({
           </p>
           <p className="text-xs text-muted-foreground mt-1">{label}</p>
         </div>
-        <Icon className="h-4 w-4 text-muted-foreground/50 shrink-0 mt-1" />
+        <Icon className="h-4 w-4 text-muted-foreground/70 shrink-0 mt-1" />
       </div>
     </div>
   );

@@ -136,7 +136,7 @@ export const InlineEntitySelector = forwardRef<HTMLButtonElement, InlineEntitySe
         >
           <input
             ref={inputRef}
-            className="w-full border-b border-border bg-transparent px-2 py-1.5 text-sm outline-none placeholder:text-muted-foreground/60"
+            className="w-full border-b border-border bg-transparent px-2 py-1.5 text-sm outline-none placeholder:text-muted-foreground/80"
             placeholder={searchPlaceholder}
             value={query}
             onChange={(event) => {

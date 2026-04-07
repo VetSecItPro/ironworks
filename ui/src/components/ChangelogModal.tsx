@@ -145,7 +145,7 @@ export function ChangelogTrigger({ onClick }: { onClick: () => void }) {
     >
       What&apos;s New
       {unread > 0 && (
-        <span className="absolute -top-1.5 -right-2 h-3.5 min-w-[14px] rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center px-0.5">
+        <span className="absolute -top-1.5 -right-2 h-3.5 min-w-[14px] rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center px-0.5">
           {unread}
         </span>
       )}

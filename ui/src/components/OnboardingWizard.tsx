@@ -894,7 +894,7 @@ export function OnboardingWizard() {
           {/* Close button */}
           <button
             onClick={handleClose}
-            className="absolute top-4 left-4 z-10 rounded-sm p-1.5 text-muted-foreground/60 hover:text-foreground transition-colors"
+            className="absolute top-4 left-4 z-10 rounded-sm p-1.5 text-muted-foreground/80 hover:text-foreground transition-colors"
           >
             <X className="h-5 w-5" />
             <span className="sr-only">Close</span>
@@ -962,7 +962,7 @@ export function OnboardingWizard() {
                       Company name
                     </label>
                     <input
-                      className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/50"
+                      className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/70"
                       placeholder="e.g., Acme Corp"
                       value={companyName}
                       onChange={(e) => setCompanyName(e.target.value)}
@@ -994,7 +994,7 @@ export function OnboardingWizard() {
                       Mission / goal (optional)
                     </label>
                     <textarea
-                      className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/50 resize-none min-h-[60px]"
+                      className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/70 resize-none min-h-[60px]"
                       placeholder="What is this company trying to achieve?"
                       value={companyGoal}
                       onChange={(e) => setCompanyGoal(e.target.value)}
@@ -1044,7 +1044,7 @@ export function OnboardingWizard() {
                       <div className="relative">
                         <input
                           type={activeProvider.key === "ollama" ? "url" : "password"}
-                          className="w-full rounded-md border border-border bg-transparent px-3 py-2 pr-9 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/50"
+                          className="w-full rounded-md border border-border bg-transparent px-3 py-2 pr-9 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/70"
                           placeholder={activeProvider.placeholder}
                           value={llmApiKey}
                           onChange={(e) => { setLlmApiKey(e.target.value); setError(null); }}
@@ -1151,7 +1151,7 @@ export function OnboardingWizard() {
                           disabled={packCreating}
                         >
                           {packIdx === 0 && (
-                            <span className="absolute -top-2 right-3 bg-blue-500 text-white text-[9px] font-semibold px-2 py-0.5 rounded-full leading-none">
+                            <span className="absolute -top-2 right-3 bg-blue-500 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full leading-none">
                               Recommended
                             </span>
                           )}
@@ -1241,7 +1241,7 @@ export function OnboardingWizard() {
                       Agent name
                     </label>
                     <input
-                      className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/50"
+                      className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/70"
                       placeholder="CEO"
                       value={agentName}
                       onChange={(e) => setAgentName(e.target.value)}
@@ -1292,7 +1292,7 @@ export function OnboardingWizard() {
                           }}
                         >
                           {opt.recommended && (
-                            <span className="absolute -top-1.5 right-1.5 bg-green-500 text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full leading-none">
+                            <span className="absolute -top-1.5 right-1.5 bg-green-500 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-full leading-none">
                               Recommended
                             </span>
                           )}
@@ -1441,7 +1441,7 @@ export function OnboardingWizard() {
                             align="start"
                           >
                             <input
-                              className="w-full px-2 py-1.5 text-xs bg-transparent outline-none border-b border-border mb-1 placeholder:text-muted-foreground/50"
+                              className="w-full px-2 py-1.5 text-xs bg-transparent outline-none border-b border-border mb-1 placeholder:text-muted-foreground/70"
                               placeholder="Search models..."
                               value={modelSearch}
                               onChange={(e) => setModelSearch(e.target.value)}
@@ -1635,7 +1635,7 @@ export function OnboardingWizard() {
                           : "Webhook URL"}
                       </label>
                       <input
-                        className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm font-mono outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/50"
+                        className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm font-mono outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/70"
                         placeholder={
                           adapterType === "openclaw_gateway"
                             ? "ws://127.0.0.1:18789"
@@ -1693,7 +1693,7 @@ export function OnboardingWizard() {
                       Task title
                     </label>
                     <input
-                      className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/50"
+                      className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/70"
                       placeholder="e.g. Research competitor pricing"
                       value={taskTitle}
                       onChange={(e) => setTaskTitle(e.target.value)}
@@ -1706,7 +1706,7 @@ export function OnboardingWizard() {
                     </label>
                     <textarea
                       ref={textareaRef}
-                      className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/50 resize-none min-h-[120px] max-h-[300px] overflow-y-auto"
+                      className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/70 resize-none min-h-[120px] max-h-[300px] overflow-y-auto"
                       placeholder="Add more detail about what the agent should do..."
                       value={taskDescription}
                       onChange={(e) => setTaskDescription(e.target.value)}
@@ -1727,13 +1727,13 @@ export function OnboardingWizard() {
                         </button>
                       </div>
                       <input
-                        className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/50"
+                        className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/70"
                         placeholder="Task title"
                         value={extra.title}
                         onChange={(e) => setExtraTasks((prev) => prev.map((t, i) => i === idx ? { ...t, title: e.target.value } : t))}
                       />
                       <textarea
-                        className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/50 resize-none min-h-[60px]"
+                        className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/70 resize-none min-h-[60px]"
                         placeholder="Description (optional)"
                         value={extra.description}
                         onChange={(e) => setExtraTasks((prev) => prev.map((t, i) => i === idx ? { ...t, description: e.target.value } : t))}

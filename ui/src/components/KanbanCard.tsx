@@ -178,7 +178,7 @@ export const KanbanCard = memo(function KanbanCard({
               </span>
             )}
             {issue.project && (
-              <span className="text-muted-foreground/60 truncate ml-auto">
+              <span className="text-muted-foreground/80 truncate ml-auto">
                 {issue.project.name}
               </span>
             )}
@@ -201,7 +201,7 @@ export const KanbanCard = memo(function KanbanCard({
               </span>
             ))}
             {labels.length > 3 && (
-              <span className="text-[10px] text-muted-foreground/60">
+              <span className="text-[10px] text-muted-foreground/80">
                 +{labels.length - 3}
               </span>
             )}

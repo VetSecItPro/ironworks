@@ -32,7 +32,7 @@ const ACCENT_ICON: Record<string, string> = {
 export function MetricCard({ icon: Icon, value, label, description, to, onClick, accentColor }: MetricCardProps) {
   const isClickable = !!(to || onClick);
   const borderClass = accentColor ? `border-l-[3px] ${ACCENT_BORDER[accentColor]}` : "";
-  const iconColor = accentColor ? ACCENT_ICON[accentColor] : "text-muted-foreground/50";
+  const iconColor = accentColor ? ACCENT_ICON[accentColor] : "text-muted-foreground/70";
 
   const inner = (
     <div className={`relative h-full px-4 py-4 sm:px-5 sm:py-5 rounded-lg border border-border bg-card transition-all overflow-hidden ${borderClass}${isClickable ? " hover:-translate-y-0.5 hover:shadow-md cursor-pointer" : ""}`}>
@@ -45,7 +45,7 @@ export function MetricCard({ icon: Icon, value, label, description, to, onClick,
             {value}
           </p>
           {description && (
-            <div className="text-sm text-muted-foreground/60 mt-1.5 hidden sm:block [font-variant-numeric:tabular-nums]">{description}</div>
+            <div className="text-sm text-muted-foreground/80 mt-1.5 hidden sm:block [font-variant-numeric:tabular-nums]">{description}</div>
           )}
         </div>
         <div className="flex flex-col items-center gap-2 shrink-0 mt-0.5">
@@ -68,7 +68,18 @@ export function MetricCard({ icon: Icon, value, label, description, to, onClick,
 
   if (onClick) {
     return (
-      <div className="h-full" onClick={onClick}>
+      <div
+        className="h-full"
+        role="button"
+        tabIndex={0}
+        onClick={onClick}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onClick();
+          }
+        }}
+      >
         {inner}
       </div>
     );

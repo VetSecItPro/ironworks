@@ -243,7 +243,9 @@ export function PackageFileTree({
                 </button>
                 <button
                   type="button"
-                  className="flex h-9 w-9 items-center justify-center self-center rounded-sm text-muted-foreground opacity-70 transition-[background-color,color,opacity] hover:bg-accent hover:text-foreground group-hover:opacity-100"
+                  aria-label={expanded ? "Collapse folder" : "Expand folder"}
+                  aria-expanded={expanded}
+                  className="flex h-9 w-9 items-center justify-center self-center rounded-sm text-muted-foreground opacity-70 transition-[background-color,color,opacity] hover:bg-accent hover:text-foreground group-hover:opacity-100 focus-visible:opacity-100"
                   onClick={() => onToggleDir(node.path)}
                 >
                   {expanded ? (

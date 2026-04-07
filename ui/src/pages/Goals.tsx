@@ -531,7 +531,7 @@ function GoalGanttView({
         {months.map((m, i) => (
           <span
             key={i}
-            className="absolute text-[9px] text-muted-foreground/60 -translate-x-1/2"
+            className="absolute text-[10px] text-muted-foreground/80 -translate-x-1/2"
             style={{ left: `${m.pct}%`, top: 0 }}
           >
             {m.label}

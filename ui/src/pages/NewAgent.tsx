@@ -222,7 +222,7 @@ export function NewAgent() {
         {/* Name */}
         <div className="px-4 pt-4 pb-2">
           <input
-            className="w-full text-lg font-semibold bg-transparent outline-none placeholder:text-muted-foreground/50"
+            className="w-full text-lg font-semibold bg-transparent outline-none placeholder:text-muted-foreground/70"
             placeholder="Agent name"
             value={name}
             onChange={(e) => setName(e.target.value)}

@@ -230,10 +230,10 @@ function DryRunDialog({
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{step.title}</span>
                     {cond.skipOnFailure && (
-                      <span className="text-[9px] px-1 py-0.5 rounded bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300">SKIP ON FAIL</span>
+                      <span className="text-[10px] px-1 py-0.5 rounded bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300">SKIP ON FAIL</span>
                     )}
                     {cond.required && (
-                      <span className="text-[9px] px-1 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">REQUIRED</span>
+                      <span className="text-[10px] px-1 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">REQUIRED</span>
                     )}
                   </div>
                   <p className="text-muted-foreground mt-0.5">
@@ -475,7 +475,7 @@ function StepStatusIcon({ status }: { status?: string }) {
     case "skipped":
       return <SkipForward className="h-4 w-4 text-muted-foreground" />;
     default:
-      return <Clock className="h-4 w-4 text-muted-foreground/50" />;
+      return <Clock className="h-4 w-4 text-muted-foreground/70" />;
   }
 }
 

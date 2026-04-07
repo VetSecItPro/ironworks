@@ -195,7 +195,7 @@ export function Hiring() {
               </div>
               <div className="space-y-1.5">
                 {pipeline[stage].length === 0 ? (
-                  <p className="text-xs text-muted-foreground/50 py-2 text-center">No requests</p>
+                  <p className="text-xs text-muted-foreground/70 py-2 text-center">No requests</p>
                 ) : (
                   pipeline[stage].map((req) => (
                     <div

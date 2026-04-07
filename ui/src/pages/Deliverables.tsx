@@ -337,7 +337,7 @@ function DeliverablePreview({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">{v.author}</span>
-                    {v.current && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-medium">Current</span>}
+                    {v.current && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-medium">Current</span>}
                   </div>
                   <p className="text-xs text-muted-foreground">{formatDate(v.date)}</p>
                 </div>

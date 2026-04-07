@@ -33,7 +33,7 @@ function RoleBadge({
 
   if (employmentType === "contractor") {
     return (
-      <span className="text-[9px] font-medium px-1 py-0 rounded-full leading-tight border border-dashed border-amber-500 text-amber-600 dark:text-amber-400 shrink-0">
+      <span className="text-[10px] font-medium px-1 py-0 rounded-full leading-tight border border-dashed border-amber-500 text-amber-600 dark:text-amber-400 shrink-0">
         CTR
       </span>
     );
@@ -41,7 +41,7 @@ function RoleBadge({
 
   if (level === "executive") {
     return (
-      <span className="text-[9px] font-medium px-1 py-0 rounded-full leading-tight bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 shrink-0">
+      <span className="text-[10px] font-medium px-1 py-0 rounded-full leading-tight bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 shrink-0">
         C
       </span>
     );
@@ -49,14 +49,14 @@ function RoleBadge({
 
   if (level === "management") {
     return (
-      <span className="text-[9px] font-medium px-1 py-0 rounded-full leading-tight bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 shrink-0">
+      <span className="text-[10px] font-medium px-1 py-0 rounded-full leading-tight bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 shrink-0">
         M
       </span>
     );
   }
 
   return (
-    <span className="text-[9px] font-medium px-1 py-0 rounded-full leading-tight bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-500 shrink-0">
+    <span className="text-[10px] font-medium px-1 py-0 rounded-full leading-tight bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-500 shrink-0">
       FTE
     </span>
   );
@@ -205,7 +205,7 @@ export function SidebarAgents() {
               "flex items-center justify-center h-4 w-4 rounded transition-colors",
               activeTab === "chat" && isActive
                 ? "text-foreground/70 bg-accent/50"
-                : "text-muted-foreground/0 group-hover/agent-link:text-muted-foreground/60 hover:!text-foreground hover:bg-accent/50",
+                : "text-muted-foreground/0 group-hover/agent-link:text-muted-foreground/80 hover:!text-foreground hover:bg-accent/50",
             )}
           >
             <MessageSquare className="h-3 w-3" />
@@ -222,7 +222,7 @@ export function SidebarAgents() {
           <CollapsibleTrigger className="flex items-center gap-1 flex-1 min-w-0">
             <ChevronRight
               className={cn(
-                "h-3 w-3 text-muted-foreground/60 transition-transform md:opacity-0 md:group-hover:opacity-100",
+                "h-3 w-3 text-muted-foreground/80 transition-transform md:opacity-0 md:group-hover:opacity-100",
                 open && "rotate-90"
               )}
             />
@@ -241,7 +241,7 @@ export function SidebarAgents() {
                   "flex items-center justify-center h-4 w-4 rounded transition-colors",
                   grouped
                     ? "text-foreground/70 bg-accent/50"
-                    : "text-muted-foreground/60 hover:text-foreground hover:bg-accent/50"
+                    : "text-muted-foreground/80 hover:text-foreground hover:bg-accent/50"
                 )}
                 aria-label={grouped ? "Show flat list" : "Group by department"}
                 title={grouped ? "Show flat list" : "Group by department"}
@@ -254,7 +254,7 @@ export function SidebarAgents() {
                 e.stopPropagation();
                 openNewAgent();
               }}
-              className="flex items-center justify-center h-4 w-4 rounded text-muted-foreground/60 hover:text-foreground hover:bg-accent/50 transition-colors"
+              className="flex items-center justify-center h-4 w-4 rounded text-muted-foreground/80 hover:text-foreground hover:bg-accent/50 transition-colors"
               aria-label="New agent"
             >
               <Plus className="h-3 w-3" />
@@ -269,7 +269,7 @@ export function SidebarAgents() {
             {departmentGroups.map((group) => (
               <div key={group.label}>
                 <div className="px-5 pt-2 pb-0.5">
-                  <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/80">
                     {group.label}
                   </span>
                 </div>

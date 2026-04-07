@@ -120,6 +120,10 @@ export function LibrarySettingsDialog({
               </p>
             </div>
             <button
+              type="button"
+              role="switch"
+              aria-checked={settings.agentHomeDirectories}
+              aria-label="Agent Home Directories"
               onClick={() =>
                 setSettings((s) => ({
                   ...s,

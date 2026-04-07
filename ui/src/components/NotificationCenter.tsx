@@ -392,18 +392,18 @@ export function NotificationCenter({
                         <span className="text-[10px] text-muted-foreground">
                           {formatDateTime(notif.createdAt)}
                         </span>
-                        <span className="text-[10px] text-muted-foreground/60">
+                        <span className="text-[10px] text-muted-foreground/80">
                           {TYPE_LABELS[notif.type] ?? notif.type}
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity shrink-0">
                       {!notif.read && (
                         <button
                           type="button"
                           onClick={() => onMarkRead(notif.id)}
-                          className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
-                          title="Mark as read"
+                          className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground focus-visible:opacity-100"
+                          aria-label="Mark as read"
                         >
                           <Check className="h-3 w-3" />
                         </button>
@@ -412,8 +412,8 @@ export function NotificationCenter({
                         <button
                           type="button"
                           onClick={() => onMuteEntity(notif.entityId!)}
-                          className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
-                          title="Mute this entity"
+                          className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground focus-visible:opacity-100"
+                          aria-label="Mute this entity"
                         >
                           <VolumeX className="h-3 w-3" />
                         </button>
@@ -421,8 +421,8 @@ export function NotificationCenter({
                       <button
                         type="button"
                         onClick={() => onRemove(notif.id)}
-                        className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground"
-                        title="Remove"
+                        className="p-1 rounded hover:bg-accent text-muted-foreground hover:text-foreground focus-visible:opacity-100"
+                        aria-label="Remove notification"
                       >
                         <Trash2 className="h-3 w-3" />
                       </button>

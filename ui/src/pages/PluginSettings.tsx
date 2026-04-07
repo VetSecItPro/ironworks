@@ -410,11 +410,11 @@ export function PluginSettings() {
                               : entry.level === "warn"
                                 ? "text-yellow-600 dark:text-yellow-400"
                                 : entry.level === "debug"
-                                  ? "text-muted-foreground/60"
+                                  ? "text-muted-foreground/80"
                                   : "text-muted-foreground"
                           }`}
                         >
-                          <span className="shrink-0 text-muted-foreground/50">{new Date(entry.createdAt).toLocaleTimeString()}</span>
+                          <span className="shrink-0 text-muted-foreground/70">{new Date(entry.createdAt).toLocaleTimeString()}</span>
                           <Badge variant="outline" className="h-4 shrink-0 px-1 text-[10px]">{entry.level}</Badge>
                           <span className="truncate" title={entry.message}>{entry.message}</span>
                         </div>

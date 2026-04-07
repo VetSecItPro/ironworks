@@ -679,15 +679,15 @@ export function AgentPerformance() {
                 </div>
                 <div className="grid grid-cols-3 gap-2 text-sm tabular-nums">
                   <div>
-                    <div className="text-xs text-muted-foreground/60">$/task</div>
+                    <div className="text-xs text-muted-foreground/80">$/task</div>
                     <div className="text-muted-foreground">{row.costPerTask !== null ? formatCents(Math.round(row.costPerTask)) : "—"}</div>
                   </div>
                   <div>
-                    <div className="text-xs text-muted-foreground/60">Avg time</div>
+                    <div className="text-xs text-muted-foreground/80">Avg time</div>
                     <div className="text-muted-foreground">{row.avgCloseH !== null ? `${row.avgCloseH.toFixed(1)}h` : "—"}</div>
                   </div>
                   <div>
-                    <div className="text-xs text-muted-foreground/60">Completion</div>
+                    <div className="text-xs text-muted-foreground/80">Completion</div>
                     <div className="text-muted-foreground">{row.completionRate}%</div>
                   </div>
                 </div>
@@ -995,25 +995,25 @@ export function AgentPerformance() {
                   </div>
                   <div className="grid grid-cols-3 gap-2 text-sm tabular-nums">
                     <div>
-                      <div className="text-xs text-muted-foreground/60">Done</div>
+                      <div className="text-xs text-muted-foreground/80">Done</div>
                       <div className={r.done > 0 ? "text-emerald-400" : "text-muted-foreground/40"}>{r.done}</div>
                     </div>
                     <div>
-                      <div className="text-xs text-muted-foreground/60">Active</div>
+                      <div className="text-xs text-muted-foreground/80">Active</div>
                       <div className={r.active > 0 ? "text-blue-400" : "text-muted-foreground/40"}>{r.active}</div>
                     </div>
                     <div>
-                      <div className="text-xs text-muted-foreground/60">Blocked</div>
+                      <div className="text-xs text-muted-foreground/80">Blocked</div>
                       <div className={r.blocked > 0 ? "text-red-400" : "text-muted-foreground/40"}>{r.blocked}</div>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-sm tabular-nums">
                     <div>
-                      <div className="text-xs text-muted-foreground/60">Avg time</div>
+                      <div className="text-xs text-muted-foreground/80">Avg time</div>
                       <div className="text-muted-foreground">{r.avgCloseH !== null ? `${r.avgCloseH.toFixed(1)}h` : "—"}</div>
                     </div>
                     <div>
-                      <div className="text-xs text-muted-foreground/60">Completion</div>
+                      <div className="text-xs text-muted-foreground/80">Completion</div>
                       <div className="text-muted-foreground">{r.completionRate !== null ? `${r.completionRate}%` : "—"}</div>
                     </div>
                   </div>

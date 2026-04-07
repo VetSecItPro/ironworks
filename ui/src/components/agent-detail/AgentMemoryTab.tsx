@@ -55,6 +55,8 @@ function MemoryCard({
             {relativeTime(entry.createdAt)}
           </span>
           <button
+            type="button"
+            aria-label="Delete memory entry"
             onClick={onDelete}
             disabled={isDeleting}
             className="text-muted-foreground hover:text-destructive transition-colors"

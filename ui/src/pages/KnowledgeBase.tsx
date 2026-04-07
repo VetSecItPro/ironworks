@@ -183,10 +183,10 @@ function KBFolderTree({ pages, selectedPageId, onSelectPage, onBulkDelete }: {
                     className="h-3 w-3 rounded border-border accent-foreground shrink-0"
                   />
                 )}
-                {!selectMode && <ChevronRightIcon className={cn("h-3 w-3 text-muted-foreground/60 transition-transform shrink-0", isExpanded && "rotate-90")} />}
+                {!selectMode && <ChevronRightIcon className={cn("h-3 w-3 text-muted-foreground/80 transition-transform shrink-0", isExpanded && "rotate-90")} />}
                 <Folder className="h-3.5 w-3.5 text-amber-500/70 shrink-0" />
                 <span className="text-xs font-medium text-muted-foreground truncate">{folderLabel(name)}</span>
-                <span className="text-[9px] text-muted-foreground/50 ml-auto shrink-0">{folder.pages.length}</span>
+                <span className="text-[10px] text-muted-foreground/70 ml-auto shrink-0">{folder.pages.length}</span>
               </button>
               {(isExpanded || selectMode) && (
                 <div className="ml-3">
@@ -245,7 +245,7 @@ function KBPageRow({ page, selected, checked, selectMode, onSelect, onToggleChec
       {selectMode ? (
         <input type="checkbox" checked={checked} readOnly className="h-3 w-3 mt-1 rounded border-border accent-foreground shrink-0" />
       ) : (
-        <FileText className="h-3.5 w-3.5 text-muted-foreground/50 mt-0.5 shrink-0" />
+        <FileText className="h-3.5 w-3.5 text-muted-foreground/70 mt-0.5 shrink-0" />
       )}
       <div className="min-w-0 flex-1">
         <div className="text-sm font-medium truncate">{page.title}</div>
@@ -315,7 +315,7 @@ function WikiLinkedBody({
           >
             <BookOpen className="h-3 w-3" />
             {p.value}
-            {!p.slug && <span className="text-[9px] opacity-60">(missing)</span>}
+            {!p.slug && <span className="text-[10px] opacity-60">(missing)</span>}
           </button>
         ))}
     </div>
@@ -1082,7 +1082,7 @@ function SimpleDiff({ oldText, newText }: { oldText: string; newText: string }) 
               ? "bg-red-500/10 text-red-400"
               : line.type === "added"
                 ? "bg-emerald-500/10 text-emerald-400"
-                : "text-muted-foreground/60",
+                : "text-muted-foreground/80",
           )}
         >
           <span className="inline-block w-4 text-right mr-2 select-none opacity-50">

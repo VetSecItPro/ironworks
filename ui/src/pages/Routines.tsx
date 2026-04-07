@@ -148,7 +148,7 @@ function ScheduleCalendarView({
         {/* Hour rows - show only hours 6-22 */}
         {hours.filter((h) => h >= 6 && h <= 22).map((hour) => (
           <div key={hour} className="grid grid-cols-[60px_repeat(7,1fr)] gap-px bg-border/10 min-h-[28px]">
-            <div className="bg-background flex items-center justify-end pr-2 text-[10px] text-muted-foreground/60">
+            <div className="bg-background flex items-center justify-end pr-2 text-[10px] text-muted-foreground/80">
               {hour === 0 ? "12AM" : hour < 12 ? `${hour}AM` : hour === 12 ? "12PM" : `${hour - 12}PM`}
             </div>
             {days.map((_, dayIdx) => {
@@ -160,7 +160,7 @@ function ScheduleCalendarView({
                     <button
                       key={si}
                       onClick={() => onRoutineClick(slot.routineId)}
-                      className="block w-full text-left text-[9px] rounded px-1 py-0.5 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors truncate"
+                      className="block w-full text-left text-[10px] rounded px-1 py-0.5 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors truncate"
                       title={`${slot.title} (${slot.agentName})`}
                     >
                       {slot.title}
@@ -262,7 +262,7 @@ function VisualCronBuilder({
           </button>
         ))}
       </div>
-      <div className="text-[10px] font-mono text-muted-foreground/60">
+      <div className="text-[10px] font-mono text-muted-foreground/80">
         Cron: {value}
       </div>
     </div>
@@ -486,7 +486,7 @@ export function Routines() {
           <div className="px-5 pt-5 pb-3">
             <textarea
               ref={titleInputRef}
-              className="w-full resize-none overflow-hidden bg-transparent text-xl font-semibold outline-none placeholder:text-muted-foreground/50"
+              className="w-full resize-none overflow-hidden bg-transparent text-xl font-semibold outline-none placeholder:text-muted-foreground/70"
               placeholder="Routine title"
               rows={1}
               value={draft.title}
@@ -878,7 +878,7 @@ export function Routines() {
                                 {routine.lastRun.failureReason.slice(0, 60)}
                               </div>
                             ) : routine.lastRun.linkedIssue?.title ? (
-                              <div className="mt-0.5 text-[10px] text-muted-foreground/60 truncate max-w-[200px]" title={routine.lastRun.linkedIssue.title}>
+                              <div className="mt-0.5 text-[10px] text-muted-foreground/80 truncate max-w-[200px]" title={routine.lastRun.linkedIssue.title}>
                                 {routine.lastRun.linkedIssue.title.slice(0, 60)}
                               </div>
                             ) : null}

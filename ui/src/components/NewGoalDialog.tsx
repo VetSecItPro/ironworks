@@ -155,7 +155,7 @@ export function NewGoalDialog() {
                 {selectedCompany.name.slice(0, 3).toUpperCase()}
               </span>
             )}
-            <span className="text-muted-foreground/60">&rsaquo;</span>
+            <span className="text-muted-foreground/80">&rsaquo;</span>
             <span>{newGoalDefaults.parentId ? "New sub-goal" : "New goal"}</span>
           </div>
           <div className="flex items-center gap-1">
@@ -181,7 +181,7 @@ export function NewGoalDialog() {
         {/* Title */}
         <div className="px-4 pt-4 pb-2 shrink-0">
           <input
-            className="w-full text-lg font-semibold bg-transparent outline-none placeholder:text-muted-foreground/50"
+            className="w-full text-lg font-semibold bg-transparent outline-none placeholder:text-muted-foreground/70"
             placeholder="Goal title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}

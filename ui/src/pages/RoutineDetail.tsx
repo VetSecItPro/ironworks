@@ -625,7 +625,7 @@ export function RoutineDetail() {
       <div className="flex items-start gap-4">
         <textarea
           ref={titleInputRef}
-          className="flex-1 min-w-0 resize-none overflow-hidden bg-transparent text-xl font-bold outline-none placeholder:text-muted-foreground/50"
+          className="flex-1 min-w-0 resize-none overflow-hidden bg-transparent text-xl font-bold outline-none placeholder:text-muted-foreground/70"
           placeholder="Routine title"
           rows={1}
           value={editDraft.title}
@@ -1063,7 +1063,7 @@ export function RoutineDetail() {
                       </span>
                     )}
                   </div>
-                  <span className="text-muted-foreground/60 shrink-0">{timeAgo(event.createdAt)}</span>
+                  <span className="text-muted-foreground/80 shrink-0">{timeAgo(event.createdAt)}</span>
                 </div>
               ))}
             </div>

@@ -822,7 +822,7 @@ function CloudInstructionsEditor({
               </svg>
               <span className="truncate">{file.name}</span>
               {file.dirty && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" title="Unsaved changes" />}
-              {!file.hasContent && <span className="text-[9px] text-muted-foreground/50 shrink-0">empty</span>}
+              {!file.hasContent && <span className="text-[10px] text-muted-foreground/70 shrink-0">empty</span>}
             </button>
           ))}
         </div>

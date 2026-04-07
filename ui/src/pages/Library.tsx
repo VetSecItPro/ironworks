@@ -672,7 +672,7 @@ function FileDiffViewer({ oldContent, newContent, fileName }: { oldContent: stri
                 key={i}
                 className={cn(
                   "px-3 py-0.5 whitespace-pre-wrap",
-                  line.type === "removed" ? "bg-red-500/10 text-red-400" : "text-muted-foreground/60",
+                  line.type === "removed" ? "bg-red-500/10 text-red-400" : "text-muted-foreground/80",
                 )}
               >
                 <span className="inline-block w-6 text-right mr-2 select-none opacity-40 text-[10px]">{i + 1}</span>
@@ -690,7 +690,7 @@ function FileDiffViewer({ oldContent, newContent, fileName }: { oldContent: stri
                 key={i}
                 className={cn(
                   "px-3 py-0.5 whitespace-pre-wrap",
-                  line.type === "added" ? "bg-emerald-500/10 text-emerald-400" : "text-muted-foreground/60",
+                  line.type === "added" ? "bg-emerald-500/10 text-emerald-400" : "text-muted-foreground/80",
                 )}
               >
                 <span className="inline-block w-6 text-right mr-2 select-none opacity-40 text-[10px]">{i + 1}</span>
@@ -744,7 +744,7 @@ function UsageAnalyticsPanel({ events, contributors }: { events: LibraryFileEven
                   <span className="font-medium text-foreground">{a.name}</span>
                   <div className="flex items-center gap-2">
                     <span className="text-muted-foreground">{a.writes} write{a.writes !== 1 ? "s" : ""}</span>
-                    <span className="text-[10px] text-muted-foreground/60">{formatRelative(a.lastWrite)}</span>
+                    <span className="text-[10px] text-muted-foreground/80">{formatRelative(a.lastWrite)}</span>
                   </div>
                 </div>
               ))}

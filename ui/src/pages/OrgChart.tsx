@@ -710,23 +710,23 @@ export function OrgChart() {
                     </span>
                     {/* Role level badge */}
                     {getRoleLevel(node.role) === "executive" && (
-                      <span className="text-[8px] font-semibold px-1 py-0 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 leading-tight">C</span>
+                      <span className="text-[10px] font-semibold px-1 py-0 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 leading-tight">C</span>
                     )}
                     {getRoleLevel(node.role) === "management" && (
-                      <span className="text-[8px] font-semibold px-1 py-0 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 leading-tight">M</span>
+                      <span className="text-[10px] font-semibold px-1 py-0 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 leading-tight">M</span>
                     )}
                     {getRoleLevel(node.role) === "staff" && !isContractor && (
-                      <span className="text-[8px] font-semibold px-1 py-0 rounded-full bg-green-500/15 text-green-600 dark:text-green-400 leading-tight">FTE</span>
+                      <span className="text-[10px] font-semibold px-1 py-0 rounded-full bg-green-500/15 text-green-600 dark:text-green-400 leading-tight">FTE</span>
                     )}
                     {isContractor && (
-                      <span className="text-[8px] font-semibold px-1 py-0 rounded-full border border-dashed border-amber-400/60 text-amber-500 leading-tight">CTR</span>
+                      <span className="text-[10px] font-semibold px-1 py-0 rounded-full border border-dashed border-amber-400/60 text-amber-500 leading-tight">CTR</span>
                     )}
                   </div>
                   <span className="text-[11px] text-muted-foreground leading-tight mt-0.5">
                     {agent?.title ?? roleLabel(node.role)}
                   </span>
                   {dept && (
-                    <span className="text-[10px] text-muted-foreground/50 leading-tight mt-0.5">
+                    <span className="text-[10px] text-muted-foreground/70 leading-tight mt-0.5">
                       {departmentLabels[dept] ?? dept}
                     </span>
                   )}
@@ -736,21 +736,21 @@ export function OrgChart() {
                     const modelName = modelRaw ? modelRaw.replace(/:cloud$/, "") : null;
                     const provider: string = adapterLabels[agent.adapterType] ?? agent.adapterType;
                     return (
-                      <span className="text-[10px] text-muted-foreground/60 font-mono leading-tight mt-1.5">
+                      <span className="text-[10px] text-muted-foreground/80 font-mono leading-tight mt-1.5">
                         {provider}{modelName ? ` - ${modelName}` : ""}
                       </span>
                     );
                   })() : null}
                   {/* Span of control metric for managers (12.14) */}
                   {node.children.length > 0 && (
-                    <span className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 mt-1">
+                    <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 mt-1">
                       <Users className="h-2.5 w-2.5" />
                       {node.children.length} report{node.children.length !== 1 ? "s" : ""}
                     </span>
                   )}
                   {/* Members since date (12.69) */}
                   {agent != null && typeof (agent as unknown as Record<string, unknown>).createdAt === "string" ? (
-                    <span className="text-[9px] text-muted-foreground/50 mt-0.5">
+                    <span className="text-[10px] text-muted-foreground/70 mt-0.5">
                       Member since {new Date(String((agent as unknown as Record<string, unknown>).createdAt)).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
                     </span>
                   ) : null}
@@ -763,7 +763,7 @@ export function OrgChart() {
                         {profile.topSkills.slice(0, 2).map((sk) => (
                           <span
                             key={sk.labelId}
-                            className="inline-flex items-center gap-0.5 text-[8px] px-1 py-0 rounded bg-muted/50 text-muted-foreground/70"
+                            className="inline-flex items-center gap-0.5 text-[10px] px-1 py-0 rounded bg-muted/50 text-muted-foreground/70"
                           >
                             <span className="w-1 h-1 rounded-full shrink-0" style={{ backgroundColor: sk.labelColor }} />
                             {sk.labelName}

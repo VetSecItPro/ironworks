@@ -282,7 +282,7 @@ export function Sidebar() {
             value={sidebarSearch}
             onChange={(e) => setSidebarSearch(e.target.value)}
             placeholder="Filter sidebar..."
-            className="w-full text-[12px] px-2 py-1 bg-muted/40 border-0 rounded-md text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring/40"
+            className="w-full text-[12px] px-2 py-1 bg-muted/40 border-0 rounded-md text-foreground placeholder:text-muted-foreground/80 focus:outline-none focus:ring-1 focus:ring-ring/40"
           />
         </div>
       </div>

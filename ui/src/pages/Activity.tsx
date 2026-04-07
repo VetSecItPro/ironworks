@@ -178,7 +178,7 @@ function ActivityHeatmap({ events }: { events: ActivityEvent[] }) {
           </div>
         ))}
       </div>
-      <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground">
+      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
         <span>Less</span>
         <div className="h-2 w-2 rounded-[2px] bg-muted/40" />
         <div className="h-2 w-2 rounded-[2px] bg-emerald-200 dark:bg-emerald-700" />

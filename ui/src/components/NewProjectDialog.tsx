@@ -226,7 +226,7 @@ export function NewProjectDialog() {
                 {selectedCompany.name.slice(0, 3).toUpperCase()}
               </span>
             )}
-            <span className="text-muted-foreground/60">&rsaquo;</span>
+            <span className="text-muted-foreground/80">&rsaquo;</span>
             <span>New project</span>
           </div>
           <div className="flex items-center gap-1">
@@ -252,7 +252,7 @@ export function NewProjectDialog() {
         {/* Name */}
         <div className="px-4 pt-4 pb-2 shrink-0">
           <input
-            className="w-full text-lg font-semibold bg-transparent outline-none placeholder:text-muted-foreground/50"
+            className="w-full text-lg font-semibold bg-transparent outline-none placeholder:text-muted-foreground/70"
             placeholder="Project name"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -287,10 +287,10 @@ export function NewProjectDialog() {
           <div>
             <div className="mb-1 flex items-center gap-1.5">
               <label className="block text-xs text-muted-foreground">Repo URL</label>
-              <span className="text-xs text-muted-foreground/50">optional</span>
+              <span className="text-xs text-muted-foreground/70">optional</span>
               <Tooltip delayDuration={300}>
                 <TooltipTrigger asChild>
-                  <HelpCircle className="h-3 w-3 text-muted-foreground/50 cursor-help" />
+                  <HelpCircle className="h-3 w-3 text-muted-foreground/70 cursor-help" />
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-[240px] text-xs">
                   Link a GitHub repository so agents can clone, read, and push code for this project.
@@ -308,10 +308,10 @@ export function NewProjectDialog() {
           <div>
             <div className="mb-1 flex items-center gap-1.5">
               <label className="block text-xs text-muted-foreground">Local folder</label>
-              <span className="text-xs text-muted-foreground/50">optional</span>
+              <span className="text-xs text-muted-foreground/70">optional</span>
               <Tooltip delayDuration={300}>
                 <TooltipTrigger asChild>
-                  <HelpCircle className="h-3 w-3 text-muted-foreground/50 cursor-help" />
+                  <HelpCircle className="h-3 w-3 text-muted-foreground/70 cursor-help" />
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-[240px] text-xs">
                   Set an absolute path on this machine where local agents will read and write files for this project.

@@ -120,7 +120,7 @@ export function UserInviteAcceptPage() {
             </label>
             <input
               id="invite-name"
-              className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/50"
+              className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/70"
               value={name}
               onChange={(e) => setName(e.target.value)}
               autoComplete="name"
@@ -137,7 +137,7 @@ export function UserInviteAcceptPage() {
             </label>
             <input
               id="invite-password"
-              className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/50"
+              className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/70"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

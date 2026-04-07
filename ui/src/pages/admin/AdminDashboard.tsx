@@ -220,7 +220,7 @@ export default function AdminDashboard() {
                       &lt;5% green · 5-15% yellow · &gt;15% red
                     </div>
                   </div>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground/50 shrink-0 mt-1.5" />
+                  <TrendingUp className="h-4 w-4 text-muted-foreground/70 shrink-0 mt-1.5" />
                 </div>
               </div>
             </div>

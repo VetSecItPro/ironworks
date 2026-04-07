@@ -90,7 +90,7 @@ export function ChartNoData({ message, height = 200 }: { message?: string; heigh
     >
       <BarChart3 className="h-8 w-8 text-muted-foreground/30 mb-2" />
       <p className="text-sm text-muted-foreground">{message ?? "No data available"}</p>
-      <p className="text-xs text-muted-foreground/60 mt-0.5">Data will appear once activity is recorded</p>
+      <p className="text-xs text-muted-foreground/80 mt-0.5">Data will appear once activity is recorded</p>
     </div>
   );
 }

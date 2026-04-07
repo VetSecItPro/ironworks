@@ -115,7 +115,7 @@ function LastUpdatedBadge({ dataUpdatedAt }: { dataUpdatedAt?: number }) {
     seconds < 3600 ? `${Math.floor(seconds / 60)}m ago` :
     `${Math.floor(seconds / 3600)}h ago`;
   return (
-    <span className="text-[10px] text-muted-foreground/60 tabular-nums">
+    <span className="text-[10px] text-muted-foreground/80 tabular-nums">
       Updated {label}
     </span>
   );
@@ -312,7 +312,7 @@ function VelocityChart({ weeks, onWeekClick }: { weeks: VelocityWeek[]; onWeekCl
                   x={x + barW / 2}
                   y={labelY}
                   textAnchor="middle"
-                  className="fill-muted-foreground text-[8px]"
+                  className="fill-muted-foreground text-[10px]"
                 >
                   {label}
                 </text>
@@ -353,7 +353,7 @@ function VelocityChart({ weeks, onWeekClick }: { weeks: VelocityWeek[]; onWeekCl
           Cancelled
         </span>
         {onWeekClick && (
-          <span className="ml-auto text-[9px] text-muted-foreground/60">Click a bar to filter issues</span>
+          <span className="ml-auto text-[10px] text-muted-foreground/80">Click a bar to filter issues</span>
         )}
       </div>
     </div>
@@ -1061,7 +1061,7 @@ export function Dashboard() {
                     </Link>
                     <button
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); dismissItem(`issue:${issue.id}`); }}
-                      className="p-1.5 rounded-md hover:bg-red-500/10 text-muted-foreground/50 hover:text-red-400 transition-colors shrink-0"
+                      className="p-1.5 rounded-md hover:bg-red-500/10 text-muted-foreground/70 hover:text-red-400 transition-colors shrink-0"
                       title="Dismiss"
                     >
                       <X className="h-3.5 w-3.5" />
@@ -1087,7 +1087,7 @@ export function Dashboard() {
                     </Link>
                     <button
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); dismissItem(`run:${run.id}`); }}
-                      className="p-1.5 rounded-md hover:bg-amber-500/10 text-muted-foreground/50 hover:text-amber-400 transition-colors shrink-0"
+                      className="p-1.5 rounded-md hover:bg-amber-500/10 text-muted-foreground/70 hover:text-amber-400 transition-colors shrink-0"
                       title="Dismiss"
                     >
                       <X className="h-3.5 w-3.5" />
@@ -1533,7 +1533,7 @@ export function Dashboard() {
                             )}
                           </span>
                         </div>
-                        <span className="text-xs text-muted-foreground/60 shrink-0 ml-2 tabular-nums font-mono min-w-[60px] text-right">
+                        <span className="text-xs text-muted-foreground/80 shrink-0 ml-2 tabular-nums font-mono min-w-[60px] text-right">
                           {new Date(item.latestEvent.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
                         </span>
                       </button>
