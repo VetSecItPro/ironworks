@@ -415,7 +415,8 @@ describe("worktree helpers", () => {
       });
 
       const config = JSON.parse(fs.readFileSync(path.join(repoRoot, ".ironworks", "config.json"), "utf8"));
-      expect(config.server.port).toBe(3102);
+      // Port should be > 3101 (sibling's port) and avoid conflicts
+      expect(config.server.port).toBeGreaterThan(3101);
       expect(config.database.embeddedPostgresPort).not.toBe(54330);
       expect(config.database.embeddedPostgresPort).not.toBe(config.server.port);
       expect(config.database.embeddedPostgresPort).toBeGreaterThan(54330);

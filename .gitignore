@@ -64,3 +64,4 @@ ironworks-features.md
 ironworks-todo.md
 .deps-reports/
 .playwright-mcp/
+.test-reports/

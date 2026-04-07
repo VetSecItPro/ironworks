@@ -90,6 +90,7 @@ import {
 import { CONFIDENCE_TAGGING_PROMPT } from "./confidence-tags.js";
 import { getQualityExamples } from "./quality-gate.js";
 import { sanitizeForPrompt, PROMPT_MAX_LENGTHS } from "../lib/prompt-security.js";
+import { extractChannelMessages } from "../lib/channel-extraction.js";
 
 const MAX_LIVE_LOG_CHUNK_BYTES = 8 * 1024;
 const HEARTBEAT_MAX_CONCURRENT_RUNS_DEFAULT = 1;
@@ -4379,21 +4380,8 @@ Keep messages concise and substantive. Do not post empty status updates. If you 
         // Non-fatal - channel posting errors must never block agent execution.
         try {
           const agentOutput = adapterResult.summary ?? "";
-          const channelPattern = /\[CHANNEL\s+#(\w[\w-]*)\]\s*(.+?)(?=\[CHANNEL\s+#|\[FACT\]|\[ASSESSMENT\]|\[SPECULATION\]|$)/gs;
-          let channelMatch: RegExpExecArray | null;
-          const postedChannels = new Set<string>();
-          while ((channelMatch = channelPattern.exec(agentOutput)) !== null) {
-            const channelName = channelMatch[1].trim().toLowerCase();
-            // LLM02-A: Strip any nested [CHANNEL] tags to prevent injection chaining,
-            // then apply a length cap to limit oversized LLM output from flooding channels.
-            let messageBody = channelMatch[2].trim()
-              .replace(/\[CHANNEL\s+#[\w-]+\]/gi, "")
-              .trim();
-            if (messageBody.length > 2000) {
-              messageBody = messageBody.slice(0, 2000);
-            }
-            if (!messageBody || messageBody.length < 5 || postedChannels.has(channelName)) continue;
-            postedChannels.add(channelName);
+          const channelMsgs = extractChannelMessages(agentOutput);
+          for (const { channel: channelName, body: messageBody } of channelMsgs) {
             // Find the target channel by name
             const [targetChannel] = await db
               .select({ id: agentChannels.id })
