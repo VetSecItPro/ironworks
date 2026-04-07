@@ -1,42 +1,36 @@
-import { useEffect, useMemo, useRef, useState, useCallback, type ComponentType } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { exportToCSV } from "../lib/exportCSV";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type {
-  BudgetPolicySummary,
-  CostByAgentModel,
-  CostByBiller,
-  CostByProviderModel,
-  CostWindowSpendRow,
-  FinanceEvent,
-  QuotaWindow,
-} from "@ironworksai/shared";
-import { ArrowDownLeft, ArrowUpRight, ChevronDown, ChevronRight, Coins, CreditCard, DollarSign, Download, Flame, FolderKanban, Plus, ReceiptText, TrendingDown, TrendingUp } from "lucide-react";
+import type { BudgetPolicySummary, CostByAgentModel, CostByBiller, CostByProviderModel, CostWindowSpendRow, FinanceEvent, QuotaWindow } from "@ironworksai/shared";
+import { ArrowUpRight, Coins, CreditCard, DollarSign, Download, ReceiptText } from "lucide-react";
 import { budgetsApi } from "../api/budgets";
 import { costsApi } from "../api/costs";
 import { executiveApi } from "../api/executive";
-import { BillerSpendCard } from "../components/BillerSpendCard";
-import { BudgetIncidentCard } from "../components/BudgetIncidentCard";
-import { BudgetPolicyCard } from "../components/BudgetPolicyCard";
 import { EmptyState } from "../components/EmptyState";
-import { FinanceBillerCard } from "../components/FinanceBillerCard";
-import { FinanceKindCard } from "../components/FinanceKindCard";
-import { FinanceTimelineCard } from "../components/FinanceTimelineCard";
-import { Identity } from "../components/Identity";
 import { PageSkeleton } from "../components/PageSkeleton";
-import { PageTabBar } from "../components/PageTabBar";
-import { ProviderQuotaCard } from "../components/ProviderQuotaCard";
-import { StatusBadge } from "../components/StatusBadge";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { useCompany } from "../context/CompanyContext";
 import { useDateRange, PRESET_KEYS, PRESET_LABELS } from "../hooks/useDateRange";
 import { queryKeys } from "../lib/queryKeys";
-import { billingTypeDisplayName, cn, formatCents, formatTokens, providerDisplayName } from "../lib/utils";
+import { formatCents, formatTokens } from "../lib/utils";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NewFinanceEventDialog } from "../components/NewFinanceEventDialog";
 import { NewBudgetDialog } from "../components/NewBudgetDialog";
 import { totalEquivalentSpendCents as totalEquivSpend } from "../lib/equivalent-spend";
+
+/* ── Tab content components ── */
+import { MetricTile } from "../components/costs/MetricTile";
+import { OverviewTabContent } from "../components/costs/OverviewTabContent";
+import { BudgetsTabContent } from "../components/costs/BudgetsTabContent";
+import { ProvidersTabContent } from "../components/costs/ProvidersTabContent";
+import { BillersTabContent } from "../components/costs/BillersTabContent";
+import { FinanceTabContent } from "../components/costs/FinanceTabContent";
+import { ProjectsTabContent } from "../components/costs/ProjectsTabContent";
+import { TokensTabContent } from "../components/costs/TokensTabContent";
+import { DepartmentsTabContent } from "../components/costs/DepartmentsTabContent";
+import { AnalysisTabContent } from "../components/costs/AnalysisTabContent";
+import { ProviderTabLabel, BillerTabLabel } from "../components/costs/ProviderBillerTabLabels";
 
 const NO_COMPANY = "__none__";
 
@@ -47,125 +41,6 @@ function currentWeekRange(): { from: string; to: string } {
   const mon = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMon, 0, 0, 0, 0);
   const sun = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 6, 23, 59, 59, 999);
   return { from: mon.toISOString(), to: sun.toISOString() };
-}
-
-function ProviderTabLabel({ provider, rows }: { provider: string; rows: CostByProviderModel[] }) {
-  const totalTokens = rows.reduce((sum, row) => sum + row.inputTokens + row.cachedInputTokens + row.outputTokens, 0);
-  const totalCost = rows.reduce((sum, row) => sum + row.costCents, 0);
-  const isSubOnly = totalCost === 0 && totalTokens > 0;
-  const equivCents = isSubOnly
-    ? totalEquivSpend(rows.map((r) => ({ model: r.model, inputTokens: r.inputTokens, cachedInputTokens: r.cachedInputTokens, outputTokens: r.outputTokens })))
-    : 0;
-  return (
-    <span className="flex items-center gap-1.5">
-      <span>{providerDisplayName(provider)}</span>
-      <span className="font-mono text-xs text-muted-foreground">{formatTokens(totalTokens)}</span>
-      {isSubOnly ? (
-        <span className="text-xs text-blue-500">~{formatCents(equivCents)}</span>
-      ) : (
-        <span className="text-xs text-muted-foreground">{formatCents(totalCost)}</span>
-      )}
-    </span>
-  );
-}
-
-function BillerTabLabel({ biller, rows }: { biller: string; rows: CostByBiller[] }) {
-  const totalTokens = rows.reduce((sum, row) => sum + row.inputTokens + row.cachedInputTokens + row.outputTokens, 0);
-  const totalCost = rows.reduce((sum, row) => sum + row.costCents, 0);
-  return (
-    <span className="flex items-center gap-1.5">
-      <span>{providerDisplayName(biller)}</span>
-      <span className="font-mono text-xs text-muted-foreground">{formatTokens(totalTokens)}</span>
-      <span className="text-xs text-muted-foreground">{formatCents(totalCost)}</span>
-    </span>
-  );
-}
-
-function MetricTile({
-  label,
-  value,
-  subtitle,
-  icon: Icon,
-  onClick,
-}: {
-  label: string;
-  value: string;
-  subtitle: string;
-  icon: ComponentType<{ className?: string }>;
-  onClick?: () => void;
-}) {
-  const Wrapper = onClick ? "button" : "div";
-  return (
-    <Wrapper
-      className={cn(
-        "border border-border p-4 text-left transition-colors",
-        onClick && "cursor-pointer hover:bg-accent/50 hover:border-foreground/20",
-      )}
-      onClick={onClick}
-    >
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <div className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">{label}</div>
-          <div className="mt-2 text-2xl font-semibold tabular-nums">{value}</div>
-          <div className="mt-1 text-sm leading-5 text-muted-foreground">{subtitle}</div>
-        </div>
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center border border-border">
-          <Icon className="h-4 w-4 text-muted-foreground" />
-        </div>
-      </div>
-    </Wrapper>
-  );
-}
-
-function FinanceSummaryCard({
-  debitCents,
-  creditCents,
-  netCents,
-  estimatedDebitCents,
-  eventCount,
-}: {
-  debitCents: number;
-  creditCents: number;
-  netCents: number;
-  estimatedDebitCents: number;
-  eventCount: number;
-}) {
-  return (
-    <Card>
-      <CardHeader className="px-5 pt-5 pb-2">
-        <CardTitle className="text-base">Finance ledger</CardTitle>
-        <CardDescription>
-          Account-level charges that do not map to a single inference request.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="grid gap-3 px-5 pb-5 pt-2 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricTile
-          label="Debits"
-          value={formatCents(debitCents)}
-          subtitle={`${eventCount} total event${eventCount === 1 ? "" : "s"} in range`}
-          icon={ArrowUpRight}
-        />
-        <MetricTile
-          label="Credits"
-          value={formatCents(creditCents)}
-          subtitle="Refunds, offsets, and credit returns"
-          icon={ArrowDownLeft}
-        />
-        <MetricTile
-          label="Net"
-          value={formatCents(netCents)}
-          subtitle="Debit minus credit for the selected period"
-          icon={ReceiptText}
-        />
-        <MetricTile
-          label="Estimated"
-          value={formatCents(estimatedDebitCents)}
-          subtitle="Estimated debits that are not yet invoice-authoritative"
-          icon={Coins}
-        />
-      </CardContent>
-    </Card>
-  );
 }
 
 export function Costs() {
@@ -179,21 +54,9 @@ export function Costs() {
   const [showNewFinanceEvent, setShowNewFinanceEvent] = useState(false);
   const [showNewBudget, setShowNewBudget] = useState(false);
 
-  const {
-    preset,
-    setPreset,
-    customFrom,
-    setCustomFrom,
-    customTo,
-    setCustomTo,
-    from,
-    to,
-    customReady,
-  } = useDateRange();
+  const { preset, setPreset, customFrom, setCustomFrom, customTo, setCustomTo, from, to, customReady } = useDateRange();
 
-  useEffect(() => {
-    setBreadcrumbs([{ label: "Costs" }]);
-  }, [setBreadcrumbs]);
+  useEffect(() => { setBreadcrumbs([{ label: "Costs" }]); }, [setBreadcrumbs]);
 
   const [today, setToday] = useState(() => new Date().toDateString());
   const todayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -201,15 +64,10 @@ export function Costs() {
     const schedule = () => {
       const now = new Date();
       const ms = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() - now.getTime();
-      todayTimerRef.current = setTimeout(() => {
-        setToday(new Date().toDateString());
-        schedule();
-      }, ms);
+      todayTimerRef.current = setTimeout(() => { setToday(new Date().toDateString()); schedule(); }, ms);
     };
     schedule();
-    return () => {
-      if (todayTimerRef.current != null) clearTimeout(todayTimerRef.current);
-    };
+    return () => { if (todayTimerRef.current != null) clearTimeout(todayTimerRef.current); };
   }, []);
 
   const weekRange = useMemo(() => currentWeekRange(), [today]);
@@ -232,24 +90,13 @@ export function Costs() {
   };
 
   const policyMutation = useMutation({
-    mutationFn: (input: {
-      scopeType: BudgetPolicySummary["scopeType"];
-      scopeId: string;
-      amount: number;
-      windowKind: BudgetPolicySummary["windowKind"];
-    }) =>
-      budgetsApi.upsertPolicy(companyId, {
-        scopeType: input.scopeType,
-        scopeId: input.scopeId,
-        amount: input.amount,
-        windowKind: input.windowKind,
-      }),
+    mutationFn: (input: { scopeType: BudgetPolicySummary["scopeType"]; scopeId: string; amount: number; windowKind: BudgetPolicySummary["windowKind"] }) =>
+      budgetsApi.upsertPolicy(companyId, { scopeType: input.scopeType, scopeId: input.scopeId, amount: input.amount, windowKind: input.windowKind }),
     onSuccess: invalidateBudgetViews,
   });
 
   const financeEventMutation = useMutation({
-    mutationFn: (event: Parameters<typeof costsApi.createFinanceEvent>[1]) =>
-      costsApi.createFinanceEvent(companyId, event),
+    mutationFn: (event: Parameters<typeof costsApi.createFinanceEvent>[1]) => costsApi.createFinanceEvent(companyId, event),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.financeSummary(companyId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.financeByBiller(companyId) });
@@ -299,18 +146,14 @@ export function Costs() {
   });
 
   const [expandedAgents, setExpandedAgents] = useState<Set<string>>(new Set());
-  useEffect(() => {
-    setExpandedAgents(new Set());
-  }, [companyId, from, to]);
+  useEffect(() => { setExpandedAgents(new Set()); }, [companyId, from, to]);
 
-  // Equivalent spend calculation
   const { data: equivalentSpend } = useQuery({
     queryKey: ["equivalent-spend", companyId, from, to],
     queryFn: () => costsApi.equivalentSpend(companyId, from || undefined, to || undefined),
     enabled: !!selectedCompanyId && customReady,
   });
 
-  // Project detail for Projects tab
   const { data: projectDetailCosts } = useQuery({
     queryKey: ["project-detail-costs", companyId, from, to],
     queryFn: () => costsApi.byProjectDetail(companyId, from || undefined, to || undefined),
@@ -362,8 +205,7 @@ export function Costs() {
   function toggleAgent(agentId: string) {
     setExpandedAgents((prev) => {
       const next = new Set(prev);
-      if (next.has(agentId)) next.delete(agentId);
-      else next.add(agentId);
+      if (next.has(agentId)) next.delete(agentId); else next.add(agentId);
       return next;
     });
   }
@@ -464,17 +306,13 @@ export function Costs() {
 
   const weekSpendByProvider = useMemo(() => {
     const map = new Map<string, number>();
-    for (const row of weekData ?? []) {
-      map.set(row.provider, (map.get(row.provider) ?? 0) + row.costCents);
-    }
+    for (const row of weekData ?? []) map.set(row.provider, (map.get(row.provider) ?? 0) + row.costCents);
     return map;
   }, [weekData]);
 
   const weekSpendByBiller = useMemo(() => {
     const map = new Map<string, number>();
-    for (const row of weekBillerData ?? []) {
-      map.set(row.biller, (map.get(row.biller) ?? 0) + row.costCents);
-    }
+    for (const row of weekBillerData ?? []) map.set(row.biller, (map.get(row.biller) ?? 0) + row.costCents);
     return map;
   }, [weekBillerData]);
 
@@ -491,9 +329,7 @@ export function Costs() {
   const quotaWindowsByProvider = useMemo(() => {
     const map = new Map<string, QuotaWindow[]>();
     for (const result of quotaData ?? []) {
-      if (result.ok && result.windows.length > 0) {
-        map.set(result.provider, result.windows);
-      }
+      if (result.ok && result.windows.length > 0) map.set(result.provider, result.windows);
     }
     return map;
   }, [quotaData]);
@@ -509,9 +345,7 @@ export function Costs() {
   const quotaSourcesByProvider = useMemo(() => {
     const map = new Map<string, string>();
     for (const result of quotaData ?? []) {
-      if (typeof result.source === "string" && result.source.length > 0) {
-        map.set(result.provider, result.source);
-      }
+      if (typeof result.source === "string" && result.source.length > 0) map.set(result.provider, result.source);
     }
     return map;
   }, [quotaData]);
@@ -529,10 +363,7 @@ export function Costs() {
       const providerCostCents = rows.reduce((sum, row) => sum + row.costCents, 0);
       const providerShare = totalSpend > 0 ? providerCostCents / totalSpend : 0;
       const providerBudget = budget * providerShare;
-      if (providerBudget <= 0) {
-        map.set(providerKey, false);
-        continue;
-      }
+      if (providerBudget <= 0) { map.set(providerKey, false); continue; }
       const burnRate = providerCostCents / Math.max(daysElapsed, 1);
       map.set(providerKey, providerCostCents + burnRate * (daysInMonth - daysElapsed) > providerBudget);
     }
@@ -542,36 +373,22 @@ export function Costs() {
   const providers = useMemo(() => Array.from(byProvider.keys()), [byProvider]);
   const billers = useMemo(() => Array.from(byBiller.keys()), [byBiller]);
 
-  const effectiveProvider =
-    activeProvider === "all" || providers.includes(activeProvider) ? activeProvider : "all";
-  useEffect(() => {
-    if (effectiveProvider !== activeProvider) setActiveProvider("all");
-  }, [effectiveProvider, activeProvider]);
+  const effectiveProvider = activeProvider === "all" || providers.includes(activeProvider) ? activeProvider : "all";
+  useEffect(() => { if (effectiveProvider !== activeProvider) setActiveProvider("all"); }, [effectiveProvider, activeProvider]);
 
-  const effectiveBiller =
-    activeBiller === "all" || billers.includes(activeBiller) ? activeBiller : "all";
-  useEffect(() => {
-    if (effectiveBiller !== activeBiller) setActiveBiller("all");
-  }, [effectiveBiller, activeBiller]);
+  const effectiveBiller = activeBiller === "all" || billers.includes(activeBiller) ? activeBiller : "all";
+  useEffect(() => { if (effectiveBiller !== activeBiller) setActiveBiller("all"); }, [effectiveBiller, activeBiller]);
 
   const providerTabItems = useMemo(() => {
     const providerKeys = Array.from(byProvider.keys());
-    const allTokens = providerKeys.reduce(
-      (sum, provider) => sum + (byProvider.get(provider)?.reduce((acc, row) => acc + row.inputTokens + row.cachedInputTokens + row.outputTokens, 0) ?? 0),
-      0,
-    );
-    const allCents = providerKeys.reduce(
-      (sum, provider) => sum + (byProvider.get(provider)?.reduce((acc, row) => acc + row.costCents, 0) ?? 0),
-      0,
-    );
-    // Calculate equivalent spend for the "All" tab when some providers are subscription
+    const allTokens = providerKeys.reduce((sum, provider) => sum + (byProvider.get(provider)?.reduce((acc, row) => acc + row.inputTokens + row.cachedInputTokens + row.outputTokens, 0) ?? 0), 0);
+    const allCents = providerKeys.reduce((sum, provider) => sum + (byProvider.get(provider)?.reduce((acc, row) => acc + row.costCents, 0) ?? 0), 0);
     const allEquiv = allCents === 0 && allTokens > 0
       ? providerKeys.reduce((sum, p) => {
           const pRows = byProvider.get(p) ?? [];
           return sum + totalEquivSpend(pRows.map((r) => ({ model: r.model, inputTokens: r.inputTokens, cachedInputTokens: r.cachedInputTokens, outputTokens: r.outputTokens })));
         }, 0)
       : 0;
-
     return [
       {
         value: "all",
@@ -600,14 +417,8 @@ export function Costs() {
 
   const billerTabItems = useMemo(() => {
     const billerKeys = Array.from(byBiller.keys());
-    const allTokens = billerKeys.reduce(
-      (sum, biller) => sum + (byBiller.get(biller)?.reduce((acc, row) => acc + row.inputTokens + row.cachedInputTokens + row.outputTokens, 0) ?? 0),
-      0,
-    );
-    const allCents = billerKeys.reduce(
-      (sum, biller) => sum + (byBiller.get(biller)?.reduce((acc, row) => acc + row.costCents, 0) ?? 0),
-      0,
-    );
+    const allTokens = billerKeys.reduce((sum, biller) => sum + (byBiller.get(biller)?.reduce((acc, row) => acc + row.inputTokens + row.cachedInputTokens + row.outputTokens, 0) ?? 0), 0);
+    const allCents = billerKeys.reduce((sum, biller) => sum + (byBiller.get(biller)?.reduce((acc, row) => acc + row.costCents, 0) ?? 0), 0);
     return [
       {
         value: "all",
@@ -630,12 +441,7 @@ export function Costs() {
     ];
   }, [byBiller]);
 
-  const inferenceTokenTotal =
-    (spendData?.byAgent ?? []).reduce(
-      (sum, row) => sum + row.inputTokens + row.cachedInputTokens + row.outputTokens,
-      0,
-    );
-
+  const inferenceTokenTotal = (spendData?.byAgent ?? []).reduce((sum, row) => sum + row.inputTokens + row.cachedInputTokens + row.outputTokens, 0);
   const topFinanceEvents = (financeData?.events ?? []) as FinanceEvent[];
   const budgetPolicies = budgetData?.policies ?? [];
   const activeBudgetIncidents = budgetData?.activeIncidents ?? [];
@@ -656,127 +462,120 @@ export function Costs() {
   return (
     <div className="space-y-6">
       <div className="space-y-5">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-                <h1 className="text-2xl font-semibold tracking-tight">Costs</h1>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  Inference spend, platform fees, credits, and live quota windows.
-                </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const rows = spendData?.byAgent ?? [];
-                  if (rows.length === 0) return;
-                  exportToCSV(
-                    rows.map((r) => ({
-                      agent: r.agentName || r.agentId,
-                      cost: (r.costCents / 100).toFixed(2),
-                      inputTokens: r.inputTokens,
-                      outputTokens: r.outputTokens,
-                      apiRuns: r.apiRunCount,
-                    })),
-                    "costs-export",
-                    [
-                      { key: "agent", label: "Agent" },
-                      { key: "cost", label: "Cost ($)" },
-                      { key: "inputTokens", label: "Input Tokens" },
-                      { key: "outputTokens", label: "Output Tokens" },
-                      { key: "apiRuns", label: "API Runs" },
-                    ],
-                  );
-                }}
-              >
-                <Download className="mr-1.5 h-3.5 w-3.5" />
-                Export CSV
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Costs</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Inference spend, platform fees, credits, and live quota windows.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const rows = spendData?.byAgent ?? [];
+                if (rows.length === 0) return;
+                exportToCSV(
+                  rows.map((r) => ({
+                    agent: r.agentName || r.agentId,
+                    cost: (r.costCents / 100).toFixed(2),
+                    inputTokens: r.inputTokens,
+                    outputTokens: r.outputTokens,
+                    apiRuns: r.apiRunCount,
+                  })),
+                  "costs-export",
+                  [
+                    { key: "agent", label: "Agent" },
+                    { key: "cost", label: "Cost ($)" },
+                    { key: "inputTokens", label: "Input Tokens" },
+                    { key: "outputTokens", label: "Output Tokens" },
+                    { key: "apiRuns", label: "API Runs" },
+                  ],
+                );
+              }}
+            >
+              <Download className="mr-1.5 h-3.5 w-3.5" />
+              Export CSV
+            </Button>
+            {PRESET_KEYS.map((key) => (
+              <Button key={key} variant={preset === key ? "secondary" : "ghost"} size="sm" onClick={() => setPreset(key)}>
+                {PRESET_LABELS[key]}
               </Button>
-              {PRESET_KEYS.map((key) => (
-                <Button
-                  key={key}
-                  variant={preset === key ? "secondary" : "ghost"}
-                  size="sm"
-                  onClick={() => setPreset(key)}
-                >
-                  {PRESET_LABELS[key]}
-                </Button>
-              ))}
-            </div>
+            ))}
           </div>
+        </div>
 
-          {preset === "custom" ? (
-            <div className="flex flex-wrap items-center gap-2 border border-border p-3">
-              <input
-                type="date"
-                value={customFrom}
-                onChange={(event) => setCustomFrom(event.target.value)}
-                className="h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground"
-              />
-              <span className="text-sm text-muted-foreground">to</span>
-              <input
-                type="date"
-                value={customTo}
-                onChange={(event) => setCustomTo(event.target.value)}
-                className="h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground"
-              />
-            </div>
-          ) : null}
+        {preset === "custom" ? (
+          <div className="flex flex-wrap items-center gap-2 border border-border p-3">
+            <input
+              type="date"
+              value={customFrom}
+              onChange={(event) => setCustomFrom(event.target.value)}
+              className="h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground"
+            />
+            <span className="text-sm text-muted-foreground">to</span>
+            <input
+              type="date"
+              value={customTo}
+              onChange={(event) => setCustomTo(event.target.value)}
+              className="h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground"
+            />
+          </div>
+        ) : null}
 
-          {/* Equivalent spend banner for subscription users */}
-          {equivalentSpend && equivalentSpend.billingMode !== "none" && equivalentSpend.billingMode !== "api" && (
-            <div className="flex items-center gap-3 p-3 rounded-lg border border-blue-500/20 bg-blue-500/5 text-sm">
-              <CreditCard className="h-4 w-4 text-blue-500 shrink-0" />
-              <span className="text-muted-foreground">
-                {equivalentSpend.billingMode === "subscription" ? "Subscription covers all usage." : "Mixed billing."}{" "}
-                <span className="font-medium text-foreground">
-                  Equivalent API spend: {formatCents(equivalentSpend.totalEquivalentCents)}
-                </span>
+        {equivalentSpend && equivalentSpend.billingMode !== "none" && equivalentSpend.billingMode !== "api" && (
+          <div className="flex items-center gap-3 p-3 rounded-lg border border-blue-500/20 bg-blue-500/5 text-sm">
+            <CreditCard className="h-4 w-4 text-blue-500 shrink-0" />
+            <span className="text-muted-foreground">
+              {equivalentSpend.billingMode === "subscription" ? "Subscription covers all usage." : "Mixed billing."}{" "}
+              <span className="font-medium text-foreground">
+                Equivalent API spend: {formatCents(equivalentSpend.totalEquivalentCents)}
               </span>
-            </div>
-          )}
-
-          <div className="grid gap-3 lg:grid-cols-4">
-            <MetricTile
-              label="Inference spend"
-              value={formatCents(spendData?.summary.spendCents ?? 0)}
-              subtitle={`${formatTokens(inferenceTokenTotal)} tokens across request-scoped events`}
-              icon={DollarSign}
-              onClick={() => setMainTab("providers")}
-            />
-            <MetricTile
-              label="Budget"
-              value={activeBudgetIncidents.length > 0 ? String(activeBudgetIncidents.length) : (
-                spendData?.summary.budgetCents && spendData.summary.budgetCents > 0
-                  ? `${spendData.summary.utilizationPercent}%`
-                  : "Open"
-              )}
-              subtitle={
-                activeBudgetIncidents.length > 0
-                  ? `${budgetData?.pausedAgentCount ?? 0} agents paused · ${budgetData?.pausedProjectCount ?? 0} projects paused`
-                  : spendData?.summary.budgetCents && spendData.summary.budgetCents > 0
-                    ? `${formatCents(spendData.summary.spendCents)} of ${formatCents(spendData.summary.budgetCents)}`
-                    : "No monthly cap configured"
-              }
-              icon={Coins}
-              onClick={() => setMainTab("budgets")}
-            />
-            <MetricTile
-              label="Finance net"
-              value={formatCents(financeData?.summary.netCents ?? 0)}
-              subtitle={`${formatCents(financeData?.summary.debitCents ?? 0)} debits · ${formatCents(financeData?.summary.creditCents ?? 0)} credits`}
-              icon={ReceiptText}
-              onClick={() => setMainTab("finance")}
-            />
-            <MetricTile
-              label="Finance events"
-              value={String(financeData?.summary.eventCount ?? 0)}
-              subtitle={`${formatCents(financeData?.summary.estimatedDebitCents ?? 0)} estimated in range`}
-              icon={ArrowUpRight}
-              onClick={() => setMainTab("finance")}
-            />
+            </span>
           </div>
+        )}
+
+        <div className="grid gap-3 lg:grid-cols-4">
+          <MetricTile
+            label="Inference spend"
+            value={formatCents(spendData?.summary.spendCents ?? 0)}
+            subtitle={`${formatTokens(inferenceTokenTotal)} tokens across request-scoped events`}
+            icon={DollarSign}
+            onClick={() => setMainTab("providers")}
+          />
+          <MetricTile
+            label="Budget"
+            value={activeBudgetIncidents.length > 0 ? String(activeBudgetIncidents.length) : (
+              spendData?.summary.budgetCents && spendData.summary.budgetCents > 0
+                ? `${spendData.summary.utilizationPercent}%`
+                : "Open"
+            )}
+            subtitle={
+              activeBudgetIncidents.length > 0
+                ? `${budgetData?.pausedAgentCount ?? 0} agents paused - ${budgetData?.pausedProjectCount ?? 0} projects paused`
+                : spendData?.summary.budgetCents && spendData.summary.budgetCents > 0
+                  ? `${formatCents(spendData.summary.spendCents)} of ${formatCents(spendData.summary.budgetCents)}`
+                  : "No monthly cap configured"
+            }
+            icon={Coins}
+            onClick={() => setMainTab("budgets")}
+          />
+          <MetricTile
+            label="Finance net"
+            value={formatCents(financeData?.summary.netCents ?? 0)}
+            subtitle={`${formatCents(financeData?.summary.debitCents ?? 0)} debits - ${formatCents(financeData?.summary.creditCents ?? 0)} credits`}
+            icon={ReceiptText}
+            onClick={() => setMainTab("finance")}
+          />
+          <MetricTile
+            label="Finance events"
+            value={String(financeData?.summary.eventCount ?? 0)}
+            subtitle={`${formatCents(financeData?.summary.estimatedDebitCents ?? 0)} estimated in range`}
+            icon={ArrowUpRight}
+            onClick={() => setMainTab("finance")}
+          />
+        </div>
       </div>
 
       <Tabs value={mainTab} onValueChange={(value) => setMainTab(value as typeof mainTab)}>
@@ -800,1209 +599,113 @@ export function Costs() {
           ) : overviewError ? (
             <p className="text-sm text-destructive">{(overviewError as Error).message}</p>
           ) : (
-            <>
-              {activeBudgetIncidents.length > 0 ? (
-                <div className="grid gap-4 xl:grid-cols-2">
-                  {activeBudgetIncidents.slice(0, 2).map((incident) => (
-                    <BudgetIncidentCard
-                      key={incident.id}
-                      incident={incident}
-                      isMutating={incidentMutation.isPending}
-                      onKeepPaused={() => incidentMutation.mutate({ incidentId: incident.id, action: "keep_paused" })}
-                      onRaiseAndResume={(amount) =>
-                        incidentMutation.mutate({
-                          incidentId: incident.id,
-                          action: "raise_budget_and_resume",
-                          amount,
-                        })}
-                    />
-                  ))}
-                </div>
-              ) : null}
-
-              <div className="grid gap-4 xl:grid-cols-3">
-                {/* Inference Ledger */}
-                <Card>
-                  <CardHeader className="px-5 pt-5 pb-2">
-                    <CardTitle className="text-base">Inference Ledger</CardTitle>
-                    <CardDescription>Total API and subscription spend across all agent runs.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4 px-5 pb-5 pt-2">
-                    <div className="flex items-end justify-between gap-3">
-                      <div>
-                        <div className="text-3xl font-semibold tabular-nums">
-                          {formatCents(spendData?.summary.spendCents ?? 0)}
-                        </div>
-                        <div className="mt-1 text-sm text-muted-foreground">
-                          {spendData?.summary.budgetCents && spendData.summary.budgetCents > 0
-                            ? `of ${formatCents(spendData.summary.budgetCents)} monthly budget`
-                            : "No budget cap configured"}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-xl font-semibold tabular-nums">
-                          {formatTokens(inferenceTokenTotal)}
-                        </div>
-                        <div className="text-sm text-muted-foreground">tokens used</div>
-                      </div>
-                    </div>
-                    {spendData?.summary.budgetCents && spendData.summary.budgetCents > 0 ? (
-                      <div className="space-y-1.5">
-                        <div className="h-2 overflow-hidden bg-muted rounded-full">
-                          <div
-                            className={cn(
-                              "h-full transition-[width,background-color] duration-150 rounded-full",
-                              spendData.summary.utilizationPercent > 90
-                                ? "bg-red-400"
-                                : spendData.summary.utilizationPercent > 70
-                                  ? "bg-yellow-400"
-                                  : "bg-emerald-400",
-                            )}
-                            style={{ width: `${Math.min(100, spendData.summary.utilizationPercent)}%` }}
-                          />
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {spendData.summary.utilizationPercent}% of monthly budget consumed
-                        </div>
-                      </div>
-                    ) : null}
-                    {equivalentSpend && equivalentSpend.subscriptionEquivalentCents > 0 && (
-                      <div className="pt-2 border-t border-border space-y-1.5">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">API spend (billed)</span>
-                          <span className="font-mono font-medium">{formatCents(equivalentSpend.actualSpendCents)}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">Subscription value (covered)</span>
-                          <span className="font-mono font-medium text-blue-500">{formatCents(equivalentSpend.subscriptionEquivalentCents)}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm pt-1 border-t border-border/50">
-                          <span className="font-medium">Total compute value</span>
-                          <span className="font-mono font-semibold">{formatCents(equivalentSpend.totalEquivalentCents)}</span>
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Spend Forecast */}
-                <Card>
-                  <CardHeader className="px-5 pt-5 pb-2">
-                    <CardTitle className="text-base">Spend Forecast</CardTitle>
-                    <CardDescription>Projected end-of-month spend based on current burn rate.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="px-5 pb-5 pt-2 space-y-3">
-                    {(() => {
-                      const currentSpend = spendData?.summary.spendCents ?? 0;
-                      const budget = spendData?.summary.budgetCents ?? 0;
-                      const now = new Date();
-                      const daysElapsed = Math.max(1, now.getDate());
-                      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-                      const burnRate = currentSpend / daysElapsed;
-                      const projected = Math.round(burnRate * daysInMonth);
-                      const overBudget = budget > 0 && projected > budget;
-                      const pctElapsed = (daysElapsed / daysInMonth) * 100;
-
-                      return (
-                        <>
-                          <div className="flex items-baseline gap-2">
-                            <span className="text-2xl font-semibold tabular-nums">{formatCents(projected)}</span>
-                            <span className="text-sm text-muted-foreground">projected</span>
-                          </div>
-                          {budget > 0 && (
-                            <div className={cn("text-sm", overBudget ? "text-red-400" : "text-emerald-400")}>
-                              {overBudget ? `Over budget by ${formatCents(projected - budget)}` : `Under budget by ${formatCents(budget - projected)}`}
-                            </div>
-                          )}
-                          {/* Projection bar */}
-                          <div className="relative h-3 bg-muted rounded-full overflow-hidden">
-                            {/* Actual spend */}
-                            <div
-                              className="absolute top-0 bottom-0 left-0 bg-blue-500 rounded-l-full"
-                              style={{ width: `${Math.min(100, budget > 0 ? (currentSpend / budget) * 100 : pctElapsed)}%` }}
-                            />
-                            {/* Projected (dashed) */}
-                            <div
-                              className="absolute top-0 bottom-0 bg-blue-500/20 border-r-2 border-dashed border-blue-400"
-                              style={{
-                                left: `${Math.min(100, budget > 0 ? (currentSpend / budget) * 100 : pctElapsed)}%`,
-                                width: `${Math.min(100 - (budget > 0 ? (currentSpend / budget) * 100 : pctElapsed), budget > 0 ? ((projected - currentSpend) / budget) * 100 : 100 - pctElapsed)}%`,
-                              }}
-                            />
-                          </div>
-                          <div className="flex justify-between text-[10px] text-muted-foreground">
-                            <span>{formatCents(currentSpend)} actual</span>
-                            <span>{formatCents(burnRate)}/day burn rate</span>
-                          </div>
-                        </>
-                      );
-                    })()}
-                  </CardContent>
-                </Card>
-
-                {/* Finance Ledger */}
-                <Card>
-                  <CardHeader className="px-5 pt-5 pb-2">
-                    <CardTitle className="text-base">Finance Ledger</CardTitle>
-                    <CardDescription>Account-level charges, credits, and platform fees.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="px-5 pb-5 pt-2">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="border border-border rounded-lg p-3">
-                        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Debits</div>
-                        <div className="text-xl font-semibold tabular-nums mt-1">{formatCents(financeData?.summary.debitCents ?? 0)}</div>
-                      </div>
-                      <div className="border border-border rounded-lg p-3">
-                        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Credits</div>
-                        <div className="text-xl font-semibold tabular-nums mt-1">{formatCents(financeData?.summary.creditCents ?? 0)}</div>
-                      </div>
-                      <div className="border border-border rounded-lg p-3">
-                        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Net</div>
-                        <div className="text-xl font-semibold tabular-nums mt-1">{formatCents(financeData?.summary.netCents ?? 0)}</div>
-                      </div>
-                      <div className="border border-border rounded-lg p-3">
-                        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Estimated</div>
-                        <div className="text-xl font-semibold tabular-nums mt-1">{formatCents(financeData?.summary.estimatedDebitCents ?? 0)}</div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Recent Events */}
-                <Card>
-                  <CardHeader className="px-5 pt-5 pb-2">
-                    <CardTitle className="text-base">Recent Events</CardTitle>
-                    <CardDescription>Latest financial activity and charges.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="px-5 pb-5 pt-2">
-                    {topFinanceEvents.length === 0 ? (
-                      <p className="text-sm text-muted-foreground py-4">No finance events yet.</p>
-                    ) : (
-                      <div className="space-y-2">
-                        {topFinanceEvents.slice(0, 5).map((event) => (
-                          <div key={event.id} className="flex items-center justify-between text-sm border-b border-border pb-2 last:border-0">
-                            <div className="min-w-0">
-                              <div className="text-sm font-medium truncate">{event.description ?? event.eventKind}</div>
-                              <div className="text-[10px] text-muted-foreground">{event.biller}</div>
-                            </div>
-                            <span className={cn(
-                              "font-mono text-sm shrink-0 ml-2",
-                              event.direction === "credit" ? "text-emerald-500" : "",
-                            )}>
-                              {event.direction === "credit" ? "+" : "-"}{formatCents(event.amountCents)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Unit Economics + Burn Rate + Cost Allocation */}
-              <div className="grid gap-4 xl:grid-cols-3">
-                <Card>
-                  <CardHeader className="px-5 pt-5 pb-2">
-                    <CardTitle className="text-base">Unit Economics</CardTitle>
-                    <CardDescription>Cost efficiency per completed issue and active hour.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3 px-5 pb-5 pt-2">
-                    {unitEconomics ? (
-                      <>
-                        <div className="flex items-end justify-between">
-                          <div>
-                            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Cost / Issue</div>
-                            <div className="text-2xl font-semibold tabular-nums mt-1">
-                              {formatCents(unitEconomics.current.costPerIssue)}
-                            </div>
-                          </div>
-                          <span className={cn(
-                            "flex items-center gap-1 text-xs font-medium",
-                            unitEconomics.costPerIssueTrend > 0 ? "text-amber-400" : "text-emerald-400",
-                          )}>
-                            {unitEconomics.costPerIssueTrend > 0 ? (
-                              <TrendingUp className="h-3 w-3" />
-                            ) : (
-                              <TrendingDown className="h-3 w-3" />
-                            )}
-                            {unitEconomics.costPerIssueTrend > 0 ? "+" : ""}{formatCents(Math.abs(unitEconomics.costPerIssueTrend))} vs prior
-                          </span>
-                        </div>
-                        <div className="border-t border-border/50 pt-2 flex items-end justify-between">
-                          <div>
-                            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Cost / Active Hour</div>
-                            <div className="text-2xl font-semibold tabular-nums mt-1">
-                              {formatCents(unitEconomics.current.costPerActiveHour)}
-                            </div>
-                          </div>
-                          <span className={cn(
-                            "flex items-center gap-1 text-xs font-medium",
-                            unitEconomics.costPerHourTrend > 0 ? "text-amber-400" : "text-emerald-400",
-                          )}>
-                            {unitEconomics.costPerHourTrend > 0 ? (
-                              <TrendingUp className="h-3 w-3" />
-                            ) : (
-                              <TrendingDown className="h-3 w-3" />
-                            )}
-                            {unitEconomics.costPerHourTrend > 0 ? "+" : ""}{formatCents(Math.abs(unitEconomics.costPerHourTrend))} vs prior
-                          </span>
-                        </div>
-                        <div className="text-xs text-muted-foreground tabular-nums pt-1 border-t border-border/50">
-                          {unitEconomics.current.issuesDone} issues done - {unitEconomics.current.activeHours}h active
-                        </div>
-                      </>
-                    ) : (
-                      <p className="text-sm text-muted-foreground py-2">Loading...</p>
-                    )}
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="px-5 pt-5 pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Flame className="h-4 w-4 text-orange-400" />
-                      Burn Rate
-                    </CardTitle>
-                    <CardDescription>Extrapolated from last 7 days of spend.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3 px-5 pb-5 pt-2">
-                    {burnRateData ? (
-                      <>
-                        <div>
-                          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Monthly rate</div>
-                          <div className="text-2xl font-semibold tabular-nums mt-1">
-                            {formatCents(burnRateData.monthlyRateCents)}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {formatCents(burnRateData.dailyRateCents)}/day
-                          </div>
-                        </div>
-                        {burnRateData.budgetCents > 0 && (
-                          <div className="border-t border-border/50 pt-2">
-                            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Runway</div>
-                            <div className={cn(
-                              "text-2xl font-semibold tabular-nums mt-1",
-                              burnRateData.runwayDays !== null && burnRateData.runwayDays < 7 ? "text-red-400" :
-                              burnRateData.runwayDays !== null && burnRateData.runwayDays < 14 ? "text-amber-400" : "text-emerald-400",
-                            )}>
-                              {burnRateData.runwayDays !== null ? `${burnRateData.runwayDays}d` : "N/A"}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {formatCents(burnRateData.remainingCents)} remaining of {formatCents(burnRateData.budgetCents)}
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <p className="text-sm text-muted-foreground py-2">Loading...</p>
-                    )}
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="px-5 pt-5 pb-2">
-                    <CardTitle className="text-base">Cost Allocation</CardTitle>
-                    <CardDescription>Per-project cost breakdown with issue counts.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="px-5 pb-5 pt-2">
-                    {costAllocation && costAllocation.length > 0 ? (
-                      <div className="space-y-1">
-                        <div className="grid grid-cols-4 gap-2 text-[10px] uppercase tracking-wider text-muted-foreground pb-1 border-b border-border/50">
-                          <span className="col-span-1">Project</span>
-                          <span className="text-right">Cost</span>
-                          <span className="text-right">Issues</span>
-                          <span className="text-right">$/Issue</span>
-                        </div>
-                        {costAllocation.slice(0, 8).map((row: { projectId: string; projectName: string; costCents: number; issueCount: number; costPerIssue: number }) => (
-                          <div key={row.projectId} className="grid grid-cols-4 gap-2 text-sm py-1">
-                            <span className="truncate font-medium col-span-1">{row.projectName}</span>
-                            <span className="text-right tabular-nums">{formatCents(row.costCents)}</span>
-                            <span className="text-right tabular-nums text-muted-foreground">{row.issueCount}</span>
-                            <span className="text-right tabular-nums text-muted-foreground">{formatCents(row.costPerIssue)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : costAllocation ? (
-                      <p className="text-sm text-muted-foreground py-2">No project costs this period.</p>
-                    ) : (
-                      <p className="text-sm text-muted-foreground py-2">Loading...</p>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div className="grid gap-4 xl:grid-cols-2">
-                <Card>
-                  <CardHeader className="px-5 pt-5 pb-2">
-                    <CardTitle className="text-base">By Agent</CardTitle>
-                    <CardDescription>What each agent consumed in the selected period.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-2 px-5 pb-5 pt-2">
-                    {(spendData?.byAgent.length ?? 0) === 0 ? (
-                      <p className="text-sm text-muted-foreground">No cost events yet.</p>
-                    ) : (
-                      spendData?.byAgent.map((row) => {
-                        const modelRows = agentModelRows.get(row.agentId) ?? [];
-                        const isExpanded = expandedAgents.has(row.agentId);
-                        const hasBreakdown = modelRows.length > 0;
-                        return (
-                          <div key={row.agentId} className="border border-border px-4 py-3">
-                            <div
-                              className={cn("flex items-start justify-between gap-3", hasBreakdown ? "cursor-pointer select-none" : "")}
-                              onClick={() => hasBreakdown && toggleAgent(row.agentId)}
-                            >
-                              <div className="flex min-w-0 items-center gap-2">
-                                {hasBreakdown ? (
-                                  isExpanded
-                                    ? <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
-                                    : <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
-                                ) : (
-                                  <span className="h-3 w-3 shrink-0" />
-                                )}
-                                <Identity name={row.agentName ?? row.agentId} size="sm" />
-                                {row.agentStatus === "terminated" ? <StatusBadge status="terminated" /> : null}
-                              </div>
-                              <div className="text-right text-sm tabular-nums">
-                                <div className="font-medium">{formatCents(row.costCents)}</div>
-                                <div className="text-sm text-muted-foreground">
-                                  in {formatTokens(row.inputTokens + row.cachedInputTokens)} · out {formatTokens(row.outputTokens)}
-                                </div>
-                                {(row.apiRunCount > 0 || row.subscriptionRunCount > 0) ? (
-                                  <div className="text-sm text-muted-foreground">
-                                    {row.apiRunCount > 0 ? `${row.apiRunCount} api` : "0 api"}
-                                    {" · "}
-                                    {row.subscriptionRunCount > 0
-                                      ? `${row.subscriptionRunCount} subscription`
-                                      : "0 subscription"}
-                                  </div>
-                                ) : null}
-                              </div>
-                            </div>
-
-                            {isExpanded && modelRows.length > 0 ? (
-                              <div className="mt-3 space-y-2 border-l border-border pl-4">
-                                {modelRows.map((modelRow) => {
-                                  const sharePct = row.costCents > 0 ? Math.round((modelRow.costCents / row.costCents) * 100) : 0;
-                                  return (
-                                    <div
-                                      key={`${modelRow.provider}:${modelRow.model}:${modelRow.billingType}`}
-                                      className="flex items-start justify-between gap-3 text-xs"
-                                    >
-                                      <div className="min-w-0">
-                                        <div className="truncate font-medium text-foreground">
-                                          {providerDisplayName(modelRow.provider)}
-                                          <span className="mx-1 text-border">/</span>
-                                          <span className="font-mono">{modelRow.model}</span>
-                                        </div>
-                                        <div className="truncate text-muted-foreground">
-                                          {providerDisplayName(modelRow.biller)} · {billingTypeDisplayName(modelRow.billingType)}
-                                        </div>
-                                      </div>
-                                      <div className="text-right tabular-nums">
-                                        <div className="font-medium">
-                                          {formatCents(modelRow.costCents)}
-                                          <span className="ml-1 font-normal text-muted-foreground">({sharePct}%)</span>
-                                        </div>
-                                        <div className="text-muted-foreground">
-                                          {formatTokens(modelRow.inputTokens + modelRow.cachedInputTokens + modelRow.outputTokens)} tok
-                                        </div>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            ) : null}
-                          </div>
-                        );
-                      })
-                    )}
-                  </CardContent>
-                </Card>
-
-                <Card className="flex flex-col">
-                  <CardHeader className="px-5 pt-5 pb-2">
-                    <CardTitle className="text-base">By Project</CardTitle>
-                    <CardDescription>Run costs attributed through project-linked issues.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-2 px-5 pb-5 pt-2 flex-1">
-                    {(spendData?.byProject.length ?? 0) === 0 ? (
-                      <p className="text-sm text-muted-foreground">No project-attributed run costs yet.</p>
-                    ) : (
-                      spendData?.byProject.map((row, index) => (
-                        <div
-                          key={row.projectId ?? `unattributed-${index}`}
-                          className="flex items-center justify-between gap-3 border border-border rounded-lg px-4 py-3 text-sm"
-                        >
-                          <span className="truncate font-medium">{row.projectName ?? row.projectId ?? "Unattributed"}</span>
-                          <div className="text-right shrink-0">
-                            <div className="font-semibold tabular-nums">{formatCents(row.costCents)}</div>
-                            <div className="text-[10px] text-muted-foreground">
-                              {formatTokens(row.inputTokens + row.outputTokens)} tokens
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            </>
+            <OverviewTabContent
+              activeBudgetIncidents={activeBudgetIncidents}
+              incidentMutation={incidentMutation}
+              spendData={spendData}
+              financeData={financeData}
+              topFinanceEvents={topFinanceEvents}
+              equivalentSpend={equivalentSpend}
+              unitEconomics={unitEconomics}
+              burnRateData={burnRateData}
+              costAllocation={costAllocation}
+              agentModelRows={agentModelRows}
+              expandedAgents={expandedAgents}
+              toggleAgent={toggleAgent}
+            />
           )}
         </TabsContent>
 
         <TabsContent value="budgets" className="mt-4 space-y-4">
-          {/* Budget header with New Budget button */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold">Budget Control</h2>
-              <p className="text-sm text-muted-foreground">Set spend limits for agents, projects, or the entire company.</p>
-            </div>
-            <Button size="sm" onClick={() => setShowNewBudget(true)}>
-              <Plus className="h-3.5 w-3.5 mr-1.5" />
-              Set Budget
-            </Button>
-          </div>
-
-          <NewBudgetDialog
-            open={showNewBudget}
-            onOpenChange={setShowNewBudget}
-            onSubmit={(policy) => {
-              policyMutation.mutate(policy, {
-                onSuccess: () => setShowNewBudget(false),
-              });
-            }}
-            isPending={policyMutation.isPending}
+          <BudgetsTabContent
+            budgetData={budgetData}
+            budgetLoading={budgetLoading}
+            budgetError={budgetError as Error | null}
+            showNewBudget={showNewBudget}
+            setShowNewBudget={setShowNewBudget}
+            policyMutation={policyMutation}
+            incidentMutation={incidentMutation}
+            activeBudgetIncidents={activeBudgetIncidents}
+            budgetPoliciesByScope={budgetPoliciesByScope}
           />
-
-          {budgetLoading ? (
-            <PageSkeleton variant="costs" />
-          ) : budgetError ? (
-            <p className="text-sm text-destructive">{(budgetError as Error).message}</p>
-          ) : (
-            <>
-              <Card className="border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))]">
-                <CardHeader className="px-5 pt-5 pb-3">
-                  <CardTitle className="text-base">Status</CardTitle>
-                  <CardDescription>
-                    Hard-stop spend limits for agents and projects. Provider subscription quota stays separate and appears under Providers.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="grid gap-3 px-5 pb-5 pt-0 md:grid-cols-4">
-                  <MetricTile
-                    label="Active incidents"
-                    value={String(activeBudgetIncidents.length)}
-                    subtitle="Open soft or hard threshold crossings"
-                    icon={ReceiptText}
-                  />
-                  <MetricTile
-                    label="Pending approvals"
-                    value={String(budgetData?.pendingApprovalCount ?? 0)}
-                    subtitle="Budget override approvals awaiting board action"
-                    icon={ArrowUpRight}
-                  />
-                  <MetricTile
-                    label="Paused agents"
-                    value={String(budgetData?.pausedAgentCount ?? 0)}
-                    subtitle="Agent heartbeats blocked by budget"
-                    icon={Coins}
-                  />
-                  <MetricTile
-                    label="Paused projects"
-                    value={String(budgetData?.pausedProjectCount ?? 0)}
-                    subtitle="Project execution blocked by budget"
-                    icon={DollarSign}
-                  />
-                </CardContent>
-              </Card>
-
-              {activeBudgetIncidents.length > 0 ? (
-                <div className="space-y-3">
-                  <div>
-                    <h2 className="text-lg font-semibold">Active incidents</h2>
-                    <p className="text-sm text-muted-foreground">
-                      Resolve hard stops here by raising the budget or explicitly keeping the scope paused.
-                    </p>
-                  </div>
-                  <div className="grid gap-4 xl:grid-cols-2">
-                    {activeBudgetIncidents.map((incident) => (
-                      <BudgetIncidentCard
-                        key={incident.id}
-                        incident={incident}
-                        isMutating={incidentMutation.isPending}
-                        onKeepPaused={() => incidentMutation.mutate({ incidentId: incident.id, action: "keep_paused" })}
-                        onRaiseAndResume={(amount) =>
-                          incidentMutation.mutate({
-                            incidentId: incident.id,
-                            action: "raise_budget_and_resume",
-                            amount,
-                          })}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-
-              <div className="space-y-5">
-                {(["company", "agent", "project"] as const).map((scopeType) => {
-                  const rows = budgetPoliciesByScope[scopeType];
-                  if (rows.length === 0) return null;
-                  return (
-                    <section key={scopeType} className="space-y-3">
-                      <div>
-                        <h2 className="text-lg font-semibold capitalize">{scopeType} budgets</h2>
-                        <p className="text-sm text-muted-foreground">
-                          {scopeType === "company"
-                            ? "Company-wide monthly policy."
-                            : scopeType === "agent"
-                              ? "Recurring monthly spend policies for individual agents."
-                              : "Lifetime spend policies for execution-bound projects."}
-                        </p>
-                      </div>
-                      <div className="grid gap-4 xl:grid-cols-2">
-                        {rows.map((summary) => (
-                          <BudgetPolicyCard
-                            key={summary.policyId}
-                            summary={summary}
-                            isSaving={policyMutation.isPending}
-                            onSave={(amount) =>
-                              policyMutation.mutate({
-                                scopeType: summary.scopeType,
-                                scopeId: summary.scopeId,
-                                amount,
-                                windowKind: summary.windowKind,
-                              })}
-                          />
-                        ))}
-                      </div>
-                    </section>
-                  );
-                })}
-
-                {budgetPolicies.length === 0 ? (
-                  <Card>
-                    <CardContent className="px-5 py-8 text-sm text-muted-foreground">
-                      No budget policies yet. Set agent and project budgets from their detail pages, or use the existing company monthly budget control.
-                    </CardContent>
-                  </Card>
-                ) : null}
-              </div>
-            </>
-          )}
         </TabsContent>
 
         <TabsContent value="providers" className="mt-4 space-y-4">
-          {showCustomPrompt ? (
-            <p className="text-sm text-muted-foreground">Select a start and end date to load data.</p>
-          ) : (
-            <>
-              <Tabs value={effectiveProvider} onValueChange={setActiveProvider}>
-                <PageTabBar items={providerTabItems} value={effectiveProvider} />
-
-                <TabsContent value="all" className="mt-4">
-                  {providers.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No cost events in this period.</p>
-                  ) : (
-                    <div className="grid gap-4 md:grid-cols-2">
-                      {providers.map((provider) => (
-                        <ProviderQuotaCard
-                          key={provider}
-                          provider={provider}
-                          rows={byProvider.get(provider) ?? []}
-                          budgetMonthlyCents={spendData?.summary.budgetCents ?? 0}
-                          totalCompanySpendCents={spendData?.summary.spendCents ?? 0}
-                          weekSpendCents={weekSpendByProvider.get(provider) ?? 0}
-                          windowRows={windowSpendByProvider.get(provider) ?? []}
-                          showDeficitNotch={deficitNotchByProvider.get(provider) ?? false}
-                          quotaWindows={quotaWindowsByProvider.get(provider) ?? []}
-                          quotaError={quotaErrorsByProvider.get(provider) ?? null}
-                          quotaSource={quotaSourcesByProvider.get(provider) ?? null}
-                          quotaLoading={quotaLoading}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </TabsContent>
-
-                {providers.map((provider) => (
-                  <TabsContent key={provider} value={provider} className="mt-4">
-                    <ProviderQuotaCard
-                      provider={provider}
-                      rows={byProvider.get(provider) ?? []}
-                      budgetMonthlyCents={spendData?.summary.budgetCents ?? 0}
-                      totalCompanySpendCents={spendData?.summary.spendCents ?? 0}
-                      weekSpendCents={weekSpendByProvider.get(provider) ?? 0}
-                      windowRows={windowSpendByProvider.get(provider) ?? []}
-                      showDeficitNotch={deficitNotchByProvider.get(provider) ?? false}
-                      quotaWindows={quotaWindowsByProvider.get(provider) ?? []}
-                      quotaError={quotaErrorsByProvider.get(provider) ?? null}
-                      quotaSource={quotaSourcesByProvider.get(provider) ?? null}
-                      quotaLoading={quotaLoading}
-                    />
-                  </TabsContent>
-                ))}
-              </Tabs>
-            </>
-          )}
+          <ProvidersTabContent
+            showCustomPrompt={showCustomPrompt}
+            effectiveProvider={effectiveProvider}
+            setActiveProvider={setActiveProvider}
+            providerTabItems={providerTabItems}
+            providers={providers}
+            byProvider={byProvider}
+            spendData={spendData}
+            weekSpendByProvider={weekSpendByProvider}
+            windowSpendByProvider={windowSpendByProvider}
+            deficitNotchByProvider={deficitNotchByProvider}
+            quotaWindowsByProvider={quotaWindowsByProvider}
+            quotaErrorsByProvider={quotaErrorsByProvider}
+            quotaSourcesByProvider={quotaSourcesByProvider}
+            quotaLoading={quotaLoading}
+          />
         </TabsContent>
 
         <TabsContent value="billers" className="mt-4 space-y-4">
-          {showCustomPrompt ? (
-            <p className="text-sm text-muted-foreground">Select a start and end date to load data.</p>
-          ) : (
-            <>
-              <Tabs value={effectiveBiller} onValueChange={setActiveBiller}>
-                <PageTabBar items={billerTabItems} value={effectiveBiller} />
-
-                <TabsContent value="all" className="mt-4">
-                  {billers.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No billable events in this period.</p>
-                  ) : (
-                    <div className="grid gap-4 md:grid-cols-2">
-                      {billers.map((biller) => {
-                        const row = (byBiller.get(biller) ?? [])[0];
-                        if (!row) return null;
-                        const providerRows = (providerData ?? []).filter((entry) => entry.biller === biller);
-                        return (
-                          <BillerSpendCard
-                            key={biller}
-                            row={row}
-                            weekSpendCents={weekSpendByBiller.get(biller) ?? 0}
-                            budgetMonthlyCents={spendData?.summary.budgetCents ?? 0}
-                            totalCompanySpendCents={spendData?.summary.spendCents ?? 0}
-                            providerRows={providerRows}
-                          />
-                        );
-                      })}
-                    </div>
-                  )}
-                </TabsContent>
-
-                {billers.map((biller) => {
-                  const row = (byBiller.get(biller) ?? [])[0];
-                  if (!row) return null;
-                  const providerRows = (providerData ?? []).filter((entry) => entry.biller === biller);
-                  return (
-                    <TabsContent key={biller} value={biller} className="mt-4">
-                      <BillerSpendCard
-                        row={row}
-                        weekSpendCents={weekSpendByBiller.get(biller) ?? 0}
-                        budgetMonthlyCents={spendData?.summary.budgetCents ?? 0}
-                        totalCompanySpendCents={spendData?.summary.spendCents ?? 0}
-                        providerRows={providerRows}
-                      />
-                    </TabsContent>
-                  );
-                })}
-              </Tabs>
-            </>
-          )}
+          <BillersTabContent
+            showCustomPrompt={showCustomPrompt}
+            effectiveBiller={effectiveBiller}
+            setActiveBiller={setActiveBiller}
+            billerTabItems={billerTabItems}
+            billers={billers}
+            byBiller={byBiller}
+            weekSpendByBiller={weekSpendByBiller}
+            spendData={spendData}
+            providerData={providerData}
+          />
         </TabsContent>
 
         <TabsContent value="finance" className="mt-4 space-y-4">
-          {/* New Finance Event button */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold">Finance Ledger</h2>
-              <p className="text-sm text-muted-foreground">Record payments, charges, credits, and adjustments.</p>
-            </div>
-            <Button size="sm" onClick={() => setShowNewFinanceEvent(true)}>
-              <Plus className="h-3.5 w-3.5 mr-1.5" />
-              New Event
-            </Button>
-          </div>
-
-          <NewFinanceEventDialog
-            open={showNewFinanceEvent}
-            onOpenChange={setShowNewFinanceEvent}
-            onSubmit={(event) => financeEventMutation.mutate(event)}
-            isPending={financeEventMutation.isPending}
+          <FinanceTabContent
+            showNewFinanceEvent={showNewFinanceEvent}
+            setShowNewFinanceEvent={setShowNewFinanceEvent}
+            financeEventMutation={financeEventMutation}
+            showCustomPrompt={showCustomPrompt}
+            financeLoading={financeLoading}
+            financeError={financeError as Error | null}
+            financeData={financeData}
+            topFinanceEvents={topFinanceEvents}
           />
-
-          {showCustomPrompt ? (
-            <p className="text-sm text-muted-foreground">Select a start and end date to load data.</p>
-          ) : financeLoading ? (
-            <PageSkeleton variant="costs" />
-          ) : financeError ? (
-            <p className="text-sm text-destructive">{(financeError as Error).message}</p>
-          ) : (
-            <>
-              <FinanceSummaryCard
-                debitCents={financeData?.summary.debitCents ?? 0}
-                creditCents={financeData?.summary.creditCents ?? 0}
-                netCents={financeData?.summary.netCents ?? 0}
-                estimatedDebitCents={financeData?.summary.estimatedDebitCents ?? 0}
-                eventCount={financeData?.summary.eventCount ?? 0}
-              />
-
-              <div className="grid gap-4 xl:grid-cols-[1.2fr,0.95fr]">
-                <div className="space-y-4">
-                  <Card>
-                    <CardHeader className="px-5 pt-5 pb-2">
-                      <CardTitle className="text-base">By biller</CardTitle>
-                      <CardDescription>Account-level financial events grouped by who charged or credited them.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid gap-4 px-5 pb-5 pt-2 md:grid-cols-2">
-                      {(financeData?.byBiller.length ?? 0) === 0 ? (
-                        <p className="text-sm text-muted-foreground">No finance events yet.</p>
-                      ) : (
-                        financeData?.byBiller.map((row) => <FinanceBillerCard key={row.biller} row={row} />)
-                      )}
-                    </CardContent>
-                  </Card>
-                  <FinanceTimelineCard rows={topFinanceEvents} />
-                </div>
-
-                <FinanceKindCard rows={financeData?.byKind ?? []} />
-              </div>
-            </>
-          )}
         </TabsContent>
 
-        {/* ─── Projects Tab ─────────────────────────────────────── */}
         <TabsContent value="projects" className="mt-4 space-y-4">
-          {/* Billing mode banner */}
-          {equivalentSpend && equivalentSpend.billingMode !== "none" && (
-            <div className={cn(
-              "flex items-center gap-3 p-3 rounded-lg border text-sm",
-              equivalentSpend.billingMode === "subscription"
-                ? "border-blue-500/30 bg-blue-500/5 text-blue-700 dark:text-blue-300"
-                : equivalentSpend.billingMode === "mixed"
-                  ? "border-amber-500/30 bg-amber-500/5 text-amber-700 dark:text-amber-300"
-                  : "border-border bg-muted/30",
-            )}>
-              <CreditCard className="h-4 w-4 shrink-0" />
-              <div className="flex-1">
-                <span className="font-medium">
-                  {equivalentSpend.billingMode === "subscription"
-                    ? "Subscription-based billing"
-                    : equivalentSpend.billingMode === "mixed"
-                      ? "Mixed billing (subscription + API)"
-                      : "API-metered billing"}
-                </span>
-                <span className="text-xs ml-2 opacity-80">
-                  {equivalentSpend.note}
-                </span>
-              </div>
-              {equivalentSpend.subscriptionEquivalentCents > 0 && (
-                <div className="text-right shrink-0">
-                  <div className="text-xs opacity-70">Equivalent API spend</div>
-                  <div className="font-mono font-semibold">
-                    {formatCents(equivalentSpend.totalEquivalentCents)}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Per-project cards */}
-          {(projectDetailCosts?.length ?? 0) === 0 ? (
-            <EmptyState icon={FolderKanban} message="No project costs recorded yet." />
-          ) : (
-            <div className="space-y-3">
-              {projectDetailCosts?.map((project) => (
-                <Card key={project.projectId}>
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-base">{project.projectName ?? "Unknown project"}</CardTitle>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="xs"
-                          onClick={() => {
-                            const url = costsApi.projectExportUrl(
-                              companyId,
-                              project.projectId ?? "",
-                              from || undefined,
-                              to || undefined,
-                            );
-                            window.open(url, "_blank");
-                          }}
-                        >
-                          <Download className="h-3 w-3 mr-1" />
-                          Export CSV
-                        </Button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div>
-                        <div className="text-xs text-muted-foreground">Actual Spend</div>
-                        <div className="text-lg font-mono font-semibold">
-                          {formatCents(project.costCents)}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-muted-foreground">Equivalent Spend</div>
-                        <div className="text-lg font-mono font-semibold text-blue-600 dark:text-blue-400">
-                          {formatCents(project.equivalentSpendCents)}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-muted-foreground">Input Tokens</div>
-                        <div className="text-sm font-mono">
-                          {formatTokens(project.inputTokens)}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-muted-foreground">Output Tokens</div>
-                        <div className="text-sm font-mono">
-                          {formatTokens(project.outputTokens)}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
+          <ProjectsTabContent
+            equivalentSpend={equivalentSpend}
+            projectDetailCosts={projectDetailCosts}
+            companyId={companyId}
+            from={from}
+            to={to}
+          />
         </TabsContent>
 
         <TabsContent value="tokens" className="mt-4 space-y-4">
-          {tokenAnalyticsLoading ? (
-            <PageSkeleton variant="costs" />
-          ) : !tokenAnalyticsData ? (
-            <EmptyState icon={Coins} message="No token data yet. Token usage will appear once agents start running." />
-          ) : (
-            <>
-              {/* Company aggregate */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <MetricTile
-                  label="Total Input"
-                  value={formatTokens(tokenAnalyticsData.totalInputTokens)}
-                  subtitle={`${tokenAnalyticsData.totalRuns} runs`}
-                  icon={ArrowDownLeft}
-                />
-                <MetricTile
-                  label="Total Output"
-                  value={formatTokens(tokenAnalyticsData.totalOutputTokens)}
-                  subtitle={`Avg ${formatTokens(tokenAnalyticsData.avgTokensPerRun)}/run`}
-                  icon={ArrowUpRight}
-                />
-                <MetricTile
-                  label="Cache Tokens"
-                  value={formatTokens(tokenAnalyticsData.totalCacheTokens)}
-                  subtitle={
-                    tokenAnalyticsData.totalInputTokens + tokenAnalyticsData.totalCacheTokens > 0
-                      ? `${Math.round((tokenAnalyticsData.totalCacheTokens / (tokenAnalyticsData.totalInputTokens + tokenAnalyticsData.totalCacheTokens)) * 100)}% hit rate`
-                      : "No data"
-                  }
-                  icon={TrendingDown}
-                />
-                <MetricTile
-                  label="Total Cost"
-                  value={`$${tokenAnalyticsData.totalCost.toFixed(2)}`}
-                  subtitle={`${tokenAnalyticsData.agents.length} active agents`}
-                  icon={DollarSign}
-                />
-              </div>
-
-              {/* Per-agent table */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Per-Agent Token Breakdown</CardTitle>
-                  <CardDescription>Token usage and cost by agent over the last 30 days</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {tokenAnalyticsData.agents.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No agents with token usage in this period.</p>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b border-border text-left text-muted-foreground">
-                            <th className="pb-2 pr-4 font-medium">Agent</th>
-                            <th className="pb-2 pr-4 font-medium text-right">Input Tokens</th>
-                            <th className="pb-2 pr-4 font-medium text-right">Output Tokens</th>
-                            <th className="pb-2 pr-4 font-medium text-right">Cache Hits</th>
-                            <th className="pb-2 pr-4 font-medium text-right">Runs</th>
-                            <th className="pb-2 pr-4 font-medium text-right">Avg/Run</th>
-                            <th className="pb-2 font-medium text-right">Cost</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {tokenAnalyticsData.agents.map((agent) => (
-                            <tr key={agent.agentId} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                              <td className="py-2 pr-4">
-                                <span className="font-medium">{agent.agentName ?? agent.agentId}</span>
-                              </td>
-                              <td className="py-2 pr-4 text-right font-mono text-xs">{formatTokens(agent.totalInputTokens)}</td>
-                              <td className="py-2 pr-4 text-right font-mono text-xs">{formatTokens(agent.totalOutputTokens)}</td>
-                              <td className="py-2 pr-4 text-right font-mono text-xs">{formatTokens(agent.totalCacheTokens)}</td>
-                              <td className="py-2 pr-4 text-right font-mono text-xs">{agent.runsCount}</td>
-                              <td className="py-2 pr-4 text-right font-mono text-xs">{formatTokens(agent.avgTokensPerRun)}</td>
-                              <td className="py-2 text-right font-mono text-xs">{agent.totalCost > 0 ? `$${agent.totalCost.toFixed(4)}` : "-"}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </>
-          )}
+          <TokensTabContent
+            tokenAnalyticsLoading={tokenAnalyticsLoading}
+            tokenAnalyticsData={tokenAnalyticsData}
+          />
         </TabsContent>
 
         <TabsContent value="departments" className="mt-4 space-y-4">
-          {!departmentSpendingData ? (
-            <PageSkeleton variant="list" />
-          ) : (
-            <Card>
-              <CardHeader className="px-5 pt-5 pb-2">
-                <CardTitle className="text-base">Department Spending</CardTitle>
-                <CardDescription>Total LLM cost broken down by agent department.</CardDescription>
-              </CardHeader>
-              <CardContent className="px-5 pb-5 pt-2 space-y-4">
-                {departmentSpendingData.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No department spending data available.</p>
-                ) : (
-                  <>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b border-border text-left text-muted-foreground">
-                            <th className="pb-2 pr-4 font-medium">Department</th>
-                            <th className="pb-2 pr-4 font-medium text-right">Agents</th>
-                            <th className="pb-2 pr-4 font-medium text-right">Total Spend</th>
-                            <th className="pb-2 font-medium text-right">Avg / Agent</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {departmentSpendingData.map((row) => (
-                            <tr key={row.department} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                              <td className="py-2 pr-4 font-medium capitalize">{row.department}</td>
-                              <td className="py-2 pr-4 text-right tabular-nums">{row.agentCount}</td>
-                              <td className="py-2 pr-4 text-right font-mono text-xs tabular-nums">{formatCents(row.totalSpend)}</td>
-                              <td className="py-2 text-right font-mono text-xs tabular-nums">{formatCents(row.avgPerAgent)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    {/* Bar chart */}
-                    {(() => {
-                      const maxSpend = Math.max(...departmentSpendingData.map((r) => r.totalSpend), 1);
-                      return (
-                        <div className="space-y-2 pt-2">
-                          {departmentSpendingData
-                            .slice()
-                            .sort((a, b) => b.totalSpend - a.totalSpend)
-                            .map((row) => (
-                              <div key={row.department} className="space-y-1">
-                                <div className="flex items-center justify-between text-xs">
-                                  <span className="capitalize text-muted-foreground">{row.department}</span>
-                                  <span className="font-mono">{formatCents(row.totalSpend)}</span>
-                                </div>
-                                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                                  <div
-                                    className="h-full bg-primary/60 rounded-full transition-[width] duration-500"
-                                    style={{ width: `${(row.totalSpend / maxSpend) * 100}%` }}
-                                  />
-                                </div>
-                              </div>
-                            ))}
-                        </div>
-                      );
-                    })()}
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          )}
+          <DepartmentsTabContent
+            departmentSpendingData={departmentSpendingData}
+          />
         </TabsContent>
 
         <TabsContent value="analysis" className="mt-4 space-y-4">
-          {/* Budget Forecast Card */}
-          {budgetForecastData && (
-            <Card>
-              <CardHeader className="px-5 pt-5 pb-2">
-                <CardTitle className="text-base">Budget Forecast</CardTitle>
-                <CardDescription>
-                  Projected month-end spend based on current daily run rate.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="px-5 pb-5 pt-2 space-y-4">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <MetricTile
-                    label="Month-to-Date"
-                    value={formatCents(budgetForecastData.currentMonthSpend)}
-                    subtitle="Spend so far this month"
-                    icon={DollarSign}
-                  />
-                  <MetricTile
-                    label="Projected Month-End"
-                    value={formatCents(budgetForecastData.projectedMonthEnd)}
-                    subtitle="At current daily rate"
-                    icon={TrendingUp}
-                  />
-                  <MetricTile
-                    label="Monthly Budget"
-                    value={budgetForecastData.monthlyBudget ? formatCents(budgetForecastData.monthlyBudget) : "None set"}
-                    subtitle="Company budget limit"
-                    icon={Coins}
-                  />
-                  <MetricTile
-                    label="Days Until Exhausted"
-                    value={budgetForecastData.daysUntilBudgetExhausted !== null ? `${budgetForecastData.daysUntilBudgetExhausted}d` : "N/A"}
-                    subtitle={budgetForecastData.monthlyBudget ? "At current rate" : "No budget set"}
-                    icon={Flame}
-                  />
-                </div>
-                <div className={cn(
-                  "rounded-lg border px-4 py-3 text-sm",
-                  budgetForecastData.trend === "under" ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400" :
-                  budgetForecastData.trend === "on_track" ? "border-blue-500/30 bg-blue-500/5 text-blue-600 dark:text-blue-400" :
-                  "border-red-500/30 bg-red-500/5 text-red-600 dark:text-red-400",
-                )}>
-                  <span className="font-semibold">
-                    {budgetForecastData.trend === "under" ? "Under Budget" :
-                     budgetForecastData.trend === "on_track" ? "On Track" :
-                     "Over Budget"}
-                    {" - "}
-                  </span>
-                  {budgetForecastData.recommendation}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Cost Allocation Analysis */}
-          {costAllocation && costAllocation.length > 0 && (
-            <Card>
-              <CardHeader className="px-5 pt-5 pb-2">
-                <CardTitle className="text-base">Top Cost Drivers by Project</CardTitle>
-                <CardDescription>
-                  Projects with the highest agent cost this month.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="px-5 pb-5 pt-2 space-y-3">
-                {(() => {
-                  const maxCost = Math.max(...costAllocation.map((r) => r.costCents), 1);
-                  return costAllocation.slice(0, 10).map((row) => (
-                    <div key={row.projectId} className="space-y-1">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium truncate max-w-[60%]">{row.projectName}</span>
-                        <span className="font-mono text-xs text-muted-foreground">
-                          {formatCents(row.costCents)} - {row.issueCount} issue{row.issueCount !== 1 ? "s" : ""}
-                        </span>
-                      </div>
-                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-primary/60 rounded-full transition-[width] duration-500"
-                          style={{ width: `${(row.costCents / maxCost) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  ));
-                })()}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Department Budget vs Actual */}
-          {deptBudgetVsActual && deptBudgetVsActual.length > 0 && (
-            <Card>
-              <CardHeader className="px-5 pt-5 pb-2">
-                <CardTitle className="text-base">Budget vs Actual by Department</CardTitle>
-                <CardDescription>
-                  Month-to-date actual spend compared to monthly budget allocation per department.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="px-5 pb-5 pt-2 space-y-2">
-                {deptBudgetVsActual.map((row) => {
-                  const hasBudget = row.budget !== null && row.budget > 0;
-                  const overBudget = hasBudget && row.variance > 0;
-                  const utilizationPct = hasBudget ? Math.min(100, Math.round((row.actual / row.budget!) * 100)) : null;
-                  return (
-                    <div key={row.department} className="space-y-1">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium">{row.department}</span>
-                        <span className="flex items-center gap-2 text-xs">
-                          <span className="text-muted-foreground">
-                            {formatCents(row.actual)}
-                            {hasBudget && ` / ${formatCents(row.budget!)}`}
-                          </span>
-                          {hasBudget && (
-                            <span className={cn(
-                              "font-semibold",
-                              overBudget ? "text-red-400" : "text-emerald-400",
-                            )}>
-                              {overBudget ? "+" : ""}{formatCents(row.variance)}
-                            </span>
-                          )}
-                        </span>
-                      </div>
-                      {hasBudget && utilizationPct !== null && (
-                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className={cn(
-                              "h-full rounded-full transition-[width] duration-500",
-                              utilizationPct >= 100 ? "bg-red-500" :
-                              utilizationPct >= 80 ? "bg-amber-500" : "bg-emerald-500",
-                            )}
-                            style={{ width: `${utilizationPct}%` }}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Agent Cost Efficiency Rankings */}
-          {agentEfficiency && agentEfficiency.length > 0 && (
-            <Card>
-              <CardHeader className="px-5 pt-5 pb-2">
-                <CardTitle className="text-base">Agent Cost Efficiency Rankings</CardTitle>
-                <CardDescription>
-                  Agents ranked by cost-per-completed-issue this month. Lower cost = higher ranking.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="px-5 pb-5 pt-2">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-left">
-                      <th className="pb-2 pr-4 font-semibold text-muted-foreground">#</th>
-                      <th className="pb-2 pr-4 font-semibold text-muted-foreground">Agent</th>
-                      <th className="pb-2 pr-4 font-semibold text-muted-foreground text-right">Issues Done</th>
-                      <th className="pb-2 pr-4 font-semibold text-muted-foreground text-right">Cost / Issue</th>
-                      <th className="pb-2 font-semibold text-muted-foreground text-right">Score</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/50">
-                    {agentEfficiency.slice(0, 15).map((row, idx) => (
-                      <tr key={row.agentId}>
-                        <td className="py-1.5 pr-4 text-muted-foreground tabular-nums">{idx + 1}</td>
-                        <td className="py-1.5 pr-4 font-medium truncate max-w-[180px]">{row.agentName}</td>
-                        <td className="py-1.5 pr-4 text-right tabular-nums">{row.issuesCompleted}</td>
-                        <td className="py-1.5 pr-4 text-right tabular-nums">
-                          {formatCents(row.costPerIssue)}
-                        </td>
-                        <td className="py-1.5 text-right tabular-nums">
-                          <span className={cn(
-                            "font-semibold",
-                            row.performanceScore >= 80 ? "text-emerald-400" :
-                            row.performanceScore >= 60 ? "text-blue-400" :
-                            row.performanceScore >= 40 ? "text-amber-400" : "text-red-400",
-                          )}>
-                            {row.performanceScore}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </CardContent>
-            </Card>
-          )}
-
-          {!budgetForecastData && !costAllocation && !deptBudgetVsActual && !agentEfficiency && (
-            <EmptyState icon={DollarSign} message="No analysis data available yet." />
-          )}
+          <AnalysisTabContent
+            budgetForecastData={budgetForecastData}
+            costAllocation={costAllocation}
+            deptBudgetVsActual={deptBudgetVsActual}
+            agentEfficiency={agentEfficiency}
+          />
         </TabsContent>
       </Tabs>
     </div>

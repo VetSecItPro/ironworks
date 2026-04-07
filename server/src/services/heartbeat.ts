@@ -4,36 +4,83 @@ import { execFile as execFileCallback } from "node:child_process";
 import { promisify } from "node:util";
 import { and, asc, desc, eq, gt, gte, inArray, isNotNull, notInArray, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import type { BillingType } from "@ironworksai/shared";
 import {
   agents,
-  agentChannels,
   agentRuntimeState,
   agentTaskSessions,
   agentWakeupRequests,
-  channelMessages,
   costEvents,
   heartbeatRunEvents,
   heartbeatRuns,
   issues,
   issueLabels,
-  knowledgePages,
   labels,
-  goals,
   principalPermissionGrants,
   projects,
   projectWorkspaces,
 } from "@ironworksai/db";
-import { DEFAULT_ITERATION_LIMITS, DEFAULT_OUTPUT_TOKEN_LIMITS, DEFAULT_SKILL_ALLOWLIST, WESTERN_COUNCIL_MODELS } from "@ironworksai/shared";
+import { DEFAULT_OUTPUT_TOKEN_LIMITS, DEFAULT_SKILL_ALLOWLIST, WESTERN_COUNCIL_MODELS } from "@ironworksai/shared";
 import type { OutputTokenCategory } from "@ironworksai/shared";
 import { conflict, notFound } from "../errors.js";
 import { logger } from "../middleware/logger.js";
 import { publishLiveEvent } from "./live-events.js";
 import { getRunLogStore, type RunLogHandle } from "./run-log-store.js";
 import { getServerAdapter, runningProcesses } from "../adapters/index.js";
-import type { AdapterExecutionResult, AdapterInvocationMeta, AdapterSessionCodec, UsageSummary } from "../adapters/index.js";
+import type { AdapterExecutionResult, AdapterInvocationMeta } from "../adapters/index.js";
 import { createLocalAgentJwt } from "../agent-auth-jwt.js";
-import { parseObject, asBoolean, asNumber, appendWithCap, MAX_EXCERPT_BYTES } from "../adapters/utils.js";
+import { parseObject, asBoolean, asNumber } from "../adapters/utils.js";
+import {
+  MAX_LIVE_LOG_CHUNK_BYTES,
+  HEARTBEAT_MAX_CONCURRENT_RUNS_DEFAULT,
+  HEARTBEAT_MAX_CONCURRENT_RUNS_MAX,
+  COMPLETION_MARKERS,
+  DEFERRED_WAKE_CONTEXT_KEY,
+  DETACHED_PROCESS_ERROR_CODE,
+  REPO_ONLY_CWD_SENTINEL,
+  MANAGED_WORKSPACE_GIT_CLONE_TIMEOUT_MS,
+  HEARTBEAT_TASK_KEY,
+  MAX_TOOL_OUTPUT_CHARS,
+  SESSIONED_LOCAL_ADAPTERS,
+  startLocksByAgent,
+  appendExcerpt,
+  readNonEmptyString,
+  normalizeMaxConcurrentRuns,
+  normalizeLedgerBillingType,
+  resolveLedgerBiller,
+  normalizeBilledCostCents,
+  normalizeUsageTotals,
+  readRawUsageTotals,
+  deriveNormalizedUsageDelta,
+  formatCount,
+  formatRuntimeWorkspaceWarningLog,
+  parseIssueAssigneeAdapterOverrides,
+  deriveTaskKey,
+  deriveTaskKeyWithHeartbeatFallback,
+  deriveCommentId,
+  describeSessionResetReason,
+  shouldResetTaskSessionForWake,
+  enrichWakeContextSnapshot,
+  mergeCoalescedContextSnapshot,
+  isSameTaskScope,
+  compressToolOutput,
+  isTrackedLocalChildProcessAdapter,
+  isProcessAlive,
+  truncateDisplayId,
+  normalizeAgentNameKey,
+  normalizeSessionParams,
+  resolveNextSessionState,
+  buildExplicitResumeSessionOverride,
+  classifyContextTier,
+  classifyTaskType,
+  PROMPT_TEMPLATES,
+  type ContextTier,
+  type TaskTemplateType,
+  type WakeupOptions,
+  type UsageTotals,
+  type SessionCompactionDecision,
+  type ParsedIssueAssigneeAdapterOverrides,
+  type ProjectWorkspaceCandidate,
+} from "./heartbeat-types.js";
 import { costService } from "./costs.js";
 import { companySkillService } from "./company-skills.js";
 import { budgetService, type BudgetEnforcementScope } from "./budgets.js";
@@ -62,9 +109,6 @@ import {
 } from "./execution-workspace-policy.js";
 import { instanceSettingsService } from "./instance-settings.js";
 import { logActivity } from "./activity-log.js";
-import { buildMorningBriefing, detectContextDrift, saveSessionState, getLatestSessionState } from "./session-state.js";
-import { agentCognitiveLoad, channelHealth, detectCrossChannelOverlap, ensureProjectChannel, findAgentDepartmentChannel, findCompanyChannel, generateOnboardingReplay, getHighSignalMessages, getPendingDeliberations, getPendingMentions, getRecentMessages, postMessage as postChannelMessage } from "./channels.js";
-import { webSearch, isResearchTask, extractSearchQuery } from "./web-search.js";
 import { redactCurrentUserText, redactCurrentUserValue } from "../log-redaction.js";
 import {
   hasSessionCompactionThresholds,
@@ -87,104 +131,55 @@ import {
   type CouncilConfig,
   type CouncilResult,
 } from "./model-council.js";
-import { CONFIDENCE_TAGGING_PROMPT } from "./confidence-tags.js";
-import { getQualityExamples } from "./quality-gate.js";
-import { sanitizeForPrompt, PROMPT_MAX_LENGTHS } from "../lib/prompt-security.js";
-import { extractChannelMessages } from "../lib/channel-extraction.js";
+import {
+  injectSessionContext,
+  injectChannelMessages as injectChannelMessagesCtx,
+  injectChannelPostingInstruction,
+  injectConfidenceTagging,
+  injectQualityExamples,
+  injectOnboardingReplay,
+  injectPendingMentions,
+  injectPendingDeliberations,
+  injectChannelHealth,
+  injectCognitiveLoadReport,
+  injectContextDriftWarning,
+  injectContextUtilizationNote,
+  injectTaskTypeClassification,
+  injectRecentDocuments,
+  injectBatchedTasks,
+  injectWebResearch,
+  injectDeadlineUrgency,
+  injectDependencyContext,
+  injectGoalContext,
+} from "./heartbeat-context.js";
+import {
+  updateRuntimeState as updateRuntimeStateModule,
+  savePostRunSessionState,
+  postSuccessChannelMessages,
+  extractAndPostAgentChannelMessages,
+  extractAndLogDecisions,
+} from "./heartbeat-post-run.js";
+import {
+  withAgentStartLock,
+  getAdapterSessionCodec,
+  parseHeartbeatPolicy as parseHeartbeatPolicyModule,
+  countRunningRunsForAgent as countRunningRunsForAgentModule,
+  checkIterationLimits as checkIterationLimitsModule,
+  resolveSessionBeforeForWakeup as resolveSessionBeforeForWakeupModule,
+  resolveExplicitResumeSessionOverride as resolveExplicitResumeSessionOverrideModule,
+  reapOrphanedRuns as reapOrphanedRunsModule,
+  resumeQueuedRuns as resumeQueuedRunsModule,
+  tickTimers as tickTimersModule,
+  releaseIssueExecutionAndPromote as releaseIssueExecutionAndPromoteModule,
+  enqueueWakeup as enqueueWakeupModule,
+} from "./heartbeat-scheduling.js";
+import {
+  cancelRunInternal as cancelRunInternalModule,
+  cancelActiveForAgentInternal as cancelActiveForAgentInternalModule,
+  cancelBudgetScopeWork as cancelBudgetScopeWorkModule,
+} from "./heartbeat-cancellation.js";
 
-const MAX_LIVE_LOG_CHUNK_BYTES = 8 * 1024;
-const HEARTBEAT_MAX_CONCURRENT_RUNS_DEFAULT = 1;
-const HEARTBEAT_MAX_CONCURRENT_RUNS_MAX = 10;
-
-const COMPLETION_MARKERS = [
-  "Task complete",
-  "Issue resolved",
-  "No further action needed",
-] as const;
-
-// ── Tiered Context Classification ──────────────────────────────────────────
-type ContextTier = "minimal" | "standard" | "full";
-
-function classifyContextTier(contextSnapshot: Record<string, unknown>): ContextTier {
-  const wakeReason = typeof contextSnapshot.wakeReason === "string" ? contextSnapshot.wakeReason : null;
-  const source = typeof contextSnapshot.wakeSource === "string" ? contextSnapshot.wakeSource : null;
-  const issueId = typeof contextSnapshot.issueId === "string" ? contextSnapshot.issueId : null;
-  const commentId = typeof contextSnapshot.wakeCommentId === "string" ? contextSnapshot.wakeCommentId : null;
-  const approvalId = typeof contextSnapshot.approvalId === "string" ? contextSnapshot.approvalId : null;
-
-  // Full tier: approvals, complex tasks, or multiple issues
-  if (approvalId || wakeReason === "approval_approved" || wakeReason === "approval_rejected") {
-    return "full";
-  }
-  const issueIds = Array.isArray(contextSnapshot.issueIds) ? contextSnapshot.issueIds : null;
-  if (issueIds && issueIds.length > 1) {
-    return "full";
-  }
-
-  // Standard tier: new comment or issue assigned
-  if (commentId || wakeReason === "comment" || wakeReason === "assignment") {
-    return "standard";
-  }
-  if (issueId && source !== "timer") {
-    return "standard";
-  }
-
-  // Minimal tier: timer wake, no new comments, agent is idle checking
-  return "minimal";
-}
-// ── Task 5: Task-Type Prompt Templates ────────────────────────────────────────
-//
-// Controls how much context is assembled for each run based on the classified
-// task type derived from the issue's labels and title.
-
-type TaskTemplateType = "answer_question" | "write_code" | "write_report" | "review_document" | "routine_check";
-
-const PROMPT_TEMPLATES: Record<TaskTemplateType, { maxContext: number; includeMemories: number; includeDocuments: number }> = {
-  answer_question: { maxContext: 2000, includeMemories: 3, includeDocuments: 2 },
-  write_code:      { maxContext: 4000, includeMemories: 5, includeDocuments: 3 },
-  write_report:    { maxContext: 8000, includeMemories: 10, includeDocuments: 5 },
-  review_document: { maxContext: 4000, includeMemories: 5, includeDocuments: 5 },
-  routine_check:   { maxContext: 500,  includeMemories: 0, includeDocuments: 0 },
-} as const;
-
-/** Classify the task type from issue labels and title text. */
-function classifyTaskType(issueTitle: string, labelNames: string[]): TaskTemplateType {
-  const titleLower = issueTitle.toLowerCase();
-  const allText = [titleLower, ...labelNames.map((l) => l.toLowerCase())].join(" ");
-
-  // Code-related
-  if (/\b(bug|fix|implement|refactor|test|code|build|deploy|ci|pr|pull request|feature)\b/.test(allText)) {
-    return "write_code";
-  }
-  // Report-related
-  if (/\b(report|analysis|analyse|analyze|research|audit|review weekly|weekly|summary|findings)\b/.test(allText)) {
-    return "write_report";
-  }
-  // Document review
-  if (/\b(review|feedback|approve|assess|evaluate)\b/.test(allText)) {
-    return "review_document";
-  }
-  // Questions
-  if (/\b(question|answer|how|what|why|explain|clarify)\b/.test(allText)) {
-    return "answer_question";
-  }
-  return "routine_check";
-}
-
-const DEFERRED_WAKE_CONTEXT_KEY = "_ironworksWakeContext";
-const DETACHED_PROCESS_ERROR_CODE = "process_detached";
-const startLocksByAgent = new Map<string, Promise<void>>();
-const REPO_ONLY_CWD_SENTINEL = "/__ironworks_repo_only__";
-const MANAGED_WORKSPACE_GIT_CLONE_TIMEOUT_MS = 10 * 60 * 1000;
 const execFile = promisify(execFileCallback);
-const SESSIONED_LOCAL_ADAPTERS = new Set([
-  "claude_local",
-  "codex_local",
-  "cursor",
-  "gemini_local",
-  "opencode_local",
-  "pi_local",
-]);
 
 function deriveRepoNameFromRepoUrl(repoUrl: string | null): string | null {
   const trimmed = repoUrl?.trim() ?? "";
@@ -285,61 +280,6 @@ const heartbeatRunListColumns = {
   updatedAt: heartbeatRuns.updatedAt,
 } as const;
 
-function appendExcerpt(prev: string, chunk: string) {
-  return appendWithCap(prev, chunk, MAX_EXCERPT_BYTES);
-}
-
-function normalizeMaxConcurrentRuns(value: unknown) {
-  const parsed = Math.floor(asNumber(value, HEARTBEAT_MAX_CONCURRENT_RUNS_DEFAULT));
-  if (!Number.isFinite(parsed)) return HEARTBEAT_MAX_CONCURRENT_RUNS_DEFAULT;
-  return Math.max(HEARTBEAT_MAX_CONCURRENT_RUNS_DEFAULT, Math.min(HEARTBEAT_MAX_CONCURRENT_RUNS_MAX, parsed));
-}
-
-async function withAgentStartLock<T>(agentId: string, fn: () => Promise<T>) {
-  const previous = startLocksByAgent.get(agentId) ?? Promise.resolve();
-  const run = previous.then(fn);
-  const marker = run.then(
-    () => undefined,
-    () => undefined,
-  );
-  startLocksByAgent.set(agentId, marker);
-  try {
-    return await run;
-  } finally {
-    if (startLocksByAgent.get(agentId) === marker) {
-      startLocksByAgent.delete(agentId);
-    }
-  }
-}
-
-interface WakeupOptions {
-  source?: "timer" | "assignment" | "on_demand" | "automation";
-  triggerDetail?: "manual" | "ping" | "callback" | "system";
-  reason?: string | null;
-  payload?: Record<string, unknown> | null;
-  idempotencyKey?: string | null;
-  requestedByActorType?: "user" | "agent" | "system";
-  requestedByActorId?: string | null;
-  contextSnapshot?: Record<string, unknown>;
-}
-
-type UsageTotals = {
-  inputTokens: number;
-  cachedInputTokens: number;
-  outputTokens: number;
-};
-
-type SessionCompactionDecision = {
-  rotate: boolean;
-  reason: string | null;
-  handoffMarkdown: string | null;
-  previousRunId: string | null;
-};
-
-interface ParsedIssueAssigneeAdapterOverrides {
-  adapterConfig: Record<string, unknown> | null;
-  useProjectWorkspace: boolean | null;
-}
 
 export type ResolvedWorkspaceForRun = {
   cwd: string;
@@ -357,9 +297,10 @@ export type ResolvedWorkspaceForRun = {
   warnings: string[];
 };
 
-type ProjectWorkspaceCandidate = {
-  id: string;
-};
+// ProjectWorkspaceCandidate, prioritizeProjectWorkspaceCandidatesForRun, readNonEmptyString,
+// normalizeLedgerBillingType, resolveLedgerBiller, normalizeBilledCostCents,
+// normalizeUsageTotals, readRawUsageTotals, deriveNormalizedUsageDelta, formatCount,
+// buildExplicitResumeSessionOverride are all imported from heartbeat-types.ts
 
 export function prioritizeProjectWorkspaceCandidatesForRun<T extends ProjectWorkspaceCandidate>(
   rows: T[],
@@ -369,40 +310,6 @@ export function prioritizeProjectWorkspaceCandidatesForRun<T extends ProjectWork
   const preferredIndex = rows.findIndex((row) => row.id === preferredWorkspaceId);
   if (preferredIndex <= 0) return rows;
   return [rows[preferredIndex]!, ...rows.slice(0, preferredIndex), ...rows.slice(preferredIndex + 1)];
-}
-
-function readNonEmptyString(value: unknown): string | null {
-  return typeof value === "string" && value.trim().length > 0 ? value : null;
-}
-
-function normalizeLedgerBillingType(value: unknown): BillingType {
-  const raw = readNonEmptyString(value);
-  switch (raw) {
-    case "api":
-    case "metered_api":
-      return "metered_api";
-    case "subscription":
-    case "subscription_included":
-      return "subscription_included";
-    case "subscription_overage":
-      return "subscription_overage";
-    case "credits":
-      return "credits";
-    case "fixed":
-      return "fixed";
-    default:
-      return "unknown";
-  }
-}
-
-function resolveLedgerBiller(result: AdapterExecutionResult): string {
-  return readNonEmptyString(result.biller) ?? readNonEmptyString(result.provider) ?? "unknown";
-}
-
-function normalizeBilledCostCents(costUsd: number | null | undefined, billingType: BillingType): number {
-  if (billingType === "subscription_included") return 0;
-  if (typeof costUsd !== "number" || !Number.isFinite(costUsd)) return 0;
-  return Math.max(0, Math.round(costUsd * 100));
 }
 
 async function resolveLedgerScopeForRun(
@@ -434,114 +341,6 @@ async function resolveLedgerScopeForRun(
     issueId: issue?.id ?? null,
     projectId: issue?.projectId ?? contextProjectId,
   };
-}
-
-type ResumeSessionRow = {
-  sessionParamsJson: Record<string, unknown> | null;
-  sessionDisplayId: string | null;
-  lastRunId: string | null;
-};
-
-export function buildExplicitResumeSessionOverride(input: {
-  resumeFromRunId: string;
-  resumeRunSessionIdBefore: string | null;
-  resumeRunSessionIdAfter: string | null;
-  taskSession: ResumeSessionRow | null;
-  sessionCodec: AdapterSessionCodec;
-}) {
-  const desiredDisplayId = truncateDisplayId(
-    input.resumeRunSessionIdAfter ?? input.resumeRunSessionIdBefore,
-  );
-  const taskSessionParams = normalizeSessionParams(
-    input.sessionCodec.deserialize(input.taskSession?.sessionParamsJson ?? null),
-  );
-  const taskSessionDisplayId = truncateDisplayId(
-    input.taskSession?.sessionDisplayId ??
-      (input.sessionCodec.getDisplayId ? input.sessionCodec.getDisplayId(taskSessionParams) : null) ??
-      readNonEmptyString(taskSessionParams?.sessionId),
-  );
-  const canReuseTaskSessionParams =
-    input.taskSession != null &&
-    (
-      input.taskSession.lastRunId === input.resumeFromRunId ||
-      (!!desiredDisplayId && taskSessionDisplayId === desiredDisplayId)
-    );
-  const sessionParams =
-    canReuseTaskSessionParams
-      ? taskSessionParams
-      : desiredDisplayId
-        ? { sessionId: desiredDisplayId }
-        : null;
-  const sessionDisplayId = desiredDisplayId ?? (canReuseTaskSessionParams ? taskSessionDisplayId : null);
-
-  if (!sessionDisplayId && !sessionParams) return null;
-  return {
-    sessionDisplayId,
-    sessionParams,
-  };
-}
-
-function normalizeUsageTotals(usage: UsageSummary | null | undefined): UsageTotals | null {
-  if (!usage) return null;
-  return {
-    inputTokens: Math.max(0, Math.floor(asNumber(usage.inputTokens, 0))),
-    cachedInputTokens: Math.max(0, Math.floor(asNumber(usage.cachedInputTokens, 0))),
-    outputTokens: Math.max(0, Math.floor(asNumber(usage.outputTokens, 0))),
-  };
-}
-
-function readRawUsageTotals(usageJson: unknown): UsageTotals | null {
-  const parsed = parseObject(usageJson);
-  if (Object.keys(parsed).length === 0) return null;
-
-  const inputTokens = Math.max(
-    0,
-    Math.floor(asNumber(parsed.rawInputTokens, asNumber(parsed.inputTokens, 0))),
-  );
-  const cachedInputTokens = Math.max(
-    0,
-    Math.floor(asNumber(parsed.rawCachedInputTokens, asNumber(parsed.cachedInputTokens, 0))),
-  );
-  const outputTokens = Math.max(
-    0,
-    Math.floor(asNumber(parsed.rawOutputTokens, asNumber(parsed.outputTokens, 0))),
-  );
-
-  if (inputTokens <= 0 && cachedInputTokens <= 0 && outputTokens <= 0) {
-    return null;
-  }
-
-  return {
-    inputTokens,
-    cachedInputTokens,
-    outputTokens,
-  };
-}
-
-function deriveNormalizedUsageDelta(current: UsageTotals | null, previous: UsageTotals | null): UsageTotals | null {
-  if (!current) return null;
-  if (!previous) return { ...current };
-
-  const inputTokens = current.inputTokens >= previous.inputTokens
-    ? current.inputTokens - previous.inputTokens
-    : current.inputTokens;
-  const cachedInputTokens = current.cachedInputTokens >= previous.cachedInputTokens
-    ? current.cachedInputTokens - previous.cachedInputTokens
-    : current.cachedInputTokens;
-  const outputTokens = current.outputTokens >= previous.outputTokens
-    ? current.outputTokens - previous.outputTokens
-    : current.outputTokens;
-
-  return {
-    inputTokens: Math.max(0, inputTokens),
-    cachedInputTokens: Math.max(0, cachedInputTokens),
-    outputTokens: Math.max(0, outputTokens),
-  };
-}
-
-function formatCount(value: number | null | undefined) {
-  if (typeof value !== "number" || !Number.isFinite(value)) return "0";
-  return value.toLocaleString("en-US");
 }
 
 export function parseSessionCompactionPolicy(agent: typeof agents.$inferSelect): SessionCompactionPolicy {
@@ -616,371 +415,27 @@ export function resolveRuntimeSessionParamsForWorkspace(input: {
   };
 }
 
-function parseIssueAssigneeAdapterOverrides(
-  raw: unknown,
-): ParsedIssueAssigneeAdapterOverrides | null {
-  const parsed = parseObject(raw);
-  const parsedAdapterConfig = parseObject(parsed.adapterConfig);
-  const adapterConfig =
-    Object.keys(parsedAdapterConfig).length > 0 ? parsedAdapterConfig : null;
-  const useProjectWorkspace =
-    typeof parsed.useProjectWorkspace === "boolean"
-      ? parsed.useProjectWorkspace
-      : null;
-  if (!adapterConfig && useProjectWorkspace === null) return null;
-  return {
-    adapterConfig,
-    useProjectWorkspace,
-  };
-}
+// parseIssueAssigneeAdapterOverrides, HEARTBEAT_TASK_KEY, deriveTaskKey,
+// deriveTaskKeyWithHeartbeatFallback, shouldResetTaskSessionForWake,
+// formatRuntimeWorkspaceWarningLog, describeSessionResetReason, deriveCommentId,
+// enrichWakeContextSnapshot, mergeCoalescedContextSnapshot, isSameTaskScope,
+// compressToolOutput, isTrackedLocalChildProcessAdapter, isProcessAlive,
+// truncateDisplayId, normalizeAgentNameKey, normalizeSessionParams,
+// resolveNextSessionState are all imported from heartbeat-types.ts
 
-/**
- * Synthetic task key for timer/heartbeat wakes that have no issue context.
- * This allows timer wakes to participate in the `agentTaskSessions` system
- * and benefit from robust session resume, instead of relying solely on the
- * simpler `agentRuntimeState.sessionId` fallback.
- */
-const HEARTBEAT_TASK_KEY = "__heartbeat__";
-
-function deriveTaskKey(
-  contextSnapshot: Record<string, unknown> | null | undefined,
-  payload: Record<string, unknown> | null | undefined,
-) {
-  return (
-    readNonEmptyString(contextSnapshot?.taskKey) ??
-    readNonEmptyString(contextSnapshot?.taskId) ??
-    readNonEmptyString(contextSnapshot?.issueId) ??
-    readNonEmptyString(payload?.taskKey) ??
-    readNonEmptyString(payload?.taskId) ??
-    readNonEmptyString(payload?.issueId) ??
-    null
-  );
-}
-
-/**
- * Extended task key derivation that falls back to a stable synthetic key
- * for timer/heartbeat wakes. This ensures timer wakes can resume their
- * previous session via `agentTaskSessions` instead of starting fresh.
- *
- * The synthetic key is only used when:
- * - No explicit task/issue key exists in the context
- * - The wake source is "timer" (scheduled heartbeat)
- */
-export function deriveTaskKeyWithHeartbeatFallback(
-  contextSnapshot: Record<string, unknown> | null | undefined,
-  payload: Record<string, unknown> | null | undefined,
-) {
-  const explicit = deriveTaskKey(contextSnapshot, payload);
-  if (explicit) return explicit;
-
-  const wakeSource = readNonEmptyString(contextSnapshot?.wakeSource);
-  if (wakeSource === "timer") return HEARTBEAT_TASK_KEY;
-
-  return null;
-}
-
-export function shouldResetTaskSessionForWake(
-  contextSnapshot: Record<string, unknown> | null | undefined,
-) {
-  if (contextSnapshot?.forceFreshSession === true) return true;
-
-  const wakeReason = readNonEmptyString(contextSnapshot?.wakeReason);
-  if (wakeReason === "issue_assigned") return true;
-  return false;
-}
-
-export function formatRuntimeWorkspaceWarningLog(warning: string) {
-  return {
-    stream: "stdout" as const,
-    chunk: `[ironworks] ${warning}\n`,
-  };
-}
-
-function describeSessionResetReason(
-  contextSnapshot: Record<string, unknown> | null | undefined,
-) {
-  if (contextSnapshot?.forceFreshSession === true) return "forceFreshSession was requested";
-
-  const wakeReason = readNonEmptyString(contextSnapshot?.wakeReason);
-  if (wakeReason === "issue_assigned") return "wake reason is issue_assigned";
-  return null;
-}
-
-function deriveCommentId(
-  contextSnapshot: Record<string, unknown> | null | undefined,
-  payload: Record<string, unknown> | null | undefined,
-) {
-  return (
-    readNonEmptyString(contextSnapshot?.wakeCommentId) ??
-    readNonEmptyString(contextSnapshot?.commentId) ??
-    readNonEmptyString(payload?.commentId) ??
-    null
-  );
-}
-
-function enrichWakeContextSnapshot(input: {
-  contextSnapshot: Record<string, unknown>;
-  reason: string | null;
-  source: WakeupOptions["source"];
-  triggerDetail: WakeupOptions["triggerDetail"] | null;
-  payload: Record<string, unknown> | null;
-}) {
-  const { contextSnapshot, reason, source, triggerDetail, payload } = input;
-  const issueIdFromPayload = readNonEmptyString(payload?.["issueId"]);
-  const commentIdFromPayload = readNonEmptyString(payload?.["commentId"]);
-  const taskKey = deriveTaskKey(contextSnapshot, payload);
-  const wakeCommentId = deriveCommentId(contextSnapshot, payload);
-
-  if (!readNonEmptyString(contextSnapshot["wakeReason"]) && reason) {
-    contextSnapshot.wakeReason = reason;
-  }
-  if (!readNonEmptyString(contextSnapshot["issueId"]) && issueIdFromPayload) {
-    contextSnapshot.issueId = issueIdFromPayload;
-  }
-  if (!readNonEmptyString(contextSnapshot["taskId"]) && issueIdFromPayload) {
-    contextSnapshot.taskId = issueIdFromPayload;
-  }
-  if (!readNonEmptyString(contextSnapshot["taskKey"]) && taskKey) {
-    contextSnapshot.taskKey = taskKey;
-  }
-  if (!readNonEmptyString(contextSnapshot["commentId"]) && commentIdFromPayload) {
-    contextSnapshot.commentId = commentIdFromPayload;
-  }
-  if (!readNonEmptyString(contextSnapshot["wakeCommentId"]) && wakeCommentId) {
-    contextSnapshot.wakeCommentId = wakeCommentId;
-  }
-  if (!readNonEmptyString(contextSnapshot["wakeSource"]) && source) {
-    contextSnapshot.wakeSource = source;
-  }
-  if (!readNonEmptyString(contextSnapshot["wakeTriggerDetail"]) && triggerDetail) {
-    contextSnapshot.wakeTriggerDetail = triggerDetail;
-  }
-
-  return {
-    contextSnapshot,
-    issueIdFromPayload,
-    commentIdFromPayload,
-    taskKey,
-    wakeCommentId,
-  };
-}
-
-function mergeCoalescedContextSnapshot(
-  existingRaw: unknown,
-  incoming: Record<string, unknown>,
-) {
-  const existing = parseObject(existingRaw);
-  const merged: Record<string, unknown> = {
-    ...existing,
-    ...incoming,
-  };
-  const commentId = deriveCommentId(incoming, null);
-  if (commentId) {
-    merged.commentId = commentId;
-    merged.wakeCommentId = commentId;
-  }
-  return merged;
-}
+// Re-export the functions that are part of the public API of this module
+export {
+  compressToolOutput,
+  deriveTaskKeyWithHeartbeatFallback,
+  shouldResetTaskSessionForWake,
+  formatRuntimeWorkspaceWarningLog,
+  buildExplicitResumeSessionOverride,
+} from "./heartbeat-types.js";
 
 function runTaskKey(run: typeof heartbeatRuns.$inferSelect) {
   return deriveTaskKey(run.contextSnapshot as Record<string, unknown> | null, null);
 }
 
-function isSameTaskScope(left: string | null, right: string | null) {
-  return (left ?? null) === (right ?? null);
-}
-
-// ── Tool Output Compression ────────────────────────────────────────────────────
-//
-// Limits verbose tool results before they enter the agent context window.
-// Strips metadata noise, retains the actionable content, and truncates to
-// MAX_TOOL_OUTPUT_CHARS with a "[truncated]" marker if the result is too long.
-
-const MAX_TOOL_OUTPUT_CHARS = 2000;
-
-/**
- * Compress a tool's raw output string to reduce context window consumption.
- *
- * Rules per tool type:
- *   - issue_comments / list_issue_comments: strip metadata fields, keep author + body + timestamp
- *   - read_file / cat: keep only first/changed sections (heuristic: first 1500 chars)
- *   - http_request / api_call: extract only top-level value fields, drop nested metadata
- *   - All: truncate total length to MAX_TOOL_OUTPUT_CHARS
- */
-export function compressToolOutput(toolName: string, output: string): string {
-  if (!output || output.length === 0) return output;
-
-  const lowerTool = toolName.toLowerCase();
-  let compressed = output;
-
-  // Issue comments: strip metadata, keep author + content + timestamp
-  if (lowerTool.includes("comment") || lowerTool.includes("issue_comment")) {
-    try {
-      const parsed = JSON.parse(output) as unknown;
-      const items = Array.isArray(parsed) ? parsed : [parsed];
-      const stripped = items.map((item: unknown) => {
-        if (typeof item !== "object" || item === null) return item;
-        const r = item as Record<string, unknown>;
-        return {
-          author: r.author ?? r.authorName ?? r.user ?? r.login ?? null,
-          body: r.body ?? r.content ?? r.text ?? null,
-          createdAt: r.createdAt ?? r.created_at ?? r.timestamp ?? null,
-        };
-      });
-      compressed = JSON.stringify(stripped);
-    } catch {
-      // Not JSON - leave as-is for truncation below
-    }
-  }
-
-  // File reads: keep only first 1500 chars (changed sections heuristic)
-  if (lowerTool.includes("read_file") || lowerTool === "cat" || lowerTool.includes("file_read")) {
-    compressed = compressed.slice(0, 1500);
-    if (output.length > 1500) {
-      compressed += "\n...[file truncated - showing first 1500 chars]";
-    }
-  }
-
-  // API / HTTP responses: extract top-level string/number fields, drop nested objects
-  if (lowerTool.includes("http") || lowerTool.includes("api_call") || lowerTool.includes("fetch")) {
-    try {
-      const parsed = JSON.parse(output) as unknown;
-      if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
-        const flat: Record<string, unknown> = {};
-        for (const [key, val] of Object.entries(parsed as Record<string, unknown>)) {
-          if (typeof val === "string" || typeof val === "number" || typeof val === "boolean") {
-            flat[key] = val;
-          }
-        }
-        compressed = JSON.stringify(flat);
-      }
-    } catch {
-      // Not JSON
-    }
-  }
-
-  // Final: hard cap at MAX_TOOL_OUTPUT_CHARS
-  if (compressed.length > MAX_TOOL_OUTPUT_CHARS) {
-    compressed = compressed.slice(0, MAX_TOOL_OUTPUT_CHARS) + " [truncated]";
-  }
-
-  return compressed;
-}
-
-function isTrackedLocalChildProcessAdapter(adapterType: string) {
-  return SESSIONED_LOCAL_ADAPTERS.has(adapterType);
-}
-
-// A positive liveness check means some process currently owns the PID.
-// On Linux, PIDs can be recycled, so this is a best-effort signal rather
-// than proof that the original child is still alive.
-function isProcessAlive(pid: number | null | undefined) {
-  if (typeof pid !== "number" || !Number.isInteger(pid) || pid <= 0) return false;
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (error) {
-    const code = (error as NodeJS.ErrnoException | undefined)?.code;
-    if (code === "EPERM") return true;
-    if (code === "ESRCH") return false;
-    return false;
-  }
-}
-
-function truncateDisplayId(value: string | null | undefined, max = 128) {
-  if (!value) return null;
-  return value.length > max ? value.slice(0, max) : value;
-}
-
-function normalizeAgentNameKey(value: string | null | undefined) {
-  if (typeof value !== "string") return null;
-  const normalized = value.trim().toLowerCase();
-  return normalized.length > 0 ? normalized : null;
-}
-
-const defaultSessionCodec: AdapterSessionCodec = {
-  deserialize(raw: unknown) {
-    const asObj = parseObject(raw);
-    if (Object.keys(asObj).length > 0) return asObj;
-    const sessionId = readNonEmptyString((raw as Record<string, unknown> | null)?.sessionId);
-    if (sessionId) return { sessionId };
-    return null;
-  },
-  serialize(params: Record<string, unknown> | null) {
-    if (!params || Object.keys(params).length === 0) return null;
-    return params;
-  },
-  getDisplayId(params: Record<string, unknown> | null) {
-    return readNonEmptyString(params?.sessionId);
-  },
-};
-
-function getAdapterSessionCodec(adapterType: string) {
-  const adapter = getServerAdapter(adapterType);
-  return adapter.sessionCodec ?? defaultSessionCodec;
-}
-
-function normalizeSessionParams(params: Record<string, unknown> | null | undefined) {
-  if (!params) return null;
-  return Object.keys(params).length > 0 ? params : null;
-}
-
-function resolveNextSessionState(input: {
-  codec: AdapterSessionCodec;
-  adapterResult: AdapterExecutionResult;
-  previousParams: Record<string, unknown> | null;
-  previousDisplayId: string | null;
-  previousLegacySessionId: string | null;
-}) {
-  const { codec, adapterResult, previousParams, previousDisplayId, previousLegacySessionId } = input;
-
-  if (adapterResult.clearSession) {
-    return {
-      params: null as Record<string, unknown> | null,
-      displayId: null as string | null,
-      legacySessionId: null as string | null,
-    };
-  }
-
-  const explicitParams = adapterResult.sessionParams;
-  const hasExplicitParams = adapterResult.sessionParams !== undefined;
-  const hasExplicitSessionId = adapterResult.sessionId !== undefined;
-  const explicitSessionId = readNonEmptyString(adapterResult.sessionId);
-  const hasExplicitDisplay = adapterResult.sessionDisplayId !== undefined;
-  const explicitDisplayId = readNonEmptyString(adapterResult.sessionDisplayId);
-  const shouldUsePrevious = !hasExplicitParams && !hasExplicitSessionId && !hasExplicitDisplay;
-
-  const candidateParams =
-    hasExplicitParams
-      ? explicitParams
-      : hasExplicitSessionId
-        ? (explicitSessionId ? { sessionId: explicitSessionId } : null)
-        : previousParams;
-
-  const serialized = normalizeSessionParams(codec.serialize(normalizeSessionParams(candidateParams) ?? null));
-  const deserialized = normalizeSessionParams(codec.deserialize(serialized));
-
-  const displayId = truncateDisplayId(
-    explicitDisplayId ??
-      (codec.getDisplayId ? codec.getDisplayId(deserialized) : null) ??
-      readNonEmptyString(deserialized?.sessionId) ??
-      (shouldUsePrevious ? previousDisplayId : null) ??
-      explicitSessionId ??
-      (shouldUsePrevious ? previousLegacySessionId : null),
-  );
-
-  const legacySessionId =
-    explicitSessionId ??
-    readNonEmptyString(deserialized?.sessionId) ??
-    displayId ??
-    (shouldUsePrevious ? previousLegacySessionId : null);
-
-  return {
-    params: serialized,
-    displayId,
-    legacySessionId,
-  };
-}
 
 /**
  * Classify the output token category for a heartbeat run based on context.
@@ -1275,26 +730,7 @@ export function heartbeatService(db: Db) {
     agent: typeof agents.$inferSelect,
     taskKey: string | null,
   ) {
-    if (taskKey) {
-      const codec = getAdapterSessionCodec(agent.adapterType);
-      const existingTaskSession = await getTaskSession(
-        agent.companyId,
-        agent.id,
-        agent.adapterType,
-        taskKey,
-      );
-      const parsedParams = normalizeSessionParams(
-        codec.deserialize(existingTaskSession?.sessionParamsJson ?? null),
-      );
-      return truncateDisplayId(
-        existingTaskSession?.sessionDisplayId ??
-          (codec.getDisplayId ? codec.getDisplayId(parsedParams) : null) ??
-          readNonEmptyString(parsedParams?.sessionId),
-      );
-    }
-
-    const runtimeForRun = await getRuntimeState(agent.id);
-    return runtimeForRun?.sessionId ?? null;
+    return resolveSessionBeforeForWakeupModule(db, agent, taskKey);
   }
 
   async function resolveExplicitResumeSessionOverride(
@@ -1302,50 +738,7 @@ export function heartbeatService(db: Db) {
     payload: Record<string, unknown> | null,
     taskKey: string | null,
   ) {
-    const resumeFromRunId = readNonEmptyString(payload?.resumeFromRunId);
-    if (!resumeFromRunId) return null;
-
-    const resumeRun = await db
-      .select({
-        id: heartbeatRuns.id,
-        contextSnapshot: heartbeatRuns.contextSnapshot,
-        sessionIdBefore: heartbeatRuns.sessionIdBefore,
-        sessionIdAfter: heartbeatRuns.sessionIdAfter,
-      })
-      .from(heartbeatRuns)
-      .where(
-        and(
-          eq(heartbeatRuns.id, resumeFromRunId),
-          eq(heartbeatRuns.companyId, agent.companyId),
-          eq(heartbeatRuns.agentId, agent.id),
-        ),
-      )
-      .then((rows) => rows[0] ?? null);
-    if (!resumeRun) return null;
-
-    const resumeContext = parseObject(resumeRun.contextSnapshot);
-    const resumeTaskKey = deriveTaskKey(resumeContext, null) ?? taskKey;
-    const resumeTaskSession = resumeTaskKey
-      ? await getTaskSession(agent.companyId, agent.id, agent.adapterType, resumeTaskKey)
-      : null;
-    const sessionCodec = getAdapterSessionCodec(agent.adapterType);
-    const sessionOverride = buildExplicitResumeSessionOverride({
-      resumeFromRunId,
-      resumeRunSessionIdBefore: resumeRun.sessionIdBefore,
-      resumeRunSessionIdAfter: resumeRun.sessionIdAfter,
-      taskSession: resumeTaskSession,
-      sessionCodec,
-    });
-    if (!sessionOverride) return null;
-
-    return {
-      resumeFromRunId,
-      taskKey: resumeTaskKey,
-      issueId: readNonEmptyString(resumeContext.issueId),
-      taskId: readNonEmptyString(resumeContext.taskId) ?? readNonEmptyString(resumeContext.issueId),
-      sessionDisplayId: sessionOverride.sessionDisplayId,
-      sessionParams: sessionOverride.sessionParams,
-    };
+    return resolveExplicitResumeSessionOverrideModule(db, agent, payload, taskKey);
   }
 
   async function resolveWorkspaceForRun(
@@ -1882,55 +1275,10 @@ export function heartbeatService(db: Db) {
     return queued;
   }
 
-  function parseHeartbeatPolicy(agent: typeof agents.$inferSelect) {
-    const runtimeConfig = parseObject(agent.runtimeConfig);
-    const heartbeat = parseObject(runtimeConfig.heartbeat);
-
-    return {
-      enabled: asBoolean(heartbeat.enabled, true),
-      intervalSec: Math.max(0, asNumber(heartbeat.intervalSec, 0)),
-      wakeOnDemand: asBoolean(heartbeat.wakeOnDemand ?? heartbeat.wakeOnAssignment ?? heartbeat.wakeOnOnDemand ?? heartbeat.wakeOnAutomation, true),
-      maxConcurrentRuns: normalizeMaxConcurrentRuns(heartbeat.maxConcurrentRuns),
-    };
-  }
+  const parseHeartbeatPolicy = parseHeartbeatPolicyModule;
 
   async function countRunningRunsForAgent(agentId: string) {
-    const [{ count }] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(heartbeatRuns)
-      .where(and(eq(heartbeatRuns.agentId, agentId), eq(heartbeatRuns.status, "running")));
-    return Number(count ?? 0);
-  }
-
-  async function countAgentRunsToday(agentId: string): Promise<number> {
-    const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-    const [{ count }] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(heartbeatRuns)
-      .where(
-        and(
-          eq(heartbeatRuns.agentId, agentId),
-          gte(heartbeatRuns.createdAt, startOfDay),
-        ),
-      );
-    return Number(count ?? 0);
-  }
-
-  async function countAgentRunsForIssueToday(agentId: string, issueId: string): Promise<number> {
-    const now = new Date();
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-    const [{ count }] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(heartbeatRuns)
-      .where(
-        and(
-          eq(heartbeatRuns.agentId, agentId),
-          gte(heartbeatRuns.createdAt, startOfDay),
-          sql`${heartbeatRuns.contextSnapshot} ->> 'issueId' = ${issueId}`,
-        ),
-      );
-    return Number(count ?? 0);
+    return countRunningRunsForAgentModule(db, agentId);
   }
 
   async function checkIterationLimits(
@@ -1938,55 +1286,7 @@ export function heartbeatService(db: Db) {
     companyId: string,
     issueId: string | null,
   ): Promise<string | null> {
-    // Check per-day limit for agent
-    const dailyCount = await countAgentRunsToday(agentId);
-    if (dailyCount >= DEFAULT_ITERATION_LIMITS.perDay) {
-      await pauseAgentForIterationLimit(agentId, companyId, "daily");
-      return `Agent exceeded daily iteration limit (${DEFAULT_ITERATION_LIMITS.perDay} runs/day)`;
-    }
-
-    // Check per-task limit (runs against same issue today)
-    if (issueId) {
-      const taskCount = await countAgentRunsForIssueToday(agentId, issueId);
-      if (taskCount >= DEFAULT_ITERATION_LIMITS.perTask) {
-        await pauseAgentForIterationLimit(agentId, companyId, "per_task");
-        return `Agent exceeded per-task iteration limit (${DEFAULT_ITERATION_LIMITS.perTask} runs/task/day)`;
-      }
-    }
-
-    return null;
-  }
-
-  async function pauseAgentForIterationLimit(agentId: string, companyId: string, kind: "daily" | "per_task") {
-    const now = new Date();
-    await db
-      .update(agents)
-      .set({
-        status: "paused",
-        pauseReason: "iteration_limit",
-        pausedAt: now,
-        updatedAt: now,
-      })
-      .where(
-        and(
-          eq(agents.id, agentId),
-          inArray(agents.status, ["active", "idle", "running", "error"]),
-        ),
-      );
-
-    await logActivity(db, {
-      companyId,
-      actorType: "system",
-      actorId: "iteration_guard",
-      action: "agent.paused",
-      entityType: "agent",
-      entityId: agentId,
-      details: {
-        reason: "iteration_limit",
-        kind,
-        limit: kind === "daily" ? DEFAULT_ITERATION_LIMITS.perDay : DEFAULT_ITERATION_LIMITS.perTask,
-      },
-    });
+    return checkIterationLimitsModule(db, agentId, companyId, issueId);
   }
 
   async function claimQueuedRun(run: typeof heartbeatRuns.$inferSelect) {
@@ -2226,113 +1526,21 @@ export function heartbeatService(db: Db) {
   }
 
   async function reapOrphanedRuns(opts?: { staleThresholdMs?: number }) {
-    const staleThresholdMs = opts?.staleThresholdMs ?? 0;
-    const now = new Date();
-
-    // Find all runs stuck in "running" state (queued runs are legitimately waiting; resumeQueuedRuns handles them)
-    const activeRuns = await db
-      .select({
-        run: heartbeatRuns,
-        adapterType: agents.adapterType,
-      })
-      .from(heartbeatRuns)
-      .innerJoin(agents, eq(heartbeatRuns.agentId, agents.id))
-      .where(eq(heartbeatRuns.status, "running"));
-
-    const reaped: string[] = [];
-
-    for (const { run, adapterType } of activeRuns) {
-      if (runningProcesses.has(run.id) || activeRunExecutions.has(run.id)) continue;
-
-      // Apply staleness threshold to avoid false positives
-      if (staleThresholdMs > 0) {
-        const refTime = run.updatedAt ? new Date(run.updatedAt).getTime() : 0;
-        if (now.getTime() - refTime < staleThresholdMs) continue;
-      }
-
-      const tracksLocalChild = isTrackedLocalChildProcessAdapter(adapterType);
-      if (tracksLocalChild && run.processPid && isProcessAlive(run.processPid)) {
-        if (run.errorCode !== DETACHED_PROCESS_ERROR_CODE) {
-          const detachedMessage = `Lost in-memory process handle, but child pid ${run.processPid} is still alive`;
-          const detachedRun = await setRunStatus(run.id, "running", {
-            error: detachedMessage,
-            errorCode: DETACHED_PROCESS_ERROR_CODE,
-          });
-          if (detachedRun) {
-            await appendRunEvent(detachedRun, await nextRunEventSeq(detachedRun.id), {
-              eventType: "lifecycle",
-              stream: "system",
-              level: "warn",
-              message: detachedMessage,
-              payload: {
-                processPid: run.processPid,
-              },
-            });
-          }
-        }
-        continue;
-      }
-
-      const shouldRetry = tracksLocalChild && !!run.processPid && (run.processLossRetryCount ?? 0) < 1;
-      const baseMessage = run.processPid
-        ? `Process lost -- child pid ${run.processPid} is no longer running`
-        : "Process lost -- server may have restarted";
-
-      let finalizedRun = await setRunStatus(run.id, "failed", {
-        error: shouldRetry ? `${baseMessage}; retrying once` : baseMessage,
-        errorCode: "process_lost",
-        finishedAt: now,
-      });
-      await setWakeupStatus(run.wakeupRequestId, "failed", {
-        finishedAt: now,
-        error: shouldRetry ? `${baseMessage}; retrying once` : baseMessage,
-      });
-      if (!finalizedRun) finalizedRun = await getRun(run.id);
-      if (!finalizedRun) continue;
-
-      let retriedRun: typeof heartbeatRuns.$inferSelect | null = null;
-      if (shouldRetry) {
-        const agent = await getAgent(run.agentId);
-        if (agent) {
-          retriedRun = await enqueueProcessLossRetry(finalizedRun, agent, now);
-        }
-      } else {
-        await releaseIssueExecutionAndPromote(finalizedRun);
-      }
-
-      await appendRunEvent(finalizedRun, await nextRunEventSeq(finalizedRun.id), {
-        eventType: "lifecycle",
-        stream: "system",
-        level: "error",
-        message: shouldRetry
-          ? `${baseMessage}; queued retry ${retriedRun?.id ?? ""}`.trim()
-          : baseMessage,
-        payload: {
-          ...(run.processPid ? { processPid: run.processPid } : {}),
-          ...(retriedRun ? { retryRunId: retriedRun.id } : {}),
-        },
-      });
-
-      await finalizeAgentStatus(run.agentId, "failed");
-      await startNextQueuedRunForAgent(run.agentId);
-      runningProcesses.delete(run.id);
-      reaped.push(run.id);
-    }
-
-    if (reaped.length > 0) {
-      logger.warn({ reapedCount: reaped.length, runIds: reaped }, "reaped orphaned heartbeat runs");
-    }
-    return { reaped: reaped.length, runIds: reaped };
+    return reapOrphanedRunsModule(db, activeRunExecutions, {
+      appendRunEvent,
+      nextRunEventSeq,
+      enqueueProcessLossRetry,
+      releaseIssueExecutionAndPromote,
+      finalizeAgentStatus,
+      startNextQueuedRunForAgent,
+      setRunStatus,
+      setWakeupStatus,
+      getRun,
+    }, opts);
   }
 
   async function resumeQueuedRuns() {
-    const queuedRuns = await db
-      .select({ agentId: heartbeatRuns.agentId })
-      .from(heartbeatRuns)
-      .where(eq(heartbeatRuns.status, "queued"));
-
-    const agentIds = [...new Set(queuedRuns.map((r) => r.agentId))];
-    await Promise.all(agentIds.map((agentId) => startNextQueuedRunForAgent(agentId)));
+    return resumeQueuedRunsModule(db, startNextQueuedRunForAgent);
   }
 
   async function updateRuntimeState(
@@ -2343,51 +1551,12 @@ export function heartbeatService(db: Db) {
     normalizedUsage?: UsageTotals | null,
   ) {
     await ensureRuntimeState(agent);
-    const usage = normalizedUsage ?? normalizeUsageTotals(result.usage);
-    const inputTokens = usage?.inputTokens ?? 0;
-    const outputTokens = usage?.outputTokens ?? 0;
-    const cachedInputTokens = usage?.cachedInputTokens ?? 0;
-    const billingType = normalizeLedgerBillingType(result.billingType);
-    const additionalCostCents = normalizeBilledCostCents(result.costUsd, billingType);
-    const hasTokenUsage = inputTokens > 0 || outputTokens > 0 || cachedInputTokens > 0;
-    const provider = result.provider ?? "unknown";
-    const biller = resolveLedgerBiller(result);
-    const ledgerScope = await resolveLedgerScopeForRun(db, agent.companyId, run);
-
-    await db
-      .update(agentRuntimeState)
-      .set({
-        adapterType: agent.adapterType,
-        sessionId: session.legacySessionId,
-        lastRunId: run.id,
-        lastRunStatus: run.status,
-        lastError: result.errorMessage ?? null,
-        totalInputTokens: sql`${agentRuntimeState.totalInputTokens} + ${inputTokens}`,
-        totalOutputTokens: sql`${agentRuntimeState.totalOutputTokens} + ${outputTokens}`,
-        totalCachedInputTokens: sql`${agentRuntimeState.totalCachedInputTokens} + ${cachedInputTokens}`,
-        totalCostCents: sql`${agentRuntimeState.totalCostCents} + ${additionalCostCents}`,
-        updatedAt: new Date(),
-      })
-      .where(eq(agentRuntimeState.agentId, agent.id));
-
-    if (additionalCostCents > 0 || hasTokenUsage) {
-      const costs = costService(db, budgetHooks);
-      await costs.createEvent(agent.companyId, {
-        heartbeatRunId: run.id,
-        agentId: agent.id,
-        issueId: ledgerScope.issueId,
-        projectId: ledgerScope.projectId,
-        provider,
-        biller,
-        billingType,
-        model: result.model ?? "unknown",
-        inputTokens,
-        cachedInputTokens,
-        outputTokens,
-        costCents: additionalCostCents,
-        occurredAt: new Date(),
-      });
-    }
+    await updateRuntimeStateModule(db, agent, run, {
+      result,
+      session,
+      normalizedUsage,
+      budgetHooks,
+    });
   }
 
   async function startNextQueuedRunForAgent(agentId: string) {
@@ -3024,554 +2193,35 @@ export function heartbeatService(db: Db) {
     }
 
     // Inject session state and morning briefing based on context tier
-    const contextTier = classifyContextTier(context);
-    context.ironworksContextTier = contextTier;
-    try {
-      if (contextTier === "minimal") {
-        // Minimal: session state + current issue title only
-        const sessionState = await getLatestSessionState(db, agent.id);
-        if (sessionState) {
-          context.ironworksSessionState = {
-            lastAction: sessionState.lastAction,
-            pendingWork: sessionState.pendingWork,
-          };
-        }
-      } else if (contextTier === "standard" || contextTier === "full") {
-        // Standard and full: inject the morning briefing
-        const briefing = await buildMorningBriefing(db, agent.id, agent.companyId);
-        if (briefing) {
-          context.ironworksMorningBriefing = briefing;
-        }
-      }
-    } catch (err) {
-      logger.warn({ err, agentId: agent.id }, "failed to build session context for run");
-    }
+    await injectSessionContext(db, context, agent.id);
 
-    // Inject recent channel messages so agents stay aware of team activity.
-    // Uses token-aware priority ordering (Feature 5 - Phase 8).
-    // CEO reads the #company channel. All others read their department channel.
-    // Failures are non-fatal - never block agent work.
-    try {
-      const CHANNEL_TOKEN_BUDGET = 2000;
-      const agentRoleLower = (agent.role ?? "").toLowerCase();
-      const isCeo = /\b(ceo|chief executive)\b/.test(agentRoleLower);
-      if (isCeo) {
-        const companyChannel = await findCompanyChannel(db, agent.companyId);
-        if (companyChannel) {
-          const msgs = await getHighSignalMessages(db, companyChannel.id, agent.id, CHANNEL_TOKEN_BUDGET);
-          if (msgs.length > 0) {
-            context.ironworksCompanyChannelUpdates = msgs.map((m) => ({
-              author: m.authorAgentId ?? m.authorUserId ?? "system",
-              body: m.body,
-              type: m.messageType,
-              at: m.createdAt,
-            }));
-          }
-        }
-      } else {
-        const deptChannel = await findAgentDepartmentChannel(db, agent.companyId, agent.department ?? null);
-        if (deptChannel) {
-          const msgs = await getHighSignalMessages(db, deptChannel.id, agent.id, CHANNEL_TOKEN_BUDGET);
-          if (msgs.length > 0) {
-            context.ironworksTeamChannelUpdates = msgs.map((m) => ({
-              author: m.authorAgentId ?? m.authorUserId ?? "system",
-              body: m.body,
-              type: m.messageType,
-              at: m.createdAt,
-            }));
-          }
-        }
-      }
-    } catch (err) {
-      logger.debug({ err, agentId: agent.id }, "channel context injection failed, skipping");
-    }
-
-    // Phase 8 - Feature 6: Private Scratchpad instruction.
-    // Reinforce concise posting discipline in the context assembly.
-    // Agents post to channels by including [CHANNEL #name] blocks in their output.
-    context.ironworksChannelPosting = `You can post messages to team channels by including this format in your response:
-
-[CHANNEL #company] Your message here
-[CHANNEL #engineering] Your message here
-[CHANNEL #operations] Your message here
-
-Use channels to:
-- Share status updates on your current work
-- Respond to @mentions from teammates
-- Coordinate with other agents on cross-functional tasks
-- Report blockers or request help
-- Announce completed deliverables
-
-Keep messages concise and substantive. Do not post empty status updates. If you have nothing new to report, do not post.`;
-
-    // Nolan Integration REQ-04: Inject confidence tagging instructions.
-    context.ironworksConfidenceTagging = CONFIDENCE_TAGGING_PROMPT;
-
-    // Nolan Integration REQ-03: Inject quality reference examples from agent memory.
-    try {
-      const qualityExamples = await getQualityExamples(db, agent.id);
-      if (qualityExamples.good.length > 0 || qualityExamples.bad.length > 0) {
-        const sections: string[] = ["## Quality Reference Examples"];
-        if (qualityExamples.good.length > 0) {
-          sections.push("### Good Examples (emulate these):");
-          for (const ex of qualityExamples.good) {
-            sections.push(`- ${ex}`);
-          }
-        }
-        if (qualityExamples.bad.length > 0) {
-          sections.push("### Bad Examples (avoid these patterns):");
-          for (const ex of qualityExamples.bad) {
-            sections.push(`- ${ex}`);
-          }
-        }
-        context.ironworksQualityExamples = sections.join("\n");
-      }
-    } catch (err) {
-      logger.debug({ err, agentId: agent.id }, "quality examples injection failed, skipping");
-    }
-
-    // Phase 8 - Feature 8: Conversation Replay for Onboarding.
-    // If the agent has never posted to any channel, inject a briefing of their
-    // department/company channel so they can onboard quickly.
-    try {
-      const [agentPostCount] = await db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(channelMessages)
-        .where(eq(channelMessages.authorAgentId, agent.id));
-      const isNewToChannels = Number(agentPostCount?.count ?? 0) === 0;
-
-      if (isNewToChannels) {
-        const agentRoleLower = (agent.role ?? "").toLowerCase();
-        const isCeo = /\b(ceo|chief executive)\b/.test(agentRoleLower);
-        const targetChannel = isCeo
-          ? await findCompanyChannel(db, agent.companyId)
-          : await findAgentDepartmentChannel(db, agent.companyId, agent.department ?? null);
-
-        if (targetChannel) {
-          const replay = await generateOnboardingReplay(db, targetChannel.id);
-          if (replay.length > 0) {
-            context.ironworksOnboardingReplay = replay;
-          }
-        }
-      }
-    } catch (err) {
-      logger.debug({ err, agentId: agent.id }, "onboarding replay injection failed, skipping");
-    }
-
-    // Inject pending @mentions as high-priority context so agents respond to
-    // teammates who tagged them. Failures are non-fatal.
-    try {
-      const mentions = await getPendingMentions(db, agent.id, agent.companyId);
-      if (mentions.length > 0) {
-        context.ironworksPendingMentions = mentions.map((m) => {
-          // LLM01-B: Sanitize raw mention body before injecting into agent context.
-          const safeBody = sanitizeForPrompt(m.body ?? "", PROMPT_MAX_LENGTHS.comment);
-          return {
-            channel: `#${m.channelName}`,
-            from: m.mentionedByName,
-            body: safeBody,
-            at: m.createdAt,
-            instruction: `You were mentioned in #${m.channelName} by ${m.mentionedByName}: "${safeBody}". Please respond in that channel.`,
-          };
-        });
-      }
-    } catch (err) {
-      logger.debug({ err, agentId: agent.id }, "pending mentions injection failed, skipping");
-    }
-
-    // Inject pending deliberations so agents respond in parallel without waiting.
-    // Failures are non-fatal.
-    try {
-      const pendingDeliberations = await getPendingDeliberations(db, agent.id, agent.companyId);
-      if (pendingDeliberations.length > 0) {
-        context.ironworksPendingDeliberations = pendingDeliberations.map((d) => ({
-          deliberationId: d.deliberationId,
-          channel: `#${d.channelName}`,
-          topic: d.topic,
-          instruction: `You are invited to a deliberation on "${d.topic}". Post your position as a reply in #${d.channelName}.`,
-        }));
-      }
-    } catch (err) {
-      logger.debug({ err, agentId: agent.id }, "pending deliberations injection failed, skipping");
-    }
-
-    // Inject channel health status for department heads if the channel is not healthy.
-    // Failures are non-fatal.
-    try {
-      const agentRoleLower = (agent.role ?? "").toLowerCase();
-      const isDeptHead = /\b(head|director|vp|lead|chief|manager)\b/.test(agentRoleLower);
-      if (isDeptHead && agent.department) {
-        const deptChannel = await findAgentDepartmentChannel(db, agent.companyId, agent.department);
-        if (deptChannel) {
-          const health = await channelHealth(db, deptChannel.id);
-          if (health.status !== "healthy") {
-            context.ironworksChannelHealth = {
-              channel: `#${agent.department}`,
-              status: health.status,
-              messagesLast48h: health.messagesLast48h,
-              decisionsLast7d: health.decisionsLast7d,
-              circularTopicScore: health.circularTopicScore,
-              advisory:
-                health.status === "quiet"
-                  ? `Your #${agent.department} channel has been quiet. Consider posting a status update.`
-                  : health.status === "noisy"
-                    ? `Your #${agent.department} channel is very active but has few decisions. Consider driving toward a resolution.`
-                    : `Your #${agent.department} channel appears stalled on the same topics. Consider making a decision to move forward.`,
-            };
-          }
-        }
-      }
-    } catch (err) {
-      logger.debug({ err, agentId: agent.id }, "channel health injection failed, skipping");
-    }
-
-    // Phase 8 - Feature 10: Cognitive Load Balancing.
-    // VP HR gets a load report listing overloaded and underutilized agents.
-    try {
-      const isVpHr = /\b(vp|vice president|head|director)\b.*\b(hr|human resources|people)\b|\b(hr|human resources|people)\b.*\b(vp|vice president|head|director)\b/i.test(agent.role ?? "");
-      if (isVpHr) {
-        const allAgents = await db
-          .select({ id: agents.id, name: agents.name })
-          .from(agents)
-          .where(and(eq(agents.companyId, agent.companyId), eq(agents.status, "active")));
-
-        const loadResults = await Promise.all(
-          allAgents.map(async (a) => {
-            const load = await agentCognitiveLoad(db, a.id);
-            return { name: a.name, ...load };
-          }),
-        );
-
-        const overloaded = loadResults.filter((r) => r.loadScore > 80);
-        const underutilized = loadResults.filter((r) => r.loadScore < 20);
-
-        if (overloaded.length > 0 || underutilized.length > 0) {
-          context.ironworksCognitiveLoadReport = {
-            overloaded: overloaded.map((r) => ({ name: r.name, score: r.loadScore, openIssues: r.openIssues })),
-            underutilized: underutilized.map((r) => ({ name: r.name, score: r.loadScore, openIssues: r.openIssues })),
-            advisory: overloaded.length > 0
-              ? `${overloaded.map((r) => r.name).join(", ")} appear overloaded. Consider redistributing tasks.`
-              : `${underutilized.map((r) => r.name).join(", ")} have capacity for more work.`,
-          };
-        }
-      }
-    } catch (err) {
-      logger.debug({ err, agentId: agent.id }, "cognitive load report injection failed, skipping");
-    }
-
-    // Every 5th run: check for context drift and inject refocus prompt if detected.
-    // Uses a modular check on total completed/finalized runs to spread load.
-    try {
-      const [runCountRow] = await db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(heartbeatRuns)
-        .where(
-          and(
-            eq(heartbeatRuns.agentId, agent.id),
-            eq(heartbeatRuns.companyId, agent.companyId),
-          ),
-        );
-      const totalRuns = Number(runCountRow?.count ?? 0);
-      if (totalRuns % 5 === 0 && totalRuns > 0) {
-        const currentObjective =
-          typeof context.issueTitle === "string" ? context.issueTitle :
-          typeof context.taskKey === "string" ? context.taskKey :
-          typeof context.wakeReason === "string" ? context.wakeReason : "";
-        if (currentObjective) {
-          const driftResult = await detectContextDrift(db, agent.id, currentObjective);
-          if (driftResult.driftDetected && driftResult.recommendation) {
-            context.ironworksDriftWarning = driftResult.recommendation;
-          }
-        }
-      }
-    } catch (err) {
-      logger.debug({ err, agentId: agent.id }, "context drift check failed, skipping");
-    }
-
-    // Agent Self-Awareness of Context Limits
-    // If the agent has been consuming a significant fraction of the model's context
-    // window in recent runs, inject an advisory note to encourage concise responses.
-    try {
-      const agentRuntimeSnapshot = await getRuntimeState(agent.id);
-      if (agentRuntimeSnapshot) {
-        // Estimate last-run input from stored cumulative total and run count
-        const totalInput = Number(agentRuntimeSnapshot.totalInputTokens ?? 0);
-        const runHistory = await db
-          .select({ count: sql<number>`count(*)::int` })
-          .from(heartbeatRuns)
-          .where(
-            and(
-              eq(heartbeatRuns.agentId, agent.id),
-              eq(heartbeatRuns.companyId, agent.companyId),
-              eq(heartbeatRuns.status, "succeeded"),
-            ),
-          );
-        const completedRuns = Number(runHistory[0]?.count ?? 1);
-        const avgInputPerRun = completedRuns > 0 ? Math.round(totalInput / completedRuns) : 0;
-
-        // Default context window is 200k for Claude models
-        const MODEL_DEFAULT_CONTEXT = 200_000;
-        const utilizationPct = MODEL_DEFAULT_CONTEXT > 0
-          ? Math.round((avgInputPerRun / MODEL_DEFAULT_CONTEXT) * 100)
-          : 0;
-
-        if (utilizationPct > 70) {
-          context.ironworksContextNote = `Note: Your context window is ${utilizationPct}% full. Be concise in your responses. Focus on the most important information.`;
-        }
-      }
-    } catch (err) {
-      logger.debug({ err, agentId: agent.id }, "context utilization check failed, skipping");
-    }
-
-    // ── Task 5: Task-Type Prompt Template Classification ─────────────────────
-    // Classify the current task from issue labels/title and store the template
-    // type in context for downstream use (token-analytics Task 7 reads it).
-    try {
-      if (issueId && issueContext) {
-        // Fetch label names for this issue
-        const issueLabelRows = await db
-          .select({ name: labels.name })
-          .from(issueLabels)
-          .innerJoin(labels, eq(issueLabels.labelId, labels.id))
-          .where(eq(issueLabels.issueId, issueId));
-        const labelNames = issueLabelRows.map((r) => r.name);
-        const taskType = classifyTaskType(issueContext.title ?? "", labelNames);
-        context.ironworksTaskType = taskType;
-        // Expose the template parameters so adapters can respect them
-        context.ironworksPromptTemplate = PROMPT_TEMPLATES[taskType];
-      } else if (!issueId) {
-        // Timer/on-demand wake with no issue = routine check
-        context.ironworksTaskType = "routine_check";
-        context.ironworksPromptTemplate = PROMPT_TEMPLATES.routine_check;
-      }
-    } catch (err) {
-      logger.debug({ err, agentId: agent.id }, "task type classification failed, skipping");
-    }
-
-    // ── Task 4: Agent References Own Documents ───────────────────────────────
-    // Inject the agent's most recent knowledge pages as "Your Recent Documents".
-    // Only for non-routine tasks where the agent might benefit from context.
-    try {
-      const taskType = typeof context.ironworksTaskType === "string" ? context.ironworksTaskType : "routine_check";
-      if (taskType !== "routine_check") {
-        const recentDocs = await db
-          .select({
-            title: knowledgePages.title,
-            body: knowledgePages.body,
-          })
-          .from(knowledgePages)
-          .where(
-            and(
-              eq(knowledgePages.agentId, agent.id),
-              eq(knowledgePages.companyId, agent.companyId),
-              sql`${knowledgePages.updatedAt} IS NOT NULL`,
-            ),
-          )
-          .orderBy(desc(knowledgePages.updatedAt))
-          .limit(5);
-
-        if (recentDocs.length > 0) {
-          const docLines = recentDocs.map(
-            (doc) => `- **${doc.title}**: ${doc.body.slice(0, 200)}${doc.body.length > 200 ? "..." : ""}`,
-          );
-          context.ironworksRecentDocuments = `## Your Recent Documents\n${docLines.join("\n")}`;
-        }
-      }
-    } catch (err) {
-      logger.debug({ err, agentId: agent.id }, "agent recent documents injection failed, skipping");
-    }
-
-    // ── Task 9: Batch Similar Tasks ──────────────────────────────────────────
-    // If this run has no specific issue but the agent has multiple queued issues
-    // of the same type, combine a brief summary into the context prompt so the
-    // agent can address several at once and reduce total LLM calls.
-    try {
-      if (!issueId) {
-        // Find queued issues for this agent of the same type as the current task
-        const taskType = typeof context.ironworksTaskType === "string" ? context.ironworksTaskType : null;
-        if (taskType && taskType !== "routine_check") {
-          const queuedIssues = await db
-            .select({
-              id: issues.id,
-              identifier: issues.identifier,
-              title: issues.title,
-            })
-            .from(issues)
-            .where(
-              and(
-                eq(issues.companyId, agent.companyId),
-                eq(issues.assigneeAgentId, agent.id),
-                sql`${issues.status} in ('todo', 'in_progress')`,
-              ),
-            )
-            .orderBy(desc(issues.createdAt))
-            .limit(5);
-
-          if (queuedIssues.length > 1) {
-            const taskList = queuedIssues
-              .map((i, idx) => `${idx + 1}. [${i.identifier ?? i.id.slice(0, 8)}] ${i.title}`)
-              .join("\n");
-            context.ironworksBatchedTasks = [
-              `You have ${queuedIssues.length} similar tasks to address:`,
-              taskList,
-              "Address each briefly and efficiently in this session.",
-            ].join("\n");
-            logger.info(
-              { agentId: agent.id, batchCount: queuedIssues.length, taskType },
-              "[batch-tasks] Batching similar tasks into single run",
-            );
-          }
-        }
-      }
-    } catch (err) {
-      logger.debug({ err, agentId: agent.id }, "batch tasks assembly failed, skipping");
-    }
-
-    // ── Web Research: Auto-inject search results for research tasks ──────────
-    // If the issue title/description contains research keywords, run a web
-    // search and inject the top 3 results into the agent's context.
-    // This is best-effort: if SearXNG is down, the agent continues without it.
-    try {
-      const issueTitle = typeof context.issueTitle === "string" ? context.issueTitle : "";
-      const issueDescription =
-        issueContext && "description" in issueContext && typeof issueContext.description === "string"
-          ? issueContext.description
-          : "";
-      const researchText = `${issueTitle} ${issueDescription}`.trim();
-      if (researchText && isResearchTask(researchText)) {
-        const searchQuery = extractSearchQuery(issueTitle || researchText);
-        const searchResults = await webSearch(searchQuery, 3);
-        if (searchResults.length > 0) {
-          const resultLines = searchResults.map(
-            // LLM01-C: Sanitize raw external web content before injection to prevent
-            // prompt injection attacks embedded in third-party web pages.
-            (r, i) => `${i + 1}. **${r.title}**\n   URL: ${r.url}\n   ${sanitizeForPrompt(r.content.slice(0, 300), 300)}`,
-          );
-          context.ironworksWebResearch = [
-            `## Web Research - ${searchQuery}`,
-            "",
-            ...resultLines,
-          ].join("\n");
-          logger.info(
-            { agentId: agent.id, query: searchQuery, resultCount: searchResults.length },
-            "[web-search] injected web research into agent context",
-          );
-        }
-      }
-    } catch (err) {
-      logger.debug({ err, agentId: agent.id }, "web research injection failed, skipping");
-    }
-
-    // ── Deadline Urgency: inject upcoming deadlines for this agent's issues ──
-    try {
-      const nowForDeadlines = new Date();
-      const urgentCutoff = new Date(nowForDeadlines.getTime() + 24 * 60 * 60 * 1000);
-      const soonCutoff = new Date(nowForDeadlines.getTime() + 72 * 60 * 60 * 1000);
-
-      const assignedWithDeadlines = await db
-        .select({
-          id: issues.id,
-          identifier: issues.identifier,
-          title: issues.title,
-          targetDate: issues.targetDate,
-          status: issues.status,
-        })
-        .from(issues)
-        .where(
-          and(
-            eq(issues.companyId, agent.companyId),
-            eq(issues.assigneeAgentId, agent.id),
-            sql`${issues.status} not in ('done', 'cancelled')`,
-            isNotNull(issues.targetDate),
-          ),
-        )
-        .orderBy(issues.targetDate);
-
-      if (assignedWithDeadlines.length > 0) {
-        const deadlineLines = assignedWithDeadlines.map((issue) => {
-          const td = issue.targetDate!;
-          const diffMs = td.getTime() - nowForDeadlines.getTime();
-          const diffMins = Math.round(diffMs / 60000);
-          const ref = issue.identifier ? `[${issue.identifier}]` : `[${issue.id.slice(0, 8)}]`;
-          if (diffMs < 0) {
-            return `OVERDUE: ${ref} ${issue.title} (was due ${Math.abs(Math.round(diffMs / 86400000))} day(s) ago)`;
-          } else if (td <= urgentCutoff) {
-            return `URGENT: ${ref} ${issue.title} (due in ${Math.round(diffMins / 60)}h)`;
-          } else if (td <= soonCutoff) {
-            return `SOON: ${ref} ${issue.title} (due in ${Math.round(diffMins / 1440)}d)`;
-          } else {
-            return `UPCOMING: ${ref} ${issue.title} (due ${td.toLocaleDateString("en-US", { timeZone: "America/Chicago", month: "short", day: "numeric" })})`;
-          }
-        });
-        context.ironworksUpcomingDeadlines = `You have ${assignedWithDeadlines.length} issues with deadlines:\n${deadlineLines.join("\n")}`;
-      }
-    } catch (err) {
-      logger.debug({ err, agentId: agent.id }, "deadline context injection failed, skipping");
-    }
-
-    // ── Dependency Context: inject blocked/blocker info for current issue ───
-    try {
-      const contextIssueIdForDeps = readNonEmptyString(context.issueId);
-      if (contextIssueIdForDeps) {
-        const [currentIssueForDeps] = await db
-          .select({ id: issues.id, dependsOn: issues.dependsOn, identifier: issues.identifier, title: issues.title })
-          .from(issues)
-          .where(eq(issues.id, contextIssueIdForDeps))
-          .limit(1);
-
-        if (currentIssueForDeps && Array.isArray(currentIssueForDeps.dependsOn) && currentIssueForDeps.dependsOn.length > 0) {
-          const blockingIssues = await db
-            .select({ id: issues.id, identifier: issues.identifier, title: issues.title, status: issues.status })
-            .from(issues)
-            .where(sql`${issues.id}::text = ANY(${JSON.stringify(currentIssueForDeps.dependsOn)}::text[])`);
-
-          const pendingBlockers = blockingIssues.filter((i) => i.status !== "done");
-          if (pendingBlockers.length > 0) {
-            const blockerList = pendingBlockers.map((i) => {
-              const ref = i.identifier ? `[${i.identifier}]` : `[${i.id.slice(0, 8)}]`;
-              return `${ref} ${i.title} (${i.status})`;
-            }).join(", ");
-            context.ironworksDependencyContext = `This issue is BLOCKED by: ${blockerList}. Do not start work on this issue until all blockers are done.`;
-          } else {
-            context.ironworksDependencyContext = "All dependencies for this issue are complete. You can proceed.";
-          }
-        }
-      }
-    } catch (err) {
-      logger.debug({ err, agentId: agent.id }, "dependency context injection failed, skipping");
-    }
-
-    // ── Goal Context: inject goal info when issue is linked to a goal ──────
-    try {
-      const issueGoalId = issueContext?.goalId ?? null;
-      if (issueGoalId) {
-        const [goalRow] = await db
-          .select({
-            title: goals.title,
-            healthStatus: goals.healthStatus,
-            healthScore: goals.healthScore,
-            confidence: goals.confidence,
-            targetDate: goals.targetDate,
-          })
-          .from(goals)
-          .where(eq(goals.id, issueGoalId))
-          .limit(1);
-
-        if (goalRow) {
-          const targetDateStr = goalRow.targetDate
-            ? new Date(goalRow.targetDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-            : "Not set";
-          const healthLabel = (goalRow.healthStatus ?? "no_data").replace(/_/g, " ");
-          const progressNote = goalRow.healthScore != null ? `${goalRow.healthScore}%` : "unknown";
-          context.ironworksGoalContext =
-            `You are working on an issue that advances the goal "${goalRow.title}" ` +
-            `which is currently ${progressNote} complete with health status ${healthLabel}. ` +
-            `Target date: ${targetDateStr}. Confidence: ${goalRow.confidence ?? 50}%.`;
-        }
-      }
-    } catch (err) {
-      logger.debug({ err, agentId: agent.id }, "goal context injection failed, skipping");
-    }
+    // ── Context assembly: delegate to heartbeat-context.ts inject functions ──
+    await injectChannelMessagesCtx(db, context, agent);
+    injectChannelPostingInstruction(context);
+    injectConfidenceTagging(context);
+    await injectQualityExamples(db, context, agent.id);
+    await injectOnboardingReplay(db, context, agent);
+    await injectPendingMentions(db, context, agent);
+    await injectPendingDeliberations(db, context, agent);
+    await injectChannelHealth(db, context, agent);
+    await injectCognitiveLoadReport(db, context, agent);
+    await injectContextDriftWarning(db, context, agent.id, agent.companyId);
+    const agentRuntimeSnapshotForCtx = await getRuntimeState(agent.id);
+    await injectContextUtilizationNote(
+      db,
+      context,
+      agent.id,
+      agent.companyId,
+      Number(agentRuntimeSnapshotForCtx?.totalInputTokens ?? 0),
+    );
+    await injectTaskTypeClassification(db, context, issueId, issueContext ? { title: issueContext.title ?? "" } : null);
+    await injectRecentDocuments(db, context, agent.id, agent.companyId);
+    await injectBatchedTasks(db, context, agent.id, agent.companyId, issueId);
+    // issueContext does not include description column - web research uses context.issueTitle from context
+    await injectWebResearch(db, context, agent.id, null);
+    await injectDeadlineUrgency(db, context, agent.id, agent.companyId);
+    await injectDependencyContext(db, context);
+    await injectGoalContext(db, context, issueContext?.goalId ?? null);
 
     context.ironworksWorkspace = {
       cwd: executionWorkspace.cwd,
@@ -4263,24 +2913,7 @@ Keep messages concise and substantive. Do not post empty status updates. If you 
 
       // Extract and log agent decisions from the run result
       if (finalizedRun && outcome === "succeeded" && adapterResult.resultJson) {
-        try {
-          const { extractDecisions, logDecisions } = await import("./decision-log.js");
-          const contextSnap = (finalizedRun.contextSnapshot ?? null) as Record<string, unknown> | null;
-          const decisions = extractDecisions(
-            adapterResult.resultJson as Record<string, unknown>,
-            contextSnap,
-          );
-          if (decisions.length > 0) {
-            await logDecisions(db, {
-              companyId: agent.companyId,
-              agentId: agent.id,
-              runId: finalizedRun.id,
-              decisions,
-            });
-          }
-        } catch (decisionLogErr) {
-          logger.debug({ err: decisionLogErr, runId }, "decision log extraction failed, skipping");
-        }
+        await extractAndLogDecisions(db, agent, finalizedRun, adapterResult.resultJson);
       }
 
       if (finalizedRun) {
@@ -4307,103 +2940,22 @@ Keep messages concise and substantive. Do not post empty status updates. If you 
           }
         }
       }
-      // Save session state for next run pickup (best-effort)
+      // Save session state, post channel messages, extract agent-authored messages (best-effort)
       if (finalizedRun) {
-        try {
-          const resultSummary = summarizeHeartbeatRunResultJson(adapterResult.resultJson ?? null);
-          const summaryText = typeof resultSummary?.summary === "string"
-            ? resultSummary.summary
-            : `Run ${outcome}`;
-          await saveSessionState(db, {
-            agentId: agent.id,
-            companyId: agent.companyId,
-            issueId: issueId ?? null,
-            summary: summaryText,
-            lastAction: `heartbeat run ${run.id.slice(0, 8)} - ${outcome}`,
-            pendingWork: outcome === "succeeded" ? null : `Previous run ${outcome} - may need retry`,
-          });
-        } catch (sessionStateErr) {
-          logger.warn({ err: sessionStateErr, runId }, "failed to save session state after run");
+        await savePostRunSessionState(db, {
+          agentId: agent.id,
+          companyId: agent.companyId,
+          issueId: issueId ?? null,
+          runId: run.id,
+          outcome,
+          adapterResultJson: adapterResult.resultJson ?? null,
+        });
+
+        if (outcome === "succeeded") {
+          await postSuccessChannelMessages(db, agent, issueId ?? null, issueContext);
         }
 
-        // Post a status update to the agent's department channel after successful work.
-        // Non-fatal - a channel error must never block agent execution.
-        if (outcome === "succeeded" && issueId) {
-          try {
-            const issueTitle = typeof issueContext?.title === "string" ? issueContext.title : null;
-            if (issueTitle) {
-              const deptChannel = await findAgentDepartmentChannel(db, agent.companyId, agent.department ?? null);
-              if (deptChannel) {
-                await postChannelMessage(db, {
-                  channelId: deptChannel.id,
-                  companyId: agent.companyId,
-                  authorAgentId: agent.id,
-                  body: `Completed work on: ${issueTitle}`,
-                  messageType: "status_update",
-                });
-              }
-
-              // Phase 8 - Feature 9: Preemptive Communication.
-              // Also post a brief update to the project channel if the issue belongs to a project.
-              const projectId = issueContext?.projectId ?? null;
-              if (projectId) {
-                try {
-                  const projectRow = await db
-                    .select({ name: projects.name })
-                    .from(projects)
-                    .where(and(eq(projects.id, projectId), eq(projects.companyId, agent.companyId)))
-                    .then((rows) => rows[0] ?? null);
-
-                  if (projectRow) {
-                    const projectChannelId = await ensureProjectChannel(db, agent.companyId, projectId, projectRow.name);
-                    await postChannelMessage(db, {
-                      channelId: projectChannelId,
-                      companyId: agent.companyId,
-                      authorAgentId: agent.id,
-                      body: `Update on ${projectRow.name}: completed "${issueTitle}"`,
-                      messageType: "status_update",
-                    });
-                  }
-                } catch (projChannelErr) {
-                  logger.debug({ err: projChannelErr, agentId: agent.id }, "project channel post-run message failed, skipping");
-                }
-              }
-            }
-          } catch (channelErr) {
-            logger.debug({ err: channelErr, agentId: agent.id }, "post-run channel message failed, skipping");
-          }
-        }
-
-        // Extract and post agent-authored channel messages from the run output.
-        // Agents include [CHANNEL #name] blocks in their summary to post to channels.
-        // Non-fatal - channel posting errors must never block agent execution.
-        try {
-          const agentOutput = adapterResult.summary ?? "";
-          const channelMsgs = extractChannelMessages(agentOutput);
-          for (const { channel: channelName, body: messageBody } of channelMsgs) {
-            // Find the target channel by name
-            const [targetChannel] = await db
-              .select({ id: agentChannels.id })
-              .from(agentChannels)
-              .where(and(
-                eq(agentChannels.companyId, agent.companyId),
-                sql`lower(${agentChannels.name}) = ${channelName}`,
-              ))
-              .limit(1);
-            if (targetChannel) {
-              await postChannelMessage(db, {
-                channelId: targetChannel.id,
-                companyId: agent.companyId,
-                authorAgentId: agent.id,
-                body: messageBody,
-                messageType: "message",
-              });
-              logger.info({ agentId: agent.id, channel: channelName, bodyLen: messageBody.length }, "agent posted to channel from run output");
-            }
-          }
-        } catch (channelExtractErr) {
-          logger.debug({ err: channelExtractErr, agentId: agent.id }, "channel message extraction from output failed, skipping");
-        }
+        await extractAndPostAgentChannelMessages(db, agent, adapterResult.summary ?? "");
 
         // PDCA: Act phase - log any adjustments made post-run
         if (outcome !== "succeeded") {
@@ -4522,858 +3074,44 @@ Keep messages concise and substantive. Do not post empty status updates. If you 
   }
 
   async function releaseIssueExecutionAndPromote(run: typeof heartbeatRuns.$inferSelect) {
-    const promotedRun = await db.transaction(async (tx) => {
-      await tx.execute(
-        sql`select id from issues where company_id = ${run.companyId} and execution_run_id = ${run.id} for update`,
-      );
-
-      const issue = await tx
-        .select({
-          id: issues.id,
-          companyId: issues.companyId,
-        })
-        .from(issues)
-        .where(and(eq(issues.companyId, run.companyId), eq(issues.executionRunId, run.id)))
-        .then((rows) => rows[0] ?? null);
-
-      if (!issue) return;
-
-      await tx
-        .update(issues)
-        .set({
-          executionRunId: null,
-          executionAgentNameKey: null,
-          executionLockedAt: null,
-          updatedAt: new Date(),
-        })
-        .where(eq(issues.id, issue.id));
-
-      while (true) {
-        const deferred = await tx
-          .select()
-          .from(agentWakeupRequests)
-          .where(
-            and(
-              eq(agentWakeupRequests.companyId, issue.companyId),
-              eq(agentWakeupRequests.status, "deferred_issue_execution"),
-              sql`${agentWakeupRequests.payload} ->> 'issueId' = ${issue.id}`,
-            ),
-          )
-          .orderBy(asc(agentWakeupRequests.requestedAt))
-          .limit(1)
-          .then((rows) => rows[0] ?? null);
-
-        if (!deferred) return null;
-
-        const deferredAgent = await tx
-          .select()
-          .from(agents)
-          .where(eq(agents.id, deferred.agentId))
-          .then((rows) => rows[0] ?? null);
-
-        if (
-          !deferredAgent ||
-          deferredAgent.companyId !== issue.companyId ||
-          deferredAgent.status === "paused" ||
-          deferredAgent.status === "terminated" ||
-          deferredAgent.status === "pending_approval"
-        ) {
-          await tx
-            .update(agentWakeupRequests)
-            .set({
-              status: "failed",
-              finishedAt: new Date(),
-              error: "Deferred wake could not be promoted: agent is not invokable",
-              updatedAt: new Date(),
-            })
-            .where(eq(agentWakeupRequests.id, deferred.id));
-          continue;
-        }
-
-        const deferredPayload = parseObject(deferred.payload);
-        const deferredContextSeed = parseObject(deferredPayload[DEFERRED_WAKE_CONTEXT_KEY]);
-        const promotedContextSeed: Record<string, unknown> = { ...deferredContextSeed };
-        const promotedReason = readNonEmptyString(deferred.reason) ?? "issue_execution_promoted";
-        const promotedSource =
-          (readNonEmptyString(deferred.source) as WakeupOptions["source"]) ?? "automation";
-        const promotedTriggerDetail =
-          (readNonEmptyString(deferred.triggerDetail) as WakeupOptions["triggerDetail"]) ?? null;
-        const promotedPayload = deferredPayload;
-        delete promotedPayload[DEFERRED_WAKE_CONTEXT_KEY];
-
-        const {
-          contextSnapshot: promotedContextSnapshot,
-          taskKey: promotedTaskKey,
-        } = enrichWakeContextSnapshot({
-          contextSnapshot: promotedContextSeed,
-          reason: promotedReason,
-          source: promotedSource,
-          triggerDetail: promotedTriggerDetail,
-          payload: promotedPayload,
-        });
-
-        const sessionBefore =
-          readNonEmptyString(promotedContextSnapshot.resumeSessionDisplayId) ??
-          await resolveSessionBeforeForWakeup(deferredAgent, promotedTaskKey);
-        const now = new Date();
-        const newRun = await tx
-          .insert(heartbeatRuns)
-          .values({
-            companyId: deferredAgent.companyId,
-            agentId: deferredAgent.id,
-            invocationSource: promotedSource,
-            triggerDetail: promotedTriggerDetail,
-            status: "queued",
-            wakeupRequestId: deferred.id,
-            contextSnapshot: promotedContextSnapshot,
-            sessionIdBefore: sessionBefore,
-          })
-          .returning()
-          .then((rows) => rows[0]);
-
-        await tx
-          .update(agentWakeupRequests)
-          .set({
-            status: "queued",
-            reason: "issue_execution_promoted",
-            runId: newRun.id,
-            claimedAt: null,
-            finishedAt: null,
-            error: null,
-            updatedAt: now,
-          })
-          .where(eq(agentWakeupRequests.id, deferred.id));
-
-        await tx
-          .update(issues)
-          .set({
-            executionRunId: newRun.id,
-            executionAgentNameKey: normalizeAgentNameKey(deferredAgent.name),
-            executionLockedAt: now,
-            updatedAt: now,
-          })
-          .where(eq(issues.id, issue.id));
-
-        return newRun;
-      }
+    return releaseIssueExecutionAndPromoteModule(db, run, {
+      resolveSessionBeforeForWakeup,
+      startNextQueuedRunForAgent,
     });
-
-    if (!promotedRun) return;
-
-    publishLiveEvent({
-      companyId: promotedRun.companyId,
-      type: "heartbeat.run.queued",
-      payload: {
-        runId: promotedRun.id,
-        agentId: promotedRun.agentId,
-        invocationSource: promotedRun.invocationSource,
-        triggerDetail: promotedRun.triggerDetail,
-        wakeupRequestId: promotedRun.wakeupRequestId,
-      },
-    });
-
-    await startNextQueuedRunForAgent(promotedRun.agentId);
   }
+
 
   async function enqueueWakeup(agentId: string, opts: WakeupOptions = {}) {
-    const source = opts.source ?? "on_demand";
-    const triggerDetail = opts.triggerDetail ?? null;
-    const contextSnapshot: Record<string, unknown> = { ...(opts.contextSnapshot ?? {}) };
-    const reason = opts.reason ?? null;
-    const payload = opts.payload ?? null;
-    const {
-      contextSnapshot: enrichedContextSnapshot,
-      issueIdFromPayload,
-      taskKey,
-      wakeCommentId,
-    } = enrichWakeContextSnapshot({
-      contextSnapshot,
-      reason,
-      source,
-      triggerDetail,
-      payload,
+    return enqueueWakeupModule(db, agentId, opts, {
+      budgetHooks,
+      resolveExplicitResumeSessionOverride,
+      resolveSessionBeforeForWakeup,
+      startNextQueuedRunForAgent,
+      checkIterationLimits,
     });
-    let issueId = readNonEmptyString(enrichedContextSnapshot.issueId) ?? issueIdFromPayload;
-
-    const agent = await getAgent(agentId);
-    if (!agent) throw notFound("Agent not found");
-    const explicitResumeSession = await resolveExplicitResumeSessionOverride(agent, payload, taskKey);
-    if (explicitResumeSession) {
-      enrichedContextSnapshot.resumeFromRunId = explicitResumeSession.resumeFromRunId;
-      enrichedContextSnapshot.resumeSessionDisplayId = explicitResumeSession.sessionDisplayId;
-      enrichedContextSnapshot.resumeSessionParams = explicitResumeSession.sessionParams;
-      if (!readNonEmptyString(enrichedContextSnapshot.issueId) && explicitResumeSession.issueId) {
-        enrichedContextSnapshot.issueId = explicitResumeSession.issueId;
-      }
-      if (!readNonEmptyString(enrichedContextSnapshot.taskId) && explicitResumeSession.taskId) {
-        enrichedContextSnapshot.taskId = explicitResumeSession.taskId;
-      }
-      if (!readNonEmptyString(enrichedContextSnapshot.taskKey) && explicitResumeSession.taskKey) {
-        enrichedContextSnapshot.taskKey = explicitResumeSession.taskKey;
-      }
-      issueId = readNonEmptyString(enrichedContextSnapshot.issueId) ?? issueId;
-    }
-    const effectiveTaskKey = readNonEmptyString(enrichedContextSnapshot.taskKey) ?? taskKey;
-    const sessionBefore =
-      explicitResumeSession?.sessionDisplayId ??
-      await resolveSessionBeforeForWakeup(agent, effectiveTaskKey);
-
-    const writeSkippedRequest = async (skipReason: string) => {
-      await db.insert(agentWakeupRequests).values({
-        companyId: agent.companyId,
-        agentId,
-        source,
-        triggerDetail,
-        reason: skipReason,
-        payload,
-        status: "skipped",
-        requestedByActorType: opts.requestedByActorType ?? null,
-        requestedByActorId: opts.requestedByActorId ?? null,
-        idempotencyKey: opts.idempotencyKey ?? null,
-        finishedAt: new Date(),
-      });
-    };
-
-    let projectId = readNonEmptyString(enrichedContextSnapshot.projectId);
-    if (!projectId && issueId) {
-      projectId = await db
-        .select({ projectId: issues.projectId })
-        .from(issues)
-        .where(and(eq(issues.id, issueId), eq(issues.companyId, agent.companyId)))
-        .then((rows) => rows[0]?.projectId ?? null);
-    }
-
-    const budgetBlock = await budgets.getInvocationBlock(agent.companyId, agentId, {
-      issueId,
-      projectId,
-    });
-    if (budgetBlock) {
-      await writeSkippedRequest("budget.blocked");
-      throw conflict(budgetBlock.reason, {
-        scopeType: budgetBlock.scopeType,
-        scopeId: budgetBlock.scopeId,
-      });
-    }
-
-    // Iteration / loop cap check
-    const iterationBlock = await checkIterationLimits(agentId, agent.companyId, issueId);
-    if (iterationBlock) {
-      await writeSkippedRequest("iteration_limit.blocked");
-      throw conflict(iterationBlock);
-    }
-
-    if (
-      agent.status === "paused" ||
-      agent.status === "terminated" ||
-      agent.status === "pending_approval"
-    ) {
-      throw conflict("Agent is not invokable in its current state", { status: agent.status });
-    }
-
-    const policy = parseHeartbeatPolicy(agent);
-
-    if (source === "timer" && !policy.enabled) {
-      await writeSkippedRequest("heartbeat.disabled");
-      return null;
-    }
-    if (source !== "timer" && !policy.wakeOnDemand) {
-      await writeSkippedRequest("heartbeat.wakeOnDemand.disabled");
-      return null;
-    }
-
-    const bypassIssueExecutionLock =
-      reason === "issue_comment_mentioned" ||
-      readNonEmptyString(enrichedContextSnapshot.wakeReason) === "issue_comment_mentioned";
-
-    if (issueId && !bypassIssueExecutionLock) {
-      const agentNameKey = normalizeAgentNameKey(agent.name);
-
-      const outcome = await db.transaction(async (tx) => {
-        await tx.execute(
-          sql`select id from issues where id = ${issueId} and company_id = ${agent.companyId} for update`,
-        );
-
-        const issue = await tx
-          .select({
-            id: issues.id,
-            companyId: issues.companyId,
-            executionRunId: issues.executionRunId,
-            executionAgentNameKey: issues.executionAgentNameKey,
-          })
-          .from(issues)
-          .where(and(eq(issues.id, issueId), eq(issues.companyId, agent.companyId)))
-          .then((rows) => rows[0] ?? null);
-
-        if (!issue) {
-          await tx.insert(agentWakeupRequests).values({
-            companyId: agent.companyId,
-            agentId,
-            source,
-            triggerDetail,
-            reason: "issue_execution_issue_not_found",
-            payload,
-            status: "skipped",
-            requestedByActorType: opts.requestedByActorType ?? null,
-            requestedByActorId: opts.requestedByActorId ?? null,
-            idempotencyKey: opts.idempotencyKey ?? null,
-            finishedAt: new Date(),
-          });
-          return { kind: "skipped" as const };
-        }
-
-        let activeExecutionRun = issue.executionRunId
-          ? await tx
-            .select()
-            .from(heartbeatRuns)
-            .where(eq(heartbeatRuns.id, issue.executionRunId))
-            .then((rows) => rows[0] ?? null)
-          : null;
-
-        if (activeExecutionRun && activeExecutionRun.status !== "queued" && activeExecutionRun.status !== "running") {
-          activeExecutionRun = null;
-        }
-
-        if (!activeExecutionRun && issue.executionRunId) {
-          await tx
-            .update(issues)
-            .set({
-              executionRunId: null,
-              executionAgentNameKey: null,
-              executionLockedAt: null,
-              updatedAt: new Date(),
-            })
-            .where(eq(issues.id, issue.id));
-        }
-
-        if (!activeExecutionRun) {
-          const legacyRun = await tx
-            .select()
-            .from(heartbeatRuns)
-            .where(
-              and(
-                eq(heartbeatRuns.companyId, issue.companyId),
-                inArray(heartbeatRuns.status, ["queued", "running"]),
-                sql`${heartbeatRuns.contextSnapshot} ->> 'issueId' = ${issue.id}`,
-              ),
-            )
-            .orderBy(
-              sql`case when ${heartbeatRuns.status} = 'running' then 0 else 1 end`,
-              asc(heartbeatRuns.createdAt),
-            )
-            .limit(1)
-            .then((rows) => rows[0] ?? null);
-
-          if (legacyRun) {
-            activeExecutionRun = legacyRun;
-            const legacyAgent = await tx
-              .select({ name: agents.name })
-              .from(agents)
-              .where(eq(agents.id, legacyRun.agentId))
-              .then((rows) => rows[0] ?? null);
-            await tx
-              .update(issues)
-              .set({
-                executionRunId: legacyRun.id,
-                executionAgentNameKey: normalizeAgentNameKey(legacyAgent?.name),
-                executionLockedAt: new Date(),
-                updatedAt: new Date(),
-              })
-              .where(eq(issues.id, issue.id));
-          }
-        }
-
-        if (activeExecutionRun) {
-          const executionAgent = await tx
-            .select({ name: agents.name })
-            .from(agents)
-            .where(eq(agents.id, activeExecutionRun.agentId))
-            .then((rows) => rows[0] ?? null);
-          const executionAgentNameKey =
-            normalizeAgentNameKey(issue.executionAgentNameKey) ??
-            normalizeAgentNameKey(executionAgent?.name);
-          const isSameExecutionAgent =
-            Boolean(executionAgentNameKey) && executionAgentNameKey === agentNameKey;
-          const shouldQueueFollowupForCommentWake =
-            Boolean(wakeCommentId) &&
-            activeExecutionRun.status === "running" &&
-            isSameExecutionAgent;
-
-          if (isSameExecutionAgent && !shouldQueueFollowupForCommentWake) {
-            const mergedContextSnapshot = mergeCoalescedContextSnapshot(
-              activeExecutionRun.contextSnapshot,
-              enrichedContextSnapshot,
-            );
-            const mergedRun = await tx
-              .update(heartbeatRuns)
-              .set({
-                contextSnapshot: mergedContextSnapshot,
-                updatedAt: new Date(),
-              })
-              .where(eq(heartbeatRuns.id, activeExecutionRun.id))
-              .returning()
-              .then((rows) => rows[0] ?? activeExecutionRun);
-
-            await tx.insert(agentWakeupRequests).values({
-              companyId: agent.companyId,
-              agentId,
-              source,
-              triggerDetail,
-              reason: "issue_execution_same_name",
-              payload,
-              status: "coalesced",
-              coalescedCount: 1,
-              requestedByActorType: opts.requestedByActorType ?? null,
-              requestedByActorId: opts.requestedByActorId ?? null,
-              idempotencyKey: opts.idempotencyKey ?? null,
-              runId: mergedRun.id,
-              finishedAt: new Date(),
-            });
-
-            return { kind: "coalesced" as const, run: mergedRun };
-          }
-
-          const deferredPayload = {
-            ...(payload ?? {}),
-            issueId,
-            [DEFERRED_WAKE_CONTEXT_KEY]: enrichedContextSnapshot,
-          };
-
-          const existingDeferred = await tx
-            .select()
-            .from(agentWakeupRequests)
-            .where(
-              and(
-                eq(agentWakeupRequests.companyId, agent.companyId),
-                eq(agentWakeupRequests.agentId, agentId),
-                eq(agentWakeupRequests.status, "deferred_issue_execution"),
-                sql`${agentWakeupRequests.payload} ->> 'issueId' = ${issue.id}`,
-              ),
-            )
-            .orderBy(asc(agentWakeupRequests.requestedAt))
-            .limit(1)
-            .then((rows) => rows[0] ?? null);
-
-          if (existingDeferred) {
-            const existingDeferredPayload = parseObject(existingDeferred.payload);
-            const existingDeferredContext = parseObject(existingDeferredPayload[DEFERRED_WAKE_CONTEXT_KEY]);
-            const mergedDeferredContext = mergeCoalescedContextSnapshot(
-              existingDeferredContext,
-              enrichedContextSnapshot,
-            );
-            const mergedDeferredPayload = {
-              ...existingDeferredPayload,
-              ...(payload ?? {}),
-              issueId,
-              [DEFERRED_WAKE_CONTEXT_KEY]: mergedDeferredContext,
-            };
-
-            await tx
-              .update(agentWakeupRequests)
-              .set({
-                payload: mergedDeferredPayload,
-                coalescedCount: (existingDeferred.coalescedCount ?? 0) + 1,
-                updatedAt: new Date(),
-              })
-              .where(eq(agentWakeupRequests.id, existingDeferred.id));
-
-            return { kind: "deferred" as const };
-          }
-
-          await tx.insert(agentWakeupRequests).values({
-            companyId: agent.companyId,
-            agentId,
-            source,
-            triggerDetail,
-            reason: "issue_execution_deferred",
-            payload: deferredPayload,
-            status: "deferred_issue_execution",
-            requestedByActorType: opts.requestedByActorType ?? null,
-            requestedByActorId: opts.requestedByActorId ?? null,
-            idempotencyKey: opts.idempotencyKey ?? null,
-          });
-
-          return { kind: "deferred" as const };
-        }
-
-        const wakeupRequest = await tx
-          .insert(agentWakeupRequests)
-          .values({
-            companyId: agent.companyId,
-            agentId,
-            source,
-            triggerDetail,
-            reason,
-            payload,
-            status: "queued",
-            requestedByActorType: opts.requestedByActorType ?? null,
-            requestedByActorId: opts.requestedByActorId ?? null,
-            idempotencyKey: opts.idempotencyKey ?? null,
-          })
-          .returning()
-          .then((rows) => rows[0]);
-
-        const newRun = await tx
-          .insert(heartbeatRuns)
-          .values({
-            companyId: agent.companyId,
-            agentId,
-            invocationSource: source,
-            triggerDetail,
-            status: "queued",
-            wakeupRequestId: wakeupRequest.id,
-            contextSnapshot: enrichedContextSnapshot,
-            sessionIdBefore: sessionBefore,
-          })
-          .returning()
-          .then((rows) => rows[0]);
-
-        await tx
-          .update(agentWakeupRequests)
-          .set({
-            runId: newRun.id,
-            updatedAt: new Date(),
-          })
-          .where(eq(agentWakeupRequests.id, wakeupRequest.id));
-
-        await tx
-          .update(issues)
-          .set({
-            executionRunId: newRun.id,
-            executionAgentNameKey: agentNameKey,
-            executionLockedAt: new Date(),
-            updatedAt: new Date(),
-          })
-          .where(eq(issues.id, issue.id));
-
-        return { kind: "queued" as const, run: newRun };
-      });
-
-      if (outcome.kind === "deferred" || outcome.kind === "skipped") return null;
-      if (outcome.kind === "coalesced") return outcome.run;
-
-      const newRun = outcome.run;
-      publishLiveEvent({
-        companyId: newRun.companyId,
-        type: "heartbeat.run.queued",
-        payload: {
-          runId: newRun.id,
-          agentId: newRun.agentId,
-          invocationSource: newRun.invocationSource,
-          triggerDetail: newRun.triggerDetail,
-          wakeupRequestId: newRun.wakeupRequestId,
-        },
-      });
-
-      await startNextQueuedRunForAgent(agent.id);
-      return newRun;
-    }
-
-    const activeRuns = await db
-      .select()
-      .from(heartbeatRuns)
-      .where(and(eq(heartbeatRuns.agentId, agentId), inArray(heartbeatRuns.status, ["queued", "running"])))
-      .orderBy(desc(heartbeatRuns.createdAt));
-
-    const sameScopeQueuedRun = activeRuns.find(
-      (candidate) => candidate.status === "queued" && isSameTaskScope(runTaskKey(candidate), taskKey),
-    );
-    const sameScopeRunningRun = activeRuns.find(
-      (candidate) => candidate.status === "running" && isSameTaskScope(runTaskKey(candidate), taskKey),
-    );
-    const shouldQueueFollowupForCommentWake =
-      Boolean(wakeCommentId) && Boolean(sameScopeRunningRun) && !sameScopeQueuedRun;
-
-    const coalescedTargetRun =
-      sameScopeQueuedRun ??
-      (shouldQueueFollowupForCommentWake ? null : sameScopeRunningRun ?? null);
-
-    if (coalescedTargetRun) {
-      const mergedContextSnapshot = mergeCoalescedContextSnapshot(
-        coalescedTargetRun.contextSnapshot,
-        contextSnapshot,
-      );
-      const mergedRun = await db
-        .update(heartbeatRuns)
-        .set({
-          contextSnapshot: mergedContextSnapshot,
-          updatedAt: new Date(),
-        })
-        .where(eq(heartbeatRuns.id, coalescedTargetRun.id))
-        .returning()
-        .then((rows) => rows[0] ?? coalescedTargetRun);
-
-      await db.insert(agentWakeupRequests).values({
-        companyId: agent.companyId,
-        agentId,
-        source,
-        triggerDetail,
-        reason,
-        payload,
-        status: "coalesced",
-        coalescedCount: 1,
-        requestedByActorType: opts.requestedByActorType ?? null,
-        requestedByActorId: opts.requestedByActorId ?? null,
-        idempotencyKey: opts.idempotencyKey ?? null,
-        runId: mergedRun.id,
-        finishedAt: new Date(),
-      });
-      return mergedRun;
-    }
-
-    const wakeupRequest = await db
-      .insert(agentWakeupRequests)
-      .values({
-        companyId: agent.companyId,
-        agentId,
-        source,
-        triggerDetail,
-        reason,
-        payload,
-        status: "queued",
-        requestedByActorType: opts.requestedByActorType ?? null,
-        requestedByActorId: opts.requestedByActorId ?? null,
-        idempotencyKey: opts.idempotencyKey ?? null,
-      })
-      .returning()
-      .then((rows) => rows[0]);
-
-    const newRun = await db
-      .insert(heartbeatRuns)
-      .values({
-        companyId: agent.companyId,
-        agentId,
-        invocationSource: source,
-        triggerDetail,
-        status: "queued",
-        wakeupRequestId: wakeupRequest.id,
-        contextSnapshot: enrichedContextSnapshot,
-        sessionIdBefore: sessionBefore,
-      })
-      .returning()
-      .then((rows) => rows[0]);
-
-    await db
-      .update(agentWakeupRequests)
-      .set({
-        runId: newRun.id,
-        updatedAt: new Date(),
-      })
-      .where(eq(agentWakeupRequests.id, wakeupRequest.id));
-
-    publishLiveEvent({
-      companyId: newRun.companyId,
-      type: "heartbeat.run.queued",
-      payload: {
-        runId: newRun.id,
-        agentId: newRun.agentId,
-        invocationSource: newRun.invocationSource,
-        triggerDetail: newRun.triggerDetail,
-        wakeupRequestId: newRun.wakeupRequestId,
-      },
-    });
-
-    await startNextQueuedRunForAgent(agent.id);
-
-    return newRun;
-  }
-
-  async function listProjectScopedRunIds(companyId: string, projectId: string) {
-    const runIssueId = sql<string | null>`${heartbeatRuns.contextSnapshot} ->> 'issueId'`;
-    const effectiveProjectId = sql<string | null>`coalesce(${heartbeatRuns.contextSnapshot} ->> 'projectId', ${issues.projectId}::text)`;
-
-    const rows = await db
-      .selectDistinctOn([heartbeatRuns.id], { id: heartbeatRuns.id })
-      .from(heartbeatRuns)
-      .leftJoin(
-        issues,
-        and(
-          eq(issues.companyId, companyId),
-          sql`${issues.id}::text = ${runIssueId}`,
-        ),
-      )
-      .where(
-        and(
-          eq(heartbeatRuns.companyId, companyId),
-          inArray(heartbeatRuns.status, ["queued", "running"]),
-          sql`${effectiveProjectId} = ${projectId}`,
-        ),
-      );
-
-    return rows.map((row) => row.id);
-  }
-
-  async function listProjectScopedWakeupIds(companyId: string, projectId: string) {
-    const wakeIssueId = sql<string | null>`${agentWakeupRequests.payload} ->> 'issueId'`;
-    const effectiveProjectId = sql<string | null>`coalesce(${agentWakeupRequests.payload} ->> 'projectId', ${issues.projectId}::text)`;
-
-    const rows = await db
-      .selectDistinctOn([agentWakeupRequests.id], { id: agentWakeupRequests.id })
-      .from(agentWakeupRequests)
-      .leftJoin(
-        issues,
-        and(
-          eq(issues.companyId, companyId),
-          sql`${issues.id}::text = ${wakeIssueId}`,
-        ),
-      )
-      .where(
-        and(
-          eq(agentWakeupRequests.companyId, companyId),
-          inArray(agentWakeupRequests.status, ["queued", "deferred_issue_execution"]),
-          sql`${agentWakeupRequests.runId} is null`,
-          sql`${effectiveProjectId} = ${projectId}`,
-        ),
-      );
-
-    return rows.map((row) => row.id);
-  }
-
-  async function cancelPendingWakeupsForBudgetScope(scope: BudgetEnforcementScope) {
-    const now = new Date();
-    let wakeupIds: string[] = [];
-
-    if (scope.scopeType === "company") {
-      wakeupIds = await db
-        .select({ id: agentWakeupRequests.id })
-        .from(agentWakeupRequests)
-        .where(
-          and(
-            eq(agentWakeupRequests.companyId, scope.companyId),
-            inArray(agentWakeupRequests.status, ["queued", "deferred_issue_execution"]),
-            sql`${agentWakeupRequests.runId} is null`,
-          ),
-        )
-        .then((rows) => rows.map((row) => row.id));
-    } else if (scope.scopeType === "agent") {
-      wakeupIds = await db
-        .select({ id: agentWakeupRequests.id })
-        .from(agentWakeupRequests)
-        .where(
-          and(
-            eq(agentWakeupRequests.companyId, scope.companyId),
-            eq(agentWakeupRequests.agentId, scope.scopeId),
-            inArray(agentWakeupRequests.status, ["queued", "deferred_issue_execution"]),
-            sql`${agentWakeupRequests.runId} is null`,
-          ),
-        )
-        .then((rows) => rows.map((row) => row.id));
-    } else {
-      wakeupIds = await listProjectScopedWakeupIds(scope.companyId, scope.scopeId);
-    }
-
-    if (wakeupIds.length === 0) return 0;
-
-    await db
-      .update(agentWakeupRequests)
-      .set({
-        status: "cancelled",
-        finishedAt: now,
-        error: "Cancelled due to budget pause",
-        updatedAt: now,
-      })
-      .where(inArray(agentWakeupRequests.id, wakeupIds));
-
-    return wakeupIds.length;
   }
 
   async function cancelRunInternal(runId: string, reason = "Cancelled by control plane") {
-    const run = await getRun(runId);
-    if (!run) throw notFound("Heartbeat run not found");
-    if (run.status !== "running" && run.status !== "queued") return run;
-
-    const running = runningProcesses.get(run.id);
-    if (running) {
-      running.child.kill("SIGTERM");
-      const graceMs = Math.max(1, running.graceSec) * 1000;
-      setTimeout(() => {
-        if (!running.child.killed) {
-          running.child.kill("SIGKILL");
-        }
-      }, graceMs);
-    }
-
-    const cancelled = await setRunStatus(run.id, "cancelled", {
-      finishedAt: new Date(),
-      error: reason,
-      errorCode: "cancelled",
+    return cancelRunInternalModule(db, runId, reason, {
+      appendRunEvent,
+      nextRunEventSeq,
+      releaseIssueExecutionAndPromote,
+      finalizeAgentStatus,
+      startNextQueuedRunForAgent,
     });
-
-    await setWakeupStatus(run.wakeupRequestId, "cancelled", {
-      finishedAt: new Date(),
-      error: reason,
-    });
-
-    if (cancelled) {
-      await appendRunEvent(cancelled, 1, {
-        eventType: "lifecycle",
-        stream: "system",
-        level: "warn",
-        message: "run cancelled",
-      });
-      await releaseIssueExecutionAndPromote(cancelled);
-    }
-
-    runningProcesses.delete(run.id);
-    await finalizeAgentStatus(run.agentId, "cancelled");
-    await startNextQueuedRunForAgent(run.agentId);
-    return cancelled;
   }
 
   async function cancelActiveForAgentInternal(agentId: string, reason = "Cancelled due to agent pause") {
-    const runs = await db
-      .select()
-      .from(heartbeatRuns)
-      .where(and(eq(heartbeatRuns.agentId, agentId), inArray(heartbeatRuns.status, ["queued", "running"])));
-
-    await Promise.all(
-      runs.map(async (run) => {
-        await setRunStatus(run.id, "cancelled", {
-          finishedAt: new Date(),
-          error: reason,
-          errorCode: "cancelled",
-        });
-
-        await setWakeupStatus(run.wakeupRequestId, "cancelled", {
-          finishedAt: new Date(),
-          error: reason,
-        });
-
-        const running = runningProcesses.get(run.id);
-        if (running) {
-          running.child.kill("SIGTERM");
-          runningProcesses.delete(run.id);
-        }
-        await releaseIssueExecutionAndPromote(run);
-      }),
-    );
-
-    return runs.length;
+    return cancelActiveForAgentInternalModule(db, agentId, reason, {
+      releaseIssueExecutionAndPromote,
+    });
   }
 
   async function cancelBudgetScopeWork(scope: BudgetEnforcementScope) {
-    if (scope.scopeType === "agent") {
-      await cancelActiveForAgentInternal(scope.scopeId, "Cancelled due to budget pause");
-      await cancelPendingWakeupsForBudgetScope(scope);
-      return;
-    }
-
-    const runIds =
-      scope.scopeType === "company"
-        ? await db
-          .select({ id: heartbeatRuns.id })
-          .from(heartbeatRuns)
-          .where(
-            and(
-              eq(heartbeatRuns.companyId, scope.companyId),
-              inArray(heartbeatRuns.status, ["queued", "running"]),
-            ),
-          )
-          .then((rows) => rows.map((row) => row.id))
-        : await listProjectScopedRunIds(scope.companyId, scope.scopeId);
-
-    await Promise.all(runIds.map((runId) => cancelRunInternal(runId, "Cancelled due to budget pause")));
-
-    await cancelPendingWakeupsForBudgetScope(scope);
+    return cancelBudgetScopeWorkModule(db, scope, {
+      cancelRunInternal,
+      cancelActiveForAgentInternal,
+    });
   }
 
   return {
@@ -5515,42 +3253,7 @@ Keep messages concise and substantive. Do not post empty status updates. If you 
 
     resumeQueuedRuns,
 
-    tickTimers: async (now = new Date()) => {
-      const allAgents = await db
-        .select()
-        .from(agents)
-        .where(notInArray(agents.status, ["paused", "terminated", "pending_approval"]));
-      let checked = 0;
-      let enqueued = 0;
-      let skipped = 0;
-
-      for (const agent of allAgents) {
-        const policy = parseHeartbeatPolicy(agent);
-        if (!policy.enabled || policy.intervalSec <= 0) continue;
-
-        checked += 1;
-        const baseline = new Date(agent.lastHeartbeatAt ?? agent.createdAt).getTime();
-        const elapsedMs = now.getTime() - baseline;
-        if (elapsedMs < policy.intervalSec * 1000) continue;
-
-        const run = await enqueueWakeup(agent.id, {
-          source: "timer",
-          triggerDetail: "system",
-          reason: "heartbeat_timer",
-          requestedByActorType: "system",
-          requestedByActorId: "heartbeat_scheduler",
-          contextSnapshot: {
-            source: "scheduler",
-            reason: "interval_elapsed",
-            now: now.toISOString(),
-          },
-        });
-        if (run) enqueued += 1;
-        else skipped += 1;
-      }
-
-      return { checked, enqueued, skipped };
-    },
+    tickTimers: (now = new Date()) => tickTimersModule(db, enqueueWakeup, now),
 
     cancelRun: (runId: string) => cancelRunInternal(runId),
 

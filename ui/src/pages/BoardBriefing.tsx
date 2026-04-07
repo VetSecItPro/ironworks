@@ -11,7 +11,7 @@ import { hiringApi } from "../api/hiring";
 import { approvalsApi } from "../api/approvals";
 import { activityApi } from "../api/activity";
 import { executiveApi } from "../api/executive";
-import type { DORAMetrics, RiskItem, PermissionMatrixData, DepartmentImpactRow, HumanOverrideRate } from "../api/executive";
+import type { RiskItem, DepartmentImpactRow } from "../api/executive";
 import { useCompany } from "../context/CompanyContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { queryKeys } from "../lib/queryKeys";
@@ -21,6 +21,16 @@ import { ActivityRow } from "../components/ActivityRow";
 import { PageSkeleton } from "../components/PageSkeleton";
 import { CapacityPlanning } from "../components/CapacityPlanning";
 import { computeAgentPerformance } from "./AgentPerformance";
+import {
+  StatBlock,
+  DORAMetricBlock,
+  HealthBreakdownItem,
+  AgentPerfSummaryRow,
+} from "../components/briefing/BriefingCards";
+import {
+  WeeklyLineChart,
+  WeeklyBarChart,
+} from "../components/briefing/BriefingCharts";
 import {
   FileText,
   Users,
@@ -196,9 +206,6 @@ export function BoardBriefing() {
     staleTime: 120_000,
   });
 
-  // Weekly trend data: 8 weeks of cost + issues via windowSpend and issues list
-  // Both are already fetched above; we compute trends from existing data.
-
   // -- Derived data --
 
   const weekSpendCents = useMemo(() => {
@@ -208,8 +215,6 @@ export function BoardBriefing() {
       .reduce((sum, r) => sum + r.costCents, 0);
   }, [windowSpend]);
 
-  // Rough "last week" calculation: we don't have the exact prior-7d bucket,
-  // so estimate using 30d minus current 7d (a rough proxy).
   const monthSpendCents = useMemo(() => {
     if (!windowSpend) return 0;
     return windowSpend
@@ -218,7 +223,6 @@ export function BoardBriefing() {
   }, [windowSpend]);
 
   const lastWeekEstimate = useMemo(() => {
-    // approximate: (30d - 7d) / 3 to get weekly average of remaining 3 weeks
     if (monthSpendCents <= weekSpendCents) return 0;
     return Math.round((monthSpendCents - weekSpendCents) / 3);
   }, [monthSpendCents, weekSpendCents]);
@@ -226,7 +230,6 @@ export function BoardBriefing() {
   const spendTrend = weekSpendCents - lastWeekEstimate;
   const monthlyProjection = Math.round(weekSpendCents * 4.33);
 
-  // Goals - enhanced with health status
   const goalStats = useMemo(() => {
     const progressList = goalsProgress ?? [];
     const goalsList = allGoals ?? [];
@@ -236,7 +239,6 @@ export function BoardBriefing() {
     const atRisk = progressList.filter((g) => g.blockedIssues > 0).length;
     const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-    // Health status counts from actual goal objects
     let onTrack = 0;
     let healthAtRisk = 0;
     let offTrack = 0;
@@ -253,7 +255,6 @@ export function BoardBriefing() {
       }
     }
 
-    // Sort at-risk goals by health score ascending (worst first)
     topAtRisk.sort((a, b) => (a.healthScore ?? 0) - (b.healthScore ?? 0));
 
     return {
@@ -269,7 +270,6 @@ export function BoardBriefing() {
     };
   }, [goalsProgress, allGoals]);
 
-  // Hiring
   const pendingHiring = useMemo(
     () => (hiringRequests ?? []).filter((h) => h.status === "pending" || h.status === "pending_approval"),
     [hiringRequests],
@@ -277,7 +277,6 @@ export function BoardBriefing() {
 
   const pendingApprovals = approvals ?? [];
 
-  // Agent performance
   const perfRows = useMemo(
     () => computeAgentPerformance(agents ?? [], issues ?? [], costsByAgent ?? [], "30d"),
     [agents, issues, costsByAgent],
@@ -289,7 +288,6 @@ export function BoardBriefing() {
     .slice(-3)
     .reverse();
 
-  // Agent map for activity
   const agentMap = useMemo(() => {
     const map = new Map<string, Agent>();
     for (const a of agents ?? []) map.set(a.id, a);
@@ -314,7 +312,6 @@ export function BoardBriefing() {
     [activity],
   );
 
-  // CMO / marketing department data derived from departmentImpact
   const marketingDept = useMemo(
     () => (departmentImpactData ?? []).find(
       (d) => d.department.toLowerCase().includes("market") || d.department.toLowerCase().includes("cmo"),
@@ -322,7 +319,6 @@ export function BoardBriefing() {
     [departmentImpactData],
   );
 
-  // Weekly trend buckets derived from issues list (simple 8-week retrospective)
   const issueTrendWeeks = useMemo(() => {
     const now = Date.now();
     const weeks: Array<{ label: string; count: number }> = [];
@@ -341,10 +337,6 @@ export function BoardBriefing() {
   }, [issues]);
 
   const spendTrendWeeks = useMemo(() => {
-    // Use windowSpend 30d vs 7d to approximate; we can only produce two data points here
-    // without a dedicated trend API. Spread them across 8 buckets with the data we have.
-    // The first 7 buckets estimate prior weekly average from the 30d window,
-    // and the last bucket is the current 7d window.
     const priorMonthly = monthSpendCents - weekSpendCents;
     const priorWeeklyAvg = priorMonthly > 0 ? Math.round(priorMonthly / 3) : 0;
     const weeks: Array<{ label: string; cost: number }> = [];
@@ -354,14 +346,10 @@ export function BoardBriefing() {
       const label = new Date(weekEnd).toLocaleDateString("en-US", { month: "short", day: "numeric" });
       weeks.push({ label, cost: priorWeeklyAvg });
     }
-    weeks.push({
-      label: "This week",
-      cost: weekSpendCents,
-    });
+    weeks.push({ label: "This week", cost: weekSpendCents });
     return weeks;
   }, [weekSpendCents, monthSpendCents]);
 
-  // Date string
   const dateStr = new Date().toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
@@ -399,7 +387,6 @@ export function BoardBriefing() {
             <button
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 transition-colors print:hidden"
               onClick={() => {
-                // Trigger browser print dialog which allows "Save as PDF"
                 const style = document.createElement("style");
                 style.textContent = "@media print { @page { size: A4; margin: 1cm; } }";
                 document.head.appendChild(style);
@@ -483,115 +470,111 @@ export function BoardBriefing() {
 
       {/* 1. Headcount + 2. Cost Summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Headcount Card - drill-down to Org Chart */}
         <Link to="/org" className="no-underline text-inherit block">
-        <div className="rounded-xl border border-border p-5 space-y-3 hover:border-foreground/20 transition-colors cursor-pointer">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
-            <Users className="h-3.5 w-3.5" />
-            Headcount
-          </h3>
-          {headcount ? (
-            <div className="space-y-2">
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold tabular-nums">{headcount.fte + headcount.contractor}</span>
-                <span className="text-sm text-muted-foreground">total agents</span>
-              </div>
-              <div className="grid grid-cols-2 gap-3 text-sm text-muted-foreground tabular-nums">
-                <div className="flex justify-between">
-                  <span>Full-time</span>
-                  <span className="font-medium text-foreground">{headcount.fte}</span>
+          <div className="rounded-xl border border-border p-5 space-y-3 hover:border-foreground/20 transition-colors cursor-pointer">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+              <Users className="h-3.5 w-3.5" />
+              Headcount
+            </h3>
+            {headcount ? (
+              <div className="space-y-2">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-bold tabular-nums">{headcount.fte + headcount.contractor}</span>
+                  <span className="text-sm text-muted-foreground">total agents</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Contractors</span>
-                  <span className="font-medium text-foreground">{headcount.contractor}</span>
+                <div className="grid grid-cols-2 gap-3 text-sm text-muted-foreground tabular-nums">
+                  <div className="flex justify-between">
+                    <span>Full-time</span>
+                    <span className="font-medium text-foreground">{headcount.fte}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Contractors</span>
+                    <span className="font-medium text-foreground">{headcount.contractor}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">No headcount data.</p>
-          )}
-        </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No headcount data.</p>
+            )}
+          </div>
         </Link>
 
-        {/* Cost Summary Card - drill-down to Costs page */}
         <Link to="/costs" className="no-underline text-inherit block">
-        <div className="rounded-xl border border-border p-5 space-y-3 hover:border-foreground/20 transition-colors cursor-pointer">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
-            <DollarSign className="h-3.5 w-3.5" />
-            Cost Summary
-          </h3>
-          <div className="space-y-2">
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold tabular-nums">{formatCents(weekSpendCents)}</span>
-              <span className="text-sm text-muted-foreground">this week</span>
-            </div>
-            <div className="space-y-1.5 text-sm text-muted-foreground tabular-nums">
-              <div className="flex justify-between">
-                <span>Last week (est.)</span>
-                <span>{formatCents(lastWeekEstimate)}</span>
+          <div className="rounded-xl border border-border p-5 space-y-3 hover:border-foreground/20 transition-colors cursor-pointer">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+              <DollarSign className="h-3.5 w-3.5" />
+              Cost Summary
+            </h3>
+            <div className="space-y-2">
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-bold tabular-nums">{formatCents(weekSpendCents)}</span>
+                <span className="text-sm text-muted-foreground">this week</span>
               </div>
-              <div className="flex justify-between">
-                <span>Trend</span>
-                <span className={cn(
-                  "flex items-center gap-1",
-                  spendTrend > 0 ? "text-amber-400" : "text-emerald-400",
-                )}>
-                  {spendTrend > 0 ? (
-                    <TrendingUp className="h-3.5 w-3.5" />
-                  ) : (
-                    <TrendingDown className="h-3.5 w-3.5" />
-                  )}
-                  {spendTrend > 0 ? "+" : ""}{formatCents(Math.abs(spendTrend))}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>Monthly projection</span>
-                <span className="font-medium text-foreground">{formatCents(monthlyProjection)}</span>
+              <div className="space-y-1.5 text-sm text-muted-foreground tabular-nums">
+                <div className="flex justify-between">
+                  <span>Last week (est.)</span>
+                  <span>{formatCents(lastWeekEstimate)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Trend</span>
+                  <span className={cn(
+                    "flex items-center gap-1",
+                    spendTrend > 0 ? "text-amber-400" : "text-emerald-400",
+                  )}>
+                    {spendTrend > 0 ? (
+                      <TrendingUp className="h-3.5 w-3.5" />
+                    ) : (
+                      <TrendingDown className="h-3.5 w-3.5" />
+                    )}
+                    {spendTrend > 0 ? "+" : ""}{formatCents(Math.abs(spendTrend))}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Monthly projection</span>
+                  <span className="font-medium text-foreground">{formatCents(monthlyProjection)}</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
         </Link>
       </div>
 
       {/* 3. Goal Progress + 4. Pending Decisions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Goal Health Card - drill-down to Goals */}
         <Link to="/goals" className="no-underline text-inherit block">
-        <div className="rounded-xl border border-border p-5 space-y-3 hover:border-foreground/20 transition-colors cursor-pointer">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
-            <Target className="h-3.5 w-3.5" />
-            Goal Health
-          </h3>
-          <div className="grid grid-cols-2 gap-3">
-            <StatBlock label="Total Goals" value={goalStats.total} />
-            <StatBlock label="Completion Rate" value={`${goalStats.completionRate}%`} color="text-blue-400" />
-            <StatBlock label="On Track" value={goalStats.onTrack} color="text-emerald-400" />
-            <StatBlock label="At Risk" value={goalStats.healthAtRisk} color={goalStats.healthAtRisk > 0 ? "text-amber-400" : undefined} />
-            <StatBlock label="Off Track" value={goalStats.offTrack} color={goalStats.offTrack > 0 ? "text-red-400" : undefined} />
-            <StatBlock label="Completed" value={goalStats.completed} color="text-emerald-400" />
-          </div>
-          {goalStats.topAtRisk.length > 0 && (
-            <div className="pt-2 border-t border-border space-y-1.5">
-              <span className="text-[10px] text-muted-foreground font-medium uppercase">Top at-risk goals</span>
-              {goalStats.topAtRisk.map((g) => (
-                <div key={g.id} className="flex items-center gap-2 text-xs">
-                  <span className={cn(
-                    "h-1.5 w-1.5 rounded-full shrink-0",
-                    g.healthStatus === "off_track" ? "bg-red-500" : "bg-amber-500",
-                  )} />
-                  <span className="truncate flex-1">{g.title}</span>
-                  {g.healthScore != null && (
-                    <span className="text-muted-foreground tabular-nums shrink-0">{g.healthScore}</span>
-                  )}
-                </div>
-              ))}
+          <div className="rounded-xl border border-border p-5 space-y-3 hover:border-foreground/20 transition-colors cursor-pointer">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+              <Target className="h-3.5 w-3.5" />
+              Goal Health
+            </h3>
+            <div className="grid grid-cols-2 gap-3">
+              <StatBlock label="Total Goals" value={goalStats.total} />
+              <StatBlock label="Completion Rate" value={`${goalStats.completionRate}%`} color="text-blue-400" />
+              <StatBlock label="On Track" value={goalStats.onTrack} color="text-emerald-400" />
+              <StatBlock label="At Risk" value={goalStats.healthAtRisk} color={goalStats.healthAtRisk > 0 ? "text-amber-400" : undefined} />
+              <StatBlock label="Off Track" value={goalStats.offTrack} color={goalStats.offTrack > 0 ? "text-red-400" : undefined} />
+              <StatBlock label="Completed" value={goalStats.completed} color="text-emerald-400" />
             </div>
-          )}
-        </div>
+            {goalStats.topAtRisk.length > 0 && (
+              <div className="pt-2 border-t border-border space-y-1.5">
+                <span className="text-[10px] text-muted-foreground font-medium uppercase">Top at-risk goals</span>
+                {goalStats.topAtRisk.map((g) => (
+                  <div key={g.id} className="flex items-center gap-2 text-xs">
+                    <span className={cn(
+                      "h-1.5 w-1.5 rounded-full shrink-0",
+                      g.healthStatus === "off_track" ? "bg-red-500" : "bg-amber-500",
+                    )} />
+                    <span className="truncate flex-1">{g.title}</span>
+                    {g.healthScore != null && (
+                      <span className="text-muted-foreground tabular-nums shrink-0">{g.healthScore}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </Link>
 
-        {/* Pending Decisions Card */}
         <div className="rounded-xl border border-border p-5 space-y-3">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
             <ClipboardList className="h-3.5 w-3.5" />
@@ -643,7 +626,6 @@ export function BoardBriefing() {
           <p className="text-sm text-muted-foreground">No agent performance data yet.</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Top 3 */}
             <div className="space-y-2">
               <h4 className="text-xs font-medium text-emerald-400 uppercase tracking-wider">Top Performers</h4>
               {topPerformers.length === 0 ? (
@@ -657,7 +639,6 @@ export function BoardBriefing() {
               )}
             </div>
 
-            {/* Bottom 3 */}
             <div className="space-y-2">
               <h4 className="text-xs font-medium text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
                 <AlertTriangle className="h-3 w-3" />
@@ -788,10 +769,7 @@ export function BoardBriefing() {
               value={riskData.countByLevel.medium ?? 0}
               color={riskData.countByLevel.medium > 0 ? "text-amber-400" : undefined}
             />
-            <StatBlock
-              label="Low"
-              value={riskData.countByLevel.low ?? 0}
-            />
+            <StatBlock label="Low" value={riskData.countByLevel.low ?? 0} />
           </div>
           {riskData.risks.length > 0 && (
             <div className="space-y-1.5 pt-2 border-t border-border/50">
@@ -1012,7 +990,6 @@ export function BoardBriefing() {
           Trends (Last 8 Weeks)
         </h3>
 
-        {/* Weekly spend trend - SVG line chart */}
         <div className="space-y-2">
           <p className="text-xs font-medium text-muted-foreground">Weekly Spend</p>
           <WeeklyLineChart
@@ -1021,7 +998,6 @@ export function BoardBriefing() {
           />
         </div>
 
-        {/* Weekly issues completed trend - SVG bar chart */}
         <div className="space-y-2">
           <p className="text-xs font-medium text-muted-foreground">Issues Completed per Week</p>
           <WeeklyBarChart
@@ -1100,235 +1076,6 @@ export function BoardBriefing() {
           <CapacityPlanning issues={issues} agents={agents} />
         </div>
       )}
-    </div>
-  );
-}
-
-function DORAMetricBlock({
-  label,
-  value,
-  tier,
-  description,
-}: {
-  label: string;
-  value: string;
-  tier: "elite" | "high" | "medium" | "low";
-  description: string;
-}) {
-  const tierColors: Record<string, string> = {
-    elite: "text-emerald-400",
-    high: "text-blue-400",
-    medium: "text-amber-400",
-    low: "text-red-400",
-  };
-  const tierLabels: Record<string, string> = {
-    elite: "Elite",
-    high: "High",
-    medium: "Medium",
-    low: "Low",
-  };
-  return (
-    <div className="rounded-lg bg-muted/30 px-3 py-3 space-y-1">
-      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className={cn("text-xl font-bold tabular-nums", tierColors[tier])}>{value}</p>
-      <p className="text-[10px] text-muted-foreground">{description}</p>
-      <span className={cn("inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded", tierColors[tier], "bg-current/10")}>
-        {tierLabels[tier]}
-      </span>
-    </div>
-  );
-}
-
-function StatBlock({
-  label,
-  value,
-  color,
-}: {
-  label: string;
-  value: number | string;
-  color?: string;
-}) {
-  return (
-    <div className="rounded-lg bg-muted/30 px-3 py-2.5">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className={cn("text-2xl font-bold tabular-nums", color)}>{value}</p>
-    </div>
-  );
-}
-
-const RATING_COLORS: Record<string, string> = {
-  A: "text-emerald-400 bg-emerald-500/10",
-  B: "text-blue-400 bg-blue-500/10",
-  C: "text-amber-400 bg-amber-500/10",
-  D: "text-orange-400 bg-orange-500/10",
-  F: "text-red-400 bg-red-500/10",
-};
-
-function HealthBreakdownItem({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="text-center">
-      <div className={cn(
-        "text-lg font-bold tabular-nums",
-        value >= 80 ? "text-emerald-400" :
-        value >= 60 ? "text-blue-400" :
-        value >= 40 ? "text-amber-400" : "text-red-400",
-      )}>
-        {value}
-      </div>
-      <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{label}</div>
-    </div>
-  );
-}
-
-function AgentPerfSummaryRow({ row }: { row: { agentId: string; name: string; rating: string; ratingScore: number; tasksDone: number; completionRate: number } }) {
-  return (
-    <div className="flex items-center gap-2.5 rounded-lg border border-border/50 bg-muted/20 px-3 py-2 text-sm">
-      <span className={cn(
-        "inline-flex items-center justify-center h-6 w-6 rounded text-xs font-bold shrink-0",
-        RATING_COLORS[row.rating] ?? "text-muted-foreground bg-muted",
-      )}>
-        {row.rating}
-      </span>
-      <span className="truncate flex-1 font-medium">{row.name}</span>
-      <span className="text-muted-foreground tabular-nums shrink-0 text-xs">
-        {row.tasksDone} tasks - {row.completionRate}%
-      </span>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Trend Chart Components (pure SVG, no external deps)
-// ---------------------------------------------------------------------------
-
-const CHART_W = 560;
-const CHART_H = 80;
-const CHART_PAD_X = 0;
-const CHART_PAD_Y = 8;
-
-function WeeklyLineChart({
-  data,
-  formatValue,
-}: {
-  data: Array<{ label: string; value: number }>;
-  formatValue: (v: number) => string;
-}) {
-  const max = Math.max(...data.map((d) => d.value), 1);
-  const n = data.length;
-  const stepX = (CHART_W - CHART_PAD_X * 2) / Math.max(n - 1, 1);
-  const points = data.map((d, i) => {
-    const x = CHART_PAD_X + i * stepX;
-    const y = CHART_PAD_Y + (1 - d.value / max) * (CHART_H - CHART_PAD_Y * 2);
-    return { x, y, d };
-  });
-  const pathD = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
-
-  return (
-    <div className="w-full overflow-x-auto">
-      <svg
-        viewBox={`0 0 ${CHART_W} ${CHART_H + 20}`}
-        className="w-full"
-        aria-label="Weekly spend trend chart"
-      >
-        {/* Grid line at 50% */}
-        <line
-          x1={CHART_PAD_X}
-          y1={CHART_PAD_Y + (CHART_H - CHART_PAD_Y * 2) / 2}
-          x2={CHART_W - CHART_PAD_X}
-          y2={CHART_PAD_Y + (CHART_H - CHART_PAD_Y * 2) / 2}
-          stroke="currentColor"
-          strokeOpacity={0.1}
-          strokeWidth={1}
-        />
-        {/* Line path */}
-        <path d={pathD} fill="none" stroke="hsl(var(--primary))" strokeWidth={2} strokeLinejoin="round" />
-        {/* Dots + labels */}
-        {points.map((p, i) => (
-          <g key={i}>
-            <circle cx={p.x} cy={p.y} r={3} fill="hsl(var(--primary))" />
-            {i === n - 1 && (
-              <text
-                x={p.x}
-                y={p.y - 6}
-                textAnchor="middle"
-                fontSize={9}
-                fill="currentColor"
-                opacity={0.7}
-              >
-                {formatValue(p.d.value)}
-              </text>
-            )}
-            <text
-              x={p.x}
-              y={CHART_H + 18}
-              textAnchor="middle"
-              fontSize={8}
-              fill="currentColor"
-              opacity={0.5}
-            >
-              {p.d.label}
-            </text>
-          </g>
-        ))}
-      </svg>
-    </div>
-  );
-}
-
-function WeeklyBarChart({ data }: { data: Array<{ label: string; value: number }> }) {
-  const max = Math.max(...data.map((d) => d.value), 1);
-  const n = data.length;
-  const totalW = CHART_W - CHART_PAD_X * 2;
-  const barW = (totalW / n) * 0.65;
-  const gap = (totalW / n) * 0.35;
-
-  return (
-    <div className="w-full overflow-x-auto">
-      <svg
-        viewBox={`0 0 ${CHART_W} ${CHART_H + 20}`}
-        className="w-full"
-        aria-label="Weekly issues completed bar chart"
-      >
-        {data.map((d, i) => {
-          const barH = max > 0 ? ((d.value / max) * (CHART_H - CHART_PAD_Y * 2)) : 0;
-          const x = CHART_PAD_X + i * (barW + gap);
-          const y = CHART_PAD_Y + (CHART_H - CHART_PAD_Y * 2) - barH;
-          return (
-            <g key={i}>
-              <rect
-                x={x}
-                y={y}
-                width={barW}
-                height={barH}
-                rx={2}
-                fill={i === n - 1 ? "hsl(var(--primary))" : "hsl(var(--primary) / 0.4)"}
-              />
-              {d.value > 0 && (
-                <text
-                  x={x + barW / 2}
-                  y={y - 3}
-                  textAnchor="middle"
-                  fontSize={9}
-                  fill="currentColor"
-                  opacity={0.8}
-                >
-                  {d.value}
-                </text>
-              )}
-              <text
-                x={x + barW / 2}
-                y={CHART_H + 18}
-                textAnchor="middle"
-                fontSize={8}
-                fill="currentColor"
-                opacity={0.5}
-              >
-                {d.label}
-              </text>
-            </g>
-          );
-        })}
-      </svg>
     </div>
   );
 }

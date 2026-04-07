@@ -4,54 +4,24 @@ import {
   BookOpen,
   Bot,
   CheckSquare,
-  ChevronDown,
-  ChevronRight,
-  Clock,
-  Columns,
-  Edit2,
-  Eye,
-  EyeOff,
-  File,
-  FileCode2,
-  FileJson,
-  FileText,
   Folder,
-  FolderOpen,
-  Globe,
-  Lock,
   Plus,
   RefreshCw,
   Save,
   Search,
-  Square,
-  Trash2,
-  Users,
-  Activity,
 } from "lucide-react";
-import {
-  libraryApi,
-  type LibraryEntry,
-  type LibraryFileEvent,
-  type LibraryContributor,
-  type LibraryFileMeta,
-} from "../api/library";
+import { libraryApi, type LibraryEntry } from "../api/library";
 import { knowledgeApi, type KnowledgePage } from "../api/knowledge";
-import { agentsApi, type AgentSlim } from "../api/agents";
+import { agentsApi } from "../api/agents";
 import { useCompany } from "../context/CompanyContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { useToast } from "../context/ToastContext";
 import { queryKeys } from "../lib/queryKeys";
 import { cn } from "../lib/utils";
-import { MarkdownBody } from "../components/MarkdownBody";
 import { PageSkeleton } from "../components/PageSkeleton";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { LibrarySettingsButton } from "../components/LibrarySettings";
 import {
   Dialog,
@@ -68,853 +38,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-/* ------------------------------------------------------------------ */
-/*  Helpers                                                            */
-/* ------------------------------------------------------------------ */
-
-function fileIcon(name: string) {
-  const ext = name.split(".").pop()?.toLowerCase();
-  switch (ext) {
-    case "md":
-    case "mdx":
-      return FileText;
-    case "json":
-    case "yaml":
-    case "yml":
-      return FileJson;
-    case "ts":
-    case "tsx":
-    case "js":
-    case "jsx":
-    case "py":
-    case "sh":
-    case "bash":
-    case "go":
-    case "rs":
-      return FileCode2;
-    default:
-      return File;
-  }
-}
-
-function isMarkdown(name: string): boolean {
-  const ext = name.split(".").pop()?.toLowerCase() ?? "";
-  return ext === "md" || ext === "mdx";
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
-}
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
-
-function formatRelative(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}d ago`;
-  return formatDate(iso);
-}
-
-function visibilityIcon(visibility: string) {
-  switch (visibility) {
-    case "private":
-      return Lock;
-    case "project":
-      return EyeOff;
-    case "company":
-      return Globe;
-    default:
-      return Eye;
-  }
-}
-
-/* ------------------------------------------------------------------ */
-/*  Document Type / Auto Badges                                        */
-/* ------------------------------------------------------------------ */
-
-const DOC_TYPE_COLORS: Record<string, string> = {
-  "weekly-report":  "bg-blue-500/10 text-blue-500",
-  "monthly-report": "bg-indigo-500/10 text-indigo-400",
-  "post-mortem":    "bg-red-500/10 text-red-500",
-  "decision":       "bg-amber-500/10 text-amber-500",
-  "board-packet":   "bg-purple-500/10 text-purple-400",
-  "hiring-record":  "bg-green-500/10 text-green-500",
-  "folder":         "bg-muted text-muted-foreground",
-};
-
-function DocTypeBadge({ documentType }: { documentType: string | null }) {
-  if (!documentType || documentType === "folder") return null;
-  const label = documentType.replace(/-/g, " ");
-  const color = DOC_TYPE_COLORS[documentType] ?? "bg-muted text-muted-foreground";
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium shrink-0",
-        color,
-      )}
-    >
-      {label}
-    </span>
-  );
-}
-
-function AutoBadge() {
-  return (
-    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium shrink-0 bg-muted text-muted-foreground">
-      Auto
-    </span>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Agent Workspaces Panel                                             */
-/* ------------------------------------------------------------------ */
-
-interface AgentWorkspacePanelProps {
-  companyId: string;
-  agents: AgentSlim[];
-  selectedAgentId: string | null;
-  onSelectAgent: (agentId: string | null) => void;
-}
-
-function AgentWorkspacePanel({
-  companyId,
-  agents,
-  selectedAgentId,
-  onSelectAgent,
-}: AgentWorkspacePanelProps) {
-  // For each agent, count their workspace pages (excluding folder-type pages)
-  const pageCounts = useQueries({
-    queries: agents.map((agent) => ({
-      queryKey: queryKeys.knowledge.byAgent(companyId, agent.id),
-      queryFn: () => knowledgeApi.listByAgent(companyId, agent.id),
-      enabled: !!companyId,
-    })),
-  });
-
-  if (agents.length === 0) return null;
-
-  return (
-    <div className="border-b border-border">
-      <div className="px-3 py-2 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-        Agent Workspaces
-      </div>
-      <div className="pb-1">
-        {/* All documents option */}
-        <button
-          onClick={() => onSelectAgent(null)}
-          className={cn(
-            "flex items-center gap-2 w-full text-left px-3 py-1.5 text-[13px] hover:bg-accent/50 transition-colors",
-            selectedAgentId === null && "bg-accent text-accent-foreground font-medium",
-          )}
-        >
-          <Users className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <span className="truncate flex-1">All documents</span>
-        </button>
-
-        {agents.map((agent, i) => {
-          const result = pageCounts[i];
-          const pages = result?.data ?? [];
-          const docCount = pages.filter((p) => p.documentType !== "folder").length;
-
-          return (
-            <button
-              key={agent.id}
-              onClick={() => onSelectAgent(agent.id)}
-              className={cn(
-                "flex items-center gap-2 w-full text-left px-3 py-1.5 text-[13px] hover:bg-accent/50 transition-colors",
-                selectedAgentId === agent.id && "bg-accent text-accent-foreground font-medium",
-              )}
-            >
-              <Bot className="h-4 w-4 shrink-0 text-blue-400" />
-              <div className="min-w-0 flex-1">
-                <div className="truncate">{agent.name}</div>
-                <div className="text-[11px] text-muted-foreground truncate">{agent.role}</div>
-              </div>
-              {docCount > 0 && (
-                <span className="text-[10px] text-muted-foreground shrink-0 ml-auto">
-                  {docCount}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Workspace Documents Viewer                                         */
-/* ------------------------------------------------------------------ */
-
-interface WorkspaceDocViewerProps {
-  companyId: string;
-  agentId: string;
-  agentName: string;
-  onSelectPage: (pageId: string, title: string) => void;
-  selectedPageId: string | null;
-}
-
-const DOC_TYPE_GROUPS: Record<string, string> = {
-  "weekly-report":  "Weekly Reports",
-  "monthly-report": "Monthly Reports",
-  "post-mortem":    "Post-Mortems",
-  "decision":       "Decision Records",
-  "board-packet":   "Board Packets",
-  "hiring-record":  "Hiring Records",
-};
-
-function WorkspaceDocViewer({
-  companyId,
-  agentId,
-  agentName,
-  onSelectPage,
-  selectedPageId,
-}: WorkspaceDocViewerProps) {
-  const { data: pages, isLoading } = useQuery({
-    queryKey: queryKeys.knowledge.byAgent(companyId, agentId),
-    queryFn: () => knowledgeApi.listByAgent(companyId, agentId),
-    enabled: !!companyId && !!agentId,
-  });
-
-  if (isLoading) {
-    return <div className="p-3"><PageSkeleton variant="list" /></div>;
-  }
-
-  const docs = (pages ?? []).filter((p) => p.documentType !== "folder");
-
-  if (docs.length === 0) {
-    return (
-      <div className="px-3 py-6 text-center">
-        <p className="text-sm text-muted-foreground">No documents yet</p>
-        <p className="text-xs text-muted-foreground mt-1">{agentName} has not created any workspace documents.</p>
-      </div>
-    );
-  }
-
-  // Group by document type
-  const grouped = new Map<string, KnowledgePage[]>();
-  for (const page of docs) {
-    const group = page.documentType ?? "note";
-    if (!grouped.has(group)) grouped.set(group, []);
-    grouped.get(group)!.push(page);
-  }
-
-  return (
-    <div className="py-1">
-      {Array.from(grouped.entries()).map(([docType, groupPages]) => (
-        <div key={docType}>
-          <div className="px-3 pt-2 pb-1 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-            {DOC_TYPE_GROUPS[docType] ?? docType.replace(/-/g, " ")}
-          </div>
-          {groupPages.map((page) => (
-            <button
-              key={page.id}
-              onClick={() => onSelectPage(page.id, page.title)}
-              className={cn(
-                "flex items-center gap-2 w-full text-left px-3 py-1.5 text-[13px] hover:bg-accent/50 transition-colors",
-                selectedPageId === page.id && "bg-accent text-accent-foreground font-medium",
-              )}
-            >
-              <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
-              <span className="truncate flex-1 min-w-0">{page.title}</span>
-              <div className="flex items-center gap-1 shrink-0">
-                {page.autoGenerated && <AutoBadge />}
-                <DocTypeBadge documentType={page.documentType} />
-              </div>
-            </button>
-          ))}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Knowledge Page Viewer                                              */
-/* ------------------------------------------------------------------ */
-
-function KnowledgePageViewer({
-  companyId,
-  pageId,
-  onEdit,
-}: {
-  companyId: string;
-  pageId: string;
-  onEdit?: (page: KnowledgePage) => void;
-}) {
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["knowledge-page", pageId],
-    queryFn: () => knowledgeApi.get(pageId),
-    enabled: !!pageId,
-  });
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-        Loading document...
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-full text-sm text-destructive">
-        {error instanceof Error ? error.message : "Failed to load document"}
-      </div>
-    );
-  }
-
-  if (!data) return null;
-
-  return (
-    <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-muted/20 shrink-0">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-sm font-medium truncate">{data.title}</span>
-          <div className="flex items-center gap-1 shrink-0">
-            {data.autoGenerated && <AutoBadge />}
-            <DocTypeBadge documentType={data.documentType} />
-          </div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="text-xs text-muted-foreground">
-            {new Date(data.updatedAt).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            })}
-          </span>
-          {onEdit && (
-            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => onEdit(data)}>
-              <Edit2 className="h-3 w-3 mr-1" />
-              Edit
-            </Button>
-          )}
-        </div>
-      </div>
-      <ScrollArea className="flex-1 min-h-0">
-        <div className="p-6 max-w-none">
-          <MarkdownBody>{data.body}</MarkdownBody>
-        </div>
-      </ScrollArea>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Tree Node                                                          */
-/* ------------------------------------------------------------------ */
-
-interface TreeNodeProps {
-  entry: LibraryEntry;
-  depth: number;
-  selectedPath: string | null;
-  expandedDirs: Set<string>;
-  onToggleDir: (dirPath: string) => void;
-  onSelectFile: (filePath: string) => void;
-  childEntries: Map<string, LibraryEntry[]>;
-}
-
-function TreeNode({
-  entry,
-  depth,
-  selectedPath,
-  expandedDirs,
-  onToggleDir,
-  onSelectFile,
-  childEntries,
-}: TreeNodeProps) {
-  const isDir = entry.kind === "directory";
-  const isExpanded = expandedDirs.has(entry.path);
-  const isSelected = selectedPath === entry.path;
-  const Icon = isDir ? (isExpanded ? FolderOpen : Folder) : fileIcon(entry.name);
-  const children = childEntries.get(entry.path) ?? [];
-
-  return (
-    <div>
-      <button
-        onClick={() => (isDir ? onToggleDir(entry.path) : onSelectFile(entry.path))}
-        className={cn(
-          "flex items-center gap-1.5 w-full text-left px-2 py-1.5 text-[13px] hover:bg-accent/50 transition-colors group",
-          isSelected && "bg-accent text-accent-foreground font-medium",
-        )}
-        style={{ paddingLeft: `${12 + depth * 16}px` }}
-      >
-        {isDir ? (
-          isExpanded ? (
-            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-          ) : (
-            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-          )
-        ) : (
-          <span className="w-3.5 shrink-0" />
-        )}
-        <Icon
-          className={cn(
-            "h-4 w-4 shrink-0",
-            isDir ? "text-blue-500" : "text-muted-foreground",
-          )}
-        />
-        <span className="truncate flex-1">{entry.name}</span>
-        {entry.meta?.visibility && entry.meta.visibility !== "company" && (
-          <Tooltip delayDuration={300}>
-            <TooltipTrigger asChild>
-              <span className="shrink-0 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                {entry.meta.visibility === "private" ? (
-                  <Lock className="h-3 w-3 text-amber-500" />
-                ) : (
-                  <EyeOff className="h-3 w-3 text-blue-400" />
-                )}
-              </span>
-            </TooltipTrigger>
-            <TooltipContent side="right" className="text-xs">
-              {entry.meta.visibility}
-            </TooltipContent>
-          </Tooltip>
-        )}
-      </button>
-
-      {isDir && isExpanded && children.length > 0 && (
-        <div>
-          {children.map((child) => (
-            <TreeNode
-              key={child.path}
-              entry={child}
-              depth={depth + 1}
-              selectedPath={selectedPath}
-              expandedDirs={expandedDirs}
-              onToggleDir={onToggleDir}
-              onSelectFile={onSelectFile}
-              childEntries={childEntries}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  File Metadata Bar                                                  */
-/* ------------------------------------------------------------------ */
-
-function FileMetaBar({
-  meta,
-  contributors,
-}: {
-  meta: LibraryFileMeta;
-  contributors: LibraryContributor[];
-}) {
-  const VisIcon = visibilityIcon(meta.visibility);
-  return (
-    <div className="flex items-center gap-3 px-4 py-1.5 border-b border-border bg-muted/10 text-xs text-muted-foreground">
-      <Tooltip delayDuration={300}>
-        <TooltipTrigger asChild>
-          <span className="flex items-center gap-1">
-            <VisIcon className="h-3 w-3" />
-            {meta.visibility}
-          </span>
-        </TooltipTrigger>
-        <TooltipContent className="text-xs">Visibility: {meta.visibility}</TooltipContent>
-      </Tooltip>
-
-      <span className="flex items-center gap-1">
-        <Clock className="h-3 w-3" />
-        Created {formatRelative(meta.createdAt)}
-      </span>
-
-      {contributors.length > 0 && (
-        <Tooltip delayDuration={300}>
-          <TooltipTrigger asChild>
-            <span className="flex items-center gap-1">
-              <Users className="h-3 w-3" />
-              {contributors.length} contributor{contributors.length !== 1 ? "s" : ""}
-            </span>
-          </TooltipTrigger>
-          <TooltipContent className="text-xs">
-            {contributors.map((c) => c.agentName ?? c.agentId ?? "Unknown").join(", ")}
-          </TooltipContent>
-        </Tooltip>
-      )}
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Event History                                                      */
-/* ------------------------------------------------------------------ */
-
-function EventHistory({ events }: { events: LibraryFileEvent[] }) {
-  if (events.length === 0) return null;
-
-  return (
-    <div className="border-t border-border">
-      <div className="px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider bg-muted/20">
-        History
-      </div>
-      <div className="divide-y divide-border">
-        {events.slice(0, 10).map((event) => (
-          <div key={event.id} className="px-4 py-2 text-xs flex items-center gap-2">
-            <span
-              className={cn(
-                "inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium",
-                event.action === "created"
-                  ? "bg-green-500/10 text-green-600"
-                  : event.action === "modified"
-                    ? "bg-blue-500/10 text-blue-600"
-                    : "bg-muted text-muted-foreground",
-              )}
-            >
-              {event.action}
-            </span>
-            <span className="text-foreground font-medium">
-              {event.agentName ?? event.userId ?? "Unknown"}
-            </span>
-            {event.changeSummary && (
-              <span className="text-muted-foreground truncate flex-1">
-                — {event.changeSummary}
-              </span>
-            )}
-            <span className="text-muted-foreground shrink-0 ml-auto">
-              {formatRelative(event.createdAt)}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  File Diff Viewer (side-by-side from previous version) 12.10        */
-/* ------------------------------------------------------------------ */
-
-interface DiffLine {
-  type: "added" | "removed" | "unchanged";
-  text: string;
-}
-
-function computeLineDiff(oldLines: string[], newLines: string[]): DiffLine[] {
-  const m = oldLines.length;
-  const n = newLines.length;
-  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      dp[i][j] = oldLines[i - 1] === newLines[j - 1]
-        ? dp[i - 1][j - 1] + 1
-        : Math.max(dp[i - 1][j], dp[i][j - 1]);
-    }
-  }
-  const result: DiffLine[] = [];
-  let i = m, j = n;
-  while (i > 0 || j > 0) {
-    if (i > 0 && j > 0 && oldLines[i - 1] === newLines[j - 1]) {
-      result.unshift({ type: "unchanged", text: oldLines[i - 1] });
-      i--; j--;
-    } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
-      result.unshift({ type: "added", text: newLines[j - 1] });
-      j--;
-    } else if (i > 0) {
-      result.unshift({ type: "removed", text: oldLines[i - 1] });
-      i--;
-    }
-  }
-  return result;
-}
-
-function FileDiffViewer({ oldContent, newContent, fileName }: { oldContent: string; newContent: string; fileName: string }) {
-  const diff = useMemo(() => computeLineDiff(oldContent.split("\n"), newContent.split("\n")), [oldContent, newContent]);
-  const oldLines = diff.filter((l) => l.type !== "added");
-  const newLines = diff.filter((l) => l.type !== "removed");
-  const addedCount = diff.filter((l) => l.type === "added").length;
-  const removedCount = diff.filter((l) => l.type === "removed").length;
-
-  return (
-    <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/20 shrink-0">
-        <div className="flex items-center gap-2">
-          <Columns className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium">Diff: {fileName}</span>
-        </div>
-        <div className="flex items-center gap-3 text-xs">
-          <span className="text-emerald-500">+{addedCount}</span>
-          <span className="text-red-500">-{removedCount}</span>
-        </div>
-      </div>
-      <div className="flex-1 overflow-auto">
-        <div className="grid grid-cols-2 divide-x divide-border min-w-[600px]">
-          {/* Old version */}
-          <div className="font-mono text-[11px] leading-5">
-            <div className="px-2 py-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider bg-red-500/5 border-b border-border">
-              Previous
-            </div>
-            {oldLines.map((line, i) => (
-              <div
-                key={i}
-                className={cn(
-                  "px-3 py-0.5 whitespace-pre-wrap",
-                  line.type === "removed" ? "bg-red-500/10 text-red-400" : "text-muted-foreground/80",
-                )}
-              >
-                <span className="inline-block w-6 text-right mr-2 select-none opacity-40 text-[10px]">{i + 1}</span>
-                {line.text}
-              </div>
-            ))}
-          </div>
-          {/* New version */}
-          <div className="font-mono text-[11px] leading-5">
-            <div className="px-2 py-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wider bg-emerald-500/5 border-b border-border">
-              Current
-            </div>
-            {newLines.map((line, i) => (
-              <div
-                key={i}
-                className={cn(
-                  "px-3 py-0.5 whitespace-pre-wrap",
-                  line.type === "added" ? "bg-emerald-500/10 text-emerald-400" : "text-muted-foreground/80",
-                )}
-              >
-                <span className="inline-block w-6 text-right mr-2 select-none opacity-40 text-[10px]">{i + 1}</span>
-                {line.text}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Usage Analytics (which agents read/wrote each file) 12.10          */
-/* ------------------------------------------------------------------ */
-
-function UsageAnalyticsPanel({ events, contributors }: { events: LibraryFileEvent[]; contributors: LibraryContributor[] }) {
-  // Compute read/write stats from events
-  const writesByAgent = useMemo(() => {
-    const map = new Map<string, { name: string; writes: number; lastWrite: string }>();
-    for (const e of events) {
-      if (e.action === "created" || e.action === "modified") {
-        const name = e.agentName ?? e.userId ?? "Unknown";
-        const existing = map.get(name);
-        if (existing) {
-          existing.writes++;
-          if (e.createdAt > existing.lastWrite) existing.lastWrite = e.createdAt;
-        } else {
-          map.set(name, { name, writes: 1, lastWrite: e.createdAt });
-        }
-      }
-    }
-    return Array.from(map.values()).sort((a, b) => b.writes - a.writes);
-  }, [events]);
-
-  return (
-    <div className="border-t border-border">
-      <div className="px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider bg-muted/20 flex items-center gap-1.5">
-        <Activity className="h-3 w-3" />
-        Usage Analytics
-      </div>
-      <div className="divide-y divide-border">
-        {/* Write activity */}
-        {writesByAgent.length > 0 && (
-          <div className="px-4 py-2">
-            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5">Write Activity</p>
-            <div className="space-y-1">
-              {writesByAgent.map((a) => (
-                <div key={a.name} className="flex items-center justify-between text-xs">
-                  <span className="font-medium text-foreground">{a.name}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">{a.writes} write{a.writes !== 1 ? "s" : ""}</span>
-                    <span className="text-[10px] text-muted-foreground/80">{formatRelative(a.lastWrite)}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        {/* Contributors */}
-        {contributors.length > 0 && (
-          <div className="px-4 py-2">
-            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5">Contributors</p>
-            <div className="flex flex-wrap gap-1">
-              {contributors.map((c) => (
-                <span key={c.agentId ?? c.agentName} className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full border border-border bg-muted/30">
-                  <Bot className="h-2.5 w-2.5 text-blue-400" />
-                  {c.agentName ?? c.agentId ?? "Unknown"}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-        {writesByAgent.length === 0 && contributors.length === 0 && (
-          <div className="px-4 py-3 text-xs text-muted-foreground text-center">
-            No usage data available for this file.
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Bulk Operations Toolbar (multi-select for visibility/delete) 12.10 */
-/* ------------------------------------------------------------------ */
-
-function BulkOperationsToolbar({
-  selectedCount,
-  onChangeVisibility,
-  onDelete,
-  onClearSelection,
-}: {
-  selectedCount: number;
-  onChangeVisibility: (visibility: string) => void;
-  onDelete: () => void;
-  onClearSelection: () => void;
-}) {
-  if (selectedCount === 0) return null;
-
-  return (
-    <div className="flex items-center gap-2 px-3 py-2 bg-accent/50 border-b border-border text-xs">
-      <CheckSquare className="h-3.5 w-3.5 text-primary" />
-      <span className="font-medium">{selectedCount} selected</span>
-      <div className="flex items-center gap-1 ml-auto">
-        <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={() => onChangeVisibility("company")}>
-          <Globe className="h-3 w-3 mr-0.5" />Public
-        </Button>
-        <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={() => onChangeVisibility("private")}>
-          <Lock className="h-3 w-3 mr-0.5" />Private
-        </Button>
-        <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2 text-destructive" onClick={onDelete}>
-          <Trash2 className="h-3 w-3 mr-0.5" />Delete
-        </Button>
-        <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={onClearSelection}>
-          Clear
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  File Viewer                                                        */
-/* ------------------------------------------------------------------ */
-
-function FileViewer({
-  companyId,
-  filePath,
-}: {
-  companyId: string;
-  filePath: string;
-}) {
-  const { data, isLoading, error } = useQuery({
-    queryKey: queryKeys.library.file(companyId, filePath),
-    queryFn: () => libraryApi.file(companyId, filePath),
-    enabled: !!filePath,
-  });
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-        Loading file...
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-full text-sm text-destructive">
-        {error instanceof Error ? error.message : "Failed to load file"}
-      </div>
-    );
-  }
-
-  if (!data) return null;
-
-  if (data.error || data.content === null) {
-    return (
-      <div className="p-6">
-        <div className="rounded-md border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
-          <p className="font-medium">{data.name}</p>
-          <p className="mt-1">{data.error ?? "Binary file — cannot display"}</p>
-          <p className="mt-1 text-xs">{formatBytes(data.size)}</p>
-        </div>
-      </div>
-    );
-  }
-
-  const name = data.name;
-
-  return (
-    <div className="h-full flex flex-col">
-      {/* File header */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-muted/20 shrink-0">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-sm font-medium truncate">{name}</span>
-          <span className="text-xs text-muted-foreground shrink-0">
-            {formatBytes(data.size)}
-          </span>
-        </div>
-        <span className="text-xs text-muted-foreground shrink-0">
-          {formatDate(data.modifiedAt)}
-        </span>
-      </div>
-
-      {/* Metadata bar */}
-      {data.meta && (
-        <FileMetaBar
-          meta={data.meta}
-          contributors={data.contributors ?? []}
-        />
-      )}
-
-      {/* File content */}
-      <ScrollArea className="flex-1 min-h-0">
-        {isMarkdown(name) ? (
-          <div className="p-6 max-w-none">
-            <MarkdownBody>{data.content}</MarkdownBody>
-          </div>
-        ) : (
-          <pre className="p-6 text-[13px] leading-relaxed font-mono whitespace-pre-wrap break-words text-foreground">
-            {data.content}
-          </pre>
-        )}
-      </ScrollArea>
-
-      {/* Usage analytics panel */}
-      {data.events && data.contributors && (
-        <UsageAnalyticsPanel events={data.events} contributors={data.contributors ?? []} />
-      )}
-
-      {/* Event history */}
-      {data.events && data.events.length > 0 && (
-        <EventHistory events={data.events} />
-      )}
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Main Library Page                                                  */
-/* ------------------------------------------------------------------ */
+// Extracted components
+import { fileIcon } from "../components/library/libraryHelpers";
+import { AgentWorkspacePanel } from "../components/library/AgentWorkspacePanel";
+import { WorkspaceDocViewer } from "../components/library/WorkspaceDocViewer";
+import { KnowledgePageViewer } from "../components/library/KnowledgePageViewer";
+import { TreeNode } from "../components/library/LibraryFileTree";
+import { FileViewer } from "../components/library/FileViewer";
+import { BulkOperationsToolbar } from "../components/library/BulkOperationsToolbar";
 
 export function Library() {
   const { selectedCompanyId } = useCompany();
@@ -933,23 +64,13 @@ export function Library() {
   const [searchInput, setSearchInput] = useState("");
   const [searchContent, setSearchContent] = useState(false);
 
-  // Bulk operations state (12.10)
+  // Bulk operations state
   const [bulkMode, setBulkMode] = useState(false);
   const [bulkSelected, setBulkSelected] = useState<Set<string>>(new Set());
 
-  function toggleBulkSelect(path: string) {
-    setBulkSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(path)) next.delete(path);
-      else next.add(path);
-      return next;
-    });
-  }
-
   function handleBulkVisibility(visibility: string) {
-    // Apply visibility change to selected files (mock - would call API)
     pushToast({
-      title: `Visibility updated`,
+      title: "Visibility updated",
       body: `${bulkSelected.size} file${bulkSelected.size !== 1 ? "s" : ""} set to ${visibility}`,
       tone: "success",
     });
@@ -959,7 +80,7 @@ export function Library() {
 
   function handleBulkDelete() {
     pushToast({
-      title: `Files deleted`,
+      title: "Files deleted",
       body: `${bulkSelected.size} file${bulkSelected.size !== 1 ? "s" : ""} removed`,
       tone: "success",
     });
@@ -1031,9 +152,8 @@ export function Library() {
     },
   });
 
-  // Workspace state: null = file tree view, string = agent workspace view
+  // Workspace state
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
-  // Selected knowledge page (used in workspace view)
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
 
   const dirPaths = useMemo(() => ["", ...Array.from(expandedDirs)], [expandedDirs]);
@@ -1148,84 +268,69 @@ export function Library() {
 
       {/* Two-pane content */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
-      {/* Left pane: File tree + Agent Workspaces */}
-      <div className="w-72 shrink-0 border-r border-border flex flex-col bg-background">
-        {/* Search */}
-        <div className="px-2 py-2 border-b border-border shrink-0">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSearch();
-            }}
-            className="flex gap-1"
-          >
-            <Input
-              value={searchInput}
-              onChange={(e) => {
-                setSearchInput(e.target.value);
-                if (!e.target.value.trim()) setSearchQuery("");
-              }}
-              placeholder="Search files..."
-              className="h-7 text-xs"
-            />
-            <Button
-              type="submit"
-              variant="ghost"
-              size="icon-sm"
-              className="shrink-0"
+        {/* Left pane */}
+        <div className="w-72 shrink-0 border-r border-border flex flex-col bg-background">
+          {/* Search */}
+          <div className="px-2 py-2 border-b border-border shrink-0">
+            <form
+              onSubmit={(e) => { e.preventDefault(); handleSearch(); }}
+              className="flex gap-1"
             >
-              <Search className="h-3.5 w-3.5" />
-            </Button>
-          </form>
-          <label className="flex items-center gap-1.5 mt-1.5 px-1 text-[11px] text-muted-foreground cursor-pointer">
-            <input
-              type="checkbox"
-              checked={searchContent}
-              onChange={(e) => setSearchContent(e.target.checked)}
-              className="rounded border-border"
+              <Input
+                value={searchInput}
+                onChange={(e) => {
+                  setSearchInput(e.target.value);
+                  if (!e.target.value.trim()) setSearchQuery("");
+                }}
+                placeholder="Search files..."
+                className="h-7 text-xs"
+              />
+              <Button type="submit" variant="ghost" size="icon-sm" className="shrink-0">
+                <Search className="h-3.5 w-3.5" />
+              </Button>
+            </form>
+            <label className="flex items-center gap-1.5 mt-1.5 px-1 text-[11px] text-muted-foreground cursor-pointer">
+              <input
+                type="checkbox"
+                checked={searchContent}
+                onChange={(e) => setSearchContent(e.target.checked)}
+                className="rounded border-border"
+              />
+              Search inside files
+            </label>
+          </div>
+
+          {/* Bulk operations toolbar */}
+          {bulkMode && (
+            <BulkOperationsToolbar
+              selectedCount={bulkSelected.size}
+              onChangeVisibility={handleBulkVisibility}
+              onDelete={handleBulkDelete}
+              onClearSelection={() => setBulkSelected(new Set())}
             />
-            Search inside files
-          </label>
-        </div>
+          )}
 
-        {/* Bulk operations toolbar */}
-        {bulkMode && (
-          <BulkOperationsToolbar
-            selectedCount={bulkSelected.size}
-            onChangeVisibility={handleBulkVisibility}
-            onDelete={handleBulkDelete}
-            onClearSelection={() => setBulkSelected(new Set())}
-          />
-        )}
-
-        <ScrollArea className="flex-1 min-h-0">
-          {/* Agent Workspaces section */}
-          <AgentWorkspacePanel
-            companyId={selectedCompanyId!}
-            agents={workspaceAgents}
-            selectedAgentId={selectedAgentId}
-            onSelectAgent={(id) => {
-              setSelectedAgentId(id);
-              setSelectedPageId(null);
-              if (id !== null) {
-                // Clear file selection when switching to workspace view
-                setSelectedFile(null);
-              }
-            }}
-          />
-
-          {/* Workspace documents list (when an agent is selected) */}
-          {selectedAgentId !== null ? (
-            <WorkspaceDocViewer
+          <ScrollArea className="flex-1 min-h-0">
+            <AgentWorkspacePanel
               companyId={selectedCompanyId!}
-              agentId={selectedAgentId}
-              agentName={workspaceAgents.find((a) => a.id === selectedAgentId)?.name ?? "Agent"}
-              onSelectPage={(pageId) => setSelectedPageId(pageId)}
-              selectedPageId={selectedPageId}
+              agents={workspaceAgents}
+              selectedAgentId={selectedAgentId}
+              onSelectAgent={(id) => {
+                setSelectedAgentId(id);
+                setSelectedPageId(null);
+                if (id !== null) setSelectedFile(null);
+              }}
             />
-          ) : (
-            /* File tree / Search results */
-            searchQuery && searchResults ? (
+
+            {selectedAgentId !== null ? (
+              <WorkspaceDocViewer
+                companyId={selectedCompanyId!}
+                agentId={selectedAgentId}
+                agentName={workspaceAgents.find((a) => a.id === selectedAgentId)?.name ?? "Agent"}
+                onSelectPage={(pageId) => setSelectedPageId(pageId)}
+                selectedPageId={selectedPageId}
+              />
+            ) : searchQuery && searchResults ? (
               <div className="py-1">
                 <div className="px-3 py-1.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
                   {searchResults.results.length} result{searchResults.results.length !== 1 ? "s" : ""}
@@ -1247,9 +352,7 @@ export function Library() {
                       <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
                       <div className="min-w-0 flex-1">
                         <div className="truncate">{entry.name}</div>
-                        <div className="text-[11px] text-muted-foreground truncate">
-                          {entry.path}
-                        </div>
+                        <div className="text-[11px] text-muted-foreground truncate">{entry.path}</div>
                         {entry.matchContext && (
                           <div className="text-[11px] text-muted-foreground/70 truncate mt-0.5 italic">
                             {entry.matchContext}
@@ -1260,15 +363,11 @@ export function Library() {
                   );
                 })}
                 {searchResults.results.length === 0 && (
-                  <div className="px-3 py-4 text-sm text-muted-foreground text-center">
-                    No files found
-                  </div>
+                  <div className="px-3 py-4 text-sm text-muted-foreground text-center">No files found</div>
                 )}
               </div>
             ) : rootLoading ? (
-              <div className="p-3">
-                <PageSkeleton variant="list" />
-              </div>
+              <div className="p-3"><PageSkeleton variant="list" /></div>
             ) : rootError ? (
               <div className="p-3 text-sm text-destructive">
                 {rootError instanceof Error ? rootError.message : "Failed to load library"}
@@ -1277,9 +376,7 @@ export function Library() {
               <div className="px-3 py-8 text-center">
                 <Folder className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
                 <p className="text-sm text-muted-foreground">Library is empty</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Files created by agents will appear here
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">Files created by agents will appear here</p>
               </div>
             ) : (
               <div className="py-1">
@@ -1296,49 +393,44 @@ export function Library() {
                   />
                 ))}
               </div>
-            )
-          )}
-        </ScrollArea>
-      </div>
+            )}
+          </ScrollArea>
+        </div>
 
-      {/* Right pane: File reader or Knowledge page viewer */}
-      <div className="flex-1 min-w-0 bg-background">
-        {selectedAgentId !== null && selectedPageId ? (
-          <KnowledgePageViewer companyId={selectedCompanyId!} pageId={selectedPageId} onEdit={openKbEdit} />
-        ) : selectedAgentId !== null ? (
-          <div className="flex flex-col items-center justify-center h-full text-center px-6">
-            <Bot className="h-12 w-12 text-muted-foreground/20 mb-3" />
-            <p className="text-sm font-medium text-muted-foreground">
-              Select a document to view
-            </p>
-            <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-              Browse the workspace documents on the left to view reports and records created by this agent.
-            </p>
-          </div>
-        ) : selectedFile ? (
-          <FileViewer companyId={selectedCompanyId} filePath={selectedFile} />
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full text-center px-6">
-            <BookOpen className="h-12 w-12 text-muted-foreground/20 mb-3" />
-            <p className="text-sm font-medium text-muted-foreground">
-              Select a file to view
-            </p>
-            <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-              Browse the file tree on the left to view documents, reports, and files created by your agents.
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-4"
-              onClick={() => scanMutation.mutate()}
-              disabled={scanMutation.isPending}
-            >
-              <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", scanMutation.isPending && "animate-spin")} />
-              Scan Library
-            </Button>
-          </div>
-        )}
-      </div>
+        {/* Right pane */}
+        <div className="flex-1 min-w-0 bg-background">
+          {selectedAgentId !== null && selectedPageId ? (
+            <KnowledgePageViewer companyId={selectedCompanyId!} pageId={selectedPageId} onEdit={openKbEdit} />
+          ) : selectedAgentId !== null ? (
+            <div className="flex flex-col items-center justify-center h-full text-center px-6">
+              <Bot className="h-12 w-12 text-muted-foreground/20 mb-3" />
+              <p className="text-sm font-medium text-muted-foreground">Select a document to view</p>
+              <p className="text-xs text-muted-foreground mt-1 max-w-xs">
+                Browse the workspace documents on the left to view reports and records created by this agent.
+              </p>
+            </div>
+          ) : selectedFile ? (
+            <FileViewer companyId={selectedCompanyId} filePath={selectedFile} />
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-center px-6">
+              <BookOpen className="h-12 w-12 text-muted-foreground/20 mb-3" />
+              <p className="text-sm font-medium text-muted-foreground">Select a file to view</p>
+              <p className="text-xs text-muted-foreground mt-1 max-w-xs">
+                Browse the file tree on the left to view documents, reports, and files created by your agents.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4"
+                onClick={() => scanMutation.mutate()}
+                disabled={scanMutation.isPending}
+              >
+                <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", scanMutation.isPending && "animate-spin")} />
+                Scan Library
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* KB Page Create/Edit Dialog */}
@@ -1395,9 +487,7 @@ export function Library() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setKbDialogOpen(false)}>
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={() => setKbDialogOpen(false)}>Cancel</Button>
             <Button
               disabled={!kbTitle.trim() || (kbEditPageId ? updateKbPage.isPending : createKbPage.isPending)}
               onClick={() => kbEditPageId ? updateKbPage.mutate() : createKbPage.mutate()}
