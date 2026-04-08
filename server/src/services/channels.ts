@@ -461,11 +461,47 @@ export async function postMessage(
       logger.debug({ err }, "channel router failed, skipping");
     }
   } else if (opts.authorAgentId) {
-    // Agent posted - record it for rate limiting but DON'T wake anyone
+    // Agent posted - record for rate limiting
     try {
       await recordAgentResponse(db, opts.channelId, opts.companyId);
+
+      // Check for @mentions in agent message - wake ONLY mentioned agents
+      const mentionPattern = /@(\w[\w\s]*?)(?=[\s,\.!?]|$)/g;
+      const mentionMatches: string[] = [];
+      let mentionMatch;
+      while ((mentionMatch = mentionPattern.exec(cleanBody)) !== null) {
+        mentionMatches.push(mentionMatch[1].trim().toLowerCase());
+      }
+
+      if (mentionMatches.length > 0 && opts.enqueueWakeup) {
+        const idleAgents = await db
+          .select({ id: agents.id, name: agents.name })
+          .from(agents)
+          .where(and(eq(agents.companyId, opts.companyId), eq(agents.status, "idle")));
+
+        const mentionedAgents = idleAgents
+          .filter(a => mentionMatches.some(m => a.name.toLowerCase().includes(m)) && a.id !== opts.authorAgentId)
+          .slice(0, 2);
+
+        if (mentionedAgents.length > 0) {
+          const ch = await db.select({ name: agentChannels.name }).from(agentChannels)
+            .where(eq(agentChannels.id, opts.channelId)).then(r => r[0] ?? null);
+          if (ch) {
+            for (const mentionedAgent of mentionedAgents) {
+              await opts.enqueueWakeup(mentionedAgent.id, {
+                source: "agent_mention",
+                reason: `Mentioned by agent in #${ch.name}`,
+                requestedByActorType: "agent",
+                requestedByActorId: opts.authorAgentId,
+                contextSnapshot: { channelName: ch.name, messagePreview: cleanBody.slice(0, 200) },
+              });
+            }
+            logger.info({ from: opts.authorAgentId, mentioned: mentionedAgents.map(a => a.name), channel: ch.name }, "agent @mention triggered wakeup");
+          }
+        }
+      }
     } catch (err) {
-      logger.debug({ err }, "agent response recording failed, skipping");
+      logger.debug({ err }, "agent response handling failed, skipping");
     }
   }
 

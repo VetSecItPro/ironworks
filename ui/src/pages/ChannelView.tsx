@@ -213,12 +213,14 @@ interface MessageRowProps {
 }
 
 function MessageRow({ msg, agentMap, issueMap, replyMap, onPin, onUnpin, isPinned, onCreateIssue, onReply, threadReplies, companyId, channelId }: MessageRowProps) {
+  const isHumanUser = Boolean(msg.authorUserId);
   const isBoard = !msg.authorAgentId && !msg.authorUserId;
+  const isHumanOrBoard = isHumanUser || isBoard;
   const agent = msg.authorAgentId ? agentMap.get(msg.authorAgentId) : null;
   const authorUserName = (msg as unknown as Record<string, unknown>).authorUserName as string | null | undefined;
-  const authorName = isBoard
-    ? "Board"
-    : agent?.name ?? authorUserName ?? "User";
+  const authorName = isHumanOrBoard
+    ? (authorUserName ?? "Board")
+    : agent?.name ?? "Agent";
   const replyTo = msg.replyToId ? replyMap.get(msg.replyToId) : null;
   const linkedIssue = msg.linkedIssueId ? issueMap.get(msg.linkedIssueId) : null;
 
@@ -273,9 +275,9 @@ function MessageRow({ msg, agentMap, issueMap, replyMap, onPin, onUnpin, isPinne
 
       {/* Author icon - larger avatars (12.15) */}
       <div className="shrink-0 mt-0.5">
-        {isBoard ? (
-          <div className="h-9 w-9 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-            <Crown className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+        {isHumanOrBoard ? (
+          <div className="h-9 w-9 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+            <Crown className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
           </div>
         ) : (
           <div className="h-9 w-9 rounded-full bg-accent flex items-center justify-center">
@@ -365,7 +367,9 @@ function MessageRow({ msg, agentMap, issueMap, replyMap, onPin, onUnpin, isPinne
           <div className="mt-2 ml-2 border-l-2 border-border/50 pl-3 space-y-1">
             {threadReplies.map((reply) => {
               const replyAgent = reply.authorAgentId ? agentMap.get(reply.authorAgentId) : null;
-              const replyAuthor = !reply.authorAgentId && !reply.authorUserId ? "Board" : (replyAgent?.name ?? "User");
+              const replyIsHuman = Boolean(reply.authorUserId) || (!reply.authorAgentId && !reply.authorUserId);
+              const replyUserName = (reply as unknown as Record<string, unknown>).authorUserName as string | null | undefined;
+              const replyAuthor = replyIsHuman ? (replyUserName ?? "Board") : (replyAgent?.name ?? "Agent");
               return (
                 <div key={reply.id} className="flex items-start gap-2 py-1">
                   <div className="h-5 w-5 rounded-full bg-accent flex items-center justify-center shrink-0 mt-0.5">
