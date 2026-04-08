@@ -1,6 +1,7 @@
 import { and, desc, eq, gt, gte, inArray, lt, or, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import { agentChannels, agents, channelMemberships, channelMessages, issues } from "@ironworksai/db";
+import { agentChannels, agents, agentWakeupRequests, channelMemberships, channelMessages, issues } from "@ironworksai/db";
+import { logger } from "../middleware/logger.js";
 
 // ---------------------------------------------------------------------------
 // Module-level constants
@@ -380,6 +381,55 @@ export async function postMessage(
     } catch {
       // Non-fatal
     }
+  }
+
+  // --- Wake agents on channel activity ---
+  // When a message is posted (by a user, Nolan bridge, or another agent),
+  // wake all idle agents that belong to this channel so they respond promptly.
+  // Non-fatal: wakeup failures must never block message delivery.
+  try {
+    // Find agents in this channel (via department matching or company-wide channels)
+    const channel = await db
+      .select({ scopeType: agentChannels.scopeType, name: agentChannels.name })
+      .from(agentChannels)
+      .where(eq(agentChannels.id, opts.channelId))
+      .then((rows) => rows[0] ?? null);
+
+    if (channel) {
+      // Find agents to wake - company channel wakes C-suite, dept channel wakes dept members
+      const isCompanyChannel = channel.scopeType === "company" || channel.name === "company" || channel.name === "leadership";
+      const agentConditions = [
+        eq(agents.companyId, opts.companyId),
+        eq(agents.status, "idle"),
+      ];
+      // Don't wake the agent that just posted (avoid self-loop)
+      const eligibleAgents = await db
+        .select({ id: agents.id, name: agents.name })
+        .from(agents)
+        .where(and(...agentConditions))
+        .then((rows) => rows.filter((a) => a.id !== opts.authorAgentId));
+
+      // Limit wakeups to avoid thundering herd on Ollama Cloud (max 3 concurrent)
+      const toWake = eligibleAgents.slice(0, 3);
+
+      for (const agent of toWake) {
+        await db.insert(agentWakeupRequests).values({
+          agentId: agent.id,
+          companyId: opts.companyId,
+          source: "channel_message",
+          reason: `New message in #${channel.name}`,
+          requestedByActorType: opts.authorUserId ? "user" : "agent",
+          requestedByActorId: opts.authorUserId ?? opts.authorAgentId ?? "system",
+          payload: { channelName: channel.name, messagePreview: opts.body.slice(0, 200) },
+        });
+      }
+
+      if (toWake.length > 0) {
+        logger.info({ channelName: channel.name, wokenAgents: toWake.map((a) => a.name) }, "woke agents on channel message");
+      }
+    }
+  } catch (err) {
+    logger.debug({ err }, "channel wake-on-message failed, skipping");
   }
 
   return message;
