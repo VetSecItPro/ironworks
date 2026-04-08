@@ -35,6 +35,13 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     messages.push({ role: "system", content: agentInstructions });
   }
 
+  // Platform awareness — always-on system context describing all agent capabilities.
+  // Injected by injectPlatformAwareness() in heartbeat.ts for every run.
+  const platformAwareness = strVal(context.ironworksPlatformAwareness);
+  if (platformAwareness) {
+    messages.push({ role: "system", content: platformAwareness });
+  }
+
   // Morning briefing / session context — redact secrets before sending to external API
   const morningBriefing = redactSecrets(strVal(context.ironworksMorningBriefing));
   if (morningBriefing) {
@@ -67,19 +74,17 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     messages.push({ role: "user", content: latestComment });
   }
 
-  // If no task/issue context was provided but channel messages exist in context,
-  // inject a prompt telling the agent to check channels and respond.
-  // This enables conversational engagement even when no issues are assigned.
-  const hasChannelContext = Boolean(
-    context.ironworksCompanyChannelUpdates ||
-    context.ironworksTeamChannelUpdates ||
-    context.ironworksLeadershipChannelUpdates ||
-    context.ironworksPendingMentions,
-  );
-  if (!rawTaskContext && !rawLatestComment && hasChannelContext) {
+  // When there is no task or comment, this is a routine check-in heartbeat.
+  // The platform awareness system prompt already primes conversational behavior;
+  // the user message just frames what to do with this particular run.
+  if (!rawTaskContext && !rawLatestComment) {
     messages.push({
       role: "user",
-      content: "You have no assigned tasks right now. Check the channel messages above for any messages directed at you or relevant to your role. If someone introduced themselves, welcomed the team, asked a question, or requested a status update, respond using [CHANNEL #channelname] format. If there is nothing requiring your response, briefly post a status update to your department channel.",
+      content:
+        "This is your regular check-in. Review any channel messages in your context, " +
+        "respond to teammates as needed, and post a brief status update if you have " +
+        "something substantive to share. If nothing requires your attention right now, " +
+        "you may skip posting — silence is better than an empty update.",
     });
   }
 

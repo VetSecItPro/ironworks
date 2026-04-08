@@ -151,6 +151,7 @@ import {
   injectDeadlineUrgency,
   injectDependencyContext,
   injectGoalContext,
+  injectPlatformAwareness,
 } from "./heartbeat-context.js";
 import {
   updateRuntimeState as updateRuntimeStateModule,
@@ -2191,6 +2192,10 @@ export function heartbeatService(db: Db) {
     if (typeof agent.agentInstructions === "string" && agent.agentInstructions) {
       context.agentInstructions = agent.agentInstructions;
     }
+
+    // Inject platform awareness — runs every heartbeat, gives agents a full
+    // mental model of their capabilities whether or not they have an issue.
+    injectPlatformAwareness(context, agent);
 
     // Inject session state and morning briefing based on context tier
     await injectSessionContext(db, context, agent.id);

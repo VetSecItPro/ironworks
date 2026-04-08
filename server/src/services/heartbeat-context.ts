@@ -45,6 +45,7 @@ import {
   PROMPT_TEMPLATES,
   readNonEmptyString,
 } from "./heartbeat-types.js";
+import { buildPlatformAwareness } from "./heartbeat-awareness.js";
 
 // ── Session state + morning briefing ──────────────────────────────────────
 
@@ -707,6 +708,20 @@ export async function injectDependencyContext(
   } catch (err) {
     logger.debug({ err }, "dependency context injection failed, skipping");
   }
+}
+
+// ── Platform awareness ─────────────────────────────────────────────────────
+
+/**
+ * Injects a comprehensive platform awareness block into the agent context.
+ * This runs for EVERY heartbeat regardless of whether an issue is assigned,
+ * giving the agent a full mental model of their capabilities at all times.
+ */
+export function injectPlatformAwareness(
+  context: Record<string, unknown>,
+  agent: { name: string; role: string | null; department: string | null },
+): void {
+  context.ironworksPlatformAwareness = buildPlatformAwareness(agent);
 }
 
 // ── Goal context ───────────────────────────────────────────────────────────
