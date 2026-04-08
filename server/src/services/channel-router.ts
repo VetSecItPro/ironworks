@@ -75,9 +75,14 @@ export async function selectRespondingAgents(
     let score = 0;
     const agentRole = (agent.role ?? "").toLowerCase();
     const agentDept = (agent.department ?? "").toLowerCase();
+    const agentName = (agent.name ?? "").toLowerCase();
 
-    // Channel department match (+3)
-    if (agentDept === channelName.toLowerCase()) score += 3;
+    // Name/mention match (+5) — the message is directly addressing this agent
+    if (agentName && lowerBody.includes(agentName)) score += 5;
+
+    // Channel department match (+3): also treat "executive" as an alias for "leadership"
+    const normalizedDept = agentDept === "executive" ? "leadership" : agentDept;
+    if (normalizedDept === channelName.toLowerCase()) score += 3;
 
     // Role keyword match (+2)
     for (const [role, keywords] of Object.entries(ROLE_KEYWORDS)) {
@@ -95,9 +100,11 @@ export async function selectRespondingAgents(
     return { ...agent, score };
   });
 
-  // Sort by score, filter by threshold (3), take top 1-2
+  // Leadership/company channels use a lower threshold (>= 2) so senior agents
+  // aren't silenced by simple conversational messages.
+  const threshold = channelName === "leadership" || channelName === "company" ? 2 : 3;
   const eligible = scored
-    .filter((a) => a.score >= 3)
+    .filter((a) => a.score >= threshold)
     .sort((a, b) => b.score - a.score)
     .slice(0, channelName === "leadership" || channelName === "company" ? 2 : 1);
 

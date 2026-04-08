@@ -23,6 +23,7 @@ import {
 } from "../services/channels.js";
 import { channelAnalytics } from "../services/executive-analytics.js";
 import { issueService } from "../services/issues.js";
+import { heartbeatService } from "../services/index.js";
 
 export function channelRoutes(db: Db) {
   const router = Router();
@@ -107,6 +108,7 @@ export function channelRoutes(db: Db) {
 
     const actor = getActorInfo(req);
 
+    const heartbeat = heartbeatService(db as any);
     const message = await postMessage(db, {
       channelId,
       companyId,
@@ -118,6 +120,7 @@ export function channelRoutes(db: Db) {
       linkedIssueId: typeof body.linkedIssueId === "string" ? body.linkedIssueId : undefined,
       replyToId: typeof body.replyToId === "string" ? body.replyToId : undefined,
       reasoning: typeof body.reasoning === "string" ? body.reasoning : undefined,
+      enqueueWakeup: (agentId, wakeOpts) => heartbeat.wakeup(agentId, wakeOpts as any),
     });
 
     // Broadcast SSE event to all connected clients for this company

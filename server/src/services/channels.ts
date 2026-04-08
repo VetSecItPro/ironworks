@@ -253,6 +253,10 @@ export async function postMessage(
     linkedIssueId?: string;
     replyToId?: string;
     reasoning?: string;
+    /** Optional heartbeat wakeup function. When provided, channel routing will
+     *  call this instead of a raw wakeup-request insert so that a heartbeat run
+     *  is created immediately rather than waiting for the next scheduler tick. */
+    enqueueWakeup?: (agentId: string, opts: Record<string, unknown>) => Promise<unknown>;
   },
 ): Promise<Message> {
   // --- Strip accumulated author prefixes from bridge/non-agent messages ---
@@ -422,15 +426,29 @@ export async function postMessage(
           null,
         );
         for (const agent of toWake) {
-          await db.insert(agentWakeupRequests).values({
-            agentId: agent.agentId,
-            companyId: opts.companyId,
-            source: "channel_relevance",
-            reason: `Relevant message in #${channel.name}`,
-            requestedByActorType: "user",
-            requestedByActorId: opts.authorUserId ?? "bridge",
-            payload: { channelName: channel.name, sequencePosition: agent.sequencePosition },
-          });
+          if (opts.enqueueWakeup) {
+            // Preferred path: creates both the wakeup request AND a heartbeat run
+            // so execution happens immediately rather than on the next scheduler tick.
+            await opts.enqueueWakeup(agent.agentId, {
+              source: "channel_relevance",
+              reason: `Relevant message in #${channel.name}`,
+              requestedByActorType: "user",
+              requestedByActorId: opts.authorUserId ?? "bridge",
+              payload: { channelName: channel.name, sequencePosition: agent.sequencePosition },
+            });
+          } else {
+            // Fallback: raw insert - wakeup request will be picked up when the
+            // heartbeat scheduler next calls enqueueWakeup for this agent.
+            await db.insert(agentWakeupRequests).values({
+              agentId: agent.agentId,
+              companyId: opts.companyId,
+              source: "channel_relevance",
+              reason: `Relevant message in #${channel.name}`,
+              requestedByActorType: "user",
+              requestedByActorId: opts.authorUserId ?? "bridge",
+              payload: { channelName: channel.name, sequencePosition: agent.sequencePosition },
+            });
+          }
         }
         if (toWake.length > 0) {
           logger.info(

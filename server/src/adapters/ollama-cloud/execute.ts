@@ -60,6 +60,28 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     messages.push({ role: "system", content: `## Your Recent Documents\n${recentDocuments}` });
   }
 
+  // Channel messages — show the agent what's happening in their channels
+  const channelContextKeys = [
+    "ironworksCompanyChannelUpdates",
+    "ironworksTeamChannelUpdates",
+    "ironworksLeadershipChannelUpdates",
+  ];
+  for (const key of channelContextKeys) {
+    const updates = context[key];
+    if (Array.isArray(updates) && updates.length > 0) {
+      const formatted = updates.map((u: any) =>
+        `[${u.at ? new Date(u.at).toLocaleTimeString() : ""}] ${u.author}: ${u.body}`
+      ).join("\n");
+      messages.push({ role: "system", content: `## Recent Channel Messages\n${formatted}` });
+    }
+  }
+
+  // Channel posting instruction
+  const channelPostingInstruction = strVal(context.ironworksChannelPosting);
+  if (channelPostingInstruction) {
+    messages.push({ role: "system", content: channelPostingInstruction });
+  }
+
   // The actual task/issue context — sanitize before including in the prompt
   const rawTaskContext = strVal(context.taskContext) || strVal(context.issueContext);
   if (rawTaskContext) {
