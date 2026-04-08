@@ -112,11 +112,14 @@ export async function createApp(
 
   // ── Global Rate Limiting (SEC-ADV-013) ──
   // Simple in-memory sliding window rate limiter. No external dependency.
+  // Limit is generous because in Docker deployments, agents + users share IPs.
   const rateBuckets = new Map<string, { count: number; resetAt: number }>();
-  const RATE_LIMIT = 200; // requests per window
+  const RATE_LIMIT = 600; // requests per window (handles 12 agents + active users)
   const RATE_WINDOW_MS = 60_000; // 1 minute
   app.use((req, res, next) => {
     if (!req.path.startsWith("/api") || req.method === "OPTIONS") return next();
+    // Exempt internal heartbeat and health checks from rate limiting
+    if (req.path === "/api/health" || req.path.includes("/heartbeat")) return next();
     const ip = req.ip ?? req.socket.remoteAddress ?? "unknown";
     const now = Date.now();
     let bucket = rateBuckets.get(ip);
