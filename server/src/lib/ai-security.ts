@@ -8,11 +8,22 @@ const MAX_AI_INPUT_LENGTH = 2000;
 
 /** Patterns that indicate a prompt injection attempt. Case-insensitive. */
 const INJECTION_PATTERNS: RegExp[] = [
-  /ignore\s+previous/gi,
-  /ignore\s+all/gi,
+  /ignore\s+(previous|all|above|prior)/gi,
+  /disregard\s+(previous|all|above|prior)/gi,
   /system\s*:/gi,
+  /\[system\]/gi,
+  /\[INST\]/gi,
+  /<<\s*SYS\s*>>/gi,
+  /<\|im_start\|>/gi,
   /you\s+are\s+now/gi,
-  /forget\s+your\s+instructions/gi,
+  /forget\s+(your|all|previous)\s+instructions/gi,
+  /new\s+instructions\s*:/gi,
+  /override\s+(your|all|previous)\s+(instructions|rules)/gi,
+  /act\s+as\s+if\s+you\s+(have\s+no|don.?t\s+have)/gi,
+  /do\s+not\s+follow\s+(your|the)\s+(previous|original)/gi,
+  /pretend\s+(you\s+are|to\s+be)\s+a\s+different/gi,
+  /ADMIN\s*OVERRIDE/gi,
+  /\bDAN\b.*\bjailbreak\b/gi,
 ];
 
 /**

@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Link } from "@/lib/router";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
@@ -10,7 +11,7 @@ import { ACTIONABLE_APPROVAL_STATUSES } from "../../lib/inbox";
 import type { NonIssueUnreadState } from "./inboxTypes";
 import type { Approval } from "@ironworksai/shared";
 
-export function ApprovalInboxRow({
+export const ApprovalInboxRow = memo(function ApprovalInboxRow({
   approval,
   requesterName,
   onApprove,
@@ -151,4 +152,4 @@ export function ApprovalInboxRow({
       ) : null}
     </div>
   );
-}
+});

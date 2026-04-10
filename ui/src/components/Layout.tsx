@@ -2,8 +2,9 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import { FeedbackModal } from "./FeedbackModal";
 import { BugReportModal } from "./BugReportModal";
 import { ChangelogModal, ChangelogTrigger } from "./ChangelogModal";
+import { StatusBar } from "./StatusBar";
 import { useQuery } from "@tanstack/react-query";
-import { Bug, Moon, Settings, Sun } from "lucide-react";
+
 import { Link, Outlet, useLocation, useNavigate, useParams } from "@/lib/router";
 import { CookieSettingsLink } from "./CookieConsent";
 import { CompanyRail } from "./CompanyRail";
@@ -34,7 +35,7 @@ import { useToast } from "../context/ToastContext";
 import { usePanel } from "../context/PanelContext";
 import { useCompany } from "../context/CompanyContext";
 import { useSidebar } from "../context/SidebarContext";
-import { useTheme } from "../context/ThemeContext";
+
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { useCompanyPageMemory } from "../hooks/useCompanyPageMemory";
 import { usePrefetch } from "../hooks/usePrefetch";
@@ -74,7 +75,7 @@ export function Layout() {
     selectionSource,
     setSelectedCompanyId,
   } = useCompany();
-  const { theme, toggleTheme } = useTheme();
+
   const { companyPrefix } = useParams<{ companyPrefix: string }>();
   usePrefetch(selectedCompanyId);
   const { pushToast } = useToast();
@@ -102,7 +103,6 @@ export function Layout() {
   // FirstLoginWizard state removed
   const guidedTour = useGuidedTour();
   const notifs = useNotifications();
-  const nextTheme = theme === "dark" ? "light" : "dark";
   const matchedCompany = useMemo(() => {
     if (!companyPrefix) return null;
     const requestedPrefix = companyPrefix.toUpperCase();
@@ -453,27 +453,13 @@ export function Layout() {
             </main>
             <PropertiesPanel />
           </div>
-          <footer role="contentinfo" className="flex items-center justify-center gap-3 px-4 py-1 border-t border-border text-[11px] text-muted-foreground shrink-0 print:hidden">
-            <span className="opacity-60">IronWorks</span>
-            <span className="text-border/50">·</span>
-            <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>
-            <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
-            <Link to="/aup" className="hover:text-foreground transition-colors">AUP</Link>
-            <span className="text-border/50">·</span>
-            <button type="button" onClick={() => setBugReportOpen(true)} className="inline-flex items-center gap-1 hover:text-foreground transition-colors"><Bug className="h-3 w-3" />Report a Bug</button>
-              <ChangelogTrigger onClick={() => setChangelogOpen(true)} />
-              {isInstanceAdmin && (
-                <>
-                  <span className="text-border/50">·</span>
-                  <Link to={instanceSettingsTarget} className="hover:text-foreground transition-colors" title="Settings">Settings</Link>
-                  <Link to="/manage" className="hover:text-foreground transition-colors" title="Admin">Admin</Link>
-                </>
-              )}
-              <span className="text-border/50">·</span>
-              <button type="button" onClick={toggleTheme} className="hover:text-foreground transition-colors" aria-label={`Switch to ${nextTheme} mode`}>
-                {theme === "dark" ? "Light" : "Dark"}
-              </button>
-          </footer>
+          <StatusBar
+            isInstanceAdmin={isInstanceAdmin}
+            instanceSettingsTarget={instanceSettingsTarget}
+            onBugReport={() => setBugReportOpen(true)}
+            onChangelog={() => setChangelogOpen(true)}
+            changelogTrigger={<ChangelogTrigger onClick={() => setChangelogOpen(true)} />}
+          />
         </div>
       </div>
       {isMobile && <MobileBottomNav visible={mobileNavVisible} />}

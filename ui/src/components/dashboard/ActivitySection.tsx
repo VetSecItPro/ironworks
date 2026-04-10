@@ -34,9 +34,9 @@ export function ActivitySection({
     <div>
       <div className="flex items-center justify-between border-b border-border/50 pb-2 mb-4">
         <div className="flex items-center gap-3">
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+          <Link to="/activity" className="text-sm font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors no-underline">
             Recent Activity
-          </h3>
+          </Link>
           <button
             onClick={onToggleLiveMode}
             className={cn(

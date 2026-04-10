@@ -796,7 +796,7 @@ export function Playbooks() {
 
 
         <ScrollArea className="flex-1 min-h-0">
-          {isLoading ? (
+          {isLoading && !playbooksList ? (
             <div className="p-3">
               <PageSkeleton variant="list" />
             </div>

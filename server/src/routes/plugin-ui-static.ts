@@ -241,6 +241,12 @@ export function pluginUiStaticRoutes(db: Db, options: PluginUiStaticRouteOptions
       return;
     }
 
+    // SEC: Block null bytes in file paths (path traversal vector)
+    if (rawFilePath.includes("\0")) {
+      res.status(400).json({ error: "Invalid file path" });
+      return;
+    }
+
     // Step 1: Look up the plugin
     let plugin = null;
     try {

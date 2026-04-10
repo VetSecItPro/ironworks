@@ -30,7 +30,7 @@ export function MyIssues() {
     return <EmptyState icon={ListTodo} message="Select a company to view your issues." />;
   }
 
-  if (isLoading) {
+  if (isLoading && !issues) {
     return <PageSkeleton variant="list" />;
   }
 

@@ -765,7 +765,7 @@ export function Goals() {
     return <EmptyState icon={Target} message="Select a company to view goals." />;
   }
 
-  if (isLoading) {
+  if (isLoading && !goals) {
     return <PageSkeleton variant="list" />;
   }
 

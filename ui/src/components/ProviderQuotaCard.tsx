@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import type { CostByProviderModel, CostWindowSpendRow, QuotaWindow } from "@ironworksai/shared";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -36,7 +36,7 @@ interface ProviderQuotaCardProps {
   quotaLoading?: boolean;
 }
 
-export function ProviderQuotaCard({
+export const ProviderQuotaCard = memo(function ProviderQuotaCard({
   provider,
   rows,
   budgetMonthlyCents,
@@ -422,7 +422,7 @@ export function ProviderQuotaCard({
       </CardContent>
     </Card>
   );
-}
+});
 
 function QuotaPanelSkeleton() {
   return (

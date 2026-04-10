@@ -36,6 +36,7 @@ import { usePageTitle } from "../hooks/usePageTitle";
 
 /* ── Dashboard sub-components ── */
 import { QuickActionFAB } from "../components/dashboard/QuickActionFAB";
+import { QuickActionsGrid } from "../components/dashboard/QuickActionsGrid";
 import { AnnouncementsSection } from "../components/dashboard/AnnouncementsSection";
 import { AttentionRequiredSection } from "../components/dashboard/AttentionRequiredSection";
 import { AlertsSection } from "../components/dashboard/AlertsSection";
@@ -56,7 +57,7 @@ export function Dashboard() {
   usePageTitle("War Room");
   const { selectedCompanyId, companies } = useCompany();
   const navigate = useNavigate();
-  const { openOnboarding, openHireAgent, openNewIssue } = useDialog();
+  const { openOnboarding, openHireAgent, openNewIssue, openNewGoal, openNewProject } = useDialog();
   const { setBreadcrumbs } = useBreadcrumbs();
   const [animatedActivityIds, setAnimatedActivityIds] = useState<Set<string>>(new Set());
   const seenActivityIdsRef = useRef<Set<string>>(new Set());
@@ -397,7 +398,7 @@ export function Dashboard() {
     return <EmptyState icon={Swords} message="Create or select a company to view the War Room." />;
   }
 
-  if (isLoading) return <PageSkeleton variant="dashboard" />;
+  if (isLoading && !data) return <PageSkeleton variant="dashboard" />;
 
   const hasNoAgents = agents !== undefined && agents.length === 0;
 
@@ -514,6 +515,13 @@ export function Dashboard() {
               description={<span>{data.budgets.pendingApprovals > 0 ? `${data.budgets.pendingApprovals} budget overrides awaiting board review` : "Awaiting board review"}</span>}
             />
           </div>
+
+          {/* QUICK ACTIONS */}
+          <QuickActionsGrid
+            onCreateIssue={openNewIssue}
+            onCreateGoal={openNewGoal}
+            onCreateProject={openNewProject}
+          />
 
           {/* 3. ATTENTION REQUIRED */}
           <AttentionRequiredSection

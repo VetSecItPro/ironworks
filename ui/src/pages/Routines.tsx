@@ -435,7 +435,7 @@ export function Routines() {
     return <EmptyState icon={Repeat} message="Select a company to view routines." />;
   }
 
-  if (isLoading) {
+  if (isLoading && !routines) {
     return <PageSkeleton variant="issues-list" />;
   }
 

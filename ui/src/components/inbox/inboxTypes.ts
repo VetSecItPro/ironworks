@@ -1,13 +1,6 @@
-// Shared local types for inbox components
-
-export type InboxCategoryFilter =
-  | "everything"
-  | "issues_i_touched"
-  | "join_requests"
-  | "approvals"
-  | "failed_runs"
-  | "alerts";
-
-export type SectionKey = "work_items" | "alerts";
-
-export type NonIssueUnreadState = "visible" | "fading" | "hidden" | null;
+// Re-export inbox types from the canonical location
+export type {
+  InboxCategoryFilter,
+  SectionKey,
+  NonIssueUnreadState,
+} from "../../types/inbox";

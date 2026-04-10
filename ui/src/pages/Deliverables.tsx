@@ -428,7 +428,7 @@ export function Deliverables() {
 
   const pendingReviewCount = (deliverables ?? []).filter((d) => d.deliverableStatus === "review").length;
 
-  if (isLoading) return <PageSkeleton />;
+  if (isLoading && !deliverables) return <PageSkeleton />;
 
   return (
     <div className="flex flex-col h-full min-h-0">

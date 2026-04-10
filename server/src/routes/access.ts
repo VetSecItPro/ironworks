@@ -2084,7 +2084,7 @@ export function accessRoutes(
     }
     // SEC-INJ-002: Block SSRF — reject private/reserved IPs
     const hostname = target.hostname;
-    if (/^(127\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.|0\.|169\.254\.|localhost|::1|\[::1\])/.test(hostname)) {
+    if (/^(127\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.|0\.|169\.254\.|localhost|::1|\[::1\]|\[?fe80:|\[?fd[0-9a-f]{2}:)/.test(hostname)) {
       throw badRequest("URL resolves to a private or reserved address");
     }
 

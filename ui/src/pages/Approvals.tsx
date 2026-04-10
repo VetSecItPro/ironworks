@@ -81,7 +81,7 @@ export function Approvals() {
     return <p className="text-sm text-muted-foreground">Select a company first.</p>;
   }
 
-  if (isLoading) {
+  if (isLoading && !data) {
     return <PageSkeleton variant="approvals" />;
   }
 

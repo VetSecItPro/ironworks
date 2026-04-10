@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { CheckCircle2, XCircle, Clock } from "lucide-react";
 import { Link } from "@/lib/router";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,7 @@ function statusIcon(status: string) {
   return null;
 }
 
-export function ApprovalCard({
+export const ApprovalCard = memo(function ApprovalCard({
   approval,
   requesterAgent,
   onApprove,
@@ -103,4 +104,4 @@ export function ApprovalCard({
       </div>
     </div>
   );
-}
+});

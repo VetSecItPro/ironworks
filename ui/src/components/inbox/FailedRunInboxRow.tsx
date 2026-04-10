@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Link } from "@/lib/router";
 import { Button } from "@/components/ui/button";
 import { RotateCcw, X, XCircle } from "lucide-react";
@@ -9,7 +10,7 @@ import { getSeverityBorderClass, runFailureMessage, readIssueIdFromRun } from ".
 import type { NonIssueUnreadState } from "./inboxTypes";
 import type { HeartbeatRun, Issue } from "@ironworksai/shared";
 
-export function FailedRunInboxRow({
+export const FailedRunInboxRow = memo(function FailedRunInboxRow({
   run,
   issueById,
   agentName: linkedAgentName,
@@ -163,4 +164,4 @@ export function FailedRunInboxRow({
       </div>
     </div>
   );
-}
+});

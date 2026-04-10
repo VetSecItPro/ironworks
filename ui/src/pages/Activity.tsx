@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "../lib/utils";
 import { exportToCSV } from "../lib/exportCSV";
 import type { Agent, ActivityEvent } from "@ironworksai/shared";
+import type { AggregatedGroup } from "../types/dashboard";
 
 /* ─── Time Grouping ──────────────────────────────────────────── */
 
@@ -37,18 +38,6 @@ function getTimeGroup(date: Date): string {
   if (date >= yesterday) return "Yesterday";
   if (date >= weekAgo) return "This Week";
   return "Older";
-}
-
-/* ─── Event Aggregation ──────────────────────────────────────── */
-
-interface AggregatedGroup {
-  key: string;
-  action: string;
-  actorName: string;
-  count: number;
-  models: string[];
-  latestEvent: ActivityEvent;
-  events: ActivityEvent[];
 }
 
 function aggregateEvents(
@@ -302,7 +291,7 @@ export function Activity() {
     return <EmptyState icon={History} message="Select a company to view activity." />;
   }
 
-  if (isLoading) {
+  if (isLoading && !data) {
     return <PageSkeleton variant="list" />;
   }
 

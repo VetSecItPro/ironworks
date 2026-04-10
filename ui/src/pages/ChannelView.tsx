@@ -406,7 +406,7 @@ function ChannelAnalyticsPanel({ companyId, channelId }: ChannelAnalyticsPanelPr
     queryFn: () => channelsApi.analytics(companyId, channelId),
   });
 
-  if (isLoading) {
+  if (isLoading && !data) {
     return (
       <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
         Loading analytics...

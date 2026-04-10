@@ -780,9 +780,9 @@ export function DesignGuide() {
       {/*  TABS                                                         */}
       {/* ============================================================ */}
       <Section title="Tabs">
-        <SubSection title="Default (pill) variant">
+        <SubSection title="Pill variant">
           <Tabs defaultValue="overview">
-            <TabsList>
+            <TabsList variant="default">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="runs">Runs</TabsTrigger>
               <TabsTrigger value="config">Config</TabsTrigger>

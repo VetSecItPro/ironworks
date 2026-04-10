@@ -9,7 +9,7 @@ export function RecentDeliverablesWidget({ issues, agents }: { issues: Issue[]; 
 
   return (
     <div className="rounded-xl border border-border p-4 space-y-3">
-      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Recent Deliverables</h4>
+      <Link to="/deliverables" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground transition-colors no-underline">Recent Deliverables</Link>
       {deliverables.length === 0 ? (
         <p className="text-sm text-muted-foreground">No deliverables awaiting review.</p>
       ) : (

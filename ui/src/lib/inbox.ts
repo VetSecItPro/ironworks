@@ -5,6 +5,9 @@ import type {
   Issue,
   JoinRequest,
 } from "@ironworksai/shared";
+import type { InboxTab, InboxApprovalFilter, InboxWorkItem, InboxBadgeData } from "../types/inbox";
+
+export type { InboxTab, InboxApprovalFilter, InboxWorkItem, InboxBadgeData };
 
 export const RECENT_ISSUES_LIMIT = 100;
 export const FAILED_RUN_STATUSES = new Set(["failed", "timed_out"]);
@@ -12,38 +15,6 @@ export const ACTIONABLE_APPROVAL_STATUSES = new Set(["pending", "revision_reques
 export const DISMISSED_KEY = "ironworks:inbox:dismissed";
 export const READ_ITEMS_KEY = "ironworks:inbox:read-items";
 export const INBOX_LAST_TAB_KEY = "ironworks:inbox:last-tab";
-export type InboxTab = "mine" | "recent" | "unread" | "all";
-export type InboxApprovalFilter = "all" | "actionable" | "resolved";
-export type InboxWorkItem =
-  | {
-      kind: "issue";
-      timestamp: number;
-      issue: Issue;
-    }
-  | {
-      kind: "approval";
-      timestamp: number;
-      approval: Approval;
-    }
-  | {
-      kind: "failed_run";
-      timestamp: number;
-      run: HeartbeatRun;
-    }
-  | {
-      kind: "join_request";
-      timestamp: number;
-      joinRequest: JoinRequest;
-    };
-
-export interface InboxBadgeData {
-  inbox: number;
-  approvals: number;
-  failedRuns: number;
-  joinRequests: number;
-  mineIssues: number;
-  alerts: number;
-}
 
 export function loadDismissedInboxItems(): Set<string> {
   try {

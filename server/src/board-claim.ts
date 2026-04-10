@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { randomBytes, timingSafeEqual } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { companies, companyMemberships, instanceUserRoles } from "@ironworksai/db";
@@ -31,10 +31,18 @@ function createChallenge(now = new Date()): ClaimChallenge {
   };
 }
 
+/** Timing-safe string comparison to prevent timing side-channel attacks. */
+function safeCompare(a: string, b: string): boolean {
+  const left = Buffer.from(a, "utf8");
+  const right = Buffer.from(b, "utf8");
+  if (left.length !== right.length) return false;
+  return timingSafeEqual(left, right);
+}
+
 function getChallengeStatus(token: string, code: string | undefined): ChallengeStatus {
   if (!activeChallenge) return "invalid";
-  if (activeChallenge.token !== token) return "invalid";
-  if (activeChallenge.code !== (code ?? "")) return "invalid";
+  if (!safeCompare(activeChallenge.token, token)) return "invalid";
+  if (!safeCompare(activeChallenge.code, code ?? "")) return "invalid";
   if (activeChallenge.claimedAt) return "claimed";
   if (activeChallenge.expiresAt.getTime() <= Date.now()) return "expired";
   return "available";
@@ -140,7 +148,7 @@ export async function claimBoardOwnership(
     }
   });
 
-  if (activeChallenge && activeChallenge.token === opts.token) {
+  if (activeChallenge && safeCompare(activeChallenge.token, opts.token)) {
     activeChallenge.claimedAt = new Date();
     activeChallenge.claimedByUserId = opts.userId;
   }

@@ -17,13 +17,13 @@ export function AttentionRequiredSection({
 
   return (
     <div className="rounded-xl border border-red-500/20 bg-red-500/[0.04] p-5 space-y-3">
-      <h3 className="text-sm font-semibold uppercase tracking-wider flex items-center gap-2 text-red-400 border-b border-red-500/10 pb-2">
+      <Link to="/inbox" className="text-sm font-semibold uppercase tracking-wider flex items-center gap-2 text-red-400 border-b border-red-500/10 pb-2 no-underline hover:text-red-300 transition-colors">
         <AlertTriangle className="h-4 w-4" aria-hidden="true" />
         Attention Required
         <span className="inline-flex items-center justify-center rounded-full bg-red-500/20 text-red-300 text-[10px] font-bold min-w-[18px] px-1.5 py-0.5 ml-1">
           {visibleBlockedIssues.length + visibleFailedRuns.length}
         </span>
-      </h3>
+      </Link>
       <div className="space-y-2">
         {visibleBlockedIssues.slice(0, 5).map((issue) => (
           <div key={issue.id} className="flex items-center gap-1 rounded-lg border-l-[3px] border-l-red-500 border border-red-500/15 bg-red-500/[0.04] pr-1">

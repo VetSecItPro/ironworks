@@ -1,3 +1,4 @@
+import { Link } from "@/lib/router";
 import type { VelocityWeek } from "../../api/velocity";
 import { LastUpdatedBadge } from "./LastUpdatedBadge";
 import { VelocityChart } from "./VelocityChart";
@@ -27,7 +28,7 @@ export function VelocityDepartmentSection({
 
       {/* Department Breakdown */}
       <div className="rounded-xl border border-border p-4 space-y-3">
-        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Agents by Department</h4>
+        <Link to="/agents" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground transition-colors no-underline">Agents by Department</Link>
         {departmentBreakdown.length === 0 ? (
           <p className="text-sm text-muted-foreground">No agents yet.</p>
         ) : (

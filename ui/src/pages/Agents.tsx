@@ -284,7 +284,7 @@ export function Agents() {
     return <EmptyState icon={Bot} message="Select a company to view agents." />;
   }
 
-  if (isLoading) {
+  if (isLoading && !agents) {
     return <PageSkeleton variant="list" />;
   }
 
