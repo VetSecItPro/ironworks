@@ -11,12 +11,12 @@ import { OpenCodeLogoIcon } from "../OpenCodeLogoIcon";
 
 const ENABLED_ADAPTER_TYPES = new Set(["claude_local", "codex_local", "gemini_local", "opencode_local", "pi_local", "cursor"]);
 
-/** Display list includes all real adapter types plus UI-only coming-soon entries. */
-const ADAPTER_DISPLAY_LIST: { value: string; label: string; comingSoon: boolean }[] = [
+/** Display list includes all real adapter types; disabled entries are not yet available. */
+const ADAPTER_DISPLAY_LIST: { value: string; label: string; disabled: boolean }[] = [
   ...AGENT_ADAPTER_TYPES.map((t) => ({
     value: t,
     label: adapterLabels[t] ?? t,
-    comingSoon: !ENABLED_ADAPTER_TYPES.has(t),
+    disabled: !ENABLED_ADAPTER_TYPES.has(t),
   })),
 ];
 
@@ -42,24 +42,24 @@ export function AdapterTypeDropdown({
         {ADAPTER_DISPLAY_LIST.map((item) => (
           <button
             key={item.value}
-            disabled={item.comingSoon}
+            disabled={item.disabled}
             className={cn(
               "flex items-center justify-between w-full px-2 py-1.5 text-sm rounded",
-              item.comingSoon
+              item.disabled
                 ? "opacity-40 cursor-not-allowed"
                 : "hover:bg-accent/50",
-              item.value === value && !item.comingSoon && "bg-accent",
+              item.value === value && !item.disabled && "bg-accent",
             )}
             onClick={() => {
-              if (!item.comingSoon) onChange(item.value);
+              if (!item.disabled) onChange(item.value);
             }}
           >
             <span className="inline-flex items-center gap-1.5">
               {item.value === "opencode_local" ? <OpenCodeLogoIcon className="h-3.5 w-3.5" /> : null}
               <span>{item.label}</span>
             </span>
-            {item.comingSoon && (
-              <span className="text-[10px] text-muted-foreground">Coming soon</span>
+            {item.disabled && (
+              <span className="text-[10px] text-muted-foreground">Not yet available</span>
             )}
           </button>
         ))}

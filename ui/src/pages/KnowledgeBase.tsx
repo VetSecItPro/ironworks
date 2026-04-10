@@ -217,7 +217,7 @@ export function KnowledgeBase() {
           </div>
           <div className="relative">
             <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search..." className="pl-7 text-xs h-8" />
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search..." aria-label="Search knowledge base" className="pl-7 text-xs h-8" />
           </div>
           {departments.length > 0 && (
             <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
@@ -281,7 +281,9 @@ export function KnowledgeBase() {
               onSelectPage={(id) => { setSelectedPageId(id); setEditing(false); setShowHistory(false); }}
               onBulkDelete={async (ids) => {
                 for (const id of ids) {
-                  await knowledgeApi.remove(id).catch(() => {});
+                  await knowledgeApi.remove(id).catch((err: unknown) => {
+                    console.error("Failed to delete knowledge page", id, err instanceof Error ? err.message : err);
+                  });
                 }
                 queryClient.invalidateQueries({ queryKey: queryKeys.knowledge.list(selectedCompanyId!) });
                 if (selectedPageId && ids.includes(selectedPageId)) setSelectedPageId(null);

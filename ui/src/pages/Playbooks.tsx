@@ -327,7 +327,7 @@ function ParametersEditor({
           {p.defaultValue && (
             <span className="text-muted-foreground">default: {p.defaultValue}</span>
           )}
-          <button onClick={() => removeParam(p.id)} className="ml-auto text-muted-foreground hover:text-destructive">
+          <button onClick={() => removeParam(p.id)} className="ml-auto text-muted-foreground hover:text-destructive" aria-label="Remove parameter">
             <X className="h-3 w-3" />
           </button>
         </div>
@@ -841,7 +841,8 @@ export function Playbooks() {
               cached.then((data) => {
                 setDryRunPlaybook(data);
                 setShowDryRunDialog(true);
-              }).catch(() => {
+              }).catch((err: unknown) => {
+                console.error("Failed to fetch playbook for dry run", err instanceof Error ? err.message : err);
                 // Fallback: just show the dialog with minimal info
                 setShowDryRunDialog(true);
               });

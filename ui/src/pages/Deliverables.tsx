@@ -273,7 +273,7 @@ function DeliverablePreview({
             )}
           </div>
         </div>
-        <button onClick={onClose} className="text-muted-foreground hover:text-foreground p-1">
+        <button onClick={onClose} className="text-muted-foreground hover:text-foreground p-1" aria-label="Close">
           <X className="h-4 w-4" />
         </button>
       </div>

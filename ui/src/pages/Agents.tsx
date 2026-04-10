@@ -91,7 +91,7 @@ function AgentCompareModal({
       >
         <div className="flex items-center justify-between px-5 py-3 border-b border-border">
           <h2 className="text-sm font-semibold">Agent Comparison</h2>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground" aria-label="Close comparison">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -320,6 +320,7 @@ export function Agents() {
               value={agentSearch}
               onChange={(e) => setAgentSearch(e.target.value)}
               placeholder="Search agents..."
+              aria-label="Search agents"
               className="pl-7 text-xs h-8"
             />
           </div>

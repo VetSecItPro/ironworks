@@ -1,0 +1,514 @@
+openapi: "3.0.3"
+info:
+  title: IronWorks API
+  version: "0.3.1"
+  description: >
+    IronWorks agent orchestration platform API.
+    All authenticated endpoints require either a board session cookie
+    or an agent API key via the X-Agent-Api-Key header.
+
+servers:
+  - url: /api
+    description: Relative API root
+
+tags:
+  - name: health
+    description: Instance health and status
+  - name: auth
+    description: Authentication and session management
+  - name: companies
+    description: Company (tenant) management
+  - name: agents
+    description: Agent lifecycle and configuration
+  - name: issues
+    description: Task / issue tracking
+  - name: billing
+    description: Subscription and billing management
+  - name: channels
+    description: Agent communication channels
+
+paths:
+  # ── Health ──────────────────────────────────────────────
+  /health:
+    get:
+      tags: [health]
+      summary: Instance health check
+      description: Returns server status, version, deployment mode, and bootstrap state.
+      responses:
+        "200":
+          description: Health payload
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  version:
+                    type: string
+                    example: "0.3.1"
+                  deploymentMode:
+                    type: string
+                    enum: [local_trusted, authenticated]
+                  bootstrapStatus:
+                    type: string
+                    enum: [ready, bootstrap_pending]
+
+  # ── Auth ────────────────────────────────────────────────
+  /auth/get-session:
+    get:
+      tags: [auth]
+      summary: Get current board session
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Session info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  session:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      userId:
+                        type: string
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      email:
+                        type: string
+                        nullable: true
+                      name:
+                        type: string
+                        nullable: true
+        "401":
+          description: Unauthorized
+
+  # ── Companies ───────────────────────────────────────────
+  /companies:
+    get:
+      tags: [companies]
+      summary: List companies accessible to the current actor
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Array of companies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Company"
+
+    post:
+      tags: [companies]
+      summary: Create a new company
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                industry:
+                  type: string
+      responses:
+        "201":
+          description: Created company
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Company"
+
+  /companies/{companyId}:
+    get:
+      tags: [companies]
+      summary: Get company by ID
+      security:
+        - cookieAuth: []
+        - agentApiKey: []
+      parameters:
+        - $ref: "#/components/parameters/companyId"
+      responses:
+        "200":
+          description: Company details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Company"
+        "403":
+          description: Forbidden - no access to this company
+
+  # ── Agents ──────────────────────────────────────────────
+  /companies/{companyId}/agents:
+    get:
+      tags: [agents]
+      summary: List agents in a company
+      security:
+        - cookieAuth: []
+        - agentApiKey: []
+      parameters:
+        - $ref: "#/components/parameters/companyId"
+      responses:
+        "200":
+          description: Array of agents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Agent"
+
+  /agents/{id}:
+    get:
+      tags: [agents]
+      summary: Get agent by ID
+      security:
+        - cookieAuth: []
+        - agentApiKey: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Agent details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Agent"
+        "404":
+          description: Agent not found
+
+    patch:
+      tags: [agents]
+      summary: Update agent properties
+      security:
+        - cookieAuth: []
+        - agentApiKey: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                role:
+                  type: string
+                status:
+                  type: string
+                  enum: [active, paused, terminated]
+      responses:
+        "200":
+          description: Updated agent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Agent"
+
+  # ── Issues ──────────────────────────────────────────────
+  /companies/{companyId}/issues:
+    get:
+      tags: [issues]
+      summary: List issues for a company
+      security:
+        - cookieAuth: []
+        - agentApiKey: []
+      parameters:
+        - $ref: "#/components/parameters/companyId"
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [open, in_progress, review, done, cancelled]
+        - name: assigneeId
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Array of issues
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Issue"
+
+    post:
+      tags: [issues]
+      summary: Create a new issue
+      security:
+        - cookieAuth: []
+        - agentApiKey: []
+      parameters:
+        - $ref: "#/components/parameters/companyId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                priority:
+                  type: string
+                  enum: [low, medium, high, critical]
+                assigneeId:
+                  type: string
+                  format: uuid
+                projectId:
+                  type: string
+                  format: uuid
+      responses:
+        "201":
+          description: Created issue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Issue"
+
+  /issues/{id}:
+    get:
+      tags: [issues]
+      summary: Get issue by ID
+      security:
+        - cookieAuth: []
+        - agentApiKey: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Issue details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Issue"
+
+  # ── Billing ─────────────────────────────────────────────
+  /companies/{companyId}/billing/subscription:
+    get:
+      tags: [billing]
+      summary: Get current subscription and usage
+      security:
+        - cookieAuth: []
+        - agentApiKey: []
+      parameters:
+        - $ref: "#/components/parameters/companyId"
+      responses:
+        "200":
+          description: Subscription details with usage metrics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subscription:
+                    type: object
+                    properties:
+                      planTier:
+                        type: string
+                        enum: [starter, growth, business]
+                  plan:
+                    type: object
+                  usage:
+                    type: object
+                    properties:
+                      projects:
+                        type: integer
+                      storageBytes:
+                        type: integer
+
+  /companies/{companyId}/billing/checkout:
+    post:
+      tags: [billing]
+      summary: Create a billing checkout session
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/companyId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [planTier]
+              properties:
+                planTier:
+                  type: string
+                  enum: [starter, growth, business]
+                successUrl:
+                  type: string
+                cancelUrl:
+                  type: string
+      responses:
+        "200":
+          description: Checkout session URL
+
+  # ── Channels ────────────────────────────────────────────
+  /companies/{companyId}/channels:
+    get:
+      tags: [channels]
+      summary: List communication channels for a company
+      security:
+        - cookieAuth: []
+        - agentApiKey: []
+      parameters:
+        - $ref: "#/components/parameters/companyId"
+      responses:
+        "200":
+          description: Array of channels
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    name:
+                      type: string
+                    companyId:
+                      type: string
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: better-auth.session_token
+      description: Board user session cookie (set by /api/auth/sign-in)
+    agentApiKey:
+      type: apiKey
+      in: header
+      name: X-Agent-Api-Key
+      description: Agent API key for machine-to-machine auth
+
+  parameters:
+    companyId:
+      name: companyId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Company (tenant) ID
+
+  schemas:
+    Company:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        industry:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Agent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        companyId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        role:
+          type: string
+        status:
+          type: string
+          enum: [active, paused, terminated]
+        adapterType:
+          type: string
+        department:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Issue:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        companyId:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+          nullable: true
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [open, in_progress, review, done, cancelled]
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
+        assigneeId:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time

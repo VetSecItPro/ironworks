@@ -537,7 +537,7 @@ export function issueService(db: Db) {
     issueId: string,
     companyId: string,
     labelIds: string[],
-    dbOrTx: any = db,
+    dbOrTx: DbOrTx = db,
   ) {
     const deduped = [...new Set(labelIds)];
     await assertValidLabelIds(companyId, deduped, dbOrTx);

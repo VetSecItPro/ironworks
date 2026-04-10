@@ -215,7 +215,7 @@ export function CsvImportDialog({ open, onClose, onImport, existingTitles = [] }
             <Upload className="h-5 w-5 text-muted-foreground" />
             <h2 className="text-lg font-semibold">Import Issues from CSV</h2>
           </div>
-          <button type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground">
+          <button type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground" aria-label="Close import">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -227,7 +227,7 @@ export function CsvImportDialog({ open, onClose, onImport, existingTitles = [] }
               <p className="text-sm text-muted-foreground mb-4">
                 Upload a CSV file with your issues
               </p>
-              <input ref={fileRef} type="file" accept=".csv" onChange={handleFile} className="hidden" />
+              <input ref={fileRef} type="file" accept=".csv" onChange={handleFile} className="hidden" aria-label="Choose CSV file" />
               <Button onClick={() => fileRef.current?.click()}>
                 <Upload className="h-4 w-4 mr-2" />
                 Choose CSV File
@@ -300,6 +300,7 @@ export function CsvImportDialog({ open, onClose, onImport, existingTitles = [] }
                       <th className="px-3 py-2 text-left w-8">
                         <button
                           type="button"
+                          aria-label={selectedRows.size === csvData.rows.length ? "Deselect all rows" : "Select all rows"}
                           onClick={() => {
                             if (selectedRows.size === csvData.rows.length) {
                               setSelectedRows(new Set());
@@ -338,7 +339,7 @@ export function CsvImportDialog({ open, onClose, onImport, existingTitles = [] }
                           )}
                         >
                           <td className="px-3 py-2">
-                            <button type="button" onClick={() => {
+                            <button type="button" aria-label={selectedRows.has(i) ? `Deselect row ${i + 1}` : `Select row ${i + 1}`} onClick={() => {
                               setSelectedRows((prev) => {
                                 const next = new Set(prev);
                                 if (next.has(i)) next.delete(i);
@@ -438,6 +439,7 @@ export function BulkActionsBar({
 
       {onStatusChange && (
         <select
+          aria-label="Set status for selected items"
           className="rounded-md border border-border bg-background px-2 py-1 text-xs"
           defaultValue=""
           onChange={(e) => {
@@ -456,6 +458,7 @@ export function BulkActionsBar({
 
       {onPriorityChange && (
         <select
+          aria-label="Set priority for selected items"
           className="rounded-md border border-border bg-background px-2 py-1 text-xs"
           defaultValue=""
           onChange={(e) => {
@@ -545,8 +548,9 @@ export function BulkAgentConfigDialog({ open, onClose, selectedAgentIds, onApply
 
         <div className="space-y-3">
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Model</label>
+            <label htmlFor="bulk-agent-model" className="text-xs font-medium text-muted-foreground">Model</label>
             <Input
+              id="bulk-agent-model"
               value={model}
               onChange={(e) => setModel(e.target.value)}
               placeholder="Leave blank to keep current"
@@ -554,8 +558,9 @@ export function BulkAgentConfigDialog({ open, onClose, selectedAgentIds, onApply
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Max Tokens</label>
+            <label htmlFor="bulk-agent-max-tokens" className="text-xs font-medium text-muted-foreground">Max Tokens</label>
             <Input
+              id="bulk-agent-max-tokens"
               type="number"
               value={maxTokens}
               onChange={(e) => setMaxTokens(e.target.value)}
@@ -564,8 +569,9 @@ export function BulkAgentConfigDialog({ open, onClose, selectedAgentIds, onApply
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Auto-approval</label>
+            <label htmlFor="bulk-agent-auto-approval" className="text-xs font-medium text-muted-foreground">Auto-approval</label>
             <select
+              id="bulk-agent-auto-approval"
               value={autoApproval}
               onChange={(e) => setAutoApproval(e.target.value as "" | "true" | "false")}
               className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
@@ -780,6 +786,7 @@ export function BulkLabelDialog({ open, onClose, selectedCount, availableLabels,
             value={newLabel}
             onChange={(e) => setNewLabel(e.target.value)}
             placeholder="New label..."
+            aria-label="New label name"
             className="h-8 text-xs"
             onKeyDown={(e) => { if (e.key === "Enter") addCustomLabel(); }}
           />

@@ -435,7 +435,9 @@ export function OrgChart() {
           const svgEl = containerRef.current?.querySelector("svg");
           if (!svgEl) return;
           const svgData = new XMLSerializer().serializeToString(svgEl);
-          navigator.clipboard.writeText(svgData).catch(() => {});
+          navigator.clipboard.writeText(svgData).catch((err: unknown) => {
+            console.error("Clipboard write failed", err instanceof Error ? err.message : err);
+          });
         }}
       >
         <Copy className="mr-1.5 h-3.5 w-3.5" />

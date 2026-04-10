@@ -385,7 +385,7 @@ export function BillingSettings() {
                   <td className="px-4 py-2.5"><InvoiceStatusBadge status={inv.status} /></td>
                   <td className="px-4 py-2.5 text-right">
                     {inv.status === "paid" && (
-                      <button className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                      <button className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors" aria-label={`Download invoice ${inv.id} as PDF`}>
                         <Download className="h-3 w-3" />
                         PDF
                       </button>
@@ -493,10 +493,11 @@ export function BillingSettings() {
 
                 {/* Company name confirmation */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">
+                  <label htmlFor="cancel-confirm-name" className="text-sm font-medium">
                     Type your company name <span className="font-mono text-muted-foreground">"{selectedCompany?.name}"</span> to confirm:
                   </label>
                   <input
+                    id="cancel-confirm-name"
                     ref={cancelInputRef}
                     type="text"
                     className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none focus:border-destructive"

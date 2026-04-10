@@ -263,6 +263,7 @@ export function AutomationRules() {
             <button
               className="text-muted-foreground hover:text-foreground transition-colors"
               onClick={resetForm}
+              aria-label="Close form"
             >
               <X className="h-4 w-4" />
             </button>

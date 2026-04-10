@@ -161,11 +161,11 @@ export function AskAIPanel({ open, onClose }: { open: boolean; onClose: () => vo
         </div>
         <div className="flex items-center gap-1 shrink-0">
           {messages.length > 1 && (
-            <button onClick={() => setMessages([])} className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors" title="Clear chat">
+            <button onClick={() => setMessages([])} className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors" title="Clear chat" aria-label="Clear chat">
               <Trash2 className="h-3 w-3" />
             </button>
           )}
-          <button onClick={onClose} className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors" title="Close">
+          <button onClick={onClose} className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors" title="Close" aria-label="Close">
             <X className="h-3.5 w-3.5" />
           </button>
         </div>

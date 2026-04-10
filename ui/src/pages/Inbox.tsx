@@ -444,7 +444,9 @@ export function Inbox() {
 
   const markReadMutation = useMutation({
     mutationFn: (id: string) => {
-      syncReadStateToServer(id).catch(() => {});
+      syncReadStateToServer(id).catch((err: unknown) => {
+        console.error("Failed to sync read state", err instanceof Error ? err.message : err);
+      });
       return issuesApi.markRead(id);
     },
     onMutate: (id) => {

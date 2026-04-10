@@ -262,12 +262,13 @@ export function CompanyRail() {
 
   // Billing subscription - disabled until a payment provider (Polar/Stripe) is configured.
   // Without a provider, the endpoint returns 404 which creates browser console noise.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const subscriptionData: any = null;
+  // Billing subscription - disabled until a payment provider (Polar/Stripe) is configured.
+  // Without a provider, the endpoint returns 404 which creates browser console noise.
 
   const handleAddCompany = useCallback(() => {
     const companyCount = sidebarCompanies.length;
-    const currentTier: PlanTier = (subscriptionData?.subscription?.planTier as PlanTier) ?? "starter";
+    // TODO: restore from subscriptionData when billing provider is enabled
+    const currentTier = "starter" as PlanTier;
     const limit = TIER_COMPANY_LIMITS[currentTier];
 
     if (companyCount < limit) {
@@ -297,7 +298,7 @@ export function CompanyRail() {
     setLimitModalLimit(`${limit} company${limit === 1 ? "" : " companies"}`);
     setLimitModalPlan(currentTier.charAt(0).toUpperCase() + currentTier.slice(1));
     setLimitModalOpen(true);
-  }, [sidebarCompanies.length, subscriptionData, openOnboarding]);
+  }, [sidebarCompanies.length, openOnboarding]);
 
   // Require 8px of movement before starting a drag to avoid interfering with clicks
   const sensors = useSensors(

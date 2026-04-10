@@ -266,7 +266,7 @@ function startTelegramPollLoop(db: Db, bot: BotInstance): void {
         }
       }
     } catch (err) {
-      console.error(`[telegram-bridge] Poll error for company ${bot.companyId}:`, (err as Error).message);
+      logger.error({ err, companyId: bot.companyId }, "[telegram-bridge] Poll error");
     }
 
     schedulePoll();
@@ -313,10 +313,7 @@ function startResponsePollLoop(db: Db, bot: BotInstance): void {
           if (ts > lastSeen) bot.lastSeenComment.set(issueId, ts);
         }
       } catch (err) {
-        console.error(
-          `[telegram-bridge] Response poll error for ${issueId}:`,
-          (err as Error).message,
-        );
+        logger.error({ err, issueId }, "[telegram-bridge] Response poll error");
       }
     }
 
@@ -435,10 +432,7 @@ export async function startAllTelegramBridges(db: Db): Promise<void> {
         await startTelegramBridge(db, bridge.companyId, token);
       }
     } catch (err) {
-      console.error(
-        `[telegram-bridge] Failed to start bridge for company ${bridge.companyId}:`,
-        (err as Error).message,
-      );
+      logger.error({ err, companyId: bridge.companyId }, "[telegram-bridge] Failed to start bridge");
       await bridgeSvc.updateStatus(
         bridge.companyId,
         "telegram",

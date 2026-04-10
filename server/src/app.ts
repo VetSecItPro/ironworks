@@ -2,7 +2,7 @@ import express, { Router, type Request as ExpressRequest } from "express";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
-import { createGzip, createDeflate } from "node:zlib";
+import { createGzip, createDeflate, createBrotliCompress } from "node:zlib";
 import { pipeline } from "node:stream";
 import type { Db } from "@ironworksai/db";
 import type { DeploymentExposure, DeploymentMode } from "@ironworksai/shared";
@@ -188,14 +188,18 @@ export async function createApp(
         const json = JSON.stringify(body);
         // Only compress if payload is reasonably large (> 1KB)
         if (json.length > 1024) {
-          const encoding = acceptEncoding.includes("gzip")
-            ? "gzip"
-            : acceptEncoding.includes("deflate")
-              ? "deflate"
-              : null;
+          const encoding = acceptEncoding.includes("br")
+            ? "br"
+            : acceptEncoding.includes("gzip")
+              ? "gzip"
+              : acceptEncoding.includes("deflate")
+                ? "deflate"
+                : null;
           if (encoding) {
             const compressor =
-              encoding === "gzip" ? createGzip() : createDeflate();
+              encoding === "br" ? createBrotliCompress()
+              : encoding === "gzip" ? createGzip()
+              : createDeflate();
             res.setHeader("Content-Encoding", encoding);
             res.removeHeader("Content-Length");
             if (!res.headersSent) {

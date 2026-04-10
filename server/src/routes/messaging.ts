@@ -2,6 +2,7 @@ import { Router } from "express";
 import type { Db } from "@ironworksai/db";
 import { assertBoard, assertCompanyAccess } from "./authz.js";
 import { logActivity, secretService } from "../services/index.js";
+import { logger } from "../middleware/logger.js";
 import { messagingBridgeService } from "../services/messaging-bridges.js";
 import {
   testTelegramToken,
@@ -227,7 +228,7 @@ export function emailWebhookRoutes(db: Db) {
         res.json({ ok: false, error: result.error });
       }
     } catch (err) {
-      console.error("[email-bridge] Webhook error:", (err as Error).message);
+      logger.error({ err }, "[email-bridge] Webhook error");
       // Return 200 to prevent retries
       res.json({ ok: false, error: "Internal error processing email" });
     }

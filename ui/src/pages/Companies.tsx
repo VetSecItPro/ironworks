@@ -155,12 +155,13 @@ export function Companies() {
                       <Button
                         variant="ghost"
                         size="icon-xs"
+                        aria-label="Save company name"
                         onClick={saveEdit}
                         disabled={editMutation.isPending}
                       >
                         <Check className="h-3.5 w-3.5 text-green-500" />
                       </Button>
-                      <Button variant="ghost" size="icon-xs" onClick={cancelEdit}>
+                      <Button variant="ghost" size="icon-xs" aria-label="Cancel editing" onClick={cancelEdit}>
                         <X className="h-3.5 w-3.5 text-muted-foreground" />
                       </Button>
                     </div>
@@ -181,6 +182,7 @@ export function Companies() {
                       <Button
                         variant="ghost"
                         size="icon-xs"
+                        aria-label="Rename company"
                         className="text-muted-foreground md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -205,6 +207,7 @@ export function Companies() {
                       <Button
                         variant="ghost"
                         size="icon-xs"
+                        aria-label="Company options"
                         className="text-muted-foreground md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
                       >
                         <MoreHorizontal className="h-4 w-4" />

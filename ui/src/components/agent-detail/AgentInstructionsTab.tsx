@@ -282,7 +282,9 @@ export function PromptsTab({
           });
         }
       };
-      void save().catch(() => undefined);
+      void save().catch((err: unknown) => {
+        console.error("Failed to autosave agent instructions", err instanceof Error ? err.message : err);
+      });
     } : null);
   }, [
     bundle,

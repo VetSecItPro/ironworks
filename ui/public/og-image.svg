@@ -1,0 +1,6 @@
+<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#18181b"/>
+  <text x="600" y="280" font-family="system-ui, sans-serif" font-size="72" font-weight="700" fill="#e4e4e7" text-anchor="middle">IronWorks</text>
+  <text x="600" y="360" font-family="system-ui, sans-serif" font-size="28" fill="#a1a1aa" text-anchor="middle">AI Agent Orchestration Platform</text>
+  <rect x="540" y="400" width="120" height="4" rx="2" fill="#6366f1"/>
+</svg>

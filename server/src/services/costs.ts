@@ -4,6 +4,7 @@ import { activityLog, agents, companies, costEvents, issues, projects } from "@i
 import { notFound, unprocessable } from "../errors.js";
 import { budgetService, type BudgetServiceHooks } from "./budgets.js";
 import { checkBudgetAlerts } from "./budget-alerts.js";
+import { logger } from "../middleware/logger.js";
 
 export interface CostDateRange {
   from?: Date;
@@ -144,7 +145,7 @@ export function costService(db: Db, budgetHooks: BudgetServiceHooks = {}) {
       // Fire budget alerts (80% warning + 100% exceeded) for api_key customers.
       // We intentionally do not await — alert failures should never block cost recording.
       checkBudgetAlerts(db, companyId).catch((err) => {
-        console.error("[budget-alerts] checkBudgetAlerts failed:", err);
+        logger.error({ err }, "[budget-alerts] checkBudgetAlerts failed");
       });
 
       return event;

@@ -320,7 +320,9 @@ function EndpointCard({ endpoint }: { endpoint: ApiEndpoint }) {
     navigator.clipboard.writeText(endpoint.exampleResponse).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
-    }).catch(() => {});
+    }).catch((err: unknown) => {
+      console.error("Clipboard write failed", err instanceof Error ? err.message : err);
+    });
   }
 
   return (

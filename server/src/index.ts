@@ -7,6 +7,7 @@ import { stdin, stdout } from "node:process";
 import { pathToFileURL } from "node:url";
 import type { Request as ExpressRequest, RequestHandler } from "express";
 import { and, eq } from "drizzle-orm";
+import type { Db } from "@ironworksai/db";
 import {
   createDb,
   ensurePostgresDatabase,
@@ -27,6 +28,7 @@ import detectPort from "detect-port";
 import { createApp } from "./app.js";
 import { loadConfig } from "./config.js";
 import { logger } from "./middleware/logger.js";
+import { installGlobalErrorHandlers } from "./lib/error-tracking.js";
 import { setupLiveEventsWebSocketServer } from "./realtime/live-events-ws.js";
 import { heartbeatService, reconcilePersistedRuntimeServicesOnStartup, routineService } from "./services/index.js";
 import { createStorageServiceFromConfig } from "./storage/index.js";
@@ -187,7 +189,7 @@ export async function startServer(): Promise<StartedServer> {
   const LOCAL_BOARD_USER_EMAIL = "local@ironworks.local";
   const LOCAL_BOARD_USER_NAME = "Board";
   
-  async function ensureLocalTrustedBoardPrincipal(db: any): Promise<void> {
+  async function ensureLocalTrustedBoardPrincipal(db: Db): Promise<void> {
     const now = new Date();
     const existingUser = await db
       .select({ id: authUsers.id })
@@ -772,6 +774,7 @@ export async function startServer(): Promise<StartedServer> {
       rejectListen(err);
     };
 
+    installGlobalErrorHandlers();
     server.once("error", onError);
     server.listen(listenPort, config.host, () => {
       server.off("error", onError);
@@ -808,18 +811,7 @@ export async function startServer(): Promise<StartedServer> {
 
       const boardClaimUrl = getBoardClaimWarningUrl(config.host, listenPort);
       if (boardClaimUrl) {
-        const red = "\x1b[41m\x1b[30m";
-        const yellow = "\x1b[33m";
-        const reset = "\x1b[0m";
-        console.log(
-          [
-            `${red}  BOARD CLAIM REQUIRED  ${reset}`,
-            `${yellow}This instance was previously local_trusted and still has local-board as the only admin.${reset}`,
-            `${yellow}Sign in with a real user and open this one-time URL to claim ownership:${reset}`,
-            `${yellow}${boardClaimUrl}${reset}`,
-            `${yellow}If you are connecting over Tailscale, replace the host in this URL with your Tailscale IP/MagicDNS name.${reset}`,
-          ].join("\n"),
-        );
+        logger.warn({ boardClaimUrl }, "BOARD CLAIM REQUIRED - This instance was previously local_trusted and still has local-board as the only admin. Sign in with a real user and open the one-time URL to claim ownership.");
       }
 
       resolveListen();

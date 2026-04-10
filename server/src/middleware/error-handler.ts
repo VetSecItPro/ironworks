@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { ZodError } from "zod";
 import { HttpError } from "../errors.js";
+import { captureError } from "../lib/error-tracking.js";
 
 export interface ErrorContext {
   error: { message: string; stack?: string; name?: string; details?: unknown; raw?: unknown };
@@ -67,5 +68,6 @@ export function errorHandler(
     rootError,
   );
 
+  captureError(err, { route: req.originalUrl, method: req.method });
   res.status(500).json({ error: "Internal server error" });
 }
