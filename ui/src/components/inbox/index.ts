@@ -7,3 +7,5 @@ export { InboxWorkItemList } from "./InboxWorkItemList";
 export { JoinRequestInboxRow } from "./JoinRequestInboxRow";
 export { SmartSuggestionsBanner } from "./SmartSuggestionsBanner";
 export { SnoozeButton } from "./SnoozeButton";
+export { useInboxData } from "./useInboxData";
+export { useInboxMutations } from "./useInboxMutations";

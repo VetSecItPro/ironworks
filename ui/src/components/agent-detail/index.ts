@@ -1,9 +1,13 @@
 export { AgentDashboard } from "./AgentDashboard";
 export { AgentConfigurePage, ConfigurationTab } from "./AgentConfigPanel";
+export { KeysTab } from "./KeysTab";
 export { PromptsTab } from "./AgentInstructionsTab";
 export { AgentSkillsTab } from "./AgentSkillsTab";
 export { AgentMemoryTab } from "./AgentMemoryTab";
 export { RunsTab } from "./AgentTimeline";
 export { RunDetail } from "./AgentRunTranscript";
+export { AgentDetailHeader } from "./AgentDetailHeader";
+export { AgentChatSlideOut } from "./AgentChatSlideOut";
+export { ConfigActionBar } from "./ConfigActionBar";
 export { parseAgentDetailView } from "./agent-detail-utils";
 export type { AgentDetailView } from "./agent-detail-utils";

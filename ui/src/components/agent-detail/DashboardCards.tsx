@@ -1,0 +1,542 @@
+import { useState, useMemo } from "react";
+import { Link } from "@/lib/router";
+import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
+import { StatusBadge } from "../StatusBadge";
+import { EmploymentBadge } from "../EmploymentBadge";
+import { MarkdownBody } from "../MarkdownBody";
+import { Button } from "@/components/ui/button";
+import { formatCents, formatTokens, formatDate, relativeTime, cn } from "../../lib/utils";
+import { agentsApi } from "../../api/agents";
+import { queryKeys } from "../../lib/queryKeys";
+import { Clock, AlertTriangle, CheckCircle2, Circle } from "lucide-react";
+import {
+  DEPARTMENT_LABELS,
+  TERMINATION_REASONS,
+  AUTONOMY_LEVELS,
+  type AutonomyLevel,
+} from "@ironworksai/shared";
+import type {
+  AgentDetail as AgentDetailRecord,
+  HeartbeatRun,
+  AgentRuntimeState,
+} from "@ironworksai/shared";
+import { runStatusIcons, runMetrics, sourceLabels } from "./agent-detail-utils";
+
+export function LatestRunCard({ runs, agentId }: { runs: HeartbeatRun[]; agentId: string }) {
+  if (runs.length === 0) return null;
+
+  const sorted = [...runs].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+
+  const liveRun = sorted.find((r) => r.status === "running" || r.status === "queued");
+  const run = liveRun ?? sorted[0];
+  const isLive = run.status === "running" || run.status === "queued";
+  const statusInfo = runStatusIcons[run.status] ?? { icon: Clock, color: "text-neutral-400" };
+  const StatusIcon = statusInfo.icon;
+  const summary = run.resultJson
+    ? String((run.resultJson as Record<string, unknown>).summary ?? (run.resultJson as Record<string, unknown>).result ?? "")
+    : run.error ?? "";
+
+  return (
+    <div className="space-y-3">
+      <div className="flex w-full items-center justify-between">
+        <h3 className="flex items-center gap-2 text-sm font-medium">
+          {isLive && (
+            <span className="relative flex h-2 w-2">
+              <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-400" />
+            </span>
+          )}
+          {isLive ? "Live Run" : "Latest Run"}
+        </h3>
+        <Link
+          to={`/agents/${agentId}/runs/${run.id}`}
+          className="shrink-0 text-xs text-muted-foreground hover:text-foreground transition-colors no-underline"
+        >
+          View details &rarr;
+        </Link>
+      </div>
+
+      <Link
+        to={`/agents/${agentId}/runs/${run.id}`}
+        className={cn(
+          "block border rounded-lg p-4 space-y-2 w-full no-underline transition-colors hover:bg-muted/50 cursor-pointer",
+          isLive ? "border-cyan-500/30 shadow-[0_0_12px_rgba(6,182,212,0.08)]" : "border-border"
+        )}
+      >
+        <div className="flex items-center gap-2">
+          <StatusIcon className={cn("h-3.5 w-3.5", statusInfo.color, run.status === "running" && "animate-spin")} />
+          <StatusBadge status={run.status} />
+          <span className="font-mono text-xs text-muted-foreground">{run.id.slice(0, 8)}</span>
+          <span className={cn(
+            "inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium",
+            run.invocationSource === "timer" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
+              : run.invocationSource === "assignment" ? "bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300"
+              : run.invocationSource === "on_demand" ? "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-300"
+              : "bg-muted text-muted-foreground"
+          )}>
+            {sourceLabels[run.invocationSource] ?? run.invocationSource}
+          </span>
+          <span className="ml-auto text-xs text-muted-foreground">{relativeTime(run.createdAt)}</span>
+        </div>
+
+        {summary && (
+          <div className="overflow-hidden max-h-16">
+            <MarkdownBody className="[&>*:first-child]:mt-0 [&>*:last-child]:mb-0">{summary}</MarkdownBody>
+          </div>
+        )}
+      </Link>
+    </div>
+  );
+}
+
+export function CostsSection({
+  runtimeState,
+  runs,
+}: {
+  runtimeState?: AgentRuntimeState;
+  runs: HeartbeatRun[];
+}) {
+  const runsWithCost = runs
+    .filter((r) => {
+      const metrics = runMetrics(r);
+      return metrics.cost > 0 || metrics.input > 0 || metrics.output > 0 || metrics.cached > 0;
+    })
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  return (
+    <div className="space-y-4">
+      {runtimeState && (
+        <div className="border border-border rounded-lg p-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 tabular-nums">
+            <div>
+              <span className="text-xs text-muted-foreground block">Input tokens</span>
+              <span className="text-lg font-semibold">{formatTokens(runtimeState.totalInputTokens)}</span>
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground block">Output tokens</span>
+              <span className="text-lg font-semibold">{formatTokens(runtimeState.totalOutputTokens)}</span>
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground block">Cached tokens</span>
+              <span className="text-lg font-semibold">{formatTokens(runtimeState.totalCachedInputTokens)}</span>
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground block">Total cost</span>
+              <span className="text-lg font-semibold">{formatCents(runtimeState.totalCostCents)}</span>
+            </div>
+          </div>
+        </div>
+      )}
+      {runsWithCost.length > 0 && (
+        <div className="border border-border rounded-lg overflow-hidden">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-border bg-accent/20">
+                <th className="text-left px-3 py-2 font-medium text-muted-foreground">Date</th>
+                <th className="text-left px-3 py-2 font-medium text-muted-foreground">Run</th>
+                <th className="text-right px-3 py-2 font-medium text-muted-foreground">Input</th>
+                <th className="text-right px-3 py-2 font-medium text-muted-foreground">Output</th>
+                <th className="text-right px-3 py-2 font-medium text-muted-foreground">Cost</th>
+              </tr>
+            </thead>
+            <tbody>
+              {runsWithCost.slice(0, 10).map((run) => {
+                const metrics = runMetrics(run);
+                return (
+                  <tr key={run.id} className="border-b border-border last:border-b-0">
+                    <td className="px-3 py-2">{formatDate(run.createdAt)}</td>
+                    <td className="px-3 py-2 font-mono">{run.id.slice(0, 8)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{formatTokens(metrics.input)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{formatTokens(metrics.output)}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">
+                      {metrics.cost > 0
+                        ? `$${metrics.cost.toFixed(4)}`
+                        : "-"
+                      }
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function OnboardingChecklist({
+  agent,
+  assignedIssues,
+  runs,
+}: {
+  agent: AgentDetailRecord;
+  assignedIssues: { id: string; status: string }[];
+  runs: HeartbeatRun[];
+}) {
+  const ext = agent as unknown as Record<string, unknown>;
+  const hiredAt = ext.hiredAt as string | null;
+  if (!hiredAt) return null;
+  const ageMs = Date.now() - new Date(hiredAt).getTime();
+  const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+  if (ageMs > sevenDaysMs) return null;
+
+  const hasPermissionGrants = (agent.access?.grants?.length ?? 0) > 0;
+  const hasAdapterConfig =
+    agent.adapterConfig != null &&
+    Object.keys(agent.adapterConfig).length > 0;
+  const hasCompletedIssue = assignedIssues.some((i) => i.status === "done");
+  const hasSucceededRun = runs.some((r) => r.status === "succeeded");
+
+  const items: Array<{ label: string; done: boolean }> = [
+    { label: "Data access provisioned", done: hasPermissionGrants },
+    { label: "Tools assigned", done: hasAdapterConfig },
+    { label: "First run completed", done: hasSucceededRun },
+    { label: "Knowledge base seeded", done: hasCompletedIssue },
+  ];
+
+  const allDone = items.every((i) => i.done);
+
+  return (
+    <div className="rounded-xl border border-border p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Onboarding Status
+        </h3>
+        {allDone && (
+          <span className="text-xs text-emerald-500 font-medium">Complete</span>
+        )}
+      </div>
+      <ul className="space-y-2">
+        {items.map((item) => (
+          <li key={item.label} className="flex items-center gap-2 text-sm">
+            {item.done ? (
+              <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+            ) : (
+              <Circle className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40" />
+            )}
+            <span className={item.done ? "text-foreground" : "text-muted-foreground"}>
+              {item.label}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+const STRATEGY_LABELS: Record<string, string> = {
+  single: "Single Model",
+  cascade: "Cascade (Retry with Fallback)",
+  council: "Council (Multi-Model Deliberation)",
+};
+
+const STRATEGY_COLORS: Record<string, string> = {
+  single: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
+  cascade: "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300",
+  council: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300",
+};
+
+export function ModelStrategyCard({ agent }: { agent: AgentDetailRecord }) {
+  const ext = agent as unknown as Record<string, unknown>;
+  const runtimeConfig = (ext.runtimeConfig ?? {}) as Record<string, unknown>;
+  const adapterConfig = (ext.adapterConfig ?? {}) as Record<string, unknown>;
+  const modelStrategy = (runtimeConfig.modelStrategy as string) ?? "single";
+  const currentModel = (runtimeConfig.model as string) ?? (adapterConfig.model as string) ?? "kimi-k2.5";
+  const strategyLabel = STRATEGY_LABELS[modelStrategy] ?? "Single Model";
+  const strategyColor = STRATEGY_COLORS[modelStrategy] ?? STRATEGY_COLORS.single;
+
+  const { data: recentActivity } = useQuery({
+    queryKey: ["agents", agent.id, "council-activity"],
+    queryFn: async () => {
+      const res = await fetch(
+        `/api/companies/${agent.companyId}/activity?agentId=${agent.id}&action=model_council.completed&limit=5`
+      );
+      if (!res.ok) return [];
+      const data = await res.json();
+      return Array.isArray(data.items) ? data.items : Array.isArray(data) ? data : [];
+    },
+    staleTime: 60_000,
+  });
+
+  const councilEvents = (recentActivity ?? []).slice(0, 3);
+
+  return (
+    <div className="rounded-xl border border-border p-4 space-y-3">
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Model Strategy</h3>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <span className="text-xs text-muted-foreground block">Strategy</span>
+          <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium mt-1", strategyColor)}>
+            {strategyLabel}
+          </span>
+        </div>
+        <div>
+          <span className="text-xs text-muted-foreground block">Primary Model</span>
+          <span className="text-sm font-mono mt-1 block truncate">{currentModel}</span>
+        </div>
+      </div>
+      <p className="text-[11px] text-muted-foreground">
+        Tasks labeled as critical automatically upgrade to council mode. Important tasks upgrade single to cascade.
+      </p>
+      {councilEvents.length > 0 && (
+        <div className="space-y-2 pt-2 border-t border-border">
+          <h4 className="text-xs font-medium text-muted-foreground">Recent Council Results</h4>
+          {councilEvents.map((event: Record<string, unknown>, idx: number) => {
+            const details = (event.details ?? {}) as Record<string, unknown>;
+            const strategy = (details.strategy as string) ?? "unknown";
+            const winningModel = (details.winningModel as string) ?? "unknown";
+            const models = Array.isArray(details.models) ? details.models : [];
+            const winnerScore = models.find(
+              (m: unknown) => (m as Record<string, unknown>).model === winningModel
+            ) as Record<string, unknown> | undefined;
+            const score = typeof winnerScore?.score === "number" ? winnerScore.score : 0;
+            const importance = (details.importance as string) ?? "";
+            return (
+              <div key={idx} className="text-xs text-muted-foreground">
+                <span className={cn("inline-flex items-center rounded px-1 py-0.5 text-[10px] font-medium mr-1", STRATEGY_COLORS[strategy] ?? STRATEGY_COLORS.single)}>
+                  {strategy}
+                </span>
+                {importance ? <span className="mr-1">[{importance}]</span> : null}
+                <span className="font-mono">{winningModel.split(":")[0]}</span>
+                {" won"}
+                {score > 0 ? ` (score ${score})` : ""}
+                {models.length > 1 && (
+                  <span className="ml-1">
+                    vs {models.filter((m: unknown) => (m as Record<string, unknown>).model !== winningModel).map((m: unknown) => {
+                      const entry = m as Record<string, unknown>;
+                      return `${String(entry.model ?? "").split(":")[0]} (${entry.score ?? 0})`;
+                    }).join(", ")}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function EmploymentCard({
+  agent,
+  companyId,
+}: {
+  agent: AgentDetailRecord;
+  companyId: string;
+}) {
+  const queryClient = useQueryClient();
+  const [showTerminateConfirm, setShowTerminateConfirm] = useState(false);
+  const [terminationReason, setTerminationReason] = useState<string>("manual");
+  const ext = agent as unknown as Record<string, unknown>;
+  const employmentType = (ext.employmentType as string) ?? "full_time";
+  const department = ext.department as string | null;
+  const hiredAt = ext.hiredAt as string | null;
+  const performanceScore = ext.performanceScore as number | null;
+  const contractEndCondition = ext.contractEndCondition as string | null;
+  const contractEndAt = ext.contractEndAt as string | null;
+  const contractBudgetCents = ext.contractBudgetCents as number | null;
+  const autonomyLevel = (ext.autonomyLevel as AutonomyLevel | null) ?? null;
+  const autonomyInfo = autonomyLevel
+    ? AUTONOMY_LEVELS.find((l) => l.key === autonomyLevel) ?? null
+    : null;
+
+  const terminateMutation = useMutation({
+    mutationFn: () => agentsApi.terminateWithReason(companyId, agent.id, terminationReason),
+    onSuccess: () => {
+      setShowTerminateConfirm(false);
+      queryClient.invalidateQueries({ queryKey: queryKeys.agents.detail(agent.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.agents.list(companyId) });
+    },
+  });
+
+  const isRecentHire = hiredAt
+    ? Date.now() - new Date(hiredAt).getTime() < 30 * 24 * 60 * 60 * 1000
+    : false;
+  const onboardingMetricsQuery = useQuery({
+    queryKey: ["agents", agent.id, "onboarding-metrics"],
+    queryFn: () => agentsApi.onboardingMetrics(agent.id, companyId),
+    enabled: isRecentHire,
+  });
+
+  const reasonLabels: Record<string, string> = {
+    contract_complete: "Contract Complete",
+    budget_exhausted: "Budget Exhausted",
+    deadline_reached: "Deadline Reached",
+    manual: "Manual Termination",
+    performance: "Performance",
+  };
+
+  return (
+    <div className="rounded-xl border border-border p-4 space-y-3">
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Employment</h3>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <span className="text-xs text-muted-foreground block">Type</span>
+          <EmploymentBadge type={employmentType} className="mt-1" />
+        </div>
+        {department && (
+          <div>
+            <span className="text-xs text-muted-foreground block">Department</span>
+            <span className="text-sm font-medium mt-1 block">
+              {(DEPARTMENT_LABELS as Record<string, string>)[department] ?? department}
+            </span>
+          </div>
+        )}
+        {hiredAt && (
+          <div>
+            <span className="text-xs text-muted-foreground block">Hired</span>
+            <span className="text-sm mt-1 block">{formatDate(hiredAt)}</span>
+          </div>
+        )}
+        {isRecentHire && onboardingMetricsQuery.data && (
+          <div>
+            <span className="text-xs text-muted-foreground block">Ramp time</span>
+            <span className="text-sm mt-1 block">
+              {onboardingMetricsQuery.data.rampTimeDays !== null
+                ? `${onboardingMetricsQuery.data.rampTimeDays} days`
+                : "Not yet completed first issue"}
+            </span>
+          </div>
+        )}
+        {autonomyInfo && (
+          <div className="col-span-2">
+            <span className="text-xs text-muted-foreground block">Autonomy Level</span>
+            <div className="mt-1 flex items-center gap-2">
+              <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
+                {autonomyInfo.key.toUpperCase()} - {autonomyInfo.label}
+              </span>
+              <span className="text-xs text-muted-foreground">{autonomyInfo.description}</span>
+            </div>
+          </div>
+        )}
+        {performanceScore != null && (
+          <div>
+            <span className="text-xs text-muted-foreground block">Performance</span>
+            <div className="flex items-center gap-2 mt-1">
+              <div className="w-20 h-1.5 bg-muted rounded-full overflow-hidden">
+                <div
+                  className={cn(
+                    "h-full rounded-full",
+                    performanceScore >= 80 ? "bg-emerald-500" : performanceScore >= 50 ? "bg-amber-500" : "bg-red-500",
+                  )}
+                  style={{ width: `${performanceScore}%` }}
+                />
+              </div>
+              <span className="text-xs tabular-nums">{performanceScore}/100</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {employmentType === "contractor" && (
+        <div className="border-t border-border pt-3 space-y-2">
+          <h4 className="text-xs font-medium text-muted-foreground">Contract Details</h4>
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            {contractEndCondition && (
+              <div>
+                <span className="text-xs text-muted-foreground block">End Condition</span>
+                <span className="capitalize">{contractEndCondition.replace(/_/g, " ")}</span>
+              </div>
+            )}
+            {contractEndAt && (
+              <div>
+                <span className="text-xs text-muted-foreground block">Deadline</span>
+                <span>{formatDate(contractEndAt)}</span>
+              </div>
+            )}
+            {contractBudgetCents != null && (
+              <div>
+                <span className="text-xs text-muted-foreground block">Budget Remaining</span>
+                <span>{formatCents(contractBudgetCents)}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {agent.status !== "terminated" && (
+        <div className="border-t border-border pt-3">
+          {!showTerminateConfirm ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => setShowTerminateConfirm(true)}
+            >
+              <AlertTriangle className="h-3.5 w-3.5 mr-1" />
+              {employmentType === "full_time" ? "Decommission Agent" : "Terminate Agent"}
+            </Button>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-xs font-medium text-muted-foreground">
+                The following actions will occur on {employmentType === "full_time" ? "decommission" : "termination"}:
+              </p>
+              <ul className="space-y-1 text-xs text-muted-foreground">
+                <li className="flex items-start gap-1.5">
+                  <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-muted-foreground/50 shrink-0" />
+                  Memory entries will be archived
+                </li>
+                {employmentType === "contractor" && (
+                  <li className="flex items-start gap-1.5">
+                    <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-muted-foreground/50 shrink-0" />
+                    Workspace will be archived
+                  </li>
+                )}
+                <li className="flex items-start gap-1.5">
+                  <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-muted-foreground/50 shrink-0" />
+                  Active issues will be unassigned
+                </li>
+                <li className="flex items-start gap-1.5">
+                  <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-muted-foreground/50 shrink-0" />
+                  A termination record will be created
+                </li>
+              </ul>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">Reason</label>
+                <select
+                  value={terminationReason}
+                  onChange={(e) => setTerminationReason(e.target.value)}
+                  className="w-full text-xs bg-transparent border border-border rounded px-2 py-1.5"
+                >
+                  {TERMINATION_REASONS.map((r) => (
+                    <option key={r} value={r}>{reasonLabels[r] ?? r}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => terminateMutation.mutate()}
+                  disabled={terminateMutation.isPending}
+                >
+                  {terminateMutation.isPending
+                    ? "Processing..."
+                    : employmentType === "full_time"
+                    ? "Confirm Decommission"
+                    : "Confirm Terminate"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowTerminateConfirm(false)}
+                  disabled={terminateMutation.isPending}
+                >
+                  Cancel
+                </Button>
+              </div>
+              {terminateMutation.isError && (
+                <p className="text-xs text-destructive">
+                  {terminateMutation.error instanceof Error ? terminateMutation.error.message : "Termination failed"}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

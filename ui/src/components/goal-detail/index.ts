@@ -11,5 +11,6 @@ export { GoalTabsSection } from "./GoalTabsSection";
 export type { Milestone } from "./MilestonesSection";
 export { useMilestones, MilestonesSection } from "./MilestonesSection";
 export { RaciDisplay } from "./RaciDisplay";
+export { GoalDetailHeader } from "./GoalDetailHeader";
 export type { SmartCriteria } from "./SmartQualityIndicator";
 export { evaluateSmart, SmartQualityIndicator } from "./SmartQualityIndicator";

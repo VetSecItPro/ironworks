@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   CompanyPortabilityCollisionStrategy,
@@ -14,13 +14,8 @@ import { authApi } from "../api/auth";
 import { companiesApi } from "../api/companies";
 import { agentsApi } from "../api/agents";
 import { queryKeys } from "../lib/queryKeys";
-import { getAgentOrderStorageKey, writeAgentOrder } from "../lib/agent-order";
-import { getProjectOrderStorageKey, writeProjectOrder } from "../lib/project-order";
-import { Button } from "@/components/ui/button";
 import { EmptyState } from "../components/EmptyState";
-import { cn } from "../lib/utils";
-import { Download, Github, Upload } from "lucide-react";
-import { Field } from "../components/agent-config-primitives";
+import { Download } from "lucide-react";
 import { getUIAdapter } from "../adapters";
 import type { CreateConfigValues } from "@ironworksai/adapter-utils";
 import {
@@ -28,141 +23,21 @@ import {
   buildFileTree,
   countFiles,
   collectAllPaths,
-  PackageFileTree,
 } from "../components/PackageFileTree";
-import { readZipArchive } from "../lib/zip";
-
-// Extracted components
 import {
   buildActionMap,
   buildConflictList,
   deriveSourcePrefix,
   prefixedName,
   ensureMarkdownPath,
-  type ConflictItem,
 } from "../components/import/ImportHelpers";
-import { ImportPreviewPane } from "../components/import/ImportPreviewPane";
-import { ConflictResolutionList } from "../components/import/ConflictResolutionList";
+import type { AdapterPickerItem } from "../components/import/AdapterPickerList";
+import { ImportSourceForm } from "../components/company-import/ImportSourceForm";
+import { ImportPreviewResults } from "../components/company-import/ImportPreviewResults";
 import {
-  AdapterPickerList,
-  type AdapterPickerItem,
-} from "../components/import/AdapterPickerList";
-
-// ── Import file tree customization ───────────────────────────────────
-
-import { ACTION_COLORS } from "../components/import/ImportHelpers";
-
-function renderImportFileExtra(
-  node: FileTreeNode,
-  checked: boolean,
-  renameMap: Map<string, string>,
-) {
-  const renamedTo = node.kind === "dir" ? renameMap.get(node.path) : undefined;
-  const actionBadge = node.action ? (
-    <span
-      className={cn(
-        "shrink-0 rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide",
-        ACTION_COLORS[node.action] ?? ACTION_COLORS.skip,
-      )}
-    >
-      {checked ? node.action : "skip"}
-    </span>
-  ) : null;
-
-  if (!actionBadge && !renamedTo) return null;
-
-  return (
-    <span className="inline-flex items-center gap-1.5 shrink-0">
-      {renamedTo && checked && (
-        <span
-          className="text-[10px] text-cyan-500 font-mono truncate max-w-[7rem]"
-          title={renamedTo}
-        >
-          &rarr; {renamedTo}
-        </span>
-      )}
-      {actionBadge}
-    </span>
-  );
-}
-
-function importFileRowClassName(_node: FileTreeNode, checked: boolean) {
-  return !checked ? "opacity-50" : undefined;
-}
-
-// ── Sidebar order helper ─────────────────────────────────────────────
-
-function applyImportedSidebarOrder(
-  preview: CompanyPortabilityPreviewResult | null,
-  result: {
-    company: { id: string };
-    agents: Array<{ slug: string; id: string | null }>;
-    projects: Array<{ slug: string; id: string | null }>;
-  },
-  userId: string | null | undefined,
-) {
-  const sidebar = preview?.manifest.sidebar;
-  if (!sidebar) return;
-  if (!userId?.trim()) return;
-
-  const agentIdBySlug = new Map(
-    result.agents
-      .filter(
-        (agent): agent is { slug: string; id: string } =>
-          typeof agent.id === "string" && agent.id.length > 0,
-      )
-      .map((agent) => [agent.slug, agent.id]),
-  );
-  const projectIdBySlug = new Map(
-    result.projects
-      .filter(
-        (project): project is { slug: string; id: string } =>
-          typeof project.id === "string" && project.id.length > 0,
-      )
-      .map((project) => [project.slug, project.id]),
-  );
-
-  const orderedAgentIds = sidebar.agents
-    .map((slug) => agentIdBySlug.get(slug))
-    .filter((id): id is string => Boolean(id));
-  const orderedProjectIds = sidebar.projects
-    .map((slug) => projectIdBySlug.get(slug))
-    .filter((id): id is string => Boolean(id));
-
-  if (orderedAgentIds.length > 0) {
-    writeAgentOrder(
-      getAgentOrderStorageKey(result.company.id, userId),
-      orderedAgentIds,
-    );
-  }
-  if (orderedProjectIds.length > 0) {
-    writeProjectOrder(
-      getProjectOrderStorageKey(result.company.id, userId),
-      orderedProjectIds,
-    );
-  }
-}
-
-// ── Read local zip ───────────────────────────────────────────────────
-
-async function readLocalPackageZip(file: File): Promise<{
-  name: string;
-  rootPath: string | null;
-  files: Record<string, CompanyPortabilityFileEntry>;
-}> {
-  if (!/\.zip$/i.test(file.name)) {
-    throw new Error("Select a .zip company package.");
-  }
-  const archive = await readZipArchive(await file.arrayBuffer());
-  if (Object.keys(archive.files).length === 0) {
-    throw new Error("No package files were found in the selected zip archive.");
-  }
-  return {
-    name: file.name,
-    rootPath: archive.rootPath,
-    files: archive.files,
-  };
-}
+  applyImportedSidebarOrder,
+  readLocalPackageZip,
+} from "../components/company-import/import-helpers";
 
 // ── Main page ─────────────────────────────────────────────────────────
 
@@ -171,7 +46,6 @@ export function CompanyImport() {
   const { setBreadcrumbs } = useBreadcrumbs();
   const { pushToast } = useToast();
   const queryClient = useQueryClient();
-  const packageInputRef = useRef<HTMLInputElement | null>(null);
 
   const { data: session } = useQuery({
     queryKey: queryKeys.auth.session,
@@ -219,9 +93,6 @@ export function CompanyImport() {
     const ceo = companyAgents.find((a) => a.role === "ceo");
     return ceo?.adapterType ?? "claude_local";
   }, [companyAgents]);
-
-  const localZipHelpText =
-    "Upload a .zip exported directly from Ironworks. Re-zipped archives created by Finder, Explorer, or other zip tools may not import correctly.";
 
   useEffect(() => {
     setBreadcrumbs([
@@ -570,246 +441,64 @@ export function CompanyImport() {
   const hasSource = sourceMode === "local" ? !!localPackage : importUrl.trim().length > 0;
   const hasErrors = importPreview ? importPreview.errors.length > 0 : false;
 
-  const previewContent =
-    selectedFile && importPreview ? importPreview.files[selectedFile] ?? null : null;
-  const selectedAction = selectedFile ? (actionMap.get(selectedFile) ?? null) : null;
-
   if (!selectedCompanyId) {
     return <EmptyState icon={Download} message="Select a company to import into." />;
   }
 
   return (
     <div>
-      {/* Source form section */}
-      <div className="border-b border-border px-5 py-5 space-y-4">
-        <div>
-          <h2 className="text-base font-semibold">Import source</h2>
-          <p className="text-xs text-muted-foreground mt-1">
-            Choose a GitHub repo or upload a local Ironworks zip package.
-          </p>
-        </div>
+      <ImportSourceForm
+        sourceMode={sourceMode}
+        onSourceModeChange={setSourceMode}
+        importUrl={importUrl}
+        onImportUrlChange={setImportUrl}
+        localPackage={localPackage}
+        onChooseLocalPackage={handleChooseLocalPackage}
+        targetMode={targetMode}
+        onTargetModeChange={setTargetMode}
+        selectedCompanyName={selectedCompany?.name}
+        newCompanyName={newCompanyName}
+        onNewCompanyNameChange={setNewCompanyName}
+        collisionStrategy={collisionStrategy}
+        onCollisionStrategyChange={setCollisionStrategy}
+        onPreview={() => previewMutation.mutate()}
+        previewPending={previewMutation.isPending}
+        hasSource={hasSource}
+        onClearPreview={() => setImportPreview(null)}
+      />
 
-        <div className="grid gap-2 md:grid-cols-2">
-          {(
-            [
-              { key: "github", icon: Github, label: "GitHub repo" },
-              { key: "local", icon: Upload, label: "Local zip" },
-            ] as const
-          ).map(({ key, icon: Icon, label }) => (
-            <button
-              key={key}
-              type="button"
-              className={cn(
-                "rounded-md border px-3 py-2 text-left text-sm transition-colors",
-                sourceMode === key ? "border-foreground bg-accent" : "border-border hover:bg-accent/50",
-              )}
-              onClick={() => { setSourceMode(key); setImportPreview(null); }}
-            >
-              <div className="flex items-center gap-2">
-                <Icon className="h-4 w-4" />
-                {label}
-              </div>
-            </button>
-          ))}
-        </div>
-
-        {sourceMode === "local" ? (
-          <div className="rounded-md border border-dashed border-border px-3 py-3">
-            <input
-              ref={packageInputRef}
-              type="file"
-              accept=".zip,application/zip"
-              className="hidden"
-              onChange={handleChooseLocalPackage}
-            />
-            <div className="flex flex-wrap items-center gap-2">
-              <Button size="sm" variant="outline" onClick={() => packageInputRef.current?.click()}>
-                Choose zip
-              </Button>
-              {localPackage && (
-                <span className="text-xs text-muted-foreground">
-                  {localPackage.name} with {Object.keys(localPackage.files).length} file
-                  {Object.keys(localPackage.files).length === 1 ? "" : "s"}
-                </span>
-              )}
-            </div>
-            {!localPackage && (
-              <p className="mt-2 text-xs text-muted-foreground">{localZipHelpText}</p>
-            )}
-          </div>
-        ) : (
-          <Field
-            label="GitHub URL"
-            hint="Repo tree path or blob URL to COMPANY.md (e.g. github.com/owner/repo/tree/main/company)."
-          >
-            <input
-              className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
-              type="text"
-              value={importUrl}
-              placeholder="https://github.com/owner/repo/tree/main/company"
-              onChange={(e) => { setImportUrl(e.target.value); setImportPreview(null); }}
-            />
-          </Field>
-        )}
-
-        <Field label="Target" hint="Import into this company or create a new one.">
-          <select
-            className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
-            value={targetMode}
-            onChange={(e) => { setTargetMode(e.target.value as "existing" | "new"); setImportPreview(null); }}
-          >
-            <option value="new">Create new company</option>
-            <option value="existing">Existing company: {selectedCompany?.name}</option>
-          </select>
-        </Field>
-
-        {targetMode === "new" && (
-          <Field label="New company name" hint="Optional override. Leave blank to use the package name.">
-            <input
-              className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
-              type="text"
-              value={newCompanyName}
-              onChange={(e) => setNewCompanyName(e.target.value)}
-              placeholder="Imported Company"
-            />
-          </Field>
-        )}
-
-        <Field
-          label="Collision strategy"
-          hint="Board imports can rename, skip, or replace matching company content."
-        >
-          <select
-            className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
-            value={collisionStrategy}
-            onChange={(e) => {
-              setCollisionStrategy(e.target.value as CompanyPortabilityCollisionStrategy);
-              setImportPreview(null);
-            }}
-          >
-            <option value="rename">Rename on conflict</option>
-            <option value="skip">Skip on conflict</option>
-            <option value="replace">Replace existing</option>
-          </select>
-        </Field>
-
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => previewMutation.mutate()}
-            disabled={previewMutation.isPending || !hasSource}
-          >
-            {previewMutation.isPending ? "Previewing..." : "Preview import"}
-          </Button>
-        </div>
-      </div>
-
-      {/* Preview results */}
       {importPreview && (
-        <>
-          {/* Sticky import action bar */}
-          <div className="sticky top-0 z-10 border-b border-border bg-background px-5 py-3">
-            <div className="flex flex-wrap items-center gap-4 text-sm">
-              <span className="font-medium">Import preview</span>
-              <span className="text-muted-foreground">
-                {selectedCount} / {totalFiles} file{totalFiles === 1 ? "" : "s"} selected
-              </span>
-              {conflicts.length > 0 && (
-                <span className="text-amber-500">
-                  {conflicts.length} conflict{conflicts.length === 1 ? "" : "s"}
-                </span>
-              )}
-              {importPreview.errors.length > 0 && (
-                <span className="text-destructive">
-                  {importPreview.errors.length} error{importPreview.errors.length === 1 ? "" : "s"}
-                </span>
-              )}
-            </div>
-          </div>
-
-          <ConflictResolutionList
-            conflicts={conflicts}
-            nameOverrides={nameOverrides}
-            skippedSlugs={skippedSlugs}
-            confirmedSlugs={confirmedSlugs}
-            onRename={handleConflictRename}
-            onToggleSkip={handleConflictToggleSkip}
-            onToggleConfirm={handleConflictToggleConfirm}
-          />
-
-          <AdapterPickerList
-            agents={adapterAgents}
-            adapterOverrides={adapterOverrides}
-            expandedSlugs={adapterExpandedSlugs}
-            configValues={adapterConfigValues}
-            onChangeAdapter={handleAdapterChange}
-            onToggleExpand={handleAdapterToggleExpand}
-            onChangeConfig={handleAdapterConfigChange}
-          />
-
-          <div className="mx-5 mt-3 flex justify-end">
-            <Button
-              size="sm"
-              onClick={() => importMutation.mutate()}
-              disabled={importMutation.isPending || hasErrors || selectedCount === 0}
-            >
-              <Download className="mr-1.5 h-3.5 w-3.5" />
-              {importMutation.isPending
-                ? "Importing..."
-                : `Import ${selectedCount} file${selectedCount === 1 ? "" : "s"}`}
-            </Button>
-          </div>
-
-          {importPreview.warnings.length > 0 && (
-            <div className="mx-5 mt-3 rounded-md border border-amber-500/30 bg-amber-500/5 px-4 py-3">
-              {importPreview.warnings.map((w) => (
-                <div key={w} className="text-xs text-amber-500">{w}</div>
-              ))}
-            </div>
-          )}
-
-          {importPreview.errors.length > 0 && (
-            <div className="mx-5 mt-3 rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3">
-              {importPreview.errors.map((e) => (
-                <div key={e} className="text-xs text-destructive">{e}</div>
-              ))}
-            </div>
-          )}
-
-          {/* Two-column layout */}
-          <div className="grid h-[calc(100vh-16rem)] gap-0 xl:grid-cols-[19rem_minmax(0,1fr)]">
-            <aside className="flex flex-col border-r border-border overflow-hidden">
-              <div className="border-b border-border px-4 py-3 shrink-0">
-                <h2 className="text-base font-semibold">Package files</h2>
-              </div>
-              <div className="flex-1 overflow-y-auto">
-                <PackageFileTree
-                  nodes={tree}
-                  selectedFile={selectedFile}
-                  expandedDirs={expandedDirs}
-                  checkedFiles={checkedFiles}
-                  onToggleDir={handleToggleDir}
-                  onSelectFile={setSelectedFile}
-                  onToggleCheck={handleToggleCheck}
-                  renderFileExtra={(node, checked) =>
-                    renderImportFileExtra(node, checked, renameMap)
-                  }
-                  fileRowClassName={importFileRowClassName}
-                />
-              </div>
-            </aside>
-            <div className="min-w-0 overflow-y-auto pl-6">
-              <ImportPreviewPane
-                selectedFile={selectedFile}
-                content={previewContent}
-                allFiles={importPreview?.files ?? {}}
-                action={selectedAction}
-                renamedTo={selectedFile ? (renameMap.get(selectedFile) ?? null) : null}
-              />
-            </div>
-          </div>
-        </>
+        <ImportPreviewResults
+          importPreview={importPreview}
+          tree={tree}
+          conflicts={conflicts}
+          renameMap={renameMap}
+          actionMap={actionMap}
+          totalFiles={totalFiles}
+          selectedCount={selectedCount}
+          selectedFile={selectedFile}
+          expandedDirs={expandedDirs}
+          checkedFiles={checkedFiles}
+          onToggleDir={handleToggleDir}
+          onSelectFile={setSelectedFile}
+          onToggleCheck={handleToggleCheck}
+          nameOverrides={nameOverrides}
+          skippedSlugs={skippedSlugs}
+          confirmedSlugs={confirmedSlugs}
+          onConflictRename={handleConflictRename}
+          onConflictToggleSkip={handleConflictToggleSkip}
+          onConflictToggleConfirm={handleConflictToggleConfirm}
+          adapterAgents={adapterAgents}
+          adapterOverrides={adapterOverrides}
+          adapterExpandedSlugs={adapterExpandedSlugs}
+          adapterConfigValues={adapterConfigValues}
+          onAdapterChange={handleAdapterChange}
+          onAdapterToggleExpand={handleAdapterToggleExpand}
+          onAdapterConfigChange={handleAdapterConfigChange}
+          onImport={() => importMutation.mutate()}
+          importPending={importMutation.isPending}
+          hasErrors={hasErrors}
+        />
       )}
     </div>
   );

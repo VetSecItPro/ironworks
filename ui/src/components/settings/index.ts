@@ -19,3 +19,7 @@ export { SecuritySection } from "./SecuritySection";
 export { SettingsErrorBoundary } from "./SettingsErrorBoundary";
 export { TalentPoolSection } from "./TalentPoolSection";
 export { TeamMembersSection } from "./TeamMembersSection";
+export { AutomationRuleForm } from "./AutomationRuleForm";
+export { AutomationRuleList } from "./AutomationRuleList";
+export type { AutomationRule, Trigger, Action } from "./automationTypes";
+export { loadRules, saveRules, generateId } from "./automationTypes";

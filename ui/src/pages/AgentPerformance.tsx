@@ -9,17 +9,12 @@ import { velocityApi } from "../api/velocity";
 import { useCompany } from "../context/CompanyContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { queryKeys } from "../lib/queryKeys";
-import { formatCents, cn, agentUrl } from "../lib/utils";
+import { formatCents, cn } from "../lib/utils";
 import { EmptyState } from "../components/EmptyState";
-import { Link } from "@/lib/router";
-import { Identity } from "../components/Identity";
 import { PageSkeleton } from "../components/PageSkeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertTriangle, ArrowDown, ArrowUp, Award, BarChart3, Building2, Download, Medal, TrendingDown } from "lucide-react";
-import { DEPARTMENT_LABELS } from "@ironworksai/shared";
-import { exportToCSV } from "../lib/exportCSV";
+import { BarChart3 } from "lucide-react";
 
-// Components
 import {
   computeAgentPerformance,
   computeRating,
@@ -31,18 +26,18 @@ import {
 import { CompanyKpiCards } from "../components/performance/CompanyKpiCards";
 import { PerformanceInsights } from "../components/performance/PerformanceInsights";
 import { PerformanceTable } from "../components/performance/PerformanceTable";
-import {
-  PerformanceTrendChart,
-  VelocityChart,
-} from "../components/performance/PerformanceCharts";
-import {
-  WorkloadDistribution,
-  AgentPipeline,
-  PerformanceByProject,
-} from "../components/performance/WorkloadCharts";
+import { PerformanceTrendChart, VelocityChart } from "../components/performance/PerformanceCharts";
+import { WorkloadDistribution, AgentPipeline } from "../components/performance/WorkloadCharts";
+import { PerformanceByProject } from "../components/performance/PerformanceByProject";
 
-// Prevent lint from removing imports used only in JSX
-const _usedIcons = { ArrowDown, ArrowUp, Award, Building2, Download, Medal };
+import {
+  PerformanceHeader,
+  PerformanceAlertBanner,
+  LeaderboardHighlights,
+  DepartmentAggregation,
+  AgentKpiCards,
+} from "../components/agent-performance";
+import type { DeptAggRow } from "../components/agent-performance";
 
 // Re-export for consumers (e.g. BoardBriefing)
 export type { AgentPerfRow };
@@ -133,9 +128,7 @@ export function AgentPerformance() {
   const sorted = useMemo(() => {
     const dir = sortDir === "asc" ? 1 : -1;
     return [...rows].sort((a, b) => {
-      if (sortField === "rating") {
-        return dir * a.rating.localeCompare(b.rating);
-      }
+      if (sortField === "rating") return dir * a.rating.localeCompare(b.rating);
       const av = a[sortField] ?? -1;
       const bv = b[sortField] ?? -1;
       return dir * ((av as number) - (bv as number));
@@ -159,7 +152,7 @@ export function AgentPerformance() {
     return m;
   }, [prevRows]);
 
-  const deptAggRows = useMemo(() => {
+  const deptAggRows: DeptAggRow[] = useMemo(() => {
     if (!showDeptAgg) return [];
     const deptMap = new Map<string, { dept: string; agents: AgentPerfRow[] }>();
     for (const row of rows) {
@@ -208,198 +201,16 @@ export function AgentPerformance() {
   if (!selectedCompanyId) {
     return <EmptyState icon={BarChart3} message="Select a company to view agent performance." />;
   }
-
   if (agentsLoading) return <PageSkeleton variant="list" />;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Agent Performance</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Evaluate agent efficiency, throughput, and cost effectiveness.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border transition-colors",
-              showDeptAgg ? "bg-accent text-foreground border-foreground/20" : "border-border text-muted-foreground hover:text-foreground",
-            )}
-            onClick={() => setShowDeptAgg(!showDeptAgg)}
-          >
-            <_usedIcons.Building2 className="h-3.5 w-3.5" />
-            Departments
-          </button>
-          <button
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border border-border text-muted-foreground hover:text-foreground transition-colors"
-            onClick={() => {
-              exportToCSV(
-                rows.map((r) => ({
-                  name: r.name,
-                  rating: r.rating,
-                  score: r.ratingScore,
-                  tasksDone: r.tasksDone,
-                  tasksInProgress: r.tasksInProgress,
-                  throughput: r.throughput.toFixed(2),
-                  avgCloseH: r.avgCloseH !== null ? r.avgCloseH.toFixed(1) : "",
-                  costPerTask: r.costPerTask !== null ? (r.costPerTask / 100).toFixed(2) : "",
-                  totalSpend: (r.totalSpendCents / 100).toFixed(2),
-                  completionRate: r.completionRate,
-                })),
-                `agent-performance-${range}`,
-                [
-                  { key: "name", label: "Agent" },
-                  { key: "rating", label: "Rating" },
-                  { key: "score", label: "Score" },
-                  { key: "tasksDone", label: "Tasks Done" },
-                  { key: "tasksInProgress", label: "In Progress" },
-                  { key: "throughput", label: "Tasks/Day" },
-                  { key: "avgCloseH", label: "Avg Close (hrs)" },
-                  { key: "costPerTask", label: "Cost/Task ($)" },
-                  { key: "totalSpend", label: "Total Spend ($)" },
-                  { key: "completionRate", label: "Completion %" },
-                ],
-              );
-            }}
-          >
-            <_usedIcons.Download className="h-3.5 w-3.5" />
-            Export CSV
-          </button>
-          <div
-            className="flex items-center gap-1 border border-border rounded-md overflow-hidden"
-            role="group"
-            aria-label="Time range"
-          >
-            {(["7d", "30d", "all"] as const).map((r) => (
-              <button
-                key={r}
-                className={cn(
-                  "px-3 py-1.5 text-xs transition-colors",
-                  range === r ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground",
-                )}
-                aria-pressed={range === r}
-                onClick={() => setRange(r)}
-              >
-                {r === "all" ? "All time" : r === "7d" ? "7 days" : "30 days"}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Performance Alert Banner */}
-      {(() => {
-        const bigDrops = rows.filter((r) => {
-          const prev = prevScoreMap.get(r.agentId);
-          return prev !== undefined && r.tasksDone > 0 && prev - r.ratingScore >= 15;
-        });
-        if (bigDrops.length === 0) return null;
-        return (
-          <div className="flex items-start gap-3 rounded-lg border border-red-500/20 bg-red-500/[0.04] px-4 py-3">
-            <TrendingDown className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-medium">Significant rating changes detected</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {bigDrops.map((r) => {
-                  const prev = prevScoreMap.get(r.agentId) ?? 0;
-                  return `${r.name} dropped ${prev - r.ratingScore} points`;
-                }).join("; ")}
-              </p>
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* Leaderboard Highlights */}
-      {(topPerformer || mostImproved) && (
-        <div className="flex flex-wrap gap-3">
-          {topPerformer && (
-            <div className="flex items-center gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/5 px-4 py-2.5">
-              <_usedIcons.Award className="h-5 w-5 text-amber-400 shrink-0" />
-              <div>
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-amber-400">Top Performer</div>
-                <div className="text-sm font-medium">{topPerformer.name} <span className="text-muted-foreground">- Score {topPerformer.ratingScore}</span></div>
-              </div>
-            </div>
-          )}
-          {mostImproved && (
-            <div className="flex items-center gap-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-2.5">
-              <_usedIcons.Medal className="h-5 w-5 text-emerald-400 shrink-0" />
-              <div>
-                <div className="text-[10px] font-semibold uppercase tracking-wide text-emerald-400">Most Improved</div>
-                <div className="text-sm font-medium">
-                  {mostImproved.name}
-                  <span className="text-muted-foreground ml-1">
-                    - Score {mostImproved.ratingScore}
-                    {prevScoreMap.get(mostImproved.agentId) !== undefined && (
-                      <span className="text-emerald-400 ml-1">
-                        (+{mostImproved.ratingScore - (prevScoreMap.get(mostImproved.agentId) ?? 0)})
-                      </span>
-                    )}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Company-Level Aggregate KPIs */}
+      <PerformanceHeader range={range} setRange={setRange} showDeptAgg={showDeptAgg} setShowDeptAgg={setShowDeptAgg} rows={rows} />
+      <PerformanceAlertBanner rows={rows} prevScoreMap={prevScoreMap} />
+      <LeaderboardHighlights topPerformer={topPerformer} mostImproved={mostImproved} prevScoreMap={prevScoreMap} />
       <CompanyKpiCards rows={rows} />
+      {showDeptAgg && <DepartmentAggregation deptAggRows={deptAggRows} />}
 
-      {/* Department Aggregation */}
-      {showDeptAgg && deptAggRows.length > 0 && (
-        <div className="rounded-xl border border-border overflow-hidden">
-          <div className="px-4 py-3 bg-muted/30 border-b border-border">
-            <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
-              <_usedIcons.Building2 className="h-3.5 w-3.5" />
-              Department Averages
-            </h4>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-muted/20">
-                  <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground uppercase">Department</th>
-                  <th className="px-4 py-2.5 text-center text-xs font-medium text-muted-foreground uppercase">Agents</th>
-                  <th className="px-4 py-2.5 text-center text-xs font-medium text-muted-foreground uppercase">Avg Score</th>
-                  <th className="px-4 py-2.5 text-center text-xs font-medium text-muted-foreground uppercase">Tasks Done</th>
-                  <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground uppercase">Tasks/Day</th>
-                  <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground uppercase">Completion</th>
-                  <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground uppercase">Total Spend</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {deptAggRows.map((d) => {
-                  const deptLabel = (DEPARTMENT_LABELS as Record<string, string>)[d.dept] ?? d.dept;
-                  return (
-                    <tr key={d.dept} className="hover:bg-accent/30 transition-colors">
-                      <td className="px-4 py-2.5 font-medium">{deptLabel}</td>
-                      <td className="px-4 py-2.5 text-center tabular-nums">{d.agentCount}</td>
-                      <td className="px-4 py-2.5 text-center">
-                        <span className={cn(
-                          "inline-flex items-center justify-center h-6 w-6 rounded text-xs font-bold",
-                          RATING_COLORS[computeRating(d.avgScore)],
-                        )}>
-                          {computeRating(d.avgScore)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2.5 text-center tabular-nums">{d.totalDone}</td>
-                      <td className="px-4 py-2.5 text-right tabular-nums text-muted-foreground">{d.avgThroughput}</td>
-                      <td className="px-4 py-2.5 text-right tabular-nums text-muted-foreground">{d.avgCompletion}%</td>
-                      <td className="px-4 py-2.5 text-right tabular-nums">{formatCents(d.totalSpend)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Velocity Chart */}
       {velocity && velocity.length > 0 && (
         <div className="rounded-xl border border-border p-4 space-y-3">
           <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Issue Velocity - Last 12 Weeks</h4>
@@ -420,70 +231,7 @@ export function AgentPerformance() {
         </div>
       </div>
 
-      {/* Per-Agent KPI Cards */}
-      {sorted.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {sorted.slice(0, 6).map((row) => {
-            const successRate = row.tasksDone > 0 ? row.completionRate : null;
-            const successColor = successRate !== null
-              ? successRate >= 85 ? "text-emerald-400" : successRate >= 70 ? "text-amber-400" : "text-red-400"
-              : "text-muted-foreground";
-            const prev = prevScoreMap.get(row.agentId);
-            const delta = prev !== undefined ? row.ratingScore - prev : null;
-            return (
-              <div key={row.agentId} className="rounded-xl border border-border p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <span className={cn(
-                    "inline-flex items-center justify-center h-7 w-7 rounded-lg border text-xs font-bold",
-                    RATING_COLORS[row.rating],
-                  )}>
-                    {row.rating}
-                  </span>
-                  <Link to={agentUrl({ id: row.agentId, urlKey: null, name: null })} className="no-underline text-inherit font-medium truncate">
-                    {row.name}
-                  </Link>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Success</p>
-                    <p className={cn("text-lg font-bold tabular-nums", successColor)}>
-                      {successRate !== null ? `${successRate}%` : "-"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">$/Task</p>
-                    <p className="text-lg font-bold tabular-nums text-muted-foreground">
-                      {row.costPerTask !== null ? formatCents(Math.round(row.costPerTask)) : "-"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Score</p>
-                    <div className="flex items-center gap-1.5">
-                      <p className="text-lg font-bold tabular-nums">{row.ratingScore}</p>
-                      {delta !== null && delta !== 0 && (
-                        delta > 0
-                          ? <_usedIcons.ArrowUp className="h-3 w-3 text-emerald-400" />
-                          : <_usedIcons.ArrowDown className="h-3 w-3 text-red-400" />
-                      )}
-                      <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className={cn(
-                            "h-full rounded-full",
-                            row.ratingScore >= 80 ? "bg-emerald-500" : row.ratingScore >= 50 ? "bg-amber-500" : "bg-red-500",
-                          )}
-                          style={{ width: `${row.ratingScore}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Insights */}
+      <AgentKpiCards sorted={sorted} prevScoreMap={prevScoreMap} />
       {rows.length > 0 && <PerformanceInsights rows={rows} />}
 
       {/* Performance Score Trend */}
@@ -503,16 +251,13 @@ export function AgentPerformance() {
             </Select>
           </div>
           {trendSnapshots.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No performance snapshots found. Agents write memory entries with category "performance_snapshot" to populate this chart.
-            </p>
+            <p className="text-sm text-muted-foreground">No performance snapshots found.</p>
           ) : (
             <PerformanceTrendChart snapshots={trendSnapshots} />
           )}
         </div>
       )}
 
-      {/* Main Table */}
       {sorted.length === 0 ? (
         <EmptyState icon={BarChart3} message="No agents to evaluate." />
       ) : (
@@ -527,7 +272,6 @@ export function AgentPerformance() {
         />
       )}
 
-      {/* Workload Distribution + Agent Pipeline */}
       {rows.length > 0 && issues && issues.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <WorkloadDistribution rows={rows} issues={issues} />
@@ -535,7 +279,6 @@ export function AgentPerformance() {
         </div>
       )}
 
-      {/* Performance by Project */}
       {rows.length > 0 && projects && projects.length > 0 && (
         <PerformanceByProject
           rows={rows}

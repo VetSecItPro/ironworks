@@ -1,19 +1,16 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { FeedbackModal } from "./FeedbackModal";
 import { BugReportModal } from "./BugReportModal";
 import { ChangelogModal, ChangelogTrigger } from "./ChangelogModal";
 import { StatusBar } from "./StatusBar";
 import { useQuery } from "@tanstack/react-query";
-
-import { Link, Outlet, useLocation, useNavigate, useParams } from "@/lib/router";
-import { CookieSettingsLink } from "./CookieConsent";
+import { Outlet, useLocation, useNavigate, useParams } from "@/lib/router";
 import { CompanyRail } from "./CompanyRail";
 import { Sidebar } from "./Sidebar";
 import { InstanceSidebar } from "./InstanceSidebar";
 import { BreadcrumbBar } from "./BreadcrumbBar";
 import { PropertiesPanel } from "./PropertiesPanel";
 import { CommandPalette } from "./CommandPalette";
-// Lazy-load dialogs that pull in @mdxeditor/editor — keeps it out of the main bundle
 const NewIssueDialog = lazy(() => import("./NewIssueDialog").then((m) => ({ default: m.NewIssueDialog })));
 const NewProjectDialog = lazy(() => import("./NewProjectDialog").then((m) => ({ default: m.NewProjectDialog })));
 const NewGoalDialog = lazy(() => import("./NewGoalDialog").then((m) => ({ default: m.NewGoalDialog })));
@@ -26,31 +23,27 @@ import { DevRestartBanner } from "./DevRestartBanner";
 import { AskAIHeaderButton, AskAIPanel } from "./AskAIButton";
 import { NotificationCenter, NotificationBell, useNotifications } from "./NotificationCenter";
 import { SampleDataBanner } from "./SampleDataToggle";
-import { GuidedTour, useGuidedTour, isFirstRun, markFirstRunSeen } from "./GuidedTour";
+import { GuidedTour, useGuidedTour } from "./GuidedTour";
 import { WelcomeScreen, hasSeenWelcome } from "./WelcomeScreen";
-// FirstLoginWizard removed - redundant with onboarding wizard
 import { useChordNavigation } from "../hooks/useKeyboardPowerUser";
 import { useDialog } from "../context/DialogContext";
 import { useToast } from "../context/ToastContext";
 import { usePanel } from "../context/PanelContext";
 import { useCompany } from "../context/CompanyContext";
 import { useSidebar } from "../context/SidebarContext";
-
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { useCompanyPageMemory } from "../hooks/useCompanyPageMemory";
 import { usePrefetch } from "../hooks/usePrefetch";
 import { healthApi } from "../api/health";
 import { registerRateLimitToast } from "../api/client";
 import { shouldSyncCompanySelectionFromRoute } from "../lib/company-selection";
-import {
-  DEFAULT_INSTANCE_SETTINGS_PATH,
-  normalizeRememberedInstanceSettingsPath,
-} from "../lib/instance-settings";
+import { DEFAULT_INSTANCE_SETTINGS_PATH, normalizeRememberedInstanceSettingsPath } from "../lib/instance-settings";
 import { queryKeys } from "../lib/queryKeys";
 import { cn } from "../lib/utils";
 import { NotFoundPage } from "../pages/NotFound";
-import { Button } from "@/components/ui/button";
 import { useMeAccess } from "../hooks/useMeAccess";
+import { useMobileSwipe } from "./layout/useMobileSwipe";
+import { useMobileNavVisibility } from "./layout/useMobileNavVisibility";
 
 const INSTANCE_SETTINGS_MEMORY_KEY = "ironworks.lastInstanceSettingsPath";
 
@@ -90,8 +83,6 @@ export function Layout() {
   const { isInstanceAdmin } = useMeAccess();
   const isInstanceSettingsRoute = location.pathname.startsWith("/instance/");
   const onboardingTriggered = useRef(false);
-  const lastMainScrollTop = useRef(0);
-  const [mobileNavVisible, setMobileNavVisible] = useState(true);
   const [instanceSettingsTarget, setInstanceSettingsTarget] = useState<string>(() => readRememberedInstanceSettingsPath());
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [bugReportOpen, setBugReportOpen] = useState(false);
@@ -188,92 +179,9 @@ export function Layout() {
     enabled: true,
   });
 
-  useEffect(() => {
-    if (!isMobile) {
-      setMobileNavVisible(true);
-      return;
-    }
-    lastMainScrollTop.current = 0;
-    setMobileNavVisible(true);
-  }, [isMobile]);
-
-  // Swipe gesture to open/close sidebar on mobile
-  useEffect(() => {
-    if (!isMobile) return;
-
-    const EDGE_ZONE = 30; // px from left edge to start open-swipe
-    const MIN_DISTANCE = 50; // minimum horizontal swipe distance
-    const MAX_VERTICAL = 75; // max vertical drift before we ignore
-
-    let startX = 0;
-    let startY = 0;
-
-    const onTouchStart = (e: TouchEvent) => {
-      const t = e.touches[0]!;
-      startX = t.clientX;
-      startY = t.clientY;
-    };
-
-    const onTouchEnd = (e: TouchEvent) => {
-      const t = e.changedTouches[0]!;
-      const dx = t.clientX - startX;
-      const dy = Math.abs(t.clientY - startY);
-
-      if (dy > MAX_VERTICAL) return; // vertical scroll, ignore
-
-      // Swipe right from left edge → open
-      if (!sidebarOpen && startX < EDGE_ZONE && dx > MIN_DISTANCE) {
-        setSidebarOpen(true);
-        return;
-      }
-
-      // Swipe left when open → close
-      if (sidebarOpen && dx < -MIN_DISTANCE) {
-        setSidebarOpen(false);
-      }
-    };
-
-    document.addEventListener("touchstart", onTouchStart, { passive: true });
-    document.addEventListener("touchend", onTouchEnd, { passive: true });
-
-    return () => {
-      document.removeEventListener("touchstart", onTouchStart);
-      document.removeEventListener("touchend", onTouchEnd);
-    };
-  }, [isMobile, sidebarOpen, setSidebarOpen]);
-
-  const updateMobileNavVisibility = useCallback((currentTop: number) => {
-    const delta = currentTop - lastMainScrollTop.current;
-
-    if (currentTop <= 24) {
-      setMobileNavVisible(true);
-    } else if (delta > 8) {
-      setMobileNavVisible(false);
-    } else if (delta < -8) {
-      setMobileNavVisible(true);
-    }
-
-    lastMainScrollTop.current = currentTop;
-  }, []);
-
-  useEffect(() => {
-    if (!isMobile) {
-      setMobileNavVisible(true);
-      lastMainScrollTop.current = 0;
-      return;
-    }
-
-    const onScroll = () => {
-      updateMobileNavVisibility(window.scrollY || document.documentElement.scrollTop || 0);
-    };
-
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-    };
-  }, [isMobile, updateMobileNavVisibility]);
+  // Mobile swipe and nav visibility (extracted hooks)
+  useMobileSwipe(isMobile, sidebarOpen, setSidebarOpen);
+  const mobileNavVisible = useMobileNavVisibility(isMobile);
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -371,7 +279,7 @@ export function Layout() {
             </div>
           </nav>
         )}
-        {/* Sidebar resize handle - between nav and content, drag right = wider sidebar */}
+        {/* Sidebar resize handle */}
         {!isMobile && !focusMode && (
           <div
             className="w-1.5 h-full cursor-col-resize group shrink-0 flex items-center justify-center hover:bg-accent/40 active:bg-accent/60 transition-colors border-r border-border/30"

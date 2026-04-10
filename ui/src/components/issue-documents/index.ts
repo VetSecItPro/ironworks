@@ -1,0 +1,1 @@
+export { IssueDocumentsSection } from "./IssueDocumentsSection";
