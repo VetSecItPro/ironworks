@@ -15,7 +15,7 @@ const MOBILE_BREAKPOINT = 768;
 const SIDEBAR_WIDTH_KEY = "ironworks:sidebar-width";
 const DEFAULT_SIDEBAR_WIDTH = 260;
 const MIN_SIDEBAR_WIDTH = 200;
-const MAX_SIDEBAR_WIDTH = 400;
+const MAX_SIDEBAR_WIDTH = 600;
 
 function loadSidebarWidth(): number {
   try {
