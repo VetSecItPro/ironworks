@@ -1392,9 +1392,9 @@ export function heartbeatService(db: Db) {
           ),
         )
         .orderBy(desc(heartbeatRuns.finishedAt))
-        .limit(3);
+        .limit(5);
 
-      if (recentRuns.length === 3) {
+      if (recentRuns.length === 5) {
         const allFailed = recentRuns.every((r) => {
           // Skip process_lost errors (server restart / deploy bounce)
           if (r.errorCode === "process_lost") return false;
@@ -1436,7 +1436,7 @@ export function heartbeatService(db: Db) {
         updatedAt: new Date(),
         ...(shouldAutoPause
           ? {
-              pauseReason: "auto_paused: 3 consecutive failures",
+              pauseReason: "auto_paused: 5 consecutive failures",
               pausedAt: new Date(),
             }
           : shouldCostPause
@@ -1466,12 +1466,12 @@ export function heartbeatService(db: Db) {
 
       // If auto-paused, create a system issue and log activity (non-fatal)
       if (shouldAutoPause) {
-        logger.warn({ agentId, companyId: updated.companyId }, "Agent auto-paused after 3 consecutive failures");
+        logger.warn({ agentId, companyId: updated.companyId }, "Agent auto-paused after 5 consecutive failures");
 
         issuesSvc
           .create(updated.companyId, {
-            title: `[System] Agent ${updated.name} paused after 3 consecutive failures`,
-            description: `The agent **${updated.name}** (${updated.role}) has been automatically paused after failing 3 consecutive runs.\n\nPlease review the agent's configuration, adapter settings, and recent run logs, then resume the agent once the issue is resolved.`,
+            title: `[System] Agent ${updated.name} paused after 5 consecutive failures`,
+            description: `The agent **${updated.name}** (${updated.role}) has been automatically paused after failing 5 consecutive runs.\n\nPlease review the agent's configuration, adapter settings, and recent run logs, then resume the agent once the issue is resolved.`,
             priority: "high",
             status: "todo",
             createdByUserId: null,
@@ -1489,7 +1489,7 @@ export function heartbeatService(db: Db) {
           entityType: "agent",
           entityId: agentId,
           agentId,
-          details: { reason: "3 consecutive failures", name: updated.name },
+          details: { reason: "5 consecutive failures", name: updated.name },
         }).catch((err) => {
           logger.warn({ err, agentId }, "Failed to log agent.auto_paused activity");
         });
@@ -1500,7 +1500,7 @@ export function heartbeatService(db: Db) {
         issuesSvc
           .create(updated.companyId, {
             title: `[System] Agent ${updated.name} paused - cost anomaly detected`,
-            description: `The agent **${updated.name}** (${updated.role}) has been automatically paused because its last 5 runs all exceeded expected token usage by more than 3x the historical baseline.\n\nReview the agent's behavior, prompt configuration, and recent run logs before resuming.`,
+            description: `The agent **${updated.name}** (${updated.role}) has been automatically paused because its last 5 runs all exceeded expected token usage by more than 5x the historical baseline.\n\nReview the agent's behavior, prompt configuration, and recent run logs before resuming.`,
             priority: "critical",
             status: "todo",
             createdByUserId: null,

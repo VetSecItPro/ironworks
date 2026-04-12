@@ -477,13 +477,101 @@ export async function resumeQueuedRuns(
   await Promise.all(agentIds.map((agentId) => startNextQueuedRunForAgent(agentId)));
 }
 
+// ── Auto-resume paused agents whose conditions have cleared ───────────────
+
+async function autoResumePausedAgents(db: Db, now: Date): Promise<number> {
+  const pausedAgents = await db
+    .select()
+    .from(agents)
+    .where(
+      and(
+        eq(agents.status, "paused"),
+        sql`${agents.pauseReason} IS NOT NULL`,
+      ),
+    );
+
+  if (pausedAgents.length === 0) return 0;
+
+  let resumed = 0;
+
+  for (const agent of pausedAgents) {
+    const reason = agent.pauseReason ?? "";
+    const pausedAt = agent.pausedAt ? new Date(agent.pausedAt) : null;
+    let shouldResume = false;
+
+    // Iteration limits: auto-resume after 1 hour cooldown
+    if (reason === "iteration_limit" && pausedAt) {
+      const cooldownMs = 60 * 60 * 1000;
+      if (now.getTime() - pausedAt.getTime() > cooldownMs) {
+        shouldResume = true;
+      }
+    }
+
+    // Consecutive failures: auto-resume after 30 min cooldown
+    if (reason.startsWith("auto_paused") && pausedAt) {
+      const cooldownMs = 30 * 60 * 1000;
+      if (now.getTime() - pausedAt.getTime() > cooldownMs) {
+        shouldResume = true;
+      }
+    }
+
+    // Cost anomaly: auto-resume after 1 hour cooldown
+    if (reason === "cost_anomaly" && pausedAt) {
+      const cooldownMs = 60 * 60 * 1000;
+      if (now.getTime() - pausedAt.getTime() > cooldownMs) {
+        shouldResume = true;
+      }
+    }
+
+    if (!shouldResume) continue;
+
+    await db
+      .update(agents)
+      .set({
+        status: "idle",
+        pauseReason: null,
+        pausedAt: null,
+        updatedAt: now,
+      })
+      .where(eq(agents.id, agent.id));
+
+    publishLiveEvent({
+      companyId: agent.companyId,
+      type: "agent.status",
+      payload: { agentId: agent.id, status: "idle", autoResumed: true },
+    });
+
+    logger.info(
+      { agentId: agent.id, name: agent.name, previousPauseReason: reason },
+      "Agent auto-resumed after pause condition cleared",
+    );
+
+    logActivity(db, {
+      companyId: agent.companyId,
+      actorType: "system",
+      actorId: "auto_resume",
+      action: "agent.resumed",
+      entityType: "agent",
+      entityId: agent.id,
+      details: { reason: "auto_resume", previousPauseReason: reason },
+    }).catch(() => {});
+
+    resumed += 1;
+  }
+
+  return resumed;
+}
+
 // ── tickTimers ─────────────────────────────────────────────────────────────
 
 export async function tickTimers(
   db: Db,
   enqueueWakeup: (agentId: string, opts: WakeupOptions) => Promise<unknown>,
   now = new Date(),
-): Promise<{ checked: number; enqueued: number; skipped: number }> {
+): Promise<{ checked: number; enqueued: number; skipped: number; resumed: number }> {
+  // Auto-resume agents whose pause conditions have cleared
+  const resumed = await autoResumePausedAgents(db, now);
+
   const allAgents = await db
     .select()
     .from(agents)
@@ -518,7 +606,7 @@ export async function tickTimers(
     else skipped += 1;
   }
 
-  return { checked, enqueued, skipped };
+  return { checked, enqueued, skipped, resumed };
 }
 
 // ── releaseIssueExecutionAndPromote ────────────────────────────────────────

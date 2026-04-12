@@ -18,6 +18,29 @@ const TELEGRAM_API = "https://api.telegram.org";
 const POLL_INTERVAL_MS = 10_000;
 const MAX_TELEGRAM_MSG_LENGTH = 4000; // leave buffer under 4096 limit
 
+// ── Intent classification ──
+
+const ACKNOWLEDGEMENTS = /^(ok|okay|k|sure|thanks|thank you|thx|got it|sounds good|cool|yes|no|yep|yea|yeah|nope|alright|noted|understood|will do|bet|word|copy|roger|affirmative|np|no problem|right|correct|exactly|agreed|ack)\.?!?$/i;
+const GREETINGS = /^(hi|hello|hey|yo|sup|good (morning|afternoon|evening|night)|gm|howdy|what'?s up)\.?!?$/i;
+const DEFERRALS = /^(later|not now|not yet|i'?m busy|we'?ll (do|get to|handle|fix|work on) (that|it|this) later|working on something else|maybe later|some other time|another time)\.?$/i;
+const STATUS_PREFIX = /^i('?m| am) (busy|working|away|afk|out|offline|eating|sleeping|driving|in a meeting)/i;
+const EMOJI_ONLY = /^[\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+$/u;
+
+function isConversational(text: string): boolean {
+  const trimmed = text.trim();
+  if (!trimmed) return true;
+  if (EMOJI_ONLY.test(trimmed)) return true;
+  if (ACKNOWLEDGEMENTS.test(trimmed)) return true;
+  if (GREETINGS.test(trimmed)) return true;
+  if (DEFERRALS.test(trimmed)) return true;
+  if (STATUS_PREFIX.test(trimmed)) return true;
+  const wordCount = trimmed.split(/\s+/).length;
+  if (wordCount <= 3 && !/\?$/.test(trimmed)) {
+    if (/^(nice|great|sweet|awesome|perfect|good|fine|fair enough|for sure|on it|my bad|no worries)\.?!?$/i.test(trimmed)) return true;
+  }
+  return false;
+}
+
 // ── Types ──
 
 interface TelegramUpdate {
@@ -224,6 +247,11 @@ function startTelegramPollLoop(db: Db, bot: BotInstance): void {
         const existingIssueId = bot.activeThreads.get(chatId);
 
         if (!existingIssueId) {
+          if (isConversational(text)) {
+            await sendTelegram(bot.token, chatId, "Got it, Boss. Let me know when you need anything.");
+            continue;
+          }
+
           // Create new issue
           // SEC-INTEG-004: Sanitize Telegram content before creating issues
           const rawSenderName = msg.from?.first_name ?? msg.from?.username ?? "Unknown";

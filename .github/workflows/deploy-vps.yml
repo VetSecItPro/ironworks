@@ -20,23 +20,23 @@ jobs:
         uses: appleboy/ssh-action@2d048bfd40d77e0ad0b38e3c1bb1af0658cbe29b
         with:
           host: ${{ secrets.VPS_HOST }}
-          username: deploy
+          username: root
           key: ${{ secrets.VPS_SSH_KEY }}
           script_stop: true
           command_timeout: 15m
           script: |
             set -euo pipefail
-            cd /home/deploy/ironworks
+            cd /root/ironworks
 
             echo "==> Pulling latest from master..."
             git fetch origin master
             git reset --hard origin/master
 
             echo "==> Rebuilding and restarting container (no compose down - preserves volumes)..."
-            sudo docker compose -f docker-compose.production.yml up -d --build
+            docker compose -f docker-compose.quickstart.yml up -d --build
 
             echo "==> Pruning old images..."
-            sudo docker image prune -f
+            docker image prune -f
 
             echo "==> Waiting for health check..."
             for i in $(seq 1 30); do
@@ -48,5 +48,5 @@ jobs:
             done
 
             echo "==> WARNING: Health check timed out after 60s"
-            sudo docker compose -f docker-compose.production.yml logs --tail=50
+            docker compose -f docker-compose.quickstart.yml logs --tail=50
             exit 1

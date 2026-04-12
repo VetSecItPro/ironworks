@@ -770,12 +770,12 @@ export function executiveAnalyticsService(db: Db) {
 
       if (avgOlder <= 0) return { anomaly: false, reason: "zero_baseline" };
 
-      // Check if ALL of the last 5 exceed 3x the baseline
-      const allExceed = recent5Tokens.every((t) => t > avgOlder * 3);
+      // Check if ALL of the last 5 exceed 5x the baseline
+      const allExceed = recent5Tokens.every((t) => t > avgOlder * 5);
 
       return {
         anomaly: allExceed,
-        reason: allExceed ? "all_recent_runs_exceed_3x_baseline" : "within_normal_range",
+        reason: allExceed ? "all_recent_runs_exceed_5x_baseline" : "within_normal_range",
         recentAvgTokens: Math.round(recent5Tokens.reduce((s, t) => s + t, 0) / recent5Tokens.length),
         baselineAvgTokens: Math.round(avgOlder),
       };
