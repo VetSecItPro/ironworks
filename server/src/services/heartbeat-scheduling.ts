@@ -523,6 +523,14 @@ async function autoResumePausedAgents(db: Db, now: Date): Promise<number> {
       }
     }
 
+    // Rate limited (cluster/provider): auto-resume after 10 min cooldown
+    if (reason.startsWith("rate_limited") && pausedAt) {
+      const cooldownMs = 10 * 60 * 1000;
+      if (now.getTime() - pausedAt.getTime() > cooldownMs) {
+        shouldResume = true;
+      }
+    }
+
     if (!shouldResume) continue;
 
     await db
