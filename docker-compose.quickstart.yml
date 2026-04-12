@@ -10,9 +10,12 @@ services:
       IRONWORKS_HOME: "/ironworks"
       OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
       ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+      DATABASE_URL: "${DATABASE_URL:-}"
       IRONWORKS_DEPLOYMENT_MODE: "authenticated"
       IRONWORKS_DEPLOYMENT_EXPOSURE: "private"
       IRONWORKS_PUBLIC_URL: "${IRONWORKS_PUBLIC_URL:-http://localhost:3100}"
       BETTER_AUTH_SECRET: "${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET must be set}"
+      OLLAMA_API_KEY: "${OLLAMA_API_KEY:-}"
+      OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-}"
     volumes:
       - "${IRONWORKS_DATA_DIR:-./data/docker-ironworks}:/ironworks"
