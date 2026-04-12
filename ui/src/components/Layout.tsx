@@ -282,9 +282,11 @@ export function Layout() {
         {/* Sidebar resize handle */}
         {!isMobile && !focusMode && (
           <div
-            className="w-1.5 h-full cursor-col-resize group shrink-0 flex items-center justify-center hover:bg-accent/40 active:bg-accent/60 transition-colors border-r border-border/30"
+            className="w-3 h-full cursor-col-resize group shrink-0 flex items-center justify-center hover:bg-accent/40 active:bg-accent/60 transition-colors border-r border-border/30 relative z-10"
             onMouseDown={(e) => {
               e.preventDefault();
+              document.body.style.cursor = "col-resize";
+              document.body.style.userSelect = "none";
               const startX = e.clientX;
               const startW = sidebarOpen ? sidebarWidth : 0;
               const onMove = (ev: MouseEvent) => {
@@ -299,6 +301,8 @@ export function Layout() {
                 }
               };
               const onUp = () => {
+                document.body.style.cursor = "";
+                document.body.style.userSelect = "";
                 document.removeEventListener("mousemove", onMove);
                 document.removeEventListener("mouseup", onUp);
               };
@@ -314,7 +318,7 @@ export function Layout() {
               }
             }}
           >
-            <div className="w-0.5 h-12 rounded-full bg-border group-hover:bg-ring/60 group-active:bg-ring transition-colors" />
+            <div className="w-0.5 h-8 rounded-full bg-border/60 group-hover:bg-ring/60 group-active:bg-ring transition-colors" />
           </div>
         )}
 
