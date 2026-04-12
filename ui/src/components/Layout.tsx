@@ -279,46 +279,52 @@ export function Layout() {
             </div>
           </nav>
         )}
-        {/* Sidebar resize handle */}
+        {/* Sidebar resize handle - wide hit target, visible grab line */}
         {!isMobile && !focusMode && (
           <div
-            className="w-3 h-full cursor-col-resize group shrink-0 flex items-center justify-center hover:bg-accent/50 active:bg-accent/70 transition-colors border-r border-border/40 relative z-10"
-            onMouseDown={(e) => {
-              e.preventDefault();
-              document.body.style.cursor = "col-resize";
-              document.body.style.userSelect = "none";
-              const startX = e.clientX;
-              const startW = sidebarOpen ? sidebarWidth : 0;
-              const onMove = (ev: MouseEvent) => {
-                const newW = startW + (ev.clientX - startX);
-                if (newW > 120 && !sidebarOpen) {
-                  setSidebarOpen(true);
-                  setSidebarWidth(Math.max(newW, 180));
-                } else if (newW < 60 && sidebarOpen) {
-                  setSidebarOpen(false);
-                } else if (sidebarOpen) {
-                  setSidebarWidth(newW);
-                }
-              };
-              const onUp = () => {
-                document.body.style.cursor = "";
-                document.body.style.userSelect = "";
-                document.removeEventListener("mousemove", onMove);
-                document.removeEventListener("mouseup", onUp);
-              };
-              document.addEventListener("mousemove", onMove);
-              document.addEventListener("mouseup", onUp);
-            }}
-            onDoubleClick={() => {
-              if (sidebarOpen) {
-                setSidebarWidth(260);
-              } else {
-                setSidebarOpen(true);
-                setSidebarWidth(260);
-              }
-            }}
+            className="relative z-20 shrink-0"
+            style={{ width: 0 }}
           >
-            <div className="w-0.5 h-16 rounded-full bg-border group-hover:bg-ring group-active:bg-primary transition-colors" />
+            <div
+              className="absolute top-0 bottom-0 cursor-col-resize group flex items-center justify-center"
+              style={{ left: -6, width: 12 }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                document.body.style.cursor = "col-resize";
+                document.body.style.userSelect = "none";
+                const startX = e.clientX;
+                const startW = sidebarOpen ? sidebarWidth : 0;
+                const onMove = (ev: MouseEvent) => {
+                  const newW = startW + (ev.clientX - startX);
+                  if (newW > 120 && !sidebarOpen) {
+                    setSidebarOpen(true);
+                    setSidebarWidth(Math.max(newW, 180));
+                  } else if (newW < 60 && sidebarOpen) {
+                    setSidebarOpen(false);
+                  } else if (sidebarOpen) {
+                    setSidebarWidth(newW);
+                  }
+                };
+                const onUp = () => {
+                  document.body.style.cursor = "";
+                  document.body.style.userSelect = "";
+                  document.removeEventListener("mousemove", onMove);
+                  document.removeEventListener("mouseup", onUp);
+                };
+                document.addEventListener("mousemove", onMove);
+                document.addEventListener("mouseup", onUp);
+              }}
+              onDoubleClick={() => {
+                if (sidebarOpen) {
+                  setSidebarWidth(260);
+                } else {
+                  setSidebarOpen(true);
+                  setSidebarWidth(260);
+                }
+              }}
+            >
+              <div className="w-px h-full bg-border/40 group-hover:w-1 group-hover:bg-ring group-active:bg-primary rounded-full transition-all" />
+            </div>
           </div>
         )}
 
