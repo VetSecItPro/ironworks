@@ -1,5 +1,5 @@
 export type { Company } from "./company.js";
-export type { BackupRetentionPolicy, InstanceExperimentalSettings, InstanceGeneralSettings, InstanceSettings } from "./instance.js";
+export type { BackupRetentionPolicy, SchedulerSettings, InstanceExperimentalSettings, InstanceGeneralSettings, InstanceSettings } from "./instance.js";
 export type {
   CompanySkillSourceType,
   CompanySkillTrustLevel,

@@ -378,10 +378,12 @@ export type {
   PluginWebhookDeliveryRecord,
   QuotaWindow,
   ProviderQuotaResult,
+  SchedulerSettings,
 } from "./types/index.js";
 
 export {
   backupRetentionPolicySchema,
+  schedulerSettingsSchema,
   instanceGeneralSettingsSchema,
   patchInstanceGeneralSettingsSchema,
   type PatchInstanceGeneralSettings,

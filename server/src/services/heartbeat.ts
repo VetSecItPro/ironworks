@@ -173,6 +173,7 @@ import {
   tickTimers as tickTimersModule,
   releaseIssueExecutionAndPromote as releaseIssueExecutionAndPromoteModule,
   enqueueWakeup as enqueueWakeupModule,
+  getSchedulerSettings,
 } from "./heartbeat-scheduling.js";
 import {
   cancelRunInternal as cancelRunInternalModule,
@@ -1375,11 +1376,15 @@ export function heartbeatService(db: Db) {
           ? "idle"
           : "error";
 
-    // ── Item 7: Auto-recovery — pause after 3 consecutive failures ───────────
+    // ── Item 7: Auto-recovery — pause after N consecutive failures ──────────
     // Check before writing status so we can override nextStatus to "paused".
+    const schedulerSettings = await getSchedulerSettings(db).catch(() => null);
+    const consecutiveFailureLimit = schedulerSettings?.consecutiveFailureLimit ?? 5;
+    const costAnomalyMultiplier = schedulerSettings?.costAnomalyMultiplier ?? 5;
+
     let shouldAutoPause = false;
     if (outcome === "failed" && nextStatus === "error") {
-      // Query the 3 most recent terminal runs for this agent (excluding currently
+      // Query the N most recent terminal runs for this agent (excluding currently
       // running/queued). "Process lost" errors from deploys are not real failures.
       const TERMINAL_STATUSES = ["succeeded", "failed", "timed_out", "cancelled"];
       const recentRuns = await db
@@ -1392,9 +1397,9 @@ export function heartbeatService(db: Db) {
           ),
         )
         .orderBy(desc(heartbeatRuns.finishedAt))
-        .limit(5);
+        .limit(consecutiveFailureLimit);
 
-      if (recentRuns.length === 5) {
+      if (recentRuns.length === consecutiveFailureLimit) {
         const allFailed = recentRuns.every((r) => {
           // Skip process_lost errors (server restart / deploy bounce)
           if (r.errorCode === "process_lost") return false;
@@ -1407,13 +1412,13 @@ export function heartbeatService(db: Db) {
     }
 
     // Cost anomaly circuit breaker: if last 5 runs all exceeded expected
-    // token usage by >3x the historical baseline, auto-pause the agent.
+    // token usage by the configured multiplier times the historical baseline, auto-pause.
     let shouldCostPause = false;
     if (!shouldAutoPause && outcome === "succeeded" && runningCount === 0) {
       try {
         const { executiveAnalyticsService: execSvc } = await import("./executive-analytics.js");
         const execAnalytics = execSvc(db);
-        const anomaly = await execAnalytics.checkCostAnomaly(agentId);
+        const anomaly = await execAnalytics.checkCostAnomaly(agentId, costAnomalyMultiplier);
         if (anomaly.anomaly) {
           shouldCostPause = true;
           logger.warn(
@@ -1436,7 +1441,7 @@ export function heartbeatService(db: Db) {
         updatedAt: new Date(),
         ...(shouldAutoPause
           ? {
-              pauseReason: "auto_paused: 5 consecutive failures",
+              pauseReason: `auto_paused: ${consecutiveFailureLimit} consecutive failures`,
               pausedAt: new Date(),
             }
           : shouldCostPause
@@ -1466,12 +1471,12 @@ export function heartbeatService(db: Db) {
 
       // If auto-paused, create a system issue and log activity (non-fatal)
       if (shouldAutoPause) {
-        logger.warn({ agentId, companyId: updated.companyId }, "Agent auto-paused after 5 consecutive failures");
+        logger.warn({ agentId, companyId: updated.companyId, consecutiveFailureLimit }, "Agent auto-paused after consecutive failures");
 
         issuesSvc
           .create(updated.companyId, {
-            title: `[System] Agent ${updated.name} paused after 5 consecutive failures`,
-            description: `The agent **${updated.name}** (${updated.role}) has been automatically paused after failing 5 consecutive runs.\n\nPlease review the agent's configuration, adapter settings, and recent run logs, then resume the agent once the issue is resolved.`,
+            title: `[System] Agent ${updated.name} paused after ${consecutiveFailureLimit} consecutive failures`,
+            description: `The agent **${updated.name}** (${updated.role}) has been automatically paused after failing ${consecutiveFailureLimit} consecutive runs.\n\nPlease review the agent's configuration, adapter settings, and recent run logs, then resume the agent once the issue is resolved.`,
             priority: "high",
             status: "todo",
             createdByUserId: null,
@@ -1489,7 +1494,7 @@ export function heartbeatService(db: Db) {
           entityType: "agent",
           entityId: agentId,
           agentId,
-          details: { reason: "5 consecutive failures", name: updated.name },
+          details: { reason: `${consecutiveFailureLimit} consecutive failures`, name: updated.name },
         }).catch((err) => {
           logger.warn({ err, agentId }, "Failed to log agent.auto_paused activity");
         });

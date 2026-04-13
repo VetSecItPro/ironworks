@@ -725,8 +725,10 @@ export function executiveAnalyticsService(db: Db) {
 
     /**
      * Circuit breaker check: returns whether an agent's recent runs show anomalous token usage.
+     * @param agentId - the agent to check
+     * @param multiplier - how many times above baseline counts as anomalous (default: 5)
      */
-    checkCostAnomaly: async (agentId: string) => {
+    checkCostAnomaly: async (agentId: string, multiplier = 5) => {
       const recentRuns = await db
         .select({
           id: heartbeatRuns.id,
@@ -770,12 +772,12 @@ export function executiveAnalyticsService(db: Db) {
 
       if (avgOlder <= 0) return { anomaly: false, reason: "zero_baseline" };
 
-      // Check if ALL of the last 5 exceed 5x the baseline
-      const allExceed = recent5Tokens.every((t) => t > avgOlder * 5);
+      // Check if ALL of the last 5 exceed the configured multiplier times the baseline
+      const allExceed = recent5Tokens.every((t) => t > avgOlder * multiplier);
 
       return {
         anomaly: allExceed,
-        reason: allExceed ? "all_recent_runs_exceed_5x_baseline" : "within_normal_range",
+        reason: allExceed ? `all_recent_runs_exceed_${multiplier}x_baseline` : "within_normal_range",
         recentAvgTokens: Math.round(recent5Tokens.reduce((s, t) => s + t, 0) / recent5Tokens.length),
         baselineAvgTokens: Math.round(avgOlder),
       };

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { LogOut, SlidersHorizontal } from "lucide-react";
-import type { BackupRetentionPolicy } from "@ironworksai/shared";
+import type { BackupRetentionPolicy, SchedulerSettings } from "@ironworksai/shared";
 import { authApi } from "@/api/auth";
 import { instanceSettingsApi } from "@/api/instanceSettings";
 import { Button } from "../components/ui/button";
@@ -66,6 +66,18 @@ export function InstanceGeneralSettings() {
     },
     onError: (error) => {
       setActionError(error instanceof Error ? error.message : "Failed to update backup retention.");
+    },
+  });
+
+  const schedulerMutation = useMutation({
+    mutationFn: async (settings: SchedulerSettings) =>
+      instanceSettingsApi.updateGeneral({ scheduler: settings }),
+    onSuccess: async () => {
+      setActionError(null);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.instance.generalSettings });
+    },
+    onError: (error) => {
+      setActionError(error instanceof Error ? error.message : "Failed to update scheduler settings.");
     },
   });
 
@@ -201,6 +213,144 @@ export function InstanceGeneralSettings() {
                 <option value={6}>6 months</option>
               </select>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-border bg-card p-5">
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <h2 className="text-sm font-semibold">Scheduler settings</h2>
+            <p className="max-w-2xl text-sm text-muted-foreground">
+              Control agent iteration limits, anomaly detection thresholds, and idle-skip behavior for the heartbeat scheduler.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label htmlFor="scheduler-iter-day" className="text-xs font-medium text-muted-foreground">
+                Iteration limit per day
+              </label>
+              <input
+                id="scheduler-iter-day"
+                type="number"
+                min={10}
+                max={10000}
+                disabled={schedulerMutation.isPending}
+                className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                value={generalQuery.data?.scheduler?.iterationLimitPerDay ?? 100}
+                onChange={(e) => {
+                  const current = generalQuery.data?.scheduler ?? { iterationLimitPerDay: 100, iterationLimitPerTask: 20, costAnomalyMultiplier: 5, consecutiveFailureLimit: 5, idleSkipEnabled: true, heartbeatSafetyNetMinutes: 30 };
+                  schedulerMutation.mutate({ ...current, iterationLimitPerDay: Number(e.target.value) });
+                }}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="scheduler-iter-task" className="text-xs font-medium text-muted-foreground">
+                Iteration limit per task
+              </label>
+              <input
+                id="scheduler-iter-task"
+                type="number"
+                min={5}
+                max={1000}
+                disabled={schedulerMutation.isPending}
+                className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                value={generalQuery.data?.scheduler?.iterationLimitPerTask ?? 20}
+                onChange={(e) => {
+                  const current = generalQuery.data?.scheduler ?? { iterationLimitPerDay: 100, iterationLimitPerTask: 20, costAnomalyMultiplier: 5, consecutiveFailureLimit: 5, idleSkipEnabled: true, heartbeatSafetyNetMinutes: 30 };
+                  schedulerMutation.mutate({ ...current, iterationLimitPerTask: Number(e.target.value) });
+                }}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="scheduler-anomaly" className="text-xs font-medium text-muted-foreground">
+                Cost anomaly threshold
+              </label>
+              <select
+                id="scheduler-anomaly"
+                disabled={schedulerMutation.isPending}
+                className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                value={generalQuery.data?.scheduler?.costAnomalyMultiplier ?? 5}
+                onChange={(e) => {
+                  const current = generalQuery.data?.scheduler ?? { iterationLimitPerDay: 100, iterationLimitPerTask: 20, costAnomalyMultiplier: 5, consecutiveFailureLimit: 5, idleSkipEnabled: true, heartbeatSafetyNetMinutes: 30 };
+                  schedulerMutation.mutate({ ...current, costAnomalyMultiplier: Number(e.target.value) });
+                }}
+              >
+                <option value={3}>3x baseline</option>
+                <option value={5}>5x baseline</option>
+                <option value={8}>8x baseline</option>
+                <option value={10}>10x baseline</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="scheduler-fail-limit" className="text-xs font-medium text-muted-foreground">
+                Consecutive failure limit
+              </label>
+              <select
+                id="scheduler-fail-limit"
+                disabled={schedulerMutation.isPending}
+                className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                value={generalQuery.data?.scheduler?.consecutiveFailureLimit ?? 5}
+                onChange={(e) => {
+                  const current = generalQuery.data?.scheduler ?? { iterationLimitPerDay: 100, iterationLimitPerTask: 20, costAnomalyMultiplier: 5, consecutiveFailureLimit: 5, idleSkipEnabled: true, heartbeatSafetyNetMinutes: 30 };
+                  schedulerMutation.mutate({ ...current, consecutiveFailureLimit: Number(e.target.value) });
+                }}
+              >
+                <option value={3}>3 failures</option>
+                <option value={5}>5 failures</option>
+                <option value={8}>8 failures</option>
+                <option value={10}>10 failures</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="scheduler-safety-net" className="text-xs font-medium text-muted-foreground">
+                Safety net interval
+              </label>
+              <select
+                id="scheduler-safety-net"
+                disabled={schedulerMutation.isPending}
+                className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                value={generalQuery.data?.scheduler?.heartbeatSafetyNetMinutes ?? 30}
+                onChange={(e) => {
+                  const current = generalQuery.data?.scheduler ?? { iterationLimitPerDay: 100, iterationLimitPerTask: 20, costAnomalyMultiplier: 5, consecutiveFailureLimit: 5, idleSkipEnabled: true, heartbeatSafetyNetMinutes: 30 };
+                  schedulerMutation.mutate({ ...current, heartbeatSafetyNetMinutes: Number(e.target.value) });
+                }}
+              >
+                <option value={15}>15 minutes</option>
+                <option value={30}>30 minutes</option>
+                <option value={45}>45 minutes</option>
+                <option value={60}>60 minutes</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex items-center justify-between gap-4 pt-1">
+            <div className="space-y-1">
+              <p className="text-sm font-medium">Idle skip</p>
+              <p className="max-w-2xl text-xs text-muted-foreground">
+                Skip heartbeat wakeups for agents with no assigned work that ran within the safety net window.
+              </p>
+            </div>
+            <button
+              type="button"
+              data-slot="toggle"
+              aria-label="Toggle idle skip"
+              disabled={schedulerMutation.isPending}
+              className={cn(
+                "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-60",
+                (generalQuery.data?.scheduler?.idleSkipEnabled ?? true) ? "bg-green-600" : "bg-muted",
+              )}
+              onClick={() => {
+                const current = generalQuery.data?.scheduler ?? { iterationLimitPerDay: 100, iterationLimitPerTask: 20, costAnomalyMultiplier: 5, consecutiveFailureLimit: 5, idleSkipEnabled: true, heartbeatSafetyNetMinutes: 30 };
+                schedulerMutation.mutate({ ...current, idleSkipEnabled: !(current.idleSkipEnabled ?? true) });
+              }}
+            >
+              <span
+                className={cn(
+                  "inline-block h-3.5 w-3.5 rounded-full bg-background shadow-sm transition-transform",
+                  (generalQuery.data?.scheduler?.idleSkipEnabled ?? true) ? "translate-x-4.5" : "translate-x-0.5",
+                )}
+              />
+            </button>
           </div>
         </div>
       </section>

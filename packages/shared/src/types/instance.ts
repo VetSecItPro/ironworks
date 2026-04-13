@@ -4,9 +4,19 @@ export interface BackupRetentionPolicy {
   monthlyMonths: number; // keep one per month for this many months
 }
 
+export interface SchedulerSettings {
+  iterationLimitPerDay: number;
+  iterationLimitPerTask: number;
+  costAnomalyMultiplier: number;
+  consecutiveFailureLimit: number;
+  idleSkipEnabled: boolean;
+  heartbeatSafetyNetMinutes: number;
+}
+
 export interface InstanceGeneralSettings {
   censorUsernameInLogs: boolean;
   backupRetention?: BackupRetentionPolicy;
+  scheduler?: SchedulerSettings;
 }
 
 export interface InstanceExperimentalSettings {

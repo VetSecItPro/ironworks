@@ -567,9 +567,12 @@ export async function startServer(): Promise<StartedServer> {
     });
   
   if (config.heartbeatSchedulerEnabled) {
+    const serverStartedAt = Date.now();
+    const DEPLOY_GRACE_MS = 3 * 60 * 1000;
+
     const heartbeat = heartbeatService(db as any);
     const routines = routineService(db as any);
-  
+
     // Reap orphaned running runs at startup while in-memory execution state is empty,
     // then resume any persisted queued runs that were waiting on the previous process.
     void heartbeat
@@ -585,6 +588,11 @@ export async function startServer(): Promise<StartedServer> {
         return;
       }
       heartbeatTickInFlight = true;
+
+      if (Date.now() - serverStartedAt < DEPLOY_GRACE_MS) {
+        logger.info("Within deploy grace period, tick running normally but monitoring suppressed");
+      }
+
       void heartbeat
         .tickTimers(new Date())
         .then((result) => {

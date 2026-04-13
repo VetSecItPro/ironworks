@@ -17,6 +17,7 @@ import {
   issues,
 } from "@ironworksai/db";
 import { DEFAULT_ITERATION_LIMITS } from "@ironworksai/shared";
+import type { SchedulerSettings } from "@ironworksai/shared";
 import type { AdapterSessionCodec } from "../adapters/index.js";
 import { getServerAdapter, runningProcesses } from "../adapters/index.js";
 import { notFound, conflict } from "../errors.js";
@@ -68,6 +69,42 @@ export async function hasAssignedWork(db: Db, agentId: string, companyId: string
     )
     .limit(1);
   return (Number(result?.count) ?? 0) > 0;
+}
+
+// ── Cached scheduler settings ─────────────────────────────────────────────
+
+let cachedSchedulerSettings: SchedulerSettings | null = null;
+let cachedSettingsAt = 0;
+const SETTINGS_CACHE_MS = 60_000; // refresh every 60s
+
+export async function getSchedulerSettings(db: Db): Promise<SchedulerSettings> {
+  const now = Date.now();
+  if (cachedSchedulerSettings && now - cachedSettingsAt < SETTINGS_CACHE_MS) {
+    return cachedSchedulerSettings;
+  }
+  try {
+    const { instanceSettingsService } = await import("./instance-settings.js");
+    const svc = instanceSettingsService(db);
+    const general = await svc.getGeneral();
+    if (general?.scheduler) {
+      cachedSchedulerSettings = general.scheduler;
+      cachedSettingsAt = now;
+      return cachedSchedulerSettings;
+    }
+  } catch {
+    // Fall through to defaults
+  }
+  const defaults: SchedulerSettings = {
+    iterationLimitPerDay: DEFAULT_ITERATION_LIMITS.perDay,
+    iterationLimitPerTask: DEFAULT_ITERATION_LIMITS.perTask,
+    costAnomalyMultiplier: 5,
+    consecutiveFailureLimit: 5,
+    idleSkipEnabled: true,
+    heartbeatSafetyNetMinutes: 30,
+  };
+  cachedSchedulerSettings = defaults;
+  cachedSettingsAt = now;
+  return defaults;
 }
 
 // ── Lock helper ────────────────────────────────────────────────────────────
@@ -148,17 +185,21 @@ export async function checkIterationLimits(
   companyId: string,
   issueId: string | null,
 ): Promise<string | null> {
+  const settings = await getSchedulerSettings(db);
+  const perDay = settings.iterationLimitPerDay;
+  const perTask = settings.iterationLimitPerTask;
+
   const dailyCount = await countAgentRunsToday(db, agentId);
-  if (dailyCount >= DEFAULT_ITERATION_LIMITS.perDay) {
+  if (dailyCount >= perDay) {
     await pauseAgentForIterationLimit(db, agentId, companyId, "daily");
-    return `Agent exceeded daily iteration limit (${DEFAULT_ITERATION_LIMITS.perDay} runs/day)`;
+    return `Agent exceeded daily iteration limit (${perDay} runs/day)`;
   }
 
   if (issueId) {
     const taskCount = await countAgentRunsForIssueToday(db, agentId, issueId);
-    if (taskCount >= DEFAULT_ITERATION_LIMITS.perTask) {
+    if (taskCount >= perTask) {
       await pauseAgentForIterationLimit(db, agentId, companyId, "per_task");
-      return `Agent exceeded per-task iteration limit (${DEFAULT_ITERATION_LIMITS.perTask} runs/task/day)`;
+      return `Agent exceeded per-task iteration limit (${perTask} runs/task/day)`;
     }
   }
 
@@ -633,6 +674,22 @@ export async function tickTimers(
     }
 
     try {
+      // Smart idle skip: if the agent has no assigned work and ran recently, skip the wakeup.
+      // Safety net: always wake if the agent has not run in 30+ minutes even without work.
+      const IDLE_SAFETY_NET_MS = 30 * 60 * 1000;
+      const lastRanAt = agent.lastHeartbeatAt ? new Date(agent.lastHeartbeatAt).getTime() : 0;
+      const timeSinceLastRun = now.getTime() - lastRanAt;
+      const ranRecently = timeSinceLastRun < IDLE_SAFETY_NET_MS;
+
+      if (ranRecently) {
+        const hasWork = await hasAssignedWork(db, agent.id, agent.companyId);
+        if (!hasWork) {
+          skipped += 1;
+          logger.debug({ agentId: agent.id, reason: "no_work_recent_run" }, "Skipped agent - no pending work");
+          continue;
+        }
+      }
+
       const run = await enqueueWakeup(agent.id, {
         source: "timer",
         triggerDetail: "system",
