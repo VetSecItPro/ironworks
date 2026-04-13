@@ -18,10 +18,18 @@ export const llmConfigSchema = z.object({
   apiKey: z.string().optional(),
 });
 
+export const backupRetentionPolicyConfigSchema = z.object({
+  dailyDays: z.number().int().min(1).max(365).default(7),
+  weeklyWeeks: z.number().int().min(0).max(52).default(4),
+  monthlyMonths: z.number().int().min(0).max(120).default(1),
+});
+
 export const databaseBackupConfigSchema = z.object({
   enabled: z.boolean().default(true),
   intervalMinutes: z.number().int().min(1).max(7 * 24 * 60).default(60),
+  /** @deprecated Use retentionPolicy instead. Kept for backward compatibility. */
   retentionDays: z.number().int().min(1).max(3650).default(30),
+  retentionPolicy: backupRetentionPolicyConfigSchema.optional(),
   dir: z.string().default("~/.ironworks/instances/default/data/backups"),
 });
 

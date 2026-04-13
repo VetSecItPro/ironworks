@@ -220,6 +220,7 @@ export type {
   AgentSkillEntry,
   AgentSkillSnapshot,
   AgentSkillSyncRequest,
+  BackupRetentionPolicy,
   InstanceExperimentalSettings,
   InstanceGeneralSettings,
   InstanceSettings,
@@ -380,6 +381,7 @@ export type {
 } from "./types/index.js";
 
 export {
+  backupRetentionPolicySchema,
   instanceGeneralSettingsSchema,
   patchInstanceGeneralSettingsSchema,
   type PatchInstanceGeneralSettings,

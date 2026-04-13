@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { LogOut, SlidersHorizontal } from "lucide-react";
+import type { BackupRetentionPolicy } from "@ironworksai/shared";
 import { authApi } from "@/api/auth";
 import { instanceSettingsApi } from "@/api/instanceSettings";
 import { Button } from "../components/ui/button";
@@ -53,6 +54,18 @@ export function InstanceGeneralSettings() {
     },
     onError: (error) => {
       setActionError(error instanceof Error ? error.message : "Failed to update general settings.");
+    },
+  });
+
+  const retentionMutation = useMutation({
+    mutationFn: async (policy: BackupRetentionPolicy) =>
+      instanceSettingsApi.updateGeneral({ backupRetention: policy }),
+    onSuccess: async () => {
+      setActionError(null);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.instance.generalSettings });
+    },
+    onError: (error) => {
+      setActionError(error instanceof Error ? error.message : "Failed to update backup retention.");
     },
   });
 
@@ -118,6 +131,77 @@ export function InstanceGeneralSettings() {
               )}
             />
           </button>
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-border bg-card p-5">
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <h2 className="text-sm font-semibold">Backup retention policy</h2>
+            <p className="max-w-2xl text-sm text-muted-foreground">
+              Control how long database backups are kept. Daily backups are retained in full, weekly keeps one per
+              calendar week, and monthly keeps one per calendar month.
+            </p>
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+              <label htmlFor="retention-daily" className="text-xs font-medium text-muted-foreground">
+                Daily retention
+              </label>
+              <select
+                id="retention-daily"
+                disabled={retentionMutation.isPending}
+                className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                value={generalQuery.data?.backupRetention?.dailyDays ?? 7}
+                onChange={(e) => {
+                  const current = generalQuery.data?.backupRetention ?? { dailyDays: 7, weeklyWeeks: 4, monthlyMonths: 1 };
+                  retentionMutation.mutate({ ...current, dailyDays: Number(e.target.value) });
+                }}
+              >
+                <option value={3}>3 days</option>
+                <option value={7}>7 days</option>
+                <option value={14}>14 days</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="retention-weekly" className="text-xs font-medium text-muted-foreground">
+                Weekly retention
+              </label>
+              <select
+                id="retention-weekly"
+                disabled={retentionMutation.isPending}
+                className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                value={generalQuery.data?.backupRetention?.weeklyWeeks ?? 4}
+                onChange={(e) => {
+                  const current = generalQuery.data?.backupRetention ?? { dailyDays: 7, weeklyWeeks: 4, monthlyMonths: 1 };
+                  retentionMutation.mutate({ ...current, weeklyWeeks: Number(e.target.value) });
+                }}
+              >
+                <option value={1}>1 week</option>
+                <option value={2}>2 weeks</option>
+                <option value={4}>4 weeks</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="retention-monthly" className="text-xs font-medium text-muted-foreground">
+                Monthly retention
+              </label>
+              <select
+                id="retention-monthly"
+                disabled={retentionMutation.isPending}
+                className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                value={generalQuery.data?.backupRetention?.monthlyMonths ?? 1}
+                onChange={(e) => {
+                  const current = generalQuery.data?.backupRetention ?? { dailyDays: 7, weeklyWeeks: 4, monthlyMonths: 1 };
+                  retentionMutation.mutate({ ...current, monthlyMonths: Number(e.target.value) });
+                }}
+              >
+                <option value={1}>1 month</option>
+                <option value={3}>3 months</option>
+                <option value={6}>6 months</option>
+              </select>
+            </div>
+          </div>
         </div>
       </section>
 

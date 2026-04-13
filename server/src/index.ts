@@ -615,19 +615,26 @@ export async function startServer(): Promise<StartedServer> {
   if (config.databaseBackupEnabled) {
     const backupIntervalMs = config.databaseBackupIntervalMinutes * 60 * 1000;
     let backupInFlight = false;
-  
+    const { instanceSettingsService } = await import("./services/instance-settings.js");
+
     const runScheduledBackup = async () => {
       if (backupInFlight) {
         logger.warn("Skipping scheduled database backup because a previous backup is still running");
         return;
       }
-  
+
       backupInFlight = true;
       try {
+        // Read retention policy from instance settings on each tick so UI changes take effect immediately
+        const settings = instanceSettingsService(db as any);
+        const general = await settings.getGeneral();
+        const retentionPolicy = general.backupRetention ?? config.databaseBackupRetentionPolicy ?? undefined;
+
         const result = await runDatabaseBackup({
           connectionString: activeDatabaseConnectionString,
           backupDir: config.databaseBackupDir,
-          retentionDays: config.databaseBackupRetentionDays,
+          retentionPolicy,
+          retentionDays: retentionPolicy ? undefined : config.databaseBackupRetentionDays,
           filenamePrefix: "ironworks",
         });
         logger.info(
@@ -636,7 +643,7 @@ export async function startServer(): Promise<StartedServer> {
             sizeBytes: result.sizeBytes,
             prunedCount: result.prunedCount,
             backupDir: config.databaseBackupDir,
-            retentionDays: config.databaseBackupRetentionDays,
+            retentionPolicy: retentionPolicy ?? { fallbackDays: config.databaseBackupRetentionDays },
           },
           `Automatic database backup complete: ${formatDatabaseBackupResult(result)}`,
         );
@@ -646,11 +653,12 @@ export async function startServer(): Promise<StartedServer> {
         backupInFlight = false;
       }
     };
-  
+
     logger.info(
       {
         intervalMinutes: config.databaseBackupIntervalMinutes,
         retentionDays: config.databaseBackupRetentionDays,
+        retentionPolicy: config.databaseBackupRetentionPolicy,
         backupDir: config.databaseBackupDir,
       },
       "Automatic database backups enabled",

@@ -11,6 +11,11 @@ type PartialConfig = {
     backup?: {
       dir?: string;
       retentionDays?: number;
+      retentionPolicy?: {
+        dailyDays: number;
+        weeklyWeeks: number;
+        monthlyMonths: number;
+      };
     };
   };
 };
@@ -94,16 +99,22 @@ async function main() {
   const connectionString = resolveConnectionString(config);
   const backupDir = resolveBackupDir(config);
   const retentionDays = resolveRetentionDays(config);
+  const retentionPolicy = config?.database?.backup?.retentionPolicy;
 
   console.log(`Config path: ${configPath}`);
   console.log(`Backing up database to: ${backupDir}`);
-  console.log(`Retention window: ${retentionDays} day(s)`);
+  if (retentionPolicy) {
+    console.log(`Retention policy: ${retentionPolicy.dailyDays}d daily, ${retentionPolicy.weeklyWeeks}w weekly, ${retentionPolicy.monthlyMonths}m monthly`);
+  } else {
+    console.log(`Retention window: ${retentionDays} day(s)`);
+  }
 
   try {
     const result = await runDatabaseBackup({
       connectionString,
       backupDir,
-      retentionDays,
+      retentionPolicy,
+      retentionDays: retentionPolicy ? undefined : retentionDays,
       filenamePrefix: "ironworks",
     });
 

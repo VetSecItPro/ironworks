@@ -15,6 +15,7 @@ import {
   type DeploymentMode,
   type SecretProvider,
   type StorageProvider,
+  type BackupRetentionPolicy,
 } from "@ironworksai/shared";
 import {
   resolveDefaultBackupDir,
@@ -57,6 +58,7 @@ export interface Config {
   databaseBackupEnabled: boolean;
   databaseBackupIntervalMinutes: number;
   databaseBackupRetentionDays: number;
+  databaseBackupRetentionPolicy: BackupRetentionPolicy | undefined;
   databaseBackupDir: string;
   serveUi: boolean;
   uiDevMiddleware: boolean;
@@ -207,6 +209,14 @@ export function loadConfig(): Config {
       fileDatabaseBackup?.retentionDays ||
       30,
   );
+  const databaseBackupRetentionPolicy: BackupRetentionPolicy | undefined =
+    fileDatabaseBackup?.retentionPolicy
+      ? {
+          dailyDays: Math.max(1, fileDatabaseBackup.retentionPolicy.dailyDays),
+          weeklyWeeks: Math.max(0, fileDatabaseBackup.retentionPolicy.weeklyWeeks),
+          monthlyMonths: Math.max(0, fileDatabaseBackup.retentionPolicy.monthlyMonths),
+        }
+      : undefined;
   const databaseBackupDir = resolveHomeAwarePath(
     process.env.IRONWORKS_DB_BACKUP_DIR ??
       fileDatabaseBackup?.dir ??
@@ -231,6 +241,7 @@ export function loadConfig(): Config {
     databaseBackupEnabled,
     databaseBackupIntervalMinutes,
     databaseBackupRetentionDays,
+    databaseBackupRetentionPolicy,
     databaseBackupDir,
     serveUi:
       process.env.SERVE_UI !== undefined

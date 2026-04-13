@@ -18,6 +18,7 @@ function normalizeGeneralSettings(raw: unknown): InstanceGeneralSettings {
   if (parsed.success) {
     return {
       censorUsernameInLogs: parsed.data.censorUsernameInLogs ?? false,
+      backupRetention: parsed.data.backupRetention,
     };
   }
   return {

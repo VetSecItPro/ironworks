@@ -1,4 +1,5 @@
 export {
+  backupRetentionPolicySchema,
   instanceGeneralSettingsSchema,
   patchInstanceGeneralSettingsSchema,
   type InstanceGeneralSettings,
