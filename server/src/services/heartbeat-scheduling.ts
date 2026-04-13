@@ -499,10 +499,11 @@ async function autoResumePausedAgents(db: Db, now: Date): Promise<number> {
     const pausedAt = agent.pausedAt ? new Date(agent.pausedAt) : null;
     let shouldResume = false;
 
-    // Iteration limits: auto-resume after 1 hour cooldown
+    // Iteration limits: only auto-resume on a new calendar day (counts reset at midnight)
     if (reason === "iteration_limit" && pausedAt) {
-      const cooldownMs = 60 * 60 * 1000;
-      if (now.getTime() - pausedAt.getTime() > cooldownMs) {
+      const pausedDay = new Date(pausedAt).toDateString();
+      const currentDay = now.toDateString();
+      if (pausedDay !== currentDay) {
         shouldResume = true;
       }
     }
@@ -598,20 +599,25 @@ export async function tickTimers(
     const elapsedMs = now.getTime() - baseline;
     if (elapsedMs < policy.intervalSec * 1000) continue;
 
-    const run = await enqueueWakeup(agent.id, {
-      source: "timer",
-      triggerDetail: "system",
-      reason: "heartbeat_timer",
-      requestedByActorType: "system",
-      requestedByActorId: "heartbeat_scheduler",
-      contextSnapshot: {
-        source: "scheduler",
-        reason: "interval_elapsed",
-        now: now.toISOString(),
-      },
-    });
-    if (run) enqueued += 1;
-    else skipped += 1;
+    try {
+      const run = await enqueueWakeup(agent.id, {
+        source: "timer",
+        triggerDetail: "system",
+        reason: "heartbeat_timer",
+        requestedByActorType: "system",
+        requestedByActorId: "heartbeat_scheduler",
+        contextSnapshot: {
+          source: "scheduler",
+          reason: "interval_elapsed",
+          now: now.toISOString(),
+        },
+      });
+      if (run) enqueued += 1;
+      else skipped += 1;
+    } catch (err) {
+      skipped += 1;
+      logger.debug({ err, agentId: agent.id }, "Skipped agent wakeup");
+    }
   }
 
   return { checked, enqueued, skipped, resumed };
