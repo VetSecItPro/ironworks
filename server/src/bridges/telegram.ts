@@ -551,11 +551,17 @@ export async function startAllTelegramBridges(db: Db): Promise<void> {
   for (const bridge of allBridges) {
     if (!bridge.secretId) continue;
     try {
-      const token = await secretSvc.resolveSecretValue(
-        bridge.companyId,
-        bridge.secretId,
-        "latest",
-      );
+      let token: string | null = null;
+      try {
+        token = await secretSvc.resolveSecretValue(
+          bridge.companyId,
+          bridge.secretId,
+          "latest",
+        );
+      } catch (secretErr) {
+        logger.warn({ secretErr, companyId: bridge.companyId }, "[telegram-bridge] Secret decryption failed, trying TELEGRAM_BOT_TOKEN env");
+        token = process.env.TELEGRAM_BOT_TOKEN ?? null;
+      }
       if (token) {
         await startTelegramBridge(db, bridge.companyId, token);
       }
