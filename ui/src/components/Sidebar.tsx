@@ -189,7 +189,7 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="w-60 h-full min-h-0 border-r border-border bg-background flex flex-col">
+    <aside className="w-full h-full min-h-0 border-r border-border bg-background flex flex-col">
       {/* Top bar: Company switcher + Search */}
       <div className="shrink-0">
         <div className="flex items-center gap-1 px-3 h-12 relative" ref={switcherRef}>
