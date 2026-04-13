@@ -21,7 +21,7 @@ const MAX_TELEGRAM_MSG_LENGTH = 4000; // leave buffer under 4096 limit
 // ── Intent classification ──
 
 const ACKNOWLEDGEMENTS = /^(ok|okay|k|sure|thanks|thank you|thx|got it|sounds good|cool|yes|no|yep|yea|yeah|nope|alright|noted|understood|will do|bet|word|copy|roger|affirmative|np|no problem|right|correct|exactly|agreed|ack)\.?!?$/i;
-const GREETINGS = /^(hi|hello|hey|yo|sup|good (morning|afternoon|evening|night)|gm|howdy|what'?s up)\.?!?$/i;
+const GREETINGS = /^(hi|hello|hey|yo|sup|good (morning|afternoon|evening|night)|gm|howdy|what'?s up)(\s+\w+)?\.?!?$/i;
 const DEFERRALS = /^(later|not now|not yet|i'?m busy|we'?ll (do|get to|handle|fix|work on) (that|it|this) later|working on something else|maybe later|some other time|another time)\.?$/i;
 const STATUS_PREFIX = /^i('?m| am) (busy|working|away|afk|out|offline|eating|sleeping|driving|in a meeting)/i;
 const EMOJI_ONLY = /^[\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+$/u;
