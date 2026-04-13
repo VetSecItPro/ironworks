@@ -629,6 +629,14 @@ export async function startServer(): Promise<StartedServer> {
     }, config.heartbeatSchedulerIntervalMs);
   }
   
+  // Start all configured messaging bridges (Telegram, etc.)
+  try {
+    const { startAllTelegramBridges } = await import("./bridges/telegram.js");
+    await startAllTelegramBridges(db as any);
+  } catch (err) {
+    logger.error({ err }, "Failed to start Telegram bridges");
+  }
+
   if (config.databaseBackupEnabled) {
     const backupIntervalMs = config.databaseBackupIntervalMinutes * 60 * 1000;
     let backupInFlight = false;
