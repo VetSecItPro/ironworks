@@ -18,5 +18,6 @@ services:
       OLLAMA_API_KEY: "${OLLAMA_API_KEY:-}"
       OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-}"
       TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN:-}"
+      IRONWORKS_SECRETS_MASTER_KEY_FILE: "/ironworks/instances/default/secrets.key"
     volumes:
       - "${IRONWORKS_DATA_DIR:-./data/docker-ironworks}:/ironworks"
