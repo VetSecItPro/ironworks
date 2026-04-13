@@ -20,25 +20,93 @@ const MAX_TELEGRAM_MSG_LENGTH = 4000; // leave buffer under 4096 limit
 
 // ── Intent classification ──
 
-const ACKNOWLEDGEMENTS = /^(ok|okay|k|sure|thanks|thank you|thx|got it|sounds good|cool|yes|no|yep|yea|yeah|nope|alright|noted|understood|will do|bet|word|copy|roger|affirmative|np|no problem|right|correct|exactly|agreed|ack)\.?!?$/i;
-const GREETINGS = /^(hi|hello|hey|yo|sup|good (morning|afternoon|evening|night)|gm|howdy|what'?s up)(\s+\w+)?\.?!?$/i;
-const DEFERRALS = /^(later|not now|not yet|i'?m busy|we'?ll (do|get to|handle|fix|work on) (that|it|this) later|working on something else|maybe later|some other time|another time)\.?$/i;
-const STATUS_PREFIX = /^i('?m| am) (busy|working|away|afk|out|offline|eating|sleeping|driving|in a meeting)/i;
+const OBVIOUS_CHAT = /^(ok|yes|no|k|yep|nope|sure|thanks|thx|hi|hey|hello|yo)\.?!?$/i;
 const EMOJI_ONLY = /^[\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+$/u;
 
-function isConversational(text: string): boolean {
+async function classifyIntent(text: string): Promise<"chat" | "task"> {
   const trimmed = text.trim();
-  if (!trimmed) return true;
-  if (EMOJI_ONLY.test(trimmed)) return true;
-  if (ACKNOWLEDGEMENTS.test(trimmed)) return true;
-  if (GREETINGS.test(trimmed)) return true;
-  if (DEFERRALS.test(trimmed)) return true;
-  if (STATUS_PREFIX.test(trimmed)) return true;
-  const wordCount = trimmed.split(/\s+/).length;
-  if (wordCount <= 3 && !/\?$/.test(trimmed)) {
-    if (/^(nice|great|sweet|awesome|perfect|good|fine|fair enough|for sure|on it|my bad|no worries)\.?!?$/i.test(trimmed)) return true;
+  if (!trimmed) return "chat";
+  if (EMOJI_ONLY.test(trimmed)) return "chat";
+  if (OBVIOUS_CHAT.test(trimmed)) return "chat";
+
+  // LLM classification for everything else
+  try {
+    const apiKey = process.env.OLLAMA_API_KEY ?? "";
+    if (!apiKey) return "task"; // No key = fall back to task creation
+
+    const response = await fetch("https://ollama.com/api/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "qwen3",
+        messages: [
+          {
+            role: "system",
+            content: "You are a message classifier for a CEO's Telegram bot. Classify the user's message as either TASK or CHAT.\n\nTASK: The user is giving a directive, asking for something to be done, reporting an issue, requesting information, or assigning work.\n\nCHAT: The user is making casual conversation, greeting, acknowledging, expressing emotion, giving status updates about themselves, or saying they're busy/unavailable.\n\nRespond with ONLY the word TASK or CHAT. Nothing else.",
+          },
+          {
+            role: "user",
+            content: text,
+          },
+        ],
+        stream: false,
+      }),
+    });
+
+    if (!response.ok) {
+      logger.warn({ status: response.status }, "[telegram-bridge] LLM classification failed, defaulting to task");
+      return "task";
+    }
+
+    const data = await response.json() as { message?: { content?: string } };
+    const answer = (data.message?.content ?? "").trim().toUpperCase();
+    logger.debug({ intent: answer.includes("CHAT") ? "chat" : "task", text: text.slice(0, 50) }, "[telegram-bridge] Message classified");
+
+    if (answer.includes("CHAT")) return "chat";
+    return "task"; // Default to task if unclear
+  } catch (err) {
+    logger.warn({ err }, "[telegram-bridge] LLM classification error, defaulting to task");
+    return "task";
   }
-  return false;
+}
+
+async function generateChatReply(text: string): Promise<string> {
+  try {
+    const apiKey = process.env.OLLAMA_API_KEY ?? "";
+    if (!apiKey) return "Got it, Boss. Let me know when you need anything.";
+
+    const response = await fetch("https://ollama.com/api/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "qwen3",
+        messages: [
+          {
+            role: "system",
+            content: "You are Marcus Cole, CEO of the company. You're chatting with the Boss (company owner) on Telegram. Keep responses brief (1-2 sentences), professional but warm. You're a confident leader who respects the boss's time. Never create tasks or mention issues. Just have a natural conversation.",
+          },
+          {
+            role: "user",
+            content: text,
+          },
+        ],
+        stream: false,
+      }),
+    });
+
+    if (!response.ok) return "Got it, Boss.";
+
+    const data = await response.json() as { message?: { content?: string } };
+    return (data.message?.content ?? "Got it, Boss.").trim().slice(0, 500);
+  } catch {
+    return "Got it, Boss. Let me know when you need anything.";
+  }
 }
 
 // ── Types ──
@@ -263,8 +331,10 @@ function startTelegramPollLoop(db: Db, bot: BotInstance): void {
         const existingIssueId = bot.activeThreads.get(chatId);
 
         if (!existingIssueId) {
-          if (isConversational(text)) {
-            await sendTelegram(bot.token, chatId, "Got it, Boss. Let me know when you need anything.");
+          const intent = await classifyIntent(text);
+          if (intent === "chat") {
+            const reply = await generateChatReply(text);
+            await sendTelegram(bot.token, chatId, reply);
             continue;
           }
 
