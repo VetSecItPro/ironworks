@@ -86,19 +86,19 @@ export function OrgChartSvgLayer({
             </g>
           );
         })}
-        {/* Curved bezier connecting lines */}
+        {/* Curved bezier connecting lines (left-to-right) */}
         {edges.map(({ parent, child }) => {
-          const x1 = parent.x + CARD_W / 2;
-          const y1 = parent.y + CARD_H;
-          const x2 = child.x + CARD_W / 2;
-          const y2 = child.y;
-          const cy1 = y1 + (y2 - y1) * 0.5;
-          const cy2 = y2 - (y2 - y1) * 0.5;
+          const x1 = parent.x + CARD_W;
+          const y1 = parent.y + CARD_H / 2;
+          const x2 = child.x;
+          const y2 = child.y + CARD_H / 2;
+          const cx1 = x1 + (x2 - x1) * 0.5;
+          const cx2 = x2 - (x2 - x1) * 0.5;
 
           return (
             <path
               key={`${parent.id}-${child.id}`}
-              d={`M ${x1} ${y1} C ${x1} ${cy1}, ${x2} ${cy2}, ${x2} ${y2}`}
+              d={`M ${x1} ${y1} C ${cx1} ${y1}, ${cx2} ${y2}, ${x2} ${y2}`}
               fill="none"
               stroke="var(--border)"
               strokeWidth={1.5}
