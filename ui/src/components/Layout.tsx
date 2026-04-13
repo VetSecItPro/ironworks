@@ -279,51 +279,51 @@ export function Layout() {
             </div>
           </nav>
         )}
-        {/* Sidebar resize handle - wide hit target, visible grab line */}
+        {/* Sidebar resize handle */}
         {!isMobile && !focusMode && (
           <div
-            className="relative z-20 shrink-0"
-            style={{ width: 0 }}
-          >
-            <div
-              className="absolute top-0 bottom-0 cursor-col-resize group flex items-center justify-center"
-              style={{ left: -6, width: 12 }}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                document.body.style.cursor = "col-resize";
-                document.body.style.userSelect = "none";
-                const startX = e.clientX;
-                const startW = sidebarOpen ? sidebarWidth : 0;
-                const onMove = (ev: MouseEvent) => {
-                  const newW = startW + (ev.clientX - startX);
-                  if (newW > 120 && !sidebarOpen) {
-                    setSidebarOpen(true);
-                    setSidebarWidth(Math.max(newW, 180));
-                  } else if (newW < 60 && sidebarOpen) {
-                    setSidebarOpen(false);
-                  } else if (sidebarOpen) {
-                    setSidebarWidth(newW);
-                  }
-                };
-                const onUp = () => {
-                  document.body.style.cursor = "";
-                  document.body.style.userSelect = "";
-                  document.removeEventListener("mousemove", onMove);
-                  document.removeEventListener("mouseup", onUp);
-                };
-                document.addEventListener("mousemove", onMove);
-                document.addEventListener("mouseup", onUp);
-              }}
-              onDoubleClick={() => {
-                if (sidebarOpen) {
-                  setSidebarWidth(260);
-                } else {
+            className="w-2 h-full shrink-0 cursor-col-resize group flex items-center justify-center bg-border/20 hover:bg-blue-500/30 active:bg-blue-500/50 transition-colors relative z-20 border-x border-border/30 hover:border-blue-500/40"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              document.body.style.cursor = "col-resize";
+              document.body.style.userSelect = "none";
+              const startX = e.clientX;
+              const startW = sidebarOpen ? sidebarWidth : 0;
+              const onMove = (ev: MouseEvent) => {
+                const newW = startW + (ev.clientX - startX);
+                if (newW > 120 && !sidebarOpen) {
                   setSidebarOpen(true);
-                  setSidebarWidth(260);
+                  setSidebarWidth(Math.max(newW, 180));
+                } else if (newW < 60 && sidebarOpen) {
+                  setSidebarOpen(false);
+                } else if (sidebarOpen) {
+                  setSidebarWidth(newW);
                 }
-              }}
-            >
-              <div className="w-px h-full bg-border/40 group-hover:w-1 group-hover:bg-ring group-active:bg-primary rounded-full transition-all" />
+              };
+              const onUp = () => {
+                document.body.style.cursor = "";
+                document.body.style.userSelect = "";
+                document.removeEventListener("mousemove", onMove);
+                document.removeEventListener("mouseup", onUp);
+              };
+              document.addEventListener("mousemove", onMove);
+              document.addEventListener("mouseup", onUp);
+            }}
+            onDoubleClick={() => {
+              if (sidebarOpen) {
+                setSidebarWidth(260);
+              } else {
+                setSidebarOpen(true);
+                setSidebarWidth(260);
+              }
+            }}
+          >
+            <div className="flex flex-col gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+              <div className="w-0.5 h-0.5 rounded-full bg-muted-foreground" />
+              <div className="w-0.5 h-0.5 rounded-full bg-muted-foreground" />
+              <div className="w-0.5 h-0.5 rounded-full bg-muted-foreground" />
+              <div className="w-0.5 h-0.5 rounded-full bg-muted-foreground" />
+              <div className="w-0.5 h-0.5 rounded-full bg-muted-foreground" />
             </div>
           </div>
         )}
