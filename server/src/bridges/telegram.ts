@@ -56,6 +56,7 @@ interface BotInstance {
   companyId: string;
   token: string;
   ceoAgentId: string | null;
+  ownerChatId: string | null;
   lastUpdateId: number;
   activeThreads: Map<string, string>; // chatId -> issueId
   lastSeenComment: Map<string, number>; // issueId -> timestamp
@@ -243,6 +244,21 @@ function startTelegramPollLoop(db: Db, bot: BotInstance): void {
           continue;
         }
 
+        // Persist owner chat ID for startup notifications
+        if (!bot.ownerChatId) {
+          bot.ownerChatId = chatId;
+          const bridgeSvc = messagingBridgeService(db);
+          const bridge = await bridgeSvc.getByPlatform(bot.companyId, "telegram");
+          if (bridge) {
+            const config = (bridge.config ?? {}) as Record<string, unknown>;
+            config.ownerChatId = chatId;
+            await db
+              .update(messagingBridges)
+              .set({ config, updatedAt: new Date() })
+              .where(eq(messagingBridges.id, bridge.id));
+          }
+        }
+
         // Regular message
         const existingIssueId = bot.activeThreads.get(chatId);
 
@@ -384,10 +400,17 @@ export async function startTelegramBridge(
 
   const ceoAgentId = await findCeoAgent(db, companyId);
 
+  // Load stored owner chat ID for startup notifications
+  const bridgeSvc = messagingBridgeService(db);
+  const bridge = await bridgeSvc.getByPlatform(companyId, "telegram");
+  const storedConfig = (bridge?.config ?? {}) as Record<string, unknown>;
+  const ownerChatId = (storedConfig.ownerChatId as string) ?? null;
+
   const bot: BotInstance = {
     companyId,
     token,
     ceoAgentId,
+    ownerChatId,
     lastUpdateId: 0,
     activeThreads: new Map(),
     lastSeenComment: new Map(),
@@ -399,10 +422,17 @@ export async function startTelegramBridge(
   bots.set(companyId, bot);
 
   // Update bridge status
-  const bridgeSvc = messagingBridgeService(db);
   await bridgeSvc.updateStatus(companyId, "telegram", "connected");
 
   logger.info({ companyId }, "[telegram-bridge] started");
+
+  // Send startup notification if we have an owner chat ID
+  if (ownerChatId) {
+    const now = new Date().toLocaleString("en-US", { timeZone: "America/Chicago", dateStyle: "short", timeStyle: "short" });
+    sendTelegram(token, ownerChatId, `Server is back online. All systems operational. (${now} CT)`).catch((err) => {
+      logger.warn({ err, companyId }, "[telegram-bridge] Failed to send startup notification");
+    });
+  }
 
   startTelegramPollLoop(db, bot);
   startResponsePollLoop(db, bot);
