@@ -173,7 +173,7 @@ export function SidebarAgents() {
                   : "text-muted-foreground",
             )}
           />
-          <span className="flex-1 truncate">{agent.name}{agent.role ? ` - ${AGENT_ROLE_LABELS[agent.role as keyof typeof AGENT_ROLE_LABELS] ?? agent.role}` : ""}</span>
+          <span className="flex-1 truncate">{agent.title || `${agent.name}${agent.role ? ` - ${AGENT_ROLE_LABELS[agent.role as keyof typeof AGENT_ROLE_LABELS] ?? agent.role}` : ""}`}</span>
           <RoleBadge role={agent.role} employmentType={(agent as unknown as Record<string, unknown>).employmentType as string | undefined} />
         </NavLink>
 

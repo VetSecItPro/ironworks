@@ -1,11 +1,11 @@
 import type { OrgNode } from "../../api/agents";
 
 // Layout constants
-export const CARD_W = 320;
+export const CARD_W = 240;
 export const CARD_H = 130;
-export const GAP_X = 56;
-export const GAP_Y = 100;
-export const PADDING = 80;
+export const GAP_X = 32;
+export const GAP_Y = 120;
+export const PADDING = 60;
 
 // Tree layout types
 export interface LayoutNode {
