@@ -41,7 +41,7 @@ async function classifyIntent(text: string): Promise<"chat" | "task"> {
         "Authorization": `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "qwen3",
+        model: "ministral-3:3b",
         messages: [
           {
             role: "system",
@@ -85,7 +85,7 @@ async function generateChatReply(text: string): Promise<string> {
         "Authorization": `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "qwen3",
+        model: "ministral-3:3b",
         messages: [
           {
             role: "system",
