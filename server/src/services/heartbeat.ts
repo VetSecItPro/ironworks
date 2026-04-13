@@ -1846,6 +1846,27 @@ export function heartbeatService(db: Db) {
     }
     // ── End Progressive Budget Gates ──────────────────────────────────────────
 
+    // ── Idle Fast-Path: skip LLM if timer-driven and no assigned work ────────
+    if (
+      (run.invocationSource === "timer" || readNonEmptyString(context.reason) === "heartbeat_timer") &&
+      !issueId
+    ) {
+      const { hasAssignedWork } = await import("./heartbeat-scheduling.js");
+      const hasWork = await hasAssignedWork(db, agent.id, agent.companyId);
+      if (!hasWork) {
+        await setRunStatus(run.id, "cancelled", {
+          error: "Idle skip - no assigned work",
+          errorCode: "idle_skip",
+          finishedAt: new Date(),
+        });
+        await setWakeupStatus(run.wakeupRequestId, "skipped", { finishedAt: new Date() });
+        logger.debug({ agentId: agent.id, runId: run.id }, "Idle skip - no assigned work");
+        await finalizeAgentStatus(agent.id, "cancelled");
+        return;
+      }
+    }
+    // ── End Idle Fast-Path ──────────────────────────────────────────────────
+
     // ── End Autonomy Enforcement ─────────────────────────────────────────────
     const issueContext = issueId
       ? await db

@@ -578,7 +578,13 @@ export async function startServer(): Promise<StartedServer> {
       .catch((err) => {
         logger.error({ err }, "startup heartbeat recovery failed");
       });
+    let heartbeatTickInFlight = false;
     setInterval(() => {
+      if (heartbeatTickInFlight) {
+        logger.warn("Skipping heartbeat tick - previous tick still running");
+        return;
+      }
+      heartbeatTickInFlight = true;
       void heartbeat
         .tickTimers(new Date())
         .then((result) => {
@@ -588,6 +594,9 @@ export async function startServer(): Promise<StartedServer> {
         })
         .catch((err) => {
           logger.error({ err }, "heartbeat timer tick failed");
+        })
+        .finally(() => {
+          heartbeatTickInFlight = false;
         });
 
       void routines

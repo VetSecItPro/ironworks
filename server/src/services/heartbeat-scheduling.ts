@@ -53,6 +53,23 @@ import {
 } from "./heartbeat-types.js";
 import { buildExplicitResumeSessionOverride } from "./heartbeat-types.js";
 
+// ── Idle detection ────────────────────────────────────────────────────────
+
+export async function hasAssignedWork(db: Db, agentId: string, companyId: string): Promise<boolean> {
+  const [result] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(issues)
+    .where(
+      and(
+        eq(issues.companyId, companyId),
+        eq(issues.assigneeAgentId, agentId),
+        inArray(issues.status, ["todo", "in_progress"]),
+      ),
+    )
+    .limit(1);
+  return (Number(result?.count) ?? 0) > 0;
+}
+
 // ── Lock helper ────────────────────────────────────────────────────────────
 
 export async function withAgentStartLock<T>(agentId: string, fn: () => Promise<T>): Promise<T> {
@@ -96,7 +113,7 @@ export function parseHeartbeatPolicy(agent: typeof agents.$inferSelect) {
 
 async function countAgentRunsToday(db: Db, agentId: string): Promise<number> {
   const now = new Date();
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0));
   const [{ count }] = await db
     .select({ count: sql<number>`count(*)` })
     .from(heartbeatRuns)
@@ -111,7 +128,7 @@ async function countAgentRunsToday(db: Db, agentId: string): Promise<number> {
 
 async function countAgentRunsForIssueToday(db: Db, agentId: string, issueId: string): Promise<number> {
   const now = new Date();
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0));
   const [{ count }] = await db
     .select({ count: sql<number>`count(*)` })
     .from(heartbeatRuns)
@@ -499,12 +516,15 @@ async function autoResumePausedAgents(db: Db, now: Date): Promise<number> {
     const pausedAt = agent.pausedAt ? new Date(agent.pausedAt) : null;
     let shouldResume = false;
 
-    // Iteration limits: only auto-resume on a new calendar day (counts reset at midnight)
+    // Iteration limits: only auto-resume on a new UTC calendar day if daily count is below limit
     if (reason === "iteration_limit" && pausedAt) {
-      const pausedDay = new Date(pausedAt).toDateString();
-      const currentDay = now.toDateString();
+      const pausedDay = pausedAt.toISOString().slice(0, 10);
+      const currentDay = now.toISOString().slice(0, 10);
       if (pausedDay !== currentDay) {
-        shouldResume = true;
+        const todayCount = await countAgentRunsToday(db, agent.id);
+        if (todayCount < DEFAULT_ITERATION_LIMITS.perDay) {
+          shouldResume = true;
+        }
       }
     }
 
@@ -516,11 +536,21 @@ async function autoResumePausedAgents(db: Db, now: Date): Promise<number> {
       }
     }
 
-    // Cost anomaly: auto-resume after 1 hour cooldown
+    // Cost anomaly: auto-resume after 1 hour cooldown only if anomaly has cleared
     if (reason === "cost_anomaly" && pausedAt) {
       const cooldownMs = 60 * 60 * 1000;
       if (now.getTime() - pausedAt.getTime() > cooldownMs) {
-        shouldResume = true;
+        try {
+          const { executiveAnalyticsService: execSvc } = await import("./executive-analytics.js");
+          const execAnalytics = execSvc(db);
+          const anomaly = await execAnalytics.checkCostAnomaly(agent.id);
+          if (!anomaly.anomaly) {
+            shouldResume = true;
+          }
+        } catch {
+          // If anomaly check fails, fall back to cooldown-only resume
+          shouldResume = true;
+        }
       }
     }
 
@@ -597,7 +627,10 @@ export async function tickTimers(
     checked += 1;
     const baseline = new Date(agent.lastHeartbeatAt ?? agent.createdAt).getTime();
     const elapsedMs = now.getTime() - baseline;
-    if (elapsedMs < policy.intervalSec * 1000) continue;
+    if (elapsedMs < policy.intervalSec * 1000) {
+      logger.debug({ agentId: agent.id, reason: "interval_not_elapsed" }, "Skipped agent");
+      continue;
+    }
 
     try {
       const run = await enqueueWakeup(agent.id, {
@@ -612,8 +645,13 @@ export async function tickTimers(
           now: now.toISOString(),
         },
       });
-      if (run) enqueued += 1;
-      else skipped += 1;
+      if (run) {
+        enqueued += 1;
+        logger.debug({ agentId: agent.id }, "Enqueued agent wakeup");
+      } else {
+        skipped += 1;
+        logger.debug({ agentId: agent.id, reason: "enqueue_returned_null" }, "Skipped agent");
+      }
     } catch (err) {
       skipped += 1;
       logger.debug({ err, agentId: agent.id }, "Skipped agent wakeup");
@@ -887,6 +925,11 @@ export async function enqueueWakeup(
       .then((rows) => rows[0]?.projectId ?? null);
   }
 
+  // NOTE: TOCTOU gap - budget is checked here but the run is created later.
+  // Another concurrent wakeup could pass the budget check before either run is persisted.
+  // A full transaction wrapping budget check + run creation is impractical due to the
+  // complex branching below (issue-lock path vs non-issue path). The completeRun path
+  // in heartbeat.ts re-checks cost anomalies, providing a post-hoc safety net.
   const budgets = budgetService(db, hooks.budgetHooks);
   const budgetBlock = await budgets.getInvocationBlock(agent.companyId, agentId, {
     issueId,
@@ -903,7 +946,7 @@ export async function enqueueWakeup(
   const iterationBlock = await hooks.checkIterationLimits(agentId, agent.companyId, issueId);
   if (iterationBlock) {
     await writeSkippedRequest("iteration_limit.blocked");
-    throw conflict(iterationBlock);
+    return null;
   }
 
   if (
