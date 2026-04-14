@@ -3,6 +3,12 @@ import type { Db } from "@ironworksai/db";
 import { knowledgePages, knowledgeChunks } from "@ironworksai/db";
 import { parsePlaybook } from "./playbook-chunker.js";
 import { embedBatch, embedText } from "./ollama-embed.js";
+import {
+  buildChunkCacheKey,
+  getCachedChunks,
+  setCachedChunks,
+  invalidateAllCaches,
+} from "./playbook-chunk-cache.js";
 import { logger } from "../middleware/logger.js";
 
 /**
@@ -110,6 +116,10 @@ export async function reindexAllPlaybooks(db: Db, companyId: string): Promise<{ 
     }
   }
 
+  // Chunk IDs are regenerated on every reindex (delete + insert), so any
+  // cached LookupResult arrays now reference dead IDs. Drop all caches.
+  invalidateAllCaches();
+
   return { pages: pages.length, chunks: totalChunks };
 }
 
@@ -123,6 +133,12 @@ export interface LookupOptions {
   ownerRole?: string;
   documentType?: string;
   topK?: number;
+  /**
+   * Optional agent ID for per-agent session caching. When provided,
+   * results are cached for 1 hour and identical subsequent queries
+   * skip the DB hit and the Ollama embed call.
+   */
+  agentId?: string;
 }
 
 export interface LookupResult {
@@ -145,7 +161,17 @@ export interface LookupResult {
  */
 export async function lookupPlaybook(db: Db, opts: LookupOptions): Promise<LookupResult[]> {
   const topK = Math.min(Math.max(opts.topK ?? 3, 1), 10);
-  const { companyId, query, department, ownerRole, documentType } = opts;
+  const { companyId, query, department, ownerRole, documentType, agentId } = opts;
+
+  // Session cache check (per-agent, 1hr TTL)
+  if (agentId) {
+    const cacheKey = buildChunkCacheKey({ query, department, ownerRole, documentType, topK });
+    const cached = getCachedChunks<LookupResult[]>(agentId, cacheKey);
+    if (cached) {
+      logger.debug({ agentId, cacheKey: cacheKey.slice(0, 60) }, "playbook-rag: cache hit");
+      return cached;
+    }
+  }
 
   const filters = [eq(knowledgeChunks.companyId, companyId)];
   if (department) filters.push(eq(knowledgeChunks.department, department));
@@ -183,7 +209,7 @@ export async function lookupPlaybook(db: Db, opts: LookupOptions): Promise<Looku
       .limit(topK);
 
     if (rows.length > 0) {
-      return rows.map((r) => ({
+      const results = rows.map((r) => ({
         chunkId: r.chunkId,
         pageId: r.pageId,
         anchor: r.anchor,
@@ -197,6 +223,11 @@ export async function lookupPlaybook(db: Db, opts: LookupOptions): Promise<Looku
         score: Math.max(0, 1 - Number(r.distance)),
         mode: "vector" as const,
       }));
+      if (agentId) {
+        const cacheKey = buildChunkCacheKey({ query, department, ownerRole, documentType, topK });
+        setCachedChunks(agentId, cacheKey, results);
+      }
+      return results;
     }
 
     logger.info({ companyId, query: query.slice(0, 80) }, "playbook-rag: no embedded chunks matched, falling back to FTS");
@@ -236,9 +267,14 @@ export async function lookupPlaybook(db: Db, opts: LookupOptions): Promise<Looku
     .orderBy(desc(sql`ts_rank(to_tsvector('english', ${knowledgeChunks.headingPath} || ' ' || ${knowledgeChunks.body}), to_tsquery('english', ${tsquery}))`))
     .limit(topK);
 
-  return ftsRows.map((r) => ({
+  const ftsResults = ftsRows.map((r) => ({
     ...r,
     score: Number(r.score),
     mode: "fts" as const,
   }));
+  if (agentId) {
+    const cacheKey = buildChunkCacheKey({ query, department, ownerRole, documentType, topK });
+    setCachedChunks(agentId, cacheKey, ftsResults);
+  }
+  return ftsResults;
 }

@@ -4,6 +4,7 @@ import { knowledgeService } from "../services/knowledge.js";
 import { logActivity } from "../services/activity-log.js";
 import { assertCompanyAccess, getActorInfo } from "./authz.js";
 import { lookupPlaybook, reindexPage, reindexAllPlaybooks } from "../services/playbook-rag.js";
+import { auditAgentRun } from "../services/playbook-audit.js";
 
 function actorForService(actor: ReturnType<typeof getActorInfo>) {
   return {
@@ -218,6 +219,43 @@ export function knowledgeRoutes(db: Db) {
     assertCompanyAccess(req, companyId);
     const result = await reindexAllPlaybooks(db, companyId);
     res.json(result);
+  });
+
+  // Manual playbook audit: judge whether an agent's output followed
+  // the relevant playbook discipline. Returns null if audit can't run
+  // (no playbook chunks, model unreachable, etc.). See playbook-audit.ts.
+  router.post("/companies/:companyId/knowledge/audit", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+    const body = req.body as {
+      agentId?: string;
+      agentName?: string;
+      agentRole?: string;
+      agentDepartment?: string;
+      taskSummary?: string;
+      agentOutput?: string;
+    };
+    const required = ["agentId", "agentName", "agentRole", "taskSummary", "agentOutput"] as const;
+    for (const k of required) {
+      if (!body[k] || typeof body[k] !== "string") {
+        res.status(400).json({ error: `${k} is required` });
+        return;
+      }
+    }
+    const verdict = await auditAgentRun(db, {
+      companyId,
+      agentId: body.agentId!,
+      agentName: body.agentName!,
+      agentRole: body.agentRole!,
+      agentDepartment: body.agentDepartment ?? null,
+      taskSummary: body.taskSummary!,
+      agentOutput: body.agentOutput!,
+    });
+    if (!verdict) {
+      res.status(503).json({ error: "audit unavailable", reason: "no chunks or model unreachable" });
+      return;
+    }
+    res.json(verdict);
   });
 
   return router;

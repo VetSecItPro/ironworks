@@ -15,8 +15,11 @@ import { logger } from "../middleware/logger.js";
  * decide whether to retry, skip, or mark the chunk for later backfill.
  */
 
-const EMBED_URL = process.env.OLLAMA_EMBED_URL ?? "https://ollama.com/api/embed";
-const EMBED_MODEL = process.env.OLLAMA_EMBED_MODEL ?? "nomic-embed-text";
+// Use `||` (not `??`) so empty-string env values fall through to the default.
+// Docker compose's `${VAR:-}` expands unset vars to "" rather than leaving them
+// undefined; `??` would treat that as "set to empty" and break URL parsing.
+const EMBED_URL = process.env.OLLAMA_EMBED_URL || "https://ollama.com/api/embed";
+const EMBED_MODEL = process.env.OLLAMA_EMBED_MODEL || "nomic-embed-text";
 const EMBED_TIMEOUT_MS = 30_000;
 
 export interface EmbedResult {
