@@ -189,7 +189,7 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="w-60 h-full min-h-0 border-r border-border bg-background flex flex-col">
+    <aside className="w-full h-full min-h-0 border-r border-border bg-background flex flex-col">
       {/* Top bar: Company switcher + Search */}
       <div className="shrink-0">
         <div className="flex items-center gap-1 px-3 h-12 relative" ref={switcherRef}>
@@ -287,7 +287,7 @@ export function Sidebar() {
         </div>
       </div>
 
-      <nav ref={navRef} className="flex-1 min-h-0 overflow-y-auto scrollbar-auto-hide flex flex-col gap-4 px-3 py-2">
+      <nav ref={navRef} className="flex-1 min-h-0 overflow-y-auto scrollbar-auto-hide flex flex-col gap-4 pl-3 pr-1.5 py-2">
         <div className="flex flex-col gap-0.5">
           {matchLabel("War Room") && (
             <SidebarNavItem to="/dashboard" label="War Room" icon={LayoutDashboard} liveCount={liveRunCount} />
