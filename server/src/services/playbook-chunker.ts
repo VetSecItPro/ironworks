@@ -1,5 +1,67 @@
-import yaml from "js-yaml";
 import { logger } from "../middleware/logger.js";
+
+/**
+ * Minimal YAML frontmatter parser. Handles the subset our PLAYBOOK_STANDARD.md
+ * uses: scalar values (strings, numbers, booleans), inline arrays [a, b, c],
+ * and block arrays. No nested objects, no anchors, no multi-line strings.
+ *
+ * Inlined to avoid adding js-yaml as a runtime dep just for this.
+ */
+function parseFrontmatterYaml(text: string): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  let currentArrayKey: string | null = null;
+  for (const rawLine of text.split("\n")) {
+    const line = rawLine.replace(/\s+$/, "");
+    if (!line || line.startsWith("#")) continue;
+
+    // Block array continuation: "  - value"
+    if (currentArrayKey && /^\s+-\s+/.test(line)) {
+      const item = line.replace(/^\s+-\s+/, "").trim();
+      const arr = out[currentArrayKey] as unknown[];
+      arr.push(coerceScalar(item));
+      continue;
+    }
+
+    // Top-level "key: value"
+    const m = line.match(/^([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$/);
+    if (!m) {
+      currentArrayKey = null;
+      continue;
+    }
+    const key = m[1];
+    const valueRaw = m[2];
+
+    if (valueRaw === "" || valueRaw === undefined) {
+      // Block array follows on next lines
+      out[key] = [];
+      currentArrayKey = key;
+      continue;
+    }
+
+    currentArrayKey = null;
+
+    // Inline array: [a, b, c]
+    if (valueRaw.startsWith("[") && valueRaw.endsWith("]")) {
+      const inner = valueRaw.slice(1, -1).trim();
+      out[key] = inner === "" ? [] : inner.split(",").map((s) => coerceScalar(s.trim()));
+      continue;
+    }
+
+    out[key] = coerceScalar(valueRaw);
+  }
+  return out;
+}
+
+function coerceScalar(s: string): string | number | boolean | null {
+  // Strip surrounding quotes
+  const unquoted = s.replace(/^["'](.*)["']$/, "$1");
+  if (unquoted === "true") return true;
+  if (unquoted === "false") return false;
+  if (unquoted === "null" || unquoted === "~") return null;
+  if (/^-?\d+$/.test(unquoted)) return parseInt(unquoted, 10);
+  if (/^-?\d+\.\d+$/.test(unquoted)) return parseFloat(unquoted);
+  return unquoted;
+}
 
 /**
  * Parse a playbook markdown body into chunks, one per H2 section.
@@ -72,7 +134,7 @@ export function parsePlaybook(body: string): ParsedPlaybook {
   const fmMatch = remaining.match(/^---\n([\s\S]+?)\n---\n/);
   if (fmMatch) {
     try {
-      const parsed = yaml.load(fmMatch[1]) as PlaybookFrontmatter;
+      const parsed = parseFrontmatterYaml(fmMatch[1]) as PlaybookFrontmatter;
       if (parsed && typeof parsed === "object") {
         frontmatter = parsed;
       }
