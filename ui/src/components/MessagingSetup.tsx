@@ -58,14 +58,14 @@ export function MessagingSetup({ companyId }: MessagingSetupProps) {
             queryKey={queryKey}
           />
 
-          {/* Slack - Coming Soon */}
-          <ComingSoonCard
+          {/* Slack - Planned */}
+          <PlannedPlatformCard
             platform="Slack"
             icon={<Hash className="h-4 w-4 text-muted-foreground" />}
           />
 
-          {/* Discord - Coming Soon */}
-          <ComingSoonCard
+          {/* Discord - Planned */}
+          <PlannedPlatformCard
             platform="Discord"
             icon={<Gamepad2 className="h-4 w-4 text-muted-foreground" />}
           />
@@ -311,9 +311,9 @@ function TelegramBridgeCard({
   );
 }
 
-// ── Coming Soon Card ──
+// ── Planned Platform Card ──
 
-function ComingSoonCard({
+function PlannedPlatformCard({
   platform,
   icon,
 }: {
@@ -328,7 +328,7 @@ function ComingSoonCard({
           <span className="text-sm font-medium">{platform}</span>
         </div>
         <span className="text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">
-          Coming soon
+          Planned
         </span>
       </div>
     </div>

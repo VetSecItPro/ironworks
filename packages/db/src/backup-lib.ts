@@ -1,12 +1,25 @@
-import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync } from "node:fs";
-import { readFile, writeFile } from "node:fs/promises";
+import { existsSync, mkdirSync, statSync, createReadStream } from "node:fs";
+import { readFile } from "node:fs/promises";
+import { createGzip, createGunzip } from "node:zlib";
 import { basename, resolve } from "node:path";
+import { pipeline } from "node:stream/promises";
+import { createWriteStream } from "node:fs";
+import { Readable } from "node:stream";
 import postgres from "postgres";
+import {
+  type BackupRetentionPolicy,
+  resolveRetentionPolicy,
+  pruneBackupsWithPolicy,
+} from "./backup-retention.js";
+
+export type { BackupRetentionPolicy } from "./backup-retention.js";
 
 export type RunDatabaseBackupOptions = {
   connectionString: string;
   backupDir: string;
-  retentionDays: number;
+  /** @deprecated Use retentionPolicy instead. Kept for backward compatibility. */
+  retentionDays?: number;
+  retentionPolicy?: BackupRetentionPolicy;
   filenamePrefix?: string;
   connectTimeoutSeconds?: number;
   includeMigrationJournal?: boolean;
@@ -69,25 +82,6 @@ function timestamp(date: Date = new Date()): string {
   return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}-${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
 }
 
-function pruneOldBackups(backupDir: string, retentionDays: number, filenamePrefix: string): number {
-  if (!existsSync(backupDir)) return 0;
-  const safeRetention = Math.max(1, Math.trunc(retentionDays));
-  const cutoff = Date.now() - safeRetention * 24 * 60 * 60 * 1000;
-  let pruned = 0;
-
-  for (const name of readdirSync(backupDir)) {
-    if (!name.startsWith(`${filenamePrefix}-`) || !name.endsWith(".sql")) continue;
-    const fullPath = resolve(backupDir, name);
-    const stat = statSync(fullPath);
-    if (stat.mtimeMs < cutoff) {
-      unlinkSync(fullPath);
-      pruned++;
-    }
-  }
-
-  return pruned;
-}
-
 function formatBackupSize(sizeBytes: number): string {
   if (sizeBytes < 1024) return `${sizeBytes}B`;
   if (sizeBytes < 1024 * 1024) return `${(sizeBytes / 1024).toFixed(1)}K`;
@@ -143,7 +137,7 @@ function tableKey(schemaName: string, tableName: string): string {
 
 export async function runDatabaseBackup(opts: RunDatabaseBackupOptions): Promise<RunDatabaseBackupResult> {
   const filenamePrefix = opts.filenamePrefix ?? "ironworks";
-  const retentionDays = Math.max(1, Math.trunc(opts.retentionDays));
+  const policy = resolveRetentionPolicy(opts);
   const connectTimeout = Math.max(1, Math.trunc(opts.connectTimeoutSeconds ?? 5));
   const includeMigrationJournal = opts.includeMigrationJournal === true;
   const excludedTableNames = normalizeTableNameSet(opts.excludeTables);
@@ -503,13 +497,18 @@ export async function runDatabaseBackup(opts: RunDatabaseBackupOptions): Promise
     emitStatement("COMMIT;");
     emit("");
 
-    // Write the backup file
+    // Write the backup file with gzip compression
     mkdirSync(opts.backupDir, { recursive: true });
-    const backupFile = resolve(opts.backupDir, `${filenamePrefix}-${timestamp()}.sql`);
-    await writeFile(backupFile, lines.join("\n"), "utf8");
+    const backupFile = resolve(opts.backupDir, `${filenamePrefix}-${timestamp()}.sql.gz`);
+    const content = Buffer.from(lines.join("\n"), "utf8");
+    await pipeline(
+      Readable.from(content),
+      createGzip({ level: 6 }),
+      createWriteStream(backupFile),
+    );
 
     const sizeBytes = statSync(backupFile).size;
-    const prunedCount = pruneOldBackups(opts.backupDir, retentionDays, filenamePrefix);
+    const prunedCount = pruneBackupsWithPolicy(opts.backupDir, policy, filenamePrefix);
 
     return {
       backupFile,
@@ -521,13 +520,31 @@ export async function runDatabaseBackup(opts: RunDatabaseBackupOptions): Promise
   }
 }
 
+async function readBackupContents(filePath: string): Promise<string> {
+  if (filePath.endsWith(".sql.gz")) {
+    const chunks: Buffer[] = [];
+    await pipeline(
+      createReadStream(filePath),
+      createGunzip(),
+      async function* (source) {
+        for await (const chunk of source) {
+          chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+          yield chunk;
+        }
+      },
+    );
+    return Buffer.concat(chunks).toString("utf8");
+  }
+  return readFile(filePath, "utf8");
+}
+
 export async function runDatabaseRestore(opts: RunDatabaseRestoreOptions): Promise<void> {
   const connectTimeout = Math.max(1, Math.trunc(opts.connectTimeoutSeconds ?? 5));
   const sql = postgres(opts.connectionString, { max: 1, connect_timeout: connectTimeout });
 
   try {
     await sql`SELECT 1`;
-    const contents = await readFile(opts.backupFile, "utf8");
+    const contents = await readBackupContents(opts.backupFile);
     const statements = contents
       .split(STATEMENT_BREAKPOINT)
       .map((statement) => statement.trim())

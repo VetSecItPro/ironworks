@@ -1,6 +1,12 @@
 name: E2E Tests
 
 on:
+  pull_request:
+    branches: [master]
+    paths:
+      - "server/src/**"
+      - "ui/src/**"
+      - "packages/**"
   workflow_dispatch:
     inputs:
       skip_llm:

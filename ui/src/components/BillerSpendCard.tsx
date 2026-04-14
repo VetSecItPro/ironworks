@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import type { CostByBiller, CostByProviderModel } from "@ironworksai/shared";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { QuotaBar } from "./QuotaBar";
@@ -12,7 +12,7 @@ interface BillerSpendCardProps {
   providerRows: CostByProviderModel[];
 }
 
-export function BillerSpendCard({
+export const BillerSpendCard = memo(function BillerSpendCard({
   row,
   weekSpendCents,
   budgetMonthlyCents,
@@ -142,4 +142,4 @@ export function BillerSpendCard({
       </CardContent>
     </Card>
   );
-}
+});

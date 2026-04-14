@@ -350,10 +350,10 @@ export function DesignGuide() {
 
         <SubSection title="Icon buttons">
           <div className="flex items-center gap-2 flex-wrap">
-            <Button variant="ghost" size="icon-xs"><Search /></Button>
-            <Button variant="ghost" size="icon-sm"><Search /></Button>
-            <Button variant="outline" size="icon"><Search /></Button>
-            <Button variant="outline" size="icon-lg"><Search /></Button>
+            <Button variant="ghost" size="icon-xs" aria-label="Search"><Search /></Button>
+            <Button variant="ghost" size="icon-sm" aria-label="Search"><Search /></Button>
+            <Button variant="outline" size="icon" aria-label="Search"><Search /></Button>
+            <Button variant="outline" size="icon-lg" aria-label="Search"><Search /></Button>
           </div>
         </SubSection>
 
@@ -780,9 +780,9 @@ export function DesignGuide() {
       {/*  TABS                                                         */}
       {/* ============================================================ */}
       <Section title="Tabs">
-        <SubSection title="Default (pill) variant">
+        <SubSection title="Pill variant">
           <Tabs defaultValue="overview">
-            <TabsList>
+            <TabsList variant="default">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="runs">Runs</TabsTrigger>
               <TabsTrigger value="config">Config</TabsTrigger>
@@ -967,7 +967,7 @@ export function DesignGuide() {
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon-sm"><Settings /></Button>
+              <Button variant="ghost" size="icon-sm" aria-label="Settings"><Settings /></Button>
             </TooltipTrigger>
             <TooltipContent>Settings</TooltipContent>
           </Tooltip>

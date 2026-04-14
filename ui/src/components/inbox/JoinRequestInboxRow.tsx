@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import { UserPlus, X } from "lucide-react";
 import { timeAgo } from "../../lib/timeAgo";
@@ -7,7 +8,7 @@ import { getSeverityBorderClass } from "./inboxHelpers";
 import type { NonIssueUnreadState } from "./inboxTypes";
 import type { JoinRequest } from "@ironworksai/shared";
 
-export function JoinRequestInboxRow({
+export const JoinRequestInboxRow = memo(function JoinRequestInboxRow({
   joinRequest,
   onApprove,
   onReject,
@@ -135,4 +136,4 @@ export function JoinRequestInboxRow({
       </div>
     </div>
   );
-}
+});

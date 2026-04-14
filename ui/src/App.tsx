@@ -83,6 +83,7 @@ import { ServiceLevelAgreement } from "./pages/ServiceLevelAgreement";
 import { LegalIndex } from "./pages/LegalIndex";
 import { PricingPage } from "./pages/PricingPage";
 import { AuthPage } from "./pages/Auth";
+import { ForgotPasswordPage } from "./pages/ForgotPassword";
 import { BoardClaimPage } from "./pages/BoardClaim";
 import { CliAuthPage } from "./pages/CliAuth";
 import { InviteLandingPage } from "./pages/InviteLanding";
@@ -392,6 +393,7 @@ export function App() {
         <Route path="legal" element={<LegalIndex />} />
         <Route path="pricing" element={<PricingPage />} />
         <Route path="auth" element={<AuthPage />} />
+        <Route path="auth/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="setup" element={<LazyPage><SetupPage /></LazyPage>} />
         <Route path="board-claim/:token" element={<BoardClaimPage />} />
         <Route path="cli-auth/:id" element={<CliAuthPage />} />

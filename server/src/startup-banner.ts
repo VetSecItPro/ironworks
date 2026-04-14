@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolveIronworksConfigPath, resolveIronworksEnvPath } from "./paths.js";
 import type { DeploymentExposure, DeploymentMode } from "@ironworksai/shared";
+import { logger } from "./middleware/logger.js";
 
 import { parse as parseEnvFileContents } from "dotenv";
 
@@ -171,5 +172,5 @@ export function printStartupBanner(opts: StartupBannerOptions): void {
     "",
   ];
 
-  console.log(lines.filter((line): line is string => line !== null).join("\n"));
+  logger.info(lines.filter((line): line is string => line !== null).join("\n"));
 }

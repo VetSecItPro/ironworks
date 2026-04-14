@@ -268,7 +268,7 @@ export function InviteLandingPage() {
               >
                 {joinAdapterOptions.map((type) => (
                   <option key={type} value={type} disabled={!ENABLED_INVITE_ADAPTERS.has(type)}>
-                    {adapterLabels[type]}{!ENABLED_INVITE_ADAPTERS.has(type) ? " (Coming soon)" : ""}
+                    {adapterLabels[type]}{!ENABLED_INVITE_ADAPTERS.has(type) ? " (not yet available)" : ""}
                   </option>
                 ))}
               </select>

@@ -8,6 +8,7 @@ drizzle/meta/
 .vite/
 coverage/
 .DS_Store
+.a11y-reports/
 data/
 .ironworks/
 .ironworks-plans/
@@ -71,7 +72,6 @@ ironworks-todo.md
 # k6 load tests - never commit test scripts or results
 load-tests/
 .k6-results/
-
 # Skill report folders (auto-generated, gitignored per global rule)
 .a11y-reports/
 .compliance-reports/

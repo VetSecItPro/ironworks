@@ -159,7 +159,7 @@ export function Hiring() {
     return <EmptyState icon={UserPlus} message="Select a company to view hiring." />;
   }
 
-  if (isLoading) return <PageSkeleton variant="list" />;
+  if (isLoading && !hiringRequests) return <PageSkeleton variant="list" />;
 
   return (
     <div className="space-y-6">

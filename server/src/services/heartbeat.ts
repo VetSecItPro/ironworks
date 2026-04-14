@@ -173,6 +173,7 @@ import {
   tickTimers as tickTimersModule,
   releaseIssueExecutionAndPromote as releaseIssueExecutionAndPromoteModule,
   enqueueWakeup as enqueueWakeupModule,
+  getSchedulerSettings,
 } from "./heartbeat-scheduling.js";
 import {
   cancelRunInternal as cancelRunInternalModule,
@@ -1375,11 +1376,15 @@ export function heartbeatService(db: Db) {
           ? "idle"
           : "error";
 
-    // ── Item 7: Auto-recovery — pause after 3 consecutive failures ───────────
+    // ── Item 7: Auto-recovery — pause after N consecutive failures ──────────
     // Check before writing status so we can override nextStatus to "paused".
+    const schedulerSettings = await getSchedulerSettings(db).catch(() => null);
+    const consecutiveFailureLimit = schedulerSettings?.consecutiveFailureLimit ?? 5;
+    const costAnomalyMultiplier = schedulerSettings?.costAnomalyMultiplier ?? 5;
+
     let shouldAutoPause = false;
     if (outcome === "failed" && nextStatus === "error") {
-      // Query the 3 most recent terminal runs for this agent (excluding currently
+      // Query the N most recent terminal runs for this agent (excluding currently
       // running/queued). "Process lost" errors from deploys are not real failures.
       const TERMINAL_STATUSES = ["succeeded", "failed", "timed_out", "cancelled"];
       const recentRuns = await db
@@ -1392,9 +1397,9 @@ export function heartbeatService(db: Db) {
           ),
         )
         .orderBy(desc(heartbeatRuns.finishedAt))
-        .limit(3);
+        .limit(consecutiveFailureLimit);
 
-      if (recentRuns.length === 3) {
+      if (recentRuns.length === consecutiveFailureLimit) {
         const allFailed = recentRuns.every((r) => {
           // Skip process_lost errors (server restart / deploy bounce)
           if (r.errorCode === "process_lost") return false;
@@ -1408,6 +1413,7 @@ export function heartbeatService(db: Db) {
 
     // Subscription-aware rate limiter: prevents runaway loops without
     // penalizing normal work. Designed for Ollama Cloud (session-based billing).
+    // Replaces the old token-based cost anomaly breaker (PR #57).
     // Checks: per-agent runs/hour, total cluster runs/hour, and same-task stalls.
     let shouldRatePause = false;
     let ratePauseReason = "";
@@ -1473,7 +1479,7 @@ export function heartbeatService(db: Db) {
         updatedAt: new Date(),
         ...(shouldAutoPause
           ? {
-              pauseReason: "auto_paused: 3 consecutive failures",
+              pauseReason: `auto_paused: ${consecutiveFailureLimit} consecutive failures`,
               pausedAt: new Date(),
             }
           : shouldRatePause
@@ -1503,12 +1509,12 @@ export function heartbeatService(db: Db) {
 
       // If auto-paused, create a system issue and log activity (non-fatal)
       if (shouldAutoPause) {
-        logger.warn({ agentId, companyId: updated.companyId }, "Agent auto-paused after 3 consecutive failures");
+        logger.warn({ agentId, companyId: updated.companyId, consecutiveFailureLimit }, "Agent auto-paused after consecutive failures");
 
         issuesSvc
           .create(updated.companyId, {
-            title: `[System] Agent ${updated.name} paused after 3 consecutive failures`,
-            description: `The agent **${updated.name}** (${updated.role}) has been automatically paused after failing 3 consecutive runs.\n\nPlease review the agent's configuration, adapter settings, and recent run logs, then resume the agent once the issue is resolved.`,
+            title: `[System] Agent ${updated.name} paused after ${consecutiveFailureLimit} consecutive failures`,
+            description: `The agent **${updated.name}** (${updated.role}) has been automatically paused after failing ${consecutiveFailureLimit} consecutive runs.\n\nPlease review the agent's configuration, adapter settings, and recent run logs, then resume the agent once the issue is resolved.`,
             priority: "high",
             status: "todo",
             createdByUserId: null,
@@ -1526,7 +1532,7 @@ export function heartbeatService(db: Db) {
           entityType: "agent",
           entityId: agentId,
           agentId,
-          details: { reason: "3 consecutive failures", name: updated.name },
+          details: { reason: `${consecutiveFailureLimit} consecutive failures`, name: updated.name },
         }).catch((err) => {
           logger.warn({ err, agentId }, "Failed to log agent.auto_paused activity");
         });
@@ -1882,6 +1888,27 @@ export function heartbeatService(db: Db) {
       }
     }
     // ── End Progressive Budget Gates ──────────────────────────────────────────
+
+    // ── Idle Fast-Path: skip LLM if timer-driven and no assigned work ────────
+    if (
+      (run.invocationSource === "timer" || readNonEmptyString(context.reason) === "heartbeat_timer") &&
+      !issueId
+    ) {
+      const { hasAssignedWork } = await import("./heartbeat-scheduling.js");
+      const hasWork = await hasAssignedWork(db, agent.id, agent.companyId);
+      if (!hasWork) {
+        await setRunStatus(run.id, "cancelled", {
+          error: "Idle skip - no assigned work",
+          errorCode: "idle_skip",
+          finishedAt: new Date(),
+        });
+        await setWakeupStatus(run.wakeupRequestId, "skipped", { finishedAt: new Date() });
+        logger.debug({ agentId: agent.id, runId: run.id }, "Idle skip - no assigned work");
+        await finalizeAgentStatus(agent.id, "cancelled");
+        return;
+      }
+    }
+    // ── End Idle Fast-Path ──────────────────────────────────────────────────
 
     // ── End Autonomy Enforcement ─────────────────────────────────────────────
     const issueContext = issueId

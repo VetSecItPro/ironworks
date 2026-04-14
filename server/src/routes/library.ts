@@ -67,6 +67,9 @@ function resolveLibraryRoot(): string {
 }
 
 function resolveSecure(libraryRoot: string, relativePath: string): string {
+  if (relativePath.includes("\0")) {
+    throw badRequest("Path must not contain null bytes");
+  }
   if (relativePath.includes("..")) {
     throw badRequest("Path must not contain '..'");
   }

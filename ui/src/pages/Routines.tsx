@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@/lib/router";
-import { AlertTriangle, CalendarDays, ChevronDown, ChevronRight, Filter, LayoutGrid, LayoutList, MoreHorizontal, Plus, Repeat, Search } from "lucide-react";
+import { Plus, Repeat } from "lucide-react";
 import { usePageTitle } from "../hooks/usePageTitle";
 import { routinesApi } from "../api/routines";
 import { agentsApi } from "../api/agents";
@@ -14,262 +14,18 @@ import { getRecentAssigneeIds, sortAgentsByRecency, trackRecentAssignee } from "
 import { cn } from "../lib/utils";
 import { EmptyState } from "../components/EmptyState";
 import { PageSkeleton } from "../components/PageSkeleton";
-import { AgentIcon } from "../components/AgentIconPicker";
-import { InlineEntitySelector, type InlineEntityOption } from "../components/InlineEntitySelector";
-import { MarkdownEditor, type MarkdownEditorRef } from "../components/MarkdownEditor";
+import type { InlineEntityOption } from "../components/InlineEntitySelector";
+import type { MarkdownEditorRef } from "../components/MarkdownEditor";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
-const concurrencyPolicies = ["coalesce_if_active", "always_enqueue", "skip_if_active"];
-const catchUpPolicies = ["skip_missed", "enqueue_missed_with_cap"];
-const concurrencyPolicyDescriptions: Record<string, string> = {
-  coalesce_if_active: "If a run is already active, keep just one follow-up run queued.",
-  always_enqueue: "Queue every trigger occurrence, even if the routine is already running.",
-  skip_if_active: "Drop new trigger occurrences while a run is still active.",
-};
-const catchUpPolicyDescriptions: Record<string, string> = {
-  skip_missed: "Ignore windows that were missed while the scheduler or routine was paused.",
-  enqueue_missed_with_cap: "Catch up missed schedule windows in capped batches after recovery.",
-};
-
-function autoResizeTextarea(element: HTMLTextAreaElement | null) {
-  if (!element) return;
-  element.style.height = "auto";
-  element.style.height = `${element.scrollHeight}px`;
-}
-
-function formatLastRunTimestamp(value: Date | string | null | undefined) {
-  if (!value) return "Never";
-  return new Date(value).toLocaleString();
-}
-
-function nextRoutineStatus(currentStatus: string, enabled: boolean) {
-  if (currentStatus === "archived" && enabled) return "active";
-  return enabled ? "active" : "paused";
-}
-
-/* ── Routine Health Indicator (late runs) ── */
-
-function RoutineHealthBadge({ lastRunAt, status }: { lastRunAt?: string | Date | null; status: string }) {
-  if (status !== "active") return null;
-  if (!lastRunAt) return null;
-  const lastRun = new Date(lastRunAt).getTime();
-  const hoursSinceRun = (Date.now() - lastRun) / (1000 * 60 * 60);
-  // Consider "late" if active routine hasn't run in 48+ hours
-  if (hoursSinceRun < 48) return null;
-  return (
-    <span className="inline-flex items-center gap-1 text-[10px] text-amber-500" title={`Last run ${Math.round(hoursSinceRun)}h ago`}>
-      <AlertTriangle className="h-3 w-3" />
-      Late
-    </span>
-  );
-}
-
-/* ── Schedule Calendar View (weekly blocks) ── */
-
-function ScheduleCalendarView({
-  routines,
-  agentById,
-  onRoutineClick,
-}: {
-  routines: Array<{ id: string; title: string; status: string; assigneeAgentId: string | null; triggers?: Array<{ enabled: boolean; nextRunAt?: string | null; schedule?: string | null }> }>;
-  agentById: Map<string, { id: string; name: string; icon?: string | null }>;
-  onRoutineClick: (id: string) => void;
-}) {
-  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const hours = Array.from({ length: 24 }, (_, i) => i);
-
-  // Parse routine schedules into day/hour slots
-  type Slot = { routineId: string; title: string; agentName: string; day: number; hour: number };
-  const slots: Slot[] = [];
-
-  for (const routine of routines) {
-    if (routine.status !== "active") continue;
-    for (const trigger of routine.triggers ?? []) {
-      if (!trigger.enabled || !trigger.schedule) continue;
-      const parts = trigger.schedule.trim().split(/\s+/);
-      if (parts.length !== 5) continue;
-      const [min, hr, , , dow] = parts;
-      const hourNum = hr === "*" ? 0 : parseInt(hr, 10);
-      const agent = routine.assigneeAgentId ? agentById.get(routine.assigneeAgentId) : null;
-
-      if (dow === "*" || dow === "1-5") {
-        // Runs on multiple days
-        const runDays = dow === "*" ? [0, 1, 2, 3, 4, 5, 6] : [0, 1, 2, 3, 4];
-        for (const d of runDays) {
-          slots.push({ routineId: routine.id, title: routine.title, agentName: agent?.name ?? "-", day: d, hour: hourNum });
-        }
-      } else if (/^\d$/.test(dow)) {
-        const d = parseInt(dow, 10);
-        // Convert: 0=Sun -> index 6, 1=Mon -> index 0, etc.
-        const dayIdx = d === 0 ? 6 : d - 1;
-        slots.push({ routineId: routine.id, title: routine.title, agentName: agent?.name ?? "-", day: dayIdx, hour: hourNum });
-      }
-    }
-  }
-
-  // Group by day and hour
-  const grid = new Map<string, Slot[]>();
-  for (const slot of slots) {
-    const key = `${slot.day}-${slot.hour}`;
-    if (!grid.has(key)) grid.set(key, []);
-    grid.get(key)!.push(slot);
-  }
-
-  return (
-    <div className="overflow-x-auto">
-      <div className="min-w-[700px]">
-        {/* Day headers */}
-        <div className="grid grid-cols-[60px_repeat(7,1fr)] gap-px bg-border/30">
-          <div className="bg-background" />
-          {days.map((day) => (
-            <div key={day} className="bg-background px-2 py-1.5 text-xs font-medium text-muted-foreground text-center">
-              {day}
-            </div>
-          ))}
-        </div>
-        {/* Hour rows - show only hours 6-22 */}
-        {hours.filter((h) => h >= 6 && h <= 22).map((hour) => (
-          <div key={hour} className="grid grid-cols-[60px_repeat(7,1fr)] gap-px bg-border/10 min-h-[28px]">
-            <div className="bg-background flex items-center justify-end pr-2 text-[10px] text-muted-foreground/80">
-              {hour === 0 ? "12AM" : hour < 12 ? `${hour}AM` : hour === 12 ? "12PM" : `${hour - 12}PM`}
-            </div>
-            {days.map((_, dayIdx) => {
-              const key = `${dayIdx}-${hour}`;
-              const cellSlots = grid.get(key) ?? [];
-              return (
-                <div key={dayIdx} className="bg-background p-0.5 min-h-[28px]">
-                  {cellSlots.map((slot, si) => (
-                    <button
-                      key={si}
-                      onClick={() => onRoutineClick(slot.routineId)}
-                      className="block w-full text-left text-[10px] rounded px-1 py-0.5 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors truncate"
-                      title={`${slot.title} (${slot.agentName})`}
-                    >
-                      {slot.title}
-                    </button>
-                  ))}
-                </div>
-              );
-            })}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ── Visual Cron Builder ── */
-
-function VisualCronBuilder({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (cron: string) => void;
-}) {
-  const daysOfWeek = [
-    { value: "1", label: "Mon" },
-    { value: "2", label: "Tue" },
-    { value: "3", label: "Wed" },
-    { value: "4", label: "Thu" },
-    { value: "5", label: "Fri" },
-    { value: "6", label: "Sat" },
-    { value: "0", label: "Sun" },
-  ];
-
-  const parts = value.trim().split(/\s+/);
-  const isValid = parts.length === 5;
-  const minute = isValid ? parts[0] : "0";
-  const hour = isValid ? parts[1] : "10";
-  const dow = isValid ? parts[4] : "*";
-
-  const selectedDays = new Set(
-    dow === "*" ? daysOfWeek.map((d) => d.value) :
-    dow === "1-5" ? ["1", "2", "3", "4", "5"] :
-    dow.split(",")
-  );
-
-  const toggleDay = (dayVal: string) => {
-    const next = new Set(selectedDays);
-    if (next.has(dayVal)) next.delete(dayVal);
-    else next.add(dayVal);
-    const dowStr = next.size === 7 ? "*" : next.size === 0 ? "*" : Array.from(next).sort().join(",");
-    onChange(`${minute} ${hour} * * ${dowStr}`);
-  };
-
-  return (
-    <div className="space-y-3 rounded-lg border border-border p-3">
-      <div className="text-xs font-medium text-muted-foreground">Visual Schedule</div>
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-muted-foreground">At</span>
-        <select
-          className="text-xs bg-transparent border border-border rounded px-2 py-1"
-          value={hour}
-          onChange={(e) => onChange(`${minute} ${e.target.value} * * ${dow}`)}
-        >
-          {Array.from({ length: 24 }, (_, i) => (
-            <option key={i} value={String(i)}>
-              {i === 0 ? "12 AM" : i < 12 ? `${i} AM` : i === 12 ? "12 PM" : `${i - 12} PM`}
-            </option>
-          ))}
-        </select>
-        <span className="text-xs text-muted-foreground">:</span>
-        <select
-          className="text-xs bg-transparent border border-border rounded px-2 py-1"
-          value={minute}
-          onChange={(e) => onChange(`${e.target.value} ${hour} * * ${dow}`)}
-        >
-          {Array.from({ length: 12 }, (_, i) => (
-            <option key={i} value={String(i * 5)}>
-              {String(i * 5).padStart(2, "0")}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="flex items-center gap-1">
-        <span className="text-xs text-muted-foreground mr-1">On:</span>
-        {daysOfWeek.map((day) => (
-          <button
-            key={day.value}
-            type="button"
-            onClick={() => toggleDay(day.value)}
-            className={cn(
-              "h-7 w-9 rounded text-[10px] font-medium transition-colors",
-              selectedDays.has(day.value)
-                ? "bg-foreground text-background"
-                : "bg-muted text-muted-foreground hover:bg-accent",
-            )}
-          >
-            {day.label}
-          </button>
-        ))}
-      </div>
-      <div className="text-[10px] font-mono text-muted-foreground/80">
-        Cron: {value}
-      </div>
-    </div>
-  );
-}
-
-type RoutineViewMode = "list" | "calendar";
+  ScheduleCalendarView,
+  CreateRoutineDialog,
+  RoutineFilterBar,
+  RoutineListTable,
+  type RoutineDraft,
+  type RoutineViewMode,
+} from "../components/routines";
 
 export function Routines() {
   usePageTitle("Routines");
@@ -283,14 +39,11 @@ export function Routines() {
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "paused" | "draft" | "archived">("all");
   const [agentFilter, setAgentFilter] = useState<string>("all");
   const descriptionEditorRef = useRef<MarkdownEditorRef>(null);
-  const titleInputRef = useRef<HTMLTextAreaElement | null>(null);
-  const assigneeSelectorRef = useRef<HTMLButtonElement | null>(null);
-  const projectSelectorRef = useRef<HTMLButtonElement | null>(null);
   const [runningRoutineId, setRunningRoutineId] = useState<string | null>(null);
   const [statusMutationRoutineId, setStatusMutationRoutineId] = useState<string | null>(null);
   const [composerOpen, setComposerOpen] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
-  const [draft, setDraft] = useState({
+  const [draft, setDraft] = useState<RoutineDraft>({
     title: "",
     description: "",
     projectId: "",
@@ -319,10 +72,6 @@ export function Routines() {
     queryFn: () => projectsApi.list(selectedCompanyId!),
     enabled: !!selectedCompanyId,
   });
-
-  useEffect(() => {
-    autoResizeTextarea(titleInputRef.current);
-  }, [draft.title, composerOpen]);
 
   const createRoutine = useMutation({
     mutationFn: () =>
@@ -428,14 +177,12 @@ export function Routines() {
     () => new Map((projects ?? []).map((project) => [project.id, project])),
     [projects],
   );
-  const currentAssignee = draft.assigneeAgentId ? agentById.get(draft.assigneeAgentId) ?? null : null;
-  const currentProject = draft.projectId ? projectById.get(draft.projectId) ?? null : null;
 
   if (!selectedCompanyId) {
     return <EmptyState icon={Repeat} message="Select a company to view routines." />;
   }
 
-  if (isLoading) {
+  if (isLoading && !routines) {
     return <PageSkeleton variant="issues-list" />;
   }
 
@@ -454,251 +201,24 @@ export function Routines() {
         </Button>
       </div>
 
-      <Dialog
+      <CreateRoutineDialog
         open={composerOpen}
-        onOpenChange={(open) => {
-          if (!createRoutine.isPending) {
-            setComposerOpen(open);
-          }
-        }}
-      >
-        <DialogContent showCloseButton={false} className="max-w-3xl gap-0 overflow-hidden p-0">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-5 py-3">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">New routine</p>
-              <p className="text-sm text-muted-foreground">
-                Define the recurring work first. Trigger setup comes next on the detail page.
-              </p>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setComposerOpen(false);
-                setAdvancedOpen(false);
-              }}
-              disabled={createRoutine.isPending}
-            >
-              Cancel
-            </Button>
-          </div>
-
-          <div className="px-5 pt-5 pb-3">
-            <textarea
-              ref={titleInputRef}
-              className="w-full resize-none overflow-hidden bg-transparent text-xl font-semibold outline-none placeholder:text-muted-foreground/70"
-              placeholder="Routine title"
-              rows={1}
-              value={draft.title}
-              onChange={(event) => {
-                setDraft((current) => ({ ...current, title: event.target.value }));
-                autoResizeTextarea(event.target);
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.metaKey && !event.ctrlKey && !event.nativeEvent.isComposing) {
-                  event.preventDefault();
-                  descriptionEditorRef.current?.focus();
-                  return;
-                }
-                if (event.key === "Tab" && !event.shiftKey) {
-                  event.preventDefault();
-                  if (draft.assigneeAgentId) {
-                    if (draft.projectId) {
-                      descriptionEditorRef.current?.focus();
-                    } else {
-                      projectSelectorRef.current?.focus();
-                    }
-                  } else {
-                    assigneeSelectorRef.current?.focus();
-                  }
-                }
-              }}
-              autoFocus
-            />
-          </div>
-
-          <div className="px-5 pb-3">
-            <div className="overflow-x-auto overscroll-x-contain">
-              <div className="inline-flex min-w-full flex-wrap items-center gap-2 text-sm text-muted-foreground sm:min-w-max sm:flex-nowrap">
-                <span>For</span>
-                <InlineEntitySelector
-                  ref={assigneeSelectorRef}
-                  value={draft.assigneeAgentId}
-                  options={assigneeOptions}
-                  placeholder="Assignee"
-                  noneLabel="No assignee"
-                  searchPlaceholder="Search assignees..."
-                  emptyMessage="No assignees found."
-                  onChange={(assigneeAgentId) => {
-                    if (assigneeAgentId) trackRecentAssignee(assigneeAgentId);
-                    setDraft((current) => ({ ...current, assigneeAgentId }));
-                  }}
-                  onConfirm={() => {
-                    if (draft.projectId) {
-                      descriptionEditorRef.current?.focus();
-                    } else {
-                      projectSelectorRef.current?.focus();
-                    }
-                  }}
-                  renderTriggerValue={(option) =>
-                    option ? (
-                      currentAssignee ? (
-                        <>
-                          <AgentIcon icon={currentAssignee.icon} className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                          <span className="truncate">{option.label}</span>
-                        </>
-                      ) : (
-                        <span className="truncate">{option.label}</span>
-                      )
-                    ) : (
-                      <span className="text-muted-foreground">Assignee</span>
-                    )
-                  }
-                  renderOption={(option) => {
-                    if (!option.id) return <span className="truncate">{option.label}</span>;
-                    const assignee = agentById.get(option.id);
-                    return (
-                      <>
-                        {assignee ? <AgentIcon icon={assignee.icon} className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : null}
-                        <span className="truncate">{option.label}</span>
-                      </>
-                    );
-                  }}
-                />
-                <span>in</span>
-                <InlineEntitySelector
-                  ref={projectSelectorRef}
-                  value={draft.projectId}
-                  options={projectOptions}
-                  placeholder="Project"
-                  noneLabel="No project"
-                  searchPlaceholder="Search projects..."
-                  emptyMessage="No projects found."
-                  onChange={(projectId) => setDraft((current) => ({ ...current, projectId }))}
-                  onConfirm={() => descriptionEditorRef.current?.focus()}
-                  renderTriggerValue={(option) =>
-                    option && currentProject ? (
-                      <>
-                        <span
-                          className="h-3.5 w-3.5 shrink-0 rounded-sm"
-                          style={{ backgroundColor: currentProject.color ?? "#64748b" }}
-                        />
-                        <span className="truncate">{option.label}</span>
-                      </>
-                    ) : (
-                      <span className="text-muted-foreground">Project</span>
-                    )
-                  }
-                  renderOption={(option) => {
-                    if (!option.id) return <span className="truncate">{option.label}</span>;
-                    const project = projectById.get(option.id);
-                    return (
-                      <>
-                        <span
-                          className="h-3.5 w-3.5 shrink-0 rounded-sm"
-                          style={{ backgroundColor: project?.color ?? "#64748b" }}
-                        />
-                        <span className="truncate">{option.label}</span>
-                      </>
-                    );
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="border-t border-border/60 px-5 py-4">
-            <MarkdownEditor
-              ref={descriptionEditorRef}
-              value={draft.description}
-              onChange={(description) => setDraft((current) => ({ ...current, description }))}
-              placeholder="Add instructions..."
-              bordered={false}
-              contentClassName="min-h-[160px] text-sm text-muted-foreground"
-              onSubmit={() => {
-                if (!createRoutine.isPending && draft.title.trim() && draft.projectId && draft.assigneeAgentId) {
-                  createRoutine.mutate();
-                }
-              }}
-            />
-          </div>
-
-          <div className="border-t border-border/60 px-5 py-3">
-            <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
-              <CollapsibleTrigger className="flex w-full items-center justify-between text-left">
-                <div>
-                  <p className="text-sm font-medium">Advanced delivery settings</p>
-                  <p className="text-sm text-muted-foreground">Keep policy controls secondary to the work definition.</p>
-                </div>
-                {advancedOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
-              </CollapsibleTrigger>
-              <CollapsibleContent className="pt-3">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Concurrency</p>
-                    <Select
-                      value={draft.concurrencyPolicy}
-                      onValueChange={(concurrencyPolicy) => setDraft((current) => ({ ...current, concurrencyPolicy }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {concurrencyPolicies.map((value) => (
-                          <SelectItem key={value} value={value}>{value.replaceAll("_", " ")}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">{concurrencyPolicyDescriptions[draft.concurrencyPolicy]}</p>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Catch-up</p>
-                    <Select
-                      value={draft.catchUpPolicy}
-                      onValueChange={(catchUpPolicy) => setDraft((current) => ({ ...current, catchUpPolicy }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {catchUpPolicies.map((value) => (
-                          <SelectItem key={value} value={value}>{value.replaceAll("_", " ")}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">{catchUpPolicyDescriptions[draft.catchUpPolicy]}</p>
-                  </div>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          </div>
-
-          <div className="flex flex-col gap-3 border-t border-border/60 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-sm text-muted-foreground">
-              After creation, Ironworks takes you straight to trigger setup for schedules, webhooks, or internal runs.
-            </div>
-            <div className="flex flex-col gap-2 sm:items-end">
-              <Button
-                onClick={() => createRoutine.mutate()}
-                disabled={
-                  createRoutine.isPending ||
-                  !draft.title.trim() ||
-                  !draft.projectId ||
-                  !draft.assigneeAgentId
-                }
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                {createRoutine.isPending ? "Creating..." : "Create routine"}
-              </Button>
-              {createRoutine.isError ? (
-                <p role="alert" className="text-sm text-destructive">
-                  {createRoutine.error instanceof Error ? createRoutine.error.message : "Failed to create routine"}
-                </p>
-              ) : null}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+        onOpenChange={setComposerOpen}
+        draft={draft}
+        setDraft={setDraft}
+        advancedOpen={advancedOpen}
+        setAdvancedOpen={setAdvancedOpen}
+        isPending={createRoutine.isPending}
+        isError={createRoutine.isError}
+        error={createRoutine.error instanceof Error ? createRoutine.error : null}
+        onSubmit={() => createRoutine.mutate()}
+        assigneeOptions={assigneeOptions}
+        projectOptions={projectOptions}
+        agentById={agentById as any}
+        projectById={projectById as any}
+        onTrackAssignee={trackRecentAssignee}
+        descriptionEditorRef={descriptionEditorRef}
+      />
 
       {error ? (
         <Card>
@@ -708,71 +228,20 @@ export function Routines() {
         </Card>
       ) : null}
 
-      {/* Search + Filters */}
       {(routines ?? []).length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative w-48 sm:w-64">
-            <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={routineSearch}
-              onChange={(e) => setRoutineSearch(e.target.value)}
-              placeholder="Search routines..."
-              className="pl-7 text-xs sm:text-sm"
-            />
-          </div>
-          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
-            <SelectTrigger className="h-8 w-auto min-w-[120px] text-xs">
-              <Filter className="h-3 w-3 mr-1" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="paused">Paused</SelectItem>
-              <SelectItem value="draft">Draft</SelectItem>
-              <SelectItem value="archived">Archived</SelectItem>
-            </SelectContent>
-          </Select>
-          {(agents ?? []).filter((a) => a.status !== "terminated").length > 0 && (
-            <Select value={agentFilter} onValueChange={setAgentFilter}>
-              <SelectTrigger className="h-8 w-auto min-w-[130px] text-xs">
-                <SelectValue placeholder="All agents" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All agents</SelectItem>
-                {(agents ?? []).filter((a) => a.status !== "terminated").map((agent) => (
-                  <SelectItem key={agent.id} value={agent.id}>{agent.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-          {/* View mode toggle */}
-          <div className="flex items-center rounded-md border border-border overflow-hidden ml-auto">
-            <button
-              className={cn(
-                "flex items-center justify-center h-8 w-8 transition-colors",
-                routineViewMode === "list" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50",
-              )}
-              onClick={() => setRoutineViewMode("list")}
-              title="List view"
-            >
-              <LayoutList className="h-3.5 w-3.5" />
-            </button>
-            <button
-              className={cn(
-                "flex items-center justify-center h-8 w-8 transition-colors",
-                routineViewMode === "calendar" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50",
-              )}
-              onClick={() => setRoutineViewMode("calendar")}
-              title="Calendar view"
-            >
-              <CalendarDays className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        </div>
+        <RoutineFilterBar
+          routineSearch={routineSearch}
+          onSearchChange={setRoutineSearch}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+          agentFilter={agentFilter}
+          onAgentFilterChange={setAgentFilter}
+          agents={agents ?? []}
+          viewMode={routineViewMode}
+          onViewModeChange={setRoutineViewMode}
+        />
       )}
 
-      {/* Calendar View */}
       {routineViewMode === "calendar" && (routines ?? []).length > 0 && (
         <ScheduleCalendarView
           routines={(routines ?? []) as any}
@@ -790,192 +259,20 @@ export function Routines() {
             />
           </div>
         ) : (
-          <div className={cn("overflow-x-auto", routineViewMode === "calendar" && "hidden")}>
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-muted-foreground border-b border-border">
-                  <th className="px-3 py-2 font-medium">Name</th>
-                  <th className="px-3 py-2 font-medium">Project</th>
-                  <th className="px-3 py-2 font-medium">Agent</th>
-                  <th className="px-3 py-2 font-medium">Last run</th>
-                  <th className="px-3 py-2 font-medium">Next run</th>
-                  <th className="px-3 py-2 font-medium">Enabled</th>
-                  <th className="w-12 px-3 py-2" />
-                </tr>
-              </thead>
-              <tbody>
-                {(routines ?? []).filter((r) => {
-                  if (routineSearch.trim() && !r.title.toLowerCase().includes(routineSearch.toLowerCase())) return false;
-                  if (statusFilter !== "all" && r.status !== statusFilter) return false;
-                  if (agentFilter !== "all" && r.assigneeAgentId !== agentFilter) return false;
-                  return true;
-                }).map((routine) => {
-                  const enabled = routine.status === "active";
-                  const isArchived = routine.status === "archived";
-                  const isStatusPending = statusMutationRoutineId === routine.id;
-                  return (
-                    <tr
-                      key={routine.id}
-                      className="align-middle border-b border-border transition-colors hover:bg-accent/50 last:border-b-0 cursor-pointer"
-                      onClick={() => navigate(`/routines/${routine.id}`)}
-                    >
-                      <td className="px-3 py-2.5">
-                        <div className="min-w-[180px]">
-                          <span className="font-medium">
-                            {routine.title}
-                          </span>
-                          {routine.status === "draft" && (
-                            <div className="mt-1 flex items-center gap-1 text-xs text-amber-500">
-                              <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                              Needs setup — assign agent & project
-                            </div>
-                          )}
-                          {routine.status !== "draft" && (isArchived || routine.status === "paused") && (
-                            <div className="mt-1 text-xs text-muted-foreground">
-                              {isArchived ? "archived" : "paused"}
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-3 py-2.5">
-                        {routine.projectId ? (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <span
-                              className="shrink-0 h-3 w-3 rounded-sm"
-                              style={{ backgroundColor: projectById.get(routine.projectId)?.color ?? "#6366f1" }}
-                            />
-                            <span className="truncate">{projectById.get(routine.projectId)?.name ?? "Unknown"}</span>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">—</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2.5">
-                        {routine.assigneeAgentId ? (() => {
-                          const agent = agentById.get(routine.assigneeAgentId);
-                          return agent ? (
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <AgentIcon icon={agent.icon} className="h-4 w-4 shrink-0" />
-                              <span className="truncate">{agent.name}</span>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">Unknown</span>
-                          );
-                        })() : (
-                          <span className="text-xs text-muted-foreground">—</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2.5 text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                          {formatLastRunTimestamp(routine.lastRun?.triggeredAt)}
-                          <RoutineHealthBadge lastRunAt={routine.lastRun?.triggeredAt} status={routine.status} />
-                        </div>
-                        {routine.lastRun ? (
-                          <>
-                            <div className="mt-1 text-xs">{routine.lastRun.status.replaceAll("_", " ")}</div>
-                            {routine.lastRun.failureReason ? (
-                              <div className="mt-0.5 text-[10px] text-red-500 truncate max-w-[200px]" title={routine.lastRun.failureReason}>
-                                {routine.lastRun.failureReason.slice(0, 60)}
-                              </div>
-                            ) : routine.lastRun.linkedIssue?.title ? (
-                              <div className="mt-0.5 text-[10px] text-muted-foreground/80 truncate max-w-[200px]" title={routine.lastRun.linkedIssue.title}>
-                                {routine.lastRun.linkedIssue.title.slice(0, 60)}
-                              </div>
-                            ) : null}
-                          </>
-                        ) : null}
-                      </td>
-                      <td className="px-3 py-2.5 text-muted-foreground text-xs">
-                        {(() => {
-                          const nextTrigger = routine.triggers?.find((t) => t.enabled && t.nextRunAt);
-                          if (!nextTrigger?.nextRunAt) return <span>—</span>;
-                          const d = new Date(nextTrigger.nextRunAt);
-                          return (
-                            <div>
-                              <div>{d.toLocaleDateString("en-US", { month: "short", day: "numeric" })}</div>
-                              <div className="text-muted-foreground/70">{d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}</div>
-                            </div>
-                          );
-                        })()}
-                      </td>
-                      <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center gap-3">
-                          <button
-                            type="button"
-                            role="switch"
-                            data-slot="toggle"
-                            aria-checked={enabled}
-                            aria-label={enabled ? `Disable ${routine.title}` : `Enable ${routine.title}`}
-                            disabled={isStatusPending || isArchived}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                              enabled ? "bg-foreground" : "bg-muted"
-                            } ${isStatusPending || isArchived ? "cursor-not-allowed opacity-50" : ""}`}
-                            onClick={() =>
-                              updateRoutineStatus.mutate({
-                                id: routine.id,
-                                status: nextRoutineStatus(routine.status, !enabled),
-                              })
-                            }
-                          >
-                            <span
-                              className={`inline-block h-5 w-5 rounded-full bg-background shadow-sm transition-transform ${
-                                enabled ? "translate-x-5" : "translate-x-0.5"
-                              }`}
-                            />
-                          </button>
-                          <span className="text-xs text-muted-foreground">
-                            {isArchived ? "Archived" : enabled ? "On" : "Off"}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-3 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon-sm" aria-label={`More actions for ${routine.title}`}>
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => navigate(`/routines/${routine.id}`)}>
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              disabled={runningRoutineId === routine.id || isArchived}
-                              onClick={() => runRoutine.mutate(routine.id)}
-                            >
-                              {runningRoutineId === routine.id ? "Running..." : "Run now"}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={() =>
-                                updateRoutineStatus.mutate({
-                                  id: routine.id,
-                                  status: enabled ? "paused" : "active",
-                                })
-                              }
-                              disabled={isStatusPending || isArchived}
-                            >
-                              {enabled ? "Pause" : "Enable"}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() =>
-                                updateRoutineStatus.mutate({
-                                  id: routine.id,
-                                  status: routine.status === "archived" ? "active" : "archived",
-                                })
-                              }
-                              disabled={isStatusPending}
-                            >
-                              {routine.status === "archived" ? "Restore" : "Archive"}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className={cn("", routineViewMode === "calendar" && "hidden")}>
+            <RoutineListTable
+              routines={(routines ?? []) as any}
+              routineSearch={routineSearch}
+              statusFilter={statusFilter}
+              agentFilter={agentFilter}
+              agentById={agentById as any}
+              projectById={projectById as any}
+              runningRoutineId={runningRoutineId}
+              statusMutationRoutineId={statusMutationRoutineId}
+              onNavigate={navigate}
+              onRunRoutine={(id) => runRoutine.mutate(id)}
+              onUpdateStatus={(id, status) => updateRoutineStatus.mutate({ id, status })}
+            />
           </div>
         )}
       </div>

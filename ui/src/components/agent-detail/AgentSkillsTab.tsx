@@ -5,34 +5,15 @@ import { agentsApi } from "../../api/agents";
 import { companySkillsApi } from "../../api/companySkills";
 import { queryKeys } from "../../lib/queryKeys";
 import { adapterLabels } from "../agent-config-primitives";
-import { MarkdownBody } from "../MarkdownBody";
 import { PageSkeleton } from "../PageSkeleton";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Loader2 } from "lucide-react";
-import type {
-  Agent,
-  AgentSkillEntry,
-  AgentSkillSnapshot,
-} from "@ironworksai/shared";
+import type { Agent, AgentSkillEntry } from "@ironworksai/shared";
 import {
   applyAgentSkillSnapshot,
   arraysEqual,
   isReadOnlyUnmanagedSkillEntry,
 } from "../../lib/agent-skills-state";
-import { cn } from "../../lib/utils";
-
-type SkillRow = {
-  id: string;
-  key: string;
-  name: string;
-  description: string | null;
-  detail: string | null;
-  locationLabel: string | null;
-  originLabel: string | null;
-  linkTo: string | null;
-  readOnly: boolean;
-  adapterEntry: AgentSkillEntry | null;
-};
+import { SkillRowItem, type SkillRow } from "./SkillRow";
 
 export function AgentSkillsTab({
   agent,
@@ -133,15 +114,11 @@ export function AgentSkillsTab({
       (companySkills ?? [])
         .filter((skill) => !adapterEntryByKey.get(skill.key)?.required)
         .map((skill) => ({
-          id: skill.id,
-          key: skill.key,
-          name: skill.name,
-          description: skill.description,
-          detail: adapterEntryByKey.get(skill.key)?.detail ?? null,
+          id: skill.id, key: skill.key, name: skill.name,
+          description: skill.description, detail: adapterEntryByKey.get(skill.key)?.detail ?? null,
           locationLabel: adapterEntryByKey.get(skill.key)?.locationLabel ?? null,
           originLabel: adapterEntryByKey.get(skill.key)?.originLabel ?? null,
-          linkTo: `/skills/${skill.id}`,
-          readOnly: false,
+          linkTo: `/skills/${skill.id}`, readOnly: false,
           adapterEntry: adapterEntryByKey.get(skill.key) ?? null,
         })),
     [adapterEntryByKey, companySkills],
@@ -151,18 +128,12 @@ export function AgentSkillsTab({
       (skillSnapshot?.entries ?? [])
         .filter((entry) => entry.required)
         .map((entry) => {
-          const companySkill = companySkillByKey.get(entry.key);
+          const cs = companySkillByKey.get(entry.key);
           return {
-            id: companySkill?.id ?? `required:${entry.key}`,
-            key: entry.key,
-            name: companySkill?.name ?? entry.key,
-            description: companySkill?.description ?? null,
-            detail: entry.detail ?? null,
-            locationLabel: entry.locationLabel ?? null,
-            originLabel: entry.originLabel ?? null,
-            linkTo: companySkill ? `/skills/${companySkill.id}` : null,
-            readOnly: false,
-            adapterEntry: entry,
+            id: cs?.id ?? `required:${entry.key}`, key: entry.key, name: cs?.name ?? entry.key,
+            description: cs?.description ?? null, detail: entry.detail ?? null,
+            locationLabel: entry.locationLabel ?? null, originLabel: entry.originLabel ?? null,
+            linkTo: cs ? `/skills/${cs.id}` : null, readOnly: false, adapterEntry: entry,
           };
         }),
     [companySkillByKey, skillSnapshot],
@@ -172,16 +143,10 @@ export function AgentSkillsTab({
       (skillSnapshot?.entries ?? [])
         .filter((entry) => isReadOnlyUnmanagedSkillEntry(entry, companySkillKeys))
         .map((entry) => ({
-          id: `external:${entry.key}`,
-          key: entry.key,
-          name: entry.runtimeName ?? entry.key,
-          description: null,
-          detail: entry.detail ?? null,
-          locationLabel: entry.locationLabel ?? null,
-          originLabel: entry.originLabel ?? null,
-          linkTo: null,
-          readOnly: true,
-          adapterEntry: entry,
+          id: `external:${entry.key}`, key: entry.key, name: entry.runtimeName ?? entry.key,
+          description: null, detail: entry.detail ?? null,
+          locationLabel: entry.locationLabel ?? null, originLabel: entry.originLabel ?? null,
+          linkTo: null, readOnly: true, adapterEntry: entry,
         })),
     [companySkillKeys, skillSnapshot],
   );
@@ -191,14 +156,10 @@ export function AgentSkillsTab({
   );
   const skillApplicationLabel = useMemo(() => {
     switch (skillSnapshot?.mode) {
-      case "persistent":
-        return "Kept in the workspace";
-      case "ephemeral":
-        return "Applied when the agent runs";
-      case "unsupported":
-        return "Tracked only";
-      default:
-        return "Unknown";
+      case "persistent": return "Kept in the workspace";
+      case "ephemeral": return "Applied when the agent runs";
+      case "unsupported": return "Tracked only";
+      default: return "Unknown";
     }
   }, [skillSnapshot?.mode]);
   const unsupportedSkillMessage = useMemo(() => {
@@ -211,17 +172,24 @@ export function AgentSkillsTab({
   const hasUnsavedChanges = !arraysEqual(skillDraft, lastSavedSkills);
   const saveStatusLabel = syncSkills.isPending
     ? "Saving changes..."
-    : hasUnsavedChanges
-      ? "Saving soon..."
-      : null;
+    : hasUnsavedChanges ? "Saving soon..." : null;
+
+  const renderSkillRow = (skill: SkillRow) => (
+    <SkillRowItem
+      key={skill.id}
+      skill={skill}
+      adapterEntryByKey={adapterEntryByKey}
+      skillDraft={skillDraft}
+      setSkillDraft={setSkillDraft}
+      skillMode={skillSnapshot?.mode}
+      unsupportedSkillMessage={unsupportedSkillMessage}
+    />
+  );
 
   return (
     <div className="max-w-4xl space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link
-          to="/skills"
-          className="text-sm font-medium text-foreground underline-offset-4 no-underline transition-colors hover:text-foreground/70 hover:underline"
-        >
+        <Link to="/skills" className="text-sm font-medium text-foreground underline-offset-4 no-underline transition-colors hover:text-foreground/70 hover:underline">
           View company skills library
         </Link>
         {saveStatusLabel ? (
@@ -250,147 +218,42 @@ export function AgentSkillsTab({
         <PageSkeleton variant="list" />
       ) : (
         <>
-          {(() => {
-            const renderSkillRow = (skill: SkillRow) => {
-              const adapterEntry = skill.adapterEntry ?? adapterEntryByKey.get(skill.key);
-              const required = Boolean(adapterEntry?.required);
-              const rowClassName = cn(
-                "flex items-start gap-3 border-b border-border px-3 py-3 text-sm last:border-b-0",
-                skill.readOnly ? "bg-muted/20" : "hover:bg-accent/20",
-              );
-              const body = (
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <span className="truncate font-medium">{skill.name}</span>
-                    </div>
-                    {skill.linkTo ? (
-                      <Link
-                        to={skill.linkTo}
-                        className="shrink-0 text-xs text-muted-foreground no-underline hover:text-foreground"
-                      >
-                        View
-                      </Link>
-                    ) : null}
-                  </div>
-                  {skill.description && (
-                    <MarkdownBody className="mt-1 text-xs text-muted-foreground prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
-                      {skill.description}
-                    </MarkdownBody>
-                  )}
-                  {skill.readOnly && skill.originLabel && (
-                    <p className="mt-1 text-xs text-muted-foreground">{skill.originLabel}</p>
-                  )}
-                  {skill.readOnly && skill.locationLabel && (
-                    <p className="mt-1 text-xs text-muted-foreground">Location: {skill.locationLabel}</p>
-                  )}
-                  {skill.detail && (
-                    <p className="mt-1 text-xs text-muted-foreground">{skill.detail}</p>
-                  )}
-                </div>
-              );
-
-              if (skill.readOnly) {
-                return (
-                  <div key={skill.id} className={rowClassName}>
-                    <span className="mt-1 h-2 w-2 rounded-full bg-muted-foreground/40" />
-                    {body}
-                  </div>
-                );
-              }
-
-              const checked = required || skillDraft.includes(skill.key);
-              const disabled = required || skillSnapshot?.mode === "unsupported";
-              const checkbox = (
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  disabled={disabled}
-                  onChange={(event) => {
-                    const next = event.target.checked
-                      ? Array.from(new Set([...skillDraft, skill.key]))
-                      : skillDraft.filter((value) => value !== skill.key);
-                    setSkillDraft(next);
-                  }}
-                  className="mt-0.5 disabled:cursor-not-allowed disabled:opacity-60"
-                />
-              );
-
-              return (
-                <label key={skill.id} className={rowClassName}>
-                  {required && adapterEntry?.requiredReason ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span>{checkbox}</span>
-                      </TooltipTrigger>
-                      <TooltipContent side="top">{adapterEntry.requiredReason}</TooltipContent>
-                    </Tooltip>
-                  ) : skillSnapshot?.mode === "unsupported" ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span>{checkbox}</span>
-                      </TooltipTrigger>
-                      <TooltipContent side="top">
-                        {unsupportedSkillMessage ?? "Manage skills in the adapter directly."}
-                      </TooltipContent>
-                    </Tooltip>
-                  ) : (
-                    checkbox
-                  )}
-                  {body}
-                </label>
-              );
-            };
-
-            if (optionalSkillRows.length === 0 && requiredSkillRows.length === 0 && unmanagedSkillRows.length === 0) {
-              return (
+          {optionalSkillRows.length === 0 && requiredSkillRows.length === 0 && unmanagedSkillRows.length === 0 ? (
+            <section className="border-y border-border">
+              <div className="px-3 py-6 text-sm text-muted-foreground">
+                Import skills into the company library first, then attach them here.
+              </div>
+            </section>
+          ) : (
+            <>
+              {optionalSkillRows.length > 0 && (
                 <section className="border-y border-border">
-                  <div className="px-3 py-6 text-sm text-muted-foreground">
-                    Import skills into the company library first, then attach them here.
-                  </div>
+                  {optionalSkillRows.map(renderSkillRow)}
                 </section>
-              );
-            }
-
-            return (
-              <>
-                {optionalSkillRows.length > 0 && (
-                  <section className="border-y border-border">
-                    {optionalSkillRows.map(renderSkillRow)}
-                  </section>
-                )}
-
-                {requiredSkillRows.length > 0 && (
-                  <section className="border-y border-border">
-                    <div className="border-b border-border bg-muted/40 px-3 py-2">
-                      <span className="text-xs font-medium text-muted-foreground">
-                        Required by Ironworks
-                      </span>
-                    </div>
-                    {requiredSkillRows.map(renderSkillRow)}
-                  </section>
-                )}
-
-                {unmanagedSkillRows.length > 0 && (
-                  <section className="border-y border-border">
-                    <div className="border-b border-border bg-muted/40 px-3 py-2">
-                      <span className="text-xs font-medium text-muted-foreground">
-                        User-installed skills, not managed by Ironworks
-                      </span>
-                    </div>
-                    {unmanagedSkillRows.map(renderSkillRow)}
-                  </section>
-                )}
-              </>
-            );
-          })()}
+              )}
+              {requiredSkillRows.length > 0 && (
+                <section className="border-y border-border">
+                  <div className="border-b border-border bg-muted/40 px-3 py-2">
+                    <span className="text-xs font-medium text-muted-foreground">Required by Ironworks</span>
+                  </div>
+                  {requiredSkillRows.map(renderSkillRow)}
+                </section>
+              )}
+              {unmanagedSkillRows.length > 0 && (
+                <section className="border-y border-border">
+                  <div className="border-b border-border bg-muted/40 px-3 py-2">
+                    <span className="text-xs font-medium text-muted-foreground">User-installed skills, not managed by Ironworks</span>
+                  </div>
+                  {unmanagedSkillRows.map(renderSkillRow)}
+                </section>
+              )}
+            </>
+          )}
 
           {desiredOnlyMissingSkills.length > 0 && (
             <div className="rounded-xl border border-amber-300/60 bg-amber-50/60 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-950/20 dark:text-amber-200">
               <div className="font-medium">Requested skills missing from the company library</div>
-              <div className="mt-1 text-xs">
-                {desiredOnlyMissingSkills.join(", ")}
-              </div>
+              <div className="mt-1 text-xs">{desiredOnlyMissingSkills.join(", ")}</div>
             </div>
           )}
 
@@ -409,7 +272,6 @@ export function AgentSkillsTab({
                 <span>{skillDraft.length}</span>
               </div>
             </div>
-
             {syncSkills.isError && (
               <p className="mt-3 text-xs text-destructive">
                 {syncSkills.error instanceof Error ? syncSkills.error.message : "Failed to update skills"}

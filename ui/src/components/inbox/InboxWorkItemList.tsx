@@ -207,6 +207,7 @@ export function InboxWorkItemList({
           isArchiving
             ? "pointer-events-none -translate-x-4 scale-[0.98] opacity-0 transition-all duration-200 ease-out"
             : "transition-all duration-200 ease-out",
+          isSelected && "list-item-selected",
           getSeverityBorderClass({ kind: "issue", status: issue.status }),
         )}
         desktopMetaLeading={(

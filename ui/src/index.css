@@ -1222,6 +1222,21 @@ a.ironworks-project-mention-chip {
   font-weight: 600;
 }
 
+/* Selected list item accent - left border indicator */
+.list-item-selected {
+  position: relative;
+}
+.list-item-selected::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 3px;
+  border-radius: 0 9999px 9999px 0;
+  background: var(--primary);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .number-roll-up,
   .number-roll-down,

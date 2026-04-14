@@ -1439,7 +1439,7 @@ export function agentRoutes(db: Db) {
         });
       } catch (err) {
         // Non-fatal: workspace/personnel record creation should not block hiring
-        console.error("Failed to create agent workspace or hiring record:", err);
+        logger.error({ err }, "Failed to create agent workspace or hiring record");
       }
     }
 
@@ -2427,7 +2427,7 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
         details: "Agent terminated via board action (manual termination).",
       });
     } catch (err) {
-      console.error("Failed to archive workspace or create termination record:", err);
+      logger.error({ err }, "Failed to archive workspace or create termination record");
     }
 
     // Announce termination to #company channel (non-fatal).
@@ -2973,7 +2973,7 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
         details: `Agent terminated. Reason: ${terminationReason as string}.`,
       });
     } catch (err) {
-      console.error("Failed to archive workspace or create termination record:", err);
+      logger.error({ err }, "Failed to archive workspace or create termination record");
     }
 
     // Announce termination to #company channel (non-fatal).

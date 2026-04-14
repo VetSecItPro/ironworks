@@ -26,6 +26,11 @@ export {
   type RunDatabaseRestoreOptions,
 } from "./backup-lib.js";
 export {
+  type BackupRetentionPolicy,
+  pruneBackupsWithPolicy,
+  resolveRetentionPolicy,
+} from "./backup-retention.js";
+export {
   createEmbeddedPostgresLogBuffer,
   formatEmbeddedPostgresError,
 } from "./embedded-postgres-error.js";

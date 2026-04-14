@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import { memo } from "react";
 import type { ReactNode } from "react";
 import { Link } from "@/lib/router";
 import { ChevronRight } from "lucide-react";
@@ -29,7 +30,7 @@ const ACCENT_ICON: Record<string, string> = {
   red: "text-red-500/60",
 };
 
-export function MetricCard({ icon: Icon, value, label, description, to, onClick, accentColor }: MetricCardProps) {
+export const MetricCard = memo(function MetricCard({ icon: Icon, value, label, description, to, onClick, accentColor }: MetricCardProps) {
   const isClickable = !!(to || onClick);
   const borderClass = accentColor ? `border-l-[3px] ${ACCENT_BORDER[accentColor]}` : "";
   const iconColor = accentColor ? ACCENT_ICON[accentColor] : "text-muted-foreground/70";
@@ -86,4 +87,4 @@ export function MetricCard({ icon: Icon, value, label, description, to, onClick,
   }
 
   return inner;
-}
+});

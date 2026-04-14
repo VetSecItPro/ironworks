@@ -15,6 +15,8 @@ export interface AgentTokenSummary {
   totalCost: number;
   runsCount: number;
   avgTokensPerRun: number;
+  /** Count of runs skipped via idle detection (errorCode = 'idle_skip'). */
+  idleSkipCount: number;
 }
 
 export interface TokenWasteRecommendation {
@@ -78,6 +80,19 @@ export function tokenAnalyticsService(db: Db) {
     const runs = Number(row?.runsCount ?? 0);
     const totalCostCents = Number(row?.totalCostCents ?? 0);
 
+    // Count idle-skipped runs (stored in heartbeatRuns with errorCode = 'idle_skip')
+    const [idleRow] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(heartbeatRuns)
+      .where(
+        and(
+          eq(heartbeatRuns.agentId, agentId),
+          eq(heartbeatRuns.errorCode, "idle_skip"),
+          gte(heartbeatRuns.createdAt, since),
+        ),
+      );
+    const idleSkipCount = Number(idleRow?.count ?? 0);
+
     return {
       agentId,
       agentName: row?.agentName ?? null,
@@ -87,6 +102,7 @@ export function tokenAnalyticsService(db: Db) {
       totalCost: totalCostCents / 100,
       runsCount: runs,
       avgTokensPerRun: runs > 0 ? Math.round((totalInput + totalOutput) / runs) : 0,
+      idleSkipCount,
     };
   }
 
@@ -283,6 +299,23 @@ export function tokenAnalyticsService(db: Db) {
       .groupBy(costEvents.agentId, agents.name)
       .orderBy(desc(sql`coalesce(sum(${costEvents.costCents}), 0)::int`));
 
+    // Batch-query idle skip counts per agent for this company
+    const idleSkipRows = await db
+      .select({
+        agentId: heartbeatRuns.agentId,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(heartbeatRuns)
+      .where(
+        and(
+          eq(heartbeatRuns.companyId, companyId),
+          eq(heartbeatRuns.errorCode, "idle_skip"),
+          gte(heartbeatRuns.createdAt, since),
+        ),
+      )
+      .groupBy(heartbeatRuns.agentId);
+    const idleSkipByAgent = new Map(idleSkipRows.map((r) => [r.agentId, Number(r.count)]));
+
     const agentSummaries: AgentTokenSummary[] = agentRows.map((row) => {
       const input = Number(row.totalInputTokens);
       const output = Number(row.totalOutputTokens);
@@ -298,6 +331,7 @@ export function tokenAnalyticsService(db: Db) {
         totalCost: costCents / 100,
         runsCount: runs,
         avgTokensPerRun: runs > 0 ? Math.round((input + output) / runs) : 0,
+        idleSkipCount: idleSkipByAgent.get(row.agentId) ?? 0,
       };
     });
 

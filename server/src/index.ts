@@ -7,6 +7,7 @@ import { stdin, stdout } from "node:process";
 import { pathToFileURL } from "node:url";
 import type { Request as ExpressRequest, RequestHandler } from "express";
 import { and, eq } from "drizzle-orm";
+import type { Db } from "@ironworksai/db";
 import {
   createDb,
   ensurePostgresDatabase,
@@ -27,6 +28,7 @@ import detectPort from "detect-port";
 import { createApp } from "./app.js";
 import { loadConfig } from "./config.js";
 import { logger } from "./middleware/logger.js";
+import { installGlobalErrorHandlers } from "./lib/error-tracking.js";
 import { setupLiveEventsWebSocketServer } from "./realtime/live-events-ws.js";
 import { heartbeatService, reconcilePersistedRuntimeServicesOnStartup, routineService } from "./services/index.js";
 import { createStorageServiceFromConfig } from "./storage/index.js";
@@ -187,7 +189,7 @@ export async function startServer(): Promise<StartedServer> {
   const LOCAL_BOARD_USER_EMAIL = "local@ironworks.local";
   const LOCAL_BOARD_USER_NAME = "Board";
   
-  async function ensureLocalTrustedBoardPrincipal(db: any): Promise<void> {
+  async function ensureLocalTrustedBoardPrincipal(db: Db): Promise<void> {
     const now = new Date();
     const existingUser = await db
       .select({ id: authUsers.id })
@@ -565,9 +567,12 @@ export async function startServer(): Promise<StartedServer> {
     });
   
   if (config.heartbeatSchedulerEnabled) {
+    const serverStartedAt = Date.now();
+    const DEPLOY_GRACE_MS = 3 * 60 * 1000;
+
     const heartbeat = heartbeatService(db as any);
     const routines = routineService(db as any);
-  
+
     // Reap orphaned running runs at startup while in-memory execution state is empty,
     // then resume any persisted queued runs that were waiting on the previous process.
     void heartbeat
@@ -576,16 +581,30 @@ export async function startServer(): Promise<StartedServer> {
       .catch((err) => {
         logger.error({ err }, "startup heartbeat recovery failed");
       });
+    let heartbeatTickInFlight = false;
     setInterval(() => {
+      if (heartbeatTickInFlight) {
+        logger.warn("Skipping heartbeat tick - previous tick still running");
+        return;
+      }
+      heartbeatTickInFlight = true;
+
+      if (Date.now() - serverStartedAt < DEPLOY_GRACE_MS) {
+        logger.info("Within deploy grace period, tick running normally but monitoring suppressed");
+      }
+
       void heartbeat
         .tickTimers(new Date())
         .then((result) => {
-          if (result.enqueued > 0) {
-            logger.info({ ...result }, "heartbeat timer tick enqueued runs");
+          if (result.enqueued > 0 || result.resumed > 0) {
+            logger.info({ ...result }, "heartbeat timer tick");
           }
         })
         .catch((err) => {
           logger.error({ err }, "heartbeat timer tick failed");
+        })
+        .finally(() => {
+          heartbeatTickInFlight = false;
         });
 
       void routines
@@ -610,22 +629,37 @@ export async function startServer(): Promise<StartedServer> {
     }, config.heartbeatSchedulerIntervalMs);
   }
   
+  // Start all configured messaging bridges (Telegram, etc.)
+  try {
+    const { startAllTelegramBridges } = await import("./bridges/telegram.js");
+    await startAllTelegramBridges(db as any);
+  } catch (err) {
+    logger.error({ err }, "Failed to start Telegram bridges");
+  }
+
   if (config.databaseBackupEnabled) {
     const backupIntervalMs = config.databaseBackupIntervalMinutes * 60 * 1000;
     let backupInFlight = false;
-  
+    const { instanceSettingsService } = await import("./services/instance-settings.js");
+
     const runScheduledBackup = async () => {
       if (backupInFlight) {
         logger.warn("Skipping scheduled database backup because a previous backup is still running");
         return;
       }
-  
+
       backupInFlight = true;
       try {
+        // Read retention policy from instance settings on each tick so UI changes take effect immediately
+        const settings = instanceSettingsService(db as any);
+        const general = await settings.getGeneral();
+        const retentionPolicy = general.backupRetention ?? config.databaseBackupRetentionPolicy ?? undefined;
+
         const result = await runDatabaseBackup({
           connectionString: activeDatabaseConnectionString,
           backupDir: config.databaseBackupDir,
-          retentionDays: config.databaseBackupRetentionDays,
+          retentionPolicy,
+          retentionDays: retentionPolicy ? undefined : config.databaseBackupRetentionDays,
           filenamePrefix: "ironworks",
         });
         logger.info(
@@ -634,7 +668,7 @@ export async function startServer(): Promise<StartedServer> {
             sizeBytes: result.sizeBytes,
             prunedCount: result.prunedCount,
             backupDir: config.databaseBackupDir,
-            retentionDays: config.databaseBackupRetentionDays,
+            retentionPolicy: retentionPolicy ?? { fallbackDays: config.databaseBackupRetentionDays },
           },
           `Automatic database backup complete: ${formatDatabaseBackupResult(result)}`,
         );
@@ -644,11 +678,12 @@ export async function startServer(): Promise<StartedServer> {
         backupInFlight = false;
       }
     };
-  
+
     logger.info(
       {
         intervalMinutes: config.databaseBackupIntervalMinutes,
         retentionDays: config.databaseBackupRetentionDays,
+        retentionPolicy: config.databaseBackupRetentionPolicy,
         backupDir: config.databaseBackupDir,
       },
       "Automatic database backups enabled",
@@ -772,6 +807,7 @@ export async function startServer(): Promise<StartedServer> {
       rejectListen(err);
     };
 
+    installGlobalErrorHandlers();
     server.once("error", onError);
     server.listen(listenPort, config.host, () => {
       server.off("error", onError);
@@ -808,18 +844,7 @@ export async function startServer(): Promise<StartedServer> {
 
       const boardClaimUrl = getBoardClaimWarningUrl(config.host, listenPort);
       if (boardClaimUrl) {
-        const red = "\x1b[41m\x1b[30m";
-        const yellow = "\x1b[33m";
-        const reset = "\x1b[0m";
-        console.log(
-          [
-            `${red}  BOARD CLAIM REQUIRED  ${reset}`,
-            `${yellow}This instance was previously local_trusted and still has local-board as the only admin.${reset}`,
-            `${yellow}Sign in with a real user and open this one-time URL to claim ownership:${reset}`,
-            `${yellow}${boardClaimUrl}${reset}`,
-            `${yellow}If you are connecting over Tailscale, replace the host in this URL with your Tailscale IP/MagicDNS name.${reset}`,
-          ].join("\n"),
-        );
+        logger.warn({ boardClaimUrl }, "BOARD CLAIM REQUIRED - This instance was previously local_trusted and still has local-board as the only admin. Sign in with a real user and open the one-time URL to claim ownership.");
       }
 
       resolveListen();

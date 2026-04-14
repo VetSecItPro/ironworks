@@ -44,7 +44,7 @@ export function SpendMetricsSection({
       {/* Today's Spend */}
       <div className="rounded-xl border border-border p-4 space-y-3">
         <div className="flex items-center justify-between">
-          <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Today's Spend</h4>
+          <Link to="/costs" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground transition-colors no-underline">Today's Spend</Link>
           <LastUpdatedBadge dataUpdatedAt={Date.now()} />
         </div>
         <div className="flex items-baseline gap-2">

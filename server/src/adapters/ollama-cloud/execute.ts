@@ -1,6 +1,7 @@
 import type { AdapterExecutionContext, AdapterExecutionResult } from "../types.js";
 import { asString } from "../utils.js";
 import { sanitizeForPrompt, redactSecrets, PROMPT_MAX_LENGTHS } from "../../lib/prompt-security.js";
+import { logger } from "../../middleware/logger.js";
 
 export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExecutionResult> {
   const { config, agent, context } = ctx;
@@ -69,17 +70,17 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   for (const key of channelContextKeys) {
     const updates = context[key];
     if (Array.isArray(updates) && updates.length > 0) {
-      const formatted = updates.map((u: any) =>
-        `[${u.at ? new Date(u.at).toLocaleTimeString() : ""}] ${u.author}: ${u.body}`
+      const formatted = updates.map((u: Record<string, unknown>) =>
+        `[${u.at ? new Date(u.at as string).toLocaleTimeString() : ""}] ${u.author}: ${u.body}`
       ).join("\n");
       messages.push({ role: "system", content: `## Recent Channel Messages\n${formatted}` });
-      console.log(`[ollama-cloud] Injected ${updates.length} channel messages from ${key}`);
+      logger.info({ count: updates.length, key }, "[ollama-cloud] Injected channel messages");
     }
   }
   // Debug: log which channel keys are present
   const presentKeys = channelContextKeys.filter(k => context[k]);
   if (presentKeys.length === 0) {
-    console.log("[ollama-cloud] No channel messages in context. Keys checked:", channelContextKeys.join(", "));
+    logger.info({ keysChecked: channelContextKeys }, "[ollama-cloud] No channel messages in context");
   }
 
   // Channel posting instruction

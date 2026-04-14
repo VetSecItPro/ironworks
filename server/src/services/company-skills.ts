@@ -1084,7 +1084,7 @@ async function readUrlSkillImports(
     const parsedUrl = new URL(url);
     const hostname = parsedUrl.hostname;
     // Block private/reserved IPs and localhost
-    if (/^(127\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.|0\.|169\.254\.|localhost|::1|\[::1\])/.test(hostname)) {
+    if (/^(127\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.|0\.|169\.254\.|localhost|::1|\[::1\]|\[?fe80:|\[?fd[0-9a-f]{2}:)/.test(hostname)) {
       throw unprocessable("URL resolves to a private or reserved address");
     }
     const markdown = await fetchText(url);

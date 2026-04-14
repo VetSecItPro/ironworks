@@ -1,12 +1,8 @@
 import { cn } from "../../lib/utils";
 import type { Agent, LiveEvent } from "@ironworksai/shared";
+import type { LiveFeedEvent } from "../../types/dashboard";
 
-export interface LiveFeedEvent {
-  id: string;
-  sseType: string;
-  receivedAt: Date;
-  event: LiveEvent;
-}
+export type { LiveFeedEvent };
 
 function liveFeedEventColor(sseType: string, payload: Record<string, unknown>): string {
   if (sseType === "agent_run") {
@@ -99,9 +95,9 @@ export function LiveFeedPanel({
     <div>
       <div className="flex items-center justify-between border-b border-border/50 pb-2 mb-4">
         <div className="flex items-center gap-2">
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+          <a href="/activity" className="text-sm font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors no-underline">
             Live Feed
-          </h3>
+          </a>
           {liveConnected ? (
             <span className="inline-flex items-center gap-1.5 text-[11px] text-emerald-400">
               <span className="relative flex h-1.5 w-1.5 shrink-0">

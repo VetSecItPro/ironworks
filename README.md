@@ -162,6 +162,32 @@ All tiers include unlimited agents. BYOK means you pay your own LLM provider cos
 
 <br/>
 
+## Troubleshooting
+
+**Server won't start / port 3100 in use:**
+```bash
+lsof -ti:3100 | xargs kill -9  # Kill process on port 3100
+docker compose up -d --build     # Restart
+```
+
+**Database connection errors:**
+Check `DATABASE_URL` in your `.env` or Docker Compose environment. For embedded mode, ensure the data directory has write permissions.
+
+**Agents stuck in "paused" state:**
+Agents auto-pause after 3 consecutive failures or when rate-limited (30 runs/agent/hour). Check the agent's run log, fix the underlying issue, then resume from the UI.
+
+**Build errors after pulling:**
+```bash
+pnpm install          # Reinstall deps
+pnpm -r build         # Rebuild all packages
+```
+
+**Docker build fails:**
+Ensure Docker BuildKit is enabled. The multi-stage build requires `docker compose` v2+:
+```bash
+DOCKER_BUILDKIT=1 docker compose up -d --build
+```
+
 ## License
 
 MIT - see [LICENSE](LICENSE).

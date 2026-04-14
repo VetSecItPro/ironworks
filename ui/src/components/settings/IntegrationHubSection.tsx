@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 const INTEGRATIONS = [
   { name: "Slack", status: "available", description: "Send notifications and alerts" },
   { name: "GitHub", status: "available", description: "Sync repos and pull requests" },
-  { name: "Jira", status: "coming_soon", description: "Two-way issue sync" },
+  { name: "Jira", status: "planned", description: "Two-way issue sync" },
   { name: "PagerDuty", status: "available", description: "Alert routing and escalation" },
-  { name: "Datadog", status: "coming_soon", description: "Metrics and monitoring" },
+  { name: "Datadog", status: "planned", description: "Metrics and monitoring" },
   { name: "Zapier", status: "available", description: "Connect to 5000+ apps" },
 ] as const;
 
@@ -34,9 +34,9 @@ export function IntegrationHubSection() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">{integration.name}</span>
-                  {integration.status === "coming_soon" && (
+                  {integration.status === "planned" && (
                     <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
-                      Coming soon
+                      Planned
                     </span>
                   )}
                 </div>

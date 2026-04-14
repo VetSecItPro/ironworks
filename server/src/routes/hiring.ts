@@ -350,7 +350,7 @@ export function hiringRoutes(db: Db) {
       });
     } catch (err) {
       // Non-fatal: workspace/personnel record creation should not block hiring
-      console.error("Failed to create agent workspace or hiring record:", err);
+      logger.error({ err }, "Failed to create agent workspace or hiring record");
     }
 
     // Announce hire to #company channel (non-fatal).

@@ -107,7 +107,7 @@ export function Org() {
     return <EmptyState icon={GitBranch} message="Select a company to view org chart." />;
   }
 
-  if (isLoading) {
+  if (isLoading && !data) {
     return <PageSkeleton variant="list" />;
   }
 

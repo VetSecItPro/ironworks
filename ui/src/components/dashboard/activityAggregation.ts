@@ -1,14 +1,7 @@
 import type { Agent } from "@ironworksai/shared";
+import type { AggregatedGroup } from "../../types/dashboard";
 
-export interface AggregatedGroup {
-  key: string;
-  action: string;
-  actorName: string;
-  count: number;
-  models: string[];
-  latestEvent: import("@ironworksai/shared").ActivityEvent;
-  events: import("@ironworksai/shared").ActivityEvent[];
-}
+export type { AggregatedGroup };
 
 export const ACTION_LABELS: Record<string, string> = {
   "cost.reported": "cost events",

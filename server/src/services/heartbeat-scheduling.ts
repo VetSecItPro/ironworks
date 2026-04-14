@@ -17,6 +17,7 @@ import {
   issues,
 } from "@ironworksai/db";
 import { DEFAULT_ITERATION_LIMITS } from "@ironworksai/shared";
+import type { SchedulerSettings } from "@ironworksai/shared";
 import type { AdapterSessionCodec } from "../adapters/index.js";
 import { getServerAdapter, runningProcesses } from "../adapters/index.js";
 import { notFound, conflict } from "../errors.js";
@@ -52,6 +53,59 @@ import {
   type WakeupOptions,
 } from "./heartbeat-types.js";
 import { buildExplicitResumeSessionOverride } from "./heartbeat-types.js";
+
+// ── Idle detection ────────────────────────────────────────────────────────
+
+export async function hasAssignedWork(db: Db, agentId: string, companyId: string): Promise<boolean> {
+  const [result] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(issues)
+    .where(
+      and(
+        eq(issues.companyId, companyId),
+        eq(issues.assigneeAgentId, agentId),
+        inArray(issues.status, ["todo", "in_progress"]),
+      ),
+    )
+    .limit(1);
+  return (Number(result?.count) ?? 0) > 0;
+}
+
+// ── Cached scheduler settings ─────────────────────────────────────────────
+
+let cachedSchedulerSettings: SchedulerSettings | null = null;
+let cachedSettingsAt = 0;
+const SETTINGS_CACHE_MS = 60_000; // refresh every 60s
+
+export async function getSchedulerSettings(db: Db): Promise<SchedulerSettings> {
+  const now = Date.now();
+  if (cachedSchedulerSettings && now - cachedSettingsAt < SETTINGS_CACHE_MS) {
+    return cachedSchedulerSettings;
+  }
+  try {
+    const { instanceSettingsService } = await import("./instance-settings.js");
+    const svc = instanceSettingsService(db);
+    const general = await svc.getGeneral();
+    if (general?.scheduler) {
+      cachedSchedulerSettings = general.scheduler;
+      cachedSettingsAt = now;
+      return cachedSchedulerSettings;
+    }
+  } catch {
+    // Fall through to defaults
+  }
+  const defaults: SchedulerSettings = {
+    iterationLimitPerDay: DEFAULT_ITERATION_LIMITS.perDay,
+    iterationLimitPerTask: DEFAULT_ITERATION_LIMITS.perTask,
+    costAnomalyMultiplier: 5,
+    consecutiveFailureLimit: 5,
+    idleSkipEnabled: true,
+    heartbeatSafetyNetMinutes: 30,
+  };
+  cachedSchedulerSettings = defaults;
+  cachedSettingsAt = now;
+  return defaults;
+}
 
 // ── Lock helper ────────────────────────────────────────────────────────────
 
@@ -96,7 +150,7 @@ export function parseHeartbeatPolicy(agent: typeof agents.$inferSelect) {
 
 async function countAgentRunsToday(db: Db, agentId: string): Promise<number> {
   const now = new Date();
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0));
   const [{ count }] = await db
     .select({ count: sql<number>`count(*)` })
     .from(heartbeatRuns)
@@ -111,7 +165,7 @@ async function countAgentRunsToday(db: Db, agentId: string): Promise<number> {
 
 async function countAgentRunsForIssueToday(db: Db, agentId: string, issueId: string): Promise<number> {
   const now = new Date();
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0));
   const [{ count }] = await db
     .select({ count: sql<number>`count(*)` })
     .from(heartbeatRuns)
@@ -131,17 +185,21 @@ export async function checkIterationLimits(
   companyId: string,
   issueId: string | null,
 ): Promise<string | null> {
+  const settings = await getSchedulerSettings(db);
+  const perDay = settings.iterationLimitPerDay;
+  const perTask = settings.iterationLimitPerTask;
+
   const dailyCount = await countAgentRunsToday(db, agentId);
-  if (dailyCount >= DEFAULT_ITERATION_LIMITS.perDay) {
+  if (dailyCount >= perDay) {
     await pauseAgentForIterationLimit(db, agentId, companyId, "daily");
-    return `Agent exceeded daily iteration limit (${DEFAULT_ITERATION_LIMITS.perDay} runs/day)`;
+    return `Agent exceeded daily iteration limit (${perDay} runs/day)`;
   }
 
   if (issueId) {
     const taskCount = await countAgentRunsForIssueToday(db, agentId, issueId);
-    if (taskCount >= DEFAULT_ITERATION_LIMITS.perTask) {
+    if (taskCount >= perTask) {
       await pauseAgentForIterationLimit(db, agentId, companyId, "per_task");
-      return `Agent exceeded per-task iteration limit (${DEFAULT_ITERATION_LIMITS.perTask} runs/task/day)`;
+      return `Agent exceeded per-task iteration limit (${perTask} runs/task/day)`;
     }
   }
 
@@ -477,13 +535,123 @@ export async function resumeQueuedRuns(
   await Promise.all(agentIds.map((agentId) => startNextQueuedRunForAgent(agentId)));
 }
 
+// ── Auto-resume paused agents whose conditions have cleared ───────────────
+
+async function autoResumePausedAgents(db: Db, now: Date): Promise<number> {
+  const pausedAgents = await db
+    .select()
+    .from(agents)
+    .where(
+      and(
+        eq(agents.status, "paused"),
+        sql`${agents.pauseReason} IS NOT NULL`,
+      ),
+    );
+
+  if (pausedAgents.length === 0) return 0;
+
+  let resumed = 0;
+
+  for (const agent of pausedAgents) {
+    const reason = agent.pauseReason ?? "";
+    const pausedAt = agent.pausedAt ? new Date(agent.pausedAt) : null;
+    let shouldResume = false;
+
+    // Iteration limits: only auto-resume on a new UTC calendar day if daily count is below limit
+    if (reason === "iteration_limit" && pausedAt) {
+      const pausedDay = pausedAt.toISOString().slice(0, 10);
+      const currentDay = now.toISOString().slice(0, 10);
+      if (pausedDay !== currentDay) {
+        const todayCount = await countAgentRunsToday(db, agent.id);
+        if (todayCount < DEFAULT_ITERATION_LIMITS.perDay) {
+          shouldResume = true;
+        }
+      }
+    }
+
+    // Consecutive failures: auto-resume after 30 min cooldown
+    if (reason.startsWith("auto_paused") && pausedAt) {
+      const cooldownMs = 30 * 60 * 1000;
+      if (now.getTime() - pausedAt.getTime() > cooldownMs) {
+        shouldResume = true;
+      }
+    }
+
+    // Cost anomaly: auto-resume after 1 hour cooldown only if anomaly has cleared
+    if (reason === "cost_anomaly" && pausedAt) {
+      const cooldownMs = 60 * 60 * 1000;
+      if (now.getTime() - pausedAt.getTime() > cooldownMs) {
+        try {
+          const { executiveAnalyticsService: execSvc } = await import("./executive-analytics.js");
+          const execAnalytics = execSvc(db);
+          const anomaly = await execAnalytics.checkCostAnomaly(agent.id);
+          if (!anomaly.anomaly) {
+            shouldResume = true;
+          }
+        } catch {
+          // If anomaly check fails, fall back to cooldown-only resume
+          shouldResume = true;
+        }
+      }
+    }
+
+    // Rate limited (cluster/provider): auto-resume after 10 min cooldown
+    if (reason.startsWith("rate_limited") && pausedAt) {
+      const cooldownMs = 10 * 60 * 1000;
+      if (now.getTime() - pausedAt.getTime() > cooldownMs) {
+        shouldResume = true;
+      }
+    }
+
+    if (!shouldResume) continue;
+
+    await db
+      .update(agents)
+      .set({
+        status: "idle",
+        pauseReason: null,
+        pausedAt: null,
+        updatedAt: now,
+      })
+      .where(eq(agents.id, agent.id));
+
+    publishLiveEvent({
+      companyId: agent.companyId,
+      type: "agent.status",
+      payload: { agentId: agent.id, status: "idle", autoResumed: true },
+    });
+
+    logger.info(
+      { agentId: agent.id, name: agent.name, previousPauseReason: reason },
+      "Agent auto-resumed after pause condition cleared",
+    );
+
+    logActivity(db, {
+      companyId: agent.companyId,
+      actorType: "system",
+      actorId: "auto_resume",
+      action: "agent.resumed",
+      entityType: "agent",
+      entityId: agent.id,
+      details: { reason: "auto_resume", previousPauseReason: reason },
+    }).catch(() => {});
+
+    resumed += 1;
+  }
+
+  return resumed;
+}
+
 // ── tickTimers ─────────────────────────────────────────────────────────────
 
 export async function tickTimers(
   db: Db,
   enqueueWakeup: (agentId: string, opts: WakeupOptions) => Promise<unknown>,
   now = new Date(),
-): Promise<{ checked: number; enqueued: number; skipped: number }> {
+): Promise<{ checked: number; enqueued: number; skipped: number; resumed: number }> {
+  // Auto-resume agents whose pause conditions have cleared
+  const resumed = await autoResumePausedAgents(db, now);
+
   const allAgents = await db
     .select()
     .from(agents)
@@ -500,25 +668,54 @@ export async function tickTimers(
     checked += 1;
     const baseline = new Date(agent.lastHeartbeatAt ?? agent.createdAt).getTime();
     const elapsedMs = now.getTime() - baseline;
-    if (elapsedMs < policy.intervalSec * 1000) continue;
+    if (elapsedMs < policy.intervalSec * 1000) {
+      logger.debug({ agentId: agent.id, reason: "interval_not_elapsed" }, "Skipped agent");
+      continue;
+    }
 
-    const run = await enqueueWakeup(agent.id, {
-      source: "timer",
-      triggerDetail: "system",
-      reason: "heartbeat_timer",
-      requestedByActorType: "system",
-      requestedByActorId: "heartbeat_scheduler",
-      contextSnapshot: {
-        source: "scheduler",
-        reason: "interval_elapsed",
-        now: now.toISOString(),
-      },
-    });
-    if (run) enqueued += 1;
-    else skipped += 1;
+    try {
+      // Smart idle skip: if the agent has no assigned work and ran recently, skip the wakeup.
+      // Safety net: always wake if the agent has not run in 30+ minutes even without work.
+      const IDLE_SAFETY_NET_MS = 30 * 60 * 1000;
+      const lastRanAt = agent.lastHeartbeatAt ? new Date(agent.lastHeartbeatAt).getTime() : 0;
+      const timeSinceLastRun = now.getTime() - lastRanAt;
+      const ranRecently = timeSinceLastRun < IDLE_SAFETY_NET_MS;
+
+      if (ranRecently) {
+        const hasWork = await hasAssignedWork(db, agent.id, agent.companyId);
+        if (!hasWork) {
+          skipped += 1;
+          logger.debug({ agentId: agent.id, reason: "no_work_recent_run" }, "Skipped agent - no pending work");
+          continue;
+        }
+      }
+
+      const run = await enqueueWakeup(agent.id, {
+        source: "timer",
+        triggerDetail: "system",
+        reason: "heartbeat_timer",
+        requestedByActorType: "system",
+        requestedByActorId: "heartbeat_scheduler",
+        contextSnapshot: {
+          source: "scheduler",
+          reason: "interval_elapsed",
+          now: now.toISOString(),
+        },
+      });
+      if (run) {
+        enqueued += 1;
+        logger.debug({ agentId: agent.id }, "Enqueued agent wakeup");
+      } else {
+        skipped += 1;
+        logger.debug({ agentId: agent.id, reason: "enqueue_returned_null" }, "Skipped agent");
+      }
+    } catch (err) {
+      skipped += 1;
+      logger.debug({ err, agentId: agent.id }, "Skipped agent wakeup");
+    }
   }
 
-  return { checked, enqueued, skipped };
+  return { checked, enqueued, skipped, resumed };
 }
 
 // ── releaseIssueExecutionAndPromote ────────────────────────────────────────
@@ -785,6 +982,11 @@ export async function enqueueWakeup(
       .then((rows) => rows[0]?.projectId ?? null);
   }
 
+  // NOTE: TOCTOU gap - budget is checked here but the run is created later.
+  // Another concurrent wakeup could pass the budget check before either run is persisted.
+  // A full transaction wrapping budget check + run creation is impractical due to the
+  // complex branching below (issue-lock path vs non-issue path). The completeRun path
+  // in heartbeat.ts re-checks cost anomalies, providing a post-hoc safety net.
   const budgets = budgetService(db, hooks.budgetHooks);
   const budgetBlock = await budgets.getInvocationBlock(agent.companyId, agentId, {
     issueId,
@@ -801,7 +1003,7 @@ export async function enqueueWakeup(
   const iterationBlock = await hooks.checkIterationLimits(agentId, agent.companyId, issueId);
   if (iterationBlock) {
     await writeSkippedRequest("iteration_limit.blocked");
-    throw conflict(iterationBlock);
+    return null;
   }
 
   if (

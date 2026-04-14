@@ -1,30 +1,7 @@
 import type { Issue } from "@ironworksai/shared";
+import type { AgentPerfRow, TimeRange, SortField } from "../../types/performance";
 
-export interface AgentPerfRow {
-  agentId: string;
-  name: string;
-  status: string;
-  tasksDone: number;
-  tasksInProgress: number;
-  throughput: number; // tasks per day
-  avgCloseH: number | null;
-  costPerTask: number | null; // cents
-  totalSpendCents: number;
-  completionRate: number; // 0-100
-  rating: "A" | "B" | "C" | "D" | "F";
-  ratingScore: number; // 0-100 composite
-}
-
-export type TimeRange = "7d" | "30d" | "all";
-
-export type SortField =
-  | "rating"
-  | "tasksDone"
-  | "throughput"
-  | "avgCloseH"
-  | "costPerTask"
-  | "totalSpendCents"
-  | "completionRate";
+export type { AgentPerfRow, TimeRange, SortField };
 
 export const RATING_COLORS: Record<string, string> = {
   A: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",

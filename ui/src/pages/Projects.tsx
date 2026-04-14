@@ -46,7 +46,7 @@ export function Projects() {
     return <EmptyState icon={Hexagon} message="Select a company to view projects." />;
   }
 
-  if (isLoading) {
+  if (isLoading && !allProjects) {
     return <PageSkeleton variant="list" />;
   }
 

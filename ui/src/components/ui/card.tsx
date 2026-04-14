@@ -2,7 +2,11 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-function Card({ className, ...props }: React.ComponentProps<"div">) {
+interface CardProps extends React.ComponentProps<"div"> {
+  accentColor?: string;
+}
+
+function Card({ className, accentColor, style, ...props }: CardProps) {
   const isInteractive = !!(props.onClick || (props as Record<string, unknown>).href);
   return (
     <div
@@ -10,8 +14,10 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
       className={cn(
         "bg-card text-card-foreground flex flex-col gap-6 border py-6 shadow-sm dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]",
         isInteractive && "hover:-translate-y-0.5 hover:shadow-md cursor-pointer",
+        accentColor && "border-t-2",
         className
       )}
+      style={accentColor ? { borderTopColor: accentColor, ...style } : style}
       {...props}
     />
   )
@@ -63,13 +69,26 @@ function CardAction({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
-function CardContent({ className, ...props }: React.ComponentProps<"div">) {
+interface CardContentProps extends React.ComponentProps<"div"> {
+  fadeOverflow?: boolean;
+}
+
+function CardContent({ className, fadeOverflow, children, ...props }: CardContentProps) {
   return (
     <div
       data-slot="card-content"
-      className={cn("px-6", className)}
+      className={cn(
+        "px-6",
+        fadeOverflow && "relative overflow-hidden",
+        className
+      )}
       {...props}
-    />
+    >
+      {children}
+      {fadeOverflow && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-card to-transparent" />
+      )}
+    </div>
   )
 }
 
