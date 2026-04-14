@@ -1,38 +1,64 @@
--- Migration 0083: enable pgvector on knowledge_chunks and agent_memory_entries
+-- Migration 0083: enable pgvector on knowledge_chunks and agent_memory_entries.
 --
--- Prerequisite: postgres image swapped from postgres:17-alpine to
--- pgvector/pgvector:pg17. The vector.so library is now present.
+-- Mirrors 0065's defensive pattern. Each block tries the pgvector
+-- operation and silently no-ops with a NOTICE if pgvector isn't installed.
+-- On postgres images without pgvector (e.g., embedded test DB), this
+-- migration produces no schema change.
 --
--- This migration:
--- 1. Ensures the vector extension is installed.
--- 2. Alters knowledge_chunks.embedding from text to vector(768).
---    Existing rows have null or JSON-encoded text embeddings; we
---    drop and recreate the column since reindex-all will repopulate.
--- 3. Restores agent_memory_entries.embedding as vector(1536). The
---    column was dropped by the pgvector reset; we add it back so
---    the existing scaffolded code path keeps compiling.
--- 4. Creates IVFFlat indexes for cosine distance lookup.
---
--- Note: IVFFlat is created with `lists = 100` which is a sane default
--- for ~5k chunks. After bulk loading embeddings, REINDEX may improve
--- recall for higher chunk counts.
+-- After upgrading to pgvector/pgvector:pg17:
+--   * knowledge_chunks.embedding text -> vector(768)
+--   * agent_memory_entries.embedding restored as vector(1536) if it was
+--     dropped during a prior pgvector reset
+--   * IVFFlat cosine indexes built (ready for top-K lookup)
 
-CREATE EXTENSION IF NOT EXISTS vector;
+DO $$ BEGIN
+  CREATE EXTENSION IF NOT EXISTS vector;
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'pgvector extension not available, skipping migration 0083';
+  RETURN;
+END $$;
 
--- knowledge_chunks: drop text column, add vector(768) column
-ALTER TABLE knowledge_chunks DROP COLUMN IF EXISTS embedding;
-ALTER TABLE knowledge_chunks ADD COLUMN embedding vector(768);
+-- Upgrade knowledge_chunks.embedding text -> vector(768)
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'knowledge_chunks'
+      AND column_name = 'embedding'
+      AND data_type = 'text'
+  ) THEN
+    ALTER TABLE knowledge_chunks DROP COLUMN embedding;
+    ALTER TABLE knowledge_chunks ADD COLUMN embedding vector(768);
+  END IF;
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'Could not upgrade knowledge_chunks.embedding: %', SQLERRM;
+END $$;
 
--- agent_memory_entries: restore vector column (was dropped during pgvector reset)
-ALTER TABLE agent_memory_entries ADD COLUMN IF NOT EXISTS embedding vector(1536);
+-- Restore agent_memory_entries.embedding if it was dropped during a prior
+-- pgvector reset (CASCADE drops vector columns when DROP EXTENSION runs)
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'agent_memory_entries' AND column_name = 'embedding'
+  ) THEN
+    ALTER TABLE agent_memory_entries ADD COLUMN embedding vector(1536);
+  END IF;
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'Could not restore agent_memory_entries.embedding: %', SQLERRM;
+END $$;
 
--- IVFFlat indexes (cosine distance) for fast top-K lookup
-CREATE INDEX IF NOT EXISTS knowledge_chunks_embedding_ivfflat_idx
-  ON knowledge_chunks
-  USING ivfflat (embedding vector_cosine_ops)
-  WITH (lists = 100);
+-- IVFFlat cosine indexes for top-K lookup
+DO $$ BEGIN
+  CREATE INDEX IF NOT EXISTS knowledge_chunks_embedding_ivfflat_idx
+    ON knowledge_chunks USING ivfflat (embedding vector_cosine_ops)
+    WITH (lists = 100);
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'Could not create knowledge_chunks vector index';
+END $$;
 
-CREATE INDEX IF NOT EXISTS agent_memory_entries_embedding_ivfflat_idx
-  ON agent_memory_entries
-  USING ivfflat (embedding vector_cosine_ops)
-  WITH (lists = 100);
+DO $$ BEGIN
+  CREATE INDEX IF NOT EXISTS agent_memory_entries_embedding_ivfflat_idx
+    ON agent_memory_entries USING ivfflat (embedding vector_cosine_ops)
+    WITH (lists = 100);
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'Could not create agent_memory_entries vector index';
+END $$;
