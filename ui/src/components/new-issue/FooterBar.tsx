@@ -51,7 +51,7 @@ export function FooterBar({
         >
           <span className="inline-flex items-center justify-center gap-1.5">
             {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-            <span>{isPending ? "Creating..." : "Create Issue"}</span>
+            <span>{isPending ? "Creating..." : "Create Mission"}</span>
           </span>
         </Button>
       </div>

@@ -76,13 +76,13 @@ export function IssueDetail() {
   const activePluginTab = issuePluginTabItems.find((item) => item.value === detailTab) ?? null;
 
   const sourceBreadcrumb = useMemo(
-    () => readIssueDetailBreadcrumb(location.state) ?? { label: "Issues", href: "/issues" },
+    () => readIssueDetailBreadcrumb(location.state) ?? { label: "Missions", href: "/issues" },
     [location.state],
   );
 
   // --- Effects ---
   useEffect(() => {
-    const titleLabel = issue?.title ?? issueId ?? "Issue";
+    const titleLabel = issue?.title ?? issueId ?? "Mission";
     setBreadcrumbs([sourceBreadcrumb, { label: hasLiveRuns ? `🔵 ${titleLabel}` : titleLabel }]);
   }, [setBreadcrumbs, sourceBreadcrumb, issue, issueId, hasLiveRuns]);
 

@@ -238,7 +238,7 @@ export function IssuesList({
       {error && <p className="text-sm text-destructive">{error.message}</p>}
 
       {!isLoading && filtered.length === 0 && viewState.viewMode === "list" && (
-        <EmptyState icon={CircleDot} message="No issues match the current filters or search." action="Create Issue" onAction={() => openNewIssue(newIssueDefaults())} />
+        <EmptyState icon={CircleDot} message="No missions match the current filters or search." action="Create Mission" onAction={() => openNewIssue(newIssueDefaults())} />
       )}
 
       {/* Mobile card layout */}
@@ -448,7 +448,7 @@ export function IssuesList({
       )}
       </div>
 
-      <button className="md:hidden fixed bottom-6 right-6 z-40 flex items-center justify-center h-12 w-12 rounded-full bg-foreground text-background shadow-lg hover:scale-105 transition-transform" onClick={() => openNewIssue(newIssueDefaults())} aria-label="Create issue">
+      <button className="md:hidden fixed bottom-6 right-6 z-40 flex items-center justify-center h-12 w-12 rounded-full bg-foreground text-background shadow-lg hover:scale-105 transition-transform" onClick={() => openNewIssue(newIssueDefaults())} aria-label="Create mission">
         <Plus className="h-5 w-5" />
       </button>
     </div>

@@ -96,7 +96,7 @@ export function GoalDetailHeader({
             <p className="text-xs mt-0.5">{riskAssessment.description}</p>
           </div>
           <div className="text-right text-xs shrink-0">
-            <div>{riskAssessment.totalIssues} issues</div>
+            <div>{riskAssessment.totalIssues} missions</div>
             {riskAssessment.blockedPercent > 0 && <div>{riskAssessment.blockedPercent}% blocked</div>}
           </div>
         </div>

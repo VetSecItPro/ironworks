@@ -28,9 +28,9 @@ export function IssuesSearchInput({ initialValue, onValueCommitted }: IssuesSear
       <Input
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder="Search issues..."
+        placeholder="Search missions..."
         className="pl-7 text-xs sm:text-sm"
-        aria-label="Search issues"
+        aria-label="Search missions"
       />
     </div>
   );

@@ -363,7 +363,7 @@ export function SuccessionWarning({ agentName, issues }: { agentName: string; is
       <div className="text-sm">
         <p className="font-medium text-amber-600 dark:text-amber-400">Succession Impact</p>
         <p className="text-muted-foreground mt-0.5">
-          If {agentName} is removed, <strong>{openIssues.length}</strong> open issue{openIssues.length !== 1 ? "s" : ""} would be
+          If {agentName} is removed, <strong>{openIssues.length}</strong> open mission{openIssues.length !== 1 ? "s" : ""} would be
           unassigned.
         </p>
       </div>

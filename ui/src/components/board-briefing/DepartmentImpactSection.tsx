@@ -18,7 +18,7 @@ export function DepartmentImpactSection({ departmentImpactData }: DepartmentImpa
           <thead>
             <tr className="border-b border-border text-left">
               <th className="pb-2 pr-4 font-semibold text-muted-foreground">Department</th>
-              <th className="pb-2 pr-4 font-semibold text-muted-foreground text-right">Issues Done</th>
+              <th className="pb-2 pr-4 font-semibold text-muted-foreground text-right">Missions Done</th>
               <th className="pb-2 pr-4 font-semibold text-muted-foreground text-right">Total Cost</th>
               <th className="pb-2 font-semibold text-muted-foreground text-right">Human-Hrs Equiv.</th>
             </tr>
@@ -40,7 +40,7 @@ export function DepartmentImpactSection({ departmentImpactData }: DepartmentImpa
         </table>
       </div>
       <p className="text-[11px] text-muted-foreground">
-        Human-hours equivalent assumes 2 hours per completed issue. Last 30 days.
+        Human-hours equivalent assumes 2 hours per completed mission. Last 30 days.
       </p>
     </div>
   );

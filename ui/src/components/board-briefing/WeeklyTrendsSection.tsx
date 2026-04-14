@@ -24,7 +24,7 @@ export function WeeklyTrendsSection({ spendTrendWeeks, issueTrendWeeks }: Weekly
       </div>
 
       <div className="space-y-2">
-        <p className="text-xs font-medium text-muted-foreground">Issues Completed per Week</p>
+        <p className="text-xs font-medium text-muted-foreground">Missions Completed per Week</p>
         <WeeklyBarChart
           data={issueTrendWeeks.map((w) => ({ label: w.label, value: w.count }))}
         />

@@ -39,7 +39,7 @@ export function WorkflowSettings() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Workflow Settings</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
-          Customize issue statuses and add custom fields to your workflow.
+          Customize mission statuses and add custom fields to your workflow.
         </p>
       </div>
 

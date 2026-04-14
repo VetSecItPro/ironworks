@@ -232,7 +232,7 @@ export function ProjectDetail() {
 
       <Tabs value={activeTab ?? "list"} onValueChange={(v) => handleTabChange(v as ProjectTab)}>
         <PageTabBar
-          items={[{ value: "list", label: "Issues" }, { value: "overview", label: "Overview" }, { value: "activity", label: "Activity" }, { value: "configuration", label: "Configuration" }, { value: "budget", label: "Budget" }, ...pluginTabItems.map((i) => ({ value: i.value, label: i.label }))]}
+          items={[{ value: "list", label: "Missions" }, { value: "overview", label: "Overview" }, { value: "activity", label: "Activity" }, { value: "configuration", label: "Configuration" }, { value: "budget", label: "Budget" }, ...pluginTabItems.map((i) => ({ value: i.value, label: i.label }))]}
           align="start" value={activeTab ?? "list"} onValueChange={(v) => handleTabChange(v as ProjectTab)}
         />
       </Tabs>

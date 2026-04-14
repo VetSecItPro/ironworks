@@ -144,7 +144,7 @@ export function IssueHeaderBar({
           variant="ghost"
           size="icon-xs"
           onClick={onCopy}
-          title="Copy issue as markdown"
+          title="Copy mission as markdown"
         >
           {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
         </Button>
@@ -163,7 +163,7 @@ export function IssueHeaderBar({
           variant="ghost"
           size="icon-xs"
           onClick={onCopy}
-          title="Copy issue as markdown"
+          title="Copy mission as markdown"
         >
           {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
         </Button>
@@ -192,7 +192,7 @@ export function IssueHeaderBar({
               onClick={onHide}
             >
               <EyeOff className="h-3 w-3" />
-              Hide this Issue
+              Hide this Mission
             </button>
           </PopoverContent>
         </Popover>

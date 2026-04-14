@@ -21,7 +21,7 @@ interface IssueSubissuesTabProps {
 
 export function IssueSubissuesTab({ childIssues, agentMap, locationState }: IssueSubissuesTabProps) {
   if (childIssues.length === 0) {
-    return <p className="text-xs text-muted-foreground">No sub-issues.</p>;
+    return <p className="text-xs text-muted-foreground">No sub-missions.</p>;
   }
 
   return (

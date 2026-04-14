@@ -126,7 +126,7 @@ export function CommandPalette() {
       }}
       data-tour="command-palette"
     >
-      <CommandInput placeholder="Search issues, agents, projects..." value={query} onValueChange={setQuery} />
+      <CommandInput placeholder="Search missions, agents, projects..." value={query} onValueChange={setQuery} />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
 
@@ -167,7 +167,7 @@ export function CommandPalette() {
         <CommandGroup heading="Actions">
           <CommandItem onSelect={() => { setOpen(false); openNewIssue(); }}>
             <SquarePen className="mr-2 h-4 w-4" />
-            Create new issue
+            Create new mission
             <span className="ml-auto text-xs text-muted-foreground">C</span>
           </CommandItem>
           <CommandItem onSelect={() => { setOpen(false); openNewAgent(); }}>
@@ -189,7 +189,7 @@ export function CommandPalette() {
         <CommandGroup heading="Pages">
           <CommandItem onSelect={() => go("/dashboard")}><LayoutDashboard className="mr-2 h-4 w-4" />Dashboard<span className="ml-auto text-xs text-muted-foreground">g d</span></CommandItem>
           <CommandItem onSelect={() => go("/inbox")}><Inbox className="mr-2 h-4 w-4" />Inbox<span className="ml-auto text-xs text-muted-foreground">g n</span></CommandItem>
-          <CommandItem onSelect={() => go("/issues")}><CircleDot className="mr-2 h-4 w-4" />Issues<span className="ml-auto text-xs text-muted-foreground">g i</span></CommandItem>
+          <CommandItem onSelect={() => go("/issues")}><CircleDot className="mr-2 h-4 w-4" />Missions<span className="ml-auto text-xs text-muted-foreground">g i</span></CommandItem>
           <CommandItem onSelect={() => go("/projects")}><Hexagon className="mr-2 h-4 w-4" />Projects<span className="ml-auto text-xs text-muted-foreground">g p</span></CommandItem>
           <CommandItem onSelect={() => go("/goals")}><Target className="mr-2 h-4 w-4" />Goals<span className="ml-auto text-xs text-muted-foreground">g o</span></CommandItem>
           <CommandItem onSelect={() => go("/agents")}><Bot className="mr-2 h-4 w-4" />Agents<span className="ml-auto text-xs text-muted-foreground">g a</span></CommandItem>
@@ -212,7 +212,7 @@ export function CommandPalette() {
         {visibleIssues.length > 0 && (
           <>
             <CommandSeparator />
-            <CommandGroup heading="Issues">
+            <CommandGroup heading="Missions">
               {visibleIssues.slice(0, 10).map((issue) => (
                 <CommandItem
                   key={issue.id}

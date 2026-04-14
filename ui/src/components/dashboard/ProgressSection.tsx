@@ -65,13 +65,13 @@ export function ProgressSection({
         )}
       </div>
 
-      {/* Issues Overview */}
+      {/* Missions Overview */}
       <div className="rounded-xl border border-border p-4 space-y-4">
-        <Link to="/issues" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground transition-colors no-underline">Issues Overview</Link>
-        <ChartCard title="Issues by Priority" subtitle="Last 14 days">
+        <Link to="/issues" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground transition-colors no-underline">Missions Overview</Link>
+        <ChartCard title="Missions by Priority" subtitle="Last 14 days">
           <PriorityChart issues={issues} />
         </ChartCard>
-        <ChartCard title="Issues by Status" subtitle="Last 14 days">
+        <ChartCard title="Missions by Status" subtitle="Last 14 days">
           <IssueStatusChart issues={issues} />
         </ChartCard>
       </div>
