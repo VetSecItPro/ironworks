@@ -1,23 +1,15 @@
 -- Migration 0081: knowledge_chunks table for RAG over playbooks.
 --
--- Enables agents to query playbook sections by semantic similarity or
--- text match instead of loading full playbook bodies on every prompt.
+-- Enables agents to query playbook sections by semantic similarity
+-- (cosine over pgvector embeddings) or text match (Postgres FTS)
+-- instead of loading full playbook bodies on every prompt.
 --
--- === PGVECTOR STATUS ===
--- The production postgres image (postgres:17-alpine) does NOT ship with
--- pgvector. The `$libdir/vector` shared library is missing, so vector(N)
--- columns cannot be queried even though pg_extension may have stale
--- records. Until the postgres image is upgraded to pgvector/pgvector:pg17
--- (tracked as a separate maintenance-window task), we store the embedding
--- as text and use ILIKE text-match fallback in playbook-rag.ts.
+-- Requires postgres image with pgvector (pgvector/pgvector:pg17 or
+-- equivalent). The vector extension is created in this migration.
 --
--- After the postgres image is upgraded:
---  1. Run migration 0082_knowledge_chunks_vector.sql which alters
---     embedding to vector(768) and rebuilds the IVFFlat index.
---  2. Trigger `POST /companies/:id/knowledge/reindex-all` to backfill
---     embeddings via Ollama's nomic-embed-text model.
---
--- Embedding model target: nomic-embed-text (768 dims, Ollama Cloud flat-rate).
+-- Embedding model: nomic-embed-text (768 dims, Ollama Cloud flat-rate).
+
+CREATE EXTENSION IF NOT EXISTS vector;
 
 CREATE TABLE IF NOT EXISTS "knowledge_chunks" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -38,10 +30,8 @@ CREATE TABLE IF NOT EXISTS "knowledge_chunks" (
   "token_count" integer NOT NULL,
   "order_num" integer NOT NULL,     -- position within source doc
 
-  -- Embedding stored as text (JSON array) until pgvector is available.
-  -- Migration 0082 will ALTER this column to vector(768) after the
-  -- postgres image upgrade.
-  "embedding" text,
+  -- Embedding (768d, nomic-embed-text via Ollama Cloud)
+  "embedding" vector(768),
 
   -- Lifecycle
   "source_revision" integer NOT NULL,
@@ -58,8 +48,15 @@ CREATE INDEX IF NOT EXISTS "knowledge_chunks_company_dept_idx"
 CREATE INDEX IF NOT EXISTS "knowledge_chunks_company_doc_type_idx"
   ON "knowledge_chunks" ("company_id", "document_type");
 
--- Full-text search index on heading_path + body for text-mode lookup
--- (until embeddings are available)
+-- Full-text search index on heading_path + body for FTS fallback
+-- (used when embedding pipeline is unavailable)
 CREATE INDEX IF NOT EXISTS "knowledge_chunks_fts_idx"
   ON "knowledge_chunks"
   USING gin (to_tsvector('english', heading_path || ' ' || body));
+
+-- IVFFlat cosine-distance index for fast top-K vector lookup.
+-- lists = 100 is a sane default for ~5k chunks; rebuild if the table grows >50k.
+CREATE INDEX IF NOT EXISTS "knowledge_chunks_embedding_ivfflat_idx"
+  ON "knowledge_chunks"
+  USING ivfflat (embedding vector_cosine_ops)
+  WITH (lists = 100);

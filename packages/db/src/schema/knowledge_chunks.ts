@@ -1,4 +1,5 @@
 import {
+  customType,
   pgTable,
   uuid,
   text,
@@ -10,18 +11,41 @@ import { knowledgePages } from "./knowledge_pages.js";
 import { companies } from "./companies.js";
 
 /**
+ * Custom Drizzle type for pgvector's vector(768) column.
+ * Used for nomic-embed-text embeddings (768d) on playbook chunks.
+ *
+ * The column is nullable so chunks can exist temporarily without
+ * embeddings (e.g., during reindex while batched embedding API calls
+ * are still in flight, or if Ollama is unreachable).
+ */
+const embeddingColumn = customType<{ data: number[]; notNull: false; default: false }>({
+  dataType() {
+    return "vector(768)";
+  },
+  toDriver(value: number[]): string {
+    return `[${value.join(",")}]`;
+  },
+  fromDriver(value: unknown): number[] {
+    if (typeof value === "string") {
+      return value
+        .replace(/^\[/, "")
+        .replace(/\]$/, "")
+        .split(",")
+        .map((v) => parseFloat(v));
+    }
+    if (Array.isArray(value)) return value as number[];
+    return [];
+  },
+});
+
+/**
  * Chunked sections of knowledge_pages playbooks, enabling RAG.
  *
  * Each row is one H2 section of a playbook (per PLAYBOOK_STANDARD.md).
- * Agents query by semantic or text match to retrieve 2-5 relevant chunks
+ * Agents query by cosine similarity to retrieve 2-5 relevant chunks
  * instead of loading the entire playbook into every prompt.
  *
- * embedding: stored as text (JSON-encoded array) until the production
- * postgres image is upgraded to one that includes pgvector. Migration
- * 0082 will alter this to vector(768) once pgvector is available; the
- * service layer (`playbook-rag.ts`) handles both shapes transparently.
- *
- * Embedding model target: nomic-embed-text (768 dims, Ollama Cloud).
+ * Embedding model: nomic-embed-text (768 dims) via Ollama Cloud.
  */
 export const knowledgeChunks = pgTable(
   "knowledge_chunks",
@@ -44,8 +68,7 @@ export const knowledgeChunks = pgTable(
     tokenCount: integer("token_count").notNull(),
     orderNum: integer("order_num").notNull(),
 
-    // Stored as text until pgvector arrives. Service layer decodes/encodes.
-    embedding: text("embedding"),
+    embedding: embeddingColumn("embedding"),
 
     sourceRevision: integer("source_revision").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

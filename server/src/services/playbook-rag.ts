@@ -2,35 +2,23 @@ import { and, eq, sql, desc } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { knowledgePages, knowledgeChunks } from "@ironworksai/db";
 import { parsePlaybook } from "./playbook-chunker.js";
-import { embedBatch } from "./ollama-embed.js";
+import { embedBatch, embedText } from "./ollama-embed.js";
 import { logger } from "../middleware/logger.js";
 
 /**
  * RAG over playbooks: chunk, embed, lookup.
  *
- * === EMBEDDING STORAGE ===
- * The production postgres image lacks pgvector, so embeddings are stored
- * as JSON-encoded text in the `embedding` column. When the postgres image
- * is upgraded, migration 0082 alters the column to vector(768) and the
- * service switches to cosine-similarity search.
+ * Embedding model: nomic-embed-text via Ollama Cloud (768 dims).
  *
- * Until then, semantic search is disabled and lookup uses Postgres FTS
- * (tsvector GIN index on heading_path + body). FTS is a weaker retriever
- * than embeddings, but still beats loading a full 50k-token playbook
- * into every prompt.
+ * Lookup strategy:
+ *   1. Embed the query.
+ *   2. Cosine-similarity top-K against knowledge_chunks.embedding.
+ *   3. If embedding fails (Ollama down) OR no chunks have embeddings,
+ *      fall back to Postgres FTS over heading_path + body.
  */
 
-// Feature flag: is the `embedding` column usable as a pgvector vector?
-// Checked once per process at startup; flipped when migration 0082 runs.
-// For now always false (text column).
-const EMBEDDING_MODE: "text" | "vector" = "text";
-
-function encodeEmbedding(vec: number[]): string {
-  return JSON.stringify(vec);
-}
-
 /**
- * Reindex one playbook page: parse, chunk, optionally embed, upsert.
+ * Reindex one playbook page: parse, chunk, embed, upsert.
  *
  * Returns the number of chunks inserted. Safe to call repeatedly; drops
  * and rebuilds all chunks for the page.
@@ -65,13 +53,13 @@ export async function reindexPage(db: Db, pageId: string): Promise<number> {
     tokenCount: chunk.tokenCount,
     orderNum: chunk.orderNum,
     sourceRevision: page.revisionNumber,
-    embedding: null as string | null,
+    embedding: null as unknown as number[] | null,
   }));
 
   const inserted = await db.insert(knowledgeChunks).values(rows).returning({ id: knowledgeChunks.id });
 
-  // Embed in batches. Failure here is non-fatal: chunks still exist and
-  // FTS fallback covers retrieval.
+  // Embed in batches. Failure here is non-fatal: chunks still exist
+  // and FTS fallback covers retrieval.
   const BATCH_SIZE = 16;
   const bodies = rows.map((r) => `${r.heading}\n\n${r.body}`);
   let embedded = 0;
@@ -84,7 +72,7 @@ export async function reindexPage(db: Db, pageId: string): Promise<number> {
       for (let j = 0; j < results.length; j++) {
         await db
           .update(knowledgeChunks)
-          .set({ embedding: encodeEmbedding(results[j].embedding), updatedAt: new Date() })
+          .set({ embedding: results[j].embedding, updatedAt: new Date() })
           .where(eq(knowledgeChunks.id, batchIds[j].id));
         embedded += 1;
       }
@@ -97,7 +85,7 @@ export async function reindexPage(db: Db, pageId: string): Promise<number> {
   }
 
   logger.info(
-    { pageId, slug: page.slug, chunks: rows.length, embedded, mode: EMBEDDING_MODE },
+    { pageId, slug: page.slug, chunks: rows.length, embedded },
     "playbook-rag: reindexed page",
   );
 
@@ -127,10 +115,6 @@ export async function reindexAllPlaybooks(db: Db, companyId: string): Promise<{ 
 
 /**
  * Semantic lookup over a company's playbook chunks.
- *
- * Returns top-K most relevant chunks. In text mode, uses Postgres FTS
- * (tsvector/tsquery) over heading_path + body. In vector mode (post-0082),
- * uses cosine similarity over the embedding column.
  */
 export interface LookupOptions {
   companyId: string;
@@ -151,35 +135,85 @@ export interface LookupResult {
   tokenCount: number;
   department: string | null;
   ownerRole: string | null;
-  score: number; // FTS rank or (1 - cosine distance); higher is better
-  mode: "fts" | "vector";
+  score: number;          // cosine similarity (1 - distance) or ts_rank; higher is better
+  mode: "vector" | "fts";
 }
 
+/**
+ * Lookup top-K chunks. Tries vector cosine first, falls back to FTS on
+ * embedding failure or zero embedded chunks.
+ */
 export async function lookupPlaybook(db: Db, opts: LookupOptions): Promise<LookupResult[]> {
   const topK = Math.min(Math.max(opts.topK ?? 3, 1), 10);
   const { companyId, query, department, ownerRole, documentType } = opts;
-
-  // Text mode (current production): Postgres FTS with ts_rank.
-  // Sanitize query to tsquery-safe terms: strip punctuation, OR-join words.
-  const terms = query
-    .toLowerCase()
-    .replace(/[^\w\s]/g, " ")
-    .split(/\s+/)
-    .filter((t) => t.length >= 2 && t.length <= 32)
-    .slice(0, 20);
-
-  if (terms.length === 0) {
-    return [];
-  }
-
-  const tsquery = terms.map((t) => `${t}:*`).join(" | ");
 
   const filters = [eq(knowledgeChunks.companyId, companyId)];
   if (department) filters.push(eq(knowledgeChunks.department, department));
   if (documentType) filters.push(eq(knowledgeChunks.documentType, documentType));
   if (ownerRole) filters.push(sql`${knowledgeChunks.ownerRole} ILIKE ${"%" + ownerRole + "%"}`);
 
-  const rows = await db
+  // Try vector mode first
+  let queryEmbedding: number[] | null = null;
+  try {
+    const result = await embedText(query);
+    queryEmbedding = result.embedding;
+  } catch (err) {
+    logger.warn({ err: (err as Error).message, query: query.slice(0, 80) }, "playbook-rag: query embed failed; falling back to FTS");
+  }
+
+  if (queryEmbedding) {
+    const embeddingLit = `[${queryEmbedding.join(",")}]`;
+
+    const rows = await db
+      .select({
+        chunkId: knowledgeChunks.id,
+        pageId: knowledgeChunks.pageId,
+        anchor: knowledgeChunks.anchor,
+        heading: knowledgeChunks.heading,
+        headingPath: knowledgeChunks.headingPath,
+        body: knowledgeChunks.body,
+        tokenCount: knowledgeChunks.tokenCount,
+        department: knowledgeChunks.department,
+        ownerRole: knowledgeChunks.ownerRole,
+        distance: sql<number>`${knowledgeChunks.embedding} <=> ${embeddingLit}::vector`,
+      })
+      .from(knowledgeChunks)
+      .where(and(...filters, sql`${knowledgeChunks.embedding} IS NOT NULL`))
+      .orderBy(sql`${knowledgeChunks.embedding} <=> ${embeddingLit}::vector`)
+      .limit(topK);
+
+    if (rows.length > 0) {
+      return rows.map((r) => ({
+        chunkId: r.chunkId,
+        pageId: r.pageId,
+        anchor: r.anchor,
+        heading: r.heading,
+        headingPath: r.headingPath,
+        body: r.body,
+        tokenCount: r.tokenCount,
+        department: r.department,
+        ownerRole: r.ownerRole,
+        // Convert cosine distance [0..2] to similarity [1..-1]; clamp to [0..1] for UX
+        score: Math.max(0, 1 - Number(r.distance)),
+        mode: "vector" as const,
+      }));
+    }
+
+    logger.info({ companyId, query: query.slice(0, 80) }, "playbook-rag: no embedded chunks matched, falling back to FTS");
+  }
+
+  // FTS fallback: ts_rank over heading_path + body
+  const terms = query
+    .toLowerCase()
+    .replace(/[^\w\s]/g, " ")
+    .split(/\s+/)
+    .filter((t) => t.length >= 2 && t.length <= 32)
+    .slice(0, 20);
+  if (terms.length === 0) return [];
+
+  const tsquery = terms.map((t) => `${t}:*`).join(" | ");
+
+  const ftsRows = await db
     .select({
       chunkId: knowledgeChunks.id,
       pageId: knowledgeChunks.pageId,
@@ -202,7 +236,7 @@ export async function lookupPlaybook(db: Db, opts: LookupOptions): Promise<Looku
     .orderBy(desc(sql`ts_rank(to_tsvector('english', ${knowledgeChunks.headingPath} || ' ' || ${knowledgeChunks.body}), to_tsquery('english', ${tsquery}))`))
     .limit(topK);
 
-  return rows.map((r) => ({
+  return ftsRows.map((r) => ({
     ...r,
     score: Number(r.score),
     mode: "fts" as const,
