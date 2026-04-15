@@ -151,8 +151,8 @@ export interface LookupResult {
   tokenCount: number;
   department: string | null;
   ownerRole: string | null;
-  score: number;          // cosine similarity (1 - distance) or ts_rank; higher is better
-  mode: "vector" | "fts";
+  score: number;          // blended hybrid score (0..1), or bm25 ts_rank if vector unavailable
+  mode: "hybrid" | "fts";
 }
 
 /**
@@ -178,62 +178,18 @@ export async function lookupPlaybook(db: Db, opts: LookupOptions): Promise<Looku
   if (documentType) filters.push(eq(knowledgeChunks.documentType, documentType));
   if (ownerRole) filters.push(sql`${knowledgeChunks.ownerRole} ILIKE ${"%" + ownerRole + "%"}`);
 
-  // Try vector mode first
-  let queryEmbedding: number[] | null = null;
-  try {
-    const result = await embedText(query);
-    queryEmbedding = result.embedding;
-  } catch (err) {
-    logger.warn({ err: (err as Error).message, query: query.slice(0, 80) }, "playbook-rag: query embed failed; falling back to FTS");
-  }
+  // ===========================================================================
+  // Hybrid retrieval: BM25/FTS first over top-50, then vector rerank over hits.
+  //
+  // Rationale (Nolan session Principle 5): keyword queries for proper nouns,
+  // error messages, exact phrases get MUCH worse with cosine-only. BM25 is
+  // strong at literal matches; vectors are strong at synonym/paraphrase.
+  // The right pattern is BM25 candidates -> cosine rerank, not cosine alone.
+  //
+  // If embeddings unavailable, BM25 rank alone is the result.
+  // ===========================================================================
 
-  if (queryEmbedding) {
-    const embeddingLit = `[${queryEmbedding.join(",")}]`;
-
-    const rows = await db
-      .select({
-        chunkId: knowledgeChunks.id,
-        pageId: knowledgeChunks.pageId,
-        anchor: knowledgeChunks.anchor,
-        heading: knowledgeChunks.heading,
-        headingPath: knowledgeChunks.headingPath,
-        body: knowledgeChunks.body,
-        tokenCount: knowledgeChunks.tokenCount,
-        department: knowledgeChunks.department,
-        ownerRole: knowledgeChunks.ownerRole,
-        distance: sql<number>`${knowledgeChunks.embedding} <=> ${embeddingLit}::vector`,
-      })
-      .from(knowledgeChunks)
-      .where(and(...filters, sql`${knowledgeChunks.embedding} IS NOT NULL`))
-      .orderBy(sql`${knowledgeChunks.embedding} <=> ${embeddingLit}::vector`)
-      .limit(topK);
-
-    if (rows.length > 0) {
-      const results = rows.map((r) => ({
-        chunkId: r.chunkId,
-        pageId: r.pageId,
-        anchor: r.anchor,
-        heading: r.heading,
-        headingPath: r.headingPath,
-        body: r.body,
-        tokenCount: r.tokenCount,
-        department: r.department,
-        ownerRole: r.ownerRole,
-        // Convert cosine distance [0..2] to similarity [1..-1]; clamp to [0..1] for UX
-        score: Math.max(0, 1 - Number(r.distance)),
-        mode: "vector" as const,
-      }));
-      if (agentId) {
-        const cacheKey = buildChunkCacheKey({ query, department, ownerRole, documentType, topK });
-        setCachedChunks(agentId, cacheKey, results);
-      }
-      return results;
-    }
-
-    logger.info({ companyId, query: query.slice(0, 80) }, "playbook-rag: no embedded chunks matched, falling back to FTS");
-  }
-
-  // FTS fallback: ts_rank over heading_path + body
+  // Stage 1: BM25 candidates (top 50 by ts_rank)
   const terms = query
     .toLowerCase()
     .replace(/[^\w\s]/g, " ")
@@ -241,10 +197,10 @@ export async function lookupPlaybook(db: Db, opts: LookupOptions): Promise<Looku
     .filter((t) => t.length >= 2 && t.length <= 32)
     .slice(0, 20);
   if (terms.length === 0) return [];
-
   const tsquery = terms.map((t) => `${t}:*`).join(" | ");
 
-  const ftsRows = await db
+  const CANDIDATE_POOL = 50;
+  const bm25Candidates = await db
     .select({
       chunkId: knowledgeChunks.id,
       pageId: knowledgeChunks.pageId,
@@ -255,7 +211,7 @@ export async function lookupPlaybook(db: Db, opts: LookupOptions): Promise<Looku
       tokenCount: knowledgeChunks.tokenCount,
       department: knowledgeChunks.department,
       ownerRole: knowledgeChunks.ownerRole,
-      score: sql<number>`ts_rank(to_tsvector('english', ${knowledgeChunks.headingPath} || ' ' || ${knowledgeChunks.body}), to_tsquery('english', ${tsquery}))`,
+      bm25Score: sql<number>`ts_rank(to_tsvector('english', ${knowledgeChunks.headingPath} || ' ' || ${knowledgeChunks.body}), to_tsquery('english', ${tsquery}))`,
     })
     .from(knowledgeChunks)
     .where(
@@ -265,11 +221,83 @@ export async function lookupPlaybook(db: Db, opts: LookupOptions): Promise<Looku
       ),
     )
     .orderBy(desc(sql`ts_rank(to_tsvector('english', ${knowledgeChunks.headingPath} || ' ' || ${knowledgeChunks.body}), to_tsquery('english', ${tsquery}))`))
-    .limit(topK);
+    .limit(CANDIDATE_POOL);
 
-  const ftsResults = ftsRows.map((r) => ({
-    ...r,
-    score: Number(r.score),
+  if (bm25Candidates.length === 0) {
+    // No BM25 hits. Could fall back to pure cosine over the whole table,
+    // but that's usually worse UX than "no results." Return empty.
+    return [];
+  }
+
+  // Stage 2: vector rerank (if embeddings available and query embed succeeds)
+  let queryEmbedding: number[] | null = null;
+  try {
+    const result = await embedText(query);
+    queryEmbedding = result.embedding;
+  } catch (err) {
+    logger.debug({ err: (err as Error).message }, "playbook-rag: query embed failed; serving BM25 only");
+  }
+
+  if (queryEmbedding && bm25Candidates.length > 1) {
+    const embeddingLit = `[${queryEmbedding.join(",")}]`;
+    const ids = bm25Candidates.map((c) => c.chunkId);
+
+    // Get cosine distance for just the BM25 candidates (single query)
+    const reranked = await db
+      .select({
+        chunkId: knowledgeChunks.id,
+        distance: sql<number>`${knowledgeChunks.embedding} <=> ${embeddingLit}::vector`,
+      })
+      .from(knowledgeChunks)
+      .where(and(
+        sql`${knowledgeChunks.id} IN (${sql.join(ids.map(id => sql`${id}`), sql`, `)})`,
+        sql`${knowledgeChunks.embedding} IS NOT NULL`,
+      ));
+
+    const distMap = new Map(reranked.map((r) => [r.chunkId, Number(r.distance)]));
+
+    // Blend: 0.6 * (1 - cosine_distance) + 0.4 * normalized_bm25
+    const maxBm25 = Math.max(...bm25Candidates.map((c) => Number(c.bm25Score)));
+    const results = bm25Candidates
+      .map((c) => {
+        const cosineSim = distMap.has(c.chunkId) ? Math.max(0, 1 - distMap.get(c.chunkId)!) : 0;
+        const bm25Norm = maxBm25 > 0 ? Number(c.bm25Score) / maxBm25 : 0;
+        return {
+          chunkId: c.chunkId,
+          pageId: c.pageId,
+          anchor: c.anchor,
+          heading: c.heading,
+          headingPath: c.headingPath,
+          body: c.body,
+          tokenCount: c.tokenCount,
+          department: c.department,
+          ownerRole: c.ownerRole,
+          score: 0.6 * cosineSim + 0.4 * bm25Norm,
+          mode: "hybrid" as const,
+        };
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, topK);
+
+    if (agentId) {
+      const cacheKey = buildChunkCacheKey({ query, department, ownerRole, documentType, topK });
+      setCachedChunks(agentId, cacheKey, results);
+    }
+    return results;
+  }
+
+  // BM25-only path: vector unavailable
+  const ftsResults = bm25Candidates.slice(0, topK).map((r) => ({
+    chunkId: r.chunkId,
+    pageId: r.pageId,
+    anchor: r.anchor,
+    heading: r.heading,
+    headingPath: r.headingPath,
+    body: r.body,
+    tokenCount: r.tokenCount,
+    department: r.department,
+    ownerRole: r.ownerRole,
+    score: Number(r.bm25Score),
     mode: "fts" as const,
   }));
   if (agentId) {
