@@ -111,6 +111,9 @@ importers:
       eventsource-parser:
         specifier: ^3.0.8
         version: 3.0.8
+      undici:
+        specifier: ^8.1.0
+        version: 8.1.0
     devDependencies:
       '@types/node':
         specifier: ^24.6.0
@@ -5987,6 +5990,10 @@ packages:
   undici@7.24.4:
     resolution: {integrity: sha512-BM/JzwwaRXxrLdElV2Uo6cTLEjhSb3WXboncJamZ15NgUURmvlXvxa6xkwIOILIjPNo9i8ku136ZvWV0Uly8+w==}
     engines: {node: '>=20.18.1'}
+
+  undici@8.1.0:
+    resolution: {integrity: sha512-E9MkTS4xXLnRPYqxH2e6Hr2/49e7WFDKczKcCaFH4VaZs2iNvHMqeIkyUAD9vM8kujy9TjVrRlQ5KkdEJxB2pw==}
+    engines: {node: '>=22.19.0'}
 
   unidiff@1.0.4:
     resolution: {integrity: sha512-ynU0vsAXw0ir8roa+xPCUHmnJ5goc5BTM2Kuc3IJd8UwgaeRs7VSD5+eeaQL+xp1JtB92hu/Zy/Lgy7RZcr1pQ==}
@@ -12463,6 +12470,8 @@ snapshots:
   undici-types@7.24.4: {}
 
   undici@7.24.4: {}
+
+  undici@8.1.0: {}
 
   unidiff@1.0.4:
     dependencies:

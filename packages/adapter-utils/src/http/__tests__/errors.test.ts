@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   HttpAdapterError,
   HttpAdapterAuthError,
+  HttpAdapterClientError,
   HttpAdapterRateLimitError,
   HttpAdapterServerError,
   HttpAdapterTimeoutError,
@@ -86,6 +87,13 @@ describe('HttpAdapterError hierarchy', () => {
     expect(wrapped.cause).toBe(root);
   });
 
+  it('HttpAdapterClientError has code=client_error and retryable=false', () => {
+    const err = new HttpAdapterClientError('bad request', { status: 400 });
+    expect(err.code).toBe('client_error');
+    expect(err.retryable).toBe(false);
+    expect(err.status).toBe(400);
+  });
+
   // Finding 2: native ES2022 Error.cause
   it('cause is exposed via the native Error.cause property', () => {
     const root = new Error('root cause');
@@ -150,5 +158,13 @@ describe('toAdapterExecutionResult', () => {
   it('redacts strings passed to unknown-error branch', () => {
     const result = toAdapterExecutionResult(new Error('leaked: sk-ant-zzzzzzzzzzzzzzzz'));
     expect(result.errorMessage).not.toContain('sk-ant-zzzzzzzzzzzzzzzz');
+  });
+
+  it('toAdapterExecutionResult handles HttpAdapterClientError', () => {
+    const err = new HttpAdapterClientError('bad', { status: 400 });
+    const r = toAdapterExecutionResult(err);
+    expect(r.errorCode).toBe('client_error');
+    expect(r.errorMeta?.retryable).toBe(false);
+    expect(r.errorMeta?.status).toBe(400);
   });
 });

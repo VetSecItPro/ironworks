@@ -7,6 +7,7 @@ import type { AdapterExecutionResult } from '../types.js';
 export type HttpAdapterErrorCode =
   | 'auth_failed'
   | 'rate_limited'
+  | 'client_error'
   | 'server_error'
   | 'timeout'
   | 'stream_break'
@@ -123,6 +124,22 @@ export class HttpAdapterConfigError extends HttpAdapterError {
 }
 
 /**
+ * Upstream returned a 4xx error that is NOT an auth or rate-limit problem
+ * (e.g., 400 Bad Request, 404 Not Found, 422 Unprocessable Entity). These are
+ * permanently unrecoverable for the current request — retrying will just waste
+ * quota. Callers that need the status code can read err.status.
+ */
+export class HttpAdapterClientError extends HttpAdapterError {
+  readonly status?: number;
+  constructor(message: string, options: { status?: number; cause?: unknown } = {}) {
+    super(message, { code: 'client_error', retryable: false, cause: options.cause });
+    this.name = 'HttpAdapterClientError';
+    this.status = options.status;
+    Object.setPrototypeOf(this, new.target.prototype);
+  }
+}
+
+/**
  * Generic network error (DNS failure, TLS handshake, socket-level). Default
  * non-retryable because persistent DNS/TLS issues signal a real config problem,
  * but callers MAY override for known-transient cases (ECONNRESET, ETIMEDOUT
@@ -150,6 +167,7 @@ export const errors = {
   HttpAdapterError,
   HttpAdapterAuthError,
   HttpAdapterRateLimitError,
+  HttpAdapterClientError,
   HttpAdapterServerError,
   HttpAdapterTimeoutError,
   HttpAdapterStreamBreak,
@@ -171,6 +189,9 @@ export function toAdapterExecutionResult(err: unknown): AdapterExecutionResult {
     const extraMeta: Record<string, unknown> = {};
     if (err instanceof HttpAdapterRateLimitError && err.retryAfterMs !== undefined) {
       extraMeta.retryAfterMs = err.retryAfterMs;
+    }
+    if (err instanceof HttpAdapterClientError && err.status !== undefined) {
+      extraMeta.status = err.status;
     }
     if (err instanceof HttpAdapterServerError && err.status !== undefined) {
       extraMeta.status = err.status;
