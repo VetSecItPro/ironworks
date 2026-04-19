@@ -1,10 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   buildTranscript,
   appendTurn,
   serializeSession,
   deserializeSession,
   estimateTokens,
+  compactIfNeeded,
   type SessionState,
   type MessageTurn,
   type Role,
@@ -226,6 +227,136 @@ describe('serialize / deserialize session params', () => {
   it('deserializeSession rejects malformed payloads', () => {
     expect(() => deserializeSession({ turns: 'not-an-array' })).toThrow();
     expect(() => deserializeSession({ turns: [{ role: 'invalid_role', content: '' }] })).toThrow();
+  });
+});
+
+describe('compactIfNeeded — no compaction needed', () => {
+  it('returns no-op when under trigger threshold', async () => {
+    const state: SessionState = {
+      turns: [{ role: 'user', content: 'Hi' }, { role: 'assistant', content: 'Hello' }],
+    };
+    const result = await compactIfNeeded(state, { targetTokens: 10_000 });
+    expect(result.outcome).toBe('no-op');
+    expect(result.state).toEqual(state);
+    expect(result.compactedTurnCount).toBe(0);
+  });
+
+  it('returns no-op when only a few turns exist even if oversized (respects preserveRecent)', async () => {
+    const state: SessionState = {
+      turns: [
+        { role: 'user', content: 'a'.repeat(100_000) },
+        { role: 'assistant', content: 'hi' },
+      ],
+    };
+    const result = await compactIfNeeded(state, {
+      targetTokens: 1000,
+      triggerTokens: 2000,
+      preserveRecent: 4,  // need at least 4 turns; we only have 2
+    });
+    // Under-preserveRecent conditions: no turns to compact → no-op
+    expect(result.outcome).toBe('no-op');
+  });
+});
+
+describe('compactIfNeeded — with compactor', () => {
+  it('calls compactor with older turns and replaces them with a summary', async () => {
+    const bigText = 'x'.repeat(10_000);
+    const state: SessionState = {
+      turns: Array.from({ length: 20 }, (_, i) => ({
+        role: (i % 2 === 0 ? 'user' : 'assistant') as Role,
+        content: `${bigText} turn ${i}`,
+      })),
+    };
+    const compactor = vi.fn(async (turns: MessageTurn[]) => {
+      return `[Previous conversation summary: covered ${turns.length} turns]`;
+    });
+    const result = await compactIfNeeded(state, {
+      targetTokens: 5_000,
+      triggerTokens: 6_000,
+      preserveRecent: 4,
+      compactor,
+    });
+    expect(result.outcome).toBe('compacted');
+    expect(compactor).toHaveBeenCalledTimes(1);
+    const compactedTurns = compactor.mock.calls[0][0] as MessageTurn[];
+    expect(compactedTurns.length).toBe(16);  // 20 - 4 preserved = 16 compacted
+    // Resulting state: 1 summary turn + 4 preserved = 5 turns
+    expect(result.state.turns.length).toBe(5);
+    expect(result.state.turns[0].role).toBe('assistant');
+    expect(result.compactedTurnCount).toBe(16);
+  });
+
+  it('falls back to truncation when compactor throws', async () => {
+    const bigText = 'x'.repeat(10_000);
+    const state: SessionState = {
+      turns: Array.from({ length: 10 }, (_, i) => ({
+        role: (i % 2 === 0 ? 'user' : 'assistant') as Role,
+        content: bigText,
+      })),
+    };
+    const compactor = vi.fn(async () => {
+      throw new Error('compactor LLM call failed');
+    });
+    const result = await compactIfNeeded(state, {
+      targetTokens: 5_000,
+      triggerTokens: 6_000,
+      preserveRecent: 4,
+      compactor,
+    });
+    expect(result.outcome).toBe('compactor-failed-truncated');
+    expect(result.state.turns.length).toBeLessThan(state.turns.length);
+  });
+});
+
+describe('compactIfNeeded — hard truncation fallback', () => {
+  it('truncates oldest turns until under targetTokens (no compactor supplied)', async () => {
+    const bigText = 'x'.repeat(10_000);
+    const state: SessionState = {
+      turns: Array.from({ length: 10 }, (_, i) => ({
+        role: (i % 2 === 0 ? 'user' : 'assistant') as Role,
+        content: bigText,
+      })),
+    };
+    const result = await compactIfNeeded(state, {
+      targetTokens: 5_000,
+      triggerTokens: 6_000,
+      preserveRecent: 4,
+    });
+    expect(result.outcome).toBe('truncated');
+    expect(result.state.turns.length).toBeGreaterThanOrEqual(4);
+    expect(result.state.turns.length).toBeLessThan(10);
+    expect(result.estimatedTokensAfter).toBeLessThan(result.estimatedTokensBefore);
+  });
+
+  it('always preserves the most recent N turns even if token budget is exceeded', async () => {
+    const bigText = 'x'.repeat(100_000);  // each turn is huge
+    const state: SessionState = {
+      turns: Array.from({ length: 6 }, (_, i) => ({
+        role: (i % 2 === 0 ? 'user' : 'assistant') as Role,
+        content: bigText,
+      })),
+    };
+    const result = await compactIfNeeded(state, {
+      targetTokens: 1000,  // tiny budget — preserveRecent wins
+      triggerTokens: 2000,
+      preserveRecent: 4,
+    });
+    expect(result.state.turns.length).toBe(4);  // preserves the most recent 4
+  });
+});
+
+describe('compactIfNeeded — immutability', () => {
+  it('does not mutate input state', async () => {
+    const bigText = 'x'.repeat(10_000);
+    const original: SessionState = {
+      turns: Array.from({ length: 10 }, (_, i) => ({
+        role: (i % 2 === 0 ? 'user' : 'assistant') as Role,
+        content: bigText,
+      })),
+    };
+    const clone = JSON.parse(JSON.stringify(original));
+    await compactIfNeeded(original, { targetTokens: 5000, triggerTokens: 6000 });
+    expect(original).toEqual(clone);
   });
 });
 
