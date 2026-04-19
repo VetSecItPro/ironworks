@@ -9,3 +9,4 @@ export { redaction } from './redaction.js';
 export { errors } from './errors.js';
 export { sessionReplay } from './session-replay.js';
 export { pricingTable } from './pricing-table.js';
+export { requestId } from './request-id.js';
