@@ -10,3 +10,6 @@ export { errors } from './errors.js';
 export { sessionReplay } from './session-replay.js';
 export { pricingTable } from './pricing-table.js';
 export { requestId } from './request-id.js';
+export { observability } from './observability.js';
+export type { AdapterCallEvent, TelemetrySink, ObserverOptions, Observer } from './observability.js';
+export { createObserver, emitCallEvent, _resetDefaultObserver } from './observability.js';
