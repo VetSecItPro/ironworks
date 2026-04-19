@@ -108,6 +108,9 @@ importers:
 
   packages/adapter-utils:
     dependencies:
+      ajv:
+        specifier: ^8.18.0
+        version: 8.18.0
       eventsource-parser:
         specifier: ^3.0.8
         version: 3.0.8
