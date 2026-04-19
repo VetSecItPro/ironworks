@@ -15,3 +15,15 @@ export type { AdapterCallEvent, TelemetrySink, ObserverOptions, Observer } from 
 export { createObserver, emitCallEvent, _resetDefaultObserver } from './observability.js';
 export { toolRepair } from './tool-repair.js';
 export type { RepairOutcome, RepairResult, RepairPrompter } from './tool-repair.js';
+export { filesApi } from './files-api.js';
+export type {
+  FileProvider,
+  FilePayload,
+  FileRef,
+  ValidationResult,
+  ValidateOptions,
+  AttachmentFormat,
+  AttachmentBlockOptions,
+  AllowedMimeType,
+} from './files-api.js';
+export { validateFilePayload, buildAttachmentBlock, ALLOWED_MIME_TYPES, DEFAULT_MAX_FILE_BYTES } from './files-api.js';
