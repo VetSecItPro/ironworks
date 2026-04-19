@@ -13,3 +13,5 @@ export { requestId } from './request-id.js';
 export { observability } from './observability.js';
 export type { AdapterCallEvent, TelemetrySink, ObserverOptions, Observer } from './observability.js';
 export { createObserver, emitCallEvent, _resetDefaultObserver } from './observability.js';
+export { toolRepair } from './tool-repair.js';
+export type { RepairOutcome, RepairResult, RepairPrompter } from './tool-repair.js';
