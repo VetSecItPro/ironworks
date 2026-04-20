@@ -2,15 +2,15 @@ import type { UseMutationResult } from "@tanstack/react-query";
 import { FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "../../lib/utils";
-import { DraftInput, Field, help } from "../agent-config-primitives";
+import type { HttpAdapterProviderType } from "../../types/providers";
 import { AdapterPicker } from "../AdapterPicker";
+import { DraftInput, Field, help } from "../agent-config-primitives";
 import { HelpBeacon } from "../HelpBeacon";
 import { MarkdownEditor } from "../MarkdownEditor";
 import { ChoosePathButton } from "../PathInstructionsModal";
 import { AdapterEnvironmentResult } from "./AdapterEnvironmentResult";
 import { AdapterTypeDropdown } from "./AdapterTypeDropdown";
 import type { AdapterEnvironmentTestResult, CreateConfigValues, SectionCommonProps } from "./types";
-import type { HttpAdapterProviderType } from "../../types/providers";
 
 /** HTTP adapter type strings — match server-side AGENT_ADAPTER_TYPES. */
 const HTTP_ADAPTER_TYPES: readonly HttpAdapterProviderType[] = [

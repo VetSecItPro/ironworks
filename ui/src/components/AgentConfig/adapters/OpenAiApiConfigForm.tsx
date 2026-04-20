@@ -9,8 +9,9 @@ import { OPENAI_MODELS } from "@ironworksai/adapter-openai-api";
 
 /** Reasoning model IDs derived from the model catalog — o4 family bills reasoning_tokens. */
 const OPENAI_REASONING_MODEL_IDS = new Set(OPENAI_MODELS.filter((m) => m.isReasoningModel).map((m) => m.id));
-import { FormField, ModelSelect, NumberInput, SkillsMultiSelect, TemperatureSlider } from "./formPrimitives";
+
 import type { SkillOption } from "./formPrimitives";
+import { FormField, ModelSelect, NumberInput, SkillsMultiSelect, TemperatureSlider } from "./formPrimitives";
 
 export interface OpenAiApiConfigValues {
   model: string;
@@ -33,11 +34,7 @@ export function OpenAiApiConfigForm({ values, onChange, availableSkills }: OpenA
   return (
     <div data-adapter-form="openai" className="space-y-4">
       <FormField label="Model" hint="Required">
-        <ModelSelect
-          value={values.model}
-          options={modelOptions}
-          onChange={(v) => onChange({ model: v })}
-        />
+        <ModelSelect value={values.model} options={modelOptions} onChange={(v) => onChange({ model: v })} />
         {/* Surface the reasoning token billing note when a reasoning model is selected */}
         {isReasoning && (
           <p className="text-[10px] text-amber-500 mt-1">
@@ -47,12 +44,7 @@ export function OpenAiApiConfigForm({ values, onChange, availableSkills }: OpenA
       </FormField>
 
       <FormField label="Temperature" hint="[0, 2] — not applicable to reasoning models">
-        <TemperatureSlider
-          value={values.temperature}
-          min={0}
-          max={2}
-          onChange={(v) => onChange({ temperature: v })}
-        />
+        <TemperatureSlider value={values.temperature} min={0} max={2} onChange={(v) => onChange({ temperature: v })} />
       </FormField>
 
       <FormField label="Max tokens" hint="Optional — defaults to model max">
@@ -87,10 +79,7 @@ export function OpenAiApiConfigForm({ values, onChange, availableSkills }: OpenA
         </div>
       </FormField>
 
-      <FormField
-        label="System prompt skills"
-        hint="Injected as text at execute time (OpenAI API is stateless)"
-      >
+      <FormField label="System prompt skills" hint="Injected as text at execute time (OpenAI API is stateless)">
         <SkillsMultiSelect
           value={values.systemPromptSkills}
           skills={availableSkills}

@@ -85,9 +85,9 @@ export { userInvites } from "./user_invites.js";
 export { webhookEvents } from "./webhook_events.js";
 export { workflowMaturity } from "./workflow_maturity.js";
 export { workspaceOperations } from "./workspace_operations.js";
-export { workspaceRuntimeServices } from "./workspace_runtime_services.js";
 export {
   type NewWorkspaceProviderSecret,
   type WorkspaceProviderSecret,
   workspaceProviderSecrets,
 } from "./workspace_provider_secrets.js";
+export { workspaceRuntimeServices } from "./workspace_runtime_services.js";

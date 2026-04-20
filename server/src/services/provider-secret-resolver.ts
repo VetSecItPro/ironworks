@@ -41,11 +41,7 @@ export type ResolvedProviderSecret = {
  * Fetch the workspace DB row for this provider. Returns null if no active
  * (non-disabled) row exists.
  */
-async function fetchWorkspaceRow(
-  db: Db,
-  companyId: string,
-  provider: ProviderType,
-) {
+async function fetchWorkspaceRow(db: Db, companyId: string, provider: ProviderType) {
   const rows = await db
     .select()
     .from(workspaceProviderSecrets)

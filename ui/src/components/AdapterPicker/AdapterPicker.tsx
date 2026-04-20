@@ -68,10 +68,7 @@ function ProviderCard({
     <Card
       data-provider={meta.type}
       onClick={() => onSelect(meta.type)}
-      className={cn(
-        "cursor-pointer transition-shadow py-4",
-        selected && "ring-2 ring-ring",
-      )}
+      className={cn("cursor-pointer transition-shadow py-4", selected && "ring-2 ring-ring")}
     >
       <CardHeader className="pb-2 px-4">
         <div className="flex items-center justify-between">

@@ -18,18 +18,16 @@ import { Router } from "express";
 import { listServerAdapters } from "../adapters/index.js";
 import { badRequest, notFound } from "../errors.js";
 import { logActivity } from "../services/index.js";
-import { decryptSecret, encryptSecret, getKeyLastFour } from "../services/secrets-vault.js";
 import type { ProviderType } from "../services/provider-secret-resolver.js";
 import { resolveProviderSecret } from "../services/provider-secret-resolver.js";
+import { decryptSecret, encryptSecret, getKeyLastFour } from "../services/secrets-vault.js";
 import { assertBoard, assertCanWrite, assertCompanyAccess, getActorInfo } from "./authz.js";
 
 const VALID_PROVIDERS = new Set<string>(["poe_api", "anthropic_api", "openai_api", "openrouter_api"]);
 
 function assertValidProvider(provider: string): asserts provider is ProviderType {
   if (!VALID_PROVIDERS.has(provider)) {
-    throw badRequest(
-      `Invalid provider "${provider}". Must be one of: ${[...VALID_PROVIDERS].join(", ")}`,
-    );
+    throw badRequest(`Invalid provider "${provider}". Must be one of: ${[...VALID_PROVIDERS].join(", ")}`);
   }
 }
 
@@ -101,12 +99,7 @@ export function providerRoutes(db: Db) {
     const existing = await db
       .select({ id: workspaceProviderSecrets.id })
       .from(workspaceProviderSecrets)
-      .where(
-        and(
-          eq(workspaceProviderSecrets.companyId, companyId),
-          eq(workspaceProviderSecrets.provider, provider),
-        ),
-      )
+      .where(and(eq(workspaceProviderSecrets.companyId, companyId), eq(workspaceProviderSecrets.provider, provider)))
       .limit(1)
       .then((rows) => rows[0] ?? null);
 

@@ -58,7 +58,7 @@ describe("PoeApiConfigForm", () => {
       </ThemeProvider>,
     );
     // form element rendered
-    expect(html).toContain("data-adapter-form=\"poe\"");
+    expect(html).toContain('data-adapter-form="poe"');
   });
 
   it("does NOT render an API key field", () => {

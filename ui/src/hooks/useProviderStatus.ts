@@ -22,8 +22,7 @@ export function useProviderStatus(
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["providers", companyId, provider, "status"],
     enabled: !!companyId,
-    queryFn: () =>
-      api.get<ProviderStatusResponse>(`/companies/${companyId}/providers/${provider}/status`),
+    queryFn: () => api.get<ProviderStatusResponse>(`/companies/${companyId}/providers/${provider}/status`),
     staleTime: 30_000,
     retry: false,
   });

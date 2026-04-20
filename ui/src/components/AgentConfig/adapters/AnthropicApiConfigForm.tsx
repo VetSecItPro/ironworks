@@ -6,8 +6,8 @@
  */
 
 import { ANTHROPIC_MODELS } from "@ironworksai/adapter-anthropic-api";
-import { FormField, ModelSelect, NumberInput, SkillsMultiSelect, TemperatureSlider } from "./formPrimitives";
 import type { SkillOption } from "./formPrimitives";
+import { FormField, ModelSelect, NumberInput, SkillsMultiSelect, TemperatureSlider } from "./formPrimitives";
 
 export interface AnthropicApiConfigValues {
   model: string;
@@ -39,20 +39,11 @@ export function AnthropicApiConfigForm({ values, onChange, availableSkills }: An
   return (
     <div data-adapter-form="anthropic" className="space-y-4">
       <FormField label="Model" hint="Required">
-        <ModelSelect
-          value={values.model}
-          options={modelOptions}
-          onChange={(v) => onChange({ model: v })}
-        />
+        <ModelSelect value={values.model} options={modelOptions} onChange={(v) => onChange({ model: v })} />
       </FormField>
 
       <FormField label="Temperature" hint="[0, 1] — mutually exclusive with extended thinking">
-        <TemperatureSlider
-          value={values.temperature}
-          min={0}
-          max={1}
-          onChange={(v) => onChange({ temperature: v })}
-        />
+        <TemperatureSlider value={values.temperature} min={0} max={1} onChange={(v) => onChange({ temperature: v })} />
       </FormField>
 
       <FormField label="Max tokens" hint="Optional — defaults to model max">
@@ -95,10 +86,7 @@ export function AnthropicApiConfigForm({ values, onChange, availableSkills }: An
         )}
       </FormField>
 
-      <FormField
-        label="System prompt skills"
-        hint="Injected as text at execute time (Anthropic API is stateless)"
-      >
+      <FormField label="System prompt skills" hint="Injected as text at execute time (Anthropic API is stateless)">
         <SkillsMultiSelect
           value={values.systemPromptSkills}
           skills={availableSkills}

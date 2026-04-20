@@ -5,8 +5,8 @@
  */
 
 import { POE_MODELS } from "@ironworksai/adapter-poe-api";
-import { FormField, ModelSelect, NumberInput, SkillsMultiSelect, TemperatureSlider } from "./formPrimitives";
 import type { SkillOption } from "./formPrimitives";
+import { FormField, ModelSelect, NumberInput, SkillsMultiSelect, TemperatureSlider } from "./formPrimitives";
 
 export interface PoeApiConfigValues {
   model: string;
@@ -27,20 +27,11 @@ export function PoeApiConfigForm({ values, onChange, availableSkills }: PoeApiCo
   return (
     <div data-adapter-form="poe" className="space-y-4">
       <FormField label="Model" hint="Required">
-        <ModelSelect
-          value={values.model}
-          options={modelOptions}
-          onChange={(v) => onChange({ model: v })}
-        />
+        <ModelSelect value={values.model} options={modelOptions} onChange={(v) => onChange({ model: v })} />
       </FormField>
 
       <FormField label="Temperature" hint="[0, 2] — optional">
-        <TemperatureSlider
-          value={values.temperature}
-          min={0}
-          max={2}
-          onChange={(v) => onChange({ temperature: v })}
-        />
+        <TemperatureSlider value={values.temperature} min={0} max={2} onChange={(v) => onChange({ temperature: v })} />
       </FormField>
 
       <FormField label="Max tokens" hint="Optional">
@@ -52,10 +43,7 @@ export function PoeApiConfigForm({ values, onChange, availableSkills }: PoeApiCo
         />
       </FormField>
 
-      <FormField
-        label="System prompt skills"
-        hint="Injected as text at execute time (Poe cannot sync files to disk)"
-      >
+      <FormField label="System prompt skills" hint="Injected as text at execute time (Poe cannot sync files to disk)">
         <SkillsMultiSelect
           value={values.systemPromptSkills}
           skills={availableSkills}

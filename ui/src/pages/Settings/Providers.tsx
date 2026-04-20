@@ -49,7 +49,8 @@ const PROVIDERS: ProviderMeta[] = [
 function MaskedKey({ lastFour }: { lastFour: string }) {
   return (
     <span className="font-mono text-xs text-muted-foreground">
-      {"\u2022\u2022\u2022\u2022 sk\u2022\u2022\u2022\u2022\u2026"}{lastFour}
+      {"\u2022\u2022\u2022\u2022 sk\u2022\u2022\u2022\u2022\u2026"}
+      {lastFour}
     </span>
   );
 }
@@ -168,9 +169,7 @@ function ProviderCard({ companyId, meta }: ProviderCardProps) {
         </CardHeader>
         <CardContent className="space-y-3">
           {/* Masked key display when configured */}
-          {configured && status?.keyLastFour && (
-            <MaskedKey lastFour={status.keyLastFour} />
-          )}
+          {configured && status?.keyLastFour && <MaskedKey lastFour={status.keyLastFour} />}
 
           {/* Key entry for unconfigured providers */}
           {!configured && (
@@ -210,12 +209,7 @@ function ProviderCard({ companyId, meta }: ProviderCardProps) {
               >
                 {testMutation.isPending ? "Testing..." : "Test connection"}
               </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setRotateOpen(true)}
-              >
+              <Button type="button" variant="outline" size="sm" onClick={() => setRotateOpen(true)}>
                 Rotate
               </Button>
               <Button
@@ -243,9 +237,7 @@ function ProviderCard({ companyId, meta }: ProviderCardProps) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Rotate {meta.name} API key</DialogTitle>
-            <DialogDescription>
-              Enter the new key. The existing key will be replaced immediately.
-            </DialogDescription>
+            <DialogDescription>Enter the new key. The existing key will be replaced immediately.</DialogDescription>
           </DialogHeader>
           <Input
             type="password"
@@ -285,11 +277,7 @@ function ProviderCard({ companyId, meta }: ProviderCardProps) {
             <Button variant="outline" onClick={() => setDeleteOpen(false)}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              disabled={deleteMutation.isPending}
-              onClick={() => deleteMutation.mutate()}
-            >
+            <Button variant="destructive" disabled={deleteMutation.isPending} onClick={() => deleteMutation.mutate()}>
               {deleteMutation.isPending ? "Removing..." : "Remove key"}
             </Button>
           </DialogFooter>

@@ -17,7 +17,8 @@ describe("workspaceProviderSecrets schema", () => {
   it("has correct table name", () => {
     // Drizzle stores the SQL table name on the Symbol(drizzle:Name) property.
     // Accessing via the public-facing config is the supported way.
-    const config = workspaceProviderSecrets[Symbol.for("drizzle:BaseName") as unknown as keyof typeof workspaceProviderSecrets];
+    const config =
+      workspaceProviderSecrets[Symbol.for("drizzle:BaseName") as unknown as keyof typeof workspaceProviderSecrets];
     // The table name should contain workspace_provider_secrets
     expect(String(config ?? "workspace_provider_secrets")).toContain("workspace_provider_secrets");
   });

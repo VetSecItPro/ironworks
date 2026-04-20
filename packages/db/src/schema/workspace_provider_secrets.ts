@@ -1,5 +1,4 @@
-import { index, pgTable, text, timestamp, uniqueIndex, uuid, varchar } from "drizzle-orm/pg-core";
-import { customType } from "drizzle-orm/pg-core";
+import { customType, index, pgTable, text, timestamp, uniqueIndex, uuid, varchar } from "drizzle-orm/pg-core";
 import { authUsers } from "./auth.js";
 import { companies } from "./companies.js";
 

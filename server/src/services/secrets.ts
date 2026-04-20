@@ -339,16 +339,8 @@ export function secretService(db: Db) {
       // when the config doesn't already carry one. This lets operators store
       // their key once (via PUT /providers/:provider/secret) and have all
       // agents that use that provider pick it up automatically.
-      if (
-        opts?.adapterType &&
-        HTTP_PROVIDER_TYPES.has(opts.adapterType) &&
-        !resolved.apiKey
-      ) {
-        const providerResolution = await resolveProviderSecret(
-          db,
-          companyId,
-          opts.adapterType as ProviderType,
-        );
+      if (opts?.adapterType && HTTP_PROVIDER_TYPES.has(opts.adapterType) && !resolved.apiKey) {
+        const providerResolution = await resolveProviderSecret(db, companyId, opts.adapterType as ProviderType);
         if (providerResolution.apiKey) {
           resolved.apiKey = providerResolution.apiKey;
           secretKeys.add("apiKey");

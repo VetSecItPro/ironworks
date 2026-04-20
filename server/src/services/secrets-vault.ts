@@ -40,9 +40,7 @@ export type EncryptedBundle = {
 function loadKek(): Buffer {
   const raw = process.env[KEK_ENV];
   if (!raw) {
-    throw new Error(
-      `${KEK_ENV} is not set. Generate a 32-byte key with: openssl rand -base64 32`,
-    );
+    throw new Error(`${KEK_ENV} is not set. Generate a 32-byte key with: openssl rand -base64 32`);
   }
   const kek = Buffer.from(raw, "base64");
   if (kek.byteLength !== KEY_BYTE_LENGTH) {
@@ -54,10 +52,7 @@ function loadKek(): Buffer {
   return kek;
 }
 
-function aesGcmEncrypt(
-  key: Buffer,
-  plaintext: Buffer,
-): { ciphertext: Buffer; iv: Buffer; authTag: Buffer } {
+function aesGcmEncrypt(key: Buffer, plaintext: Buffer): { ciphertext: Buffer; iv: Buffer; authTag: Buffer } {
   const iv = randomBytes(IV_BYTE_LENGTH);
   const cipher = createCipheriv("aes-256-gcm", key, iv);
   const ciphertext = Buffer.concat([cipher.update(plaintext), cipher.final()]);
@@ -65,12 +60,7 @@ function aesGcmEncrypt(
   return { ciphertext, iv, authTag };
 }
 
-function aesGcmDecrypt(
-  key: Buffer,
-  ciphertext: Buffer,
-  iv: Buffer,
-  authTag: Buffer,
-): Buffer {
+function aesGcmDecrypt(key: Buffer, ciphertext: Buffer, iv: Buffer, authTag: Buffer): Buffer {
   const decipher = createDecipheriv("aes-256-gcm", key, iv);
   decipher.setAuthTag(authTag);
   // GCM auth tag verification happens inside final() — throws on tamper
@@ -93,7 +83,11 @@ export function encryptSecret(plaintext: string): EncryptedBundle {
   const dek = randomBytes(KEY_BYTE_LENGTH);
 
   // Layer 1: encrypt the API key with the DEK
-  const { ciphertext: encryptedKey, iv: keyIv, authTag: keyAuthTag } = aesGcmEncrypt(dek, Buffer.from(plaintext, "utf8"));
+  const {
+    ciphertext: encryptedKey,
+    iv: keyIv,
+    authTag: keyAuthTag,
+  } = aesGcmEncrypt(dek, Buffer.from(plaintext, "utf8"));
 
   // Layer 2: encrypt the DEK with the KEK
   const { ciphertext: encryptedDek, iv: dekIv, authTag: dekAuthTag } = aesGcmEncrypt(kek, dek);

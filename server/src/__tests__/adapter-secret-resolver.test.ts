@@ -49,6 +49,7 @@ const mockDb = {
   insert: vi.fn().mockReturnThis(),
   values: vi.fn().mockReturnThis(),
   returning: vi.fn().mockReturnThis(),
+  // biome-ignore lint/suspicious/noThenProperty: test mock drizzle thenable contract
   then: vi.fn().mockImplementation((resolve: (v: unknown[]) => unknown) => resolve([])),
 } as unknown as import("@ironworksai/db").Db;
 
@@ -107,11 +108,7 @@ describe("resolveAdapterConfigForRuntime (G.14)", () => {
     const { secretService } = await import("../services/secrets.js");
     const svc = secretService(mockDb);
 
-    const result = await svc.resolveAdapterConfigForRuntime(
-      COMPANY_ID,
-      {},
-      { adapterType: "openai_api" },
-    );
+    const result = await svc.resolveAdapterConfigForRuntime(COMPANY_ID, {}, { adapterType: "openai_api" });
 
     expect(result.config.apiKey).toBeUndefined();
     expect(result.secretKeys.has("apiKey")).toBe(false);
@@ -121,11 +118,7 @@ describe("resolveAdapterConfigForRuntime (G.14)", () => {
     const { secretService } = await import("../services/secrets.js");
     const svc = secretService(mockDb);
 
-    await svc.resolveAdapterConfigForRuntime(
-      COMPANY_ID,
-      {},
-      { adapterType: "claude_local" },
-    );
+    await svc.resolveAdapterConfigForRuntime(COMPANY_ID, {}, { adapterType: "claude_local" });
 
     expect(mockResolveProviderSecret).not.toHaveBeenCalled();
   });
@@ -152,11 +145,7 @@ describe("resolveAdapterConfigForRuntime (G.14)", () => {
     const { secretService } = await import("../services/secrets.js");
     const svc = secretService(mockDb);
 
-    const result = await svc.resolveAdapterConfigForRuntime(
-      COMPANY_ID,
-      {},
-      { adapterType: "poe_api" },
-    );
+    const result = await svc.resolveAdapterConfigForRuntime(COMPANY_ID, {}, { adapterType: "poe_api" });
 
     expect(result.config.apiKey).toBe("poe-key-from-env");
   });

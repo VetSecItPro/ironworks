@@ -6,8 +6,8 @@
  */
 
 import { OPENROUTER_MODELS } from "@ironworksai/adapter-openrouter-api";
-import { FormField, ModelSelect, NumberInput, SkillsMultiSelect, TemperatureSlider, TextInput } from "./formPrimitives";
 import type { SkillOption } from "./formPrimitives";
+import { FormField, ModelSelect, NumberInput, SkillsMultiSelect, TemperatureSlider, TextInput } from "./formPrimitives";
 
 export interface OpenRouterApiConfigValues {
   model: string;
@@ -35,29 +35,15 @@ export function OpenRouterApiConfigForm({ values, onChange, availableSkills }: O
   return (
     <div data-adapter-form="openrouter" className="space-y-4">
       <FormField label="Model" hint="Required">
-        <ModelSelect
-          value={values.model}
-          options={modelOptions}
-          onChange={(v) => onChange({ model: v })}
-        />
+        <ModelSelect value={values.model} options={modelOptions} onChange={(v) => onChange({ model: v })} />
       </FormField>
 
       <FormField label="Temperature" hint="[0, 2] — optional">
-        <TemperatureSlider
-          value={values.temperature}
-          min={0}
-          max={2}
-          onChange={(v) => onChange({ temperature: v })}
-        />
+        <TemperatureSlider value={values.temperature} min={0} max={2} onChange={(v) => onChange({ temperature: v })} />
       </FormField>
 
       <FormField label="Max tokens" hint="Optional — defaults to 4096">
-        <NumberInput
-          value={values.maxTokens}
-          min={1}
-          placeholder="4096"
-          onChange={(v) => onChange({ maxTokens: v })}
-        />
+        <NumberInput value={values.maxTokens} min={1} placeholder="4096" onChange={(v) => onChange({ maxTokens: v })} />
       </FormField>
 
       {/* OpenRouter recommends setting these headers for usage attribution */}
@@ -70,17 +56,10 @@ export function OpenRouterApiConfigForm({ values, onChange, availableSkills }: O
       </FormField>
 
       <FormField label="X-Title" hint="Optional — human-readable app name">
-        <TextInput
-          value={values.xTitle}
-          placeholder="IronWorks"
-          onChange={(v) => onChange({ xTitle: v })}
-        />
+        <TextInput value={values.xTitle} placeholder="IronWorks" onChange={(v) => onChange({ xTitle: v })} />
       </FormField>
 
-      <FormField
-        label="System prompt skills"
-        hint="Injected as text at execute time (OpenRouter API is stateless)"
-      >
+      <FormField label="System prompt skills" hint="Injected as text at execute time (OpenRouter API is stateless)">
         <SkillsMultiSelect
           value={values.systemPromptSkills}
           skills={availableSkills}

@@ -11,8 +11,8 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { buildTestApp, boardUser, noActor } from "./helpers/route-app.js";
 import { makeChainableDb } from "./helpers/drizzle-mock.js";
+import { boardUser, buildTestApp, noActor } from "./helpers/route-app.js";
 
 // ── Vault mock ───────────────────────────────────────────────────────────────
 
@@ -205,9 +205,7 @@ describe("PUT /api/companies/:id/providers/:provider/secret", () => {
   it("returns 400 when apiKey is missing", async () => {
     const { providerRoutes } = await import("../routes/providers.js");
     const app = buildTestApp({ router: providerRoutes(makeEmptyDb()), actor: boardUser(USER_ID, [COMPANY_ID]) });
-    const res = await request(app)
-      .put(`/api/companies/${COMPANY_ID}/providers/anthropic_api/secret`)
-      .send({});
+    const res = await request(app).put(`/api/companies/${COMPANY_ID}/providers/anthropic_api/secret`).send({});
     expect(res.status).toBe(400);
   });
 
@@ -253,7 +251,13 @@ describe("POST /api/companies/:id/providers/:provider/test", () => {
   });
 
   it("returns 404 when no key is configured", async () => {
-    mockResolveProviderSecret.mockResolvedValue({ source: "none", apiKey: null, lastTestStatus: null, lastTestedAt: null, keyLastFour: null });
+    mockResolveProviderSecret.mockResolvedValue({
+      source: "none",
+      apiKey: null,
+      lastTestStatus: null,
+      lastTestedAt: null,
+      keyLastFour: null,
+    });
     const { providerRoutes } = await import("../routes/providers.js");
     const app = buildTestApp({ router: providerRoutes(makeEmptyDb()), actor: boardUser(USER_ID, [COMPANY_ID]) });
     const res = await request(app).post(`/api/companies/${COMPANY_ID}/providers/anthropic_api/test`);

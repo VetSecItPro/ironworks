@@ -12,22 +12,12 @@ import { cn } from "../../../lib/utils";
 const inputClass =
   "w-full rounded-md border border-border px-2.5 py-1.5 bg-transparent outline-none text-sm font-mono placeholder:text-muted-foreground/40 h-9";
 
-export function FormField({
-  label,
-  hint,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
+export function FormField({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1">
       <div className="flex items-center gap-1.5">
         <span className="text-xs text-muted-foreground">{label}</span>
-        {hint && (
-          <span className="text-[10px] text-muted-foreground/60 leading-tight">{hint}</span>
-        )}
+        {hint && <span className="text-[10px] text-muted-foreground/60 leading-tight">{hint}</span>}
       </div>
       {children}
     </div>
@@ -201,18 +191,10 @@ export function SkillsMultiSelect({
       {skills.map((s) => {
         const selected = value.includes(s.key);
         return (
-          <button
-            type="button"
-            key={s.key}
-            onClick={() => toggle(s.key)}
-            className="focus:outline-none"
-          >
+          <button type="button" key={s.key} onClick={() => toggle(s.key)} className="focus:outline-none">
             <Badge
               variant={selected ? "default" : "outline"}
-              className={cn(
-                "cursor-pointer transition-colors",
-                selected && "bg-primary/90",
-              )}
+              className={cn("cursor-pointer transition-colors", selected && "bg-primary/90")}
             >
               {s.label}
             </Badge>
