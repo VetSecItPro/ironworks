@@ -32,6 +32,11 @@ export const AGENT_ADAPTER_TYPES = [
   "openclaw_gateway",
   "hermes_local",
   "ollama_cloud",
+  // HTTP API adapters (Phase G) — stateless cloud providers reached over HTTPS
+  "poe_api",
+  "anthropic_api",
+  "openai_api",
+  "openrouter_api",
 ] as const;
 export type AgentAdapterType = (typeof AGENT_ADAPTER_TYPES)[number];
 
