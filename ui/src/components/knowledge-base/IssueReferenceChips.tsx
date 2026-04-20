@@ -23,9 +23,10 @@ export function IssueReferenceChips({ body, companyPrefix: _companyPrefix }: { b
   const refs = useMemo(() => {
     const pattern = /\b([A-Z]{2,6}-\d{1,6})\b/g;
     const matches = new Set<string>();
-    let match: RegExpExecArray | null;
-    while ((match = pattern.exec(body)) !== null) {
+    let match = pattern.exec(body);
+    while (match !== null) {
       matches.add(match[1]);
+      match = pattern.exec(body);
     }
     return Array.from(matches);
   }, [body]);

@@ -17,9 +17,9 @@ export function WikiLinkedBody({
     const wikiLinkPattern = /\[\[([^\]]+)\]\]/g;
     const parts: Array<{ type: "text" | "link"; value: string; slug?: string }> = [];
     let lastIndex = 0;
-    let match: RegExpExecArray | null;
+    let match = wikiLinkPattern.exec(body);
 
-    while ((match = wikiLinkPattern.exec(body)) !== null) {
+    while (match !== null) {
       if (match.index > lastIndex) {
         parts.push({ type: "text", value: body.slice(lastIndex, match.index) });
       }
@@ -33,6 +33,7 @@ export function WikiLinkedBody({
         slug: linkedPage?.slug,
       });
       lastIndex = match.index + match[0].length;
+      match = wikiLinkPattern.exec(body);
     }
     if (lastIndex < body.length) {
       parts.push({ type: "text", value: body.slice(lastIndex) });

@@ -34,7 +34,8 @@ function Kbd({ children }: { children: string }) {
 
 export function KeyboardShortcuts() {
   const grouped = shortcuts.reduce<Record<string, ShortcutEntry[]>>((acc, entry) => {
-    (acc[entry.scope] ??= []).push(entry);
+    if (!acc[entry.scope]) acc[entry.scope] = [];
+    acc[entry.scope].push(entry);
     return acc;
   }, {});
 

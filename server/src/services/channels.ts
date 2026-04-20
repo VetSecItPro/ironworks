@@ -450,9 +450,10 @@ export async function postMessage(
       // Check for @mentions in agent message - wake ONLY mentioned agents
       const mentionPattern = /@(\w[\w\s]*?)(?=[\s,.!?]|$)/g;
       const mentionMatches: string[] = [];
-      let mentionMatch: RegExpExecArray | null = null;
-      while ((mentionMatch = mentionPattern.exec(cleanBody)) !== null) {
+      let mentionMatch = mentionPattern.exec(cleanBody);
+      while (mentionMatch !== null) {
         mentionMatches.push(mentionMatch[1].trim().toLowerCase());
+        mentionMatch = mentionPattern.exec(cleanBody);
       }
 
       if (mentionMatches.length > 0 && opts.enqueueWakeup) {

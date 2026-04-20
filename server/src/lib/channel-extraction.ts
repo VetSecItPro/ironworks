@@ -35,6 +35,7 @@ export function extractChannelMessages(text: string): ChannelMessage[] {
   const seen = new Set<string>();
   let match: RegExpExecArray | null;
 
+  // biome-ignore lint/suspicious/noAssignInExpressions: stream read loop - idiomatic regex exec pattern with continue inside loop body
   while ((match = channelPattern.exec(text)) !== null) {
     const channel = match[1].trim().toLowerCase();
 

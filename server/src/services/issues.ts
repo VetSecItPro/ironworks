@@ -1688,10 +1688,11 @@ export function issueService(db: Db) {
     findMentionedAgents: async (companyId: string, body: string) => {
       const re = /\B@([^\s@,!?.]+)/g;
       const tokens = new Set<string>();
-      let m: RegExpExecArray | null;
-      while ((m = re.exec(body)) !== null) {
+      let m = re.exec(body);
+      while (m !== null) {
         const normalized = normalizeAgentMentionToken(m[1]);
         if (normalized) tokens.add(normalized.toLowerCase());
+        m = re.exec(body);
       }
 
       const explicitAgentMentionIds = extractAgentMentionIds(body);

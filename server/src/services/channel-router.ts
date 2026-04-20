@@ -39,9 +39,10 @@ export async function selectRespondingAgents(
   // Rule 3: Extract @mentions
   const mentionPattern = /@(\w[\w\s]*?)(?=\s|,|$)/g;
   const mentions: string[] = [];
-  let match: RegExpExecArray | null = null;
-  while ((match = mentionPattern.exec(messageBody)) !== null) {
+  let match = mentionPattern.exec(messageBody);
+  while (match !== null) {
     mentions.push(match[1].trim().toLowerCase());
+    match = mentionPattern.exec(messageBody);
   }
 
   // Get all idle agents for this company

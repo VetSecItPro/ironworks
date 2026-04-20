@@ -176,10 +176,10 @@ function renderBodyWithEmbeds(
 ): React.ReactNode[] {
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
-  let match: RegExpExecArray | null;
   const regex = new RegExp(ISSUE_ID_REGEX.source, "g");
+  let match = regex.exec(body);
 
-  while ((match = regex.exec(body)) !== null) {
+  while (match !== null) {
     if (match.index > lastIndex) {
       parts.push(body.slice(lastIndex, match.index));
     }
@@ -208,6 +208,7 @@ function renderBodyWithEmbeds(
       );
     }
     lastIndex = match.index + match[0].length;
+    match = regex.exec(body);
   }
   if (lastIndex < body.length) {
     parts.push(body.slice(lastIndex));
