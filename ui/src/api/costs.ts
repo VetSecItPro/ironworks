@@ -68,6 +68,15 @@ export const costsApi = {
 
   projectExportUrl: (companyId: string, projectId: string, from?: string, to?: string) =>
     `/api/companies/${companyId}/costs/project-export?projectId=${encodeURIComponent(projectId)}${from ? `&from=${encodeURIComponent(from)}` : ""}${to ? `&to=${encodeURIComponent(to)}` : ""}`,
+
+  // Phase O.2: rollup-based analytics (reads cost_rollup_daily, 1-day lag)
+  rollupTimeSeries: (companyId: string, range: CostRange, groupBy: CostGroupBy = "day") =>
+    api.get<RollupTimeSeriesResponse>(`/companies/${companyId}/costs/time-series?range=${range}&group_by=${groupBy}`),
+
+  rollupLeaderboard: (companyId: string, range: CostRange, limit = 10) =>
+    api.get<RollupLeaderboardResponse>(`/companies/${companyId}/costs/leaderboard?range=${range}&limit=${limit}`),
+
+  rollupMom: (companyId: string) => api.get<RollupMomResponse>(`/companies/${companyId}/costs/mom`),
 };
 
 export interface EquivalentSpendResult {
@@ -91,4 +100,56 @@ function dateParamsWithLimit(from?: string, to?: string, limit?: number): string
   if (limit) params.set("limit", String(limit));
   const qs = params.toString();
   return qs ? `?${qs}` : "";
+}
+
+// ── Phase O.2 rollup analytics types ──────────────────────────────────────────
+
+export type CostRange = "7d" | "30d" | "90d" | "mtd" | "ytd";
+export type CostGroupBy = "day" | "agent" | "adapter";
+
+export interface RollupTimeSeriesPoint {
+  day: string;
+  agentId: string | null;
+  agentName: string | null;
+  provider: string | null;
+  source: string | null;
+  callCount: number;
+  inputTokens: number;
+  outputTokens: number;
+  costUsd: number;
+}
+
+export interface RollupTimeSeriesResponse {
+  range: CostRange;
+  groupBy: CostGroupBy;
+  points: RollupTimeSeriesPoint[];
+}
+
+export interface RollupLeaderboardEntry {
+  agentId: string;
+  agentName: string | null;
+  callCount: number;
+  inputTokens: number;
+  outputTokens: number;
+  costUsd: number;
+}
+
+export interface RollupLeaderboardResponse {
+  range: CostRange;
+  limit: number;
+  entries: RollupLeaderboardEntry[];
+}
+
+export interface RollupMonthSummary {
+  from: string;
+  to: string;
+  totalCostUsd: number;
+  byProvider: Array<{ provider: string; costUsd: number }>;
+}
+
+export interface RollupMomResponse {
+  currentMonth: RollupMonthSummary;
+  previousMonth: RollupMonthSummary;
+  deltaUsd: number;
+  deltaPct: number | null;
 }

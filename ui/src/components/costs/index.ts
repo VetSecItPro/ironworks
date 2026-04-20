@@ -13,5 +13,6 @@ export { OverviewTabContent } from "./OverviewTabContent";
 export { ProjectsTabContent } from "./ProjectsTabContent";
 export { BillerTabLabel, ProviderTabLabel } from "./ProviderBillerTabLabels";
 export { ProvidersTabContent } from "./ProvidersTabContent";
+export { RollupAnalyticsTabContent } from "./RollupAnalyticsTabContent";
 export { TokensTabContent } from "./TokensTabContent";
 export { useProviderBillerTabs } from "./useProviderBillerTabs";

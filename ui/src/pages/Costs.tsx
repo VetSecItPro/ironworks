@@ -15,6 +15,7 @@ import { FinanceTabContent } from "../components/costs/FinanceTabContent";
 import { OverviewTabContent } from "../components/costs/OverviewTabContent";
 import { ProjectsTabContent } from "../components/costs/ProjectsTabContent";
 import { ProvidersTabContent } from "../components/costs/ProvidersTabContent";
+import { RollupAnalyticsTabContent } from "../components/costs/RollupAnalyticsTabContent";
 import { TokensTabContent } from "../components/costs/TokensTabContent";
 import { useCostsDerivedData } from "../components/costs/useCostsDerivedData";
 import { useCostsMutations } from "../components/costs/useCostsMutations";
@@ -42,7 +43,7 @@ export function Costs() {
   const { setBreadcrumbs } = useBreadcrumbs();
 
   const [mainTab, setMainTab] = useState<
-    "overview" | "budgets" | "providers" | "billers" | "finance" | "projects" | "tokens" | "departments" | "analysis"
+    "overview" | "budgets" | "providers" | "billers" | "finance" | "projects" | "tokens" | "departments" | "analysis" | "rollup"
   >("overview");
   const [showNewFinanceEvent, setShowNewFinanceEvent] = useState(false);
   const [showNewBudget, setShowNewBudget] = useState(false);
@@ -330,6 +331,7 @@ export function Costs() {
           <TabsTrigger value="tokens">Token Usage</TabsTrigger>
           <TabsTrigger value="departments">Departments</TabsTrigger>
           <TabsTrigger value="analysis">Analysis</TabsTrigger>
+          <TabsTrigger value="rollup">Rollup Analytics</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-4 space-y-4">
@@ -442,6 +444,10 @@ export function Costs() {
             deptBudgetVsActual={deptBudgetVsActual}
             agentEfficiency={agentEfficiency}
           />
+        </TabsContent>
+
+        <TabsContent value="rollup" className="mt-4 space-y-4">
+          {selectedCompanyId && <RollupAnalyticsTabContent companyId={selectedCompanyId} />}
         </TabsContent>
       </Tabs>
     </div>
