@@ -74,6 +74,7 @@ export function ProjectActivityTab({ projectId, companyId }: { projectId: string
     return (
       <div className="space-y-2">
         {Array.from({ length: 5 }).map((_, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholder list; items are anonymous, count-only
           <div key={i} className="skeleton h-10 rounded-md" />
         ))}
       </div>

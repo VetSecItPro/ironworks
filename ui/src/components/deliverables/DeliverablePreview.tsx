@@ -140,8 +140,8 @@ export function DeliverablePreview({ deliverable, onClose }: DeliverablePreviewP
         {activeTab === "annotations" && (
           <div className="p-4 space-y-3">
             <p className="text-xs text-muted-foreground">Click-to-comment annotations on specific lines</p>
-            {annotations.map((ann, i) => (
-              <div key={i} className="flex gap-2 p-2 rounded-md border border-border bg-muted/10">
+            {annotations.map((ann) => (
+              <div key={`${ann.line}-${ann.author}`} className="flex gap-2 p-2 rounded-md border border-border bg-muted/10">
                 <div className="flex items-center justify-center h-5 w-5 rounded bg-muted text-[10px] font-mono font-bold text-muted-foreground shrink-0 mt-0.5">
                   L{ann.line}
                 </div>

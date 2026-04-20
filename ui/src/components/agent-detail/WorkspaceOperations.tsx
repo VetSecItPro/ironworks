@@ -91,8 +91,8 @@ function WorkspaceOperationLogViewer({
           )}
           {chunks.length > 0 && (
             <div className="max-h-64 overflow-y-auto rounded bg-neutral-100 p-2 font-mono text-xs dark:bg-neutral-950">
-              {chunks.map((chunk, index) => (
-                <div key={`${chunk.ts}-${index}`} className="flex gap-2">
+              {chunks.map((chunk) => (
+                <div key={chunk.ts} className="flex gap-2">
                   <span className="shrink-0 text-neutral-500">
                     {new Date(chunk.ts).toLocaleTimeString("en-US", { hour12: false })}
                   </span>

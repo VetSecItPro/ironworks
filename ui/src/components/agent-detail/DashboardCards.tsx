@@ -265,7 +265,7 @@ export function ModelStrategyCard({ agent }: { agent: AgentDetailRecord }) {
       {councilEvents.length > 0 && (
         <div className="space-y-2 pt-2 border-t border-border">
           <h4 className="text-xs font-medium text-muted-foreground">Recent Council Results</h4>
-          {councilEvents.map((event: Record<string, unknown>, idx: number) => {
+          {councilEvents.map((event: Record<string, unknown>) => {
             const details = (event.details ?? {}) as Record<string, unknown>;
             const strategy = (details.strategy as string) ?? "unknown";
             const winningModel = (details.winningModel as string) ?? "unknown";
@@ -276,7 +276,7 @@ export function ModelStrategyCard({ agent }: { agent: AgentDetailRecord }) {
             const score = typeof winnerScore?.score === "number" ? winnerScore.score : 0;
             const importance = (details.importance as string) ?? "";
             return (
-              <div key={idx} className="text-xs text-muted-foreground">
+              <div key={event.id as string} className="text-xs text-muted-foreground">
                 <span
                   className={cn(
                     "inline-flex items-center rounded px-1 py-0.5 text-[10px] font-medium mr-1",

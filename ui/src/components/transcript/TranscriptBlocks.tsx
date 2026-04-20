@@ -218,17 +218,8 @@ export function TranscriptCommandGroup({
       >
         <div className={cn("flex shrink-0 items-center", subtitle && "mt-0.5")}>
           {block.items.slice(0, Math.min(block.items.length, 3)).map((_, index) => (
-            <span
-              key={index}
-              className={cn(
-                "inline-flex h-6 w-6 items-center justify-center rounded-full border shadow-sm",
-                index > 0 && "-ml-1.5",
-                isRunning
-                  ? "border-cyan-500/25 bg-cyan-500/[0.08] text-cyan-600 dark:text-cyan-300"
-                  : "border-border/70 bg-background text-foreground/55",
-                isRunning && "animate-pulse",
-              )}
-            >
+            // biome-ignore lint/suspicious/noArrayIndexKey: tool-call avatar stack shows up to 3 anonymous icons; position is the identity
+            <span key={index} className={cn("inline-flex h-6 w-6 items-center justify-center rounded-full border shadow-sm", index > 0 && "-ml-1.5", isRunning ? "border-cyan-500/25 bg-cyan-500/[0.08] text-cyan-600 dark:text-cyan-300" : "border-border/70 bg-background text-foreground/55", isRunning && "animate-pulse")}>
               <TerminalSquare className="h-3.5 w-3.5" />
             </span>
           ))}
@@ -263,8 +254,8 @@ export function TranscriptCommandGroup({
       </div>
       {open && (
         <div className={cn("mt-3 space-y-3", hasError && "rounded-xl border border-red-500/20 bg-red-500/[0.06] p-3")}>
-          {block.items.map((item, index) => (
-            <div key={`${item.ts}-${index}`} className="space-y-2">
+          {block.items.map((item) => (
+            <div key={item.ts} className="space-y-2">
               <div className="flex items-center gap-2">
                 <span
                   className={cn(

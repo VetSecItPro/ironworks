@@ -31,12 +31,14 @@ export function PageSkeleton({ variant = "list" }: PageSkeletonProps) {
 
         <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholder list; items are anonymous, count-only
             <Skeleton key={i} className="h-24 w-full" />
           ))}
         </div>
 
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholder list; items are anonymous, count-only
             <Skeleton key={i} className="h-44 w-full" />
           ))}
         </div>
@@ -57,6 +59,7 @@ export function PageSkeleton({ variant = "list" }: PageSkeletonProps) {
         </div>
         <div className="grid gap-3">
           {Array.from({ length: 3 }).map((_, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholder list; items are anonymous, count-only
             <Skeleton key={i} className="h-36 w-full" />
           ))}
         </div>
@@ -69,6 +72,7 @@ export function PageSkeleton({ variant = "list" }: PageSkeletonProps) {
       <div className="space-y-6">
         <div className="flex flex-wrap items-center gap-2">
           {Array.from({ length: 6 }).map((_, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholder list; items are anonymous, count-only
             <Skeleton key={i} className="h-9 w-28" />
           ))}
         </div>
@@ -93,10 +97,12 @@ export function PageSkeleton({ variant = "list" }: PageSkeletonProps) {
 
         <div className="space-y-5">
           {Array.from({ length: 3 }).map((_, section) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholder list; items are anonymous, count-only
             <div key={section} className="space-y-2">
               <Skeleton className="h-4 w-40" />
               <div className="space-y-1 border border-border">
                 {Array.from({ length: 3 }).map((_, row) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholder list; items are anonymous, count-only
                   <Skeleton key={row} className="h-14 w-full rounded-none" />
                 ))}
               </div>
@@ -165,6 +171,7 @@ export function PageSkeleton({ variant = "list" }: PageSkeletonProps) {
         {/* Status cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {Array.from({ length: 4 }).map((_, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholder list; items are anonymous, count-only
             <Skeleton key={i} className="h-20 rounded-lg skeleton" />
           ))}
         </div>
@@ -180,6 +187,7 @@ export function PageSkeleton({ variant = "list" }: PageSkeletonProps) {
         {/* Content area */}
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholder list; items are anonymous, count-only
             <Skeleton key={i} className="h-14 w-full skeleton" />
           ))}
         </div>
@@ -218,6 +226,7 @@ export function PageSkeleton({ variant = "list" }: PageSkeletonProps) {
         {/* Comments area */}
         <div className="space-y-4">
           {Array.from({ length: 3 }).map((_, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholder list; items are anonymous, count-only
             <div key={i} className="flex gap-3">
               <Skeleton className="h-8 w-8 rounded-full shrink-0 skeleton" />
               <div className="flex-1 space-y-2">
@@ -243,6 +252,7 @@ export function PageSkeleton({ variant = "list" }: PageSkeletonProps) {
         {/* Goal cards */}
         <div className="space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholder list; items are anonymous, count-only
             <div key={i} className="rounded-lg border border-border p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <Skeleton className="h-5 w-48 skeleton" />
@@ -278,6 +288,7 @@ export function PageSkeleton({ variant = "list" }: PageSkeletonProps) {
           <Skeleton className="h-4 w-40" />
           <div className="space-y-1">
             {Array.from({ length: 8 }).map((_, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholder list; items are anonymous, count-only
               <Skeleton key={i} className="h-11 w-full rounded-none" />
             ))}
           </div>
@@ -298,6 +309,7 @@ export function PageSkeleton({ variant = "list" }: PageSkeletonProps) {
 
       <div className="space-y-1">
         {Array.from({ length: 7 }).map((_, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholder list; items are anonymous, count-only
           <Skeleton key={i} className="h-11 w-full rounded-none" />
         ))}
       </div>

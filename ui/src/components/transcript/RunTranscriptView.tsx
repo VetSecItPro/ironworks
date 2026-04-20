@@ -33,8 +33,8 @@ function RawTranscriptView({ entries, density }: { entries: TranscriptEntry[]; d
   const compact = density === "compact";
   return (
     <div className={cn("font-mono", compact ? "space-y-1 text-[11px]" : "space-y-1.5 text-xs")}>
-      {entries.map((entry, idx) => (
-        <div key={`${entry.kind}-${entry.ts}-${idx}`} className={cn("grid gap-x-3", "grid-cols-[auto_1fr]")}>
+      {entries.map((entry) => (
+        <div key={`${entry.kind}-${entry.ts}`} className={cn("grid gap-x-3", "grid-cols-[auto_1fr]")}>
           <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{entry.kind}</span>
           <pre className="min-w-0 whitespace-pre-wrap break-words text-foreground/80">{formatRawEntry(entry)}</pre>
         </div>
@@ -83,7 +83,7 @@ export function RunTranscriptView({
     <div className={cn("space-y-3", className)}>
       {visibleBlocks.map((block, index) => (
         <div
-          key={`${block.type}-${block.ts}-${index}`}
+          key={`${block.type}-${block.ts}`}
           className={cn(
             index === visibleBlocks.length - 1 && streaming && "animate-in fade-in slide-in-from-bottom-1 duration-300",
           )}

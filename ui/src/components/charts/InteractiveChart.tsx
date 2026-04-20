@@ -154,7 +154,7 @@ export function InteractiveChart({
       <svg ref={svgRef} width={containerWidth} height={height} className="select-none" onWheel={handleWheel}>
         <title>Interactive chart</title>
         {yTicks.map((tick, i) => (
-          <g key={i}>
+          <g key={tick}>
             <line
               x1={PADDING.left}
               y1={getY(tick)}
@@ -170,12 +170,12 @@ export function InteractiveChart({
           </g>
         ))}
 
-        {annotations.map((ann, i) => {
+        {annotations.map((ann) => {
           const dataIdx = zoomRange ? ann.index - zoomRange[0] : ann.index;
           if (dataIdx < 0 || dataIdx >= visibleData.length) return null;
           const x = getX(dataIdx);
           return (
-            <g key={`ann-${i}`}>
+            <g key={`ann-${ann.index}`}>
               <line
                 x1={x}
                 y1={PADDING.top}
@@ -215,7 +215,7 @@ export function InteractiveChart({
 
         {chartType === "bar" ? (
           visibleData.map((d, i) => (
-            <g key={i}>
+            <g key={d.label}>
               {/* biome-ignore lint/a11y/useSemanticElements: SVG rect cannot be replaced with a native <button>; role="button" is required for keyboard-accessible SVG chart elements */}
               <rect
                 role="button"
@@ -251,7 +251,7 @@ export function InteractiveChart({
             {visibleData.map((d, i) => (
               // biome-ignore lint/a11y/useSemanticElements: SVG circle cannot be replaced with a native <button>; role="button" is required for keyboard-accessible SVG chart elements
               <circle
-                key={i}
+                key={d.label}
                 role="button"
                 aria-label={`Data point: ${d.label} ${d.value}`}
                 cx={getX(i)}
@@ -274,7 +274,7 @@ export function InteractiveChart({
           if (i % skip !== 0 && i !== visibleData.length - 1) return null;
           return (
             <text
-              key={i}
+              key={d.label}
               x={getX(i)}
               y={PADDING.top + chartHeight + 16}
               textAnchor="middle"

@@ -96,6 +96,7 @@ export function StepTask({
 
       {/* Extra tasks */}
       {extraTasks.map((extra, idx) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: editable task items have no stable id; content is mutable during editing
         <div key={idx} className="space-y-2 rounded-md border border-border p-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-muted-foreground">Task {idx + 2}</span>

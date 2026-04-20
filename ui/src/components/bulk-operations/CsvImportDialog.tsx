@@ -176,7 +176,7 @@ export function CsvImportDialog({ open, onClose, onImport, existingTitles = [] }
                       >
                         <option value="__unmapped__">-- Skip --</option>
                         {csvData.headers.map((h, i) => (
-                          <option key={i} value={i}>
+                          <option key={h} value={i}>
                             {h}
                           </option>
                         ))}
@@ -251,10 +251,8 @@ export function CsvImportDialog({ open, onClose, onImport, existingTitles = [] }
                       const isDupe = duplicateRows.has(i);
                       const isExisting = existingDupes.has(i);
                       return (
-                        <tr
-                          key={i}
-                          className={cn("hover:bg-accent/30", isDupe && "bg-amber-500/5", isExisting && "bg-red-500/5")}
-                        >
+                        // biome-ignore lint/suspicious/noArrayIndexKey: CSV rows have no identity; row position in the parsed file is the only meaningful key
+                        <tr key={i} className={cn("hover:bg-accent/30", isDupe && "bg-amber-500/5", isExisting && "bg-red-500/5")}>
                           <td className="px-3 py-2">
                             <button
                               type="button"

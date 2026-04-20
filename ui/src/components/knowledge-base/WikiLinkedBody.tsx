@@ -49,9 +49,9 @@ export function WikiLinkedBody({
     <div className="flex flex-wrap gap-1 pb-2">
       {rendered
         .filter((p) => p.type === "link")
-        .map((p, i) => (
+        .map((p) => (
           <button type="button"
-            key={i}
+            key={p.slug ?? p.value}
             onClick={() => p.slug && onNavigate(p.slug)}
             className={cn(
               "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors",

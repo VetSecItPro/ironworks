@@ -37,13 +37,11 @@ export function ActivityHeatmap({ events }: { events: ActivityEvent[] }) {
       </h4>
       <div className="grid gap-[3px]" style={{ gridTemplateColumns: `repeat(${weeks}, 1fr)` }}>
         {grid.map((week, wi) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: grid cells are position-indexed; week/day position is the identity
           <div key={wi} className="flex flex-col gap-[3px]">
             {week.map((count, di) => (
-              <div
-                key={di}
-                className={cn("aspect-square w-full min-w-[8px] rounded-[3px]", cellColor(count, maxCount))}
-                title={`${count} events`}
-              />
+              // biome-ignore lint/suspicious/noArrayIndexKey: grid cells are position-indexed; week/day position is the identity
+              <div key={di} className={cn("aspect-square w-full min-w-[8px] rounded-[3px]", cellColor(count, maxCount))} title={`${count} events`} />
             ))}
           </div>
         ))}

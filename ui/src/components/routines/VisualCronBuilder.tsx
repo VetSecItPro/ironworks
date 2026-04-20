@@ -40,7 +40,7 @@ export function VisualCronBuilder({ value, onChange }: { value: string; onChange
           onChange={(e) => onChange(`${minute} ${e.target.value} * * ${dow}`)}
         >
           {Array.from({ length: 24 }, (_, i) => (
-            <option key={i} value={String(i)}>
+            <option key={String(i)} value={String(i)}>
               {i === 0 ? "12 AM" : i < 12 ? `${i} AM` : i === 12 ? "12 PM" : `${i - 12} PM`}
             </option>
           ))}
@@ -52,7 +52,7 @@ export function VisualCronBuilder({ value, onChange }: { value: string; onChange
           onChange={(e) => onChange(`${e.target.value} ${hour} * * ${dow}`)}
         >
           {Array.from({ length: 12 }, (_, i) => (
-            <option key={i} value={String(i * 5)}>
+            <option key={String(i * 5)} value={String(i * 5)}>
               {String(i * 5).padStart(2, "0")}
             </option>
           ))}

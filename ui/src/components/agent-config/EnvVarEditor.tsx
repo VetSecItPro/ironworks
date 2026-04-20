@@ -178,6 +178,7 @@ export function EnvVarEditor({
       {rows.map((row, i) => {
         const isTrailing = i === rows.length - 1 && !row.key && !row.plainValue && !row.secretId;
         return (
+          // biome-ignore lint/suspicious/noArrayIndexKey: editable env-var rows have no stable id; row.key is mutable and can be empty during editing
           <div key={i} className="flex items-center gap-1.5">
             <input
               className={cn(inputClass, "flex-[2]")}

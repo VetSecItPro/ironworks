@@ -347,8 +347,8 @@ export function PluginStatusTab({
 
                 {healthData.checks.length > 0 ? (
                   <div className="space-y-2 border-t border-border/50 pt-2">
-                    {healthData.checks.map((check, i) => (
-                      <div key={i} className="flex items-start justify-between gap-2">
+                    {healthData.checks.map((check) => (
+                      <div key={check.name} className="flex items-start justify-between gap-2">
                         <span className="truncate text-muted-foreground" title={check.name}>
                           {check.name}
                         </span>

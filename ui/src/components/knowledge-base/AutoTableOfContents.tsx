@@ -26,9 +26,9 @@ export function AutoTableOfContents({ body }: { body: string }) {
     <div className="rounded-lg border border-border bg-muted/10 p-3 mb-4">
       <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">Table of Contents</p>
       <nav className="space-y-0.5">
-        {headings.map((h, i) => (
+        {headings.map((h) => (
           <a
-            key={i}
+            key={h.id}
             href={`#${h.id}`}
             className={cn(
               "block text-xs text-muted-foreground hover:text-foreground transition-colors py-0.5",

@@ -16,8 +16,8 @@ export function AdapterEnvironmentResult({ result }: { result: AdapterEnvironmen
         <span className="text-[11px] opacity-80">{new Date(result.testedAt).toLocaleTimeString()}</span>
       </div>
       <div className="mt-2 space-y-1.5">
-        {result.checks.map((check, idx) => (
-          <div key={`${check.code}-${idx}`} className="text-[11px] leading-relaxed break-words">
+        {result.checks.map((check) => (
+          <div key={check.code} className="text-[11px] leading-relaxed break-words">
             <span className="font-medium uppercase tracking-wide opacity-80">{check.level}</span>
             <span className="mx-1 opacity-60">·</span>
             <span>{check.message}</span>

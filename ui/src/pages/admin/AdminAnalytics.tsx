@@ -77,7 +77,7 @@ function LineChart({
         const y = PAD.top + (INNER_H / yTicks) * i;
         const val = max - ((max - min) / yTicks) * i;
         return (
-          <g key={i}>
+          <g key={val}>
             <line
               x1={PAD.left}
               y1={y}
@@ -106,7 +106,7 @@ function LineChart({
         if (i % step !== 0 && i !== data.length - 1) return null;
         return (
           <text
-            key={i}
+            key={d.label}
             x={scaleX(i, data.length)}
             y={CHART_H - 4}
             textAnchor="middle"
@@ -131,7 +131,7 @@ function LineChart({
       />
       {/* Data points */}
       {data.map((d, i) => (
-        <circle key={i} cx={scaleX(i, data.length)} cy={scaleY(d.value, min, max)} r={3} fill={color} />
+        <circle key={d.label} cx={scaleX(i, data.length)} cy={scaleY(d.value, min, max)} r={3} fill={color} />
       ))}
     </svg>
   );
@@ -158,7 +158,7 @@ function BarChart({
         const y = PAD.top + (INNER_H / yTicks) * i;
         const val = max - (max / yTicks) * i;
         return (
-          <g key={i}>
+          <g key={val}>
             <line
               x1={PAD.left}
               y1={y}
@@ -188,7 +188,7 @@ function BarChart({
         const step = Math.max(1, Math.floor(data.length / 6));
         const showLabel = i % step === 0 || i === data.length - 1;
         return (
-          <g key={i}>
+          <g key={d.label}>
             <rect x={x} y={y} width={barW} height={barH} fill={color} fillOpacity={0.75} rx={2} />
             {showLabel && (
               <text

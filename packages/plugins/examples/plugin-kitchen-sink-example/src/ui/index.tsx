@@ -344,6 +344,7 @@ function MiniList({
   return (
     <div style={{ display: "grid", gap: "8px" }}>
       {items.map((item, index) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: generic plugin list renderer accepts unknown[]; items have no guaranteed id field
         <div key={index} style={subtleCardStyle}>
           {render(item, index)}
         </div>

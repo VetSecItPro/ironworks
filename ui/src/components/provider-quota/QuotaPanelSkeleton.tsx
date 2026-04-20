@@ -12,6 +12,7 @@ export function QuotaPanelSkeleton() {
       </div>
       <div className="mt-4 space-y-3">
         {Array.from({ length: 3 }).map((_, index) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholder list; items are anonymous, count-only
           <div key={index} className="border border-border px-3.5 py-3">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 space-y-2">

@@ -117,6 +117,7 @@ export function ManualModeDialog({
 
             <div className="space-y-3">
               {steps.map((step, idx) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: editable playbook steps have no stable id; step.title is mutable during editing
                 <div key={idx} className="border border-border rounded-lg p-3 space-y-2">
                   <div className="flex items-center gap-2">
                     <span className="flex items-center justify-center h-5 w-5 rounded-full bg-accent text-[11px] font-medium shrink-0">

@@ -90,7 +90,7 @@ export function PathInstructionsModal({ open, onOpenChange }: PathInstructionsMo
         {/* Steps */}
         <ol className="space-y-2 text-sm">
           {current.steps.map((step, i) => (
-            <li key={i} className="flex gap-2">
+            <li key={step} className="flex gap-2">
               <span className="text-muted-foreground font-mono text-xs mt-0.5 shrink-0">{i + 1}.</span>
               <span>{step}</span>
             </li>

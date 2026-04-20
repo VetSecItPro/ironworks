@@ -54,17 +54,8 @@ export function SimpleDiff({ oldText, newText }: { oldText: string; newText: str
   return (
     <div className="font-mono text-[11px] leading-5 overflow-x-auto max-h-64 overflow-y-auto rounded border border-border">
       {diff.map((line, i) => (
-        <div
-          key={i}
-          className={cn(
-            "px-3 py-0.5 whitespace-pre-wrap",
-            line.type === "removed"
-              ? "bg-red-500/10 text-red-400"
-              : line.type === "added"
-                ? "bg-emerald-500/10 text-emerald-400"
-                : "text-muted-foreground/80",
-          )}
-        >
+        // biome-ignore lint/suspicious/noArrayIndexKey: diff lines have no identity beyond their position; same line text can appear multiple times on both sides
+        <div key={i} className={cn("px-3 py-0.5 whitespace-pre-wrap", line.type === "removed" ? "bg-red-500/10 text-red-400" : line.type === "added" ? "bg-emerald-500/10 text-emerald-400" : "text-muted-foreground/80")}>
           <span className="inline-block w-4 text-right mr-2 select-none opacity-50">
             {line.type === "removed" ? "-" : line.type === "added" ? "+" : " "}
           </span>

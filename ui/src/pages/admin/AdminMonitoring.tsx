@@ -117,6 +117,7 @@ export default function AdminMonitoring() {
       {isLoading && (
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-2">
           {Array.from({ length: 8 }).map((_, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholder list; items are anonymous, count-only
             <div key={i} className="rounded-xl border border-border h-28 animate-pulse bg-muted/30" />
           ))}
         </div>

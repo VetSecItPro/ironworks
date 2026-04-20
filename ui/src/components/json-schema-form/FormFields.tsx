@@ -354,6 +354,7 @@ export const ArrayField = React.memo(
 
         <div className="space-y-3">
           {items.map((item, index) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: JSON Schema array items have no inherent id; position is the address used by the form path
             <div key={index} className="group relative flex items-start space-x-2 rounded-lg border p-3">
               <div className="flex-1">
                 <div className="mb-2 text-xs font-medium text-muted-foreground">Item {index + 1}</div>

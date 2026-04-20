@@ -458,8 +458,8 @@ export function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType
               <ul className="list-disc pl-5 space-y-1">
                 {adapterInvokePayload.commandNotes
                   .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
-                  .map((note, idx) => (
-                    <li key={`${idx}-${note}`} className="text-xs break-all font-mono">
+                  .map((note) => (
+                    <li key={note} className="text-xs break-all font-mono">
                       {note}
                     </li>
                   ))}

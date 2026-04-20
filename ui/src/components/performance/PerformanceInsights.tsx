@@ -127,9 +127,9 @@ export function PerformanceInsights({ rows }: { rows: AgentPerfRow[] }) {
         </p>
       ) : (
         <div className="space-y-2">
-          {insights.slice(0, 8).map((insight, i) => (
+          {insights.slice(0, 8).map((insight) => (
             <div
-              key={`${insight.agent}-${i}`}
+              key={`${insight.agent}-${insight.message}`}
               className="flex items-start gap-2.5 rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5 text-sm"
             >
               {insight.type === "warning" && <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-red-400" />}

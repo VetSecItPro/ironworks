@@ -49,7 +49,7 @@ export function PerformanceTrendChart({ snapshots }: { snapshots: Array<{ date: 
         const val = minScore + (range / yTicks) * i;
         const y = yPos(val);
         return (
-          <g key={i}>
+          <g key={val}>
             <line
               x1={TREND_PAD.left}
               y1={y}
@@ -88,7 +88,7 @@ export function PerformanceTrendChart({ snapshots }: { snapshots: Array<{ date: 
 
       {/* Data points */}
       {snapshots.map((s, i) => (
-        <circle key={i} cx={xPos(i)} cy={yPos(s.score)} r={3} fill="#6366f1" />
+        <circle key={s.date.toISOString()} cx={xPos(i)} cy={yPos(s.score)} r={3} fill="#6366f1" />
       ))}
 
       {/* X-axis labels */}
@@ -98,7 +98,7 @@ export function PerformanceTrendChart({ snapshots }: { snapshots: Array<{ date: 
         const label = `${d.getMonth() + 1}/${d.getDate()}`;
         return (
           <text
-            key={i}
+            key={s.date.toISOString()}
             x={xPos(i)}
             y={TREND_H - 6}
             textAnchor="middle"
@@ -138,7 +138,7 @@ export function VelocityChart({ data }: { data: VelocityWeek[] }) {
         const val = yStep * i;
         const y = VEL_PAD.top + VEL_INNER_H - (val / maxVal) * VEL_INNER_H;
         return (
-          <g key={i}>
+          <g key={val}>
             <line
               x1={VEL_PAD.left}
               y1={y}
@@ -171,7 +171,7 @@ export function VelocityChart({ data }: { data: VelocityWeek[] }) {
         const label = `${labelDate.getMonth() + 1}/${labelDate.getDate()}`;
 
         return (
-          <g key={i}>
+          <g key={d.weekStart}>
             <rect x={x} y={y} width={barW} height={barH} fill="#3b82f6" fillOpacity={0.75} rx={2} />
             {(i === 0 || i === barCount - 1 || i % 2 === 0) && (
               <text

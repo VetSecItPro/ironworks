@@ -186,6 +186,7 @@ export function PromptsTabSkeleton() {
         </div>
         <div className="grid gap-3 md:grid-cols-3">
           {Array.from({ length: 3 }).map((_, index) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholder list; items are anonymous, count-only
             <div key={index} className="space-y-2">
               <Skeleton className="h-3 w-20" />
               <Skeleton className="h-10 w-full" />
@@ -202,6 +203,7 @@ export function PromptsTabSkeleton() {
           <Skeleton className="h-10 w-full" />
           <div className="space-y-2">
             {Array.from({ length: 5 }).map((_, index) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: skeleton placeholder list; items are anonymous, count-only
               <Skeleton key={index} className="h-9 w-full rounded-none" />
             ))}
           </div>

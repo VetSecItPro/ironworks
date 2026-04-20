@@ -85,14 +85,14 @@ export function ScheduleCalendarView({
               <div className="bg-background flex items-center justify-end pr-2 text-[10px] text-muted-foreground/80">
                 {hour === 0 ? "12AM" : hour < 12 ? `${hour}AM` : hour === 12 ? "12PM" : `${hour - 12}PM`}
               </div>
-              {days.map((_, dayIdx) => {
+              {days.map((day, dayIdx) => {
                 const key = `${dayIdx}-${hour}`;
                 const cellSlots = grid.get(key) ?? [];
                 return (
-                  <div key={dayIdx} className="bg-background p-0.5 min-h-[28px]">
-                    {cellSlots.map((slot, si) => (
+                  <div key={day} className="bg-background p-0.5 min-h-[28px]">
+                    {cellSlots.map((slot) => (
                       <button type="button"
-                        key={si}
+                        key={slot.routineId}
                         onClick={() => onRoutineClick(slot.routineId)}
                         className="block w-full text-left text-[10px] rounded px-1 py-0.5 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors truncate"
                         title={`${slot.title} (${slot.agentName})`}

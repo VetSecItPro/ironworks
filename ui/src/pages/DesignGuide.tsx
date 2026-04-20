@@ -695,6 +695,7 @@ export function DesignGuide() {
         <ScrollArea className="h-36 rounded-md border border-border">
           <div className="space-y-2 p-3">
             {Array.from({ length: 12 }).map((_, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: static demo list; items are anonymous, position is the only identity
               <div key={i} className="rounded-md border border-border p-2 text-sm">
                 Heartbeat run #{i + 1}: completed successfully
               </div>

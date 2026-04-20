@@ -90,7 +90,7 @@ export function BreadcrumbBar() {
             {breadcrumbs.map((crumb, i) => {
               const isLast = i === breadcrumbs.length - 1;
               return (
-                <Fragment key={i}>
+                <Fragment key={crumb.label}>
                   {i > 0 && <BreadcrumbSeparator />}
                   <BreadcrumbItem className={isLast ? "min-w-0" : "shrink-0"}>
                     {isLast || !crumb.href ? (

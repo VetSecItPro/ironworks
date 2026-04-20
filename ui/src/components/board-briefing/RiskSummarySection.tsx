@@ -34,8 +34,8 @@ export function RiskSummarySection({ riskData }: RiskSummarySectionProps) {
       </div>
       {riskData.risks.length > 0 && (
         <div className="space-y-1.5 pt-2 border-t border-border/50">
-          {riskData.risks.slice(0, 5).map((risk: RiskItem, i: number) => (
-            <div key={`${risk.entityId}-${i}`} className="flex items-start gap-2.5 text-sm">
+          {riskData.risks.slice(0, 5).map((risk: RiskItem) => (
+            <div key={risk.entityId} className="flex items-start gap-2.5 text-sm">
               <span
                 className={cn(
                   "inline-flex items-center justify-center h-5 w-5 rounded text-[10px] font-bold shrink-0 mt-0.5",

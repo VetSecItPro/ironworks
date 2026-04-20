@@ -63,8 +63,8 @@ export function AuditTrailSection() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {MOCK_AUDIT_TRAIL.map((entry, i) => (
-              <tr key={i} className="hover:bg-muted/20 transition-colors">
+            {MOCK_AUDIT_TRAIL.map((entry) => (
+              <tr key={`${entry.changedAt}-${entry.field}`} className="hover:bg-muted/20 transition-colors">
                 <td className="px-4 py-2.5 text-xs capitalize">{entry.section.replace(/-/g, " ")}</td>
                 <td className="px-4 py-2.5 text-xs font-medium">{entry.field}</td>
                 <td className="px-4 py-2.5 text-xs text-muted-foreground">{entry.changedBy}</td>

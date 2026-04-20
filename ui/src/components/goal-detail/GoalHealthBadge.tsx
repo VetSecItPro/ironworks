@@ -124,8 +124,8 @@ export function HealthTrendChart({ snapshots }: { snapshots: GoalSnapshotDTO[] }
         />
 
         {/* Dots */}
-        {pathPoints.map((p, i) => (
-          <circle key={i} cx={p.x} cy={p.y} r="2.5" className="fill-blue-500" />
+        {pathPoints.map((p) => (
+          <circle key={`${p.x}-${p.y}`} cx={p.x} cy={p.y} r="2.5" className="fill-blue-500" />
         ))}
 
         {/* X labels */}

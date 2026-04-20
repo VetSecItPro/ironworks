@@ -36,7 +36,7 @@ export function WeeklyLineChart({
         />
         <path d={pathD} fill="none" stroke="hsl(var(--primary))" strokeWidth={2} strokeLinejoin="round" />
         {points.map((p, i) => (
-          <g key={i}>
+          <g key={p.d.label}>
             <circle cx={p.x} cy={p.y} r={3} fill="hsl(var(--primary))" />
             {i === n - 1 && (
               <text x={p.x} y={p.y - 6} textAnchor="middle" fontSize={9} fill="currentColor" opacity={0.7}>
@@ -72,7 +72,7 @@ export function WeeklyBarChart({ data }: { data: Array<{ label: string; value: n
           const x = CHART_PAD_X + i * (barW + gap);
           const y = CHART_PAD_Y + (CHART_H - CHART_PAD_Y * 2) - barH;
           return (
-            <g key={i}>
+            <g key={d.label}>
               <rect
                 x={x}
                 y={y}

@@ -43,9 +43,9 @@ export function GoalGanttView({
     <div className="space-y-1">
       {/* Month header */}
       <div className="relative h-6 border-b border-border mb-2">
-        {months.map((m, i) => (
+        {months.map((m) => (
           <span
-            key={i}
+            key={m.label}
             className="absolute text-[10px] text-muted-foreground/80 -translate-x-1/2"
             style={{ left: `${m.pct}%`, top: 0 }}
           >

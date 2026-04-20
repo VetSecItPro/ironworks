@@ -132,8 +132,8 @@ export function EditHistoryViewer({ commentId, open, onClose }: EditHistoryViewe
         <p className="text-muted-foreground">No edit history</p>
       ) : (
         <div className="space-y-2 max-h-40 overflow-y-auto">
-          {history.map((entry, i) => (
-            <div key={i} className="border-l-2 border-border pl-2 py-1">
+          {history.map((entry) => (
+            <div key={entry.editedAt} className="border-l-2 border-border pl-2 py-1">
               <div className="text-muted-foreground">
                 {entry.editedBy} - {formatDateTime(entry.editedAt)}
               </div>

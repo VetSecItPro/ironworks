@@ -214,8 +214,8 @@ export function InviteLandingPage() {
           {diagnostics.length > 0 && (
             <div className="mt-3 space-y-1 rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
               <p className="font-medium text-foreground">Connectivity diagnostics</p>
-              {diagnostics.map((diag, idx) => (
-                <div key={`${diag.code}:${idx}`} className="space-y-0.5">
+              {diagnostics.map((diag) => (
+                <div key={diag.code} className="space-y-0.5">
                   <p className={diag.level === "warn" ? "text-amber-600 dark:text-amber-400" : undefined}>
                     [{diag.level}] {diag.message}
                   </p>
