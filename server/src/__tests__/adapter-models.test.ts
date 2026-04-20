@@ -92,9 +92,16 @@ describe("adapter model listing", () => {
   });
 
   it("returns no opencode models when opencode command is unavailable", async () => {
+    // Restore IRONWORKS_OPENCODE_COMMAND in try/finally so a mid-test failure
+    // never leaks the sentinel value into subsequent tests in the same worker.
+    const original = process.env.IRONWORKS_OPENCODE_COMMAND;
     process.env.IRONWORKS_OPENCODE_COMMAND = "__ironworks_missing_opencode_command__";
-
-    const models = await listAdapterModels("opencode_local");
-    expect(models).toEqual([]);
+    try {
+      const models = await listAdapterModels("opencode_local");
+      expect(models).toEqual([]);
+    } finally {
+      if (original === undefined) delete process.env.IRONWORKS_OPENCODE_COMMAND;
+      else process.env.IRONWORKS_OPENCODE_COMMAND = original;
+    }
   });
 });
