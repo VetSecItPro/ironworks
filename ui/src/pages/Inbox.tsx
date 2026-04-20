@@ -76,6 +76,14 @@ export function Inbox() {
     return "hidden" as const;
   };
 
+  const selectableIssueIds = useMemo(
+    () =>
+      tab === "mine"
+        ? data.issuesToRender.filter((issue) => !mutations.archivingIssueIds.has(issue.id)).map((issue) => issue.id)
+        : [],
+    [tab, data.issuesToRender, mutations.archivingIssueIds],
+  );
+
   if (!selectedCompanyId) {
     return <EmptyState icon={InboxIcon} message="Select a company to view inbox." />;
   }
@@ -111,13 +119,6 @@ export function Inbox() {
   const unreadIssueIds = markAllReadIssues.map((issue) => issue.id);
   const canMarkAllRead = unreadIssueIds.length > 0;
 
-  const selectableIssueIds = useMemo(
-    () =>
-      tab === "mine"
-        ? data.issuesToRender.filter((issue) => !mutations.archivingIssueIds.has(issue.id)).map((issue) => issue.id)
-        : [],
-    [tab, data.issuesToRender, mutations.archivingIssueIds],
-  );
   const allSelected =
     selectableIssueIds.length > 0 && selectableIssueIds.every((id) => mutations.selectedIssueIds.has(id));
   const someSelected = mutations.selectedIssueIds.size > 0;

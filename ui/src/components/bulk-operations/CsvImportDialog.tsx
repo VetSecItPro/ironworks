@@ -26,6 +26,22 @@ export function CsvImportDialog({ open, onClose, onImport, existingTitles = [] }
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const duplicateRows = useMemo(() => {
+    if (!csvData) return new Set<number>();
+    return detectDuplicates(csvData.rows, mapping.title);
+  }, [csvData, mapping.title]);
+
+  const existingDupes = useMemo(() => {
+    if (!csvData || mapping.title === null) return new Set<number>();
+    const existing = new Set(existingTitles.map((t) => t.toLowerCase().trim()));
+    const dupes = new Set<number>();
+    csvData.rows.forEach((row, i) => {
+      const title = row[mapping.title!]?.toLowerCase().trim() ?? "";
+      if (title && existing.has(title)) dupes.add(i);
+    });
+    return dupes;
+  }, [csvData, mapping.title, existingTitles]);
+
   if (!open) return null;
 
   function handleFile(e: ChangeEvent<HTMLInputElement>) {
@@ -89,22 +105,6 @@ export function CsvImportDialog({ open, onClose, onImport, existingTitles = [] }
     setSelectedRows(new Set());
     setStep("upload");
   }
-
-  const duplicateRows = useMemo(() => {
-    if (!csvData) return new Set<number>();
-    return detectDuplicates(csvData.rows, mapping.title);
-  }, [csvData, mapping.title]);
-
-  const existingDupes = useMemo(() => {
-    if (!csvData || mapping.title === null) return new Set<number>();
-    const existing = new Set(existingTitles.map((t) => t.toLowerCase().trim()));
-    const dupes = new Set<number>();
-    csvData.rows.forEach((row, i) => {
-      const title = row[mapping.title!]?.toLowerCase().trim() ?? "";
-      if (title && existing.has(title)) dupes.add(i);
-    });
-    return dupes;
-  }, [csvData, mapping.title, existingTitles]);
 
   return (
     <button type="button" className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50" aria-label="Close dialog" onClick={onClose} onKeyDown={(e) => { if (e.key === 'Escape') { e.preventDefault(); onClose(); } }}>

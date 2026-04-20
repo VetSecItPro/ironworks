@@ -31,6 +31,17 @@ export function JsonSchemaForm({ schema, values, onChange, errors = {}, disabled
     [onChange],
   );
 
+  // Memoize to avoid re-renders when parent provides new object references
+  const properties = useMemo(() => schema.properties ?? {}, [schema.properties]);
+  const requiredFields = useMemo(() => new Set(schema.required ?? []), [schema.required]);
+
+  const handleFieldChange = useCallback(
+    (key: string, value: unknown) => {
+      onChange({ ...values, [key]: value });
+    },
+    [onChange, values],
+  );
+
   // If it's a scalar at root, render a single FormField
   if (type !== "object") {
     return (
@@ -47,17 +58,6 @@ export function JsonSchemaForm({ schema, values, onChange, errors = {}, disabled
       </div>
     );
   }
-
-  // Memoize to avoid re-renders when parent provides new object references
-  const properties = useMemo(() => schema.properties ?? {}, [schema.properties]);
-  const requiredFields = useMemo(() => new Set(schema.required ?? []), [schema.required]);
-
-  const handleFieldChange = useCallback(
-    (key: string, value: unknown) => {
-      onChange({ ...values, [key]: value });
-    },
-    [onChange, values],
-  );
 
   if (Object.keys(properties).length === 0) {
     return (
