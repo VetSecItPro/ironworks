@@ -50,6 +50,7 @@ import { projectRoutes } from "./routes/projects.js";
 import { roleTemplateRoutes } from "./routes/role-templates.js";
 import { routineRoutes } from "./routes/routines.js";
 import { searchRoutes } from "./routes/search.js";
+import { providerRoutes } from "./routes/providers.js";
 import { secretRoutes } from "./routes/secrets.js";
 import { setupRoutes } from "./routes/setup.js";
 import { sidebarBadgeRoutes } from "./routes/sidebar-badges.js";
@@ -306,6 +307,7 @@ export async function createApp(
   api.use(goalRoutes(db));
   api.use(approvalRoutes(db));
   api.use(secretRoutes(db));
+  api.use(providerRoutes(db));
   api.use(costRoutes(db));
   api.use(executiveRoutes(db));
   api.use(activityRoutes(db));
