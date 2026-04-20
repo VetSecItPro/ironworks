@@ -118,6 +118,7 @@ function createDbStub() {
     select: vi.fn().mockReturnValue({
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockReturnValue({
+          // biome-ignore lint/suspicious/noThenProperty: test mock drizzle thenable contract
           then: vi.fn().mockResolvedValue([
             {
               id: companyId,

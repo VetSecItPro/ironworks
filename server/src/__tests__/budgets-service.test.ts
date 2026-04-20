@@ -18,6 +18,7 @@ function createDbStub(selectResults: SelectResult[]) {
   const selectOrderBy = vi.fn(async () => pendingSelects.shift() ?? []);
   const selectFrom = vi.fn(() => ({
     where: selectWhere,
+    // biome-ignore lint/suspicious/noThenProperty: test mock drizzle thenable contract
     then: selectThen,
     orderBy: selectOrderBy,
   }));

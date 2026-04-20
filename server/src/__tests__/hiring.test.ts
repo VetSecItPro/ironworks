@@ -44,6 +44,7 @@ function createFakeDb() {
   const selectWhere = vi.fn().mockReturnValue({
     orderBy: selectOrderBy,
     limit: selectLimit,
+    // biome-ignore lint/suspicious/noThenProperty: test mock drizzle thenable contract
     then: vi.fn().mockImplementation((cb: any) => mockDbRows().then(cb)),
   });
   const selectFrom = vi.fn().mockReturnValue({ where: selectWhere });
@@ -51,12 +52,14 @@ function createFakeDb() {
 
   // insert chain
   const insertThen = vi.fn().mockImplementation((cb: any) => mockInsertRow().then(cb));
+  // biome-ignore lint/suspicious/noThenProperty: test mock drizzle thenable contract
   const insertReturning = vi.fn().mockReturnValue({ then: insertThen });
   const insertValues = vi.fn().mockReturnValue({ returning: insertReturning });
   const insertInto = vi.fn().mockReturnValue({ values: insertValues });
 
   // update chain
   const updateThen = vi.fn().mockImplementation((cb: any) => mockUpdateRow().then(cb));
+  // biome-ignore lint/suspicious/noThenProperty: test mock drizzle thenable contract
   const updateReturning = vi.fn().mockReturnValue({ then: updateThen });
   const updateWhere = vi.fn().mockReturnValue({ returning: updateReturning });
   const updateSet = vi.fn().mockReturnValue({ where: updateWhere });

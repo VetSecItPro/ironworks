@@ -44,8 +44,7 @@ export function makeChainableDb<T = unknown>(rows: T[] | (() => T[]) = []): Reco
     chain[method] = vi.fn().mockReturnValue(chain);
   }
   // Thenable contract — callers do `await db.select()...` or explicit `.then(cb)`
-  // biome-ignore lint/suspicious/noThenProperty: intentional — mock matches Drizzle's
-  //   PromiseLike return shape. Without `then`, JS's `await` can't unwrap the chain.
+  // biome-ignore lint/suspicious/noThenProperty: test mock drizzle thenable contract
   chain.then = vi.fn().mockImplementation((resolve: (value: T[]) => unknown) => {
     const value = typeof rows === "function" ? (rows as () => T[])() : rows;
     return resolve(value);

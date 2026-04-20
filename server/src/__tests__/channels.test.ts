@@ -117,6 +117,7 @@ async function createApp(actor: Record<string, unknown>) {
     select: vi.fn().mockReturnValue({
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockReturnValue({
+          // biome-ignore lint/suspicious/noThenProperty: test mock drizzle thenable contract
           then: vi.fn().mockImplementation((cb: any) => cb([{ id: CHANNEL_ID, companyId: COMPANY_ID }])),
         }),
       }),
@@ -147,6 +148,7 @@ async function createAppWithChannelLookup(actor: Record<string, unknown>, result
     select: vi.fn().mockReturnValue({
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockReturnValue({
+          // biome-ignore lint/suspicious/noThenProperty: test mock drizzle thenable contract
           then: vi.fn().mockImplementation((cb: any) => cb(result ? [result] : [])),
         }),
       }),

@@ -120,6 +120,7 @@ async function createApp(actor: Record<string, unknown>) {
     select: vi.fn().mockReturnThis(),
     from: vi.fn().mockReturnThis(),
     where: vi.fn().mockReturnThis(),
+    // biome-ignore lint/suspicious/noThenProperty: test mock drizzle thenable contract
     then: vi.fn().mockResolvedValue([{ membershipRole: "owner" }]),
     update: vi.fn().mockReturnThis(),
     set: vi.fn().mockReturnThis(),

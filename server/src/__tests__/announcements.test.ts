@@ -38,6 +38,7 @@ function buildChainableQuery(defaultResult: unknown = []) {
   chain.set = vi.fn().mockReturnValue(chain);
   chain.returning = vi.fn().mockReturnValue(chain);
   chain.and = vi.fn().mockReturnValue(chain);
+  // biome-ignore lint/suspicious/noThenProperty: test mock drizzle thenable contract
   chain.then = vi.fn().mockImplementation((resolve: any) => resolve(defaultResult));
   return chain;
 }

@@ -70,6 +70,7 @@ function makeMockDb(selectSetups: SelectSetup = []) {
       return {
         from: vi.fn().mockReturnThis(),
         where: vi.fn().mockReturnValue({
+          // biome-ignore lint/suspicious/noThenProperty: test mock drizzle thenable contract
           then: vi.fn((cb: (r: any[]) => any) => Promise.resolve(cb(rows))),
         }),
       };
