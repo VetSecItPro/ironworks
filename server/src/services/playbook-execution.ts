@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import type { Dirent } from "node:fs";
 import path from "node:path";
 import type { Db } from "@ironworksai/db";
 import {
@@ -424,7 +425,7 @@ async function scanAndRegisterLibraryFiles(companyId: string, issueId: string, d
   const MAX_DEPTH = 5;
   async function walk(dir: string, relBase: string, depth: number) {
     if (depth > MAX_DEPTH) return;
-    let dirents;
+    let dirents: Dirent[];
     try {
       dirents = await fs.readdir(dir, { withFileTypes: true });
     } catch {

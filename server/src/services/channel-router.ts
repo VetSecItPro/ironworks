@@ -39,7 +39,7 @@ export async function selectRespondingAgents(
   // Rule 3: Extract @mentions
   const mentionPattern = /@(\w[\w\s]*?)(?=\s|,|$)/g;
   const mentions: string[] = [];
-  let match;
+  let match: RegExpExecArray | null = null;
   while ((match = mentionPattern.exec(messageBody)) !== null) {
     mentions.push(match[1].trim().toLowerCase());
   }

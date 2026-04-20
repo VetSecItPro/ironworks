@@ -1,6 +1,6 @@
 import type { Db } from "@ironworksai/db";
 import { logger } from "../middleware/logger.js";
-import { lookupPlaybook } from "./playbook-rag.js";
+import { type LookupResult, lookupPlaybook } from "./playbook-rag.js";
 
 /**
  * Post-execution audit: after an agent completes a run, a small Ollama
@@ -68,7 +68,7 @@ export async function auditAgentRun(db: Db, input: AuditInput): Promise<AuditVer
 
   // Look up relevant playbook chunks via RAG. Filter by department so
   // we don't audit a CMO output against a security playbook.
-  let chunks;
+  let chunks: LookupResult[];
   try {
     chunks = await lookupPlaybook(db, {
       companyId: input.companyId,

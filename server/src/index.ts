@@ -248,7 +248,7 @@ export async function startServer(): Promise<StartedServer> {
     }
   }
 
-  let db;
+  let db: Db;
   let embeddedPostgres: EmbeddedPostgresInstance | null = null;
   let embeddedPostgresStartedByThisProcess = false;
   let migrationSummary: MigrationSummary = "skipped";

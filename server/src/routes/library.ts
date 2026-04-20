@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import type { Dirent, Stats } from "node:fs";
 import path from "node:path";
 import type { Db } from "@ironworksai/db";
 import { agents } from "@ironworksai/db";
@@ -158,7 +159,7 @@ export function libraryRoutes(db: Db) {
     const relativePath = (req.query.path as string) || "";
     const targetDir = resolveSecure(libraryRoot, relativePath);
 
-    let stat;
+    let stat: Stats;
     try {
       stat = await fs.stat(targetDir);
     } catch {
@@ -264,7 +265,7 @@ export function libraryRoutes(db: Db) {
 
     const filePath = resolveSecure(libraryRoot, relativePath);
 
-    let stat;
+    let stat: Stats;
     try {
       stat = await fs.stat(filePath);
     } catch {
@@ -345,7 +346,7 @@ export function libraryRoutes(db: Db) {
     async function walk(dir: string, relativeBase: string, depth: number) {
       if (depth > MAX_DEPTH || results.length >= MAX_RESULTS) return;
 
-      let dirents;
+      let dirents: Dirent[];
       try {
         dirents = await fs.readdir(dir, { withFileTypes: true });
       } catch {
@@ -424,7 +425,7 @@ export function libraryRoutes(db: Db) {
     async function walk(dir: string, relativeBase: string, depth: number) {
       if (depth > MAX_DEPTH) return;
 
-      let dirents;
+      let dirents: Dirent[];
       try {
         dirents = await fs.readdir(dir, { withFileTypes: true });
       } catch {
@@ -515,7 +516,7 @@ export function libraryRoutes(db: Db) {
 
     // Verify file exists on disk
     const absPath = resolveSecure(libraryRoot, filePath);
-    let stat;
+    let stat: Stats;
     try {
       stat = await fs.stat(absPath);
     } catch {

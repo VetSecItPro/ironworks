@@ -1036,7 +1036,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       }
     }
 
-    let issue;
+    let issue: Awaited<ReturnType<typeof svc.update>>;
     try {
       issue = await svc.update(id, updateFields);
     } catch (err) {

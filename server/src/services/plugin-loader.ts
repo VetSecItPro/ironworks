@@ -27,6 +27,7 @@
 
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
+import type { Stats } from "node:fs";
 import { readdir, readFile, rm, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -1040,7 +1041,7 @@ export function pluginLoader(
         const entryPath = path.join(scanDir, entry);
 
         // Check if entry is a directory
-        let entryStat;
+        let entryStat: Stats;
         try {
           entryStat = await stat(entryPath);
         } catch {
@@ -1159,7 +1160,7 @@ export function pluginLoader(
           // Non-scoped packages: check naming convention
           if (!isPluginPackageName(entry)) continue;
 
-          let entryStat;
+          let entryStat: Stats;
           try {
             entryStat = await stat(entryPath);
           } catch {

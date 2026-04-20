@@ -71,7 +71,7 @@ export function messagingRoutes(db: Db) {
     }
 
     // Store token as a company secret
-    let secret;
+    let secret: Awaited<ReturnType<typeof secretSvc.rotate>>;
     const existingSecret = await secretSvc.getByName(companyId, "TELEGRAM_BOT_TOKEN");
     if (existingSecret) {
       secret = await secretSvc.rotate(existingSecret.id, {
