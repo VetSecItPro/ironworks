@@ -87,6 +87,7 @@ export function validateFilePayload(payload: FilePayload, options: ValidateOptio
     // Reject control characters that enable log injection or C-string truncation.
     // NUL (\x00) terminates strings in C contexts and corrupts audit log entries;
     // CR/LF (\r\n) let attackers smuggle fake log lines after the real entry.
+    // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional control-char rejection for security validation
     if (/[\x00\r\n]/.test(payload.filename)) {
       errors.push("filename must not contain null bytes, carriage returns, or line feeds");
     }

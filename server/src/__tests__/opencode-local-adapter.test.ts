@@ -152,6 +152,7 @@ describe("opencode_local ui stdout parser", () => {
 });
 
 function stripAnsi(value: string): string {
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional ANSI escape sequence stripping
   return value.replace(/\x1b\[[0-9;]*m/g, "");
 }
 

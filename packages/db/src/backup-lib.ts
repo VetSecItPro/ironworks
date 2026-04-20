@@ -82,6 +82,7 @@ function formatBackupSize(sizeBytes: number): string {
 }
 
 function formatSqlLiteral(value: string): string {
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional NUL byte removal to prevent SQL string truncation
   const sanitized = value.replace(/\u0000/g, "");
   let tag = "$ironworks$";
   while (sanitized.includes(tag)) {
