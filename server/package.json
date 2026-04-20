@@ -66,7 +66,7 @@
     "embedded-postgres": "18.1.0-beta.16",
     "express": "^5.2.1",
     "hermes-paperclip-adapter": "0.1.1",
-    "jsdom": "^28.1.0",
+    "jsdom": "^29.0.2",
     "multer": "^2.1.1",
     "open": "^11.0.0",
     "pino": "^9.14.0",
