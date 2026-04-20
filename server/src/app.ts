@@ -13,6 +13,7 @@ import { errorHandler, httpLogger } from "./middleware/index.js";
 import { privateHostnameGuard, resolvePrivateHostnameAllowSet } from "./middleware/private-hostname-guard.js";
 import { enforcePlaybookRunLimit, enforceProjectLimit, enforceStorageLimit } from "./middleware/tier-limits.js";
 import { accessRoutes } from "./routes/access.js";
+import { adapterCallRoutes } from "./routes/adapter-calls.js";
 import { activityRoutes } from "./routes/activity.js";
 import { adminRoutes } from "./routes/admin.js";
 import { agentMemoryRoutes } from "./routes/agent-memory.js";
@@ -308,6 +309,7 @@ export async function createApp(
   api.use(approvalRoutes(db));
   api.use(secretRoutes(db));
   api.use(providerRoutes(db));
+  api.use(adapterCallRoutes(db));
   api.use(costRoutes(db));
   api.use(executiveRoutes(db));
   api.use(activityRoutes(db));

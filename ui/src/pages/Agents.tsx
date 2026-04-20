@@ -1,5 +1,5 @@
 import { type Agent, type AgentLifecycleStage, DEPARTMENT_LABELS, DEPARTMENTS } from "@ironworksai/shared";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BarChart3,
   Bot,
@@ -26,6 +26,8 @@ import {
   AgentListView,
   AgentOrgTreeNode,
   AgentPipelineView,
+  AgentYamlExportButton,
+  AgentYamlImportModal,
 } from "../components/agents-page";
 import { EmptyState } from "../components/EmptyState";
 import { PageSkeleton } from "../components/PageSkeleton";
@@ -72,6 +74,7 @@ export function Agents() {
   const { selectedCompanyId } = useCompany();
   const { openNewAgent, openHireAgent } = useDialog();
   const { setBreadcrumbs } = useBreadcrumbs();
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
   const { isMobile } = useSidebar();
@@ -360,6 +363,18 @@ export function Agents() {
               <BarChart3 className="h-3.5 w-3.5 mr-1.5" />
               Compare ({compareIds.size})
             </Button>
+          )}
+          {selectedCompanyId && (
+            <>
+              <AgentYamlExportButton companyId={selectedCompanyId} />
+              <AgentYamlImportModal
+                companyId={selectedCompanyId}
+                onImported={() => {
+                  // Invalidate agent list so newly imported agents appear immediately
+                  void queryClient.invalidateQueries({ queryKey: queryKeys.agents.list(selectedCompanyId) });
+                }}
+              />
+            </>
           )}
           <Button size="sm" variant="outline" onClick={openHireAgent}>
             <UserPlus className="h-3.5 w-3.5 mr-1.5" />
