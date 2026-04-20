@@ -26,7 +26,6 @@ import type {
   IssueDocumentSummary,
   PluginLauncherBounds,
   PluginLauncherRenderContextSnapshot,
-  PluginLauncherRenderEnvironment,
   PluginStateScopeKind,
   Project,
 } from "@ironworksai/shared";
@@ -904,9 +903,6 @@ export function parseMessage(line: string): JsonRpcMessage {
  */
 export class JsonRpcParseError extends Error {
   override readonly name = "JsonRpcParseError";
-  constructor(message: string) {
-    super(message);
-  }
 }
 
 /**
