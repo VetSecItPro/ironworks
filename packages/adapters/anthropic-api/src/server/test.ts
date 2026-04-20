@@ -12,6 +12,7 @@
 import type { AdapterEnvironmentCheck, AdapterEnvironmentTestResult } from "@ironworksai/adapter-utils";
 import { HttpAdapterAuthError, HttpAdapterNetworkError } from "@ironworksai/adapter-utils/http/errors";
 import type { Transport } from "@ironworksai/adapter-utils/http/transport";
+import { isAdapterDisabled } from "./kill-switch.js";
 
 const ADAPTER_TYPE = "anthropic_api";
 
@@ -40,6 +41,21 @@ export async function testEnvironment(
   transport: Transport,
 ): Promise<AdapterEnvironmentTestResult> {
   const checks: AdapterEnvironmentCheck[] = [];
+
+  if (isAdapterDisabled()) {
+    checks.push({
+      code: "anthropic_api_disabled",
+      level: "error",
+      message: "adapter disabled by ADAPTER_DISABLE_ANTHROPIC_API env",
+      hint: "Unset ADAPTER_DISABLE_ANTHROPIC_API to re-enable this adapter.",
+    });
+    return {
+      adapterType: ADAPTER_TYPE,
+      status: summarizeStatus(checks),
+      checks,
+      testedAt: new Date().toISOString(),
+    };
+  }
 
   const apiKey = resolveApiKey(ctx.config);
   if (!apiKey) {

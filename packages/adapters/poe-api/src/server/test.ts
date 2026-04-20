@@ -8,6 +8,7 @@
 import type { AdapterEnvironmentCheck, AdapterEnvironmentTestResult } from "@ironworksai/adapter-utils";
 import { HttpAdapterAuthError, HttpAdapterNetworkError } from "@ironworksai/adapter-utils/http/errors";
 import type { Transport } from "@ironworksai/adapter-utils/http/transport";
+import { isAdapterDisabled } from "./kill-switch.js";
 
 const POE_MODELS_URL = "https://api.poe.com/v1/models";
 const ADAPTER_TYPE = "poe_api";
@@ -37,6 +38,22 @@ export async function testEnvironment(
   transport: Transport,
 ): Promise<AdapterEnvironmentTestResult> {
   const checks: AdapterEnvironmentCheck[] = [];
+
+  // Kill-switch check — must come before any network probe.
+  if (isAdapterDisabled()) {
+    checks.push({
+      code: "poe_api_disabled",
+      level: "error",
+      message: "adapter disabled by ADAPTER_DISABLE_POE_API env",
+      hint: "Unset ADAPTER_DISABLE_POE_API to re-enable this adapter.",
+    });
+    return {
+      adapterType: ADAPTER_TYPE,
+      status: summarizeStatus(checks),
+      checks,
+      testedAt: new Date().toISOString(),
+    };
+  }
 
   const apiKey = resolveApiKey(ctx.config);
   if (!apiKey) {

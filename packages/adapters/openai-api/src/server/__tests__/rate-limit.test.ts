@@ -7,8 +7,12 @@ import { createAdapterRateLimiter, resolveRateLimitPerMin } from "../rate-limit-
 describe("resolveRateLimitPerMin (openai_api)", () => {
   const ENV_KEY = "OPENAI_API_RATE_LIMIT_PER_MIN";
 
-  beforeEach(() => { delete process.env[ENV_KEY]; });
-  afterEach(() => { delete process.env[ENV_KEY]; });
+  beforeEach(() => {
+    delete process.env[ENV_KEY];
+  });
+  afterEach(() => {
+    delete process.env[ENV_KEY];
+  });
 
   it("returns 60 when env var is not set", () => {
     expect(resolveRateLimitPerMin()).toBe(60);

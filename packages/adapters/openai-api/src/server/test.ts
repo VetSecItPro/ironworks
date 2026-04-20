@@ -9,6 +9,7 @@
 import type { AdapterEnvironmentCheck, AdapterEnvironmentTestResult } from "@ironworksai/adapter-utils";
 import { HttpAdapterAuthError, HttpAdapterNetworkError } from "@ironworksai/adapter-utils/http/errors";
 import type { Transport } from "@ironworksai/adapter-utils/http/transport";
+import { isAdapterDisabled } from "./kill-switch.js";
 
 const ADAPTER_TYPE = "openai_api";
 // We probe using a minimal chat completions request rather than GET /v1/models
@@ -41,6 +42,22 @@ export async function testEnvironment(
   transport: Transport,
 ): Promise<AdapterEnvironmentTestResult> {
   const checks: AdapterEnvironmentCheck[] = [];
+
+  // Kill-switch: ADAPTER_DISABLE_OPENAI_API=1 → report as unavailable without probing
+  if (isAdapterDisabled()) {
+    checks.push({
+      code: "openai_api_disabled",
+      level: "error",
+      message: "adapter disabled by ADAPTER_DISABLE_OPENAI_API env",
+      hint: "Unset ADAPTER_DISABLE_OPENAI_API to re-enable this adapter.",
+    });
+    return {
+      adapterType: ADAPTER_TYPE,
+      status: summarizeStatus(checks),
+      checks,
+      testedAt: new Date().toISOString(),
+    };
+  }
 
   const apiKey = resolveApiKey(ctx.config) ?? process.env.ADAPTER_OPENAI_API_KEY ?? null;
   if (!apiKey) {

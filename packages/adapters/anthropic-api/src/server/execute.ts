@@ -24,6 +24,7 @@ import type { UsageSummary } from "@ironworksai/adapter-utils/http/sse-parser";
 import { parseSseStream } from "@ironworksai/adapter-utils/http/sse-parser";
 import type { Transport } from "@ironworksai/adapter-utils/http/transport";
 import { validateAnthropicConfig } from "../shared/config.js";
+import { isAdapterDisabled } from "./kill-switch.js";
 import { adapterRateLimiter } from "./rate-limit-config.js";
 
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
@@ -102,6 +103,16 @@ export async function execute(
   /** Injectable rate limiter for testing — production uses the module-level adapterRateLimiter */
   rateLimiter: RateLimiter = adapterRateLimiter,
 ): Promise<AdapterExecutionResult> {
+  if (isAdapterDisabled()) {
+    return {
+      exitCode: 1,
+      signal: null,
+      timedOut: false,
+      errorMessage: "adapter disabled by ADAPTER_DISABLE_ANTHROPIC_API env",
+      errorCode: "anthropic_api_disabled",
+    };
+  }
+
   // Validate config before any network activity
   const validation = validateAnthropicConfig(ctx.config);
   if (!validation.ok) {

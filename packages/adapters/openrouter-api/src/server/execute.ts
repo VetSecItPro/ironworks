@@ -21,6 +21,7 @@ import type { UsageSummary } from "@ironworksai/adapter-utils/http/sse-parser";
 import { parseSseStream } from "@ironworksai/adapter-utils/http/sse-parser";
 import type { Transport } from "@ironworksai/adapter-utils/http/transport";
 import { validateOpenRouterConfig } from "../shared/config.js";
+import { isAdapterDisabled } from "./kill-switch.js";
 import { adapterRateLimiter } from "./rate-limit-config.js";
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
@@ -82,6 +83,17 @@ export async function execute(
   /** Injectable rate limiter for testing — production uses the module-level adapterRateLimiter */
   rateLimiter: RateLimiter = adapterRateLimiter,
 ): Promise<AdapterExecutionResult> {
+  // Kill-switch: ADAPTER_DISABLE_OPENROUTER_API=1 → refuse immediately without network I/O
+  if (isAdapterDisabled()) {
+    return {
+      exitCode: 1,
+      signal: null,
+      timedOut: false,
+      errorMessage: "adapter disabled by ADAPTER_DISABLE_OPENROUTER_API env",
+      errorCode: "openrouter_api_disabled",
+    };
+  }
+
   // Validate config before any network activity
   const validation = validateOpenRouterConfig(ctx.config);
   if (!validation.ok) {

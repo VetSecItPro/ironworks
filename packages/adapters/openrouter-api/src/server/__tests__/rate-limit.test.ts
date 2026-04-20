@@ -7,8 +7,12 @@ import { createAdapterRateLimiter, resolveRateLimitPerMin } from "../rate-limit-
 describe("resolveRateLimitPerMin (openrouter_api)", () => {
   const ENV_KEY = "OPENROUTER_API_RATE_LIMIT_PER_MIN";
 
-  beforeEach(() => { delete process.env[ENV_KEY]; });
-  afterEach(() => { delete process.env[ENV_KEY]; });
+  beforeEach(() => {
+    delete process.env[ENV_KEY];
+  });
+  afterEach(() => {
+    delete process.env[ENV_KEY];
+  });
 
   it("returns 60 when env var is not set", () => {
     expect(resolveRateLimitPerMin()).toBe(60);

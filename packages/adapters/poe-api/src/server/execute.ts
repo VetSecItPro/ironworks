@@ -16,6 +16,7 @@ import type { UsageSummary } from "@ironworksai/adapter-utils/http/sse-parser";
 import { parseSseStream } from "@ironworksai/adapter-utils/http/sse-parser";
 import type { Transport } from "@ironworksai/adapter-utils/http/transport";
 import { validatePoeConfig } from "../shared/config.js";
+import { isAdapterDisabled } from "./kill-switch.js";
 import { adapterRateLimiter } from "./rate-limit-config.js";
 
 const POE_API_URL = "https://api.poe.com/v1/chat/completions";
@@ -70,6 +71,19 @@ export async function execute(
   /** Injectable rate limiter for testing — production uses the module-level adapterRateLimiter */
   rateLimiter: RateLimiter = adapterRateLimiter,
 ): Promise<AdapterExecutionResult> {
+  // Pre-flight: kill-switch check. ADAPTER_DISABLE_POE_API=1 hard-disables this adapter
+  // with no network I/O. Checked before config validation so disabling works even when
+  // config is invalid (helps during incident response when the config state is unknown).
+  if (isAdapterDisabled()) {
+    return {
+      exitCode: 1,
+      signal: null,
+      timedOut: false,
+      errorMessage: "adapter disabled by ADAPTER_DISABLE_POE_API env",
+      errorCode: "poe_api_disabled",
+    };
+  }
+
   // Validate config before any network activity
   const validation = validatePoeConfig(ctx.config);
   if (!validation.ok) {
