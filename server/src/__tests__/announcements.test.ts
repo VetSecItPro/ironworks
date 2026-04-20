@@ -44,9 +44,12 @@ function buildChainableQuery(defaultResult: unknown = []) {
 
 const mockLogActivity = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 
-vi.mock("../services/index.js", () => ({
-  logActivity: mockLogActivity,
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    logActivity: mockLogActivity,
+  });
+});
 
 vi.mock("../services/activity-log.js", () => ({
   logActivity: mockLogActivity,

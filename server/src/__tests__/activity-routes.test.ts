@@ -21,9 +21,12 @@ vi.mock("../services/activity.js", () => ({
   activityService: () => mockActivityService,
 }));
 
-vi.mock("../services/index.js", () => ({
-  issueService: () => mockIssueService,
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    issueService: () => mockIssueService,
+  });
+});
 
 function createApp() {
   const app = express();
