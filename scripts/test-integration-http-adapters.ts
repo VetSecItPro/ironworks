@@ -8,10 +8,10 @@
  * NOT run in CI — requires live API keys. Manual gate only.
  */
 
-import { poeApiAdapter } from "@ironworksai/adapter-poe-api/server";
 import { anthropicApiAdapter } from "@ironworksai/adapter-anthropic-api/server";
 import { openaiApiAdapter } from "@ironworksai/adapter-openai-api/server";
 import { openrouterApiAdapter } from "@ironworksai/adapter-openrouter-api/server";
+import { poeApiAdapter } from "@ironworksai/adapter-poe-api/server";
 import type { AdapterExecutionContext, AdapterExecutionResult } from "@ironworksai/adapter-utils";
 
 // ---------------------------------------------------------------------------
@@ -19,11 +19,7 @@ import type { AdapterExecutionContext, AdapterExecutionResult } from "@ironworks
 // single liveness-probe prompt. Max 100 tokens to keep cost near zero.
 // ---------------------------------------------------------------------------
 
-function makeContext(
-  adapterType: string,
-  config: Record<string, unknown>,
-  prompt: string,
-): AdapterExecutionContext {
+function makeContext(adapterType: string, config: Record<string, unknown>, prompt: string): AdapterExecutionContext {
   const logs: string[] = [];
   return {
     runId: `integration-test-${adapterType}-${Date.now()}`,
@@ -204,8 +200,8 @@ async function runProbe(probe: ProbeDescriptor): Promise<ProbeResult> {
 async function main() {
   console.log("IronWorks HTTP Adapter Integration Test Harness");
   console.log("================================================");
-  console.log("Prompt : " + JSON.stringify(PROBE_PROMPT));
-  console.log("MaxTok : " + MAX_TOKENS);
+  console.log(`Prompt : ${JSON.stringify(PROBE_PROMPT)}`);
+  console.log(`MaxTok : ${MAX_TOKENS}`);
   console.log("");
 
   const results: ProbeResult[] = [];
@@ -225,15 +221,12 @@ async function main() {
   const skipped = results.filter((r) => r.status === "skip");
 
   for (const r of results) {
-    const label =
-      r.status === "pass" ? "PASS" : r.status === "fail" ? "FAIL" : "SKIP";
+    const label = r.status === "pass" ? "PASS" : r.status === "fail" ? "FAIL" : "SKIP";
     console.log(`  ${label.padEnd(6)} ${r.adapter}`);
   }
 
   console.log("");
-  console.log(
-    `${passed.length}/${attempted.length} attempted adapters passed. ${skipped.length} skipped (no key).`,
-  );
+  console.log(`${passed.length}/${attempted.length} attempted adapters passed. ${skipped.length} skipped (no key).`);
 
   if (failed.length > 0) {
     console.log("\nFailed adapters:");
