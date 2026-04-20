@@ -22,6 +22,7 @@ export function StepCompany({ companyName, companyGoal, onCompanyNameChange, onC
       </div>
       <div className="mt-3 group">
         <label
+          htmlFor="onboarding-company-name"
           className={cn(
             "text-xs mb-1 block transition-colors",
             companyName.trim() ? "text-foreground" : "text-muted-foreground group-focus-within:text-foreground",
@@ -30,6 +31,7 @@ export function StepCompany({ companyName, companyGoal, onCompanyNameChange, onC
           Company name
         </label>
         <input
+          id="onboarding-company-name"
           className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/70"
           placeholder="e.g., Acme Corp"
           value={companyName}
@@ -61,6 +63,7 @@ export function StepCompany({ companyName, companyGoal, onCompanyNameChange, onC
       </div>
       <div className="group">
         <label
+          htmlFor="onboarding-company-goal"
           className={cn(
             "text-xs mb-1 block transition-colors",
             companyGoal.trim() ? "text-foreground" : "text-muted-foreground group-focus-within:text-foreground",
@@ -69,6 +72,7 @@ export function StepCompany({ companyName, companyGoal, onCompanyNameChange, onC
           Mission / goal (optional)
         </label>
         <textarea
+          id="onboarding-company-goal"
           className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/70 resize-none min-h-[60px]"
           placeholder="What is this company trying to achieve?"
           value={companyGoal}

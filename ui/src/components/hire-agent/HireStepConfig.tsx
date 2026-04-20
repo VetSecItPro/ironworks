@@ -76,13 +76,14 @@ export function HireStepConfig({
   return (
     <div className="space-y-4">
       <div className="space-y-1.5">
-        <label className="text-xs font-medium text-muted-foreground">Name *</label>
-        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Agent name" className="text-sm" />
+        <label htmlFor="hire-agent-name" className="text-xs font-medium text-muted-foreground">Name *</label>
+        <Input id="hire-agent-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Agent name" className="text-sm" />
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-xs font-medium text-muted-foreground">Role</label>
+        <label htmlFor="hire-agent-role" className="text-xs font-medium text-muted-foreground">Role</label>
         <select
+          id="hire-agent-role"
           value={role}
           onChange={(e) => setRole(e.target.value as AgentRole)}
           className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
@@ -96,8 +97,9 @@ export function HireStepConfig({
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-xs font-medium text-muted-foreground">Department</label>
+        <label htmlFor="hire-agent-department" className="text-xs font-medium text-muted-foreground">Department</label>
         <select
+          id="hire-agent-department"
           value={department}
           onChange={(e) => setDepartment(e.target.value as Department)}
           className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
@@ -111,8 +113,9 @@ export function HireStepConfig({
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-xs font-medium text-muted-foreground">Reports To</label>
+        <label htmlFor="hire-agent-reports-to" className="text-xs font-medium text-muted-foreground">Reports To</label>
         <select
+          id="hire-agent-reports-to"
           value={reportsTo}
           onChange={(e) => setReportsTo(e.target.value)}
           className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
@@ -136,8 +139,9 @@ export function HireStepConfig({
           <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Contract Details</div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Project *</label>
+            <label htmlFor="hire-agent-project" className="text-xs font-medium text-muted-foreground">Project *</label>
             <select
+              id="hire-agent-project"
               value={projectId}
               onChange={(e) => setProjectId(e.target.value)}
               className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
@@ -152,7 +156,7 @@ export function HireStepConfig({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">End Condition</label>
+            <span className="text-xs font-medium text-muted-foreground">End Condition</span>
             <div className="space-y-1">
               {CONTRACT_END_CONDITIONS.map((ec) => (
                 <label key={ec} className="flex items-center gap-2 text-sm cursor-pointer">
@@ -172,15 +176,16 @@ export function HireStepConfig({
 
           {endCondition === "date" && (
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">End Date</label>
-              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="text-sm" />
+              <label htmlFor="hire-agent-end-date" className="text-xs font-medium text-muted-foreground">End Date</label>
+              <Input id="hire-agent-end-date" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="text-sm" />
             </div>
           )}
 
           {endCondition === "budget_exhausted" && (
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Budget Amount ($)</label>
+              <label htmlFor="hire-agent-budget" className="text-xs font-medium text-muted-foreground">Budget Amount ($)</label>
               <Input
+                id="hire-agent-budget"
                 type="number"
                 min="0"
                 step="0.01"

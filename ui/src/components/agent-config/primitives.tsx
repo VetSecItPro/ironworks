@@ -37,7 +37,7 @@ export function Field({ label, hint, children }: { label: string; hint?: string;
   return (
     <div>
       <div className="flex items-center gap-1.5 mb-1">
-        <label className="text-xs text-muted-foreground">{label}</label>
+        <span className="text-xs text-muted-foreground">{label}</span>
         {hint && <HintIcon text={hint} />}
       </div>
       {children}
@@ -395,7 +395,7 @@ export function InlineField({ label, hint, children }: { label: string; hint?: s
   return (
     <div className="flex items-center gap-3">
       <div className="flex items-center gap-1.5 shrink-0">
-        <label className="text-xs text-muted-foreground">{label}</label>
+        <span className="text-xs text-muted-foreground">{label}</span>
         {hint && <HintIcon text={hint} />}
       </div>
       <div className="w-24 ml-auto">{children}</div>

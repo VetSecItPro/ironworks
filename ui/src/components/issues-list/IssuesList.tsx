@@ -440,7 +440,7 @@ export function IssuesList({
                   <PopoverContent className="w-40 p-1" align="start">
                     <div className="space-y-0.5">
                       {statusOrder.map((s) => (
-                        <label
+                        <div
                           key={s}
                           className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer text-xs"
                         >
@@ -453,10 +453,11 @@ export function IssuesList({
                                 current.includes(s) ? current.filter((v: string) => v !== s) : [...current, s],
                               );
                             }}
+                            aria-label={statusLabel(s)}
                           />
                           <StatusIcon status={s} />
                           <span>{statusLabel(s)}</span>
-                        </label>
+                        </div>
                       ))}
                       {(viewState.columnFilters?.status ?? []).length > 0 && (
                         <button type="button"
@@ -493,7 +494,7 @@ export function IssuesList({
                   <PopoverContent className="w-40 p-1" align="start">
                     <div className="space-y-0.5">
                       {priorityOrder.map((p) => (
-                        <label
+                        <div
                           key={p}
                           className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer text-xs"
                         >
@@ -506,10 +507,11 @@ export function IssuesList({
                                 current.includes(p) ? current.filter((v: string) => v !== p) : [...current, p],
                               );
                             }}
+                            aria-label={statusLabel(p)}
                           />
                           <PriorityIcon priority={p} />
                           <span>{statusLabel(p)}</span>
-                        </label>
+                        </div>
                       ))}
                       {(viewState.columnFilters?.priority ?? []).length > 0 && (
                         <button type="button"

@@ -89,7 +89,7 @@ export function NewFinanceEventDialog({ open, onOpenChange, onSubmit, isPending 
         <div className="space-y-4 py-2">
           {/* Direction */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Direction</label>
+            <span className="text-xs font-medium text-muted-foreground">Direction</span>
             <div className="grid grid-cols-2 gap-2 mt-1">
               {(["credit", "debit"] as const).map((d) => (
                 <button type="button"
@@ -112,7 +112,7 @@ export function NewFinanceEventDialog({ open, onOpenChange, onSubmit, isPending 
 
           {/* Event Kind */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Type</label>
+            <span className="text-xs font-medium text-muted-foreground">Type</span>
             <div className="flex flex-wrap gap-1.5 mt-1">
               {EVENT_KINDS.map((kind) => (
                 <button type="button"
@@ -134,8 +134,9 @@ export function NewFinanceEventDialog({ open, onOpenChange, onSubmit, isPending 
           {/* Amount + Biller */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Amount (USD)</label>
+              <label htmlFor="finance-event-amount" className="text-xs font-medium text-muted-foreground">Amount (USD)</label>
               <Input
+                id="finance-event-amount"
                 type="number"
                 inputMode="decimal"
                 step="0.01"
@@ -147,8 +148,9 @@ export function NewFinanceEventDialog({ open, onOpenChange, onSubmit, isPending 
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Biller</label>
+              <label htmlFor="finance-event-biller" className="text-xs font-medium text-muted-foreground">Biller</label>
               <Input
+                id="finance-event-biller"
                 value={biller}
                 onChange={(e) => setBiller(e.target.value)}
                 placeholder="e.g. Anthropic"
@@ -160,8 +162,9 @@ export function NewFinanceEventDialog({ open, onOpenChange, onSubmit, isPending 
           {/* Provider + Date */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Provider (optional)</label>
+              <label htmlFor="finance-event-provider" className="text-xs font-medium text-muted-foreground">Provider (optional)</label>
               <Input
+                id="finance-event-provider"
                 value={provider}
                 onChange={(e) => setProvider(e.target.value)}
                 placeholder="e.g. anthropic"
@@ -169,15 +172,16 @@ export function NewFinanceEventDialog({ open, onOpenChange, onSubmit, isPending 
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Date</label>
-              <Input type="date" value={occurredAt} onChange={(e) => setOccurredAt(e.target.value)} className="mt-1" />
+              <label htmlFor="finance-event-date" className="text-xs font-medium text-muted-foreground">Date</label>
+              <Input id="finance-event-date" type="date" value={occurredAt} onChange={(e) => setOccurredAt(e.target.value)} className="mt-1" />
             </div>
           </div>
 
           {/* Description */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Description</label>
+            <label htmlFor="finance-event-description" className="text-xs font-medium text-muted-foreground">Description</label>
             <Textarea
+              id="finance-event-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Monthly subscription credit, API usage charge, etc."

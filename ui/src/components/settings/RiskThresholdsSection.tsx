@@ -51,10 +51,11 @@ export function RiskThresholdsSection({ companyId }: { companyId: string }) {
       </h2>
       <div className="rounded-md border border-border px-4 py-4 space-y-4">
         <div className="space-y-1.5">
-          <label className="text-sm font-medium">Spending alert threshold (per run)</label>
+          <label htmlFor="risk-spend-threshold" className="text-sm font-medium">Spending alert threshold (per run)</label>
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">$</span>
             <input
+              id="risk-spend-threshold"
               type="number"
               inputMode="decimal"
               min={1}
@@ -68,8 +69,9 @@ export function RiskThresholdsSection({ companyId }: { companyId: string }) {
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-sm font-medium">Performance alert threshold</label>
+          <label htmlFor="risk-perf-threshold" className="text-sm font-medium">Performance alert threshold</label>
           <input
+            id="risk-perf-threshold"
             type="number"
             inputMode="decimal"
             min={0}
@@ -82,8 +84,9 @@ export function RiskThresholdsSection({ companyId }: { companyId: string }) {
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-sm font-medium">Auto-resolve timeout (hours)</label>
+          <label htmlFor="risk-resolve-hours" className="text-sm font-medium">Auto-resolve timeout (hours)</label>
           <input
+            id="risk-resolve-hours"
             type="number"
             inputMode="decimal"
             min={1}

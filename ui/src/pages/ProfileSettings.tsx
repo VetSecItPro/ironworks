@@ -161,8 +161,9 @@ export function ProfileSettings() {
         <div className="space-y-4">
           {/* Display name */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">Display name</label>
+            <label htmlFor="profile-display-name" className="text-sm font-medium">Display name</label>
             <input
+              id="profile-display-name"
               className={`w-full rounded-md border bg-transparent px-2.5 py-1.5 text-sm outline-none ${
                 nameError ? "border-destructive focus:border-destructive" : "border-border focus:border-primary"
               }`}
@@ -175,8 +176,9 @@ export function ProfileSettings() {
 
           {/* Email (read-only) */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">Email</label>
+            <label htmlFor="profile-email" className="text-sm font-medium">Email</label>
             <input
+              id="profile-email"
               className="w-full rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-sm outline-none text-muted-foreground cursor-not-allowed"
               value={email}
               readOnly
@@ -187,11 +189,12 @@ export function ProfileSettings() {
 
           {/* Timezone */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium flex items-center gap-1.5">
+            <label htmlFor="profile-timezone" className="text-sm font-medium flex items-center gap-1.5">
               <Globe className="h-3.5 w-3.5 text-muted-foreground" />
               Timezone preference
             </label>
             <select
+              id="profile-timezone"
               value={timezone}
               onChange={(e) => setTimezone(e.target.value)}
               className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
@@ -227,8 +230,9 @@ export function ProfileSettings() {
 
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">Current password</label>
+            <label htmlFor="profile-current-password" className="text-sm font-medium">Current password</label>
             <input
+              id="profile-current-password"
               type="password"
               className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none focus:border-primary"
               value={currentPassword}
@@ -239,8 +243,9 @@ export function ProfileSettings() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">New password</label>
+            <label htmlFor="profile-new-password" className="text-sm font-medium">New password</label>
             <input
+              id="profile-new-password"
               type="password"
               className={`w-full rounded-md border bg-transparent px-2.5 py-1.5 text-sm outline-none ${
                 newPassword && validatePassword(newPassword).length > 0
@@ -264,8 +269,9 @@ export function ProfileSettings() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">Confirm new password</label>
+            <label htmlFor="profile-confirm-password" className="text-sm font-medium">Confirm new password</label>
             <input
+              id="profile-confirm-password"
               type="password"
               className={`w-full rounded-md border bg-transparent px-2.5 py-1.5 text-sm outline-none ${
                 confirmPassword && confirmPassword !== newPassword

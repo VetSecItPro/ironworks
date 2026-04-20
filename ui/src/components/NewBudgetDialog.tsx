@@ -121,7 +121,7 @@ export function NewBudgetDialog({ open, onOpenChange, onSubmit, isPending }: New
         <div className="space-y-4 py-2">
           {/* Scope Type */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Scope</label>
+            <span className="text-xs font-medium text-muted-foreground">Scope</span>
             <div className="grid grid-cols-3 gap-2 mt-1">
               {(["agent", "project", "company"] as const).map((s) => (
                 <button type="button"
@@ -143,10 +143,11 @@ export function NewBudgetDialog({ open, onOpenChange, onSubmit, isPending }: New
           {/* Scope Target */}
           {scopeType !== "company" && (
             <div>
-              <label className="text-xs font-medium text-muted-foreground">
+              <label htmlFor="new-budget-scope-id" className="text-xs font-medium text-muted-foreground">
                 {scopeType === "agent" ? "Agent" : "Project"}
               </label>
               <select
+                id="new-budget-scope-id"
                 value={scopeId}
                 onChange={(e) => setScopeId(e.target.value)}
                 className="mt-1 w-full h-9 rounded-full border border-border bg-background px-3 text-sm"
@@ -163,11 +164,12 @@ export function NewBudgetDialog({ open, onOpenChange, onSubmit, isPending }: New
 
           {/* Amount */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground">
+            <label htmlFor="new-budget-amount" className="text-xs font-medium text-muted-foreground">
               Monthly Budget (USD)
-              {scopeType === "project" && " — lifetime limit"}
+              {scopeType === "project" && " - lifetime limit"}
             </label>
             <Input
+              id="new-budget-amount"
               type="number"
               inputMode="numeric"
               step="1"
@@ -181,8 +183,9 @@ export function NewBudgetDialog({ open, onOpenChange, onSubmit, isPending }: New
 
           {/* Warning Threshold */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Warning threshold (%)</label>
+            <label htmlFor="new-budget-warn-percent" className="text-xs font-medium text-muted-foreground">Warning threshold (%)</label>
             <Input
+              id="new-budget-warn-percent"
               type="number"
               inputMode="numeric"
               min="50"
@@ -199,7 +202,7 @@ export function NewBudgetDialog({ open, onOpenChange, onSubmit, isPending }: New
           {/* Hard Stop */}
           <div className="flex items-center justify-between">
             <div>
-              <label className="text-sm font-medium">Hard stop</label>
+              <span className="text-sm font-medium">Hard stop</span>
               <p className="text-xs text-muted-foreground">Pause agent execution when budget is exceeded</p>
             </div>
             <button type="button"

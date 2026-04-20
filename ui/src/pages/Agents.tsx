@@ -262,10 +262,11 @@ export function Agents() {
                   Show terminated
                 </button>
                 <div className="px-2 py-1.5">
-                  <label className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">
+                  <label htmlFor="agents-dept-filter" className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">
                     Department
                   </label>
                   <select
+                    id="agents-dept-filter"
                     value={departmentFilter}
                     onChange={(e) => setDepartmentFilter(e.target.value)}
                     className="w-full text-xs bg-transparent border border-border rounded px-1.5 py-1"
@@ -279,10 +280,11 @@ export function Agents() {
                   </select>
                 </div>
                 <div className="px-2 py-1.5">
-                  <label className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">
+                  <label htmlFor="agents-employment-filter" className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">
                     Employment Type
                   </label>
                   <select
+                    id="agents-employment-filter"
                     value={employmentFilter}
                     onChange={(e) => setEmploymentFilter(e.target.value)}
                     className="w-full text-xs bg-transparent border border-border rounded px-1.5 py-1"

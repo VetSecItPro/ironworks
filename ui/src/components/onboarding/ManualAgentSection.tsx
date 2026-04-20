@@ -100,8 +100,9 @@ export function ManualAgentSection({
   return (
     <>
       <div>
-        <label className="text-xs text-muted-foreground mb-1 block">Agent name</label>
+        <label htmlFor="onboarding-agent-name" className="text-xs text-muted-foreground mb-1 block">Agent name</label>
         <input
+          id="onboarding-agent-name"
           className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/70"
           placeholder="CEO"
           value={agentName}
@@ -111,10 +112,10 @@ export function ManualAgentSection({
 
       {/* Adapter type radio cards */}
       <div>
-        <label className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+        <span className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
           Adapter type
           <HelpBeacon text="The adapter determines which AI coding tool powers this agent. Claude Code and Codex are recommended for most use cases. Expand 'More' to see Gemini CLI, OpenCode, and other options." />
-        </label>
+        </span>
         <div className="grid grid-cols-2 gap-2">
           {[
             {
@@ -230,7 +231,7 @@ export function ManualAgentSection({
         adapterType === "cursor") && (
         <div className="space-y-3">
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Model</label>
+            <span className="text-xs text-muted-foreground mb-1 block">Model</span>
             <Popover
               open={modelOpen}
               onOpenChange={(next) => {
@@ -411,10 +412,11 @@ export function ManualAgentSection({
       {/* HTTP / OpenClaw URL */}
       {(adapterType === "http" || adapterType === "openclaw_gateway") && (
         <div>
-          <label className="text-xs text-muted-foreground mb-1 block">
+          <label htmlFor="onboarding-adapter-url" className="text-xs text-muted-foreground mb-1 block">
             {adapterType === "openclaw_gateway" ? "Gateway URL" : "Webhook URL"}
           </label>
           <input
+            id="onboarding-adapter-url"
             className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm font-mono outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/70"
             placeholder={adapterType === "openclaw_gateway" ? "ws://127.0.0.1:18789" : "https://..."}
             value={url}

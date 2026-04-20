@@ -158,8 +158,9 @@ export function CsvImportDialog({ open, onClose, onImport, existingTitles = [] }
                 <div className="grid grid-cols-2 gap-3">
                   {FIELD_KEYS.map(({ key, label }) => (
                     <div key={key} className="flex items-center gap-2">
-                      <label className="text-xs text-muted-foreground w-32 shrink-0">{label}</label>
+                      <label htmlFor={`csv-col-${key}`} className="text-xs text-muted-foreground w-32 shrink-0">{label}</label>
                       <select
+                        id={`csv-col-${key}`}
                         value={mapping[key] ?? "__unmapped__"}
                         onChange={(e) =>
                           setMapping((prev) => ({

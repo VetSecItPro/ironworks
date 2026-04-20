@@ -161,8 +161,9 @@ export function WebhooksSettings() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Endpoint URL</label>
+              <label htmlFor="webhook-endpoint-url" className="text-xs font-medium text-muted-foreground mb-1 block">Endpoint URL</label>
               <Input
+                id="webhook-endpoint-url"
                 value={newUrl}
                 onChange={(e) => setNewUrl(e.target.value)}
                 placeholder="https://api.example.com/webhooks"
@@ -170,8 +171,9 @@ export function WebhooksSettings() {
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Signing Secret (optional)</label>
+              <label htmlFor="webhook-signing-secret" className="text-xs font-medium text-muted-foreground mb-1 block">Signing Secret (optional)</label>
               <Input
+                id="webhook-signing-secret"
                 value={newSecret}
                 onChange={(e) => setNewSecret(e.target.value)}
                 placeholder="Auto-generated if empty"
@@ -179,7 +181,7 @@ export function WebhooksSettings() {
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-2 block">Events</label>
+              <span className="text-xs font-medium text-muted-foreground mb-2 block">Events</span>
               <div className="grid grid-cols-2 gap-1.5 max-h-48 overflow-y-auto">
                 {AVAILABLE_EVENTS.map((evt) => (
                   <button type="button"

@@ -70,7 +70,7 @@ export function LibrarySettingsDialog({
         <div className="space-y-6 py-2">
           {/* Default Visibility */}
           <div>
-            <label className="text-sm font-medium">Default Visibility</label>
+            <span className="text-sm font-medium">Default Visibility</span>
             <p className="text-xs text-muted-foreground mb-2">
               When agents create files, what visibility should be applied by default?
             </p>
@@ -104,7 +104,7 @@ export function LibrarySettingsDialog({
           {/* Agent Home Directories */}
           <div className="flex items-center justify-between">
             <div>
-              <label className="text-sm font-medium">Agent Home Directories</label>
+              <span className="text-sm font-medium">Agent Home Directories</span>
               <p className="text-xs text-muted-foreground">
                 Create agents/&lt;name&gt;/ folders automatically for each agent
               </p>
@@ -136,7 +136,7 @@ export function LibrarySettingsDialog({
 
           {/* Shared Folder Write Access */}
           <div>
-            <label className="text-sm font-medium">Shared Folder Write Access</label>
+            <span className="text-sm font-medium">Shared Folder Write Access</span>
             <p className="text-xs text-muted-foreground mb-2">
               Who can create and edit files in the shared/ directory?
             </p>

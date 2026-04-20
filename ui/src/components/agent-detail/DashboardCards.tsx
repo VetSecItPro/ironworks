@@ -475,8 +475,9 @@ export function EmploymentCard({ agent, companyId }: { agent: AgentDetailRecord;
                 </li>
               </ul>
               <div>
-                <label className="text-xs text-muted-foreground block mb-1">Reason</label>
+                <label htmlFor="termination-reason" className="text-xs text-muted-foreground block mb-1">Reason</label>
                 <select
+                  id="termination-reason"
                   value={terminationReason}
                   onChange={(e) => setTerminationReason(e.target.value)}
                   className="w-full text-xs bg-transparent border border-border rounded px-2 py-1.5"

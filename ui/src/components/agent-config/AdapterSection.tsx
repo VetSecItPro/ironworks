@@ -78,7 +78,7 @@ export function AdapterSection({
         {showAdapterTypeField && (
           <div>
             <div className="flex items-center gap-1.5 mb-1">
-              <label className="text-xs text-muted-foreground">Adapter type</label>
+              <span className="text-xs text-muted-foreground">Adapter type</span>
               <HelpBeacon text="The adapter type determines which AI coding tool powers this agent. Claude Code, Codex, Gemini CLI, and others each have different capabilities, pricing, and model access. Choose based on the LLM provider you want to use." />
             </div>
             <AdapterTypeDropdown value={adapterType} onChange={onAdapterTypeChange} />

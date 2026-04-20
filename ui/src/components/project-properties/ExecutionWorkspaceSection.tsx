@@ -149,10 +149,10 @@ export function ExecutionWorkspaceSection({
                 </div>
                 <div>
                   <div className="mb-1 flex items-center gap-1.5">
-                    <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span>Base ref</span>
                       <SaveIndicator state={fieldState("execution_workspace_base_ref")} />
-                    </label>
+                    </div>
                   </div>
                   <DraftInput
                     value={executionWorkspaceStrategy.baseRef ?? ""}
@@ -174,10 +174,10 @@ export function ExecutionWorkspaceSection({
                 </div>
                 <div>
                   <div className="mb-1 flex items-center gap-1.5">
-                    <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span>Branch template</span>
                       <SaveIndicator state={fieldState("execution_workspace_branch_template")} />
-                    </label>
+                    </div>
                   </div>
                   <DraftInput
                     value={executionWorkspaceStrategy.branchTemplate ?? ""}
@@ -199,10 +199,10 @@ export function ExecutionWorkspaceSection({
                 </div>
                 <div>
                   <div className="mb-1 flex items-center gap-1.5">
-                    <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span>Worktree parent dir</span>
                       <SaveIndicator state={fieldState("execution_workspace_worktree_parent_dir")} />
-                    </label>
+                    </div>
                   </div>
                   <DraftInput
                     value={executionWorkspaceStrategy.worktreeParentDir ?? ""}
@@ -224,10 +224,10 @@ export function ExecutionWorkspaceSection({
                 </div>
                 <div>
                   <div className="mb-1 flex items-center gap-1.5">
-                    <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span>Provision command</span>
                       <SaveIndicator state={fieldState("execution_workspace_provision_command")} />
-                    </label>
+                    </div>
                   </div>
                   <DraftInput
                     value={executionWorkspaceStrategy.provisionCommand ?? ""}
@@ -249,10 +249,10 @@ export function ExecutionWorkspaceSection({
                 </div>
                 <div>
                   <div className="mb-1 flex items-center gap-1.5">
-                    <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span>Teardown command</span>
                       <SaveIndicator state={fieldState("execution_workspace_teardown_command")} />
-                    </label>
+                    </div>
                   </div>
                   <DraftInput
                     value={executionWorkspaceStrategy.teardownCommand ?? ""}

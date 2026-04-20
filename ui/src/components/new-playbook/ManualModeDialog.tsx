@@ -66,8 +66,9 @@ export function ManualModeDialog({
         <div className="space-y-4 py-2">
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
-              <label className="text-xs font-medium text-muted-foreground">Name</label>
+              <label htmlFor="playbook-name" className="text-xs font-medium text-muted-foreground">Name</label>
               <Input
+                id="playbook-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. New Client Onboarding"
@@ -75,8 +76,9 @@ export function ManualModeDialog({
               />
             </div>
             <div className="col-span-2">
-              <label className="text-xs font-medium text-muted-foreground">Description</label>
+              <label htmlFor="playbook-description" className="text-xs font-medium text-muted-foreground">Description</label>
               <Input
+                id="playbook-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="One-liner explaining what this playbook does"
@@ -84,7 +86,7 @@ export function ManualModeDialog({
               />
             </div>
             <div className="col-span-2">
-              <label className="text-xs font-medium text-muted-foreground">Category</label>
+              <span className="text-xs font-medium text-muted-foreground">Category</span>
               <div className="flex flex-wrap gap-1.5 mt-1">
                 {CATEGORIES.map((cat) => (
                   <button type="button"
@@ -106,7 +108,7 @@ export function ManualModeDialog({
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-medium text-muted-foreground">Steps</label>
+              <span className="text-xs font-medium text-muted-foreground">Steps</span>
               <Button variant="ghost" size="xs" onClick={addStep}>
                 <Plus className="h-3 w-3 mr-1" />
                 Add Step
@@ -145,8 +147,9 @@ export function ManualModeDialog({
                   />
                   <div className="grid grid-cols-3 gap-2">
                     <div>
-                      <label className="text-[10px] text-muted-foreground">Assignee Role</label>
+                      <label htmlFor={`step-${idx}-assignee-role`} className="text-[10px] text-muted-foreground">Assignee Role</label>
                       <Input
+                        id={`step-${idx}-assignee-role`}
                         value={step.assigneeRole}
                         onChange={(e) => updateStep(idx, "assigneeRole", e.target.value)}
                         placeholder="e.g. cto"
@@ -154,8 +157,9 @@ export function ManualModeDialog({
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-muted-foreground">Depends on steps</label>
+                      <label htmlFor={`step-${idx}-depends-on`} className="text-[10px] text-muted-foreground">Depends on steps</label>
                       <Input
+                        id={`step-${idx}-depends-on`}
                         value={step.dependsOn}
                         onChange={(e) => updateStep(idx, "dependsOn", e.target.value)}
                         placeholder="e.g. 1, 2"
@@ -163,8 +167,9 @@ export function ManualModeDialog({
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-muted-foreground">Est. minutes</label>
+                      <label htmlFor={`step-${idx}-est-minutes`} className="text-[10px] text-muted-foreground">Est. minutes</label>
                       <Input
+                        id={`step-${idx}-est-minutes`}
                         value={step.estimatedMinutes}
                         onChange={(e) => updateStep(idx, "estimatedMinutes", e.target.value)}
                         placeholder="30"

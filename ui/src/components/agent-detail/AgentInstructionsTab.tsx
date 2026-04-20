@@ -382,7 +382,7 @@ export function PromptsTab({
         <CollapsibleContent className="pt-4 pb-6">
           <TooltipProvider>
             <div className="grid gap-x-6 gap-y-4 sm:grid-cols-[auto_1fr_1fr]">
-              <label className="space-y-1.5">
+              <div className="space-y-1.5">
                 <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                   Mode
                   <Tooltip>
@@ -438,8 +438,8 @@ export function PromptsTab({
                     External
                   </Button>
                 </div>
-              </label>
-              <label className="space-y-1.5 min-w-0">
+              </div>
+              <div className="space-y-1.5 min-w-0">
                 <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                   Root path
                   <Tooltip>
@@ -490,8 +490,8 @@ export function PromptsTab({
                     )}
                   </div>
                 )}
-              </label>
-              <label className="space-y-1.5">
+              </div>
+              <div className="space-y-1.5">
                 <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                   Entry file
                   <Tooltip>
@@ -525,7 +525,7 @@ export function PromptsTab({
                   }}
                   className="font-mono text-sm"
                 />
-              </label>
+              </div>
             </div>
           </TooltipProvider>
         </CollapsibleContent>

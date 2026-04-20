@@ -67,9 +67,9 @@ export function AddCheckInForm({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-1">
-          <label className="text-xs text-muted-foreground">Status</label>
+          <span className="text-xs text-muted-foreground">Status</span>
           <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger className="h-8 text-xs">
+            <SelectTrigger className="h-8 text-xs" aria-label="Status">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -81,10 +81,11 @@ export function AddCheckInForm({
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs text-muted-foreground">
+          <label htmlFor="checkin-confidence" className="text-xs text-muted-foreground">
             Confidence: <span className={cn("font-medium", confColor)}>{confidence}</span>
           </label>
           <input
+            id="checkin-confidence"
             type="range"
             min={0}
             max={100}
@@ -96,8 +97,9 @@ export function AddCheckInForm({
       </div>
 
       <div className="space-y-1">
-        <label className="text-xs text-muted-foreground">Note</label>
+        <label htmlFor="checkin-note" className="text-xs text-muted-foreground">Note</label>
         <Textarea
+          id="checkin-note"
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="What progress was made?"
@@ -107,8 +109,9 @@ export function AddCheckInForm({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-1">
-          <label className="text-xs text-muted-foreground">Blockers (optional)</label>
+          <label htmlFor="checkin-blockers" className="text-xs text-muted-foreground">Blockers (optional)</label>
           <Textarea
+            id="checkin-blockers"
             value={blockers}
             onChange={(e) => setBlockers(e.target.value)}
             placeholder="Any blockers?"
@@ -116,8 +119,9 @@ export function AddCheckInForm({
           />
         </div>
         <div className="space-y-1">
-          <label className="text-xs text-muted-foreground">Next Steps (optional)</label>
+          <label htmlFor="checkin-next-steps" className="text-xs text-muted-foreground">Next Steps (optional)</label>
           <Textarea
+            id="checkin-next-steps"
             value={nextSteps}
             onChange={(e) => setNextSteps(e.target.value)}
             placeholder="What's next?"

@@ -150,17 +150,18 @@ export function IssuesToolbar({
                     <span className="text-xs text-muted-foreground">Status</span>
                     <div className="space-y-0.5">
                       {statusOrder.map((s) => (
-                        <label
+                        <div
                           key={s}
                           className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer"
                         >
                           <Checkbox
                             checked={viewState.statuses.includes(s)}
                             onCheckedChange={() => onUpdateView({ statuses: toggleInArray(viewState.statuses, s) })}
+                            aria-label={statusLabel(s)}
                           />
                           <StatusIcon status={s} />
                           <span className="text-sm">{statusLabel(s)}</span>
-                        </label>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -169,7 +170,7 @@ export function IssuesToolbar({
                       <span className="text-xs text-muted-foreground">Priority</span>
                       <div className="space-y-0.5">
                         {priorityOrder.map((p) => (
-                          <label
+                          <div
                             key={p}
                             className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer"
                           >
@@ -178,39 +179,42 @@ export function IssuesToolbar({
                               onCheckedChange={() =>
                                 onUpdateView({ priorities: toggleInArray(viewState.priorities, p) })
                               }
+                              aria-label={statusLabel(p)}
                             />
                             <PriorityIcon priority={p} />
                             <span className="text-sm">{statusLabel(p)}</span>
-                          </label>
+                          </div>
                         ))}
                       </div>
                     </div>
                     <div className="space-y-1">
                       <span className="text-xs text-muted-foreground">Assignee</span>
                       <div className="space-y-0.5 max-h-32 overflow-y-auto">
-                        <label className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer">
+                        <div className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer">
                           <Checkbox
                             checked={viewState.assignees.includes("__unassigned")}
                             onCheckedChange={() =>
                               onUpdateView({ assignees: toggleInArray(viewState.assignees, "__unassigned") })
                             }
+                            aria-label="No assignee"
                           />
                           <span className="text-sm">No assignee</span>
-                        </label>
+                        </div>
                         {currentUserId && (
-                          <label className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer">
+                          <div className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer">
                             <Checkbox
                               checked={viewState.assignees.includes("__me")}
                               onCheckedChange={() =>
                                 onUpdateView({ assignees: toggleInArray(viewState.assignees, "__me") })
                               }
+                              aria-label="Me"
                             />
                             <User className="h-3.5 w-3.5 text-muted-foreground" />
                             <span className="text-sm">Me</span>
-                          </label>
+                          </div>
                         )}
                         {(agents ?? []).map((agent) => (
-                          <label
+                          <div
                             key={agent.id}
                             className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer"
                           >
@@ -219,9 +223,10 @@ export function IssuesToolbar({
                               onCheckedChange={() =>
                                 onUpdateView({ assignees: toggleInArray(viewState.assignees, agent.id) })
                               }
+                              aria-label={agent.name}
                             />
                             <span className="text-sm">{agent.name}</span>
-                          </label>
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -230,7 +235,7 @@ export function IssuesToolbar({
                         <span className="text-xs text-muted-foreground">Labels</span>
                         <div className="space-y-0.5 max-h-32 overflow-y-auto">
                           {labels.map((label) => (
-                            <label
+                            <div
                               key={label.id}
                               className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer"
                             >
@@ -239,10 +244,11 @@ export function IssuesToolbar({
                                 onCheckedChange={() =>
                                   onUpdateView({ labels: toggleInArray(viewState.labels, label.id) })
                                 }
+                                aria-label={label.name}
                               />
                               <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: label.color }} />
                               <span className="text-sm">{label.name}</span>
-                            </label>
+                            </div>
                           ))}
                         </div>
                       </div>
@@ -252,7 +258,7 @@ export function IssuesToolbar({
                         <span className="text-xs text-muted-foreground">Project</span>
                         <div className="space-y-0.5 max-h-32 overflow-y-auto">
                           {projects.map((project) => (
-                            <label
+                            <div
                               key={project.id}
                               className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer"
                             >
@@ -261,9 +267,10 @@ export function IssuesToolbar({
                                 onCheckedChange={() =>
                                   onUpdateView({ projects: toggleInArray(viewState.projects, project.id) })
                                 }
+                                aria-label={project.name}
                               />
                               <span className="text-sm">{project.name}</span>
-                            </label>
+                            </div>
                           ))}
                         </div>
                       </div>

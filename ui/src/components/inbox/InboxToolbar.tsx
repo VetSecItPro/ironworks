@@ -83,7 +83,7 @@ export function InboxToolbar({
 
         {tab === "mine" && selectableIssueIds.length > 0 && (
           <div className="flex items-center gap-2">
-            <label className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground select-none">
+            <div className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground select-none">
               <Checkbox
                 checked={allSelected}
                 onCheckedChange={onSelectAll}
@@ -91,7 +91,7 @@ export function InboxToolbar({
                 className="h-3.5 w-3.5"
               />
               Select all
-            </label>
+            </div>
             {someSelected && (
               <Button
                 type="button"

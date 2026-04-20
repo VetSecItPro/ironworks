@@ -79,7 +79,7 @@ export function FeedbackModal({ open, onClose }: FeedbackModalProps) {
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {/* Type radio */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-2 block">Type</label>
+            <span className="text-xs font-medium text-muted-foreground mb-2 block">Type</span>
             <div className="flex gap-3">
               {(["bug", "feature"] as FeedbackType[]).map((t) => (
                 <label key={t} className="flex items-center gap-2 cursor-pointer">

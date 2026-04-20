@@ -128,8 +128,9 @@ function AddMemoryForm({
       <h4 className="text-sm font-medium">Add Memory Entry</h4>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="text-xs text-muted-foreground block mb-1">Type</label>
+          <label htmlFor="memory-type" className="text-xs text-muted-foreground block mb-1">Type</label>
           <select
+            id="memory-type"
             value={memoryType}
             onChange={(e) => setMemoryType(e.target.value)}
             className="w-full text-xs bg-transparent border border-border rounded px-2 py-1.5"
@@ -142,8 +143,9 @@ function AddMemoryForm({
           </select>
         </div>
         <div>
-          <label className="text-xs text-muted-foreground block mb-1">Category</label>
+          <label htmlFor="memory-category" className="text-xs text-muted-foreground block mb-1">Category</label>
           <Input
+            id="memory-category"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             placeholder="e.g. project-x, preference"
@@ -152,8 +154,9 @@ function AddMemoryForm({
         </div>
       </div>
       <div>
-        <label className="text-xs text-muted-foreground block mb-1">Content</label>
+        <label htmlFor="memory-content" className="text-xs text-muted-foreground block mb-1">Content</label>
         <textarea
+          id="memory-content"
           value={content}
           onChange={(e) => setContent(e.target.value)}
           rows={3}

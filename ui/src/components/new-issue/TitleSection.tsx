@@ -34,8 +34,9 @@ export function TitleSection({
 }: TitleSectionProps) {
   return (
     <div className="px-4 pt-4 pb-2 shrink-0">
-      <label className="block text-xs text-muted-foreground mb-1 required-asterisk">Title</label>
+      <label htmlFor="new-issue-title" className="block text-xs text-muted-foreground mb-1 required-asterisk">Title</label>
       <textarea
+        id="new-issue-title"
         className="w-full text-lg font-semibold bg-transparent outline-none resize-none overflow-hidden placeholder:text-muted-foreground/70"
         placeholder="Mission title"
         required

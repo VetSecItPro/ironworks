@@ -194,7 +194,7 @@ export function InviteUserDialog({ open, onOpenChange }: { open: boolean; onOpen
           </div>
 
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Role</label>
+            <span className="text-xs text-muted-foreground mb-1 block">Role</span>
             <div className="grid grid-cols-2 gap-2">
               {ROLE_OPTIONS.map((opt) => (
                 <button

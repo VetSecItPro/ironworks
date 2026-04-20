@@ -146,9 +146,9 @@ export function BugReportModal({ open, onClose }: BugReportModalProps) {
           {/* Severity (bugs only) */}
           {type === "bug" && (
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Severity</label>
+              <span className="text-xs font-medium text-muted-foreground">Severity</span>
               <Select value={severity} onValueChange={(v) => setSeverity(v as CreateBugReportInput["severity"])}>
-                <SelectTrigger className="w-full text-sm">
+                <SelectTrigger className="w-full text-sm" aria-label="Severity">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -163,8 +163,8 @@ export function BugReportModal({ open, onClose }: BugReportModalProps) {
 
           {/* Page URL (read-only) */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Page URL</label>
-            <Input value={pageUrl} readOnly tabIndex={-1} className="text-xs text-muted-foreground bg-muted/30" />
+            <label htmlFor="bug-report-page-url" className="text-xs font-medium text-muted-foreground">Page URL</label>
+            <Input id="bug-report-page-url" value={pageUrl} readOnly tabIndex={-1} className="text-xs text-muted-foreground bg-muted/30" />
           </div>
 
           {/* Actions */}

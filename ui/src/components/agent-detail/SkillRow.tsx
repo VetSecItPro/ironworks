@@ -76,6 +76,7 @@ export function SkillRowItem({
   const disabled = required || skillMode === "unsupported";
   const checkbox = (
     <input
+      id={`skill-row-${skill.id}`}
       type="checkbox"
       checked={checked}
       disabled={disabled}
@@ -90,7 +91,7 @@ export function SkillRowItem({
   );
 
   return (
-    <label key={skill.id} className={rowClassName}>
+    <label htmlFor={`skill-row-${skill.id}`} key={skill.id} className={rowClassName}>
       {required && adapterEntry?.requiredReason ? (
         <Tooltip>
           <TooltipTrigger asChild>

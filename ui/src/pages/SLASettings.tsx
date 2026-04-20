@@ -148,7 +148,7 @@ function PolicyRow({
       <span className={cn("text-sm font-medium", PRIORITY_COLORS[priority])}>{PRIORITY_LABELS[priority]}</span>
 
       <div>
-        <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Response</label>
+        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Response</span>
         <div className="flex items-center gap-1 mt-0.5">
           <Input
             value={responseH}
@@ -174,7 +174,7 @@ function PolicyRow({
       </div>
 
       <div>
-        <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Resolution</label>
+        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Resolution</span>
         <div className="flex items-center gap-1 mt-0.5">
           <Input
             value={resolutionH}
