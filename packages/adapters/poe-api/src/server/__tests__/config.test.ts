@@ -54,9 +54,11 @@ describe("validatePoeConfig", () => {
   });
 
   it("accepts env-var reference for apiKey", () => {
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: intentional literal — testing env-var reference string syntax
     const result = validatePoeConfig({ model: "claude-sonnet-4-6", apiKey: "${POE_API_KEY}" });
     expect(result.ok).toBe(true);
     if (result.ok) {
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: intentional literal
       expect(result.config.apiKey).toBe("${POE_API_KEY}");
     }
   });

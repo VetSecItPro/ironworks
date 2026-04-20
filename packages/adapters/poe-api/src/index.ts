@@ -5,9 +5,9 @@
  * This root export is for discovery (adapter type constant + documentation).
  */
 
-export { ADAPTER_TYPE } from "./shared/constants.js";
-export { agentConfigurationDoc } from "./shared/agent-configuration-doc.js";
-export { POE_MODELS } from "./shared/models.js";
-export { validatePoeConfig } from "./shared/config.js";
-export type { PoeAdapterConfig, ValidatePoeConfigResult } from "./shared/config.js";
 export { poeApiAdapter } from "./server/index.js";
+export { agentConfigurationDoc } from "./shared/agent-configuration-doc.js";
+export type { PoeAdapterConfig, ValidatePoeConfigResult } from "./shared/config.js";
+export { validatePoeConfig } from "./shared/config.js";
+export { ADAPTER_TYPE } from "./shared/constants.js";
+export { POE_MODELS } from "./shared/models.js";

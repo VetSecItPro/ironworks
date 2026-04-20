@@ -1,6 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
-import type { Transport } from "@ironworksai/adapter-utils/http/transport";
 import { HttpAdapterAuthError, HttpAdapterNetworkError } from "@ironworksai/adapter-utils/http/errors";
+import type { Transport } from "@ironworksai/adapter-utils/http/transport";
+import { describe, expect, it, vi } from "vitest";
 import { testEnvironment } from "../test.js";
 
 function makeMockTransport(overrides: Partial<Transport> = {}): Transport {

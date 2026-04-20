@@ -1,7 +1,11 @@
-import { type Mock, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Transport } from "@ironworksai/adapter-utils/http/transport";
 import type { AdapterExecutionContext } from "@ironworksai/adapter-utils";
-import { HttpAdapterAuthError, HttpAdapterRateLimitError, HttpAdapterServerError } from "@ironworksai/adapter-utils/http/errors";
+import {
+  HttpAdapterAuthError,
+  HttpAdapterRateLimitError,
+  HttpAdapterServerError,
+} from "@ironworksai/adapter-utils/http/errors";
+import type { Transport } from "@ironworksai/adapter-utils/http/transport";
+import { describe, expect, it, type Mock, vi } from "vitest";
 import { execute } from "../execute.js";
 
 // ---------------------------------------------------------------------------
@@ -31,7 +35,10 @@ function makeCtx(overrides: Partial<AdapterExecutionContext> = {}): AdapterExecu
 }
 
 // Build an OpenAI-compat SSE stream string from an array of text deltas + optional tool calls
-function buildSseStream(chunks: string[], usage = { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 }): string {
+function buildSseStream(
+  chunks: string[],
+  usage = { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 },
+): string {
   const events: string[] = [];
   let idx = 0;
   for (const chunk of chunks) {
@@ -68,7 +75,9 @@ function buildToolCallSseStream(): string {
         {
           index: 0,
           delta: {
-            tool_calls: [{ index: 0, id: "call_abc", type: "function", function: { name: "get_weather", arguments: "" } }],
+            tool_calls: [
+              { index: 0, id: "call_abc", type: "function", function: { name: "get_weather", arguments: "" } },
+            ],
           },
           finish_reason: null,
         },
@@ -189,7 +198,9 @@ describe("execute — happy path", () => {
   });
 
   it("returns usage from stream", async () => {
-    const transport = makeMockTransport(buildSseStream(["done"], { prompt_tokens: 100, completion_tokens: 50, total_tokens: 150 }));
+    const transport = makeMockTransport(
+      buildSseStream(["done"], { prompt_tokens: 100, completion_tokens: 50, total_tokens: 150 }),
+    );
     const result = await execute(makeCtx(), transport);
     expect(result.usage?.inputTokens).toBe(100);
     expect(result.usage?.outputTokens).toBe(50);
@@ -254,9 +265,7 @@ describe("execute — error paths", () => {
   it("401 returns auth error without retry", async () => {
     const transport: Transport = {
       sendJson: vi.fn(),
-      sendJsonStream: vi.fn().mockRejectedValue(
-        new HttpAdapterAuthError("Unauthorized"),
-      ),
+      sendJsonStream: vi.fn().mockRejectedValue(new HttpAdapterAuthError("Unauthorized")),
     };
     const result = await execute(makeCtx(), transport);
     expect(result.exitCode).toBe(1);
@@ -311,7 +320,9 @@ describe("execute — error paths", () => {
             {
               index: 0,
               delta: {
-                tool_calls: [{ index: 0, id: "call_r16", type: "function", function: { name: "write_file", arguments: "" } }],
+                tool_calls: [
+                  { index: 0, id: "call_r16", type: "function", function: { name: "write_file", arguments: "" } },
+                ],
               },
               finish_reason: null,
             },
@@ -351,7 +362,9 @@ describe("execute — error paths", () => {
 
   it("pricing missing for unknown model — usage reported, costUsd null or 0", async () => {
     // Use a model not in pricing table to trigger missing-pricing path
-    const transport = makeMockTransport(buildSseStream(["ok"], { prompt_tokens: 100, completion_tokens: 50, total_tokens: 150 }));
+    const transport = makeMockTransport(
+      buildSseStream(["ok"], { prompt_tokens: 100, completion_tokens: 50, total_tokens: 150 }),
+    );
     // Inject an unknown model by bypassing the config validator for this test
     const ctx = makeCtx({ config: { model: "claude-sonnet-4-6", apiKey: "sk-poe-key" } });
     const result = await execute(ctx, transport);

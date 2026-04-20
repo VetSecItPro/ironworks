@@ -29,9 +29,7 @@ describe("injectSkillsIntoSystemPrompt", () => {
   });
 
   it("appends skill content to system prompt when keys provided", () => {
-    const skills = [
-      { key: "ironworks", content: "## IronWorks API\nUse GET /api/agents/me..." },
-    ];
+    const skills = [{ key: "ironworks", content: "## IronWorks API\nUse GET /api/agents/me..." }];
     const result = injectSkillsIntoSystemPrompt("Base prompt.", skills);
     expect(result).toContain("Base prompt.");
     expect(result).toContain("IronWorks API");

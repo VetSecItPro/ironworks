@@ -7,13 +7,13 @@
  */
 
 import type { AdapterExecutionContext, AdapterExecutionResult } from "@ironworksai/adapter-utils";
-import { HttpAdapterAuthError, HttpAdapterError, HttpAdapterStreamBreak } from "@ironworksai/adapter-utils/http/errors";
 import { computeCost } from "@ironworksai/adapter-utils/http/cost";
+import { HttpAdapterAuthError, HttpAdapterError, HttpAdapterStreamBreak } from "@ironworksai/adapter-utils/http/errors";
 import { DEFAULT_RETRY_POLICY, runWithRetry } from "@ironworksai/adapter-utils/http/retry";
-import { parseSseStream } from "@ironworksai/adapter-utils/http/sse-parser";
-import { buildTranscript, deserializeSession, appendTurn } from "@ironworksai/adapter-utils/http/session-replay";
-import type { Transport } from "@ironworksai/adapter-utils/http/transport";
+import { appendTurn, buildTranscript, deserializeSession } from "@ironworksai/adapter-utils/http/session-replay";
 import type { UsageSummary } from "@ironworksai/adapter-utils/http/sse-parser";
+import { parseSseStream } from "@ironworksai/adapter-utils/http/sse-parser";
+import type { Transport } from "@ironworksai/adapter-utils/http/transport";
 import { validatePoeConfig } from "../shared/config.js";
 
 const POE_API_URL = "https://api.poe.com/v1/chat/completions";
@@ -81,7 +81,7 @@ export async function execute(
   const { config } = validation;
   const model = config.model;
 
-  const apiKey = resolveApiKey(ctx.config) ?? (process.env.ADAPTER_POE_API_KEY ?? null);
+  const apiKey = resolveApiKey(ctx.config) ?? process.env.ADAPTER_POE_API_KEY ?? null;
   if (!apiKey) {
     return {
       exitCode: 1,
@@ -105,14 +105,13 @@ export async function execute(
 
   // Build the message list from prior session state + new user turn
   const priorSession = deserializeSession(ctx.runtime.sessionParams);
-  let sessionState = priorSession ?? { turns: [] as import("@ironworksai/adapter-utils/http/session-replay").MessageTurn[] };
+  let sessionState = priorSession ?? {
+    turns: [] as import("@ironworksai/adapter-utils/http/session-replay").MessageTurn[],
+  };
 
   // Extract the current task/issue as the user message content
   const userMessage =
-    asString(ctx.context.wakeReason) ??
-    asString(ctx.context.taskId) ??
-    asString(ctx.context.issueId) ??
-    "Start.";
+    asString(ctx.context.wakeReason) ?? asString(ctx.context.taskId) ?? asString(ctx.context.issueId) ?? "Start.";
 
   sessionState = appendTurn(sessionState, { role: "user", content: userMessage });
 
@@ -171,7 +170,10 @@ export async function execute(
         },
         toolCallFlag,
         onRetry: (event) => {
-          void ctx.onLog("stderr", `[poe-api] retry attempt=${event.attempt + 1} after error: ${errorMessageFrom(event.error)}\n`);
+          void ctx.onLog(
+            "stderr",
+            `[poe-api] retry attempt=${event.attempt + 1} after error: ${errorMessageFrom(event.error)}\n`,
+          );
         },
       },
     );
@@ -225,9 +227,7 @@ export async function execute(
     : sessionState;
 
   // Session params carry the transcript for R17 stateless replay
-  const sessionParams = newSessionState.turns.length > 0
-    ? { turns: newSessionState.turns }
-    : null;
+  const sessionParams = newSessionState.turns.length > 0 ? { turns: newSessionState.turns } : null;
 
   return {
     exitCode: 0,

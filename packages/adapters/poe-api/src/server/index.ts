@@ -1,12 +1,17 @@
-import type { AdapterExecutionContext, AdapterExecutionResult, AdapterEnvironmentTestContext, ServerAdapterModule } from "@ironworksai/adapter-utils";
+import type {
+  AdapterEnvironmentTestContext,
+  AdapterExecutionContext,
+  AdapterExecutionResult,
+  ServerAdapterModule,
+} from "@ironworksai/adapter-utils";
 import { transport } from "@ironworksai/adapter-utils/http/transport";
+import { agentConfigurationDoc } from "../shared/agent-configuration-doc.js";
+import { ADAPTER_TYPE } from "../shared/constants.js";
+import { POE_MODELS } from "../shared/models.js";
 import { execute as executeWithTransport } from "./execute.js";
-import { testEnvironment as testEnvWithTransport } from "./test.js";
 import { sessionCodec } from "./session-codec.js";
 import { getSkillSnapshot } from "./skills.js";
-import { ADAPTER_TYPE } from "../shared/constants.js";
-import { agentConfigurationDoc } from "../shared/agent-configuration-doc.js";
-import { POE_MODELS } from "../shared/models.js";
+import { testEnvironment as testEnvWithTransport } from "./test.js";
 
 // Module-level transport instance — shared across calls for connection pooling.
 const sharedTransport = transport.createTransport();
@@ -32,4 +37,4 @@ export const poeApiAdapter: ServerAdapterModule = {
   agentConfigurationDoc,
 };
 
-export { execute, testEnvironment, sessionCodec, getSkillSnapshot };
+export { execute, getSkillSnapshot, sessionCodec, testEnvironment };
