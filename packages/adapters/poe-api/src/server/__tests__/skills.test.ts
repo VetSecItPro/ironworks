@@ -2,11 +2,13 @@ import { describe, expect, it } from "vitest";
 import { getSkillSnapshot, injectSkillsIntoSystemPrompt } from "../skills.js";
 
 describe("getSkillSnapshot", () => {
-  it("returns mode: unsupported for poe_api adapter", () => {
+  it("returns mode: system-prompt-injected for poe_api adapter (G.6)", () => {
+    // "unsupported" was misleading: skills ARE supported via system prompt injection.
+    // "system-prompt-injected" is the accurate mode for stateless HTTP adapters.
     const snapshot = getSkillSnapshot({ config: { model: "claude-sonnet-4-6" } });
-    expect(snapshot.mode).toBe("unsupported");
+    expect(snapshot.mode).toBe("system-prompt-injected");
     expect(snapshot.adapterType).toBe("poe_api");
-    expect(snapshot.supported).toBe(false);
+    expect(snapshot.supported).toBe(true);
   });
 
   it("returns empty desiredSkills when systemPromptSkills not configured", () => {

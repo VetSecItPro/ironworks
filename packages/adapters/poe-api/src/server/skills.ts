@@ -2,10 +2,9 @@
  * Skill management for poe_api adapter.
  *
  * Poe is stateless HTTP — it cannot sync skill files to disk like CLI adapters.
- * The skill sync mode is "unsupported" (R18 mitigation: honest reporting to IronWorks).
- *
- * Skills listed in config.systemPromptSkills are injected as text into the
- * system prompt at execute time. This module provides the snapshot + injection helpers.
+ * Skills listed in config.systemPromptSkills are injected as text into the system
+ * prompt at execute time. The skill sync mode is "system-prompt-injected" (G.6:
+ * accurate representation — skills ARE supported, just via prompt injection not file sync).
  */
 
 import type { AdapterSkillSnapshot } from "@ironworksai/adapter-utils";
@@ -22,24 +21,24 @@ export interface SkillSnapshotContext {
 }
 
 /**
- * Return the skill snapshot for poe_api. Always reports mode "unsupported"
- * because Poe cannot receive skill files; the desiredSkills list reflects what
- * the agent wants injected into the system prompt.
+ * Return the skill snapshot for poe_api. Reports mode "system-prompt-injected"
+ * because skills are injected as text into the system prompt at execute time.
+ * The desiredSkills list reflects what the agent wants injected.
  */
 export function getSkillSnapshot(ctx: SkillSnapshotContext): AdapterSkillSnapshot {
   const systemPromptSkills = extractSystemPromptSkills(ctx.config);
 
   return {
     adapterType: ADAPTER_TYPE,
-    supported: false,
-    mode: "unsupported",
+    supported: true,
+    mode: "system-prompt-injected",
     desiredSkills: systemPromptSkills,
     entries: [],
     warnings:
       systemPromptSkills.length > 0
         ? [
             `Skills [${systemPromptSkills.join(", ")}] will be injected into the system prompt. ` +
-              "Poe does not support native skill sync — contents are inlined as text.",
+              "Poe does not support native skill file sync — contents are inlined as text.",
           ]
         : [],
   };

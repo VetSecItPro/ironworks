@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import { getSkillSnapshot, injectSkillsIntoSystemPrompt } from "../skills.js";
 
 describe("getSkillSnapshot", () => {
-  it("returns mode: unsupported (R18 mitigation — honest reporting)", () => {
+  it("returns mode: system-prompt-injected for openrouter_api adapter (G.6)", () => {
     const snapshot = getSkillSnapshot({ config: { model: "meta-llama/llama-4-scout-17b-16e-instruct" } });
-    expect(snapshot.mode).toBe("unsupported");
-    expect(snapshot.supported).toBe(false);
+    expect(snapshot.mode).toBe("system-prompt-injected");
+    expect(snapshot.supported).toBe(true);
   });
 
   it("returns adapterType: openrouter_api", () => {

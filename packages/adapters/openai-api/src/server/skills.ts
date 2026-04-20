@@ -31,15 +31,15 @@ export function getSkillSnapshot(ctx: SkillSnapshotContext): AdapterSkillSnapsho
 
   return {
     adapterType: ADAPTER_TYPE,
-    supported: false,
-    mode: "unsupported",
+    supported: true,
+    mode: "system-prompt-injected",
     desiredSkills: systemPromptSkills,
     entries: [],
     warnings:
       systemPromptSkills.length > 0
         ? [
             `Skills [${systemPromptSkills.join(", ")}] will be injected into the system prompt. ` +
-              "OpenAI API does not support native skill sync — contents are inlined as text.",
+              "OpenAI API does not support native skill file sync — contents are inlined as text.",
           ]
         : [],
   };

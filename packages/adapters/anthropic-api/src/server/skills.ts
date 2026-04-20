@@ -2,10 +2,9 @@
  * Skill management for anthropic_api adapter.
  *
  * Anthropic's HTTP API is stateless — it cannot sync skill files to disk like CLI adapters.
- * The skill sync mode is "unsupported" (R18 mitigation: honest reporting to IronWorks).
- *
  * Skills listed in config.systemPromptSkills are injected as text into the system prompt
- * at execute time. This module provides the snapshot + injection helpers.
+ * at execute time. The skill sync mode is "system-prompt-injected" (G.6: accurate
+ * representation — skills ARE supported, just via prompt injection not file sync).
  */
 
 import type { AdapterSkillSnapshot } from "@ironworksai/adapter-utils";
@@ -22,24 +21,24 @@ export interface SkillSnapshotContext {
 }
 
 /**
- * Return the skill snapshot for anthropic_api. Always reports mode "unsupported" because
- * the HTTP API cannot receive skill files; desiredSkills reflects what the agent wants
- * injected into the system prompt instead.
+ * Return the skill snapshot for anthropic_api. Reports mode "system-prompt-injected"
+ * because skills are injected as text into the system prompt at execute time.
+ * The desiredSkills list reflects what the agent wants injected.
  */
 export function getSkillSnapshot(ctx: SkillSnapshotContext): AdapterSkillSnapshot {
   const systemPromptSkills = extractSystemPromptSkills(ctx.config);
 
   return {
     adapterType: ADAPTER_TYPE,
-    supported: false,
-    mode: "unsupported",
+    supported: true,
+    mode: "system-prompt-injected",
     desiredSkills: systemPromptSkills,
     entries: [],
     warnings:
       systemPromptSkills.length > 0
         ? [
             `Skills [${systemPromptSkills.join(", ")}] will be injected into the system prompt. ` +
-              "Anthropic API does not support native skill sync — contents are inlined as text.",
+              "Anthropic API does not support native skill file sync — contents are inlined as text.",
           ]
         : [],
   };

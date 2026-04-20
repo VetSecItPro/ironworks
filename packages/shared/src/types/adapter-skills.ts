@@ -1,4 +1,7 @@
-export type AgentSkillSyncMode = "unsupported" | "persistent" | "ephemeral";
+// "system-prompt-injected" added in Phase G: HTTP adapters inject skills as text
+// into the system prompt rather than syncing files to disk. This is a supported mode,
+// not "unsupported" — reporting "unsupported" was misleading before G.6.
+export type AgentSkillSyncMode = "unsupported" | "persistent" | "ephemeral" | "system-prompt-injected";
 
 export type AgentSkillState = "available" | "configured" | "installed" | "missing" | "stale" | "external";
 

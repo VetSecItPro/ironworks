@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import { getSkillSnapshot, injectSkillsIntoSystemPrompt } from "../skills.js";
 
 describe("getSkillSnapshot", () => {
-  it("returns mode: unsupported (R18 mitigation — honest reporting)", () => {
+  it("returns mode: system-prompt-injected for openai_api adapter (G.6)", () => {
     const snapshot = getSkillSnapshot({ config: { model: "gpt-5" } });
-    expect(snapshot.mode).toBe("unsupported");
-    expect(snapshot.supported).toBe(false);
+    expect(snapshot.mode).toBe("system-prompt-injected");
+    expect(snapshot.supported).toBe(true);
   });
 
   it("returns adapterType: openai_api", () => {
