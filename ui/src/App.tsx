@@ -83,6 +83,10 @@ const NotificationSettings = lazy(() =>
 const BillingSettingsPage = lazy(() => import("./pages/BillingSettings").then((m) => ({ default: m.BillingSettings })));
 // Settings > Providers — API key management for HTTP adapter providers
 const SettingsProviders = lazy(() => import("./pages/Settings/Providers").then((m) => ({ default: m.ProvidersPage })));
+// Settings > Adapter Playground — fire a test prompt against any configured adapter
+const SettingsPlayground = lazy(() =>
+  import("./pages/Settings/AdapterPlayground").then((m) => ({ default: m.AdapterPlayground })),
+);
 // Admin panel — lazy loaded, instance admin only
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
@@ -307,6 +311,14 @@ function boardRoutes() {
         element={
           <LazyPage>
             <ProvidersRoute />
+          </LazyPage>
+        }
+      />
+      <Route
+        path="settings/playground"
+        element={
+          <LazyPage>
+            <PlaygroundRoute />
           </LazyPage>
         }
       />
@@ -755,6 +767,19 @@ function ProvidersRoute() {
     : null;
   if (!matchedCompany) return null;
   return <SettingsProviders companyId={matchedCompany.id} />;
+}
+
+/**
+ * Resolves :companyPrefix to a real company UUID, then renders the Playground page.
+ */
+function PlaygroundRoute() {
+  const { companies } = useCompany();
+  const { companyPrefix } = useParams<{ companyPrefix?: string }>();
+  const matchedCompany = companyPrefix
+    ? (companies.find((company) => company.issuePrefix.toUpperCase() === companyPrefix.toUpperCase()) ?? null)
+    : null;
+  if (!matchedCompany) return null;
+  return <SettingsPlayground companyId={matchedCompany.id} />;
 }
 
 function OnboardingRoutePage() {
