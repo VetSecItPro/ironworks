@@ -5,6 +5,13 @@ import { envBindingSchema } from "@ironworksai/shared";
 import { and, desc, eq } from "drizzle-orm";
 import { conflict, notFound, unprocessable } from "../errors.js";
 import { getSecretProvider, listSecretProviders } from "../secrets/provider-registry.js";
+import type { ProviderType } from "./provider-secret-resolver.js";
+import { resolveProviderSecret } from "./provider-secret-resolver.js";
+
+// HTTP adapter types that can have workspace-scoped API keys stored in
+// workspace_provider_secrets. Used to inject the resolved key into
+// adapterConfig before the adapter's execute() is called.
+const HTTP_PROVIDER_TYPES = new Set<string>(["poe_api", "anthropic_api", "openai_api", "openrouter_api"]);
 
 const ENV_KEY_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const SENSITIVE_ENV_KEY_RE =
@@ -323,9 +330,33 @@ export function secretService(db: Db) {
     resolveAdapterConfigForRuntime: async (
       companyId: string,
       adapterConfig: Record<string, unknown>,
+      opts?: { adapterType?: string },
     ): Promise<{ config: Record<string, unknown>; secretKeys: Set<string> }> => {
       const resolved = { ...adapterConfig };
       const secretKeys = new Set<string>();
+
+      // Phase G.14: for HTTP provider adapters, inject the workspace API key
+      // when the config doesn't already carry one. This lets operators store
+      // their key once (via PUT /providers/:provider/secret) and have all
+      // agents that use that provider pick it up automatically.
+      if (
+        opts?.adapterType &&
+        HTTP_PROVIDER_TYPES.has(opts.adapterType) &&
+        !resolved.apiKey
+      ) {
+        const providerResolution = await resolveProviderSecret(
+          db,
+          companyId,
+          opts.adapterType as ProviderType,
+        );
+        if (providerResolution.apiKey) {
+          resolved.apiKey = providerResolution.apiKey;
+          secretKeys.add("apiKey");
+        }
+        // If source is "none" we leave apiKey absent — the adapter will surface
+        // its own "key not configured" error, which is the correct UX.
+      }
+
       if (!Object.hasOwn(adapterConfig, "env")) {
         return { config: resolved, secretKeys };
       }
