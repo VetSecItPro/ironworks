@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { makeChainableDb } from "./helpers/drizzle-mock.js";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -72,16 +73,7 @@ async function createApp(actor: Record<string, unknown>) {
     (req as any).actor = actor;
     next();
   });
-  // Chainable that's also awaitable via a proper thenable contract.
-  const chainable: any = {};
-  chainable.select = vi.fn().mockReturnValue(chainable);
-  chainable.from = vi.fn().mockReturnValue(chainable);
-  chainable.where = vi.fn().mockReturnValue(chainable);
-  chainable.update = vi.fn().mockReturnValue(chainable);
-  chainable.set = vi.fn().mockReturnValue(chainable);
-  chainable.limit = vi.fn().mockReturnValue(chainable);
-  chainable.then = vi.fn().mockImplementation((resolve: any) => resolve([{ membershipRole: "owner" }]));
-  const fakeDb = chainable as any;
+  const fakeDb = makeChainableDb([{ membershipRole: "owner" }]);
   app.use("/api", secretRoutes(fakeDb));
   app.use(errorHandler);
   return app;

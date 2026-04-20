@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { makeChainableDb } from "./helpers/drizzle-mock.js";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -85,18 +86,8 @@ async function createApp(actor: Record<string, unknown>) {
     (req as any).actor = actor;
     next();
   });
-  // Fake DB chainable for assertCanWrite membership queries.
-  const chainable: any = {};
-  chainable.select = vi.fn().mockReturnValue(chainable);
-  chainable.from = vi.fn().mockReturnValue(chainable);
-  chainable.where = vi.fn().mockReturnValue(chainable);
-  chainable.orderBy = vi.fn().mockReturnValue(chainable);
-  chainable.limit = vi.fn().mockReturnValue(chainable);
-  // Treat board user with non-viewer role by returning empty rows (membership undefined → not viewer).
-  chainable.then = vi.fn().mockImplementation((resolve: any) => resolve([]));
-  const fakeDb: any = {
-    select: vi.fn().mockReturnValue(chainable),
-  };
+  // Empty membership rows → board user treated as non-viewer by assertCanWrite.
+  const fakeDb = makeChainableDb([]);
   app.use("/api", goalRoutes(fakeDb));
   app.use(errorHandler);
   return app;

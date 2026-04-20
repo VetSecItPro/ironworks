@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { makeChainableDb } from "./helpers/drizzle-mock.js";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -39,25 +40,6 @@ vi.mock("../middleware/logger.js", () => ({
   logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn(), debug: vi.fn() },
 }));
 
-// ── Fake db for war-room queries ────────────────────────────────────────────
-
-function createFakeDb() {
-  // Chainable that's also awaitable (resolves to []).
-  const chainable: any = {};
-  chainable.select = vi.fn().mockReturnValue(chainable);
-  chainable.from = vi.fn().mockReturnValue(chainable);
-  chainable.leftJoin = vi.fn().mockReturnValue(chainable);
-  chainable.where = vi.fn().mockReturnValue(chainable);
-  chainable.groupBy = vi.fn().mockReturnValue(chainable);
-  chainable.orderBy = vi.fn().mockReturnValue(chainable);
-  chainable.limit = vi.fn().mockReturnValue(chainable);
-  chainable.then = vi.fn().mockImplementation((resolve: any) => resolve([]));
-  // Make db itself callable as select()
-  const db = vi.fn().mockReturnValue(chainable);
-  Object.assign(db, chainable);
-  return db;
-}
-
 // ── App builder ─────────────────────────────────────────────────────────────
 
 async function createApp(actor: Record<string, unknown>) {
@@ -70,7 +52,7 @@ async function createApp(actor: Record<string, unknown>) {
     (req as any).actor = actor;
     next();
   });
-  const fakeDb = createFakeDb();
+  const fakeDb = makeChainableDb([]);
   app.use("/api", dashboardRoutes(fakeDb as any));
   app.use(errorHandler);
   return app;
