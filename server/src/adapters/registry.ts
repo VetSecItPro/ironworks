@@ -1,3 +1,5 @@
+// HTTP API adapters are pre-composed modules — import the ready-built adapter object directly.
+import { anthropicApiAdapter } from "@ironworksai/adapter-anthropic-api/server";
 import {
   agentConfigurationDoc as claudeAgentConfigurationDoc,
   models as claudeModels,
@@ -44,6 +46,7 @@ import {
   listGeminiSkills,
   syncGeminiSkills,
 } from "@ironworksai/adapter-gemini-local/server";
+import { openaiApiAdapter } from "@ironworksai/adapter-openai-api/server";
 import {
   agentConfigurationDoc as openclawGatewayAgentConfigurationDoc,
   models as openclawGatewayModels,
@@ -61,6 +64,7 @@ import {
   testEnvironment as openCodeTestEnvironment,
   syncOpenCodeSkills,
 } from "@ironworksai/adapter-opencode-local/server";
+import { openrouterApiAdapter } from "@ironworksai/adapter-openrouter-api/server";
 import { agentConfigurationDoc as piAgentConfigurationDoc } from "@ironworksai/adapter-pi-local";
 import {
   listPiModels,
@@ -70,6 +74,7 @@ import {
   testEnvironment as piTestEnvironment,
   syncPiSkills,
 } from "@ironworksai/adapter-pi-local/server";
+import { poeApiAdapter } from "@ironworksai/adapter-poe-api/server";
 import { getAdapterSessionManagement } from "@ironworksai/adapter-utils";
 import { agentConfigurationDoc as hermesAgentConfigurationDoc, models as hermesModels } from "hermes-paperclip-adapter";
 import {
@@ -189,6 +194,7 @@ const hermesLocalAdapter: ServerAdapterModule = {
 
 const adaptersByType = new Map<string, ServerAdapterModule>(
   [
+    // Local / gateway adapters
     claudeLocalAdapter,
     codexLocalAdapter,
     openCodeLocalAdapter,
@@ -198,6 +204,12 @@ const adaptersByType = new Map<string, ServerAdapterModule>(
     openclawGatewayAdapter,
     hermesLocalAdapter,
     ollamaCloudAdapter,
+    // HTTP API adapters (Phase G) — stateless cloud providers reached over HTTPS
+    anthropicApiAdapter,
+    openaiApiAdapter,
+    openrouterApiAdapter,
+    poeApiAdapter,
+    // Generic / process adapters (last to avoid shadowing named types)
     processAdapter,
     httpAdapter,
   ].map((a) => [a.type, a]),
