@@ -29,8 +29,9 @@ vi.mock("../services/index.js", async () => {
   const { randomUUID } = await import("node:crypto");
   const { eq } = await import("drizzle-orm");
   const { heartbeatRuns, issues } = await import("@ironworksai/db");
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
 
-  return {
+  return makeFullServicesMock({
     ...actual,
     routineService: (db: any) =>
       actual.routineService(db, {
@@ -70,7 +71,7 @@ vi.mock("../services/index.js", async () => {
           },
         },
       }),
-  };
+  });
 });
 
 const embeddedPostgresSupport = await getEmbeddedPostgresTestSupport();

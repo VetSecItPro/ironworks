@@ -50,11 +50,14 @@ const mockProjectService = vi.hoisted(() => ({
 const mockLogActivity = vi.hoisted(() => vi.fn());
 const mockGenerateClientUpdate = vi.hoisted(() => vi.fn());
 
-vi.mock("../services/index.js", () => ({
-  projectService: () => mockProjectService,
-  logActivity: mockLogActivity,
-  generateClientUpdate: mockGenerateClientUpdate,
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    projectService: () => mockProjectService,
+    logActivity: mockLogActivity,
+    generateClientUpdate: mockGenerateClientUpdate,
+  });
+});
 
 vi.mock("../services/activity-log.js", () => ({
   logActivity: mockLogActivity,

@@ -38,11 +38,14 @@ const mockAccessService = vi.hoisted(() => ({
   canUser: vi.fn().mockResolvedValue(true),
 }));
 
-vi.mock("../services/index.js", () => ({
-  secretService: () => mockSecretService,
-  logActivity: mockLogActivity,
-  accessService: () => mockAccessService,
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    secretService: () => mockSecretService,
+    logActivity: mockLogActivity,
+    accessService: () => mockAccessService,
+  });
+});
 
 vi.mock("../services/activity-log.js", () => ({
   logActivity: mockLogActivity,

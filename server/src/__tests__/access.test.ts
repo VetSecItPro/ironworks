@@ -57,15 +57,18 @@ const mockDeduplicateAgentName = vi.hoisted(() =>
   vi.fn().mockImplementation((_db: any, _cid: any, name: string) => name),
 );
 
-vi.mock("../services/index.js", () => ({
-  accessService: () => mockAccessService,
-  agentService: () => mockAgentService,
-  boardAuthService: () => mockBoardAuthService,
-  budgetService: () => mockBudgetService,
-  logActivity: mockLogActivity,
-  notifyHireApproved: mockNotifyHireApproved,
-  deduplicateAgentName: mockDeduplicateAgentName,
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    accessService: () => mockAccessService,
+    agentService: () => mockAgentService,
+    boardAuthService: () => mockBoardAuthService,
+    budgetService: () => mockBudgetService,
+    logActivity: mockLogActivity,
+    notifyHireApproved: mockNotifyHireApproved,
+    deduplicateAgentName: mockDeduplicateAgentName,
+  });
+});
 
 vi.mock("../services/user-invites.js", () => ({
   userInviteService: () => ({

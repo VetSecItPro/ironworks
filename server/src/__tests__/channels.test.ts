@@ -83,9 +83,12 @@ vi.mock("../services/issues.js", () => ({
   issueService: () => ({ getById: vi.fn().mockResolvedValue(null) }),
 }));
 
-vi.mock("../services/index.js", () => ({
-  heartbeatService: () => ({ wakeup: vi.fn() }),
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    heartbeatService: () => ({ wakeup: vi.fn() }),
+  });
+});
 
 vi.mock("../services/activity-log.js", () => ({
   logActivity: vi.fn(),

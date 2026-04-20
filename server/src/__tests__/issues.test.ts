@@ -62,33 +62,36 @@ const mockAccessService = vi.hoisted(() => ({
 
 const mockLogActivity = vi.hoisted(() => vi.fn());
 
-vi.mock("../services/index.js", () => ({
-  accessService: () => mockAccessService,
-  agentService: () => ({ getById: vi.fn().mockResolvedValue(null), list: vi.fn().mockResolvedValue([]) }),
-  executionWorkspaceService: () => ({ getById: vi.fn() }),
-  goalService: () => ({
-    getById: vi.fn().mockResolvedValue(null),
-    getDefaultCompanyGoal: vi.fn().mockResolvedValue(null),
-  }),
-  heartbeatService: () => ({ wakeup: vi.fn(), getActiveRun: vi.fn(), listRuns: vi.fn().mockResolvedValue([]) }),
-  issueApprovalService: () => ({
-    list: vi.fn().mockResolvedValue([]),
-    listApprovalsForIssue: vi.fn().mockResolvedValue([]),
-    link: vi.fn(),
-    unlink: vi.fn(),
-  }),
-  issueService: () => mockIssueService,
-  documentService: () => ({ getIssueDocumentPayload: vi.fn().mockResolvedValue({}) }),
-  logActivity: mockLogActivity,
-  projectService: () => ({ getById: vi.fn().mockResolvedValue(null), listByIds: vi.fn().mockResolvedValue([]) }),
-  routineService: () => ({ list: vi.fn().mockResolvedValue([]) }),
-  workProductService: () => ({
-    listForIssue: vi.fn().mockResolvedValue([]),
-    create: vi.fn(),
-    update: vi.fn(),
-    remove: vi.fn(),
-  }),
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    accessService: () => mockAccessService,
+    agentService: () => ({ getById: vi.fn().mockResolvedValue(null), list: vi.fn().mockResolvedValue([]) }),
+    executionWorkspaceService: () => ({ getById: vi.fn() }),
+    goalService: () => ({
+      getById: vi.fn().mockResolvedValue(null),
+      getDefaultCompanyGoal: vi.fn().mockResolvedValue(null),
+    }),
+    heartbeatService: () => ({ wakeup: vi.fn(), getActiveRun: vi.fn(), listRuns: vi.fn().mockResolvedValue([]) }),
+    issueApprovalService: () => ({
+      list: vi.fn().mockResolvedValue([]),
+      listApprovalsForIssue: vi.fn().mockResolvedValue([]),
+      link: vi.fn(),
+      unlink: vi.fn(),
+    }),
+    issueService: () => mockIssueService,
+    documentService: () => ({ getIssueDocumentPayload: vi.fn().mockResolvedValue({}) }),
+    logActivity: mockLogActivity,
+    projectService: () => ({ getById: vi.fn().mockResolvedValue(null), listByIds: vi.fn().mockResolvedValue([]) }),
+    routineService: () => ({ list: vi.fn().mockResolvedValue([]) }),
+    workProductService: () => ({
+      listForIssue: vi.fn().mockResolvedValue([]),
+      create: vi.fn(),
+      update: vi.fn(),
+      remove: vi.fn(),
+    }),
+  });
+});
 
 vi.mock("../services/activity-log.js", () => ({
   logActivity: mockLogActivity,

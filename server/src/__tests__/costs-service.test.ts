@@ -75,28 +75,19 @@ const mockBudgetService = vi.hoisted(() => ({
   resolveIncident: vi.fn(),
 }));
 
-vi.mock("../services/index.js", () => ({
-  budgetService: () => mockBudgetService,
-  costService: () => mockCostService,
-  financeService: () => mockFinanceService,
-  companyService: () => mockCompanyService,
-  agentService: () => mockAgentService,
-  heartbeatService: () => mockHeartbeatService,
-  logActivity: mockLogActivity,
-  companyPortabilityService: () => ({}),
-  instanceSettingsService: () => ({}),
-  companySkillService: () => ({}),
-  workProductService: () => ({}),
-  workspaceOperationService: () => ({}),
-  executionWorkspaceService: () => ({}),
-  issueApprovalService: () => ({}),
-  secretService: () => ({}),
-  sidebarBadgeService: () => ({}),
-  dashboardService: () => ({}),
-  goalService: () => ({}),
-  routineService: () => ({}),
-  playbookService: () => ({ seedDefaults: vi.fn() }),
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    budgetService: () => mockBudgetService,
+    costService: () => mockCostService,
+    financeService: () => mockFinanceService,
+    companyService: () => mockCompanyService,
+    agentService: () => mockAgentService,
+    heartbeatService: () => mockHeartbeatService,
+    logActivity: mockLogActivity,
+    playbookService: () => ({ seedDefaults: vi.fn() }),
+  });
+});
 
 vi.mock("../services/quota-windows.js", () => ({
   fetchAllQuotaWindows: mockFetchAllQuotaWindows,

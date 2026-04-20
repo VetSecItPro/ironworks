@@ -86,40 +86,32 @@ const mockCompanySkillService = vi.hoisted(() => ({
 const mockWorkspaceOperationService = vi.hoisted(() => ({}));
 const mockLogActivity = vi.hoisted(() => vi.fn());
 
-vi.mock("../services/index.js", () => ({
-  agentService: () => mockAgentService,
-  agentInstructionsService: () => mockAgentInstructionsService,
-  accessService: () => mockAccessService,
-  approvalService: () => mockApprovalService,
-  companySkillService: () => mockCompanySkillService,
-  budgetService: () => mockBudgetService,
-  heartbeatService: () => mockHeartbeatService,
-  issueApprovalService: () => mockIssueApprovalService,
-  issueService: () => mockIssueService,
-  logActivity: mockLogActivity,
-  createAgentWorkspace: vi.fn().mockResolvedValue(undefined),
-  archiveAgentWorkspace: vi.fn().mockResolvedValue(undefined),
-  createAgentDocument: vi.fn().mockResolvedValue("doc-id"),
-  getAgentDocuments: vi.fn().mockResolvedValue([]),
-  createHiringRecord: vi.fn().mockResolvedValue(undefined),
-  createTerminationRecord: vi.fn().mockResolvedValue(undefined),
-  createPerformanceReview: vi.fn().mockResolvedValue(undefined),
-  companyPortabilityService: () => ({}),
-  instanceSettingsService: () => ({}),
-  workProductService: () => ({}),
-  executionWorkspaceService: () => ({}),
-  sidebarBadgeService: () => ({}),
-  dashboardService: () => ({}),
-  goalService: () => ({}),
-  financeService: () => ({}),
-  costService: () => ({}),
-  companyService: () => ({}),
-  routineService: () => ({}),
-  playbookService: () => ({ seedDefaults: vi.fn() }),
-  secretService: () => mockSecretService,
-  syncInstructionsBundleConfigFromFilePath: vi.fn((_agent, config) => config),
-  workspaceOperationService: () => mockWorkspaceOperationService,
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    agentService: () => mockAgentService,
+    agentInstructionsService: () => mockAgentInstructionsService,
+    accessService: () => mockAccessService,
+    approvalService: () => mockApprovalService,
+    companySkillService: () => mockCompanySkillService,
+    budgetService: () => mockBudgetService,
+    heartbeatService: () => mockHeartbeatService,
+    issueApprovalService: () => mockIssueApprovalService,
+    issueService: () => mockIssueService,
+    logActivity: mockLogActivity,
+    createAgentWorkspace: vi.fn().mockResolvedValue(undefined),
+    archiveAgentWorkspace: vi.fn().mockResolvedValue(undefined),
+    createAgentDocument: vi.fn().mockResolvedValue("doc-id"),
+    getAgentDocuments: vi.fn().mockResolvedValue([]),
+    createHiringRecord: vi.fn().mockResolvedValue(undefined),
+    createTerminationRecord: vi.fn().mockResolvedValue(undefined),
+    createPerformanceReview: vi.fn().mockResolvedValue(undefined),
+    playbookService: () => ({ seedDefaults: vi.fn() }),
+    secretService: () => mockSecretService,
+    syncInstructionsBundleConfigFromFilePath: vi.fn((_agent, config) => config),
+    workspaceOperationService: () => mockWorkspaceOperationService,
+  });
+});
 
 function createDbStub() {
   return {

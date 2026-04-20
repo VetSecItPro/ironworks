@@ -63,17 +63,20 @@ const mockKnowledgeService = vi.hoisted(() => ({
 const mockLogActivity = vi.hoisted(() => vi.fn());
 const mockSeedSystemRoleTemplates = vi.hoisted(() => vi.fn());
 
-vi.mock("../services/index.js", () => ({
-  companyService: () => mockCompanyService,
-  agentService: () => mockAgentService,
-  accessService: () => mockAccessService,
-  budgetService: () => mockBudgetService,
-  companyPortabilityService: () => mockPortabilityService,
-  playbookService: () => mockPlaybookService,
-  routineService: () => mockRoutineService,
-  logActivity: mockLogActivity,
-  seedSystemRoleTemplates: mockSeedSystemRoleTemplates,
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    companyService: () => mockCompanyService,
+    agentService: () => mockAgentService,
+    accessService: () => mockAccessService,
+    budgetService: () => mockBudgetService,
+    companyPortabilityService: () => mockPortabilityService,
+    playbookService: () => mockPlaybookService,
+    routineService: () => mockRoutineService,
+    logActivity: mockLogActivity,
+    seedSystemRoleTemplates: mockSeedSystemRoleTemplates,
+  });
+});
 
 vi.mock("../services/knowledge.js", () => ({
   knowledgeService: () => mockKnowledgeService,

@@ -71,15 +71,18 @@ const mockHeartbeatService = vi.hoisted(() => ({
 
 const mockLogActivity = vi.hoisted(() => vi.fn());
 
-vi.mock("../services/index.js", () => ({
-  costService: () => mockCostService,
-  financeService: () => mockFinanceService,
-  budgetService: () => mockBudgetService,
-  companyService: () => mockCompanyService,
-  agentService: () => mockAgentService,
-  heartbeatService: () => mockHeartbeatService,
-  logActivity: mockLogActivity,
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    costService: () => mockCostService,
+    financeService: () => mockFinanceService,
+    budgetService: () => mockBudgetService,
+    companyService: () => mockCompanyService,
+    agentService: () => mockAgentService,
+    heartbeatService: () => mockHeartbeatService,
+    logActivity: mockLogActivity,
+  });
+});
 
 vi.mock("../services/costs.js", () => ({
   costPerIssue: vi.fn().mockResolvedValue([]),

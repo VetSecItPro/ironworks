@@ -11,13 +11,16 @@ const { createAssetMock, getAssetByIdMock, logActivityMock } = vi.hoisted(() => 
   logActivityMock: vi.fn(),
 }));
 
-vi.mock("../services/index.js", () => ({
-  assetService: vi.fn(() => ({
-    create: createAssetMock,
-    getById: getAssetByIdMock,
-  })),
-  logActivity: logActivityMock,
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    assetService: vi.fn(() => ({
+      create: createAssetMock,
+      getById: getAssetByIdMock,
+    })),
+    logActivity: logActivityMock,
+  });
+});
 
 function createAsset() {
   const now = new Date("2026-01-01T00:00:00.000Z");

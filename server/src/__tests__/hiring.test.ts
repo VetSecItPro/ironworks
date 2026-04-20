@@ -75,14 +75,14 @@ function createFakeDb() {
 const mockLogActivity = vi.hoisted(() => vi.fn());
 const mockApprovalCreate = vi.hoisted(() => vi.fn());
 
-vi.mock("../services/index.js", () => ({
-  logActivity: mockLogActivity,
-  approvalService: () => ({ create: mockApprovalCreate }),
-  createAgentWorkspace: vi.fn(),
-  createHiringRecord: vi.fn(),
-  createEmploymentHistoryEntry: vi.fn(),
-  buildOnboardingPacket: vi.fn().mockResolvedValue({}),
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    logActivity: mockLogActivity,
+    approvalService: () => ({ create: mockApprovalCreate }),
+    buildOnboardingPacket: vi.fn().mockResolvedValue({}),
+  });
+});
 
 vi.mock("../services/activity-log.js", () => ({
   logActivity: mockLogActivity,

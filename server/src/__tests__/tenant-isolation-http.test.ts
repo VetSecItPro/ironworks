@@ -293,7 +293,9 @@ const mockCompanySkillService = vi.hoisted(() => ({
 
 const mockLogActivity = vi.hoisted(() => vi.fn());
 
-vi.mock("../services/index.js", () => ({
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
   accessService: () => mockAccessService,
   agentService: () => mockAgentService,
   agentInstructionsService: () => ({}),
@@ -354,7 +356,8 @@ vi.mock("../services/index.js", () => ({
     remove: vi.fn(),
   }),
   workspaceOperationService: () => ({}),
-}));
+  });
+});
 
 vi.mock("../services/knowledge.js", () => ({
   knowledgeService: () => mockKnowledgeService,

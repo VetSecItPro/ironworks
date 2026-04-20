@@ -51,11 +51,14 @@ vi.mock("../services/messaging-bridges.js", () => ({
   messagingBridgeService: () => mockBridgeService,
 }));
 
-vi.mock("../services/index.js", () => ({
-  logActivity: mockLogActivity,
-  secretService: () => mockSecretService,
-  companyService: () => mockCompanyService,
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    logActivity: mockLogActivity,
+    secretService: () => mockSecretService,
+    companyService: () => mockCompanyService,
+  });
+});
 
 vi.mock("../services/activity-log.js", () => ({
   logActivity: mockLogActivity,

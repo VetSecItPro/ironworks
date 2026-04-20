@@ -3,49 +3,38 @@ import request from "supertest";
 import { describe, expect, it, vi } from "vitest";
 import { companyRoutes } from "../routes/companies.js";
 
-vi.mock("../services/index.js", () => ({
-  companyService: () => ({
-    list: vi.fn(),
-    stats: vi.fn(),
-    getById: vi.fn(),
-    create: vi.fn(),
-    update: vi.fn(),
-    archive: vi.fn(),
-    remove: vi.fn(),
-  }),
-  companyPortabilityService: () => ({
-    exportBundle: vi.fn(),
-    previewExport: vi.fn(),
-    previewImport: vi.fn(),
-    importBundle: vi.fn(),
-  }),
-  accessService: () => ({
-    canUser: vi.fn(),
-    ensureMembership: vi.fn(),
-  }),
-  budgetService: () => ({
-    upsertPolicy: vi.fn(),
-  }),
-  agentService: () => ({
-    getById: vi.fn(),
-  }),
-  logActivity: vi.fn(),
-  instanceSettingsService: () => ({}),
-  companySkillService: () => ({}),
-  workProductService: () => ({}),
-  workspaceOperationService: () => ({}),
-  executionWorkspaceService: () => ({}),
-  issueApprovalService: () => ({}),
-  secretService: () => ({}),
-  sidebarBadgeService: () => ({}),
-  dashboardService: () => ({}),
-  heartbeatService: () => ({}),
-  goalService: () => ({}),
-  financeService: () => ({}),
-  costService: () => ({}),
-  routineService: () => ({}),
-  playbookService: () => ({ seedDefaults: vi.fn() }),
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    companyService: () => ({
+      list: vi.fn(),
+      stats: vi.fn(),
+      getById: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      archive: vi.fn(),
+      remove: vi.fn(),
+    }),
+    companyPortabilityService: () => ({
+      exportBundle: vi.fn(),
+      previewExport: vi.fn(),
+      previewImport: vi.fn(),
+      importBundle: vi.fn(),
+    }),
+    accessService: () => ({
+      canUser: vi.fn(),
+      ensureMembership: vi.fn(),
+    }),
+    budgetService: () => ({
+      upsertPolicy: vi.fn(),
+    }),
+    agentService: () => ({
+      getById: vi.fn(),
+    }),
+    logActivity: vi.fn(),
+    playbookService: () => ({ seedDefaults: vi.fn() }),
+  });
+});
 
 describe("company routes malformed issue path guard", () => {
   it("returns a clear error when companyId is missing for issues list path", async () => {

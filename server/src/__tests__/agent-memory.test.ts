@@ -51,10 +51,13 @@ const mockCreateAgentDocument = vi.hoisted(() => {
   return vi.fn().mockResolvedValue("00000000-0000-0000-0000-000000000000");
 });
 
-vi.mock("../services/index.js", () => ({
-  logActivity: mockLogActivity,
-  createAgentDocument: mockCreateAgentDocument,
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    logActivity: mockLogActivity,
+    createAgentDocument: mockCreateAgentDocument,
+  });
+});
 
 vi.mock("../services/activity-log.js", () => ({
   logActivity: mockLogActivity,
