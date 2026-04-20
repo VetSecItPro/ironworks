@@ -2,7 +2,7 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    projects: ["packages/db", "packages/adapters/opencode-local", "packages/adapters/poe-api", "server", "ui", "cli"],
+    projects: ["packages/db", "packages/adapters/opencode-local", "packages/adapters/poe-api", "packages/adapters/anthropic-api", "server", "ui", "cli"],
     coverage: {
       provider: "v8",
       reporter: ["text", "json-summary"],
