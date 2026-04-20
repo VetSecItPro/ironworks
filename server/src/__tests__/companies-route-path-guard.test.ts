@@ -40,6 +40,7 @@ describe("company routes malformed issue path guard", () => {
   it("returns a clear error when companyId is missing for issues list path", async () => {
     const app = express();
     app.use((req, _res, next) => {
+      // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
       (req as any).actor = {
         type: "agent",
         agentId: "agent-1",
@@ -48,6 +49,7 @@ describe("company routes malformed issue path guard", () => {
       };
       next();
     });
+    // biome-ignore lint/suspicious/noExplicitAny: mock Drizzle DB or storage object for unit tests; real type requires full schema-aware Drizzle instance
     app.use("/api/companies", companyRoutes({} as any));
 
     const res = await request(app).get("/api/companies/issues");

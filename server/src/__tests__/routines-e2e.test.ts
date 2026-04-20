@@ -33,9 +33,11 @@ vi.mock("../services/index.js", async () => {
 
   return makeFullServicesMock({
     ...actual,
+    // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
     routineService: (db: any) =>
       actual.routineService(db, {
         heartbeat: {
+          // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
           wakeup: async (agentId: string, wakeupOpts: any) => {
             const issueId =
               (typeof wakeupOpts?.payload?.issueId === "string" && wakeupOpts.payload.issueId) ||
@@ -118,6 +120,7 @@ describeEmbeddedPostgres("routine routes end-to-end", () => {
     const app = express();
     app.use(express.json());
     app.use((req, _res, next) => {
+      // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
       (req as any).actor = actor;
       next();
     });

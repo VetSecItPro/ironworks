@@ -101,11 +101,13 @@ function createApp() {
     req.actor = { type: "board", userId: "board-user", source: "local_implicit" };
     next();
   });
+  // biome-ignore lint/suspicious/noExplicitAny: test-only type cast to satisfy service/function signature in unit test context
   app.use("/api", costRoutes(makeDb() as any));
   app.use(errorHandler);
   return app;
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
 function createAppWithActor(actor: any) {
   const app = express();
   app.use(express.json());
@@ -113,6 +115,7 @@ function createAppWithActor(actor: any) {
     req.actor = actor;
     next();
   });
+  // biome-ignore lint/suspicious/noExplicitAny: test-only type cast to satisfy service/function signature in unit test context
   app.use("/api", costRoutes(makeDb() as any));
   app.use(errorHandler);
   return app;

@@ -79,6 +79,7 @@ function createApp(storage: ReturnType<typeof createStorageService>) {
     };
     next();
   });
+  // biome-ignore lint/suspicious/noExplicitAny: mock Drizzle DB or storage object for unit tests; real type requires full schema-aware Drizzle instance
   app.use("/api", assetRoutes({} as any, storage));
   return app;
 }

@@ -8,7 +8,7 @@ import {
 } from "../observability.js";
 
 describe("createObserver (default stdout sink)", () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: vi.spyOn generics require any for untyped process.stdout.write
   let stdoutWrite: ReturnType<typeof vi.spyOn<any, any>>;
   beforeEach(() => {
     stdoutWrite = vi.spyOn(process.stdout, "write").mockImplementation(() => true);

@@ -47,6 +47,7 @@ function createFakeDb() {
   return {
     select: selectObj,
     update: vi.fn().mockReturnValue({ set }),
+  // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
 }
 
@@ -65,6 +66,7 @@ vi.mock("../middleware/logger.js", () => ({
 
 // Mock assertCanWrite to avoid DB calls for membership checks
 vi.mock("../routes/authz.js", async (importOriginal) => {
+  // biome-ignore lint/suspicious/noExplicitAny: test-only type cast to satisfy service/function signature in unit test context
   const original = (await importOriginal()) as any;
   return {
     ...original,
@@ -74,6 +76,7 @@ vi.mock("../routes/authz.js", async (importOriginal) => {
 
 // ── App builder ─────────────────────────────────────────────────────────────
 
+// biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
 async function createApp(actor: Record<string, unknown>, fakeDb?: any) {
   const { deliverableRoutes } = await import("../routes/deliverables.js");
   const { errorHandler } = await import("../middleware/error-handler.js");
@@ -81,6 +84,7 @@ async function createApp(actor: Record<string, unknown>, fakeDb?: any) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });

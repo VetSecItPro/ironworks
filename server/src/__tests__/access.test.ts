@@ -54,6 +54,7 @@ const mockBudgetService = vi.hoisted(() => ({
 const mockLogActivity = vi.hoisted(() => vi.fn());
 const mockNotifyHireApproved = vi.hoisted(() => vi.fn());
 const mockDeduplicateAgentName = vi.hoisted(() =>
+  // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
   vi.fn().mockImplementation((_db: any, _cid: any, name: string) => name),
 );
 
@@ -103,9 +104,11 @@ async function createApp(actor: Record<string, unknown>) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });
+  // biome-ignore lint/suspicious/noExplicitAny: mock Drizzle DB or storage object for unit tests; real type requires full schema-aware Drizzle instance
   const fakeDb = {} as any;
   app.use("/api", accessRoutes(fakeDb));
   app.use(errorHandler);

@@ -145,6 +145,7 @@ async function createApp(actor: Record<string, unknown>) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });
@@ -154,6 +155,7 @@ async function createApp(actor: Record<string, unknown>) {
     where: vi.fn().mockReturnThis(),
     // biome-ignore lint/suspicious/noThenProperty: test mock drizzle thenable contract
     then: vi.fn().mockResolvedValue([]),
+  // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
   const fakeStorage = {
     putFile: vi.fn(),
@@ -161,6 +163,7 @@ async function createApp(actor: Record<string, unknown>) {
     deleteFile: vi.fn(),
     listFiles: vi.fn().mockResolvedValue([]),
     getSignedUrl: vi.fn(),
+  // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
   app.use("/api", issueRoutes(fakeDb, fakeStorage));
   app.use(errorHandler);
@@ -182,6 +185,7 @@ describe("issue routes", () => {
     vi.clearAllMocks();
     mockIssueService.list.mockResolvedValue([MOCK_ISSUE]);
     mockIssueService.getById.mockResolvedValue(MOCK_ISSUE);
+    // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
     mockIssueService.create.mockImplementation((_companyId: string, data: any) => ({
       id: randomUUID(),
       companyId: COMPANY_ID,

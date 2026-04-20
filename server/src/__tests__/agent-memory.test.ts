@@ -30,7 +30,7 @@ const MOCK_MEMORY_ENTRY = {
 // ── DB mock ─────────────────────────────────────────────────────────────────
 
 function buildChainableQuery(defaultResult: unknown = []) {
-  const chain: Record<string, any> = {};
+  const chain: Record<string, unknown> = {};
   chain.select = vi.fn().mockReturnValue(chain);
   chain.from = vi.fn().mockReturnValue(chain);
   chain.where = vi.fn().mockReturnValue(chain);
@@ -42,6 +42,7 @@ function buildChainableQuery(defaultResult: unknown = []) {
   chain.set = vi.fn().mockReturnValue(chain);
   chain.returning = vi.fn().mockReturnValue(chain);
   // biome-ignore lint/suspicious/noThenProperty: test mock drizzle thenable contract
+  // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
   chain.then = vi.fn().mockImplementation((resolve: any) => resolve(defaultResult));
   return chain;
 }
@@ -71,13 +72,14 @@ vi.mock("../middleware/logger.js", () => ({
 
 // ── App builder ─────────────────────────────────────────────────────────────
 
-async function createApp(actor: Record<string, unknown>, dbOverrides?: Record<string, any>) {
+async function createApp(actor: Record<string, unknown>, dbOverrides?: Record<string, unknown>) {
   const { agentMemoryRoutes } = await import("../routes/agent-memory.js");
   const { errorHandler } = await import("../middleware/error-handler.js");
 
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });
@@ -102,6 +104,7 @@ async function createApp(actor: Record<string, unknown>, dbOverrides?: Record<st
       return chain;
     }),
     ...dbOverrides,
+  // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
 
   app.use("/api", agentMemoryRoutes(fakeDb));

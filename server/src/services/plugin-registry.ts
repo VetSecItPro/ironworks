@@ -450,11 +450,10 @@ export function pluginRegistryService(db: Db) {
 
       return db
         .insert(pluginEntities)
-        // biome-ignore lint/suspicious/noExplicitAny: spread of typed input with pluginId doesn't satisfy Drizzle's Values<> constraint
-        .values({
-          ...input,
-          pluginId,
-        } as any)
+        .values(
+          // biome-ignore lint/suspicious/noExplicitAny: spread of typed input with pluginId doesn't satisfy Drizzle's Values<> constraint
+          { ...input, pluginId } as any,
+        )
         .returning()
         .then((rows) => rows[0]);
     },

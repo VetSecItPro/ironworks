@@ -136,9 +136,11 @@ function createApp(actor: Record<string, unknown>) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });
+  // biome-ignore lint/suspicious/noExplicitAny: test-only type cast to satisfy service/function signature in unit test context
   app.use("/api", agentRoutes(createDbStub() as any));
   app.use(errorHandler);
   return app;

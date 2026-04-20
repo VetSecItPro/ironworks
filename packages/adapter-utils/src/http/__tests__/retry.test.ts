@@ -280,12 +280,12 @@ function makeTrackedAbortController() {
   let removes = 0;
   const origAdd = ac.signal.addEventListener.bind(ac.signal);
   const origRemove = ac.signal.removeEventListener.bind(ac.signal);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: monkey-patching AbortSignal event listener for listener-count tracking
   (ac.signal as any).addEventListener = (...args: Parameters<typeof origAdd>) => {
     adds++;
     return origAdd(...args);
   };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: monkey-patching AbortSignal event listener for listener-count tracking
   (ac.signal as any).removeEventListener = (...args: Parameters<typeof origRemove>) => {
     removes++;
     return origRemove(...args);

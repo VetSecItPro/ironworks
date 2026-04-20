@@ -52,6 +52,7 @@ describe("monthly spend hydration", () => {
       ],
     ]);
 
+    // biome-ignore lint/suspicious/noExplicitAny: test-only type cast to satisfy service/function signature in unit test context
     const companies = companyService(dbStub.db as any);
     const [company] = await companies.list();
 
@@ -91,6 +92,7 @@ describe("monthly spend hydration", () => {
       ],
     ]);
 
+    // biome-ignore lint/suspicious/noExplicitAny: test-only type cast to satisfy service/function signature in unit test context
     const agents = agentService(dbStub.db as any);
     const agent = await agents.getById("agent-1");
 

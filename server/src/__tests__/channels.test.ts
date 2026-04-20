@@ -108,6 +108,7 @@ async function createApp(actor: Record<string, unknown>) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });
@@ -118,10 +119,12 @@ async function createApp(actor: Record<string, unknown>) {
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockReturnValue({
           // biome-ignore lint/suspicious/noThenProperty: test mock drizzle thenable contract
+          // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
           then: vi.fn().mockImplementation((cb: any) => cb([{ id: CHANNEL_ID, companyId: COMPANY_ID }])),
         }),
       }),
     }),
+  // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
 
   app.use("/api", channelRoutes(fakeDb));
@@ -133,6 +136,7 @@ function createAppWithNoChannel(actor: Record<string, unknown>) {
   return createAppWithChannelLookup(actor, null);
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
 async function createAppWithChannelLookup(actor: Record<string, unknown>, result: any) {
   const { channelRoutes } = await import("../routes/channels.js");
   const { errorHandler } = await import("../middleware/error-handler.js");
@@ -140,6 +144,7 @@ async function createAppWithChannelLookup(actor: Record<string, unknown>, result
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });
@@ -149,10 +154,12 @@ async function createAppWithChannelLookup(actor: Record<string, unknown>, result
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockReturnValue({
           // biome-ignore lint/suspicious/noThenProperty: test mock drizzle thenable contract
+          // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
           then: vi.fn().mockImplementation((cb: any) => cb(result ? [result] : [])),
         }),
       }),
     }),
+  // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
 
   app.use("/api", channelRoutes(fakeDb));

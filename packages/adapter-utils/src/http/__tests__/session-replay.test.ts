@@ -90,6 +90,7 @@ describe("buildTranscript — OpenAI format", () => {
         },
       ],
     };
+    // biome-ignore lint/suspicious/noExplicitAny: buildTranscript returns a union; cast to access OpenAI array shape
     const messages = buildTranscript(state, { format: "openai" }) as any[];
     // OpenAI expects:
     //  { role: 'assistant', content: 'Let me check.', tool_calls: [{id, type:'function', function:{name, arguments}}] }
@@ -123,6 +124,7 @@ describe("buildTranscript — OpenAI format", () => {
       turns: [{ role: "assistant", content: [{ type: "tool_use", id: "call_1", name: "f", input: {} }] }],
     };
     const messages = buildTranscript(state, { format: "openai" });
+    // biome-ignore lint/suspicious/noExplicitAny: buildTranscript returns a union; cast to access OpenAI array shape
     const msg = (messages as any[])[0];
     expect(msg.content).toBeNull();
     expect(msg.tool_calls).toHaveLength(1);
@@ -141,6 +143,7 @@ describe("buildTranscript — OpenAI format", () => {
       ],
     };
     const messages = buildTranscript(state, { format: "openai" });
+    // biome-ignore lint/suspicious/noExplicitAny: buildTranscript returns a union; cast to access OpenAI array shape
     const msg = (messages as any[])[0];
     expect(msg.content).toBe("Checking.");
   });
@@ -157,6 +160,7 @@ describe("buildTranscript — Anthropic format", () => {
     const result = buildTranscript(state, { format: "anthropic", systemPrompt });
     // Anthropic format returns { system?: string, messages: Message[] } shape
     expect(result).toHaveProperty("system", systemPrompt);
+    // biome-ignore lint/suspicious/noExplicitAny: buildTranscript returns a union; cast to access Anthropic shape
     expect((result as any).messages).toEqual([
       { role: "user", content: "Hi" },
       { role: "assistant", content: "Hello" },
@@ -181,6 +185,7 @@ describe("buildTranscript — Anthropic format", () => {
       ],
     };
     const result = buildTranscript(state, { format: "anthropic" });
+    // biome-ignore lint/suspicious/noExplicitAny: buildTranscript returns a union; cast to access Anthropic shape
     const messages = (result as any).messages;
     expect(messages[1].content).toEqual([
       { type: "text", text: "Checking." },

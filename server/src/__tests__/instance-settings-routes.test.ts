@@ -30,6 +30,7 @@ vi.mock("../services/index.js", async () => {
   });
 });
 
+// biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
 function createApp(actor: any) {
   const app = express();
   app.use(express.json());
@@ -37,6 +38,7 @@ function createApp(actor: any) {
     req.actor = actor;
     next();
   });
+  // biome-ignore lint/suspicious/noExplicitAny: mock Drizzle DB or storage object for unit tests; real type requires full schema-aware Drizzle instance
   app.use("/api", instanceSettingsRoutes({} as any));
   app.use(errorHandler);
   return app;

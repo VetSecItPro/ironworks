@@ -94,6 +94,7 @@ async function createApp(actor: Record<string, unknown>) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });
@@ -103,6 +104,7 @@ async function createApp(actor: Record<string, unknown>) {
     where: vi.fn().mockReturnThis(),
     // biome-ignore lint/suspicious/noThenProperty: test mock drizzle thenable contract
     then: vi.fn().mockResolvedValue([{ membershipRole: "owner" }]),
+  // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
   app.use("/api", playbookRoutes(fakeDb));
   app.use(errorHandler);

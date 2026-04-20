@@ -31,6 +31,7 @@ vi.mock("../services/activity-log.js", () => ({
 
 // ── App builder ─────────────────────────────────────────────────────────────
 
+// biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
 async function createApp(db?: any, opts?: any) {
   const { healthRoutes } = await import("../routes/health.js");
 
@@ -43,11 +44,13 @@ async function createApp(db?: any, opts?: any) {
 // ── Helper ──────────────────────────────────────────────────────────────────
 
 function createFakeDbForHealth(adminCount: number) {
+  // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
   const then = vi.fn().mockImplementation((cb: any) => Promise.resolve(cb([{ count: adminCount }])));
   const where = vi.fn().mockReturnValue({ then });
   const from = vi.fn().mockReturnValue({ where, then });
   const selectObj = vi.fn().mockReturnValue({ from });
 
+  // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   return { select: selectObj } as any;
 }
 

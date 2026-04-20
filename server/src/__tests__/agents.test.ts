@@ -90,6 +90,7 @@ vi.mock("../services/index.js", async () => {
     createTerminationRecord: vi.fn(),
     createEmploymentHistoryEntry: vi.fn(),
     buildOnboardingPacket: vi.fn().mockResolvedValue({}),
+    // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
     deduplicateAgentName: vi.fn().mockImplementation((_db: any, _cid: any, name: string) => name),
     notifyHireApproved: vi.fn(),
     boardAuthService: () => ({ getSession: vi.fn() }),
@@ -111,11 +112,14 @@ vi.mock("../adapters/index.js", () => ({
 }));
 
 vi.mock("../redaction.js", () => ({
+  // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
   redactEventPayload: vi.fn((x: any) => x),
+  // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
   sanitizeRecord: vi.fn((x: any) => x),
 }));
 
 vi.mock("../log-redaction.js", () => ({
+  // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
   redactCurrentUserValue: vi.fn((x: any) => x),
 }));
 
@@ -184,9 +188,11 @@ async function createApp(actor: Record<string, unknown>) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });
+  // biome-ignore lint/suspicious/noExplicitAny: mock Drizzle DB or storage object for unit tests; real type requires full schema-aware Drizzle instance
   const fakeDb = {} as any;
   app.use("/api", agentRoutes(fakeDb));
   app.use(errorHandler);

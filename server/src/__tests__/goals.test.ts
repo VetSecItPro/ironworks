@@ -71,6 +71,7 @@ vi.mock("../middleware/logger.js", () => ({
 }));
 
 vi.mock("../middleware/validate.js", () => ({
+  // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
   validate: () => (_req: any, _res: any, next: any) => next(),
 }));
 
@@ -83,6 +84,7 @@ async function createApp(actor: Record<string, unknown>) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });

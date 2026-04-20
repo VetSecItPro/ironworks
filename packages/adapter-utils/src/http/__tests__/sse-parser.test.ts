@@ -1,3 +1,4 @@
+// biome-ignore lint/suspicious/noExplicitAny: accessing discriminated union NormalizedStreamEvent member without narrowing in test assertion
 import { describe, expect, it } from "vitest";
 import { type NormalizedStreamEvent, parseSseStream, type SseEvent } from "../sse-parser.js";
 
@@ -26,6 +27,7 @@ describe("parseSseStream — OpenAI-compat format", () => {
       "data: [DONE]\n\n",
     ]);
     const events = await collect(parseSseStream(stream, { format: "openai" }));
+    // biome-ignore lint/suspicious/noExplicitAny: accessing discriminated union NormalizedStreamEvent member without narrowing in test assertion
     expect(events.filter((e) => e.type === "text_delta").map((e) => (e as any).text)).toEqual(["Hello", " world"]);
     expect(events.at(-1)?.type).toBe("done");
   });
@@ -37,6 +39,7 @@ describe("parseSseStream — OpenAI-compat format", () => {
       "data: [DONE]\n\n",
     ]);
     const events = await collect(parseSseStream(stream, { format: "openai" }));
+    // biome-ignore lint/suspicious/noExplicitAny: accessing discriminated union NormalizedStreamEvent member without narrowing in test assertion
     const doneEvent = events.find((e) => e.type === "done") as any;
     expect(doneEvent.usage).toEqual({ promptTokens: 4, completionTokens: 5, totalTokens: 9 });
   });
@@ -54,10 +57,13 @@ describe("parseSseStream — OpenAI-compat format", () => {
     const deltas = events.filter((e) => e.type === "tool_use_delta");
     const completes = events.filter((e) => e.type === "tool_use_complete");
     expect(starts).toHaveLength(1);
+    // biome-ignore lint/suspicious/noExplicitAny: accessing discriminated union NormalizedStreamEvent member without narrowing in test assertion
     expect((starts[0] as any).toolCallId).toBe("call_abc");
+    // biome-ignore lint/suspicious/noExplicitAny: accessing discriminated union NormalizedStreamEvent member without narrowing in test assertion
     expect((starts[0] as any).toolName).toBe("get_weather");
     expect(deltas.length).toBeGreaterThanOrEqual(2);
     expect(completes).toHaveLength(1);
+    // biome-ignore lint/suspicious/noExplicitAny: accessing discriminated union NormalizedStreamEvent member without narrowing in test assertion
     expect((completes[0] as any).argsJson).toBe('{"city":"Paris"}');
   });
 
@@ -78,6 +84,7 @@ describe("parseSseStream — OpenAI-compat format", () => {
     const events = await collect(parseSseStream(stream, { format: "openai" }));
     const deltas = events.filter((e) => e.type === "text_delta");
     expect(deltas).toHaveLength(1);
+    // biome-ignore lint/suspicious/noExplicitAny: accessing discriminated union NormalizedStreamEvent member without narrowing in test assertion
     expect((deltas[0] as any).text).toBe("hi");
   });
 
@@ -86,12 +93,14 @@ describe("parseSseStream — OpenAI-compat format", () => {
     const events = await collect(parseSseStream(stream, { format: "openai" }));
     const errs = events.filter((e) => e.type === "stream_error");
     expect(errs).toHaveLength(1);
+    // biome-ignore lint/suspicious/noExplicitAny: accessing discriminated union NormalizedStreamEvent member without narrowing in test assertion
     expect((errs[0] as any).message).toContain("slow down");
   });
 
   it("emits done with no usage when stream ends without usage block", async () => {
     const stream = makeStream(['data: {"choices":[{"delta":{"content":"x"}}]}\n\n', "data: [DONE]\n\n"]);
     const events = await collect(parseSseStream(stream, { format: "openai" }));
+    // biome-ignore lint/suspicious/noExplicitAny: accessing discriminated union NormalizedStreamEvent member without narrowing in test assertion
     const done = events.at(-1) as any;
     expect(done.type).toBe("done");
     expect(done.usage).toBeUndefined();
@@ -101,6 +110,7 @@ describe("parseSseStream — OpenAI-compat format", () => {
     const stream = makeStream(['data: {"choices":[{"delta":{"content":"hello"}}]}\n\n']);
     const events = await collect(parseSseStream(stream, { format: "openai" }));
     const warnings = events.filter(
+      // biome-ignore lint/suspicious/noExplicitAny: accessing discriminated union NormalizedStreamEvent member without narrowing in test assertion
       (e) => e.type === "parse_warning" && (e as any).code === "stream_ended_without_done",
     );
     expect(warnings).toHaveLength(1);
@@ -121,6 +131,7 @@ describe("parseSseStream — Anthropic-native format", () => {
       'data: {"type":"message_stop"}\n\n',
     ]);
     const events = await collect(parseSseStream(stream, { format: "anthropic" }));
+    // biome-ignore lint/suspicious/noExplicitAny: accessing discriminated union NormalizedStreamEvent member without narrowing in test assertion
     const deltas = events.filter((e) => e.type === "text_delta").map((e) => (e as any).text);
     expect(deltas).toEqual(["Hello", " world"]);
     expect(events.at(-1)?.type).toBe("done");
@@ -142,9 +153,12 @@ describe("parseSseStream — Anthropic-native format", () => {
     const events = await collect(parseSseStream(stream, { format: "anthropic" }));
     const starts = events.filter((e) => e.type === "tool_use_start");
     expect(starts).toHaveLength(1);
+    // biome-ignore lint/suspicious/noExplicitAny: accessing discriminated union NormalizedStreamEvent member without narrowing in test assertion
     expect((starts[0] as any).toolCallId).toBe("toolu_123");
+    // biome-ignore lint/suspicious/noExplicitAny: accessing discriminated union NormalizedStreamEvent member without narrowing in test assertion
     expect((starts[0] as any).toolName).toBe("get_weather");
     const completes = events.filter((e) => e.type === "tool_use_complete");
+    // biome-ignore lint/suspicious/noExplicitAny: accessing discriminated union NormalizedStreamEvent member without narrowing in test assertion
     expect((completes[0] as any).argsJson).toBe('{"city":"Paris"}');
   });
 
@@ -156,6 +170,7 @@ describe("parseSseStream — Anthropic-native format", () => {
       'data: {"type":"message_stop"}\n\n',
     ]);
     const events = await collect(parseSseStream(stream, { format: "anthropic" }));
+    // biome-ignore lint/suspicious/noExplicitAny: accessing discriminated union NormalizedStreamEvent member without narrowing in test assertion
     const done = events.at(-1) as any;
     expect(done.type).toBe("done");
     expect(done.usage).toEqual({
@@ -188,6 +203,7 @@ describe("parseSseStream — Anthropic-native format", () => {
     const events = await collect(parseSseStream(stream, { format: "anthropic" }));
     const errs = events.filter((e) => e.type === "stream_error");
     expect(errs).toHaveLength(1);
+    // biome-ignore lint/suspicious/noExplicitAny: accessing discriminated union NormalizedStreamEvent member without narrowing in test assertion
     expect((errs[0] as any).message).toContain("overloaded");
   });
 });
@@ -238,6 +254,7 @@ describe("parseSseStream — post-DONE continuation (Finding 1)", () => {
     ]);
     const events = await collect(parseSseStream(stream, { format: "openai" }));
 
+    // biome-ignore lint/suspicious/noExplicitAny: accessing discriminated union NormalizedStreamEvent member without narrowing in test assertion
     const texts = events.filter((e) => e.type === "text_delta").map((e) => (e as any).text);
     expect(texts).toEqual(["one"]); // 'leaked' must NOT appear
 
@@ -260,6 +277,7 @@ describe("parseSseStream — post-DONE continuation (Finding 1)", () => {
       'data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"leaked"}}\n\n',
     ]);
     const events = await collect(parseSseStream(stream, { format: "anthropic" }));
+    // biome-ignore lint/suspicious/noExplicitAny: accessing discriminated union NormalizedStreamEvent member without narrowing in test assertion
     const texts = events.filter((e) => e.type === "text_delta").map((e) => (e as any).text);
     expect(texts).toEqual(["hi"]);
 
@@ -278,6 +296,7 @@ describe("parseSseStream — orphan tool delta (Finding 2)", () => {
       'data: {"type":"message_stop"}\n\n',
     ]);
     const events = await collect(parseSseStream(stream, { format: "anthropic" }));
+    // biome-ignore lint/suspicious/noExplicitAny: accessing discriminated union NormalizedStreamEvent member without narrowing in test assertion
     const warnings = events.filter((e) => e.type === "parse_warning" && (e as any).code === "orphan_tool_delta");
     expect(warnings).toHaveLength(1);
   });

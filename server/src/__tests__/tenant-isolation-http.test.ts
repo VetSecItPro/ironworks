@@ -48,7 +48,7 @@ const SECRET_B_ID = randomUUID();
 
 // ─── Mock data stores ────────────────────────────────────────────────────────
 
-const AGENTS: Record<string, any> = {
+const AGENTS: Record<string, unknown> = {
   [AGENT_A_ID]: {
     id: AGENT_A_ID,
     companyId: COMPANY_A_ID,
@@ -73,12 +73,12 @@ const AGENTS: Record<string, any> = {
   },
 };
 
-const PROJECTS: Record<string, any> = {
+const PROJECTS: Record<string, unknown> = {
   [PROJECT_A_ID]: { id: PROJECT_A_ID, companyId: COMPANY_A_ID, name: "Project A", status: "in_progress" },
   [PROJECT_B_ID]: { id: PROJECT_B_ID, companyId: COMPANY_B_ID, name: "Project B", status: "in_progress" },
 };
 
-const ISSUES: Record<string, any> = {
+const ISSUES: Record<string, unknown> = {
   [ISSUE_A_ID]: {
     id: ISSUE_A_ID,
     companyId: COMPANY_A_ID,
@@ -97,17 +97,17 @@ const ISSUES: Record<string, any> = {
   },
 };
 
-const GOALS: Record<string, any> = {
+const GOALS: Record<string, unknown> = {
   [GOAL_A_ID]: { id: GOAL_A_ID, companyId: COMPANY_A_ID, title: "Goal A", status: "active" },
   [GOAL_B_ID]: { id: GOAL_B_ID, companyId: COMPANY_B_ID, title: "Goal B", status: "active" },
 };
 
-const KB_PAGES: Record<string, any> = {
+const KB_PAGES: Record<string, unknown> = {
   [KB_PAGE_A_ID]: { id: KB_PAGE_A_ID, companyId: COMPANY_A_ID, title: "KB A", slug: "kb-a", body: "Page A" },
   [KB_PAGE_B_ID]: { id: KB_PAGE_B_ID, companyId: COMPANY_B_ID, title: "KB B", slug: "kb-b", body: "Page B" },
 };
 
-const ROUTINES: Record<string, any> = {
+const ROUTINES: Record<string, unknown> = {
   [ROUTINE_A_ID]: {
     id: ROUTINE_A_ID,
     companyId: COMPANY_A_ID,
@@ -126,7 +126,7 @@ const ROUTINES: Record<string, any> = {
   },
 };
 
-const SECRETS: Record<string, any> = {
+const SECRETS: Record<string, unknown> = {
   [SECRET_A_ID]: { id: SECRET_A_ID, companyId: COMPANY_A_ID, name: "API_KEY_A", provider: "local_encrypted" },
   [SECRET_B_ID]: { id: SECRET_B_ID, companyId: COMPANY_B_ID, name: "API_KEY_B", provider: "local_encrypted" },
 };
@@ -136,6 +136,7 @@ const SECRETS: Record<string, any> = {
 const mockAgentService = vi.hoisted(() => ({
   list: vi
     .fn()
+    // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
     .mockImplementation((companyId: string) => Object.values(AGENTS).filter((a: any) => a.companyId === companyId)),
   getById: vi.fn().mockImplementation((id: string) => AGENTS[id] ?? null),
   create: vi.fn(),
@@ -148,6 +149,7 @@ const mockAgentService = vi.hoisted(() => ({
 const mockProjectService = vi.hoisted(() => ({
   list: vi
     .fn()
+    // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
     .mockImplementation((companyId: string) => Object.values(PROJECTS).filter((p: any) => p.companyId === companyId)),
   getById: vi.fn().mockImplementation((id: string) => PROJECTS[id] ?? null),
   create: vi.fn(),
@@ -164,9 +166,11 @@ const mockProjectService = vi.hoisted(() => ({
 const mockIssueService = vi.hoisted(() => ({
   list: vi
     .fn()
+    // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
     .mockImplementation((companyId: string) => Object.values(ISSUES).filter((i: any) => i.companyId === companyId)),
   getById: vi.fn().mockImplementation((id: string) => ISSUES[id] ?? null),
   getByIdentifier: vi.fn().mockResolvedValue(null),
+  // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
   create: vi.fn().mockImplementation((_companyId: string, data: any) => ({
     id: randomUUID(),
     ...data,
@@ -182,6 +186,7 @@ const mockIssueService = vi.hoisted(() => ({
 const mockGoalService = vi.hoisted(() => ({
   list: vi
     .fn()
+    // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
     .mockImplementation((companyId: string) => Object.values(GOALS).filter((g: any) => g.companyId === companyId)),
   getById: vi.fn().mockImplementation((id: string) => GOALS[id] ?? null),
   create: vi.fn(),
@@ -193,9 +198,11 @@ const mockGoalService = vi.hoisted(() => ({
 const mockKnowledgeService = vi.hoisted(() => ({
   list: vi
     .fn()
+    // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
     .mockImplementation((companyId: string) => Object.values(KB_PAGES).filter((p: any) => p.companyId === companyId)),
   getById: vi.fn().mockImplementation((id: string) => KB_PAGES[id] ?? null),
   getBySlug: vi.fn(),
+  // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
   create: vi.fn().mockImplementation((companyId: string, data: any) => ({
     id: randomUUID(),
     companyId,
@@ -213,6 +220,7 @@ const mockKnowledgeService = vi.hoisted(() => ({
 const mockRoutineService = vi.hoisted(() => ({
   list: vi
     .fn()
+    // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
     .mockImplementation((companyId: string) => Object.values(ROUTINES).filter((r: any) => r.companyId === companyId)),
   getDetail: vi.fn().mockImplementation((id: string) => ROUTINES[id] ?? null),
   create: vi.fn(),
@@ -223,6 +231,7 @@ const mockRoutineService = vi.hoisted(() => ({
 const mockSecretService = vi.hoisted(() => ({
   list: vi
     .fn()
+    // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
     .mockImplementation((companyId: string) => Object.values(SECRETS).filter((s: any) => s.companyId === companyId)),
   getById: vi.fn().mockImplementation((id: string) => SECRETS[id] ?? null),
   create: vi.fn(),
@@ -249,6 +258,7 @@ const mockFinanceService = vi.hoisted(() => ({
 }));
 
 const mockActivityService = vi.hoisted(() => ({
+  // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
   list: vi.fn().mockImplementation((_filters: any) => []),
   create: vi.fn(),
   forIssue: vi.fn().mockResolvedValue([]),
@@ -400,11 +410,14 @@ vi.mock("../adapters/index.js", () => ({
 }));
 
 vi.mock("../redaction.js", () => ({
+  // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
   redactEventPayload: vi.fn((x: any) => x),
+  // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
   sanitizeRecord: vi.fn((x: any) => x),
 }));
 
 vi.mock("../log-redaction.js", () => ({
+  // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
   redactCurrentUserValue: vi.fn((x: any) => x),
 }));
 
@@ -464,10 +477,12 @@ async function createApp(actor: ActorOverrides) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });
 
+  // biome-ignore lint/suspicious/noExplicitAny: mock Drizzle DB or storage object for unit tests; real type requires full schema-aware Drizzle instance
   const fakeDb = {} as any;
   const fakeStorage = {
     putFile: vi.fn(),
@@ -475,6 +490,7 @@ async function createApp(actor: ActorOverrides) {
     deleteFile: vi.fn(),
     listFiles: vi.fn().mockResolvedValue([]),
     getSignedUrl: vi.fn(),
+  // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
 
   app.use("/api/companies", companyRoutes(fakeDb, fakeStorage));
@@ -584,6 +600,7 @@ describe("Tenant Isolation — HTTP-level cross-company access", () => {
 
     it("User A CAN list Company A agents", async () => {
       const res = await request(appA).get(`/api/companies/${COMPANY_A_ID}/agents`).expect(200);
+      // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
       const ids = res.body.map((a: any) => a.id);
       expect(ids).toContain(AGENT_A_ID);
       expect(ids).not.toContain(AGENT_B_ID);
@@ -591,6 +608,7 @@ describe("Tenant Isolation — HTTP-level cross-company access", () => {
 
     it("User A CAN list Company A issues", async () => {
       const res = await request(appA).get(`/api/companies/${COMPANY_A_ID}/issues`).expect(200);
+      // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
       const ids = res.body.map((i: any) => i.id);
       expect(ids).toContain(ISSUE_A_ID);
       expect(ids).not.toContain(ISSUE_B_ID);
@@ -598,6 +616,7 @@ describe("Tenant Isolation — HTTP-level cross-company access", () => {
 
     it("User A CAN list Company A projects", async () => {
       const res = await request(appA).get(`/api/companies/${COMPANY_A_ID}/projects`).expect(200);
+      // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
       const ids = res.body.map((p: any) => p.id);
       expect(ids).toContain(PROJECT_A_ID);
       expect(ids).not.toContain(PROJECT_B_ID);
@@ -605,6 +624,7 @@ describe("Tenant Isolation — HTTP-level cross-company access", () => {
 
     it("User A CAN list Company A goals", async () => {
       const res = await request(appA).get(`/api/companies/${COMPANY_A_ID}/goals`).expect(200);
+      // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
       const ids = res.body.map((g: any) => g.id);
       expect(ids).toContain(GOAL_A_ID);
       expect(ids).not.toContain(GOAL_B_ID);
@@ -612,6 +632,7 @@ describe("Tenant Isolation — HTTP-level cross-company access", () => {
 
     it("User A CAN list Company A knowledge pages", async () => {
       const res = await request(appA).get(`/api/companies/${COMPANY_A_ID}/knowledge`).expect(200);
+      // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
       const ids = res.body.map((p: any) => p.id);
       expect(ids).toContain(KB_PAGE_A_ID);
       expect(ids).not.toContain(KB_PAGE_B_ID);
@@ -619,6 +640,7 @@ describe("Tenant Isolation — HTTP-level cross-company access", () => {
 
     it("User A CAN list Company A routines", async () => {
       const res = await request(appA).get(`/api/companies/${COMPANY_A_ID}/routines`).expect(200);
+      // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
       const ids = res.body.map((r: any) => r.id);
       expect(ids).toContain(ROUTINE_A_ID);
       expect(ids).not.toContain(ROUTINE_B_ID);
@@ -626,6 +648,7 @@ describe("Tenant Isolation — HTTP-level cross-company access", () => {
 
     it("User A CAN list Company A secrets", async () => {
       const res = await request(appA).get(`/api/companies/${COMPANY_A_ID}/secrets`).expect(200);
+      // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
       const ids = res.body.map((s: any) => s.id);
       expect(ids).toContain(SECRET_A_ID);
       expect(ids).not.toContain(SECRET_B_ID);
@@ -878,11 +901,13 @@ describe("Tenant Isolation — HTTP-level cross-company access", () => {
   describe("Multi-company user valid access", () => {
     it("Multi-company user CAN list Company A agents", async () => {
       const res = await request(appMulti).get(`/api/companies/${COMPANY_A_ID}/agents`).expect(200);
+      // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
       expect(res.body.map((a: any) => a.id)).toContain(AGENT_A_ID);
     });
 
     it("Multi-company user CAN list Company B agents", async () => {
       const res = await request(appMulti).get(`/api/companies/${COMPANY_B_ID}/agents`).expect(200);
+      // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
       expect(res.body.map((a: any) => a.id)).toContain(AGENT_B_ID);
     });
 
@@ -909,11 +934,13 @@ describe("Tenant Isolation — HTTP-level cross-company access", () => {
   describe("Instance admin bypasses company scoping", () => {
     it("Instance admin CAN list Company A agents", async () => {
       const res = await request(appAdmin).get(`/api/companies/${COMPANY_A_ID}/agents`).expect(200);
+      // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
       expect(res.body.map((a: any) => a.id)).toContain(AGENT_A_ID);
     });
 
     it("Instance admin CAN list Company B agents", async () => {
       const res = await request(appAdmin).get(`/api/companies/${COMPANY_B_ID}/agents`).expect(200);
+      // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
       expect(res.body.map((a: any) => a.id)).toContain(AGENT_B_ID);
     });
 

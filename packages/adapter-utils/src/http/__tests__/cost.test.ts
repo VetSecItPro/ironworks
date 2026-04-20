@@ -116,6 +116,7 @@ describe("computeCost — Poe (no caching)", () => {
 
 describe("computeCost — missing data paths", () => {
   it("unknown provider returns 0 USD with warning", () => {
+    // biome-ignore lint/suspicious/noExplicitAny: passing unknown provider literal to test the unknown-provider code path
     const cost = computeCost("unknown" as any, "anything", {
       promptTokens: 100,
       completionTokens: 50,
