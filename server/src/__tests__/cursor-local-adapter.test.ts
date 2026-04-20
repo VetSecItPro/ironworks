@@ -1,7 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
+import { printCursorStreamEvent } from "@ironworksai/adapter-cursor-local/cli";
 import { isCursorUnknownSessionError, parseCursorJsonl } from "@ironworksai/adapter-cursor-local/server";
 import { parseCursorStdoutLine } from "@ironworksai/adapter-cursor-local/ui";
-import { printCursorStreamEvent } from "@ironworksai/adapter-cursor-local/cli";
+import { describe, expect, it, vi } from "vitest";
 
 describe("cursor parser", () => {
   it("extracts session, summary, usage, cost, and terminal error message", () => {
@@ -139,7 +139,8 @@ describe("cursor ui stdout parser", () => {
 
   it("compacts shellToolCall and shell tool result for run log", () => {
     const ts = "2026-03-05T00:00:00.000Z";
-    const longCommand = "curl -s -X POST \"$IRONWORKS_API_URL/api/issues/abc/checkout\" -H \"Authorization: Bearer $IRONWORKS_API_KEY\"";
+    const longCommand =
+      'curl -s -X POST "$IRONWORKS_API_URL/api/issues/abc/checkout" -H "Authorization: Bearer $IRONWORKS_API_KEY"';
 
     expect(
       parseCursorStdoutLine(
@@ -197,7 +198,7 @@ describe("cursor ui stdout parser", () => {
         kind: "tool_result",
         ts,
         toolUseId: "call_shell_1",
-        content: "exit 0\n<stdout>\n{\"id\":\"abc\",\"status\":\"in_progress\"}",
+        content: 'exit 0\n<stdout>\n{"id":"abc","status":"in_progress"}',
         isError: false,
       },
     ]);
@@ -377,9 +378,7 @@ describe("cursor cli formatter", () => {
         false,
       );
 
-      const lines = spy.mock.calls
-        .map((call) => call.map((v) => String(v)).join(" "))
-        .map(stripAnsi);
+      const lines = spy.mock.calls.map((call) => call.map((v) => String(v)).join(" ")).map(stripAnsi);
 
       expect(lines).toEqual(
         expect.arrayContaining([

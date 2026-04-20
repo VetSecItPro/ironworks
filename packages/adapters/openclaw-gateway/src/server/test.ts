@@ -1,10 +1,10 @@
+import { randomUUID } from "node:crypto";
 import type {
   AdapterEnvironmentCheck,
   AdapterEnvironmentTestContext,
   AdapterEnvironmentTestResult,
 } from "@ironworksai/adapter-utils";
 import { asString, parseObject } from "@ironworksai/adapter-utils/server-utils";
-import { randomUUID } from "node:crypto";
 import { WebSocket } from "ws";
 
 function summarizeStatus(checks: AdapterEnvironmentCheck[]): AdapterEnvironmentTestResult["status"] {
@@ -68,8 +68,7 @@ function resolveAuthToken(config: Record<string, unknown>, headers: Record<strin
   if (nonEmpty(tokenHeader)) return nonEmpty(tokenHeader);
 
   const authHeader =
-    headerMapGetIgnoreCase(headers, "x-openclaw-auth") ??
-    headerMapGetIgnoreCase(headers, "authorization");
+    headerMapGetIgnoreCase(headers, "x-openclaw-auth") ?? headerMapGetIgnoreCase(headers, "authorization");
   return tokenFromAuthHeader(authHeader);
 }
 
@@ -187,9 +186,7 @@ async function probeGateway(input: {
   });
 }
 
-export async function testEnvironment(
-  ctx: AdapterEnvironmentTestContext,
-): Promise<AdapterEnvironmentTestResult> {
+export async function testEnvironment(ctx: AdapterEnvironmentTestContext): Promise<AdapterEnvironmentTestResult> {
   const checks: AdapterEnvironmentCheck[] = [];
   const config = parseObject(ctx.config);
   const urlValue = asString(config.url, "").trim();

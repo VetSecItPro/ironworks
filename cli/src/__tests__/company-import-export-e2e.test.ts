@@ -1,15 +1,12 @@
 import { execFile, spawn } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import {
-  getEmbeddedPostgresTestSupport,
-  startEmbeddedPostgresTestDatabase,
-} from "./helpers/embedded-postgres.js";
+import { getEmbeddedPostgresTestSupport, startEmbeddedPostgresTestDatabase } from "./helpers/embedded-postgres.js";
 import { createStoredZipArchive } from "./helpers/zip.js";
 
 const execFileAsync = promisify(execFile);
@@ -180,7 +177,7 @@ async function api<T>(baseUrl: string, pathname: string, init?: RequestInit): Pr
   if (!res.ok) {
     throw new Error(`Request failed ${res.status} ${pathname}: ${text}`);
   }
-  return text ? JSON.parse(text) as T : (null as T);
+  return text ? (JSON.parse(text) as T) : (null as T);
 }
 
 async function runCliJson<T>(args: string[], opts: { apiBase: string; configPath: string }) {
@@ -195,18 +192,14 @@ async function runCliJson<T>(args: string[], opts: { apiBase: string; configPath
     },
   );
   const stdout = result.stdout.trim();
-  const jsonStart = stdout.search(/[\[{]/);
+  const jsonStart = stdout.search(/[[{]/);
   if (jsonStart === -1) {
     throw new Error(`CLI did not emit JSON.\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`);
   }
   return JSON.parse(stdout.slice(jsonStart)) as T;
 }
 
-async function waitForServer(
-  apiBase: string,
-  child: ServerProcess,
-  output: { stdout: string[]; stderr: string[] },
-) {
+async function waitForServer(apiBase: string, child: ServerProcess, output: { stdout: string[]; stderr: string[] }) {
   const startedAt = Date.now();
   while (Date.now() - startedAt < 30_000) {
     if (child.exitCode !== null) {
@@ -251,15 +244,11 @@ describeEmbeddedPostgres("ironworksai company import/export e2e", () => {
 
     const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
     const output = { stdout: [] as string[], stderr: [] as string[] };
-    const child = spawn(
-      "pnpm",
-      ["ironworksai", "run", "--config", configPath],
-      {
-        cwd: repoRoot,
-        env: createServerEnv(configPath, port, tempDb.connectionString),
-        stdio: ["ignore", "pipe", "pipe"],
-      },
-    );
+    const child = spawn("pnpm", ["ironworksai", "run", "--config", configPath], {
+      cwd: repoRoot,
+      env: createServerEnv(configPath, port, tempDb.connectionString),
+      stdio: ["ignore", "pipe", "pipe"],
+    });
     serverProcess = child;
     child.stdout?.on("data", (chunk) => {
       output.stdout.push(String(chunk));
@@ -288,22 +277,18 @@ describeEmbeddedPostgres("ironworksai company import/export e2e", () => {
       body: JSON.stringify({ name: `CLI Export Source ${Date.now()}` }),
     });
 
-    const sourceAgent = await api<{ id: string; name: string }>(
-      apiBase,
-      `/api/companies/${sourceCompany.id}/agents`,
-      {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          name: "Export Engineer",
-          role: "engineer",
-          adapterType: "claude_local",
-          adapterConfig: {
-            promptTemplate: "You verify company portability.",
-          },
-        }),
-      },
-    );
+    const sourceAgent = await api<{ id: string; name: string }>(apiBase, `/api/companies/${sourceCompany.id}/agents`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        name: "Export Engineer",
+        role: "engineer",
+        adapterType: "claude_local",
+        adapterConfig: {
+          promptTemplate: "You verify company portability.",
+        },
+      }),
+    });
 
     const sourceProject = await api<{ id: string; name: string }>(
       apiBase,
@@ -340,18 +325,10 @@ describeEmbeddedPostgres("ironworksai company import/export e2e", () => {
       ok: boolean;
       out: string;
       filesWritten: number;
-    }>(
-      [
-        "company",
-        "export",
-        sourceCompany.id,
-        "--out",
-        exportDir,
-        "--include",
-        "company,agents,projects,issues",
-      ],
-      { apiBase, configPath },
-    );
+    }>(["company", "export", sourceCompany.id, "--out", exportDir, "--include", "company,agents,projects,issues"], {
+      apiBase,
+      configPath,
+    });
 
     expect(exportResult.ok).toBe(true);
     expect(exportResult.filesWritten).toBeGreaterThan(0);

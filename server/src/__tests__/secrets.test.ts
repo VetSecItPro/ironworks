@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -18,9 +18,7 @@ const MOCK_SECRET = {
   latestVersion: 1,
 };
 
-const MOCK_PROVIDERS = [
-  { id: "local_encrypted", name: "Local Encrypted" },
-];
+const MOCK_PROVIDERS = [{ id: "local_encrypted", name: "Local Encrypted" }];
 
 // ── Service mocks ───────────────────────────────────────────────────────────
 
@@ -79,9 +77,7 @@ async function createApp(actor: Record<string, unknown>) {
   chainable.update = vi.fn().mockReturnValue(chainable);
   chainable.set = vi.fn().mockReturnValue(chainable);
   chainable.limit = vi.fn().mockReturnValue(chainable);
-  chainable.then = vi.fn().mockImplementation((resolve: any) =>
-    resolve([{ membershipRole: "owner" }]),
-  );
+  chainable.then = vi.fn().mockImplementation((resolve: any) => resolve([{ membershipRole: "owner" }]));
   const fakeDb = chainable as any;
   app.use("/api", secretRoutes(fakeDb));
   app.use(errorHandler);
@@ -180,9 +176,7 @@ describe("secret routes", () => {
   describe("POST /api/secrets/:id/rotate", () => {
     it("rotates a secret value", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post(`/api/secrets/${SECRET_ID}/rotate`)
-        .send({ value: "sk-ant-newkey456" });
+      const res = await request(app).post(`/api/secrets/${SECRET_ID}/rotate`).send({ value: "sk-ant-newkey456" });
 
       expect(res.status).toBe(200);
       expect(res.body).toMatchObject({ latestVersion: 2 });
@@ -191,9 +185,7 @@ describe("secret routes", () => {
     it("returns 404 for non-existent secret", async () => {
       mockSecretService.getById.mockResolvedValue(null);
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post(`/api/secrets/${randomUUID()}/rotate`)
-        .send({ value: "newvalue" });
+      const res = await request(app).post(`/api/secrets/${randomUUID()}/rotate`).send({ value: "newvalue" });
       expect(res.status).toBe(404);
     });
   });
@@ -201,9 +193,7 @@ describe("secret routes", () => {
   describe("PATCH /api/secrets/:id", () => {
     it("updates secret metadata", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .patch(`/api/secrets/${SECRET_ID}`)
-        .send({ description: "Updated description" });
+      const res = await request(app).patch(`/api/secrets/${SECRET_ID}`).send({ description: "Updated description" });
 
       expect(res.status).toBe(200);
       expect(mockSecretService.update).toHaveBeenCalled();
@@ -212,9 +202,7 @@ describe("secret routes", () => {
     it("returns 404 for non-existent secret", async () => {
       mockSecretService.getById.mockResolvedValue(null);
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .patch(`/api/secrets/${randomUUID()}`)
-        .send({ description: "test" });
+      const res = await request(app).patch(`/api/secrets/${randomUUID()}`).send({ description: "test" });
       expect(res.status).toBe(404);
     });
   });

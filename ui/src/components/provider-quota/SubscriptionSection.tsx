@@ -21,9 +21,7 @@ export function SubscriptionSection({
     <>
       <div className="border-t border-border" />
       <div className="space-y-2">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-          Subscription
-        </p>
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Subscription</p>
         <p className="text-xs text-muted-foreground">
           <span className="font-mono text-foreground">{totalSubRuns}</span> runs
           {" · "}
@@ -45,9 +43,7 @@ export function SubscriptionSection({
                 style={{ width: `${subSharePct}%` }}
               />
             </div>
-            <p className="text-xs text-muted-foreground">
-              {Math.round(subSharePct)}% of token usage via subscription
-            </p>
+            <p className="text-xs text-muted-foreground">{Math.round(subSharePct)}% of token usage via subscription</p>
           </>
         )}
       </div>

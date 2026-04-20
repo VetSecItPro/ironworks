@@ -1,59 +1,59 @@
+import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import { promises as fs } from "node:fs";
-import { execFile } from "node:child_process";
 import path from "node:path";
 import { promisify } from "node:util";
+import {
+  readIronworksSkillSyncPreference,
+  writeIronworksSkillSyncPreference,
+} from "@ironworksai/adapter-utils/server-utils";
 import type { Db } from "@ironworksai/db";
 import type {
   CompanyPortabilityAgentManifestEntry,
   CompanyPortabilityCollisionStrategy,
   CompanyPortabilityEnvInput,
   CompanyPortabilityExport,
-  CompanyPortabilityFileEntry,
   CompanyPortabilityExportPreviewResult,
   CompanyPortabilityExportResult,
+  CompanyPortabilityFileEntry,
   CompanyPortabilityImport,
   CompanyPortabilityImportResult,
   CompanyPortabilityInclude,
+  CompanyPortabilityIssueManifestEntry,
+  CompanyPortabilityIssueRoutineManifestEntry,
+  CompanyPortabilityIssueRoutineTriggerManifestEntry,
   CompanyPortabilityManifest,
   CompanyPortabilityPreview,
   CompanyPortabilityPreviewAgentPlan,
   CompanyPortabilityPreviewResult,
   CompanyPortabilityProjectManifestEntry,
   CompanyPortabilityProjectWorkspaceManifestEntry,
-  CompanyPortabilityIssueRoutineManifestEntry,
-  CompanyPortabilityIssueRoutineTriggerManifestEntry,
-  CompanyPortabilityIssueManifestEntry,
   CompanyPortabilitySidebarOrder,
   CompanyPortabilitySkillManifestEntry,
   CompanySkill,
 } from "@ironworksai/shared";
 import {
+  deriveProjectUrlKey,
   ISSUE_PRIORITIES,
   ISSUE_STATUSES,
+  normalizeAgentUrlKey,
   PROJECT_STATUSES,
   ROUTINE_CATCH_UP_POLICIES,
   ROUTINE_CONCURRENCY_POLICIES,
   ROUTINE_STATUSES,
   ROUTINE_TRIGGER_KINDS,
   ROUTINE_TRIGGER_SIGNING_MODES,
-  deriveProjectUrlKey,
-  normalizeAgentUrlKey,
 } from "@ironworksai/shared";
-import {
-  readIronworksSkillSyncPreference,
-  writeIronworksSkillSyncPreference,
-} from "@ironworksai/adapter-utils/server-utils";
 import { notFound, unprocessable } from "../errors.js";
+import { type OrgNode, renderOrgChartPng } from "../routes/org-chart-svg.js";
 import type { StorageService } from "../storage/types.js";
 import { accessService } from "./access.js";
-import { agentService } from "./agents.js";
 import { agentInstructionsService } from "./agent-instructions.js";
+import { agentService } from "./agents.js";
 import { assetService } from "./assets.js";
-import { generateReadme } from "./company-export-readme.js";
-import { renderOrgChartPng, type OrgNode } from "../routes/org-chart-svg.js";
-import { companySkillService } from "./company-skills.js";
 import { companyService } from "./companies.js";
+import { generateReadme } from "./company-export-readme.js";
+import { companySkillService } from "./company-skills.js";
 import { validateCron } from "./cron.js";
 import { issueService } from "./issues.js";
 import { projectService } from "./projects.js";
@@ -62,9 +62,15 @@ import { routineService } from "./routines.js";
 /** Build OrgNode tree from manifest agent list (slug + reportsToSlug). */
 export function buildOrgTreeFromManifest(agents: CompanyPortabilityManifest["agents"]): OrgNode[] {
   const ROLE_LABELS: Record<string, string> = {
-    ceo: "Chief Executive", cto: "Technology", cmo: "Marketing",
-    cfo: "Finance", coo: "Operations", vp: "VP", manager: "Manager",
-    engineer: "Engineer", agent: "Agent",
+    ceo: "Chief Executive",
+    cto: "Technology",
+    cmo: "Marketing",
+    cfo: "Finance",
+    coo: "Operations",
+    vp: "VP",
+    manager: "Manager",
+    engineer: "Engineer",
+    agent: "Agent",
   };
   const bySlug = new Map(agents.map((a) => [a.slug, a]));
   const childrenOf = new Map<string | null, typeof agents>();
@@ -122,10 +128,12 @@ export function resolveImportMode(options?: ImportBehaviorOptions): ImportMode {
 
 export function resolveSkillConflictStrategy(mode: ImportMode, collisionStrategy: CompanyPortabilityCollisionStrategy) {
   if (mode === "board_full") return "replace" as const;
-  return collisionStrategy === "skip" ? "skip" as const : "rename" as const;
+  return collisionStrategy === "skip" ? ("skip" as const) : ("rename" as const);
 }
 
-export function classifyPortableFileKind(pathValue: string): CompanyPortabilityExportPreviewResult["fileInventory"][number]["kind"] {
+export function classifyPortableFileKind(
+  pathValue: string,
+): CompanyPortabilityExportPreviewResult["fileInventory"][number]["kind"] {
   const normalized = normalizePortablePath(pathValue);
   if (normalized === "COMPANY.md") return "company";
   if (normalized === ".ironworks.yaml" || normalized === ".ironworks.yml") return "extension";
@@ -138,7 +146,7 @@ export function classifyPortableFileKind(pathValue: string): CompanyPortabilityE
 }
 
 export function normalizeSkillSlug(value: string | null | undefined) {
-  return value ? normalizeAgentUrlKey(value) ?? null : null;
+  return value ? (normalizeAgentUrlKey(value) ?? null) : null;
 }
 
 export function normalizeSkillKey(value: string | null | undefined) {
@@ -152,15 +160,15 @@ export function normalizeSkillKey(value: string | null | undefined) {
 
 export function readSkillKey(frontmatter: Record<string, unknown>) {
   const metadata = isPlainRecord(frontmatter.metadata) ? frontmatter.metadata : null;
-  const ironworks = isPlainRecord(metadata?.ironworks) ? metadata?.ironworks as Record<string, unknown> : null;
+  const ironworks = isPlainRecord(metadata?.ironworks) ? (metadata?.ironworks as Record<string, unknown>) : null;
   return normalizeSkillKey(
-    asString(frontmatter.key)
-    ?? asString(frontmatter.skillKey)
-    ?? asString(metadata?.skillKey)
-    ?? asString(metadata?.canonicalKey)
-    ?? asString(metadata?.ironworksSkillKey)
-    ?? asString(ironworks?.skillKey)
-    ?? asString(ironworks?.key),
+    asString(frontmatter.key) ??
+      asString(frontmatter.skillKey) ??
+      asString(metadata?.skillKey) ??
+      asString(metadata?.canonicalKey) ??
+      asString(metadata?.ironworksSkillKey) ??
+      asString(ironworks?.skillKey) ??
+      asString(ironworks?.key),
   );
 }
 
@@ -177,7 +185,11 @@ export function deriveManifestSkillKey(
   const sourceKind = asString(metadata?.sourceKind);
   const owner = normalizeSkillSlug(asString(metadata?.owner));
   const repo = normalizeSkillSlug(asString(metadata?.repo));
-  if ((sourceType === "github" || sourceType === "skills_sh" || sourceKind === "github" || sourceKind === "skills_sh") && owner && repo) {
+  if (
+    (sourceType === "github" || sourceType === "skills_sh" || sourceKind === "github" || sourceKind === "skills_sh") &&
+    owner &&
+    repo
+  ) {
     return `${owner}/${repo}/${slug}`;
   }
   if (sourceKind === "ironworks_bundled") {
@@ -217,14 +229,13 @@ function readSkillSourceKind(skill: CompanySkill) {
 
 export function deriveLocalExportNamespace(skill: CompanySkill, slug: string) {
   const metadata = isPlainRecord(skill.metadata) ? skill.metadata : null;
-  const candidates = [
-    asString(metadata?.projectName),
-    asString(metadata?.workspaceName),
-  ];
+  const candidates = [asString(metadata?.projectName), asString(metadata?.workspaceName)];
 
   if (skill.sourceLocator) {
     const basename = path.basename(skill.sourceLocator);
-    candidates.push(basename.toLowerCase() === "skill.md" ? path.basename(path.dirname(skill.sourceLocator)) : basename);
+    candidates.push(
+      basename.toLowerCase() === "skill.md" ? path.basename(path.dirname(skill.sourceLocator)) : basename,
+    );
   }
 
   for (const value of candidates) {
@@ -245,17 +256,16 @@ export function derivePrimarySkillExportDir(
   const primaryNamespace = keySegments[0] ?? null;
 
   if (primaryNamespace === "company") {
-    const companySegment = normalizeExportPathSegment(companyIssuePrefix, true)
-      ?? normalizeExportPathSegment(keySegments[1], true)
-      ?? "company";
+    const companySegment =
+      normalizeExportPathSegment(companyIssuePrefix, true) ??
+      normalizeExportPathSegment(keySegments[1], true) ??
+      "company";
     return `skills/company/${companySegment}/${slug}`;
   }
 
   if (primaryNamespace === "local") {
     const localNamespace = deriveLocalExportNamespace(skill, slug);
-    return localNamespace
-      ? `skills/local/${localNamespace}/${slug}`
-      : `skills/local/${slug}`;
+    return localNamespace ? `skills/local/${localNamespace}/${slug}` : `skills/local/${slug}`;
   }
 
   if (primaryNamespace === "url") {
@@ -552,7 +562,9 @@ export function asInteger(value: unknown): number | null {
   return typeof value === "number" && Number.isInteger(value) ? value : null;
 }
 
-export function normalizeRoutineTriggerExtension(value: unknown): CompanyPortabilityIssueRoutineTriggerManifestEntry | null {
+export function normalizeRoutineTriggerExtension(
+  value: unknown,
+): CompanyPortabilityIssueRoutineTriggerManifestEntry | null {
   if (!isPlainRecord(value)) return null;
   const kind = asString(value.kind);
   if (!kind) return null;
@@ -571,8 +583,8 @@ export function normalizeRoutineExtension(value: unknown): CompanyPortabilityIss
   if (!isPlainRecord(value)) return null;
   const triggers = Array.isArray(value.triggers)
     ? value.triggers
-      .map((entry) => normalizeRoutineTriggerExtension(entry))
-      .filter((entry): entry is CompanyPortabilityIssueRoutineTriggerManifestEntry => entry !== null)
+        .map((entry) => normalizeRoutineTriggerExtension(entry))
+        .filter((entry): entry is CompanyPortabilityIssueRoutineTriggerManifestEntry => entry !== null)
     : [];
   const routine = {
     concurrencyPolicy: asString(value.concurrencyPolicy),
@@ -590,10 +602,10 @@ function buildRoutineManifestFromLiveRoutine(routine: RoutineLike): CompanyPorta
       kind: trigger.kind,
       label: trigger.label ?? null,
       enabled: Boolean(trigger.enabled),
-      cronExpression: trigger.kind === "schedule" ? trigger.cronExpression ?? null : null,
-      timezone: trigger.kind === "schedule" ? trigger.timezone ?? null : null,
-      signingMode: trigger.kind === "webhook" ? trigger.signingMode ?? null : null,
-      replayWindowSec: trigger.kind === "webhook" ? trigger.replayWindowSec ?? null : null,
+      cronExpression: trigger.kind === "schedule" ? (trigger.cronExpression ?? null) : null,
+      timezone: trigger.kind === "schedule" ? (trigger.timezone ?? null) : null,
+      signingMode: trigger.kind === "webhook" ? (trigger.signingMode ?? null) : null,
+      replayWindowSec: trigger.kind === "webhook" ? (trigger.replayWindowSec ?? null) : null,
     })),
   };
 }
@@ -655,9 +667,14 @@ export function derivePortableProjectWorkspaceKey(
   usedKeys: Set<string>,
 ) {
   const baseKey =
-    normalizeAgentUrlKey(workspace.name)
-    ?? normalizeAgentUrlKey(asString(workspace.repoUrl)?.split("/").pop()?.replace(/\.git$/i, "") ?? "")
-    ?? "workspace";
+    normalizeAgentUrlKey(workspace.name) ??
+    normalizeAgentUrlKey(
+      asString(workspace.repoUrl)
+        ?.split("/")
+        .pop()
+        ?.replace(/\.git$/i, "") ?? "",
+    ) ??
+    "workspace";
   return uniqueSlug(baseKey, usedKeys);
 }
 
@@ -675,7 +692,9 @@ export function exportPortableProjectExecutionWorkspacePolicy(
     if (defaultWorkspaceKey) {
       next.defaultProjectWorkspaceKey = defaultWorkspaceKey;
     } else {
-      warnings.push(`Project ${projectSlug} default workspace ${defaultWorkspaceId} was omitted from export because that workspace is not portable.`);
+      warnings.push(
+        `Project ${projectSlug} default workspace ${defaultWorkspaceId} was omitted from export because that workspace is not portable.`,
+      );
     }
     delete next.defaultProjectWorkspaceId;
   }
@@ -697,7 +716,9 @@ export function importPortableProjectExecutionWorkspacePolicy(
     if (defaultWorkspaceId) {
       next.defaultProjectWorkspaceId = defaultWorkspaceId;
     } else {
-      warnings.push(`Project ${projectSlug} references missing workspace key ${defaultWorkspaceKey}; imported execution workspace policy without a default workspace.`);
+      warnings.push(
+        `Project ${projectSlug} references missing workspace key ${defaultWorkspaceKey}; imported execution workspace policy without a default workspace.`,
+      );
     }
   }
   delete next.defaultProjectWorkspaceKey;
@@ -736,7 +757,11 @@ export async function inferPortableWorkspaceGitMetadata(workspace: NonNullable<P
   } catch {
     try {
       const firstRemote = await readGitOutput(cwd, ["remote"]);
-      const remoteName = firstRemote?.split("\n").map((entry) => entry.trim()).find(Boolean) ?? null;
+      const remoteName =
+        firstRemote
+          ?.split("\n")
+          .map((entry) => entry.trim())
+          .find(Boolean) ?? null;
       if (remoteName) {
         repoUrl = await readGitOutput(cwd, ["remote", "get-url", remoteName]);
       }
@@ -786,7 +811,9 @@ export async function buildPortableProjectWorkspaces(
         : { repoUrl: null, repoRef: null, defaultRef: null };
     const repoUrl = asString(workspace.repoUrl) ?? inferredGitMetadata.repoUrl;
     if (!repoUrl) {
-      warnings.push(`Project ${projectSlug} workspace ${workspace.name} was omitted from export because it does not have a portable repoUrl.`);
+      warnings.push(
+        `Project ${projectSlug} workspace ${workspace.name} was omitted from export because it does not have a portable repoUrl.`,
+      );
       continue;
     }
     const repoRef = asString(workspace.repoRef) ?? inferredGitMetadata.repoRef;
@@ -815,21 +842,28 @@ export async function buildPortableProjectWorkspaces(
 
     let setupCommand = asString(workspace.setupCommand);
     if (setupCommand && containsAbsolutePathFragment(setupCommand)) {
-      warnings.push(`Project ${projectSlug} workspace ${workspaceKey} setupCommand was omitted from export because it is system-dependent.`);
+      warnings.push(
+        `Project ${projectSlug} workspace ${workspaceKey} setupCommand was omitted from export because it is system-dependent.`,
+      );
       setupCommand = null;
     }
 
     let cleanupCommand = asString(workspace.cleanupCommand);
     if (cleanupCommand && containsAbsolutePathFragment(cleanupCommand)) {
-      warnings.push(`Project ${projectSlug} workspace ${workspaceKey} cleanupCommand was omitted from export because it is system-dependent.`);
+      warnings.push(
+        `Project ${projectSlug} workspace ${workspaceKey} cleanupCommand was omitted from export because it is system-dependent.`,
+      );
       cleanupCommand = null;
     }
 
-    const metadata = isPlainRecord(workspace.metadata) && !containsSystemDependentPathValue(workspace.metadata)
-      ? workspace.metadata
-      : null;
+    const metadata =
+      isPlainRecord(workspace.metadata) && !containsSystemDependentPathValue(workspace.metadata)
+        ? workspace.metadata
+        : null;
     if (isPlainRecord(workspace.metadata) && metadata == null) {
-      warnings.push(`Project ${projectSlug} workspace ${workspaceKey} metadata was omitted from export because it contains system-dependent paths.`);
+      warnings.push(
+        `Project ${projectSlug} workspace ${workspaceKey} metadata was omitted from export because it contains system-dependent paths.`,
+      );
     }
 
     const portableWorkspace = stripEmptyValues({
@@ -905,7 +939,13 @@ function readZonedDateParts(startsAt: string, timeZone: string) {
     const day = Number(parts.day);
     const hour = Number(parts.hour);
     const minute = Number(parts.minute);
-    if (!weekday || !Number.isFinite(month) || !Number.isFinite(day) || !Number.isFinite(hour) || !Number.isFinite(minute)) {
+    if (
+      !weekday ||
+      !Number.isFinite(month) ||
+      !Number.isFinite(day) ||
+      !Number.isFinite(hour) ||
+      !Number.isFinite(minute)
+    ) {
       return null;
     }
     return { weekday, month, day, hour, minute };
@@ -915,7 +955,9 @@ function readZonedDateParts(startsAt: string, timeZone: string) {
 }
 
 function normalizeCronList(values: string[]) {
-  return Array.from(new Set(values)).sort((left, right) => Number(left) - Number(right)).join(",");
+  return Array.from(new Set(values))
+    .sort((left, right) => Number(left) - Number(right))
+    .join(",");
 }
 
 export function buildLegacyRoutineTriggerFromRecurrence(
@@ -932,11 +974,15 @@ export function buildLegacyRoutineTriggerFromRecurrence(
   const frequency = asString(issue.legacyRecurrence.frequency);
   const interval = asInteger(issue.legacyRecurrence.interval) ?? 1;
   if (!frequency) {
-    errors.push(`Recurring task ${issue.slug} uses legacy recurrence without frequency; add .ironworks.yaml routines.${issue.slug}.triggers.`);
+    errors.push(
+      `Recurring task ${issue.slug} uses legacy recurrence without frequency; add .ironworks.yaml routines.${issue.slug}.triggers.`,
+    );
     return { trigger: null, warnings, errors };
   }
   if (interval < 1) {
-    errors.push(`Recurring task ${issue.slug} uses legacy recurrence with an invalid interval; add .ironworks.yaml routines.${issue.slug}.triggers.`);
+    errors.push(
+      `Recurring task ${issue.slug} uses legacy recurrence with an invalid interval; add .ironworks.yaml routines.${issue.slug}.triggers.`,
+    );
     return { trigger: null, warnings, errors };
   }
 
@@ -944,7 +990,9 @@ export function buildLegacyRoutineTriggerFromRecurrence(
   const startsAt = asString(schedule?.startsAt);
   const zonedStartsAt = startsAt ? readZonedDateParts(startsAt, timezone) : null;
   if (startsAt && !zonedStartsAt) {
-    errors.push(`Recurring task ${issue.slug} has an invalid legacy startsAt/timezone combination; add .ironworks.yaml routines.${issue.slug}.triggers.`);
+    errors.push(
+      `Recurring task ${issue.slug} has an invalid legacy startsAt/timezone combination; add .ironworks.yaml routines.${issue.slug}.triggers.`,
+    );
     return { trigger: null, warnings, errors };
   }
 
@@ -952,39 +1000,47 @@ export function buildLegacyRoutineTriggerFromRecurrence(
   const hour = asInteger(time?.hour) ?? zonedStartsAt?.hour ?? 0;
   const minute = asInteger(time?.minute) ?? zonedStartsAt?.minute ?? 0;
   if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
-    errors.push(`Recurring task ${issue.slug} uses legacy recurrence with an invalid time; add .ironworks.yaml routines.${issue.slug}.triggers.`);
+    errors.push(
+      `Recurring task ${issue.slug} uses legacy recurrence with an invalid time; add .ironworks.yaml routines.${issue.slug}.triggers.`,
+    );
     return { trigger: null, warnings, errors };
   }
 
   if (issue.legacyRecurrence.until != null || issue.legacyRecurrence.count != null) {
-    warnings.push(`Recurring task ${issue.slug} uses legacy recurrence end bounds; Ironworks will import the routine trigger without those limits.`);
+    warnings.push(
+      `Recurring task ${issue.slug} uses legacy recurrence end bounds; Ironworks will import the routine trigger without those limits.`,
+    );
   }
 
   let cronExpression: string | null = null;
 
   if (frequency === "hourly") {
-    const hourField = interval === 1
-      ? "*"
-      : zonedStartsAt
-        ? `${zonedStartsAt.hour}-23/${interval}`
-        : `*/${interval}`;
+    const hourField = interval === 1 ? "*" : zonedStartsAt ? `${zonedStartsAt.hour}-23/${interval}` : `*/${interval}`;
     cronExpression = `${minute} ${hourField} * * *`;
   } else if (frequency === "daily") {
-    if (Array.isArray(issue.legacyRecurrence.weekdays) || Array.isArray(issue.legacyRecurrence.monthDays) || Array.isArray(issue.legacyRecurrence.months)) {
-      errors.push(`Recurring task ${issue.slug} uses unsupported legacy daily recurrence constraints; add .ironworks.yaml routines.${issue.slug}.triggers.`);
+    if (
+      Array.isArray(issue.legacyRecurrence.weekdays) ||
+      Array.isArray(issue.legacyRecurrence.monthDays) ||
+      Array.isArray(issue.legacyRecurrence.months)
+    ) {
+      errors.push(
+        `Recurring task ${issue.slug} uses unsupported legacy daily recurrence constraints; add .ironworks.yaml routines.${issue.slug}.triggers.`,
+      );
       return { trigger: null, warnings, errors };
     }
     const dayField = interval === 1 ? "*" : `*/${interval}`;
     cronExpression = `${minute} ${hour} ${dayField} * *`;
   } else if (frequency === "weekly") {
     if (interval !== 1) {
-      errors.push(`Recurring task ${issue.slug} uses legacy weekly recurrence with interval > 1; add .ironworks.yaml routines.${issue.slug}.triggers.`);
+      errors.push(
+        `Recurring task ${issue.slug} uses legacy weekly recurrence with interval > 1; add .ironworks.yaml routines.${issue.slug}.triggers.`,
+      );
       return { trigger: null, warnings, errors };
     }
     const weekdays = Array.isArray(issue.legacyRecurrence.weekdays)
       ? issue.legacyRecurrence.weekdays
-        .map((entry) => asString(entry))
-        .filter((entry): entry is string => Boolean(entry))
+          .map((entry) => asString(entry))
+          .filter((entry): entry is string => Boolean(entry))
       : [];
     const cronWeekdays = weekdays
       .map((entry) => WEEKDAY_TO_CRON[entry.toLowerCase()])
@@ -993,66 +1049,80 @@ export function buildLegacyRoutineTriggerFromRecurrence(
       cronWeekdays.push(zonedStartsAt.weekday);
     }
     if (cronWeekdays.length === 0) {
-      errors.push(`Recurring task ${issue.slug} uses legacy weekly recurrence without weekdays; add .ironworks.yaml routines.${issue.slug}.triggers.`);
+      errors.push(
+        `Recurring task ${issue.slug} uses legacy weekly recurrence without weekdays; add .ironworks.yaml routines.${issue.slug}.triggers.`,
+      );
       return { trigger: null, warnings, errors };
     }
     cronExpression = `${minute} ${hour} * * ${normalizeCronList(cronWeekdays)}`;
   } else if (frequency === "monthly") {
     if (interval !== 1) {
-      errors.push(`Recurring task ${issue.slug} uses legacy monthly recurrence with interval > 1; add .ironworks.yaml routines.${issue.slug}.triggers.`);
+      errors.push(
+        `Recurring task ${issue.slug} uses legacy monthly recurrence with interval > 1; add .ironworks.yaml routines.${issue.slug}.triggers.`,
+      );
       return { trigger: null, warnings, errors };
     }
     if (Array.isArray(issue.legacyRecurrence.ordinalWeekdays) && issue.legacyRecurrence.ordinalWeekdays.length > 0) {
-      errors.push(`Recurring task ${issue.slug} uses legacy ordinal monthly recurrence; add .ironworks.yaml routines.${issue.slug}.triggers.`);
+      errors.push(
+        `Recurring task ${issue.slug} uses legacy ordinal monthly recurrence; add .ironworks.yaml routines.${issue.slug}.triggers.`,
+      );
       return { trigger: null, warnings, errors };
     }
     const monthDays = Array.isArray(issue.legacyRecurrence.monthDays)
       ? issue.legacyRecurrence.monthDays
-        .map((entry) => asInteger(entry))
-        .filter((entry): entry is number => entry != null && entry >= 1 && entry <= 31)
+          .map((entry) => asInteger(entry))
+          .filter((entry): entry is number => entry != null && entry >= 1 && entry <= 31)
       : [];
     if (monthDays.length === 0 && zonedStartsAt?.day) {
       monthDays.push(zonedStartsAt.day);
     }
     if (monthDays.length === 0) {
-      errors.push(`Recurring task ${issue.slug} uses legacy monthly recurrence without monthDays; add .ironworks.yaml routines.${issue.slug}.triggers.`);
+      errors.push(
+        `Recurring task ${issue.slug} uses legacy monthly recurrence without monthDays; add .ironworks.yaml routines.${issue.slug}.triggers.`,
+      );
       return { trigger: null, warnings, errors };
     }
     const months = Array.isArray(issue.legacyRecurrence.months)
       ? issue.legacyRecurrence.months
-        .map((entry) => asInteger(entry))
-        .filter((entry): entry is number => entry != null && entry >= 1 && entry <= 12)
+          .map((entry) => asInteger(entry))
+          .filter((entry): entry is number => entry != null && entry >= 1 && entry <= 12)
       : [];
     const monthField = months.length > 0 ? normalizeCronList(months.map(String)) : "*";
     cronExpression = `${minute} ${hour} ${normalizeCronList(monthDays.map(String))} ${monthField} *`;
   } else if (frequency === "yearly") {
     if (interval !== 1) {
-      errors.push(`Recurring task ${issue.slug} uses legacy yearly recurrence with interval > 1; add .ironworks.yaml routines.${issue.slug}.triggers.`);
+      errors.push(
+        `Recurring task ${issue.slug} uses legacy yearly recurrence with interval > 1; add .ironworks.yaml routines.${issue.slug}.triggers.`,
+      );
       return { trigger: null, warnings, errors };
     }
     const months = Array.isArray(issue.legacyRecurrence.months)
       ? issue.legacyRecurrence.months
-        .map((entry) => asInteger(entry))
-        .filter((entry): entry is number => entry != null && entry >= 1 && entry <= 12)
+          .map((entry) => asInteger(entry))
+          .filter((entry): entry is number => entry != null && entry >= 1 && entry <= 12)
       : [];
     if (months.length === 0 && zonedStartsAt?.month) {
       months.push(zonedStartsAt.month);
     }
     const monthDays = Array.isArray(issue.legacyRecurrence.monthDays)
       ? issue.legacyRecurrence.monthDays
-        .map((entry) => asInteger(entry))
-        .filter((entry): entry is number => entry != null && entry >= 1 && entry <= 31)
+          .map((entry) => asInteger(entry))
+          .filter((entry): entry is number => entry != null && entry >= 1 && entry <= 31)
       : [];
     if (monthDays.length === 0 && zonedStartsAt?.day) {
       monthDays.push(zonedStartsAt.day);
     }
     if (months.length === 0 || monthDays.length === 0) {
-      errors.push(`Recurring task ${issue.slug} uses legacy yearly recurrence without month/monthDay anchors; add .ironworks.yaml routines.${issue.slug}.triggers.`);
+      errors.push(
+        `Recurring task ${issue.slug} uses legacy yearly recurrence without month/monthDay anchors; add .ironworks.yaml routines.${issue.slug}.triggers.`,
+      );
       return { trigger: null, warnings, errors };
     }
     cronExpression = `${minute} ${hour} ${normalizeCronList(monthDays.map(String))} ${normalizeCronList(months.map(String))} *`;
   } else {
-    errors.push(`Recurring task ${issue.slug} uses unsupported legacy recurrence frequency "${frequency}"; add .ironworks.yaml routines.${issue.slug}.triggers.`);
+    errors.push(
+      `Recurring task ${issue.slug} uses unsupported legacy recurrence frequency "${frequency}"; add .ironworks.yaml routines.${issue.slug}.triggers.`,
+    );
     return { trigger: null, warnings, errors };
   }
 
@@ -1083,18 +1153,23 @@ export function resolvePortableRoutineDefinition(
 
   const routine = issue.routine
     ? {
-      concurrencyPolicy: issue.routine.concurrencyPolicy,
-      catchUpPolicy: issue.routine.catchUpPolicy,
-      triggers: [...issue.routine.triggers],
-    }
+        concurrencyPolicy: issue.routine.concurrencyPolicy,
+        catchUpPolicy: issue.routine.catchUpPolicy,
+        triggers: [...issue.routine.triggers],
+      }
     : {
-      concurrencyPolicy: null,
-      catchUpPolicy: null,
-      triggers: [] as CompanyPortabilityIssueRoutineTriggerManifestEntry[],
-    };
+        concurrencyPolicy: null,
+        catchUpPolicy: null,
+        triggers: [] as CompanyPortabilityIssueRoutineTriggerManifestEntry[],
+      };
 
-  if (routine.concurrencyPolicy && !(ROUTINE_CONCURRENCY_POLICIES as readonly string[]).includes(routine.concurrencyPolicy)) {
-    errors.push(`Recurring task ${issue.slug} uses unsupported routine concurrencyPolicy "${routine.concurrencyPolicy}".`);
+  if (
+    routine.concurrencyPolicy &&
+    !(ROUTINE_CONCURRENCY_POLICIES as readonly string[]).includes(routine.concurrencyPolicy)
+  ) {
+    errors.push(
+      `Recurring task ${issue.slug} uses unsupported routine concurrencyPolicy "${routine.concurrencyPolicy}".`,
+    );
   }
   if (routine.catchUpPolicy && !(ROUTINE_CATCH_UP_POLICIES as readonly string[]).includes(routine.catchUpPolicy)) {
     errors.push(`Recurring task ${issue.slug} uses unsupported routine catchUpPolicy "${routine.catchUpPolicy}".`);
@@ -1116,7 +1191,11 @@ export function resolvePortableRoutineDefinition(
       }
       continue;
     }
-    if (trigger.kind === "webhook" && trigger.signingMode && !(ROUTINE_TRIGGER_SIGNING_MODES as readonly string[]).includes(trigger.signingMode)) {
+    if (
+      trigger.kind === "webhook" &&
+      trigger.signingMode &&
+      !(ROUTINE_TRIGGER_SIGNING_MODES as readonly string[]).includes(trigger.signingMode)
+    ) {
       errors.push(`Recurring task ${issue.slug} uses unsupported webhook signingMode "${trigger.signingMode}".`);
     }
   }
@@ -1212,10 +1291,7 @@ export function isPortableBinaryFile(
   return typeof value === "object" && value !== null && value.encoding === "base64" && typeof value.data === "string";
 }
 
-export function readPortableTextFile(
-  files: Record<string, CompanyPortabilityFileEntry>,
-  filePath: string,
-) {
+export function readPortableTextFile(files: Record<string, CompanyPortabilityFileEntry>, filePath: string) {
   const value = files[filePath];
   return typeof value === "string" ? value : null;
 }
@@ -1239,7 +1315,10 @@ export function inferContentTypeFromPath(filePath: string) {
   }
 }
 
-export function resolveCompanyLogoExtension(contentType: string | null | undefined, originalFilename: string | null | undefined) {
+export function resolveCompanyLogoExtension(
+  contentType: string | null | undefined,
+  originalFilename: string | null | undefined,
+) {
   const fromContentType = contentType ? COMPANY_LOGO_CONTENT_TYPE_EXTENSIONS[contentType.toLowerCase()] : null;
   if (fromContentType) return fromContentType;
 
@@ -1345,7 +1424,9 @@ export function normalizePortableSidebarOrder(value: unknown): CompanyPortabilit
   return sidebar.agents.length > 0 || sidebar.projects.length > 0 ? sidebar : null;
 }
 
-export function sortAgentsBySidebarOrder<T extends { id: string; name: string; reportsTo: string | null }>(agents: T[]) {
+export function sortAgentsBySidebarOrder<T extends { id: string; name: string; reportsTo: string | null }>(
+  agents: T[],
+) {
   if (agents.length === 0) return [];
 
   const byId = new Map(agents.map((agent) => [agent.id, agent]));
@@ -1381,9 +1462,7 @@ export function filterPortableExtensionYaml(yaml: string, selectedFiles: Set<str
     const sectionValue = parsed[section];
     if (!isPlainRecord(sectionValue)) continue;
     const sectionSlugs = selected[section];
-    const filteredEntries = Object.fromEntries(
-      Object.entries(sectionValue).filter(([slug]) => sectionSlugs.has(slug)),
-    );
+    const filteredEntries = Object.fromEntries(Object.entries(sectionValue).filter(([slug]) => sectionSlugs.has(slug)));
     if (Object.keys(filteredEntries).length > 0) {
       parsed[section] = filteredEntries;
     } else {
@@ -1428,9 +1507,7 @@ export function filterExportFiles(
   }
 
   const selectedFiles = new Set(
-    selectedFilesInput
-      .map((entry) => normalizePortablePath(entry))
-      .filter((entry) => entry.length > 0),
+    selectedFilesInput.map((entry) => normalizePortablePath(entry)).filter((entry) => entry.length > 0),
   );
   const filtered: Record<string, CompanyPortabilityFileEntry> = {};
   for (const [filePath, content] of Object.entries(files)) {
@@ -1449,7 +1526,9 @@ export function filterExportFiles(
 export function findIronworksExtensionPath(files: Record<string, CompanyPortabilityFileEntry>) {
   if (typeof files[".ironworks.yaml"] === "string") return ".ironworks.yaml";
   if (typeof files[".ironworks.yml"] === "string") return ".ironworks.yml";
-  return Object.keys(files).find((entry) => entry.endsWith("/.ironworks.yaml") || entry.endsWith("/.ironworks.yml")) ?? null;
+  return (
+    Object.keys(files).find((entry) => entry.endsWith("/.ironworks.yaml") || entry.endsWith("/.ironworks.yml")) ?? null
+  );
 }
 
 export function ensureMarkdownPath(pathValue: string) {
@@ -1460,9 +1539,7 @@ export function ensureMarkdownPath(pathValue: string) {
   return normalized;
 }
 
-export function normalizePortableConfig(
-  value: unknown,
-): Record<string, unknown> {
+export function normalizePortableConfig(value: unknown): Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return {};
   const input = value as Record<string, unknown>;
   const next: Record<string, unknown> = {};
@@ -1477,7 +1554,8 @@ export function normalizePortableConfig(
       key === "promptTemplate" ||
       key === "bootstrapPromptTemplate" || // deprecated — kept for backward compat
       key === "ironworksSkillSync"
-    ) continue;
+    )
+      continue;
     if (key === "env") continue;
     next[key] = entry;
   }
@@ -1520,9 +1598,7 @@ export function extractPortableEnvInputs(
     if (isPlainRecord(binding) && binding.type === "plain") {
       const defaultValue = asString(binding.value);
       const isSensitive = isSensitiveEnvKey(key);
-      const portability = defaultValue && isAbsoluteCommand(defaultValue)
-        ? "system_dependent"
-        : "portable";
+      const portability = defaultValue && isAbsoluteCommand(defaultValue) ? "system_dependent" : "portable";
       if (portability === "system_dependent") {
         warnings.push(`Agent ${agentSlug} env ${key} default was exported as system-dependent.`);
       }
@@ -1532,7 +1608,7 @@ export function extractPortableEnvInputs(
         agentSlug,
         kind: isSensitive ? "secret" : "plain",
         requirement: "optional",
-        defaultValue: isSensitive ? "" : defaultValue ?? "",
+        defaultValue: isSensitive ? "" : (defaultValue ?? ""),
         portability,
       });
       continue;
@@ -1562,7 +1638,11 @@ export function jsonEqual(left: unknown, right: unknown): boolean {
   return JSON.stringify(left) === JSON.stringify(right);
 }
 
-export function isPathDefault(pathSegments: string[], value: unknown, rules: Array<{ path: string[]; value: unknown }>) {
+export function isPathDefault(
+  pathSegments: string[],
+  value: unknown,
+  rules: Array<{ path: string[]; value: unknown }>,
+) {
   return rules.some((rule) => jsonEqual(rule.path, pathSegments) && jsonEqual(rule.value, value));
 }
 
@@ -1615,9 +1695,7 @@ function isEmptyArray(value: unknown): boolean {
 
 export function stripEmptyValues(value: unknown, opts?: { preserveEmptyStrings?: boolean }): unknown {
   if (Array.isArray(value)) {
-    const next = value
-      .map((entry) => stripEmptyValues(entry, opts))
-      .filter((entry) => entry !== undefined);
+    const next = value.map((entry) => stripEmptyValues(entry, opts)).filter((entry) => entry !== undefined);
     return next.length > 0 ? next : undefined;
   }
   if (isPlainRecord(value)) {
@@ -1673,9 +1751,7 @@ export const YAML_KEY_PRIORITY = [
   "metadata",
 ] as const;
 
-export const YAML_KEY_PRIORITY_INDEX = new Map<string, number>(
-  YAML_KEY_PRIORITY.map((key, index) => [key, index]),
-);
+export const YAML_KEY_PRIORITY_INDEX = new Map<string, number>(YAML_KEY_PRIORITY.map((key, index) => [key, index]));
 
 function compareYamlKeys(left: string, right: string) {
   const leftPriority = YAML_KEY_PRIORITY_INDEX.get(left);
@@ -1704,7 +1780,7 @@ function renderYamlBlock(value: unknown, indentLevel: number): string[] {
         typeof entry === "string" ||
         typeof entry === "boolean" ||
         typeof entry === "number" ||
-        Array.isArray(entry) && entry.length === 0 ||
+        (Array.isArray(entry) && entry.length === 0) ||
         isEmptyObject(entry);
       if (scalar) {
         lines.push(`${indent}- ${renderYamlScalar(entry)}`);
@@ -1726,7 +1802,7 @@ function renderYamlBlock(value: unknown, indentLevel: number): string[] {
         typeof entry === "string" ||
         typeof entry === "boolean" ||
         typeof entry === "number" ||
-        Array.isArray(entry) && entry.length === 0 ||
+        (Array.isArray(entry) && entry.length === 0) ||
         isEmptyObject(entry);
       if (scalar) {
         lines.push(`${indent}${key}: ${renderYamlScalar(entry)}`);
@@ -1750,7 +1826,7 @@ export function renderFrontmatter(frontmatter: Record<string, unknown>) {
       typeof value === "string" ||
       typeof value === "boolean" ||
       typeof value === "number" ||
-      Array.isArray(value) && value.length === 0 ||
+      (Array.isArray(value) && value.length === 0) ||
       isEmptyObject(value);
     if (scalar) {
       lines.push(`${key}: ${renderYamlScalar(value)}`);
@@ -1773,18 +1849,10 @@ export function buildMarkdown(frontmatter: Record<string, unknown>, body: string
 
 export function normalizeSelectedFiles(selectedFiles?: string[]) {
   if (!selectedFiles) return null;
-  return new Set(
-    selectedFiles
-      .map((entry) => normalizePortablePath(entry))
-      .filter((entry) => entry.length > 0),
-  );
+  return new Set(selectedFiles.map((entry) => normalizePortablePath(entry)).filter((entry) => entry.length > 0));
 }
 
-export function filterCompanyMarkdownIncludes(
-  companyPath: string,
-  markdown: string,
-  selectedFiles: Set<string>,
-) {
+export function filterCompanyMarkdownIncludes(companyPath: string, markdown: string, selectedFiles: Set<string>) {
   const parsed = parseFrontmatterMarkdown(markdown);
   const includeEntries = readIncludeEntries(parsed.frontmatter);
   const filteredIncludes = includeEntries.filter((entry) =>
@@ -1805,7 +1873,7 @@ export function applySelectedFilesToSource(source: ResolvedSource, selectedFiles
 
   const companyPath = source.manifest.company
     ? ensureMarkdownPath(source.manifest.company.path)
-    : Object.keys(source.files).find((entry) => entry.endsWith("/COMPANY.md") || entry === "COMPANY.md") ?? null;
+    : (Object.keys(source.files).find((entry) => entry.endsWith("/COMPANY.md") || entry === "COMPANY.md") ?? null);
   if (!companyPath) {
     throw unprocessable("Company package is missing COMPANY.md");
   }
@@ -1822,11 +1890,7 @@ export function applySelectedFilesToSource(source: ResolvedSource, selectedFiles
     effectiveFiles[normalizedPath] = content;
   }
 
-  effectiveFiles[companyPath] = filterCompanyMarkdownIncludes(
-    companyPath,
-    companyMarkdown,
-    normalizedSelection,
-  );
+  effectiveFiles[companyPath] = filterCompanyMarkdownIncludes(companyPath, companyMarkdown, normalizedSelection);
 
   const filtered = buildManifestFromPackageFiles(effectiveFiles, {
     sourceLabel: source.manifest.source,
@@ -1924,9 +1988,7 @@ export async function buildReferencedSkillMarkdown(skill: CompanySkill) {
 export async function withSkillSourceMetadata(skill: CompanySkill, markdown: string) {
   const sourceEntry = await buildSkillSourceEntry(skill);
   const parsed = parseFrontmatterMarkdown(markdown);
-  const metadata = isPlainRecord(parsed.frontmatter.metadata)
-    ? { ...parsed.frontmatter.metadata }
-    : {};
+  const metadata = isPlainRecord(parsed.frontmatter.metadata) ? { ...parsed.frontmatter.metadata } : {};
   const existingSources = Array.isArray(metadata.sources)
     ? metadata.sources.filter((entry) => isPlainRecord(entry))
     : [];
@@ -1949,7 +2011,6 @@ export async function withSkillSourceMetadata(skill: CompanySkill, markdown: str
   return buildMarkdown(frontmatter, parsed.body);
 }
 
-
 export function parseYamlScalar(rawValue: string): unknown {
   const trimmed = rawValue.trim();
   if (trimmed === "") return "";
@@ -1959,11 +2020,7 @@ export function parseYamlScalar(rawValue: string): unknown {
   if (trimmed === "[]") return [];
   if (trimmed === "{}") return {};
   if (/^-?\d+(\.\d+)?$/.test(trimmed)) return Number(trimmed);
-  if (
-    trimmed.startsWith("\"") ||
-    trimmed.startsWith("[") ||
-    trimmed.startsWith("{")
-  ) {
+  if (trimmed.startsWith('"') || trimmed.startsWith("[") || trimmed.startsWith("{")) {
     try {
       return JSON.parse(trimmed);
     } catch {
@@ -2014,7 +2071,7 @@ export function parseYamlBlock(
       const inlineObjectSeparator = remainder.indexOf(":");
       if (
         inlineObjectSeparator > 0 &&
-        !remainder.startsWith("\"") &&
+        !remainder.startsWith('"') &&
         !remainder.startsWith("{") &&
         !remainder.startsWith("[")
       ) {
@@ -2194,27 +2251,31 @@ export function readAgentEnvInputs(
   return Object.entries(env).flatMap(([key, value]) => {
     if (!isPlainRecord(value)) return [];
     const record = value as EnvInputRecord;
-    return [{
-      key,
-      description: asString(record.description) ?? null,
-      agentSlug,
-      kind: record.kind === "plain" ? "plain" : "secret",
-      requirement: record.requirement === "required" ? "required" : "optional",
-      defaultValue: typeof record.default === "string" ? record.default : null,
-      portability: record.portability === "system_dependent" ? "system_dependent" : "portable",
-    }];
+    return [
+      {
+        key,
+        description: asString(record.description) ?? null,
+        agentSlug,
+        kind: record.kind === "plain" ? "plain" : "secret",
+        requirement: record.requirement === "required" ? "required" : "optional",
+        defaultValue: typeof record.default === "string" ? record.default : null,
+        portability: record.portability === "system_dependent" ? "system_dependent" : "portable",
+      },
+    ];
   });
 }
 
 export function readAgentSkillRefs(frontmatter: Record<string, unknown>) {
   const skills = frontmatter.skills;
   if (!Array.isArray(skills)) return [];
-  return Array.from(new Set(
-    skills
-      .filter((entry): entry is string => typeof entry === "string")
-      .map((entry) => normalizeSkillKey(entry) ?? entry.trim())
-      .filter(Boolean),
-  ));
+  return Array.from(
+    new Set(
+      skills
+        .filter((entry): entry is string => typeof entry === "string")
+        .map((entry) => normalizeSkillKey(entry) ?? entry.trim())
+        .filter(Boolean),
+    ),
+  );
 }
 
 export function buildManifestFromPackageFiles(
@@ -2222,12 +2283,11 @@ export function buildManifestFromPackageFiles(
   opts?: { sourceLabel?: { companyId: string; companyName: string } | null },
 ): ResolvedSource {
   const normalizedFiles = normalizeFileMap(files);
-  const companyPath = typeof normalizedFiles["COMPANY.md"] === "string"
-    ? normalizedFiles["COMPANY.md"]
-    : undefined;
-  const resolvedCompanyPath = companyPath !== undefined
-    ? "COMPANY.md"
-    : Object.keys(normalizedFiles).find((entry) => entry.endsWith("/COMPANY.md") || entry === "COMPANY.md");
+  const companyPath = typeof normalizedFiles["COMPANY.md"] === "string" ? normalizedFiles["COMPANY.md"] : undefined;
+  const resolvedCompanyPath =
+    companyPath !== undefined
+      ? "COMPANY.md"
+      : Object.keys(normalizedFiles).find((entry) => entry.endsWith("/COMPANY.md") || entry === "COMPANY.md");
   if (!resolvedCompanyPath) {
     throw unprocessable("Company package is missing COMPANY.md");
   }
@@ -2248,14 +2308,8 @@ export function buildManifestFromPackageFiles(
   const ironworksProjects = isPlainRecord(ironworksExtension.projects) ? ironworksExtension.projects : {};
   const ironworksTasks = isPlainRecord(ironworksExtension.tasks) ? ironworksExtension.tasks : {};
   const ironworksRoutines = isPlainRecord(ironworksExtension.routines) ? ironworksExtension.routines : {};
-  const companyName =
-    asString(companyFrontmatter.name)
-    ?? opts?.sourceLabel?.companyName
-    ?? "Imported Company";
-  const companySlug =
-    asString(companyFrontmatter.slug)
-    ?? normalizeAgentUrlKey(companyName)
-    ?? "company";
+  const companyName = asString(companyFrontmatter.name) ?? opts?.sourceLabel?.companyName ?? "Imported Company";
+  const companySlug = asString(companyFrontmatter.slug) ?? normalizeAgentUrlKey(companyName) ?? "company";
 
   const includeEntries = readIncludeEntries(companyFrontmatter);
   const referencedAgentPaths = includeEntries
@@ -2336,9 +2390,7 @@ export function buildManifestFromPackageFiles(
     const extensionRuntime = isPlainRecord(extension.runtime) ? extension.runtime : null;
     const extensionPermissions = isPlainRecord(extension.permissions) ? extension.permissions : null;
     const extensionMetadata = isPlainRecord(extension.metadata) ? extension.metadata : null;
-    const adapterConfig = isPlainRecord(extensionAdapter?.config)
-      ? extensionAdapter.config
-      : {};
+    const adapterConfig = isPlainRecord(extensionAdapter?.config) ? extensionAdapter.config : {};
     const runtimeConfig = extensionRuntime ?? {};
     const title = asString(frontmatter.title);
 
@@ -2385,17 +2437,18 @@ export function buildManifestFromPackageFiles(
       .filter((entry) => entry === skillPath || entry.startsWith(`${skillDir}/`))
       .map((entry) => ({
         path: entry === skillPath ? "SKILL.md" : entry.slice(skillDir.length + 1),
-        kind: entry === skillPath
-          ? "skill"
-          : entry.startsWith(`${skillDir}/references/`)
-            ? "reference"
-            : entry.startsWith(`${skillDir}/scripts/`)
-              ? "script"
-              : entry.startsWith(`${skillDir}/assets/`)
-                ? "asset"
-                : entry.endsWith(".md")
-                  ? "markdown"
-                  : "other",
+        kind:
+          entry === skillPath
+            ? "skill"
+            : entry.startsWith(`${skillDir}/references/`)
+              ? "reference"
+              : entry.startsWith(`${skillDir}/scripts/`)
+                ? "script"
+                : entry.startsWith(`${skillDir}/assets/`)
+                  ? "asset"
+                  : entry.endsWith(".md")
+                    ? "markdown"
+                    : "other",
       }));
     const metadata = isPlainRecord(frontmatter.metadata) ? frontmatter.metadata : null;
     const sources = metadata && Array.isArray(metadata.sources) ? metadata.sources : [];
@@ -2413,19 +2466,23 @@ export function buildManifestFromPackageFiles(
       const trackingRef = asString(primarySource?.trackingRef);
       const [owner, repoName] = (repo ?? "").split("/");
       sourceType = "github";
-      sourceLocator = asString(primarySource?.url)
-        ?? (repo ? `https://github.com/${repo}${repoPath ? `/tree/${trackingRef ?? commit ?? "main"}/${repoPath}` : ""}` : null);
+      sourceLocator =
+        asString(primarySource?.url) ??
+        (repo
+          ? `https://github.com/${repo}${repoPath ? `/tree/${trackingRef ?? commit ?? "main"}/${repoPath}` : ""}`
+          : null);
       sourceRef = commit;
-      normalizedMetadata = owner && repoName
-        ? {
-            sourceKind: "github",
-            owner,
-            repo: repoName,
-            ref: commit,
-            trackingRef,
-            repoSkillDir: repoPath ?? `skills/${slug}`,
-          }
-        : null;
+      normalizedMetadata =
+        owner && repoName
+          ? {
+              sourceKind: "github",
+              owner,
+              repo: repoName,
+              ref: commit,
+              trackingRef,
+              repoSkillDir: repoPath ?? `skills/${slug}`,
+            }
+          : null;
     } else if (sourceKind === "url") {
       sourceType = "url";
       sourceLocator = asString(primarySource?.url) ?? asString(primarySource?.rawUrl);
@@ -2508,15 +2565,14 @@ export function buildManifestFromPackageFiles(
     const routineExtension = normalizeRoutineExtension(ironworksRoutines[slug]);
     const routineExtensionRaw = isPlainRecord(ironworksRoutines[slug]) ? ironworksRoutines[slug] : {};
     const schedule = isPlainRecord(frontmatter.schedule) ? frontmatter.schedule : null;
-    const legacyRecurrence = schedule && isPlainRecord(schedule.recurrence)
-      ? schedule.recurrence
-      : isPlainRecord(extension.recurrence)
-        ? extension.recurrence
-        : null;
+    const legacyRecurrence =
+      schedule && isPlainRecord(schedule.recurrence)
+        ? schedule.recurrence
+        : isPlainRecord(extension.recurrence)
+          ? extension.recurrence
+          : null;
     const recurring =
-      asBoolean(frontmatter.recurring) === true
-      || routineExtension !== null
-      || legacyRecurrence !== null;
+      asBoolean(frontmatter.recurring) === true || routineExtension !== null || legacyRecurrence !== null;
     manifest.issues.push({
       slug,
       identifier: asString(extension.identifier),
@@ -2556,10 +2612,12 @@ export function buildManifestFromPackageFiles(
   };
 }
 
-
 export function normalizeGitHubSourcePath(value: string | null | undefined) {
   if (!value) return "";
-  return value.trim().replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
+  return value
+    .trim()
+    .replace(/\\/g, "/")
+    .replace(/^\/+|\/+$/g, "");
 }
 
 export function parseGitHubSourceUrl(rawUrl: string) {
@@ -2614,7 +2672,6 @@ export function resolveRawGitHubUrl(owner: string, repo: string, ref: string, fi
   const normalizedFilePath = filePath.replace(/^\/+/, "");
   return `https://raw.githubusercontent.com/${owner}/${repo}/${ref}/${normalizedFilePath}`;
 }
-
 
 export type CompanyPortabilityServiceDeps = {
   companies: ReturnType<typeof companyService>;

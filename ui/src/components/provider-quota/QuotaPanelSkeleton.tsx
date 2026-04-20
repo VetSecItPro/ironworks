@@ -12,10 +12,7 @@ export function QuotaPanelSkeleton() {
       </div>
       <div className="mt-4 space-y-3">
         {Array.from({ length: 3 }).map((_, index) => (
-          <div
-            key={index}
-            className="border border-border px-3.5 py-3"
-          >
+          <div key={index} className="border border-border px-3.5 py-3">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 space-y-2">
                 <Skeleton className="h-4 w-32" />

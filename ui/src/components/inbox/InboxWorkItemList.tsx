@@ -1,17 +1,16 @@
+import type { HeartbeatRun, Issue } from "@ironworksai/shared";
 import { Checkbox } from "@/components/ui/checkbox";
-import { IssueRow } from "../IssueRow";
-import { SwipeToArchive } from "../SwipeToArchive";
-import { StatusIcon } from "../StatusIcon";
+import type { InboxWorkItem } from "../../lib/inbox";
 import { timeAgo } from "../../lib/timeAgo";
 import { cn } from "../../lib/utils";
+import { IssueRow } from "../IssueRow";
+import { StatusIcon } from "../StatusIcon";
+import { SwipeToArchive } from "../SwipeToArchive";
 import { ApprovalInboxRow } from "./ApprovalInboxRow";
 import { FailedRunInboxRow } from "./FailedRunInboxRow";
-import { JoinRequestInboxRow } from "./JoinRequestInboxRow";
 import { getSeverityBorderClass } from "./inboxHelpers";
 import type { NonIssueUnreadState } from "./inboxTypes";
-import type { InboxWorkItem } from "../../lib/inbox";
-import type { Issue } from "@ironworksai/shared";
-import type { HeartbeatRun } from "@ironworksai/shared";
+import { JoinRequestInboxRow } from "./JoinRequestInboxRow";
 
 interface InboxWorkItemListProps {
   workItemsToRender: InboxWorkItem[];
@@ -111,14 +110,12 @@ export function InboxWorkItemList({
         />
       );
       return isMineTab ? (
-        <SwipeToArchive
-          key={approvalKey}
-          disabled={isArchiving}
-          onArchive={() => handleArchiveNonIssue(approvalKey)}
-        >
+        <SwipeToArchive key={approvalKey} disabled={isArchiving} onArchive={() => handleArchiveNonIssue(approvalKey)}>
           {row}
         </SwipeToArchive>
-      ) : row;
+      ) : (
+        row
+      );
     }
 
     if (item.kind === "failed_run") {
@@ -148,14 +145,12 @@ export function InboxWorkItemList({
         />
       );
       return isMineTab ? (
-        <SwipeToArchive
-          key={runKey}
-          disabled={isArchiving}
-          onArchive={() => handleArchiveNonIssue(runKey)}
-        >
+        <SwipeToArchive key={runKey} disabled={isArchiving} onArchive={() => handleArchiveNonIssue(runKey)}>
           {row}
         </SwipeToArchive>
-      ) : row;
+      ) : (
+        row
+      );
     }
 
     if (item.kind === "join_request") {
@@ -182,14 +177,12 @@ export function InboxWorkItemList({
         />
       );
       return isMineTab ? (
-        <SwipeToArchive
-          key={joinKey}
-          disabled={isArchiving}
-          onArchive={() => handleArchiveNonIssue(joinKey)}
-        >
+        <SwipeToArchive key={joinKey} disabled={isArchiving} onArchive={() => handleArchiveNonIssue(joinKey)}>
           {row}
         </SwipeToArchive>
-      ) : row;
+      ) : (
+        row
+      );
     }
 
     const issue = item.issue;
@@ -210,7 +203,7 @@ export function InboxWorkItemList({
           isSelected && "list-item-selected",
           getSeverityBorderClass({ kind: "issue", status: issue.status }),
         )}
-        desktopMetaLeading={(
+        desktopMetaLeading={
           <>
             <span className="hidden shrink-0 sm:inline-flex">
               <StatusIcon status={issue.status} />
@@ -224,27 +217,19 @@ export function InboxWorkItemList({
                   <span className="absolute inline-flex h-full w-full animate-pulse rounded-full bg-blue-400 opacity-75" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-500" />
                 </span>
-                <span className="hidden text-[11px] font-medium text-blue-600 dark:text-blue-400 sm:inline">
-                  Live
-                </span>
+                <span className="hidden text-[11px] font-medium text-blue-600 dark:text-blue-400 sm:inline">Live</span>
               </span>
             )}
           </>
-        )}
+        }
         mobileMeta={
           issue.lastExternalCommentAt
             ? `commented ${timeAgo(issue.lastExternalCommentAt)}`
             : `updated ${timeAgo(issue.updatedAt)}`
         }
-        unreadState={
-          isUnread ? "visible" : isFading ? "fading" : "hidden"
-        }
+        unreadState={isUnread ? "visible" : isFading ? "fading" : "hidden"}
         onMarkRead={() => onMarkReadIssue(issue.id)}
-        onArchive={
-          isMineTab
-            ? () => onArchiveIssue(issue.id)
-            : undefined
-        }
+        onArchive={isMineTab ? () => onArchiveIssue(issue.id) : undefined}
         archiveDisabled={isArchiving || archiveIssueMutation.isPending}
         trailingMeta={
           issue.lastExternalCommentAt
@@ -262,14 +247,20 @@ export function InboxWorkItemList({
       >
         {row}
       </SwipeToArchive>
-    ) : row;
+    ) : (
+      row
+    );
 
     return isMineTab ? (
       <div key={`issue-sel:${issue.id}`} className="group/sel relative">
         {wrappedRow}
         <button
           type="button"
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleToggleIssue(issue.id); }}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleToggleIssue(issue.id);
+          }}
           className={cn(
             "absolute left-0 top-0 hidden h-full w-7 items-center justify-center sm:flex",
             isSelected ? "opacity-100" : "opacity-0 group-hover/sel:opacity-100",
@@ -284,23 +275,25 @@ export function InboxWorkItemList({
           />
         </button>
       </div>
-    ) : wrappedRow;
+    ) : (
+      wrappedRow
+    );
   }
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card">
-      {(groupedByAgent && groupedByAgent.size > 0 ? (
-        Array.from(groupedByAgent.entries()).map(([groupKey, groupItems]) => (
-          <div key={groupKey}>
-            <div className="bg-muted/40 px-4 py-1.5 text-xs font-medium text-muted-foreground border-b border-border">
-              {groupKey === "__unassigned__" ? "Unassigned" : agentName(groupKey) ?? groupKey.slice(0, 8)}
-            </div>
-            {groupItems.map((item) => renderWorkItem(item))}
-          </div>
-        ))
-      ) : (
-        workItemsToRender.map((item) => renderWorkItem(item))
-      )) as React.ReactNode}
+      {
+        (groupedByAgent && groupedByAgent.size > 0
+          ? Array.from(groupedByAgent.entries()).map(([groupKey, groupItems]) => (
+              <div key={groupKey}>
+                <div className="bg-muted/40 px-4 py-1.5 text-xs font-medium text-muted-foreground border-b border-border">
+                  {groupKey === "__unassigned__" ? "Unassigned" : (agentName(groupKey) ?? groupKey.slice(0, 8))}
+                </div>
+                {groupItems.map((item) => renderWorkItem(item))}
+              </div>
+            ))
+          : workItemsToRender.map((item) => renderWorkItem(item))) as React.ReactNode
+      }
     </div>
   );
 }

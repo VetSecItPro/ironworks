@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -171,9 +171,7 @@ describe("project routes", () => {
 
     it("rejects unauthenticated create with 401", async () => {
       const app = await createApp(noActor());
-      const res = await request(app)
-        .post(`/api/companies/${COMPANY_ID}/projects`)
-        .send({ name: "Test" });
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/projects`).send({ name: "Test" });
       expect(res.status).toBe(401);
     });
   });
@@ -183,9 +181,7 @@ describe("project routes", () => {
       const updated = { ...MOCK_PROJECT, name: "Ironworks Pro" };
       mockProjectService.update.mockResolvedValue(updated);
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .patch(`/api/projects/${PROJECT_ID}`)
-        .send({ name: "Ironworks Pro" });
+      const res = await request(app).patch(`/api/projects/${PROJECT_ID}`).send({ name: "Ironworks Pro" });
 
       expect(res.status).toBe(200);
       expect(res.body.name).toBe("Ironworks Pro");
@@ -206,9 +202,7 @@ describe("project routes", () => {
     it("returns 404 for non-existent project update", async () => {
       mockProjectService.getById.mockResolvedValue(null);
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .patch(`/api/projects/${randomUUID()}`)
-        .send({ name: "Updated" });
+      const res = await request(app).patch(`/api/projects/${randomUUID()}`).send({ name: "Updated" });
       expect(res.status).toBe(404);
     });
   });
@@ -267,8 +261,7 @@ describe("project routes", () => {
     it("generates a client update report", async () => {
       mockGenerateClientUpdate.mockResolvedValue("## Weekly Update\nAll good.");
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post(`/api/companies/${COMPANY_ID}/projects/${PROJECT_ID}/client-update`);
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/projects/${PROJECT_ID}/client-update`);
 
       expect(res.status).toBe(201);
       expect(res.body.markdown).toContain("Weekly Update");

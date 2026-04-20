@@ -1,10 +1,10 @@
-import { useState } from "react";
 import type { BudgetIncident } from "@ironworksai/shared";
 import { AlertOctagon, ArrowUpRight, PauseCircle } from "lucide-react";
-import { formatCents } from "../lib/utils";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { formatCents } from "../lib/utils";
 
 function centsInputValue(value: number) {
   return (value / 100).toFixed(2);
@@ -42,7 +42,8 @@ export function BudgetIncidentCard({
             </div>
             <CardTitle className="mt-1 text-base text-red-50">{incident.scopeName}</CardTitle>
             <CardDescription className="mt-1 text-red-100/70">
-              Spending reached {formatCents(incident.amountObserved)} against a limit of {formatCents(incident.amountLimit)}.
+              Spending reached {formatCents(incident.amountObserved)} against a limit of{" "}
+              {formatCents(incident.amountLimit)}.
             </CardDescription>
           </div>
           <div className="rounded-full border border-red-400/30 bg-red-500/10 p-2 text-red-200">
@@ -61,9 +62,7 @@ export function BudgetIncidentCard({
         </div>
 
         <div className="rounded-xl border border-border/60 bg-background/60 p-3">
-          <label className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-            New budget (USD)
-          </label>
+          <label className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">New budget (USD)</label>
           <div className="mt-2 flex flex-col gap-3 sm:flex-row">
             <Input
               value={draftAmount}
@@ -83,9 +82,7 @@ export function BudgetIncidentCard({
             </Button>
           </div>
           {parsed !== null && parsed <= incident.amountObserved ? (
-            <p className="mt-2 text-xs text-red-200/80">
-              The new budget must exceed current observed spend.
-            </p>
+            <p className="mt-2 text-xs text-red-200/80">The new budget must exceed current observed spend.</p>
           ) : null}
         </div>
 

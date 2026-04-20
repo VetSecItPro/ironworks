@@ -1,13 +1,20 @@
-import type { CostByProviderModel, CostByBiller } from "@ironworksai/shared";
-import { formatCents, formatTokens, providerDisplayName } from "../../lib/utils";
+import type { CostByBiller, CostByProviderModel } from "@ironworksai/shared";
 import { totalEquivalentSpendCents as totalEquivSpend } from "../../lib/equivalent-spend";
+import { formatCents, formatTokens, providerDisplayName } from "../../lib/utils";
 
 export function ProviderTabLabel({ provider, rows }: { provider: string; rows: CostByProviderModel[] }) {
   const totalTokens = rows.reduce((sum, row) => sum + row.inputTokens + row.cachedInputTokens + row.outputTokens, 0);
   const totalCost = rows.reduce((sum, row) => sum + row.costCents, 0);
   const isSubOnly = totalCost === 0 && totalTokens > 0;
   const equivCents = isSubOnly
-    ? totalEquivSpend(rows.map((r) => ({ model: r.model, inputTokens: r.inputTokens, cachedInputTokens: r.cachedInputTokens, outputTokens: r.outputTokens })))
+    ? totalEquivSpend(
+        rows.map((r) => ({
+          model: r.model,
+          inputTokens: r.inputTokens,
+          cachedInputTokens: r.cachedInputTokens,
+          outputTokens: r.outputTokens,
+        })),
+      )
     : 0;
   return (
     <span className="flex items-center gap-1.5">

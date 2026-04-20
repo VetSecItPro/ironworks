@@ -1,6 +1,6 @@
-import { and, eq, desc } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { activityLog } from "@ironworksai/db";
+import { and, desc, eq } from "drizzle-orm";
 import { logActivity } from "./activity-log.js";
 
 export interface CompanyRiskSettings {
@@ -20,19 +20,11 @@ const DEFAULT_SETTINGS: CompanyRiskSettings = {
  * Read the latest risk settings for a company.
  * Falls back to defaults if none have been saved.
  */
-export async function getRiskSettings(
-  db: Db,
-  companyId: string,
-): Promise<CompanyRiskSettings> {
+export async function getRiskSettings(db: Db, companyId: string): Promise<CompanyRiskSettings> {
   const rows = await db
     .select()
     .from(activityLog)
-    .where(
-      and(
-        eq(activityLog.companyId, companyId),
-        eq(activityLog.action, SETTINGS_ACTION),
-      ),
-    )
+    .where(and(eq(activityLog.companyId, companyId), eq(activityLog.action, SETTINGS_ACTION)))
     .orderBy(desc(activityLog.createdAt))
     .limit(1);
 
@@ -59,12 +51,9 @@ export async function updateRiskSettings(
 ): Promise<CompanyRiskSettings> {
   const current = await getRiskSettings(db, companyId);
   const merged: CompanyRiskSettings = {
-    spendingAlertThresholdCents:
-      settings.spendingAlertThresholdCents ?? current.spendingAlertThresholdCents,
-    performanceAlertThreshold:
-      settings.performanceAlertThreshold ?? current.performanceAlertThreshold,
-    autoResolveTimeoutHours:
-      settings.autoResolveTimeoutHours ?? current.autoResolveTimeoutHours,
+    spendingAlertThresholdCents: settings.spendingAlertThresholdCents ?? current.spendingAlertThresholdCents,
+    performanceAlertThreshold: settings.performanceAlertThreshold ?? current.performanceAlertThreshold,
+    autoResolveTimeoutHours: settings.autoResolveTimeoutHours ?? current.autoResolveTimeoutHours,
   };
 
   await logActivity(db, {

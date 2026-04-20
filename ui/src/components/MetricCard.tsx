@@ -1,8 +1,8 @@
 import type { LucideIcon } from "lucide-react";
-import { memo } from "react";
-import type { ReactNode } from "react";
-import { Link } from "@/lib/router";
 import { ChevronRight } from "lucide-react";
+import type { ReactNode } from "react";
+import { memo } from "react";
+import { Link } from "@/lib/router";
 
 interface MetricCardProps {
   icon: LucideIcon;
@@ -30,23 +30,33 @@ const ACCENT_ICON: Record<string, string> = {
   red: "text-red-500/60",
 };
 
-export const MetricCard = memo(function MetricCard({ icon: Icon, value, label, description, to, onClick, accentColor }: MetricCardProps) {
+export const MetricCard = memo(function MetricCard({
+  icon: Icon,
+  value,
+  label,
+  description,
+  to,
+  onClick,
+  accentColor,
+}: MetricCardProps) {
   const isClickable = !!(to || onClick);
   const borderClass = accentColor ? `border-l-[3px] ${ACCENT_BORDER[accentColor]}` : "";
   const iconColor = accentColor ? ACCENT_ICON[accentColor] : "text-muted-foreground/70";
 
   const inner = (
-    <div className={`relative h-full px-4 py-4 sm:px-5 sm:py-5 rounded-lg border border-border bg-card transition-all overflow-hidden ${borderClass}${isClickable ? " hover:-translate-y-0.5 hover:shadow-md cursor-pointer" : ""}`}>
+    <div
+      className={`relative h-full px-4 py-4 sm:px-5 sm:py-5 rounded-lg border border-border bg-card transition-all overflow-hidden ${borderClass}${isClickable ? " hover:-translate-y-0.5 hover:shadow-md cursor-pointer" : ""}`}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium text-muted-foreground/70 uppercase tracking-wider">
-            {label}
-          </p>
+          <p className="text-xs font-medium text-muted-foreground/70 uppercase tracking-wider">{label}</p>
           <p className="text-3xl sm:text-4xl font-bold tracking-tight [font-variant-numeric:tabular-nums] mt-1">
             {value}
           </p>
           {description && (
-            <div className="text-sm text-muted-foreground/80 mt-1.5 hidden sm:block [font-variant-numeric:tabular-nums]">{description}</div>
+            <div className="text-sm text-muted-foreground/80 mt-1.5 hidden sm:block [font-variant-numeric:tabular-nums]">
+              {description}
+            </div>
           )}
         </div>
         <div className="flex flex-col items-center gap-2 shrink-0 mt-0.5">

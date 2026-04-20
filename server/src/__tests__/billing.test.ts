@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -46,8 +46,22 @@ vi.mock("../services/billing.js", () => ({
   verifyPolarWebhookSignature: mockVerifyPolarWebhookSignature,
   PLAN_DEFINITIONS: {
     starter: { name: "Starter", priceMonthly: 0, agentLimit: 5, storageGb: 1, projectLimit: 3, productId: null },
-    growth: { name: "Growth", priceMonthly: 2900, agentLimit: 20, storageGb: 10, projectLimit: 10, productId: "prod_growth" },
-    business: { name: "Business", priceMonthly: 9900, agentLimit: 100, storageGb: 50, projectLimit: 50, productId: "prod_business" },
+    growth: {
+      name: "Growth",
+      priceMonthly: 2900,
+      agentLimit: 20,
+      storageGb: 10,
+      projectLimit: 10,
+      productId: "prod_growth",
+    },
+    business: {
+      name: "Business",
+      priceMonthly: 9900,
+      agentLimit: 100,
+      storageGb: 50,
+      projectLimit: 50,
+      productId: "prod_business",
+    },
   },
 }));
 
@@ -67,9 +81,13 @@ async function createApp(actor: Record<string, unknown>) {
   const { errorHandler } = await import("../middleware/error-handler.js");
 
   const app = express();
-  app.use(express.json({
-    verify: (req: any, _res, buf) => { req.rawBody = buf; },
-  }));
+  app.use(
+    express.json({
+      verify: (req: any, _res, buf) => {
+        req.rawBody = buf;
+      },
+    }),
+  );
   app.use((req, _res, next) => {
     (req as any).actor = actor;
     next();
@@ -137,9 +155,7 @@ describe("billing routes", () => {
 
     it("rejects missing successUrl/cancelUrl with 400", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post(`/api/companies/${COMPANY_ID}/billing/checkout`)
-        .send({ planTier: "growth" });
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/billing/checkout`).send({ planTier: "growth" });
 
       expect(res.status).toBe(400);
       expect(res.body.error).toContain("successUrl and cancelUrl are required");
@@ -178,9 +194,7 @@ describe("billing routes", () => {
   describe("POST /api/webhooks/polar", () => {
     it("rejects missing webhook headers with 400", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post("/api/webhooks/polar")
-        .send({ type: "subscription.created" });
+      const res = await request(app).post("/api/webhooks/polar").send({ type: "subscription.created" });
 
       expect(res.status).toBe(400);
       expect(res.body.error).toContain("Missing required Standard Webhooks headers");

@@ -1,11 +1,7 @@
-import type { RefObject, DragEvent } from "react";
-import {
-  Paperclip,
-  FileText,
-  X,
-} from "lucide-react";
-import { cn } from "../../lib/utils";
+import { FileText, Paperclip, X } from "lucide-react";
+import type { DragEvent, RefObject } from "react";
 import { Button } from "@/components/ui/button";
+import { cn } from "../../lib/utils";
 import { MarkdownEditor, type MarkdownEditorRef, type MentionOption } from "../MarkdownEditor";
 import { formatFileSize, type StagedIssueFile } from "./constants";
 
@@ -53,12 +49,7 @@ export function DescriptionSection({
       onDragLeave={handleFileDragLeave}
       onDrop={handleFileDrop}
     >
-      <div
-        className={cn(
-          "rounded-md transition-colors",
-          isFileDragOver && "bg-accent/20",
-        )}
-      >
+      <div className={cn("rounded-md transition-colors", isFileDragOver && "bg-accent/20")}>
         <MarkdownEditor
           ref={descriptionEditorRef}
           value={description}
@@ -77,7 +68,10 @@ export function DescriptionSection({
               <div className="text-xs font-medium text-muted-foreground">Documents</div>
               <div className="space-y-2">
                 {stagedDocuments.map((file) => (
-                  <div key={file.id} className="flex items-start justify-between gap-3 rounded-md border border-border/70 px-3 py-2">
+                  <div
+                    key={file.id}
+                    className="flex items-start justify-between gap-3 rounded-md border border-border/70 px-3 py-2"
+                  >
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="rounded-full border border-border px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
@@ -113,7 +107,10 @@ export function DescriptionSection({
               <div className="text-xs font-medium text-muted-foreground">Attachments</div>
               <div className="space-y-2">
                 {stagedAttachments.map((file) => (
-                  <div key={file.id} className="flex items-start justify-between gap-3 rounded-md border border-border/70 px-3 py-2">
+                  <div
+                    key={file.id}
+                    className="flex items-start justify-between gap-3 rounded-md border border-border/70 px-3 py-2"
+                  >
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <Paperclip className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />

@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { assertCompanyAccess } from "./authz.js";
 import { webSearch } from "../services/web-search.js";
+import { assertCompanyAccess } from "./authz.js";
 
 export function searchRoutes() {
   const router = Router();

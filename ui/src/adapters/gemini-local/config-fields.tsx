@@ -1,9 +1,6 @@
-import type { AdapterConfigFieldsProps } from "../types";
-import {
-  DraftInput,
-  Field,
-} from "../../components/agent-config-primitives";
+import { DraftInput, Field } from "../../components/agent-config-primitives";
 import { ChoosePathButton } from "../../components/PathInstructionsModal";
+import type { AdapterConfigFieldsProps } from "../types";
 
 const inputClass =
   "w-full rounded-md border border-border px-2.5 py-1.5 bg-transparent outline-none text-sm font-mono placeholder:text-muted-foreground/40";
@@ -27,12 +24,8 @@ export function GeminiLocalConfigFields({
           <DraftInput
             value={
               isCreate
-                ? values!.instructionsFilePath ?? ""
-                : eff(
-                    "adapterConfig",
-                    "instructionsFilePath",
-                    String(config.instructionsFilePath ?? ""),
-                  )
+                ? (values!.instructionsFilePath ?? "")
+                : eff("adapterConfig", "instructionsFilePath", String(config.instructionsFilePath ?? ""))
             }
             onCommit={(v) =>
               isCreate

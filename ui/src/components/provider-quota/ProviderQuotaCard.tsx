@@ -1,17 +1,13 @@
-import { memo, useMemo } from "react";
 import type { CostByProviderModel, CostWindowSpendRow, QuotaWindow } from "@ironworksai/shared";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { QuotaBar } from "../QuotaBar";
-import {
-  formatCents,
-  formatTokens,
-  providerDisplayName,
-} from "@/lib/utils";
+import { memo, useMemo } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { totalEquivalentSpendCents } from "@/lib/equivalent-spend";
-import { RollingWindowsSection } from "./RollingWindowsSection";
-import { SubscriptionSection } from "./SubscriptionSection";
+import { formatCents, formatTokens, providerDisplayName } from "@/lib/utils";
+import { QuotaBar } from "../QuotaBar";
 import { ModelBreakdownSection } from "./ModelBreakdownSection";
+import { RollingWindowsSection } from "./RollingWindowsSection";
 import { SubscriptionQuotaSection } from "./SubscriptionQuotaSection";
+import { SubscriptionSection } from "./SubscriptionSection";
 
 interface ProviderQuotaCardProps {
   provider: string;
@@ -41,8 +37,13 @@ export const ProviderQuotaCard = memo(function ProviderQuotaCard({
   quotaLoading = false,
 }: ProviderQuotaCardProps) {
   const totals = useMemo(() => {
-    let inputTokens = 0, outputTokens = 0, costCents = 0;
-    let apiRunCount = 0, subRunCount = 0, subInputTokens = 0, subOutputTokens = 0;
+    let inputTokens = 0,
+      outputTokens = 0,
+      costCents = 0;
+    let apiRunCount = 0,
+      subRunCount = 0,
+      subInputTokens = 0,
+      subOutputTokens = 0;
     for (const r of rows) {
       inputTokens += r.inputTokens;
       outputTokens += r.outputTokens;
@@ -78,9 +79,17 @@ export const ProviderQuotaCard = memo(function ProviderQuotaCard({
   }, [rows]);
 
   const {
-    totalInputTokens, totalOutputTokens, totalTokens, totalCostCents,
-    totalApiRuns, totalSubRuns, totalSubInputTokens, totalSubOutputTokens,
-    totalSubTokens, subSharePct, equivalentCents,
+    totalInputTokens,
+    totalOutputTokens,
+    totalTokens,
+    totalCostCents,
+    totalApiRuns,
+    totalSubRuns,
+    totalSubInputTokens,
+    totalSubOutputTokens,
+    totalSubTokens,
+    subSharePct,
+    equivalentCents,
   } = totals;
 
   const isSubscriptionOnly = totalCostCents === 0 && totalTokens > 0;
@@ -88,11 +97,9 @@ export const ProviderQuotaCard = memo(function ProviderQuotaCard({
     budgetMonthlyCents > 0 && totalCompanySpendCents > 0
       ? (totalCostCents / totalCompanySpendCents) * budgetMonthlyCents
       : budgetMonthlyCents;
-  const budgetPct =
-    providerBudgetShare > 0 ? Math.min(100, (totalCostCents / providerBudgetShare) * 100) : 0;
+  const budgetPct = providerBudgetShare > 0 ? Math.min(100, (totalCostCents / providerBudgetShare) * 100) : 0;
   const weeklyBudgetShare = providerBudgetShare > 0 ? providerBudgetShare / 4.33 : 0;
-  const weekPct =
-    weeklyBudgetShare > 0 ? Math.min(100, (weekSpendCents / weeklyBudgetShare) * 100) : 0;
+  const weekPct = weeklyBudgetShare > 0 ? Math.min(100, (weekSpendCents / weeklyBudgetShare) * 100) : 0;
   const hasBudget = budgetMonthlyCents > 0;
 
   return (
@@ -103,11 +110,17 @@ export const ProviderQuotaCard = memo(function ProviderQuotaCard({
             <CardTitle className="text-sm font-semibold">
               {providerDisplayName(provider)}
               {isSubscriptionOnly ? (
-                <span className="ml-1.5 text-[10px] font-medium text-blue-500 bg-blue-500/10 px-1.5 py-0.5 rounded-full">Subscription</span>
+                <span className="ml-1.5 text-[10px] font-medium text-blue-500 bg-blue-500/10 px-1.5 py-0.5 rounded-full">
+                  Subscription
+                </span>
               ) : (totalSubRuns > 0 || totalSubTokens > 0) && (totalApiRuns > 0 || totalCostCents > 0) ? (
-                <span className="ml-1.5 text-[10px] font-medium text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded-full">Mixed</span>
+                <span className="ml-1.5 text-[10px] font-medium text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded-full">
+                  Mixed
+                </span>
               ) : totalApiRuns > 0 || totalCostCents > 0 ? (
-                <span className="ml-1.5 text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">API</span>
+                <span className="ml-1.5 text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
+                  API
+                </span>
               ) : null}
             </CardTitle>
             <CardDescription className="text-xs mt-0.5">
@@ -116,8 +129,7 @@ export const ProviderQuotaCard = memo(function ProviderQuotaCard({
               <span className="font-mono">{formatTokens(totalOutputTokens)}</span> out
               {(totalApiRuns > 0 || totalSubRuns > 0) && (
                 <span className="ml-1.5">
-                  ·{" "}
-                  {totalApiRuns > 0 && `~${totalApiRuns} api`}
+                  · {totalApiRuns > 0 && `~${totalApiRuns} api`}
                   {totalApiRuns > 0 && totalSubRuns > 0 && " / "}
                   {totalSubRuns > 0 && `~${totalSubRuns} sub`}
                   {" runs"}
@@ -128,15 +140,11 @@ export const ProviderQuotaCard = memo(function ProviderQuotaCard({
           <div className="text-right shrink-0">
             {isSubscriptionOnly ? (
               <>
-                <span className="text-xl font-bold tabular-nums text-blue-500">
-                  ~{formatCents(equivalentCents)}
-                </span>
+                <span className="text-xl font-bold tabular-nums text-blue-500">~{formatCents(equivalentCents)}</span>
                 <div className="text-[10px] text-muted-foreground mt-0.5">equivalent spend</div>
               </>
             ) : (
-              <span className="text-xl font-bold tabular-nums">
-                {formatCents(totalCostCents)}
-              </span>
+              <span className="text-xl font-bold tabular-nums">{formatCents(totalCostCents)}</span>
             )}
           </div>
         </div>
@@ -177,11 +185,7 @@ export const ProviderQuotaCard = memo(function ProviderQuotaCard({
           subSharePct={subSharePct}
         />
 
-        <ModelBreakdownSection
-          rows={rows}
-          totalTokens={totalTokens}
-          totalCostCents={totalCostCents}
-        />
+        <ModelBreakdownSection rows={rows} totalTokens={totalTokens} totalCostCents={totalCostCents} />
 
         <SubscriptionQuotaSection
           provider={provider}

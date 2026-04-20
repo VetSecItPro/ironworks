@@ -32,7 +32,7 @@
   <link rel="stylesheet" href="/design-system.css">
   <style>
     .check { color: #10b981; }
-    .dash { color: #3f3f46; }
+        .dash { color: #3f3f46; }
   </style>
 
   <script type="application/ld+json">
@@ -512,39 +512,39 @@
   </footer>
 
   <script>
-    (function () {
-      'use strict';
-      var monthly = { starter: '$79', growth: '$199', business: '$599' };
-      var annual  = { starter: '$63', growth: '$159', business: '$479' };
+    ((() => {
+          'use strict';
+          var monthly = { starter: '$79', growth: '$199', business: '$599' };
+          var annual  = { starter: '$63', growth: '$159', business: '$479' };
 
-      function setBilling(mode) {
-        var prices = mode === 'annual' ? annual : monthly;
-        document.getElementById('starter-price').textContent  = prices.starter;
-        document.getElementById('growth-price').textContent   = prices.growth;
-        document.getElementById('business-price').textContent = prices.business;
+          function setBilling(mode) {
+            var prices = mode === 'annual' ? annual : monthly;
+            document.getElementById('starter-price').textContent  = prices.starter;
+            document.getElementById('growth-price').textContent   = prices.growth;
+            document.getElementById('business-price').textContent = prices.business;
 
-        var showAnnual = mode === 'annual';
-        ['starter-annual-note', 'growth-annual-note', 'business-annual-note'].forEach(function (id) {
-          document.getElementById(id).classList.toggle('hidden', !showAnnual);
-        });
-        document.getElementById('annual-note').classList.toggle('hidden', !showAnnual);
-        document.getElementById('btn-monthly').classList.toggle('active', mode === 'monthly');
-        document.getElementById('btn-annual').classList.toggle('active', mode === 'annual');
-      }
+            var showAnnual = mode === 'annual';
+            ['starter-annual-note', 'growth-annual-note', 'business-annual-note'].forEach((id) => {
+              document.getElementById(id).classList.toggle('hidden', !showAnnual);
+            });
+            document.getElementById('annual-note').classList.toggle('hidden', !showAnnual);
+            document.getElementById('btn-monthly').classList.toggle('active', mode === 'monthly');
+            document.getElementById('btn-annual').classList.toggle('active', mode === 'annual');
+          }
 
-      document.getElementById('btn-monthly').addEventListener('click', function () {
-        setBilling('monthly');
-        document.getElementById('btn-monthly').setAttribute('aria-pressed', 'true');
-        document.getElementById('btn-annual').setAttribute('aria-pressed', 'false');
-      });
-      document.getElementById('btn-annual').addEventListener('click', function () {
-        setBilling('annual');
-        document.getElementById('btn-monthly').setAttribute('aria-pressed', 'false');
-        document.getElementById('btn-annual').setAttribute('aria-pressed', 'true');
-      });
-    }());
+          document.getElementById('btn-monthly').addEventListener('click', () => {
+            setBilling('monthly');
+            document.getElementById('btn-monthly').setAttribute('aria-pressed', 'true');
+            document.getElementById('btn-annual').setAttribute('aria-pressed', 'false');
+          });
+          document.getElementById('btn-annual').addEventListener('click', () => {
+            setBilling('annual');
+            document.getElementById('btn-monthly').setAttribute('aria-pressed', 'false');
+            document.getElementById('btn-annual').setAttribute('aria-pressed', 'true');
+          });
+        })());
   </script>
 
-  <script>(function(){var t=document.getElementById("nav-toggle"),n=document.getElementById("mobile-nav");if(t&&n){t.addEventListener("click",function(){var open=n.classList.toggle("hidden");t.setAttribute("aria-expanded",open?"false":"true");});}})();</script>
+  <script>(()=> {var t=document.getElementById("nav-toggle"),n=document.getElementById("mobile-nav");if(t&&n){t.addEventListener("click",()=> {var open=n.classList.toggle("hidden");t.setAttribute("aria-expanded",open?"false":"true");});}})();</script>
 </body>
 </html>

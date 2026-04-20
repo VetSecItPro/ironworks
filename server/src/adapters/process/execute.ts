@@ -1,14 +1,14 @@
+import { PROMPT_MAX_LENGTHS, redactSecrets, sanitizeForPrompt } from "../../lib/prompt-security.js";
 import type { AdapterExecutionContext, AdapterExecutionResult } from "../types.js";
 import {
-  asString,
   asNumber,
+  asString,
   asStringArray,
-  parseObject,
   buildIronworksEnv,
+  parseObject,
   redactEnvForLogs,
   runChildProcess,
 } from "../utils.js";
-import { sanitizeForPrompt, redactSecrets, PROMPT_MAX_LENGTHS } from "../../lib/prompt-security.js";
 
 export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExecutionResult> {
   const { runId, agent, config, onLog, onMeta, context } = ctx;
@@ -41,8 +41,17 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
 
   // SEC-TAINT-001: Block arbitrary command execution. Only permit known adapter binaries.
   const ALLOWED_COMMANDS = new Set([
-    "claude", "codex", "opencode", "aider", "cursor", "pi",
-    "npx", "node", "tsx", "python", "python3",
+    "claude",
+    "codex",
+    "opencode",
+    "aider",
+    "cursor",
+    "pi",
+    "npx",
+    "node",
+    "tsx",
+    "python",
+    "python3",
   ]);
   const basename = command.split("/").pop() ?? "";
   if (!ALLOWED_COMMANDS.has(basename)) {

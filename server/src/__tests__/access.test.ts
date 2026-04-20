@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -53,7 +53,9 @@ const mockBudgetService = vi.hoisted(() => ({
 
 const mockLogActivity = vi.hoisted(() => vi.fn());
 const mockNotifyHireApproved = vi.hoisted(() => vi.fn());
-const mockDeduplicateAgentName = vi.hoisted(() => vi.fn().mockImplementation((_db: any, _cid: any, name: string) => name));
+const mockDeduplicateAgentName = vi.hoisted(() =>
+  vi.fn().mockImplementation((_db: any, _cid: any, name: string) => name),
+);
 
 vi.mock("../services/index.js", () => ({
   accessService: () => mockAccessService,
@@ -151,9 +153,7 @@ describe("access routes", () => {
     it("rejects invite creation without board access (agent actor)", async () => {
       const agentActor = { type: "agent", agentId: randomUUID(), companyId: COMPANY_ID, source: "agent_key" };
       const app = await createApp(agentActor);
-      const res = await request(app)
-        .post(`/api/companies/${COMPANY_ID}/invites`)
-        .send({});
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/invites`).send({});
 
       // Agent actors should be blocked from board-only actions
       expect(res.status).toBeGreaterThanOrEqual(400);
@@ -162,9 +162,7 @@ describe("access routes", () => {
     it("rejects invite without permission", async () => {
       mockAccessService.hasPermission.mockResolvedValue(false);
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post(`/api/companies/${COMPANY_ID}/invites`)
-        .send({ role: "engineer" });
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/invites`).send({ role: "engineer" });
 
       // Should fail because body is validated via Zod schema
       expect(res.status).toBeGreaterThanOrEqual(400);

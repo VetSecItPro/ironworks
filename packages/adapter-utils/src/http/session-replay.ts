@@ -10,12 +10,12 @@
  * through `AdapterExecutionResult.sessionParams` without any class instances.
  */
 
-export type Role = 'user' | 'assistant';
+export type Role = "user" | "assistant";
 
 export type ContentBlock =
-  | { type: 'text'; text: string }
-  | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }
-  | { type: 'tool_result'; tool_use_id: string; content: string; is_error?: boolean };
+  | { type: "text"; text: string }
+  | { type: "tool_use"; id: string; name: string; input: Record<string, unknown> }
+  | { type: "tool_result"; tool_use_id: string; content: string; is_error?: boolean };
 
 export interface MessageTurn {
   role: Role;
@@ -26,7 +26,7 @@ export interface SessionState {
   turns: MessageTurn[];
 }
 
-export type TranscriptFormat = 'openai' | 'anthropic';
+export type TranscriptFormat = "openai" | "anthropic";
 
 export interface BuildTranscriptOptions {
   format: TranscriptFormat;
@@ -55,43 +55,37 @@ export function appendTurn(state: SessionState, turn: MessageTurn): SessionState
  *   role message. Content blocks pass through unchanged — they are already in
  *   Anthropic wire format.
  */
-export function buildTranscript(
-  state: SessionState,
-  options: BuildTranscriptOptions,
-): unknown {
-  if (options.format === 'openai') return buildOpenAiTranscript(state, options.systemPrompt);
+export function buildTranscript(state: SessionState, options: BuildTranscriptOptions): unknown {
+  if (options.format === "openai") return buildOpenAiTranscript(state, options.systemPrompt);
   return buildAnthropicTranscript(state, options.systemPrompt);
 }
 
-function buildOpenAiTranscript(
-  state: SessionState,
-  systemPrompt: string | undefined,
-): unknown[] {
+function buildOpenAiTranscript(state: SessionState, systemPrompt: string | undefined): unknown[] {
   const messages: unknown[] = [];
 
   if (systemPrompt) {
-    messages.push({ role: 'system', content: systemPrompt });
+    messages.push({ role: "system", content: systemPrompt });
   }
 
   for (const turn of state.turns) {
-    if (typeof turn.content === 'string') {
+    if (typeof turn.content === "string") {
       messages.push({ role: turn.role, content: turn.content });
       continue;
     }
 
-    if (turn.role === 'assistant') {
+    if (turn.role === "assistant") {
       // Split text blocks from tool_use blocks. OpenAI expects tool_use as a
       // top-level tool_calls array rather than content blocks.
       const texts: string[] = [];
       const toolCalls: unknown[] = [];
 
       for (const block of turn.content) {
-        if (block.type === 'text') {
+        if (block.type === "text") {
           texts.push(block.text);
-        } else if (block.type === 'tool_use') {
+        } else if (block.type === "tool_use") {
           toolCalls.push({
             id: block.id,
-            type: 'function',
+            type: "function",
             function: {
               name: block.name,
               // OpenAI requires arguments as a JSON string, not an object
@@ -102,11 +96,11 @@ function buildOpenAiTranscript(
       }
 
       const msg: Record<string, unknown> = {
-        role: 'assistant',
+        role: "assistant",
         // OpenAI allows null content when tool_calls is present; empty string is
         // rejected by stricter parsers. Use null only when no text blocks exist
         // and tool_calls are present.
-        content: texts.length > 0 ? texts.join('') : (toolCalls.length > 0 ? null : ''),
+        content: texts.length > 0 ? texts.join("") : toolCalls.length > 0 ? null : "",
       };
       if (toolCalls.length > 0) msg.tool_calls = toolCalls;
       messages.push(msg);
@@ -117,14 +111,14 @@ function buildOpenAiTranscript(
     // Each block maps to its own message because OpenAI does not support
     // content arrays for tool results.
     for (const block of turn.content) {
-      if (block.type === 'tool_result') {
+      if (block.type === "tool_result") {
         messages.push({
-          role: 'tool',
+          role: "tool",
           tool_call_id: block.tool_use_id,
           content: block.content,
         });
-      } else if (block.type === 'text') {
-        messages.push({ role: 'user', content: block.text });
+      } else if (block.type === "text") {
+        messages.push({ role: "user", content: block.text });
       }
     }
   }
@@ -138,7 +132,7 @@ function buildAnthropicTranscript(
 ): { system?: string; messages: unknown[] } {
   // Anthropic content blocks are already in wire format, so turns pass through
   // unchanged. System prompt goes in its own top-level field.
-  const messages = state.turns.map(t => ({ role: t.role, content: t.content }));
+  const messages = state.turns.map((t) => ({ role: t.role, content: t.content }));
   const result: { system?: string; messages: unknown[] } = { messages };
   if (systemPrompt) result.system = systemPrompt;
   return result;
@@ -155,7 +149,7 @@ function buildAnthropicTranscript(
 export function serializeSession(state: SessionState): Record<string, unknown> {
   // Shallow-clone each turn to prevent caller mutations of original state
   // from affecting the serialized blob.
-  return { turns: state.turns.map(t => ({ ...t })) };
+  return { turns: state.turns.map((t) => ({ ...t })) };
 }
 
 /**
@@ -173,21 +167,21 @@ export function serializeSession(state: SessionState): Record<string, unknown> {
 export function deserializeSession(raw: unknown): SessionState {
   if (raw === null || raw === undefined) return { turns: [] };
 
-  if (typeof raw !== 'object' || Array.isArray(raw)) {
-    throw new Error('session params must be an object');
+  if (typeof raw !== "object" || Array.isArray(raw)) {
+    throw new Error("session params must be an object");
   }
 
   const turns = (raw as Record<string, unknown>).turns;
   if (!Array.isArray(turns)) {
-    throw new Error('session.turns must be an array');
+    throw new Error("session.turns must be an array");
   }
 
   for (const t of turns) {
-    if (typeof t !== 'object' || t === null) {
-      throw new Error('each turn must be an object');
+    if (typeof t !== "object" || t === null) {
+      throw new Error("each turn must be an object");
     }
     const role = (t as Record<string, unknown>).role;
-    if (role !== 'user' && role !== 'assistant') {
+    if (role !== "user" && role !== "assistant") {
       throw new Error(`invalid role: ${String(role)}`);
     }
   }
@@ -213,16 +207,16 @@ export function estimateTokens(state: SessionState, systemPrompt?: string): numb
   if (systemPrompt) chars += systemPrompt.length;
 
   for (const turn of state.turns) {
-    if (typeof turn.content === 'string') {
+    if (typeof turn.content === "string") {
       chars += turn.content.length;
     } else {
       for (const block of turn.content) {
-        if (block.type === 'text') {
+        if (block.type === "text") {
           chars += block.text.length;
-        } else if (block.type === 'tool_use') {
+        } else if (block.type === "tool_use") {
           // Include both the tool name and serialized input in the estimate
           chars += block.name.length + JSON.stringify(block.input).length;
-        } else if (block.type === 'tool_result') {
+        } else if (block.type === "tool_result") {
           chars += block.content.length;
         }
       }
@@ -241,9 +235,7 @@ export function estimateTokens(state: SessionState, systemPrompt?: string): numb
  * "[Previous conversation summary: ...]" so the model recognizes it as
  * compressed history rather than a genuine response.
  */
-export interface Compactor {
-  (turns: MessageTurn[]): Promise<string>;
-}
+export type Compactor = (turns: MessageTurn[]) => Promise<string>;
 
 export interface CompactionOptions {
   /** Token budget for the transcript after compaction. Default: 80,000 */
@@ -265,11 +257,7 @@ export interface CompactionOptions {
   preserveRecent?: number;
 }
 
-export type CompactionOutcome =
-  | 'no-op'
-  | 'compacted'
-  | 'truncated'
-  | 'compactor-failed-truncated';
+export type CompactionOutcome = "no-op" | "compacted" | "truncated" | "compactor-failed-truncated";
 
 export interface CompactionResult {
   outcome: CompactionOutcome;
@@ -295,10 +283,7 @@ export interface CompactionResult {
  *
  * Never mutates the input state.
  */
-export async function compactIfNeeded(
-  state: SessionState,
-  options: CompactionOptions = {},
-): Promise<CompactionResult> {
+export async function compactIfNeeded(state: SessionState, options: CompactionOptions = {}): Promise<CompactionResult> {
   const targetTokens = options.targetTokens ?? 80_000;
   const triggerTokens = options.triggerTokens ?? targetTokens * 1.5;
   const preserveRecent = options.preserveRecent ?? 4;
@@ -308,7 +293,13 @@ export async function compactIfNeeded(
 
   // Under trigger — nothing to do
   if (before <= triggerTokens) {
-    return { outcome: 'no-op', state, estimatedTokensBefore: before, estimatedTokensAfter: before, compactedTurnCount: 0 };
+    return {
+      outcome: "no-op",
+      state,
+      estimatedTokensBefore: before,
+      estimatedTokensAfter: before,
+      compactedTurnCount: 0,
+    };
   }
 
   const turns = state.turns;
@@ -316,7 +307,13 @@ export async function compactIfNeeded(
 
   // Not enough turns to split off anything — preserve recent wins, return no-op
   if (splitAt <= 0) {
-    return { outcome: 'no-op', state, estimatedTokensBefore: before, estimatedTokensAfter: before, compactedTurnCount: 0 };
+    return {
+      outcome: "no-op",
+      state,
+      estimatedTokensBefore: before,
+      estimatedTokensAfter: before,
+      compactedTurnCount: 0,
+    };
   }
 
   const toCompact = turns.slice(0, splitAt);
@@ -326,14 +323,14 @@ export async function compactIfNeeded(
   if (compactor) {
     try {
       const summary = await compactor(toCompact);
-      const summaryTurn: MessageTurn = { role: 'assistant', content: summary };
+      const summaryTurn: MessageTurn = { role: "assistant", content: summary };
       const compactedState: SessionState = { turns: [summaryTurn, ...toPreserve] };
       const after = estimateTokens(compactedState, systemPrompt);
       // Return 'compacted' whenever the compactor succeeds. Callers that need a
       // stricter budget guarantee should size targetTokens to account for the
       // preserved turns plus an expected summary size.
       return {
-        outcome: 'compacted',
+        outcome: "compacted",
         state: compactedState,
         estimatedTokensBefore: before,
         estimatedTokensAfter: after,
@@ -341,12 +338,20 @@ export async function compactIfNeeded(
       };
     } catch {
       // Compactor threw — fall back to truncation with the failure outcome
-      return hardTruncate(toPreserve, before, targetTokens, preserveRecent, systemPrompt, 'compactor-failed-truncated', turns);
+      return hardTruncate(
+        toPreserve,
+        before,
+        targetTokens,
+        preserveRecent,
+        systemPrompt,
+        "compactor-failed-truncated",
+        turns,
+      );
     }
   }
 
   // No compactor — straight to hard truncation
-  return hardTruncate(toPreserve, before, targetTokens, preserveRecent, systemPrompt, 'truncated', turns);
+  return hardTruncate(toPreserve, before, targetTokens, preserveRecent, systemPrompt, "truncated", turns);
 }
 
 /**
@@ -360,7 +365,7 @@ function hardTruncate(
   targetTokens: number,
   preserveRecent: number,
   systemPrompt: string | undefined,
-  outcome: 'truncated' | 'compactor-failed-truncated',
+  outcome: "truncated" | "compactor-failed-truncated",
   allTurns?: MessageTurn[],
 ): CompactionResult {
   // When the full turn list is provided, attempt to recover extra turns that fit

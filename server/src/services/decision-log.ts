@@ -1,6 +1,6 @@
 import type { Db } from "@ironworksai/db";
-import { logActivity } from "./activity-log.js";
 import { logger } from "../middleware/logger.js";
+import { logActivity } from "./activity-log.js";
 
 /**
  * Decision Log Service
@@ -30,8 +30,8 @@ export function extractDecisions(
   if (!resultJson) return [];
 
   const decisions: DecisionEntry[] = [];
-  const issueId = contextSnapshot?.issueId as string | null ?? null;
-  const issueTitle = contextSnapshot?.issueTitle as string | null ?? null;
+  const issueId = (contextSnapshot?.issueId as string | null) ?? null;
+  const issueTitle = (contextSnapshot?.issueTitle as string | null) ?? null;
 
   // Check for explicit decisions array in agent output
   const rawDecisions = resultJson.decisions;

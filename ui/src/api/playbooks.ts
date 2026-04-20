@@ -72,35 +72,33 @@ export interface RunPlaybookResult {
 }
 
 export const playbooksApi = {
-  list: (companyId: string) =>
-    api.get<Playbook[]>(`/companies/${encodeURIComponent(companyId)}/playbooks`),
+  list: (companyId: string) => api.get<Playbook[]>(`/companies/${encodeURIComponent(companyId)}/playbooks`),
 
   detail: (companyId: string, playbookId: string) =>
     api.get<PlaybookWithSteps>(
       `/companies/${encodeURIComponent(companyId)}/playbooks/${encodeURIComponent(playbookId)}`,
     ),
 
-  create: (companyId: string, payload: {
-    name: string;
-    description?: string;
-    body?: string;
-    icon?: string;
-    category?: string;
-    estimatedMinutes?: number;
-    steps?: Array<{
-      stepOrder: number;
-      title: string;
-      instructions?: string;
-      assigneeRole?: string;
-      dependsOn?: number[];
+  create: (
+    companyId: string,
+    payload: {
+      name: string;
+      description?: string;
+      body?: string;
+      icon?: string;
+      category?: string;
       estimatedMinutes?: number;
-      requiresApproval?: boolean;
-    }>;
-  }) =>
-    api.post<Playbook>(
-      `/companies/${encodeURIComponent(companyId)}/playbooks`,
-      payload,
-    ),
+      steps?: Array<{
+        stepOrder: number;
+        title: string;
+        instructions?: string;
+        assigneeRole?: string;
+        dependsOn?: number[];
+        estimatedMinutes?: number;
+        requiresApproval?: boolean;
+      }>;
+    },
+  ) => api.post<Playbook>(`/companies/${encodeURIComponent(companyId)}/playbooks`, payload),
 
   update: (companyId: string, playbookId: string, payload: Partial<Playbook>) =>
     api.patch<Playbook>(
@@ -109,15 +107,10 @@ export const playbooksApi = {
     ),
 
   delete: (companyId: string, playbookId: string) =>
-    api.delete<void>(
-      `/companies/${encodeURIComponent(companyId)}/playbooks/${encodeURIComponent(playbookId)}`,
-    ),
+    api.delete<void>(`/companies/${encodeURIComponent(companyId)}/playbooks/${encodeURIComponent(playbookId)}`),
 
   seed: (companyId: string) =>
-    api.post<{ seeded: boolean; count: number }>(
-      `/companies/${encodeURIComponent(companyId)}/playbooks/seed`,
-      {},
-    ),
+    api.post<{ seeded: boolean; count: number }>(`/companies/${encodeURIComponent(companyId)}/playbooks/seed`, {}),
 
   run: (companyId: string, playbookId: string, projectId?: string, name?: string, repoUrl?: string) =>
     api.post<RunPlaybookResult>(

@@ -14,9 +14,7 @@ export const sessionCodec: AdapterSessionCodec = {
       readNonEmptyString(record.session);
     if (!sessionId) return null;
     const cwd =
-      readNonEmptyString(record.cwd) ??
-      readNonEmptyString(record.workdir) ??
-      readNonEmptyString(record.folder);
+      readNonEmptyString(record.cwd) ?? readNonEmptyString(record.workdir) ?? readNonEmptyString(record.folder);
     return {
       sessionId,
       ...(cwd ? { cwd } : {}),
@@ -30,9 +28,7 @@ export const sessionCodec: AdapterSessionCodec = {
       readNonEmptyString(params.session);
     if (!sessionId) return null;
     const cwd =
-      readNonEmptyString(params.cwd) ??
-      readNonEmptyString(params.workdir) ??
-      readNonEmptyString(params.folder);
+      readNonEmptyString(params.cwd) ?? readNonEmptyString(params.workdir) ?? readNonEmptyString(params.folder);
     return {
       sessionId,
       ...(cwd ? { cwd } : {}),
@@ -49,13 +45,13 @@ export const sessionCodec: AdapterSessionCodec = {
 };
 
 export { execute } from "./execute.js";
-export { listPiSkills, syncPiSkills } from "./skills.js";
-export { testEnvironment } from "./test.js";
 export {
-  listPiModels,
   discoverPiModels,
   discoverPiModelsCached,
   ensurePiModelConfiguredAndAvailable,
+  listPiModels,
   resetPiModelsCacheForTests,
 } from "./models.js";
-export { parsePiJsonl, isPiUnknownSessionError } from "./parse.js";
+export { isPiUnknownSessionError, parsePiJsonl } from "./parse.js";
+export { listPiSkills, syncPiSkills } from "./skills.js";
+export { testEnvironment } from "./test.js";

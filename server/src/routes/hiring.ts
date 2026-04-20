@@ -1,23 +1,26 @@
-import { Router } from "express";
 import type { Db } from "@ironworksai/db";
-import {
-  agents as agentsTable,
-  companySubscriptions,
-  hiringRequests,
-} from "@ironworksai/db";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { agents as agentsTable, companySubscriptions, hiringRequests } from "@ironworksai/db";
 import {
   EMPLOYMENT_TYPES,
-  HIRING_REQUEST_STATUSES,
-  PLAN_AGENT_LIMITS,
   type EmploymentType,
+  HIRING_REQUEST_STATUSES,
   type HiringRequestStatus,
+  PLAN_AGENT_LIMITS,
 } from "@ironworksai/shared";
+import { and, desc, eq, sql } from "drizzle-orm";
+import { Router } from "express";
 import { badRequest, notFound, unprocessable } from "../errors.js";
-import { assertCanWrite, assertCompanyAccess, getActorInfo } from "./authz.js";
-import { logActivity, createAgentWorkspace, createHiringRecord, buildOnboardingPacket, approvalService, createEmploymentHistoryEntry } from "../services/index.js";
 import { logger } from "../middleware/logger.js";
 import { findCompanyChannel, postMessage as postChannelMessage } from "../services/channels.js";
+import {
+  approvalService,
+  buildOnboardingPacket,
+  createAgentWorkspace,
+  createEmploymentHistoryEntry,
+  createHiringRecord,
+  logActivity,
+} from "../services/index.js";
+import { assertCanWrite, assertCompanyAccess, getActorInfo } from "./authz.js";
 
 export function hiringRoutes(db: Db) {
   const router = Router();
@@ -69,9 +72,10 @@ export function hiringRoutes(db: Db) {
       throw badRequest("title is required");
     }
 
-    const resolvedEmploymentType = (typeof employmentType === "string" && EMPLOYMENT_TYPES.includes(employmentType as EmploymentType))
-      ? employmentType as string
-      : "full_time";
+    const resolvedEmploymentType =
+      typeof employmentType === "string" && EMPLOYMENT_TYPES.includes(employmentType as EmploymentType)
+        ? (employmentType as string)
+        : "full_time";
 
     const actor = getActorInfo(req);
     const row = await db
@@ -365,7 +369,9 @@ export function hiringRoutes(db: Db) {
             messageType: "announcement",
           });
         }
-      } catch { /* non-fatal */ }
+      } catch {
+        /* non-fatal */
+      }
     })();
 
     res.status(201).json(result);

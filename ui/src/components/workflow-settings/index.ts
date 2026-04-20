@@ -1,4 +1,4 @@
-export { StatusesSection } from "./StatusesSection";
 export { CustomFieldsSection } from "./CustomFieldsSection";
-export { loadStatuses, saveStatuses, loadFields, saveFields } from "./workflowTypes";
-export type { CustomStatus, CustomField } from "./workflowTypes";
+export { StatusesSection } from "./StatusesSection";
+export type { CustomField, CustomStatus } from "./workflowTypes";
+export { loadFields, loadStatuses, saveFields, saveStatuses } from "./workflowTypes";

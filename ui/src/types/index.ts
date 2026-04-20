@@ -1,20 +1,20 @@
 export type {
-  LiveFeedEvent,
   AggregatedGroup,
+  LiveFeedEvent,
 } from "./dashboard";
 
 export type {
-  InboxTab,
   InboxApprovalFilter,
-  InboxWorkItem,
   InboxBadgeData,
   InboxCategoryFilter,
-  SectionKey,
+  InboxTab,
+  InboxWorkItem,
   NonIssueUnreadState,
+  SectionKey,
 } from "./inbox";
 
 export type {
   AgentPerfRow,
-  TimeRange,
   SortField,
+  TimeRange,
 } from "./performance";

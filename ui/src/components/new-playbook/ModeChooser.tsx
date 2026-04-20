@@ -1,11 +1,5 @@
-import { PenLine, Bot } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Bot, PenLine } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface ModeChooserProps {
   open: boolean;
@@ -20,9 +14,7 @@ export function ModeChooser({ open, onOpenChange, onSelectManual, onSelectAuto }
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Create Playbook</DialogTitle>
-          <DialogDescription>
-            How would you like to create your playbook?
-          </DialogDescription>
+          <DialogDescription>How would you like to create your playbook?</DialogDescription>
         </DialogHeader>
 
         <div className="grid grid-cols-2 gap-3 py-4">
@@ -33,9 +25,7 @@ export function ModeChooser({ open, onOpenChange, onSelectManual, onSelectAuto }
             <PenLine className="h-8 w-8 text-muted-foreground" />
             <div className="text-center">
               <p className="text-sm font-medium">Manual</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Build step-by-step with a form
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">Build step-by-step with a form</p>
             </div>
           </button>
 
@@ -46,9 +36,7 @@ export function ModeChooser({ open, onOpenChange, onSelectManual, onSelectAuto }
             <Bot className="h-8 w-8 text-muted-foreground" />
             <div className="text-center">
               <p className="text-sm font-medium">AI-Assisted</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Describe it, AI generates it
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">Describe it, AI generates it</p>
             </div>
           </button>
         </div>

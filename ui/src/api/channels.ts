@@ -71,51 +71,29 @@ export interface QuorumResult {
 }
 
 export const channelsApi = {
-  list: (companyId: string) =>
-    api.get<Channel[]>(`/companies/${companyId}/channels`),
+  list: (companyId: string) => api.get<Channel[]>(`/companies/${companyId}/channels`),
   messages: (companyId: string, channelId: string, limit = 50) =>
-    api.get<ChannelMessage[]>(
-      `/companies/${companyId}/channels/${channelId}/messages?limit=${limit}`,
-    ),
+    api.get<ChannelMessage[]>(`/companies/${companyId}/channels/${channelId}/messages?limit=${limit}`),
   postMessage: (
     companyId: string,
     channelId: string,
     body: { body: string; messageType?: string; reasoning?: string; replyToId?: string },
-  ) =>
-    api.post<ChannelMessage>(
-      `/companies/${companyId}/channels/${channelId}/messages`,
-      body,
-    ),
+  ) => api.post<ChannelMessage>(`/companies/${companyId}/channels/${channelId}/messages`, body),
   decisions: (companyId: string, channelId: string) =>
-    api.get<DecisionRecord[]>(
-      `/companies/${companyId}/channels/${channelId}/decisions`,
-    ),
+    api.get<DecisionRecord[]>(`/companies/${companyId}/channels/${channelId}/decisions`),
   pinned: (companyId: string, channelId: string) =>
-    api.get<ChannelMessage[]>(
-      `/companies/${companyId}/channels/${channelId}/pinned`,
-    ),
+    api.get<ChannelMessage[]>(`/companies/${companyId}/channels/${channelId}/pinned`),
   pinMessage: (companyId: string, channelId: string, messageId: string) =>
-    api.post<{ ok: boolean }>(
-      `/companies/${companyId}/channels/${channelId}/messages/${messageId}/pin`,
-      {},
-    ),
+    api.post<{ ok: boolean }>(`/companies/${companyId}/channels/${channelId}/messages/${messageId}/pin`, {}),
   unpinMessage: (companyId: string, channelId: string, messageId: string) =>
-    api.delete<{ ok: boolean }>(
-      `/companies/${companyId}/channels/${channelId}/messages/${messageId}/pin`,
-    ),
+    api.delete<{ ok: boolean }>(`/companies/${companyId}/channels/${channelId}/messages/${messageId}/pin`),
   analytics: (companyId: string, channelId: string, periodDays = 30) =>
-    api.get<ChannelAnalytics>(
-      `/companies/${companyId}/channels/${channelId}/analytics?periodDays=${periodDays}`,
-    ),
+    api.get<ChannelAnalytics>(`/companies/${companyId}/channels/${channelId}/analytics?periodDays=${periodDays}`),
   deliberate: (
     companyId: string,
     channelId: string,
     body: { topic: string; invitedAgentIds: string[]; initiatedByAgentId?: string },
-  ) =>
-    api.post<{ deliberationId: string }>(
-      `/companies/${companyId}/channels/${channelId}/deliberate`,
-      body,
-    ),
+  ) => api.post<{ deliberationId: string }>(`/companies/${companyId}/channels/${channelId}/deliberate`, body),
   concludeDeliberation: (companyId: string, channelId: string, deliberationId: string) =>
     api.post<{ synthesis: string }>(
       `/companies/${companyId}/channels/${channelId}/deliberations/${deliberationId}/conclude`,
@@ -136,12 +114,9 @@ export const channelsApi = {
       `/companies/${companyId}/channels/${channelId}/fork-and-test`,
       body,
     ),
-  expertiseMap: (companyId: string) =>
-    api.get<AgentExpertise[]>(`/companies/${companyId}/expertise-map`),
+  expertiseMap: (companyId: string) => api.get<AgentExpertise[]>(`/companies/${companyId}/expertise-map`),
   summary: (companyId: string, channelId: string, days = 7) =>
-    api.get<ChannelSummary>(
-      `/companies/${companyId}/channels/${channelId}/summary?days=${days}`,
-    ),
+    api.get<ChannelSummary>(`/companies/${companyId}/channels/${channelId}/summary?days=${days}`),
   createIssueFromMessage: (
     companyId: string,
     channelId: string,
@@ -153,7 +128,5 @@ export const channelsApi = {
       body,
     ),
   quorum: (companyId: string, channelId: string, messageId: string) =>
-    api.get<QuorumResult>(
-      `/companies/${companyId}/channels/${channelId}/messages/${messageId}/quorum`,
-    ),
+    api.get<QuorumResult>(`/companies/${companyId}/channels/${channelId}/messages/${messageId}/quorum`),
 };

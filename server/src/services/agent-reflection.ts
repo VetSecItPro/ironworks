@@ -1,6 +1,15 @@
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import { agentMemoryEntries, agents, approvals, heartbeatRuns, issueApprovals, issueLabels, issues, labels } from "@ironworksai/db";
+import {
+  agentMemoryEntries,
+  agents,
+  approvals,
+  heartbeatRuns,
+  issueApprovals,
+  issueLabels,
+  issues,
+  labels,
+} from "@ironworksai/db";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 import { createDecisionRecord, updateTechDebtRegister } from "./agent-workspace.js";
 
@@ -79,9 +88,10 @@ export async function performPostTaskReflection(
   }
 
   // Always: create a task reflection summary
-  const reflectionContent = opts.outcome === "completed"
-    ? `Task completed: ${opts.issueTitle}. Runs: ${runCount}. ${runCount > 5 ? "This was a complex task requiring multiple iterations." : "Completed efficiently."}`
-    : `Task cancelled: ${opts.issueTitle}. Runs: ${runCount}. Review what went wrong.`;
+  const reflectionContent =
+    opts.outcome === "completed"
+      ? `Task completed: ${opts.issueTitle}. Runs: ${runCount}. ${runCount > 5 ? "This was a complex task requiring multiple iterations." : "Completed efficiently."}`
+      : `Task cancelled: ${opts.issueTitle}. Runs: ${runCount}. Review what went wrong.`;
 
   await db.insert(agentMemoryEntries).values({
     agentId: opts.agentId,
@@ -136,9 +146,19 @@ export async function performPostTaskReflection(
 
       if (isTechnicalRole) {
         const TECHNICAL_KEYWORDS = [
-          "architecture", "design", "infrastructure", "migration",
-          "database", "api", "schema", "deploy", "refactor",
-          "integration", "service", "protocol", "specification",
+          "architecture",
+          "design",
+          "infrastructure",
+          "migration",
+          "database",
+          "api",
+          "schema",
+          "deploy",
+          "refactor",
+          "integration",
+          "service",
+          "protocol",
+          "specification",
         ];
         const haystack = `${opts.issueTitle}`.toLowerCase();
         const hasTechnicalContent = TECHNICAL_KEYWORDS.some((kw) => haystack.includes(kw));
@@ -161,7 +181,8 @@ export async function performPostTaskReflection(
             title: opts.issueTitle,
             context,
             decision: `This decision was recorded automatically upon completion of the issue: "${opts.issueTitle}".`,
-            consequences: "Review this ADR and update with detailed context, alternatives considered, and long-term implications.",
+            consequences:
+              "Review this ADR and update with detailed context, alternatives considered, and long-term implications.",
             status: "accepted",
           });
 
@@ -236,7 +257,12 @@ export async function performPostTaskReflection(
         });
 
         logger.warn(
-          { agentId: opts.agentId, issueId: opts.issueId, score: qualityResult.score, qualityIssues: qualityResult.issues },
+          {
+            agentId: opts.agentId,
+            issueId: opts.issueId,
+            score: qualityResult.score,
+            qualityIssues: qualityResult.issues,
+          },
           "agent output flagged for quality review",
         );
       }
@@ -259,12 +285,7 @@ export async function performPostTaskReflection(
         })
         .from(approvals)
         .innerJoin(issueApprovals, eq(approvals.id, issueApprovals.approvalId))
-        .where(
-          and(
-            eq(issueApprovals.issueId, opts.issueId),
-            eq(approvals.type, "quality_gate"),
-          ),
-        )
+        .where(and(eq(issueApprovals.issueId, opts.issueId), eq(approvals.type, "quality_gate")))
         .orderBy(desc(approvals.createdAt))
         .limit(1);
 
@@ -344,10 +365,7 @@ export async function extractLessonFromRejection(
     lastAccessedAt: now,
   });
 
-  logger.info(
-    { agentId: opts.agentId, issueId: opts.issueId },
-    "extracted lesson from approval rejection",
-  );
+  logger.info({ agentId: opts.agentId, issueId: opts.issueId }, "extracted lesson from approval rejection");
 }
 
 /**
@@ -403,9 +421,7 @@ export async function identifySkillGaps(
   // Store as periodic memory entry for VP HR reference
   if (gaps.length > 0) {
     const now = new Date();
-    const gapSummary = gaps
-      .map((g) => `${g.skill}: ${g.successRate}% success (${g.totalTasks} tasks)`)
-      .join("; ");
+    const gapSummary = gaps.map((g) => `${g.skill}: ${g.successRate}% success (${g.totalTasks} tasks)`).join("; ");
 
     await db.insert(agentMemoryEntries).values({
       agentId,
@@ -417,10 +433,7 @@ export async function identifySkillGaps(
       lastAccessedAt: now,
     });
 
-    logger.info(
-      { agentId, companyId, gapCount: gaps.length },
-      "identified skill gaps for agent",
-    );
+    logger.info({ agentId, companyId, gapCount: gaps.length }, "identified skill gaps for agent");
   }
 
   return gaps;
@@ -458,11 +471,7 @@ export async function createHandoffIssue(
     .where(eq(agents.id, opts.fromAgentId))
     .limit(1);
 
-  const [toAgent] = await db
-    .select({ name: agents.name })
-    .from(agents)
-    .where(eq(agents.id, opts.toAgentId))
-    .limit(1);
+  const [toAgent] = await db.select({ name: agents.name }).from(agents).where(eq(agents.id, opts.toAgentId)).limit(1);
 
   // Resolve source issue
   const [sourceIssue] = await db
@@ -525,7 +534,7 @@ export async function createHandoffIssue(
 // ── Agent Output Quality Review ───────────────────────────────────────────
 
 export interface OutputQualityResult {
-  score: number;       // 0-100
+  score: number; // 0-100
   isAcceptable: boolean; // score >= 60
   issues: string[];
 }
@@ -596,7 +605,11 @@ export function reviewOutputQuality(content: string): OutputQualityResult {
   }
 
   // Check 4: Ends mid-sentence (no terminal punctuation on last non-empty line)
-  const lastLine = trimmed.split("\n").filter((l) => l.trim().length > 0).pop() ?? "";
+  const lastLine =
+    trimmed
+      .split("\n")
+      .filter((l) => l.trim().length > 0)
+      .pop() ?? "";
   const lastChar = lastLine.trimEnd().slice(-1);
   const validTerminators = new Set([".", "!", "?", ":", ";", ")", "]", "`", '"', "'"]);
   // Markdown code blocks or list items ending with content are acceptable
@@ -657,10 +670,7 @@ export interface PromptOptimizationResult {
  *   2. Average run count per issue (from heartbeat runs)
  *   3. Recurring mistake_learning memory entries (suggests prompt gaps)
  */
-export async function generatePromptOptimizationSuggestion(
-  db: Db,
-  agentId: string,
-): Promise<PromptOptimizationResult> {
+export async function generatePromptOptimizationSuggestion(db: Db, agentId: string): Promise<PromptOptimizationResult> {
   // Resolve current agent for prompt hash
   const [agentRow] = await db
     .select({ role: agents.role, name: agents.name, companyId: agents.companyId })
@@ -687,12 +697,7 @@ export async function generatePromptOptimizationSuggestion(
       status: issues.status,
     })
     .from(issues)
-    .where(
-      and(
-        eq(issues.assigneeAgentId, agentId),
-        sql`${issues.status} IN ('done', 'cancelled')`,
-      ),
-    )
+    .where(and(eq(issues.assigneeAgentId, agentId), sql`${issues.status} IN ('done', 'cancelled')`))
     .orderBy(desc(issues.completedAt))
     .limit(20);
 
@@ -712,7 +717,10 @@ export async function generatePromptOptimizationSuggestion(
       .where(
         and(
           eq(heartbeatRuns.agentId, agentId),
-          sql`${heartbeatRuns.contextSnapshot}->>'issueId' = ANY(ARRAY[${sql.join(issueIds.map((id) => sql`${id}`), sql`, `)}])`,
+          sql`${heartbeatRuns.contextSnapshot}->>'issueId' = ANY(ARRAY[${sql.join(
+            issueIds.map((id) => sql`${id}`),
+            sql`, `,
+          )}])`,
         ),
       );
     const totalRuns = Number(runCounts[0]?.count ?? 0);
@@ -739,14 +747,14 @@ export async function generatePromptOptimizationSuggestion(
   if (successRate < 0.7 && total >= 3) {
     suggestions.push(
       `Add more specific instructions for the most common failing task types. ` +
-      `Success rate is ${(successRate * 100).toFixed(0)}% (${completed}/${total} tasks).`,
+        `Success rate is ${(successRate * 100).toFixed(0)}% (${completed}/${total} tasks).`,
     );
   }
 
   if (avgRunCount > 8) {
     suggestions.push(
       `Consider breaking complex tasks into sub-tasks. ` +
-      `Average run count is ${avgRunCount.toFixed(1)} per task (threshold: 8).`,
+        `Average run count is ${avgRunCount.toFixed(1)} per task (threshold: 8).`,
     );
   }
 
@@ -757,20 +765,21 @@ export async function generatePromptOptimizationSuggestion(
     if (keywords.length > 0) {
       suggestions.push(
         `Add explicit "DO NOT" instructions for recurring issues. ` +
-        `Recurring patterns in mistake log: ${keywords.join(", ")}.`,
+          `Recurring patterns in mistake log: ${keywords.join(", ")}.`,
       );
     }
   }
 
   const suggestedChange = suggestions.length > 0 ? suggestions.join(" ") : null;
-  const reasoning = total < 3
-    ? `Insufficient task history (${total} resolved tasks). Rerun after more tasks complete.`
-    : [
-        `Analyzed ${total} recent tasks.`,
-        `Success rate: ${(successRate * 100).toFixed(0)}%.`,
-        `Avg runs/task: ${avgRunCount.toFixed(1)}.`,
-        `Mistake entries: ${mistakeEntries.length}.`,
-      ].join(" ");
+  const reasoning =
+    total < 3
+      ? `Insufficient task history (${total} resolved tasks). Rerun after more tasks complete.`
+      : [
+          `Analyzed ${total} recent tasks.`,
+          `Success rate: ${(successRate * 100).toFixed(0)}%.`,
+          `Avg runs/task: ${avgRunCount.toFixed(1)}.`,
+          `Mistake entries: ${mistakeEntries.length}.`,
+        ].join(" ");
 
   // Save as prompt_suggestion memory entry for human review
   if (suggestedChange) {
@@ -807,12 +816,61 @@ function simpleHash(input: string): string {
 }
 
 const KEYWORD_STOP_WORDS = new Set([
-  "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for",
-  "of", "with", "by", "from", "is", "was", "are", "were", "be", "been",
-  "being", "have", "has", "had", "do", "does", "did", "will", "would",
-  "could", "should", "may", "might", "shall", "can", "not", "this",
-  "that", "these", "those", "it", "its", "as", "if", "so", "up", "out",
-  "task", "issue", "work", "agent", "completed", "cancelled", "attempted",
+  "a",
+  "an",
+  "the",
+  "and",
+  "or",
+  "but",
+  "in",
+  "on",
+  "at",
+  "to",
+  "for",
+  "of",
+  "with",
+  "by",
+  "from",
+  "is",
+  "was",
+  "are",
+  "were",
+  "be",
+  "been",
+  "being",
+  "have",
+  "has",
+  "had",
+  "do",
+  "does",
+  "did",
+  "will",
+  "would",
+  "could",
+  "should",
+  "may",
+  "might",
+  "shall",
+  "can",
+  "not",
+  "this",
+  "that",
+  "these",
+  "those",
+  "it",
+  "its",
+  "as",
+  "if",
+  "so",
+  "up",
+  "out",
+  "task",
+  "issue",
+  "work",
+  "agent",
+  "completed",
+  "cancelled",
+  "attempted",
 ]);
 
 /** Extract top N keywords by frequency from a text blob. */

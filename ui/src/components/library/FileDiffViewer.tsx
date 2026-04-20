@@ -1,5 +1,5 @@
-import { useMemo } from "react";
 import { Columns } from "lucide-react";
+import { useMemo } from "react";
 import { cn } from "../../lib/utils";
 
 interface DiffLine {
@@ -10,15 +10,10 @@ interface DiffLine {
 function computeLineDiff(oldLines: string[], newLines: string[]): DiffLine[] {
   const m = oldLines.length;
   const n = newLines.length;
-  const dp: number[][] = Array.from({ length: m + 1 }, () =>
-    Array(n + 1).fill(0),
-  );
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
   for (let i = 1; i <= m; i++) {
     for (let j = 1; j <= n; j++) {
-      dp[i][j] =
-        oldLines[i - 1] === newLines[j - 1]
-          ? dp[i - 1][j - 1] + 1
-          : Math.max(dp[i - 1][j], dp[i][j - 1]);
+      dp[i][j] = oldLines[i - 1] === newLines[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
     }
   }
   const result: DiffLine[] = [];
@@ -49,11 +44,7 @@ export function FileDiffViewer({
   newContent: string;
   fileName: string;
 }) {
-  const diff = useMemo(
-    () =>
-      computeLineDiff(oldContent.split("\n"), newContent.split("\n")),
-    [oldContent, newContent],
-  );
+  const diff = useMemo(() => computeLineDiff(oldContent.split("\n"), newContent.split("\n")), [oldContent, newContent]);
   const oldLines = diff.filter((l) => l.type !== "added");
   const newLines = diff.filter((l) => l.type !== "removed");
   const addedCount = diff.filter((l) => l.type === "added").length;
@@ -82,14 +73,10 @@ export function FileDiffViewer({
                 key={i}
                 className={cn(
                   "px-3 py-0.5 whitespace-pre-wrap",
-                  line.type === "removed"
-                    ? "bg-red-500/10 text-red-400"
-                    : "text-muted-foreground/80",
+                  line.type === "removed" ? "bg-red-500/10 text-red-400" : "text-muted-foreground/80",
                 )}
               >
-                <span className="inline-block w-6 text-right mr-2 select-none opacity-40 text-[10px]">
-                  {i + 1}
-                </span>
+                <span className="inline-block w-6 text-right mr-2 select-none opacity-40 text-[10px]">{i + 1}</span>
                 {line.text}
               </div>
             ))}
@@ -103,14 +90,10 @@ export function FileDiffViewer({
                 key={i}
                 className={cn(
                   "px-3 py-0.5 whitespace-pre-wrap",
-                  line.type === "added"
-                    ? "bg-emerald-500/10 text-emerald-400"
-                    : "text-muted-foreground/80",
+                  line.type === "added" ? "bg-emerald-500/10 text-emerald-400" : "text-muted-foreground/80",
                 )}
               >
-                <span className="inline-block w-6 text-right mr-2 select-none opacity-40 text-[10px]">
-                  {i + 1}
-                </span>
+                <span className="inline-block w-6 text-right mr-2 select-none opacity-40 text-[10px]">{i + 1}</span>
                 {line.text}
               </div>
             ))}

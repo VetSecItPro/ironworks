@@ -1,23 +1,23 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as React from "react";
 import { StrictMode } from "react";
 import * as ReactDOM from "react-dom";
 import { createRoot } from "react-dom/client";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter } from "@/lib/router";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { App } from "./App";
-import { CompanyProvider } from "./context/CompanyContext";
-import { LiveUpdatesProvider } from "./context/LiveUpdatesProvider";
+import { applyAccentColor, isCompactMode, loadAccentColor } from "./components/PersonalPreferences";
+import { PowerModeProvider } from "./components/ProgressiveDisclosure";
 import { BreadcrumbProvider } from "./context/BreadcrumbContext";
+import { CompanyProvider } from "./context/CompanyContext";
+import { DialogProvider } from "./context/DialogContext";
+import { LiveUpdatesProvider } from "./context/LiveUpdatesProvider";
 import { PanelProvider } from "./context/PanelContext";
 import { SidebarProvider } from "./context/SidebarContext";
-import { DialogProvider } from "./context/DialogContext";
-import { ToastProvider } from "./context/ToastContext";
 import { ThemeProvider } from "./context/ThemeContext";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { ToastProvider } from "./context/ToastContext";
 import { initPluginBridge } from "./plugins/bridge-init";
 import { PluginLauncherProvider } from "./plugins/launchers";
-import { PowerModeProvider } from "./components/ProgressiveDisclosure";
-import { isCompactMode, applyAccentColor, loadAccentColor } from "./components/PersonalPreferences";
 import "@mdxeditor/editor/style.css";
 import "./index.css";
 
@@ -80,5 +80,5 @@ createRoot(document.getElementById("root")!).render(
         </BrowserRouter>
       </ThemeProvider>
     </QueryClientProvider>
-  </StrictMode>
+  </StrictMode>,
 );

@@ -1,7 +1,7 @@
 import { Megaphone } from "lucide-react";
+import type { DepartmentImpactRow } from "../../api/executive";
 import { formatCents } from "../../lib/utils";
 import { StatBlock } from "../briefing/BriefingCards";
-import type { DepartmentImpactRow } from "../../api/executive";
 
 interface CMOCampaignSectionProps {
   marketingDept: DepartmentImpactRow;
@@ -15,11 +15,7 @@ export function CMOCampaignSection({ marketingDept }: CMOCampaignSectionProps) {
         CMO Campaign Performance
       </h3>
       <div className="grid grid-cols-2 gap-3">
-        <StatBlock
-          label="Content Pieces Produced"
-          value={marketingDept.issuesCompleted}
-          color="text-blue-400"
-        />
+        <StatBlock label="Content Pieces Produced" value={marketingDept.issuesCompleted} color="text-blue-400" />
         <div className="rounded-lg bg-muted/30 px-3 py-2.5">
           <p className="text-xs text-muted-foreground">Marketing Spend</p>
           <p className="text-2xl font-bold tabular-nums">{formatCents(marketingDept.totalCost)}</p>

@@ -1,4 +1,5 @@
 import path from "node:path";
+import { readIronworksSkillSyncPreference } from "@ironworksai/adapter-utils/server-utils";
 import type { Db } from "@ironworksai/db";
 import type {
   CompanyPortabilityExport,
@@ -8,90 +9,86 @@ import type {
   CompanyPortabilityManifest,
   CompanyPortabilityPreview,
 } from "@ironworksai/shared";
-import {
-  deriveProjectUrlKey,
-  normalizeAgentUrlKey,
-} from "@ironworksai/shared";
-import { readIronworksSkillSyncPreference } from "@ironworksai/adapter-utils/server-utils";
+import { deriveProjectUrlKey, normalizeAgentUrlKey } from "@ironworksai/shared";
 import { notFound, unprocessable } from "../errors.js";
-import { generateReadme } from "./company-export-readme.js";
 import { renderOrgChartPng } from "../routes/org-chart-svg.js";
-import { routineService } from "./routines.js";
 import type { StorageService } from "../storage/types.js";
+import { generateReadme } from "./company-export-readme.js";
 import {
-  type CompanyPortabilityServiceDeps,
-  type ResolvedSource,
-  type RoutineLike,
-  inferContentTypeFromPath,
-  asString,
-  isPlainRecord,
-  normalizeSkillSlug,
-  normalizeSkillKey,
-  deriveManifestSkillKey,
-  stripEmptyValues,
-  dedupeEnvInputs,
-  buildEnvInputMap,
-  buildMarkdown,
-  buildYamlFile,
-  buildManifestFromPackageFiles,
-  normalizeFileMap,
-  normalizePortablePath,
-  normalizeInclude,
-  normalizePortableSidebarOrder,
-  toSafeSlug,
-  uniqueSlug,
-  classifyPortableFileKind,
-  buildOrgTreeFromManifest,
-  extractPortableEnvInputs,
-  pruneDefaultLikeValue,
-  sortAgentsBySidebarOrder,
-  filterExportFiles,
-  normalizePortableConfig,
-  isAbsoluteCommand,
-  buildSkillExportDirMap,
-  shouldReferenceSkillOnExport,
-  buildReferencedSkillMarkdown,
-  withSkillSourceMetadata,
-  buildPortableProjectWorkspaces,
-  exportPortableProjectExecutionWorkspacePolicy,
-  bufferToPortableBinaryFile,
-  streamToBuffer,
-  resolveCompanyLogoExtension,
-  isPortableBinaryFile,
   ADAPTER_DEFAULT_RULES_BY_TYPE,
-  RUNTIME_DEFAULT_RULES,
+  applySelectedFilesToSource,
+  asString,
+  bufferToPortableBinaryFile,
+  buildEnvInputMap,
+  buildManifestFromPackageFiles,
+  buildMarkdown,
+  buildOrgTreeFromManifest,
+  buildPortableProjectWorkspaces,
+  buildReferencedSkillMarkdown,
+  buildSkillExportDirMap,
+  buildYamlFile,
   COMPANY_LOGO_CONTENT_TYPE_EXTENSIONS,
   COMPANY_LOGO_FILE_NAME,
-  pickTextFiles,
-  parseGitHubSourceUrl,
-  resolveRawGitHubUrl,
-  applySelectedFilesToSource,
-  fetchText,
-  fetchOptionalText,
+  type CompanyPortabilityServiceDeps,
+  classifyPortableFileKind,
+  dedupeEnvInputs,
+  deriveManifestSkillKey,
+  exportPortableProjectExecutionWorkspacePolicy,
+  extractPortableEnvInputs,
   fetchBinary,
   fetchJson,
-  readIncludeEntries,
+  fetchOptionalText,
+  fetchText,
+  filterExportFiles,
+  inferContentTypeFromPath,
+  isAbsoluteCommand,
+  isPlainRecord,
+  isPortableBinaryFile,
+  normalizeFileMap,
+  normalizeInclude,
+  normalizePortableConfig,
+  normalizePortablePath,
+  normalizePortableSidebarOrder,
+  normalizeSkillKey,
+  normalizeSkillSlug,
   parseFrontmatterMarkdown,
+  parseGitHubSourceUrl,
+  pickTextFiles,
+  pruneDefaultLikeValue,
+  type ResolvedSource,
+  type RoutineLike,
+  RUNTIME_DEFAULT_RULES,
+  readIncludeEntries,
+  resolveCompanyLogoExtension,
+  resolveRawGitHubUrl,
+  shouldReferenceSkillOnExport,
+  sortAgentsBySidebarOrder,
+  streamToBuffer,
+  stripEmptyValues,
+  toSafeSlug,
+  uniqueSlug,
+  withSkillSourceMetadata,
 } from "./company-portability-shared.js";
+import { routineService } from "./routines.js";
 
-export async function resolveSource(deps: CompanyPortabilityServiceDeps, source: CompanyPortabilityPreview["source"]): Promise<ResolvedSource> {
+export async function resolveSource(
+  deps: CompanyPortabilityServiceDeps,
+  source: CompanyPortabilityPreview["source"],
+): Promise<ResolvedSource> {
   if (source.type === "inline") {
-    return buildManifestFromPackageFiles(
-      normalizeFileMap(source.files, source.rootPath),
-    );
+    return buildManifestFromPackageFiles(normalizeFileMap(source.files, source.rootPath));
   }
 
   const parsed = parseGitHubSourceUrl(source.url);
   let ref = parsed.ref;
   const warnings: string[] = [];
-  const companyRelativePath = parsed.companyPath === "COMPANY.md"
-    ? [parsed.basePath, "COMPANY.md"].filter(Boolean).join("/")
-    : parsed.companyPath;
+  const companyRelativePath =
+    parsed.companyPath === "COMPANY.md"
+      ? [parsed.basePath, "COMPANY.md"].filter(Boolean).join("/")
+      : parsed.companyPath;
   let companyMarkdown: string | null = null;
   try {
-    companyMarkdown = await fetchOptionalText(
-      resolveRawGitHubUrl(parsed.owner, parsed.repo, ref, companyRelativePath),
-    );
+    companyMarkdown = await fetchOptionalText(resolveRawGitHubUrl(parsed.owner, parsed.repo, ref, companyRelativePath));
   } catch (err) {
     if (ref === "main") {
       ref = "master";
@@ -107,9 +104,10 @@ export async function resolveSource(deps: CompanyPortabilityServiceDeps, source:
     throw unprocessable("GitHub company package is missing COMPANY.md");
   }
 
-  const companyPath = parsed.companyPath === "COMPANY.md"
-    ? "COMPANY.md"
-    : normalizePortablePath(path.posix.relative(parsed.basePath || ".", parsed.companyPath));
+  const companyPath =
+    parsed.companyPath === "COMPANY.md"
+      ? "COMPANY.md"
+      : normalizePortablePath(path.posix.relative(parsed.basePath || ".", parsed.companyPath));
   const files: Record<string, CompanyPortabilityFileEntry> = {
     [companyPath]: companyMarkdown,
   };
@@ -145,9 +143,7 @@ export async function resolveSource(deps: CompanyPortabilityServiceDeps, source:
     const relativePath = normalizePortablePath(includeEntry.path);
     if (files[relativePath] !== undefined) continue;
     if (!(repoPath.endsWith(".md") || repoPath.endsWith(".yaml") || repoPath.endsWith(".yml"))) continue;
-    files[relativePath] = await fetchText(
-      resolveRawGitHubUrl(parsed.owner, parsed.repo, ref, repoPath),
-    );
+    files[relativePath] = await fetchText(resolveRawGitHubUrl(parsed.owner, parsed.repo, ref, repoPath));
   }
 
   const resolved = buildManifestFromPackageFiles(files);
@@ -155,12 +151,12 @@ export async function resolveSource(deps: CompanyPortabilityServiceDeps, source:
   if (companyLogoPath && !resolved.files[companyLogoPath]) {
     const repoPath = [parsed.basePath, companyLogoPath].filter(Boolean).join("/");
     try {
-      const binary = await fetchBinary(
-        resolveRawGitHubUrl(parsed.owner, parsed.repo, ref, repoPath),
-      );
+      const binary = await fetchBinary(resolveRawGitHubUrl(parsed.owner, parsed.repo, ref, repoPath));
       resolved.files[companyLogoPath] = bufferToPortableBinaryFile(binary, inferContentTypeFromPath(companyLogoPath));
     } catch (err) {
-      warnings.push(`Failed to fetch company logo ${companyLogoPath} from GitHub: ${err instanceof Error ? err.message : String(err)}`);
+      warnings.push(
+        `Failed to fetch company logo ${companyLogoPath} from GitHub: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
   }
   resolved.warnings.unshift(...warnings);
@@ -202,7 +198,7 @@ export async function exportBundle(
     }
   }
 
-  const agentByReference = new Map<string, typeof liveAgentRows[number]>();
+  const agentByReference = new Map<string, (typeof liveAgentRows)[number]>();
   for (const agent of liveAgentRows) {
     agentByReference.set(agent.id, agent);
     agentByReference.set(agent.name, agent);
@@ -212,7 +208,7 @@ export async function exportBundle(
     }
   }
 
-  const selectedAgents = new Map<string, typeof liveAgentRows[number]>();
+  const selectedAgents = new Map<string, (typeof liveAgentRows)[number]>();
   for (const selector of input.agents ?? []) {
     const trimmed = selector.trim();
     if (!trimmed) continue;
@@ -231,8 +227,7 @@ export async function exportBundle(
     }
   }
 
-  const agentRows = Array.from(selectedAgents.values())
-    .sort((left, right) => left.name.localeCompare(right.name));
+  const agentRows = Array.from(selectedAgents.values()).sort((left, right) => left.name.localeCompare(right.name));
 
   const usedSlugs = new Set<string>();
   const idToSlug = new Map<string, string>();
@@ -249,13 +244,13 @@ export async function exportBundle(
   const allProjects = allProjectsRaw.filter((project) => !project.archivedAt);
   const allRoutines = include.issues ? await routinesSvc.list(companyId) : [];
   const projectById = new Map(allProjects.map((project) => [project.id, project]));
-  const projectByReference = new Map<string, typeof allProjects[number]>();
+  const projectByReference = new Map<string, (typeof allProjects)[number]>();
   for (const project of allProjects) {
     projectByReference.set(project.id, project);
     projectByReference.set(project.urlKey, project);
   }
 
-  const selectedProjects = new Map<string, typeof allProjects[number]>();
+  const selectedProjects = new Map<string, (typeof allProjects)[number]>();
   const normalizeProjectSelector = (selector: string) => selector.trim().toLowerCase();
   for (const selector of input.projects ?? []) {
     const match = projectByReference.get(selector) ?? projectByReference.get(normalizeProjectSelector(selector));
@@ -267,14 +262,12 @@ export async function exportBundle(
   }
 
   const selectedIssues = new Map<string, Awaited<ReturnType<typeof issuesSvc.getById>>>();
-  const selectedRoutines = new Map<string, typeof allRoutines[number]>();
+  const selectedRoutines = new Map<string, (typeof allRoutines)[number]>();
   const routineById = new Map(allRoutines.map((routine) => [routine.id, routine]));
   const resolveIssueBySelector = async (selector: string) => {
     const trimmed = selector.trim();
     if (!trimmed) return null;
-    return trimmed.includes("-")
-      ? issuesSvc.getByIdentifier(trimmed)
-      : issuesSvc.getById(trimmed);
+    return trimmed.includes("-") ? issuesSvc.getByIdentifier(trimmed) : issuesSvc.getById(trimmed);
   };
   for (const selector of input.issues ?? []) {
     const issue = await resolveIssueBySelector(selector);
@@ -340,13 +333,15 @@ export async function exportBundle(
     }
   }
 
-  const selectedProjectRows = Array.from(selectedProjects.values())
-    .sort((left, right) => left.name.localeCompare(right.name));
+  const selectedProjectRows = Array.from(selectedProjects.values()).sort((left, right) =>
+    left.name.localeCompare(right.name),
+  );
   const selectedIssueRows = Array.from(selectedIssues.values())
     .filter((issue): issue is NonNullable<typeof issue> => issue != null)
     .sort((left, right) => (left.identifier ?? left.title).localeCompare(right.identifier ?? right.title));
-  const selectedRoutineSummaries = Array.from(selectedRoutines.values())
-    .sort((left, right) => left.title.localeCompare(right.title));
+  const selectedRoutineSummaries = Array.from(selectedRoutines.values()).sort((left, right) =>
+    left.title.localeCompare(right.title),
+  );
   const selectedRoutineRows = (
     await Promise.all(selectedRoutineSummaries.map((routine) => routinesSvc.getDetail(routine.id)))
   ).filter((routine): routine is RoutineLike => routine !== null);
@@ -370,14 +365,16 @@ export async function exportBundle(
     const baseSlug = deriveProjectUrlKey(project.name, project.name);
     projectSlugById.set(project.id, uniqueSlug(baseSlug, usedProjectSlugs));
   }
-  const sidebarOrder = requestedSidebarOrder ?? stripEmptyValues({
-    agents: sortAgentsBySidebarOrder(Array.from(selectedAgents.values()))
-      .map((agent) => idToSlug.get(agent.id))
-      .filter((slug): slug is string => Boolean(slug)),
-    projects: selectedProjectRows
-      .map((project) => projectSlugById.get(project.id))
-      .filter((slug): slug is string => Boolean(slug)),
-  });
+  const sidebarOrder =
+    requestedSidebarOrder ??
+    stripEmptyValues({
+      agents: sortAgentsBySidebarOrder(Array.from(selectedAgents.values()))
+        .map((agent) => idToSlug.get(agent.id))
+        .filter((slug): slug is string => Boolean(slug)),
+      projects: selectedProjectRows
+        .map((project) => projectSlugById.get(project.id))
+        .filter((slug): slug is string => Boolean(slug)),
+    });
 
   const companyPath = "COMPANY.md";
   files[companyPath] = buildMarkdown(
@@ -391,7 +388,7 @@ export async function exportBundle(
   );
 
   if (include.company && company.logoAssetId) {
-  if (!deps.storage) {
+    if (!deps.storage) {
       warnings.push("Skipped company logo from export because storage is unavailable.");
     } else {
       const logoAsset = await deps.assetRecords.getById(company.logoAssetId);
@@ -404,7 +401,9 @@ export async function exportBundle(
           companyLogoPath = `images/${COMPANY_LOGO_FILE_NAME}${resolveCompanyLogoExtension(logoAsset.contentType, logoAsset.originalFilename)}`;
           files[companyLogoPath] = bufferToPortableBinaryFile(body, logoAsset.contentType);
         } catch (err) {
-          warnings.push(`Failed to export company logo ${company.logoAssetId}: ${err instanceof Error ? err.message : String(err)}`);
+          warnings.push(
+            `Failed to export company logo ${company.logoAssetId}: ${err instanceof Error ? err.message : String(err)}`,
+          );
         }
       }
     }
@@ -416,14 +415,14 @@ export async function exportBundle(
   const unportableTaskWorkspaceRefs = new Map<string, { workspaceId: string; taskSlugs: string[] }>();
   const ironworksRoutinesOut: Record<string, Record<string, unknown>> = {};
 
-  const skillByReference = new Map<string, typeof companySkillRows[number]>();
+  const skillByReference = new Map<string, (typeof companySkillRows)[number]>();
   for (const skill of companySkillRows) {
     skillByReference.set(skill.id, skill);
     skillByReference.set(skill.key, skill);
     skillByReference.set(skill.slug, skill);
     skillByReference.set(skill.name, skill);
   }
-  const selectedSkills = new Map<string, typeof companySkillRows[number]>();
+  const selectedSkills = new Map<string, (typeof companySkillRows)[number]>();
   for (const selector of input.skills ?? []) {
     const trimmed = selector.trim();
     if (!trimmed) continue;
@@ -440,8 +439,9 @@ export async function exportBundle(
       selectedSkills.set(skill.id, skill);
     }
   }
-  const selectedSkillRows = Array.from(selectedSkills.values())
-    .sort((left, right) => left.key.localeCompare(right.key));
+  const selectedSkillRows = Array.from(selectedSkills.values()).sort((left, right) =>
+    left.key.localeCompare(right.key),
+  );
 
   const skillExportDirs = buildSkillExportDirMap(selectedSkillRows, company.issuePrefix);
   for (const skill of selectedSkillRows) {
@@ -455,9 +455,10 @@ export async function exportBundle(
       const fileDetail = await deps.companySkills.readFile(companyId, skill.id, inventoryEntry.path).catch(() => null);
       if (!fileDetail) continue;
       const filePath = `${packageDir}/${inventoryEntry.path}`;
-      files[filePath] = inventoryEntry.path === "SKILL.md"
-        ? await withSkillSourceMetadata(skill, fileDetail.content)
-        : fileDetail.content;
+      files[filePath] =
+        inventoryEntry.path === "SKILL.md"
+          ? await withSkillSourceMetadata(skill, fileDetail.content)
+          : fileDetail.content;
     }
   }
 
@@ -475,25 +476,20 @@ export async function exportBundle(
       );
       envInputs.push(...exportedEnvInputs);
       const adapterDefaultRules = ADAPTER_DEFAULT_RULES_BY_TYPE[agent.adapterType] ?? [];
-      const portableAdapterConfig = pruneDefaultLikeValue(
-        normalizePortableConfig(agent.adapterConfig),
-        {
-          dropFalseBooleans: true,
-          defaultRules: adapterDefaultRules,
-        },
-      ) as Record<string, unknown>;
-      const portableRuntimeConfig = pruneDefaultLikeValue(
-        normalizePortableConfig(agent.runtimeConfig),
-        {
-          dropFalseBooleans: true,
-          defaultRules: RUNTIME_DEFAULT_RULES,
-        },
-      ) as Record<string, unknown>;
-      const portablePermissions = pruneDefaultLikeValue(agent.permissions ?? {}, { dropFalseBooleans: true }) as Record<string, unknown>;
+      const portableAdapterConfig = pruneDefaultLikeValue(normalizePortableConfig(agent.adapterConfig), {
+        dropFalseBooleans: true,
+        defaultRules: adapterDefaultRules,
+      }) as Record<string, unknown>;
+      const portableRuntimeConfig = pruneDefaultLikeValue(normalizePortableConfig(agent.runtimeConfig), {
+        dropFalseBooleans: true,
+        defaultRules: RUNTIME_DEFAULT_RULES,
+      }) as Record<string, unknown>;
+      const portablePermissions = pruneDefaultLikeValue(agent.permissions ?? {}, { dropFalseBooleans: true }) as Record<
+        string,
+        unknown
+      >;
       const agentEnvInputs = dedupeEnvInputs(
-        envInputs
-          .slice(envInputsStart)
-          .filter((inputValue) => inputValue.agentSlug === slug),
+        envInputs.slice(envInputsStart).filter((inputValue) => inputValue.agentSlug === slug),
       );
       const reportsToSlug = agent.reportsTo ? (idToSlug.get(agent.reportsTo) ?? null) : null;
       const desiredSkills = readIronworksSkillSyncPreference(
@@ -562,12 +558,13 @@ export async function exportBundle(
       targetDate: project.targetDate ?? null,
       color: project.color ?? null,
       status: project.status,
-      executionWorkspacePolicy: exportPortableProjectExecutionWorkspacePolicy(
-        slug,
-        project.executionWorkspacePolicy,
-        portableWorkspaces.workspaceKeyById,
-        warnings,
-      ) ?? undefined,
+      executionWorkspacePolicy:
+        exportPortableProjectExecutionWorkspacePolicy(
+          slug,
+          project.executionWorkspacePolicy,
+          portableWorkspaces.workspaceKeyById,
+          warnings,
+        ) ?? undefined,
       workspaces: portableWorkspaces.extension,
     });
     ironworksProjectsOut[slug] = isPlainRecord(extension) ? extension : {};
@@ -579,9 +576,10 @@ export async function exportBundle(
     // All tasks go in top-level tasks/ folder, never nested under projects/
     const taskPath = `tasks/${taskSlug}/TASK.md`;
     const assigneeSlug = issue.assigneeAgentId ? (idToSlug.get(issue.assigneeAgentId) ?? null) : null;
-    const projectWorkspaceKey = issue.projectId && issue.projectWorkspaceId
-      ? projectWorkspaceKeyByProjectId.get(issue.projectId)?.get(issue.projectWorkspaceId) ?? null
-      : null;
+    const projectWorkspaceKey =
+      issue.projectId && issue.projectWorkspaceId
+        ? (projectWorkspaceKeyByProjectId.get(issue.projectId)?.get(issue.projectWorkspaceId) ?? null)
+        : null;
     if (issue.projectWorkspaceId && !projectWorkspaceKey) {
       const aggregateKey = `${issue.projectId ?? "no-project"}:${issue.projectWorkspaceId}`;
       const existing = unportableTaskWorkspaceRefs.get(aggregateKey);
@@ -618,14 +616,16 @@ export async function exportBundle(
   for (const { workspaceId, taskSlugs } of unportableTaskWorkspaceRefs.values()) {
     const preview = taskSlugs.slice(0, 4).join(", ");
     const remainder = taskSlugs.length > 4 ? ` and ${taskSlugs.length - 4} more` : "";
-    warnings.push(`Tasks ${preview}${remainder} reference workspace ${workspaceId}, but that workspace could not be exported portably.`);
+    warnings.push(
+      `Tasks ${preview}${remainder} reference workspace ${workspaceId}, but that workspace could not be exported portably.`,
+    );
   }
 
   for (const routine of selectedRoutineRows) {
     const taskSlug = taskSlugByRoutineId.get(routine.id)!;
-    const projectSlug = routine.projectId ? projectSlugById.get(routine.projectId) ?? null : null;
+    const projectSlug = routine.projectId ? (projectSlugById.get(routine.projectId) ?? null) : null;
     const taskPath = `tasks/${taskSlug}/TASK.md`;
-    const assigneeSlug = routine.assigneeAgentId ? idToSlug.get(routine.assigneeAgentId) ?? null : null;
+    const assigneeSlug = routine.assigneeAgentId ? (idToSlug.get(routine.assigneeAgentId) ?? null) : null;
     files[taskPath] = buildMarkdown(
       {
         name: routine.title,
@@ -640,17 +640,21 @@ export async function exportBundle(
       priority: routine.priority !== "medium" ? routine.priority : undefined,
       concurrencyPolicy: routine.concurrencyPolicy !== "coalesce_if_active" ? routine.concurrencyPolicy : undefined,
       catchUpPolicy: routine.catchUpPolicy !== "skip_missed" ? routine.catchUpPolicy : undefined,
-      triggers: routine.triggers.map((trigger: RoutineLike["triggers"][number]) => stripEmptyValues({
-        kind: trigger.kind,
-        label: trigger.label ?? null,
-        enabled: trigger.enabled ? undefined : false,
-        cronExpression: trigger.kind === "schedule" ? trigger.cronExpression ?? null : undefined,
-        timezone: trigger.kind === "schedule" ? trigger.timezone ?? null : undefined,
-        signingMode: trigger.kind === "webhook" && trigger.signingMode !== "bearer" ? trigger.signingMode ?? null : undefined,
-        replayWindowSec: trigger.kind === "webhook" && trigger.replayWindowSec !== 300
-          ? trigger.replayWindowSec ?? null
-          : undefined,
-      })),
+      triggers: routine.triggers.map((trigger: RoutineLike["triggers"][number]) =>
+        stripEmptyValues({
+          kind: trigger.kind,
+          label: trigger.label ?? null,
+          enabled: trigger.enabled ? undefined : false,
+          cronExpression: trigger.kind === "schedule" ? (trigger.cronExpression ?? null) : undefined,
+          timezone: trigger.kind === "schedule" ? (trigger.timezone ?? null) : undefined,
+          signingMode:
+            trigger.kind === "webhook" && trigger.signingMode !== "bearer" ? (trigger.signingMode ?? null) : undefined,
+          replayWindowSec:
+            trigger.kind === "webhook" && trigger.replayWindowSec !== 300
+              ? (trigger.replayWindowSec ?? null)
+              : undefined,
+        }),
+      ),
     });
     ironworksRoutinesOut[taskSlug] = isPlainRecord(extension) ? extension : {};
   }
@@ -685,7 +689,7 @@ export async function exportBundle(
     { preserveEmptyStrings: true },
   );
 
-  let finalFiles = filterExportFiles(files, input.selectedFiles, ironworksExtensionPath);
+  const finalFiles = filterExportFiles(files, input.selectedFiles, ironworksExtensionPath);
   let resolved = buildManifestFromPackageFiles(finalFiles, {
     sourceLabel: {
       companyId: company.id,
@@ -755,9 +759,9 @@ export async function previewExport(
     include: {
       ...input.include,
       issues:
-        input.include?.issues
-        ?? Boolean((input.issues && input.issues.length > 0) || (input.projectIssues && input.projectIssues.length > 0))
-        ?? false,
+        input.include?.issues ??
+        Boolean((input.issues && input.issues.length > 0) || (input.projectIssues && input.projectIssues.length > 0)) ??
+        false,
     },
   };
   if (previewInput.include && previewInput.include.issues === undefined) {
@@ -781,4 +785,3 @@ export async function previewExport(
     },
   };
 }
-

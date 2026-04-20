@@ -1,8 +1,8 @@
 // @vitest-environment node
 
 import { describe, expect, it } from "vitest";
-import { __liveUpdatesTestUtils } from "./LiveUpdatesProvider";
 import { queryKeys } from "../lib/queryKeys";
+import { __liveUpdatesTestUtils } from "./LiveUpdatesProvider";
 
 describe("LiveUpdatesProvider issue invalidation", () => {
   it("refreshes touched inbox queries for issue activity", () => {
@@ -14,15 +14,11 @@ describe("LiveUpdatesProvider issue invalidation", () => {
       getQueryData: () => undefined,
     };
 
-    __liveUpdatesTestUtils.invalidateActivityQueries(
-      queryClient as never,
-      "company-1",
-      {
-        entityType: "issue",
-        entityId: "issue-1",
-        details: null,
-      },
-    );
+    __liveUpdatesTestUtils.invalidateActivityQueries(queryClient as never, "company-1", {
+      entityType: "issue",
+      entityId: "issue-1",
+      details: null,
+    });
 
     expect(invalidations).toContainEqual({
       queryKey: queryKeys.issues.listMineByMe("company-1"),

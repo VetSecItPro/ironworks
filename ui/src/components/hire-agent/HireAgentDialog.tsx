@@ -1,20 +1,20 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useDialog } from "../../context/DialogContext";
-import { useCompany } from "../../context/CompanyContext";
-import { useToast } from "../../context/ToastContext";
-import { agentsApi } from "../../api/agents";
-import { projectsApi } from "../../api/projects";
-import { hiringApi } from "../../api/hiring";
-import { roleTemplatesApi, type RoleTemplate } from "../../api/roleTemplates";
-import { queryKeys } from "../../lib/queryKeys";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import type { AgentRole, ContractEndCondition, Department } from "@ironworksai/shared";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
-import type { AgentRole, Department, ContractEndCondition } from "@ironworksai/shared";
-import { HireStepType } from "./HireStepType";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { agentsApi } from "../../api/agents";
+import { hiringApi } from "../../api/hiring";
+import { projectsApi } from "../../api/projects";
+import { type RoleTemplate, roleTemplatesApi } from "../../api/roleTemplates";
+import { useCompany } from "../../context/CompanyContext";
+import { useDialog } from "../../context/DialogContext";
+import { useToast } from "../../context/ToastContext";
+import { queryKeys } from "../../lib/queryKeys";
 import { HireStepConfig, TalentPoolOverlay } from "./HireStepConfig";
 import { HireStepReview } from "./HireStepReview";
+import { HireStepType } from "./HireStepType";
 
 type EmploymentType = "full_time" | "contractor";
 type Step = 1 | 2 | 3;
@@ -74,12 +74,23 @@ export function HireAgentDialog() {
   });
 
   function resetState() {
-    setStep(1); setEmploymentType(null); setName(""); setRole("engineer");
-    setDepartment("engineering"); setReportsTo(""); setShowTalentPool(false);
-    setProjectId(""); setEndCondition("manual"); setEndDate(""); setBudgetAmount("");
+    setStep(1);
+    setEmploymentType(null);
+    setName("");
+    setRole("engineer");
+    setDepartment("engineering");
+    setReportsTo("");
+    setShowTalentPool(false);
+    setProjectId("");
+    setEndCondition("manual");
+    setEndDate("");
+    setBudgetAmount("");
   }
 
-  function handleClose() { resetState(); closeHireAgent(); }
+  function handleClose() {
+    resetState();
+    closeHireAgent();
+  }
 
   function handleTemplateSelect(t: RoleTemplate) {
     setName(t.title);
@@ -93,14 +104,19 @@ export function HireAgentDialog() {
 
   function buildPayload(status: string) {
     const payload: Record<string, unknown> = {
-      title: name.trim(), role, department, employmentType, status,
+      title: name.trim(),
+      role,
+      department,
+      employmentType,
+      status,
       reportsToAgentId: reportsTo || null,
     };
     if (employmentType === "contractor") {
       payload.projectId = projectId || null;
       payload.endCondition = endCondition;
       if (endCondition === "date" && endDate) payload.endDate = endDate;
-      if (endCondition === "budget_exhausted" && budgetAmount) payload.budgetCents = Math.round(parseFloat(budgetAmount) * 100);
+      if (endCondition === "budget_exhausted" && budgetAmount)
+        payload.budgetCents = Math.round(parseFloat(budgetAmount) * 100);
     }
     return payload;
   }
@@ -111,7 +127,11 @@ export function HireAgentDialog() {
       pushToast({ title: "Hiring request submitted", body: "Awaiting approval.", tone: "success" });
       handleClose();
     } catch (err) {
-      pushToast({ title: "Failed to submit", body: err instanceof Error ? err.message : "Unknown error", tone: "error" });
+      pushToast({
+        title: "Failed to submit",
+        body: err instanceof Error ? err.message : "Unknown error",
+        tone: "error",
+      });
     }
   }
 
@@ -130,13 +150,28 @@ export function HireAgentDialog() {
   const isPending = createMutation.isPending || fulfillMutation.isPending;
 
   return (
-    <Dialog open={hireAgentOpen} onOpenChange={(open) => { if (!open) handleClose(); }}>
+    <Dialog
+      open={hireAgentOpen}
+      onOpenChange={(open) => {
+        if (!open) handleClose();
+      }}
+    >
       <DialogContent showCloseButton={false} className="sm:max-w-lg p-0 gap-0 overflow-hidden">
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
           <div className="flex items-center gap-2">
             {step > 1 && (
-              <button type="button" aria-label="Go back" className="text-muted-foreground hover:text-foreground transition-colors"
-                onClick={() => { if (showTalentPool) { setShowTalentPool(false); return; } setStep((step - 1) as Step); }}>
+              <button
+                type="button"
+                aria-label="Go back"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => {
+                  if (showTalentPool) {
+                    setShowTalentPool(false);
+                    return;
+                  }
+                  setStep((step - 1) as Step);
+                }}
+              >
                 <ArrowLeft className="h-3.5 w-3.5" />
               </button>
             )}
@@ -153,21 +188,39 @@ export function HireAgentDialog() {
 
         <div className="p-6 space-y-4">
           {step === 1 && (
-            <HireStepType employmentType={employmentType} onSelect={(type) => { setEmploymentType(type); setStep(2); }} />
+            <HireStepType
+              employmentType={employmentType}
+              onSelect={(type) => {
+                setEmploymentType(type);
+                setStep(2);
+              }}
+            />
           )}
 
           {step === 2 && !showTalentPool && employmentType && (
             <HireStepConfig
-              name={name} setName={setName} role={role} setRole={setRole}
-              department={department} setDepartment={setDepartment}
-              reportsTo={reportsTo} setReportsTo={setReportsTo}
-              employmentType={employmentType} projectId={projectId} setProjectId={setProjectId}
-              endCondition={endCondition} setEndCondition={setEndCondition}
-              endDate={endDate} setEndDate={setEndDate}
-              budgetAmount={budgetAmount} setBudgetAmount={setBudgetAmount}
-              agents={agents ?? []} projects={projects ?? []}
+              name={name}
+              setName={setName}
+              role={role}
+              setRole={setRole}
+              department={department}
+              setDepartment={setDepartment}
+              reportsTo={reportsTo}
+              setReportsTo={setReportsTo}
+              employmentType={employmentType}
+              projectId={projectId}
+              setProjectId={setProjectId}
+              endCondition={endCondition}
+              setEndCondition={setEndCondition}
+              endDate={endDate}
+              setEndDate={setEndDate}
+              budgetAmount={budgetAmount}
+              setBudgetAmount={setBudgetAmount}
+              agents={agents ?? []}
+              projects={projects ?? []}
               canProceedToReview={canProceedToReview}
-              onNext={() => setStep(3)} onShowTalentPool={() => setShowTalentPool(true)}
+              onNext={() => setStep(3)}
+              onShowTalentPool={() => setShowTalentPool(true)}
             />
           )}
 
@@ -177,14 +230,22 @@ export function HireAgentDialog() {
 
           {step === 3 && employmentType && (
             <HireStepReview
-              name={name} employmentType={employmentType} role={role} department={department}
-              reportsTo={reportsTo} projectId={projectId} endCondition={endCondition}
-              endDate={endDate} budgetAmount={budgetAmount}
-              agents={agents ?? []} projects={projects ?? []}
+              name={name}
+              employmentType={employmentType}
+              role={role}
+              department={department}
+              reportsTo={reportsTo}
+              projectId={projectId}
+              endCondition={endCondition}
+              endDate={endDate}
+              budgetAmount={budgetAmount}
+              agents={agents ?? []}
+              projects={projects ?? []}
               isPending={isPending}
               isCreating={createMutation.isPending && !fulfillMutation.isPending}
               error={createMutation.error ?? fulfillMutation.error ?? null}
-              onSubmitForApproval={handleSubmitForApproval} onHireNow={handleHireNow}
+              onSubmitForApproval={handleSubmitForApproval}
+              onHireNow={handleHireNow}
             />
           )}
         </div>

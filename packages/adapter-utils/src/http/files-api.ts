@@ -9,14 +9,14 @@
 
 /** MIME types accepted for upload. Restrictive by default — adapters may pass custom lists. */
 export const ALLOWED_MIME_TYPES = [
-  'image/png',
-  'image/jpeg',
-  'image/jpg',
-  'image/webp',
-  'image/gif',
-  'application/pdf',
-  'text/plain',
-  'text/markdown',
+  "image/png",
+  "image/jpeg",
+  "image/jpg",
+  "image/webp",
+  "image/gif",
+  "application/pdf",
+  "text/plain",
+  "text/markdown",
 ] as const;
 
 /** 20 MB — Anthropic and OpenAI both cap single-file uploads at or below this. */
@@ -24,7 +24,7 @@ export const DEFAULT_MAX_FILE_BYTES = 20 * 1024 * 1024;
 
 export type AllowedMimeType = (typeof ALLOWED_MIME_TYPES)[number];
 
-export type FileProvider = 'anthropic' | 'openai' | 'poe' | 'openrouter';
+export type FileProvider = "anthropic" | "openai" | "poe" | "openrouter";
 
 /** Raw file data before upload — passed to validateFilePayload before any network call. */
 export interface FilePayload {
@@ -70,37 +70,30 @@ export interface ValidateOptions {
  * Returns all errors found — not just the first — so callers can display a
  * complete list without re-validating.
  */
-export function validateFilePayload(
-  payload: FilePayload,
-  options: ValidateOptions = {},
-): ValidationResult {
+export function validateFilePayload(payload: FilePayload, options: ValidateOptions = {}): ValidationResult {
   const errors: string[] = [];
   const maxBytes = options.maxBytes ?? DEFAULT_MAX_FILE_BYTES;
   const allowed: readonly string[] = options.allowedMimeTypes ?? ALLOWED_MIME_TYPES;
 
-  if (!payload.filename || payload.filename.trim() === '') {
-    errors.push('filename must be non-empty');
+  if (!payload.filename || payload.filename.trim() === "") {
+    errors.push("filename must be non-empty");
   } else {
     // Reject path-traversal sequences (POSIX + Windows separators + parent-dir reference).
     // Filenames are logged and surfaced in audit trails — a traversal sequence like
     // ..\..\etc\passwd can reach storage paths on Windows hosts.
-    if (
-      payload.filename.includes('..') ||
-      payload.filename.includes('/') ||
-      payload.filename.includes('\\')
-    ) {
-      errors.push('filename must not contain path separators or traversal sequences');
+    if (payload.filename.includes("..") || payload.filename.includes("/") || payload.filename.includes("\\")) {
+      errors.push("filename must not contain path separators or traversal sequences");
     }
     // Reject control characters that enable log injection or C-string truncation.
     // NUL (\x00) terminates strings in C contexts and corrupts audit log entries;
     // CR/LF (\r\n) let attackers smuggle fake log lines after the real entry.
     if (/[\x00\r\n]/.test(payload.filename)) {
-      errors.push('filename must not contain null bytes, carriage returns, or line feeds');
+      errors.push("filename must not contain null bytes, carriage returns, or line feeds");
     }
     // Cap at POSIX filename limit — unbounded lengths cause storage driver issues
     // and silent display truncation in downstream audit UIs.
     if (payload.filename.length > 255) {
-      errors.push('filename exceeds 255 characters (POSIX max)');
+      errors.push("filename exceeds 255 characters (POSIX max)");
     }
   }
 
@@ -109,17 +102,15 @@ export function validateFilePayload(
   }
 
   if (payload.bytes.length === 0) {
-    errors.push('file bytes must not be empty (zero-byte file)');
+    errors.push("file bytes must not be empty (zero-byte file)");
   } else if (payload.bytes.length > maxBytes) {
-    errors.push(
-      `file size ${payload.bytes.length} exceeds max ${maxBytes} (file too large)`,
-    );
+    errors.push(`file size ${payload.bytes.length} exceeds max ${maxBytes} (file too large)`);
   }
 
   return { valid: errors.length === 0, errors };
 }
 
-export type AttachmentFormat = 'anthropic' | 'openai';
+export type AttachmentFormat = "anthropic" | "openai";
 
 /**
  * Strict base64 alphabet + padding check.
@@ -132,14 +123,14 @@ const BASE64_REGEX = /^[A-Za-z0-9+/]*={0,2}$/;
 
 function validateBase64(data: string): void {
   if (data.length === 0) {
-    throw new Error('base64Data must not be empty');
+    throw new Error("base64Data must not be empty");
   }
   // RFC 4648 §4: every base64-encoded stream's byte count is a multiple of 4.
   if (data.length % 4 !== 0) {
-    throw new Error('base64Data length is not a multiple of 4');
+    throw new Error("base64Data length is not a multiple of 4");
   }
   if (!BASE64_REGEX.test(data)) {
-    throw new Error('base64Data contains characters outside the base64 alphabet');
+    throw new Error("base64Data contains characters outside the base64 alphabet");
   }
 }
 
@@ -163,57 +154,52 @@ export interface AttachmentBlockOptions {
  *   - image (Files API): {type:'image_url', image_url:{url:'file://<id>'}}
  *   - image (inline):    {type:'image_url', image_url:{url:'data:<mime>;base64,<data>'}}
  */
-export function buildAttachmentBlock(
-  ref: FileRef,
-  options: AttachmentBlockOptions,
-): Record<string, unknown> {
+export function buildAttachmentBlock(ref: FileRef, options: AttachmentBlockOptions): Record<string, unknown> {
   if (ref.provider !== options.format) {
-    throw new Error(
-      `provider/format mismatch: ref.provider="${ref.provider}" but format="${options.format}"`,
-    );
+    throw new Error(`provider/format mismatch: ref.provider="${ref.provider}" but format="${options.format}"`);
   }
 
-  if (options.format === 'anthropic') {
-    const blockType = ref.mimeType === 'application/pdf' ? 'document' : 'image';
+  if (options.format === "anthropic") {
+    const blockType = ref.mimeType === "application/pdf" ? "document" : "image";
 
-    if (ref.fileId !== '') {
+    if (ref.fileId !== "") {
       return {
         type: blockType,
-        source: { type: 'file', file_id: ref.fileId },
+        source: { type: "file", file_id: ref.fileId },
       };
     }
 
-    if (ref.base64Data !== undefined && ref.base64Data !== '') {
+    if (ref.base64Data !== undefined && ref.base64Data !== "") {
       // Validate before passing to the API — malformed base64 errors surface remotely
       // and are hard to attribute; catch them at the construction site instead.
       validateBase64(ref.base64Data);
       return {
         type: blockType,
-        source: { type: 'base64', media_type: ref.mimeType, data: ref.base64Data },
+        source: { type: "base64", media_type: ref.mimeType, data: ref.base64Data },
       };
     }
 
-    throw new Error('Anthropic FileRef must have a non-empty fileId or base64Data');
+    throw new Error("Anthropic FileRef must have a non-empty fileId or base64Data");
   }
 
   // OpenAI — image_url content block; Files API references use file:// URI scheme
-  if (ref.fileId !== '') {
+  if (ref.fileId !== "") {
     return {
-      type: 'image_url',
+      type: "image_url",
       image_url: { url: `file://${ref.fileId}` },
     };
   }
 
-  if (ref.base64Data !== undefined && ref.base64Data !== '') {
+  if (ref.base64Data !== undefined && ref.base64Data !== "") {
     // Same guard as Anthropic path — validate before embedding in the data: URI.
     validateBase64(ref.base64Data);
     return {
-      type: 'image_url',
+      type: "image_url",
       image_url: { url: `data:${ref.mimeType};base64,${ref.base64Data}` },
     };
   }
 
-  throw new Error('OpenAI FileRef must have a non-empty fileId or base64Data');
+  throw new Error("OpenAI FileRef must have a non-empty fileId or base64Data");
 }
 
 /** Barrel-compatible namespace for callers that prefer named-object imports. */

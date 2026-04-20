@@ -1,25 +1,24 @@
-import { useEffect, useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { useCompany } from "@/context/CompanyContext";
-import { useBreadcrumbs } from "@/context/BreadcrumbContext";
-import { useToast } from "@/context/ToastContext";
-import { billingApi, type SubscriptionResponse } from "@/api/billing";
-import { queryKeys } from "@/lib/queryKeys";
-import { PricingTable } from "@/components/PricingTable";
-import { Button } from "@/components/ui/button";
-import type { PlanTier } from "@/api/billing";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { ExternalLink } from "lucide-react";
-
+import { useEffect, useState } from "react";
+import type { PlanTier } from "@/api/billing";
+import { billingApi, type SubscriptionResponse } from "@/api/billing";
 import {
-  CurrentPlanCard,
-  UsageDashboardCard,
-  InvoiceHistory,
-  PlanComparison,
-  PaymentMethodCard,
   CancelSubscriptionSection,
+  CurrentPlanCard,
+  InvoiceHistory,
+  PaymentMethodCard,
+  PlanComparison,
   UpgradeBanner,
+  UsageDashboardCard,
   UsageProjectionsCard,
 } from "@/components/billing-settings";
+import { PricingTable } from "@/components/PricingTable";
+import { Button } from "@/components/ui/button";
+import { useBreadcrumbs } from "@/context/BreadcrumbContext";
+import { useCompany } from "@/context/CompanyContext";
+import { useToast } from "@/context/ToastContext";
+import { queryKeys } from "@/lib/queryKeys";
 
 export function BillingSettings() {
   const { selectedCompanyId, selectedCompany } = useCompany();
@@ -28,10 +27,7 @@ export function BillingSettings() {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   useEffect(() => {
-    setBreadcrumbs([
-      { label: "Settings", href: "/settings" },
-      { label: "Billing" },
-    ]);
+    setBreadcrumbs([{ label: "Settings", href: "/settings" }, { label: "Billing" }]);
   }, [setBreadcrumbs]);
 
   const { data, isLoading, error } = useQuery({
@@ -42,8 +38,7 @@ export function BillingSettings() {
   });
 
   const portalMutation = useMutation({
-    mutationFn: () =>
-      billingApi.createPortalSession(selectedCompanyId!, window.location.href),
+    mutationFn: () => billingApi.createPortalSession(selectedCompanyId!, window.location.href),
     onSuccess: (result: { url: string }) => {
       window.location.href = result.url;
     },
@@ -53,8 +48,7 @@ export function BillingSettings() {
   });
 
   const cancelMutation = useMutation({
-    mutationFn: () =>
-      billingApi.createPortalSession(selectedCompanyId!, window.location.href),
+    mutationFn: () => billingApi.createPortalSession(selectedCompanyId!, window.location.href),
     onSuccess: (result: { url: string }) => {
       window.location.href = result.url;
     },
@@ -94,11 +88,7 @@ export function BillingSettings() {
   }
 
   if (error) {
-    return (
-      <div className="p-6 text-destructive">
-        Failed to load billing information. Please try again later.
-      </div>
-    );
+    return <div className="p-6 text-destructive">Failed to load billing information. Please try again later.</div>;
   }
 
   const sub = data as SubscriptionResponse;
@@ -110,16 +100,10 @@ export function BillingSettings() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Billing</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Manage your subscription and billing details.
-          </p>
+          <p className="text-muted-foreground text-sm mt-1">Manage your subscription and billing details.</p>
         </div>
         {subscription.polarCustomerId && (
-          <Button
-            variant="outline"
-            onClick={() => portalMutation.mutate()}
-            disabled={portalMutation.isPending}
-          >
+          <Button variant="outline" onClick={() => portalMutation.mutate()} disabled={portalMutation.isPending}>
             <ExternalLink className="h-4 w-4 mr-1.5" />
             Manage Billing
           </Button>
@@ -135,19 +119,12 @@ export function BillingSettings() {
       {/* Pricing Table */}
       <div className="space-y-3">
         <h2 className="text-lg font-semibold">Change Plan</h2>
-        <PricingTable
-          currentTier={subscription.planTier}
-          onSelectTier={handleSelectTier}
-          loading={checkoutLoading}
-        />
+        <PricingTable currentTier={subscription.planTier} onSelectTier={handleSelectTier} loading={checkoutLoading} />
       </div>
 
       <UsageProjectionsCard plan={plan} usage={usage} />
 
-      <PaymentMethodCard
-        onManage={() => portalMutation.mutate()}
-        isManaging={portalMutation.isPending}
-      />
+      <PaymentMethodCard onManage={() => portalMutation.mutate()} isManaging={portalMutation.isPending} />
 
       <InvoiceHistory />
 

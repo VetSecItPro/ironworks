@@ -1,15 +1,23 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { agentsApi } from "../../api/agents";
+import { goalProgressApi } from "../../api/goalProgress";
+import { goalsApi } from "../../api/goals";
 import { heartbeatsApi } from "../../api/heartbeats";
 import { issuesApi } from "../../api/issues";
-import { goalsApi } from "../../api/goals";
-import { goalProgressApi } from "../../api/goalProgress";
 import { queryKeys } from "../../lib/queryKeys";
 import { IssuesList } from "../IssuesList";
 import type { KanbanGoalInfo } from "../KanbanBoard";
 
-export function ProjectIssuesList({ projectId, companyId, goalIds }: { projectId: string; companyId: string; goalIds?: string[] }) {
+export function ProjectIssuesList({
+  projectId,
+  companyId,
+  goalIds,
+}: {
+  projectId: string;
+  companyId: string;
+  goalIds?: string[];
+}) {
   const queryClient = useQueryClient();
 
   const { data: agents } = useQuery({
@@ -33,7 +41,11 @@ export function ProjectIssuesList({ projectId, companyId, goalIds }: { projectId
     return ids;
   }, [liveRuns]);
 
-  const { data: issues, isLoading, error } = useQuery({
+  const {
+    data: issues,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: queryKeys.issues.listByProject(companyId, projectId),
     queryFn: () => issuesApi.list(companyId, { projectId }),
     enabled: !!companyId,
@@ -63,8 +75,7 @@ export function ProjectIssuesList({ projectId, companyId, goalIds }: { projectId
     : null;
 
   const updateIssue = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
-      issuesApi.update(id, data),
+    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) => issuesApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.issues.listByProject(companyId, projectId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.issues.list(companyId) });

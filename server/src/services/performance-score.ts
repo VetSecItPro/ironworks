@@ -1,6 +1,6 @@
-import { and, asc, eq, gte, ne, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import { agents, agentMemoryEntries, approvals, companies, heartbeatRuns, issues } from "@ironworksai/db";
+import { agentMemoryEntries, agents, approvals, companies, heartbeatRuns, issues } from "@ironworksai/db";
+import { and, asc, eq, gte, ne, sql } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 
 // ── Agent Performance Score ─────────────────────────────────────────────────
@@ -22,11 +22,7 @@ const NEUTRAL_SCORE = 15;
  *   - Budget efficiency (0-25): based on budget vs spend ratio
  *   - Activity level (0-25): based on issues completed in the last 30 days
  */
-export async function computePerformanceScore(
-  db: Db,
-  agentId: string,
-  companyId: string,
-): Promise<number> {
+export async function computePerformanceScore(db: Db, agentId: string, companyId: string): Promise<number> {
   // ── Factor 1: Issue completion rate ─────────────────────────────
   const completionStats = await db
     .select({
@@ -34,26 +30,23 @@ export async function computePerformanceScore(
       cancelled: sql<number>`count(case when ${issues.status} = 'cancelled' then 1 end)::int`,
     })
     .from(issues)
-    .where(
-      and(
-        eq(issues.companyId, companyId),
-        eq(issues.assigneeAgentId, agentId),
-      ),
-    );
+    .where(and(eq(issues.companyId, companyId), eq(issues.assigneeAgentId, agentId)));
 
   const stats = completionStats[0];
   const completed = Number(stats?.completed ?? 0);
   const cancelled = Number(stats?.cancelled ?? 0);
   const totalResolved = completed + cancelled;
 
-  const completionScore =
-    totalResolved > 0 ? Math.round((completed / totalResolved) * 25) : NEUTRAL_SCORE;
+  const completionScore = totalResolved > 0 ? Math.round((completed / totalResolved) * 25) : NEUTRAL_SCORE;
 
   // ── Factor 2: Approval pass rate ────────────────────────────────
-  const approvalRows = await db.select({
-    total: sql<number>`count(*)`,
-    approved: sql<number>`count(*) filter (where status = 'approved')`,
-  }).from(approvals).where(eq(approvals.requestedByAgentId, agentId));
+  const approvalRows = await db
+    .select({
+      total: sql<number>`count(*)`,
+      approved: sql<number>`count(*) filter (where status = 'approved')`,
+    })
+    .from(approvals)
+    .where(eq(approvals.requestedByAgentId, agentId));
 
   const approvalTotal = Number(approvalRows[0]?.total ?? 0);
   const approvalApproved = Number(approvalRows[0]?.approved ?? 0);
@@ -117,19 +110,11 @@ export async function computePerformanceScore(
  * Recompute and persist performance scores for all non-terminated agents
  * in the given company.
  */
-export async function updateAllPerformanceScores(
-  db: Db,
-  companyId: string,
-): Promise<void> {
+export async function updateAllPerformanceScores(db: Db, companyId: string): Promise<void> {
   const companyAgents = await db
     .select({ id: agents.id })
     .from(agents)
-    .where(
-      and(
-        eq(agents.companyId, companyId),
-        ne(agents.status, "terminated"),
-      ),
-    );
+    .where(and(eq(agents.companyId, companyId), ne(agents.status, "terminated")));
 
   const now = new Date();
   let updated = 0;
@@ -148,10 +133,7 @@ export async function updateAllPerformanceScores(
     updated++;
   }
 
-  logger.info(
-    { companyId, agentsUpdated: updated },
-    "updated performance scores for company agents",
-  );
+  logger.info({ companyId, agentsUpdated: updated }, "updated performance scores for company agents");
 }
 
 // ── Agent Utilization Tracking ─────────────────────────────────────────────
@@ -183,12 +165,7 @@ export async function computeAgentUtilization(
       finishedAt: heartbeatRuns.finishedAt,
     })
     .from(heartbeatRuns)
-    .where(
-      and(
-        eq(heartbeatRuns.agentId, agentId),
-        gte(heartbeatRuns.createdAt, periodStart),
-      ),
-    );
+    .where(and(eq(heartbeatRuns.agentId, agentId), gte(heartbeatRuns.createdAt, periodStart)));
 
   let activeMinutes = 0;
   for (const run of runs) {
@@ -201,9 +178,7 @@ export async function computeAgentUtilization(
   }
 
   activeMinutes = Math.round(activeMinutes);
-  const utilizationPct = totalMinutes > 0
-    ? Math.min(100, Math.round((activeMinutes / totalMinutes) * 100))
-    : 0;
+  const utilizationPct = totalMinutes > 0 ? Math.min(100, Math.round((activeMinutes / totalMinutes) * 100)) : 0;
 
   return { activeMinutes, totalMinutes, utilizationPct };
 }
@@ -241,19 +216,11 @@ export async function onboardingMetrics(
   const completedIssues = await db
     .select({ completedAt: issues.completedAt })
     .from(issues)
-    .where(
-      and(
-        eq(issues.assigneeAgentId, agentId),
-        eq(issues.status, "done"),
-        sql`${issues.completedAt} is not null`,
-      ),
-    )
+    .where(and(eq(issues.assigneeAgentId, agentId), eq(issues.status, "done"), sql`${issues.completedAt} is not null`))
     .orderBy(asc(issues.completedAt));
 
   const firstIssueCompletedAt =
-    completedIssues.length > 0 && completedIssues[0]?.completedAt
-      ? new Date(completedIssues[0].completedAt)
-      : null;
+    completedIssues.length > 0 && completedIssues[0]?.completedAt ? new Date(completedIssues[0].completedAt) : null;
 
   let rampTimeDays: number | null = null;
   if (hiredAt && firstIssueCompletedAt) {
@@ -280,22 +247,14 @@ export async function onboardingMetrics(
  * Stores each agent's current performance_score as a semantic memory entry
  * with category "performance_snapshot". Intended to run alongside weekly reports.
  */
-export async function capturePerformanceSnapshot(
-  db: Db,
-  companyId: string,
-): Promise<void> {
+export async function capturePerformanceSnapshot(db: Db, companyId: string): Promise<void> {
   const companyAgents = await db
     .select({
       id: agents.id,
       performanceScore: agents.performanceScore,
     })
     .from(agents)
-    .where(
-      and(
-        eq(agents.companyId, companyId),
-        ne(agents.status, "terminated"),
-      ),
-    );
+    .where(and(eq(agents.companyId, companyId), ne(agents.status, "terminated")));
 
   const now = new Date();
   const dateStr = now.toISOString().slice(0, 10);

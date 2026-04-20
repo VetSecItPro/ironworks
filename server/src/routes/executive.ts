@@ -1,27 +1,27 @@
-import { Router } from "express";
 import type { Db } from "@ironworksai/db";
 import { agents } from "@ironworksai/db";
-import { and, eq, ne, inArray } from "drizzle-orm";
-import {
-  executiveAnalyticsService,
-  budgetForecast,
-  departmentSpendingSummary,
-  modelHealthCheck,
-  departmentImpact,
-  departmentBudgetVsActual,
-  agentEfficiencyRankings,
-  humanOverrideRate,
-  systemHealthSummary,
-  councilAnalytics,
-} from "../services/executive-analytics.js";
-import { computeDORAMetrics } from "../services/dora-metrics.js";
-import { getMemoryHealth } from "../services/agent-memory.js";
+import { and, eq, inArray, ne } from "drizzle-orm";
+import { Router } from "express";
 import { logActivity } from "../services/activity-log.js";
-import { heartbeatService } from "../services/heartbeat.js";
-import { tokenAnalyticsService, contextWindowUtilization } from "../services/token-analytics.js";
-import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
-import { getPendingAlerts, resolveAlert, type AlertSeverity } from "../services/smart-alerts.js";
+import { getMemoryHealth } from "../services/agent-memory.js";
 import { getRiskSettings, updateRiskSettings } from "../services/company-risk-settings.js";
+import { computeDORAMetrics } from "../services/dora-metrics.js";
+import {
+  agentEfficiencyRankings,
+  budgetForecast,
+  councilAnalytics,
+  departmentBudgetVsActual,
+  departmentImpact,
+  departmentSpendingSummary,
+  executiveAnalyticsService,
+  humanOverrideRate,
+  modelHealthCheck,
+  systemHealthSummary,
+} from "../services/executive-analytics.js";
+import { heartbeatService } from "../services/heartbeat.js";
+import { type AlertSeverity, getPendingAlerts, resolveAlert } from "../services/smart-alerts.js";
+import { contextWindowUtilization, tokenAnalyticsService } from "../services/token-analytics.js";
+import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
 
 export function executiveRoutes(db: Db) {
   const router = Router();
@@ -97,13 +97,7 @@ export function executiveRoutes(db: Db) {
     const activeAgents = await db
       .select({ id: agents.id })
       .from(agents)
-      .where(
-        and(
-          eq(agents.companyId, companyId),
-          ne(agents.status, "paused"),
-          ne(agents.status, "terminated"),
-        ),
-      );
+      .where(and(eq(agents.companyId, companyId), ne(agents.status, "paused"), ne(agents.status, "terminated")));
 
     if (activeAgents.length === 0) {
       res.json({ paused: 0, message: "No active agents to pause." });
@@ -119,13 +113,7 @@ export function executiveRoutes(db: Db) {
         pausedAt: now,
         updatedAt: now,
       })
-      .where(
-        and(
-          eq(agents.companyId, companyId),
-          ne(agents.status, "paused"),
-          ne(agents.status, "terminated"),
-        ),
-      );
+      .where(and(eq(agents.companyId, companyId), ne(agents.status, "paused"), ne(agents.status, "terminated")));
 
     // Cancel all running work
     for (const agent of activeAgents) {
@@ -186,20 +174,25 @@ export function executiveRoutes(db: Db) {
 
       for (const entry of data.allActions) {
         const detailsStr = entry.details ? JSON.stringify(entry.details).replace(/"/g, '""') : "";
-        rows.push([
-          entry.createdAt instanceof Date ? entry.createdAt.toISOString() : String(entry.createdAt),
-          entry.actorType,
-          entry.actorId,
-          entry.action,
-          entry.entityType,
-          entry.entityId,
-          entry.agentId ?? "",
-          `"${detailsStr}"`,
-        ].join(","));
+        rows.push(
+          [
+            entry.createdAt instanceof Date ? entry.createdAt.toISOString() : String(entry.createdAt),
+            entry.actorType,
+            entry.actorId,
+            entry.action,
+            entry.entityType,
+            entry.entityId,
+            entry.agentId ?? "",
+            `"${detailsStr}"`,
+          ].join(","),
+        );
       }
 
       res.setHeader("Content-Type", "text/csv");
-      res.setHeader("Content-Disposition", `attachment; filename="compliance-export-${from.toISOString().slice(0, 10)}-to-${to.toISOString().slice(0, 10)}.csv"`);
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="compliance-export-${from.toISOString().slice(0, 10)}-to-${to.toISOString().slice(0, 10)}.csv"`,
+      );
       res.send(rows.join("\n"));
       return;
     }

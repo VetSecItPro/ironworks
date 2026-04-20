@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -135,7 +135,10 @@ describe("approval routes", () => {
     mockApprovalService.list.mockResolvedValue([MOCK_APPROVAL]);
     mockApprovalService.getById.mockResolvedValue(MOCK_APPROVAL);
     mockApprovalService.create.mockResolvedValue(MOCK_APPROVAL);
-    mockApprovalService.approve.mockResolvedValue({ approval: { ...MOCK_APPROVAL, status: "approved" }, applied: true });
+    mockApprovalService.approve.mockResolvedValue({
+      approval: { ...MOCK_APPROVAL, status: "approved" },
+      applied: true,
+    });
     mockApprovalService.reject.mockResolvedValue({ approval: { ...MOCK_APPROVAL, status: "rejected" }, applied: true });
     mockApprovalService.requestRevision.mockResolvedValue({ ...MOCK_APPROVAL, status: "revision_requested" });
     mockApprovalService.resubmit.mockResolvedValue({ ...MOCK_APPROVAL, status: "pending" });
@@ -220,9 +223,7 @@ describe("approval routes", () => {
     it("rejects non-board actors from approving", async () => {
       const agentActor = { type: "agent", agentId: AGENT_ID, companyId: COMPANY_ID };
       const app = await createApp(agentActor);
-      const res = await request(app)
-        .post(`/api/approvals/${APPROVAL_ID}/approve`)
-        .send({ decidedByUserId: USER_ID });
+      const res = await request(app).post(`/api/approvals/${APPROVAL_ID}/approve`).send({ decidedByUserId: USER_ID });
 
       expect(res.status).toBe(403);
     });
@@ -242,9 +243,7 @@ describe("approval routes", () => {
     it("rejects non-board actors from rejecting", async () => {
       const agentActor = { type: "agent", agentId: AGENT_ID, companyId: COMPANY_ID };
       const app = await createApp(agentActor);
-      const res = await request(app)
-        .post(`/api/approvals/${APPROVAL_ID}/reject`)
-        .send({ decidedByUserId: USER_ID });
+      const res = await request(app).post(`/api/approvals/${APPROVAL_ID}/reject`).send({ decidedByUserId: USER_ID });
 
       expect(res.status).toBe(403);
     });
@@ -283,9 +282,7 @@ describe("approval routes", () => {
   describe("POST /api/approvals/:id/comments", () => {
     it("adds a comment to an approval", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post(`/api/approvals/${APPROVAL_ID}/comments`)
-        .send({ body: "Looks good to me" });
+      const res = await request(app).post(`/api/approvals/${APPROVAL_ID}/comments`).send({ body: "Looks good to me" });
 
       expect(res.status).toBe(201);
       expect(res.body).toMatchObject({ body: "Looks good to me" });
@@ -294,9 +291,7 @@ describe("approval routes", () => {
     it("returns 404 for comment on non-existent approval", async () => {
       mockApprovalService.getById.mockResolvedValue(null);
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post(`/api/approvals/${randomUUID()}/comments`)
-        .send({ body: "Test" });
+      const res = await request(app).post(`/api/approvals/${randomUUID()}/comments`).send({ body: "Test" });
       expect(res.status).toBe(404);
     });
   });

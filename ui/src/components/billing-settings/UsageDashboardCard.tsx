@@ -1,5 +1,5 @@
-import { UsageMeter, formatBytes } from "./billingHelpers";
 import type { SubscriptionResponse } from "@/api/billing";
+import { formatBytes, UsageMeter } from "./billingHelpers";
 
 interface UsageDashboardCardProps {
   plan: SubscriptionResponse["plan"];

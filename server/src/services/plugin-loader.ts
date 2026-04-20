@@ -24,9 +24,10 @@
  * @see PLUGIN_SPEC.md §10 — Package Contract
  * @see PLUGIN_SPEC.md §12 — Process Model
  */
+
+import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
 import { readdir, readFile, rm, stat } from "node:fs/promises";
-import { execFile } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -39,15 +40,15 @@ import type {
   PluginUiSlotDeclaration,
 } from "@ironworksai/shared";
 import { logger } from "../middleware/logger.js";
-import { pluginManifestValidator } from "./plugin-manifest-validator.js";
 import { pluginCapabilityValidator } from "./plugin-capability-validator.js";
-import { pluginRegistryService } from "./plugin-registry.js";
-import type { PluginWorkerManager, WorkerStartOptions, WorkerToHostHandlers } from "./plugin-worker-manager.js";
 import type { PluginEventBus } from "./plugin-event-bus.js";
 import type { PluginJobScheduler } from "./plugin-job-scheduler.js";
 import type { PluginJobStore } from "./plugin-job-store.js";
-import type { PluginToolDispatcher } from "./plugin-tool-dispatcher.js";
 import type { PluginLifecycleManager } from "./plugin-lifecycle.js";
+import { pluginManifestValidator } from "./plugin-manifest-validator.js";
+import { pluginRegistryService } from "./plugin-registry.js";
+import type { PluginToolDispatcher } from "./plugin-tool-dispatcher.js";
+import type { PluginWorkerManager, WorkerStartOptions, WorkerToHostHandlers } from "./plugin-worker-manager.js";
 
 const execFileAsync = promisify(execFile);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -70,11 +71,7 @@ export const NPM_PLUGIN_PACKAGE_PREFIX = "ironworks-plugin-";
  *
  * @see PLUGIN_SPEC.md §8.1 — On-Disk Layout
  */
-export const DEFAULT_LOCAL_PLUGIN_DIR = path.join(
-  os.homedir(),
-  ".ironworks",
-  "plugins",
-);
+export const DEFAULT_LOCAL_PLUGIN_DIR = path.join(os.homedir(), ".ironworks", "plugins");
 
 const DEV_TSX_LOADER_PATH = path.resolve(__dirname, "../../../cli/node_modules/tsx/dist/loader.mjs");
 
@@ -104,9 +101,9 @@ export interface DiscoveredPlugin {
  * @see PLUGIN_SPEC.md §8.1 — On-Disk Layout
  */
 export type PluginSource =
-  | "local-filesystem"  // ~/.ironworks/plugins/ local directory
-  | "npm"               // npm packages matching ironworks-plugin-* convention
-  | "registry";         // future: remote plugin registry URL
+  | "local-filesystem" // ~/.ironworks/plugins/ local directory
+  | "npm" // npm packages matching ironworks-plugin-* convention
+  | "registry"; // future: remote plugin registry URL
 
 type ParsedSemver = {
   major: number;
@@ -129,7 +126,10 @@ export interface PluginDiscoveryResult {
 
 function getDeclaredPageRoutePaths(manifest: IronworksPluginManifestV1): string[] {
   return (manifest.ui?.slots ?? [])
-    .filter((slot): slot is PluginUiSlotDeclaration => slot.type === "page" && typeof slot.routePath === "string" && slot.routePath.length > 0)
+    .filter(
+      (slot): slot is PluginUiSlotDeclaration =>
+        slot.type === "page" && typeof slot.routePath === "string" && slot.routePath.length > 0,
+    )
     .map((slot) => slot.routePath!);
 }
 
@@ -389,7 +389,10 @@ export interface PluginLoader {
    *
    * @see PLUGIN_SPEC.md §25.3 — Upgrade Lifecycle
    */
-  upgradePlugin(pluginId: string, options: Omit<PluginInstallOptions, "installDir">): Promise<{
+  upgradePlugin(
+    pluginId: string,
+    options: Omit<PluginInstallOptions, "installDir">,
+  ): Promise<{
     oldManifest: IronworksPluginManifestV1;
     newManifest: IronworksPluginManifestV1;
     discovered: DiscoveredPlugin;
@@ -519,9 +522,7 @@ export function isPluginPackageName(name: string): boolean {
  * Read and parse a package.json from a directory path.
  * Returns null if no package.json exists.
  */
-async function readPackageJson(
-  dir: string,
-): Promise<Record<string, unknown> | null> {
+async function readPackageJson(dir: string): Promise<Record<string, unknown> | null> {
   const pkgPath = path.join(dir, "package.json");
   if (!existsSync(pkgPath)) return null;
 
@@ -541,19 +542,10 @@ async function readPackageJson(
  *
  * @see PLUGIN_SPEC.md §10 — Package Contract
  */
-function resolveManifestPath(
-  packageRoot: string,
-  pkgJson: Record<string, unknown>,
-): string | null {
+function resolveManifestPath(packageRoot: string, pkgJson: Record<string, unknown>): string | null {
   const ironworksPlugin = pkgJson["ironworksPlugin"];
-  if (
-    ironworksPlugin !== null &&
-    typeof ironworksPlugin === "object" &&
-    !Array.isArray(ironworksPlugin)
-  ) {
-    const manifestRelPath = (ironworksPlugin as Record<string, unknown>)[
-      "manifest"
-    ];
+  if (ironworksPlugin !== null && typeof ironworksPlugin === "object" && !Array.isArray(ironworksPlugin)) {
+    const manifestRelPath = (ironworksPlugin as Record<string, unknown>)["manifest"];
     if (typeof manifestRelPath === "string") {
       // NOTE: the resolved path is returned as-is even if the file does not yet
       // exist on disk (e.g. the package has not been built).  Callers MUST guard
@@ -578,9 +570,7 @@ function resolveManifestPath(
 }
 
 function parseSemver(version: string): ParsedSemver | null {
-  const match = version.match(
-    /^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$/,
-  );
+  const match = version.match(/^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$/);
   if (!match) return null;
 
   return {
@@ -612,9 +602,9 @@ function compareSemver(left: string, right: string): number {
     throw new Error(`Invalid semver comparison: '${left}' vs '${right}'`);
   }
 
-  const coreOrder = (
-    ["major", "minor", "patch"] as const
-  ).map((key) => leftParsed[key] - rightParsed[key]).find((delta) => delta !== 0);
+  const coreOrder = (["major", "minor", "patch"] as const)
+    .map((key) => leftParsed[key] - rightParsed[key])
+    .find((delta) => delta !== 0);
   if (coreOrder) {
     return coreOrder;
   }
@@ -654,10 +644,7 @@ export function getPluginUiContributionMetadata(
   manifest: IronworksPluginManifestV1,
 ): PluginUiContributionMetadata | null {
   const slots = manifest.ui?.slots ?? [];
-  const launchers = [
-    ...(manifest.launchers ?? []),
-    ...(manifest.ui?.launchers ?? []),
-  ];
+  const launchers = [...(manifest.launchers ?? []), ...(manifest.ui?.launchers ?? [])];
 
   if (slots.length === 0 && launchers.length === 0) {
     return null;
@@ -787,9 +774,7 @@ export function pluginLoader(
    * @param installOptions - Options specifying the package to fetch.
    * @returns A `DiscoveredPlugin` object containing the validated manifest.
    */
-  async function fetchAndValidate(
-    installOptions: PluginInstallOptions,
-  ): Promise<DiscoveredPlugin> {
+  async function fetchAndValidate(installOptions: PluginInstallOptions): Promise<DiscoveredPlugin> {
     const { packageName, localPath, version, installDir } = installOptions;
 
     if (!packageName && !localPath) {
@@ -810,10 +795,7 @@ export function pluginLoader(
       }
       resolvedPackagePath = absLocalPath;
       const pkgJson = await readPackageJson(absLocalPath);
-      resolvedPackageName =
-        typeof pkgJson?.["name"] === "string"
-          ? pkgJson["name"]
-          : path.basename(absLocalPath);
+      resolvedPackageName = typeof pkgJson?.["name"] === "string" ? pkgJson["name"] : path.basename(absLocalPath);
 
       log.info(
         { localPath: absLocalPath, packageName: resolvedPackageName },
@@ -823,10 +805,7 @@ export function pluginLoader(
       // npm install
       const spec = version ? `${packageName}@${version}` : packageName!;
 
-      log.info(
-        { spec, installDir: targetInstallDir },
-        "plugin-loader: fetching plugin from npm",
-      );
+      log.info({ spec, installDir: targetInstallDir }, "plugin-loader: fetching plugin from npm");
 
       try {
         // Use execFile (not exec) to avoid shell injection from package name/version.
@@ -854,9 +833,7 @@ export function pluginLoader(
       }
 
       if (!existsSync(resolvedPackagePath)) {
-        throw new Error(
-          `Package directory not found after installation: ${resolvedPackagePath}`,
-        );
+        throw new Error(`Package directory not found after installation: ${resolvedPackagePath}`);
       }
     }
 
@@ -920,20 +897,16 @@ export function pluginLoader(
    * Attempt to load and validate a plugin manifest from a resolved path.
    * Returns the manifest on success or throws with a descriptive error.
    */
-  async function loadManifestFromPath(
-    manifestPath: string,
-  ): Promise<IronworksPluginManifestV1> {
+  async function loadManifestFromPath(manifestPath: string): Promise<IronworksPluginManifestV1> {
     let raw: unknown;
 
     try {
       // Dynamic import works for both .js (ESM) and .cjs (CJS) manifests
-      const mod = await import(manifestPath) as Record<string, unknown>;
+      const mod = (await import(manifestPath)) as Record<string, unknown>;
       // The manifest may be the default export or the module itself
       raw = mod["default"] ?? mod;
     } catch (err) {
-      throw new Error(
-        `Failed to load manifest module at ${manifestPath}: ${String(err)}`,
-      );
+      throw new Error(`Failed to load manifest module at ${manifestPath}: ${String(err)}`);
     }
 
     return manifestValidator.parseOrThrow(raw);
@@ -943,10 +916,7 @@ export function pluginLoader(
    * Build a DiscoveredPlugin from a resolved package directory, or null
    * if the package is not a Ironworks plugin.
    */
-  async function buildDiscoveredPlugin(
-    packagePath: string,
-    source: PluginSource,
-  ): Promise<DiscoveredPlugin | null> {
+  async function buildDiscoveredPlugin(packagePath: string, source: PluginSource): Promise<DiscoveredPlugin | null> {
     const pkgJson = await readPackageJson(packagePath);
     if (!pkgJson) return null;
 
@@ -985,9 +955,7 @@ export function pluginLoader(
       };
     } catch (err) {
       // Rethrow with context — callers catch and route to the errors array
-      throw new Error(
-        `Plugin ${packageName}: ${String(err)}`,
-      );
+      throw new Error(`Plugin ${packageName}: ${String(err)}`);
     }
   }
 
@@ -1056,10 +1024,7 @@ export function pluginLoader(
       const errors: Array<{ packagePath: string; packageName: string; error: string }> = [];
 
       if (!existsSync(scanDir)) {
-        log.debug(
-          { dir: scanDir },
-          "plugin-loader: local plugin directory does not exist, skipping",
-        );
+        log.debug({ dir: scanDir }, "plugin-loader: local plugin directory does not exist, skipping");
         return { discovered, errors, sources: ["local-filesystem"] };
       }
 
@@ -1114,8 +1079,7 @@ export function pluginLoader(
           if (plugin) discovered.push(plugin);
         } catch (err) {
           const pkgJson = await readPackageJson(entryPath);
-          const packageName =
-            typeof pkgJson?.["name"] === "string" ? pkgJson["name"] : entry;
+          const packageName = typeof pkgJson?.["name"] === "string" ? pkgJson["name"] : entry;
           errors.push({ packagePath: entryPath, packageName, error: String(err) });
         }
       }
@@ -1208,8 +1172,7 @@ export function pluginLoader(
             if (plugin) discovered.push(plugin);
           } catch (err) {
             const pkgJson = await readPackageJson(entryPath);
-            const packageName =
-              typeof pkgJson?.["name"] === "string" ? pkgJson["name"] : entry;
+            const packageName = typeof pkgJson?.["name"] === "string" ? pkgJson["name"] : entry;
             errors.push({ packagePath: entryPath, packageName, error: String(err) });
           }
         }
@@ -1317,10 +1280,7 @@ export function pluginLoader(
         version,
       } = upgradeOptions;
 
-      log.info(
-        { pluginId, packageName, version, localPath },
-        "plugin-loader: upgrading plugin",
-      );
+      log.info({ pluginId, packageName, version, localPath }, "plugin-loader: upgrading plugin");
 
       // 1. Fetch/Install the new version
       const discovered = await fetchAndValidate({
@@ -1470,15 +1430,10 @@ export function pluginLoader(
         return { total: 0, succeeded: 0, failed: 0, results: [] };
       }
 
-      log.info(
-        { count: readyPlugins.length },
-        "plugin-loader: found ready plugins to load",
-      );
+      log.info({ count: readyPlugins.length }, "plugin-loader: found ready plugins to load");
 
       // Load plugins in parallel
-      const results = await Promise.allSettled(
-        readyPlugins.map((plugin) => activatePlugin(plugin))
-      );
+      const results = await Promise.allSettled(readyPlugins.map((plugin) => activatePlugin(plugin)));
 
       const loadResults = results.map((r, i) => {
         if (r.status === "fulfilled") return r.value;
@@ -1555,8 +1510,7 @@ export function pluginLoader(
 
       if (plugin.status !== "ready") {
         throw new Error(
-          `Cannot load plugin in status '${plugin.status}'. ` +
-            `Plugin must be in 'installed' or 'ready' status.`,
+          `Cannot load plugin in status '${plugin.status}'. ` + `Plugin must be in 'installed' or 'ready' status.`,
         );
       }
 
@@ -1569,22 +1523,12 @@ export function pluginLoader(
 
     async unloadSingle(pluginId: string, pluginKey: string): Promise<void> {
       if (!runtimeServices) {
-        throw new Error(
-          "Cannot unloadSingle: no PluginRuntimeServices provided.",
-        );
+        throw new Error("Cannot unloadSingle: no PluginRuntimeServices provided.");
       }
 
-      log.info(
-        { pluginId, pluginKey },
-        "plugin-loader: unloading single plugin",
-      );
+      log.info({ pluginId, pluginKey }, "plugin-loader: unloading single plugin");
 
-      const {
-        workerManager,
-        eventBus,
-        jobScheduler,
-        toolDispatcher,
-      } = runtimeServices;
+      const { workerManager, eventBus, jobScheduler, toolDispatcher } = runtimeServices;
 
       // 1. Unregister from job scheduler (cancels in-flight runs)
       try {
@@ -1614,10 +1558,7 @@ export function pluginLoader(
         );
       }
 
-      log.info(
-        { pluginId, pluginKey },
-        "plugin-loader: plugin unloaded successfully",
-      );
+      log.info({ pluginId, pluginKey }, "plugin-loader: plugin unloaded successfully");
     },
 
     // -----------------------------------------------------------------------
@@ -1626,9 +1567,7 @@ export function pluginLoader(
 
     async shutdownAll(): Promise<void> {
       if (!runtimeServices) {
-        throw new Error(
-          "Cannot shutdownAll: no PluginRuntimeServices provided.",
-        );
+        throw new Error("Cannot shutdownAll: no PluginRuntimeServices provided.");
       }
 
       log.info("plugin-loader: shutting down all plugins");
@@ -1692,10 +1631,7 @@ export function pluginLoader(
     } = runtimeServices;
 
     try {
-      log.info(
-        { pluginId, pluginKey, version: plugin.version },
-        "plugin-loader: activating plugin",
-      );
+      log.info({ pluginId, pluginKey, version: plugin.version }, "plugin-loader: activating plugin");
 
       // ------------------------------------------------------------------
       // 1. Resolve worker entrypoint
@@ -1744,10 +1680,7 @@ export function pluginLoader(
       await workerManager.startWorker(pluginId, workerOptions);
       registered.worker = true;
 
-      log.info(
-        { pluginId, pluginKey },
-        "plugin-loader: worker started",
-      );
+      log.info({ pluginId, pluginKey }, "plugin-loader: worker started");
 
       // ------------------------------------------------------------------
       // 5. Sync job declarations and register with scheduler
@@ -1781,10 +1714,7 @@ export function pluginLoader(
       const _scopedBus = eventBus.forPlugin(pluginKey);
       registered.eventSubscriptions = eventBus.subscriptionCount(pluginKey);
 
-      log.debug(
-        { pluginId, pluginKey },
-        "plugin-loader: event bus scoped handle ready",
-      );
+      log.debug({ pluginId, pluginKey }, "plugin-loader: event bus scoped handle ready");
 
       // ------------------------------------------------------------------
       // 7. Register webhook endpoints (manifest-declared)
@@ -1815,10 +1745,7 @@ export function pluginLoader(
         toolDispatcher.registerPluginTools(pluginKey, manifest);
         registered.tools = toolDeclarations.length;
 
-        log.info(
-          { pluginId, pluginKey, tools: toolDeclarations.length },
-          "plugin-loader: agent tools registered",
-        );
+        log.info({ pluginId, pluginKey, tools: toolDeclarations.length }, "plugin-loader: agent tools registered");
       }
 
       // ------------------------------------------------------------------
@@ -1838,10 +1765,7 @@ export function pluginLoader(
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
 
-      log.error(
-        { pluginId, pluginKey, err: errorMessage },
-        "plugin-loader: failed to activate plugin",
-      );
+      log.error({ pluginId, pluginKey, err: errorMessage }, "plugin-loader: failed to activate plugin");
 
       // Mark the plugin as errored in the database so it is not retried
       // automatically on next startup without operator intervention.

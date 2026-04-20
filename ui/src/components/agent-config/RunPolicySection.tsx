@@ -1,16 +1,16 @@
-import { useState } from "react";
 import { Heart } from "lucide-react";
+import { useState } from "react";
 import { cn } from "../../lib/utils";
 import {
-  Field,
-  ToggleField,
-  ToggleWithNumber,
   CollapsibleSection,
   DraftNumberInput,
+  Field,
   help,
+  ToggleField,
+  ToggleWithNumber,
 } from "../agent-config-primitives";
 import { HelpBeacon } from "../HelpBeacon";
-import type { SectionCommonProps, CreateConfigValues } from "./types";
+import type { CreateConfigValues, SectionCommonProps } from "./types";
 import { inputClass } from "./types";
 
 interface RunPolicySectionProps extends SectionCommonProps {
@@ -35,10 +35,17 @@ export function RunPolicySection({
   if (isCreate && showCreateRunPolicySection) {
     return (
       <div className={cn(!cards && "border-b border-border")}>
-        {cards
-          ? <h3 className="text-sm font-medium flex items-center gap-2 mb-3"><Heart className="h-3 w-3" /> Run Policy <HelpBeacon text="The heartbeat interval controls how often this agent wakes up to check for new work. A shorter interval means faster response times but higher resource usage. 300 seconds (5 minutes) is a good default for most agents." /></h3>
-          : <div className="px-4 py-2 text-xs font-medium text-muted-foreground flex items-center gap-2"><Heart className="h-3 w-3" /> Run Policy <HelpBeacon text="The heartbeat interval controls how often this agent wakes up to check for new work. A shorter interval means faster response times but higher resource usage. 300 seconds (5 minutes) is a good default for most agents." /></div>
-        }
+        {cards ? (
+          <h3 className="text-sm font-medium flex items-center gap-2 mb-3">
+            <Heart className="h-3 w-3" /> Run Policy{" "}
+            <HelpBeacon text="The heartbeat interval controls how often this agent wakes up to check for new work. A shorter interval means faster response times but higher resource usage. 300 seconds (5 minutes) is a good default for most agents." />
+          </h3>
+        ) : (
+          <div className="px-4 py-2 text-xs font-medium text-muted-foreground flex items-center gap-2">
+            <Heart className="h-3 w-3" /> Run Policy{" "}
+            <HelpBeacon text="The heartbeat interval controls how often this agent wakes up to check for new work. A shorter interval means faster response times but higher resource usage. 300 seconds (5 minutes) is a good default for most agents." />
+          </div>
+        )}
         <div className={cn(cards ? "border border-border rounded-lg p-4 space-y-3" : "px-4 pb-3 space-y-3")}>
           <ToggleWithNumber
             label="Heartbeat on interval"
@@ -60,10 +67,15 @@ export function RunPolicySection({
   if (!isCreate) {
     return (
       <div className={cn(!cards && "border-b border-border")}>
-        {cards
-          ? <h3 className="text-sm font-medium flex items-center gap-2 mb-3"><Heart className="h-3 w-3" /> Run Policy</h3>
-          : <div className="px-4 py-2 text-xs font-medium text-muted-foreground flex items-center gap-2"><Heart className="h-3 w-3" /> Run Policy</div>
-        }
+        {cards ? (
+          <h3 className="text-sm font-medium flex items-center gap-2 mb-3">
+            <Heart className="h-3 w-3" /> Run Policy
+          </h3>
+        ) : (
+          <div className="px-4 py-2 text-xs font-medium text-muted-foreground flex items-center gap-2">
+            <Heart className="h-3 w-3" /> Run Policy
+          </div>
+        )}
         <div className={cn(cards ? "border border-border rounded-lg overflow-hidden" : "")}>
           <div className={cn(cards ? "p-4 space-y-3" : "px-4 pb-3 space-y-3")}>
             <ToggleWithNumber
@@ -85,43 +97,31 @@ export function RunPolicySection({
             open={runPolicyAdvancedOpen}
             onToggle={() => setRunPolicyAdvancedOpen(!runPolicyAdvancedOpen)}
           >
-          <div className="space-y-3">
-            <ToggleField
-              label="Wake on demand"
-              hint={help.wakeOnDemand}
-              checked={eff(
-                "heartbeat",
-                "wakeOnDemand",
-                heartbeat.wakeOnDemand !== false,
-              )}
-              onChange={(v) => mark("heartbeat", "wakeOnDemand", v)}
-            />
-            <Field label="Cooldown (sec)" hint={help.cooldownSec}>
-              <DraftNumberInput
-                value={eff(
-                  "heartbeat",
-                  "cooldownSec",
-                  Number(heartbeat.cooldownSec ?? 10),
-                )}
-                onCommit={(v) => mark("heartbeat", "cooldownSec", v)}
-                immediate
-                className={inputClass}
+            <div className="space-y-3">
+              <ToggleField
+                label="Wake on demand"
+                hint={help.wakeOnDemand}
+                checked={eff("heartbeat", "wakeOnDemand", heartbeat.wakeOnDemand !== false)}
+                onChange={(v) => mark("heartbeat", "wakeOnDemand", v)}
               />
-            </Field>
-            <Field label="Max concurrent runs" hint={help.maxConcurrentRuns}>
-              <DraftNumberInput
-                value={eff(
-                  "heartbeat",
-                  "maxConcurrentRuns",
-                  Number(heartbeat.maxConcurrentRuns ?? 1),
-                )}
-                onCommit={(v) => mark("heartbeat", "maxConcurrentRuns", v)}
-                immediate
-                className={inputClass}
-              />
-            </Field>
-          </div>
-        </CollapsibleSection>
+              <Field label="Cooldown (sec)" hint={help.cooldownSec}>
+                <DraftNumberInput
+                  value={eff("heartbeat", "cooldownSec", Number(heartbeat.cooldownSec ?? 10))}
+                  onCommit={(v) => mark("heartbeat", "cooldownSec", v)}
+                  immediate
+                  className={inputClass}
+                />
+              </Field>
+              <Field label="Max concurrent runs" hint={help.maxConcurrentRuns}>
+                <DraftNumberInput
+                  value={eff("heartbeat", "maxConcurrentRuns", Number(heartbeat.maxConcurrentRuns ?? 1))}
+                  onCommit={(v) => mark("heartbeat", "maxConcurrentRuns", v)}
+                  immediate
+                  className={inputClass}
+                />
+              </Field>
+            </div>
+          </CollapsibleSection>
         </div>
       </div>
     );

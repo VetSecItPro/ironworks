@@ -1,29 +1,10 @@
 export {
-  createDb,
-  getPostgresDataDirectory,
-  ensurePostgresDatabase,
-  inspectMigrations,
-  applyPendingMigrations,
-  reconcilePendingMigrationHistory,
-  type MigrationState,
-  type MigrationHistoryReconcileResult,
-  migratePostgresIfEmpty,
-  type MigrationBootstrapResult,
-  type Db,
-} from "./client.js";
-export {
-  getEmbeddedPostgresTestSupport,
-  startEmbeddedPostgresTestDatabase,
-  type EmbeddedPostgresTestDatabase,
-  type EmbeddedPostgresTestSupport,
-} from "./test-embedded-postgres.js";
-export {
-  runDatabaseBackup,
-  runDatabaseRestore,
   formatDatabaseBackupResult,
   type RunDatabaseBackupOptions,
   type RunDatabaseBackupResult,
   type RunDatabaseRestoreOptions,
+  runDatabaseBackup,
+  runDatabaseRestore,
 } from "./backup-lib.js";
 export {
   type BackupRetentionPolicy,
@@ -31,7 +12,26 @@ export {
   resolveRetentionPolicy,
 } from "./backup-retention.js";
 export {
+  applyPendingMigrations,
+  createDb,
+  type Db,
+  ensurePostgresDatabase,
+  getPostgresDataDirectory,
+  inspectMigrations,
+  type MigrationBootstrapResult,
+  type MigrationHistoryReconcileResult,
+  type MigrationState,
+  migratePostgresIfEmpty,
+  reconcilePendingMigrationHistory,
+} from "./client.js";
+export {
   createEmbeddedPostgresLogBuffer,
   formatEmbeddedPostgresError,
 } from "./embedded-postgres-error.js";
 export * from "./schema/index.js";
+export {
+  type EmbeddedPostgresTestDatabase,
+  type EmbeddedPostgresTestSupport,
+  getEmbeddedPostgresTestSupport,
+  startEmbeddedPostgresTestDatabase,
+} from "./test-embedded-postgres.js";

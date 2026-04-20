@@ -1,45 +1,45 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
   Agent,
-  CompanyPortabilityFileEntry,
   CompanyPortabilityExportPreviewResult,
+  CompanyPortabilityFileEntry,
   Project,
 } from "@ironworksai/shared";
-import { useNavigate, useLocation } from "@/lib/router";
-import { useCompany } from "../context/CompanyContext";
-import { useBreadcrumbs } from "../context/BreadcrumbContext";
-import { useToast } from "../context/ToastContext";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Package } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate } from "@/lib/router";
 import { agentsApi } from "../api/agents";
 import { authApi } from "../api/auth";
 import { companiesApi } from "../api/companies";
 import { projectsApi } from "../api/projects";
-import { EmptyState } from "../components/EmptyState";
-import { PageSkeleton } from "../components/PageSkeleton";
-import { queryKeys } from "../lib/queryKeys";
-import { buildInitialExportCheckedFiles } from "../lib/company-export-selection";
-import { useAgentOrder } from "../hooks/useAgentOrder";
-import { useProjectOrder } from "../hooks/useProjectOrder";
-import { buildPortableSidebarOrder } from "../lib/company-portability-sidebar";
-import { Package } from "lucide-react";
-import { buildFileTree, collectAllPaths, countFiles } from "../components/PackageFileTree";
-import type { FileTreeNode } from "../components/PackageFileTree";
 import {
-  ExportPreviewPane,
+  collectMatchedParentDirs,
+  downloadZip,
   ExportActionBar,
-  ExportWarnings,
+  ExportPreviewPane,
   ExportSidebar,
+  ExportWarnings,
+  expandAncestors,
+  filePathFromLocation,
   filterIronworksYaml,
   filterTree,
-  collectMatchedParentDirs,
-  sortByChecked,
-  paginateTaskNodes,
-  downloadZip,
-  filePathFromLocation,
-  expandAncestors,
   generateReadmeFromSelection,
+  paginateTaskNodes,
+  sortByChecked,
   TASKS_PAGE_SIZE,
 } from "../components/company-export";
+import { EmptyState } from "../components/EmptyState";
+import type { FileTreeNode } from "../components/PackageFileTree";
+import { buildFileTree, collectAllPaths, countFiles } from "../components/PackageFileTree";
+import { PageSkeleton } from "../components/PageSkeleton";
+import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { useCompany } from "../context/CompanyContext";
+import { useToast } from "../context/ToastContext";
+import { useAgentOrder } from "../hooks/useAgentOrder";
+import { useProjectOrder } from "../hooks/useProjectOrder";
+import { buildInitialExportCheckedFiles } from "../lib/company-export-selection";
+import { buildPortableSidebarOrder } from "../lib/company-portability-sidebar";
+import { queryKeys } from "../lib/queryKeys";
 
 export function CompanyExport() {
   const { selectedCompanyId, selectedCompany } = useCompany();
@@ -78,10 +78,19 @@ export function CompanyExport() {
   const currentUserId = session?.user?.id ?? session?.session?.userId ?? null;
   const visibleAgents = useMemo(() => agents.filter((agent: Agent) => agent.status !== "terminated"), [agents]);
   const visibleProjects = useMemo(() => projects.filter((project: Project) => !project.archivedAt), [projects]);
-  const { orderedAgents } = useAgentOrder({ agents: visibleAgents, companyId: selectedCompanyId, userId: currentUserId });
-  const { orderedProjects } = useProjectOrder({ projects: visibleProjects, companyId: selectedCompanyId, userId: currentUserId });
+  const { orderedAgents } = useAgentOrder({
+    agents: visibleAgents,
+    companyId: selectedCompanyId,
+    userId: currentUserId,
+  });
+  const { orderedProjects } = useProjectOrder({
+    projects: visibleProjects,
+    companyId: selectedCompanyId,
+    userId: currentUserId,
+  });
   const sidebarOrder = useMemo(
-    () => buildPortableSidebarOrder({ agents: visibleAgents, orderedAgents, projects: visibleProjects, orderedProjects }),
+    () =>
+      buildPortableSidebarOrder({ agents: visibleAgents, orderedAgents, projects: visibleProjects, orderedProjects }),
     [orderedAgents, orderedProjects, visibleAgents, visibleProjects],
   );
   const sidebarOrderKey = useMemo(() => JSON.stringify(sidebarOrder ?? null), [sidebarOrder]);
@@ -124,7 +133,9 @@ export function CompanyExport() {
       }),
     onSuccess: (result) => {
       setExportData(result);
-      setCheckedFiles((prev) => buildInitialExportCheckedFiles(Object.keys(result.files), result.manifest.issues, prev));
+      setCheckedFiles((prev) =>
+        buildInitialExportCheckedFiles(Object.keys(result.files), result.manifest.issues, prev),
+      );
       const tree = buildFileTree(result.files);
       const topDirs = new Set<string>();
       for (const node of tree) {
@@ -140,7 +151,12 @@ export function CompanyExport() {
         setExpandedDirs(topDirs);
       }
     },
-    onError: (err) => pushToast({ tone: "error", title: "Export failed", body: err instanceof Error ? err.message : "Failed to load export data." }),
+    onError: (err) =>
+      pushToast({
+        tone: "error",
+        title: "Export failed",
+        body: err instanceof Error ? err.message : "Failed to load export data.",
+      }),
   });
 
   const downloadMutation = useMutation({
@@ -153,9 +169,18 @@ export function CompanyExport() {
     onSuccess: (result) => {
       const resultCheckedFiles = new Set(Object.keys(result.files));
       downloadZip(result, resultCheckedFiles, result.files);
-      pushToast({ tone: "success", title: "Export downloaded", body: `${resultCheckedFiles.size} file${resultCheckedFiles.size === 1 ? "" : "s"} exported as ${result.rootPath}.zip` });
+      pushToast({
+        tone: "success",
+        title: "Export downloaded",
+        body: `${resultCheckedFiles.size} file${resultCheckedFiles.size === 1 ? "" : "s"} exported as ${result.rootPath}.zip`,
+      });
     },
-    onError: (err) => pushToast({ tone: "error", title: "Export failed", body: err instanceof Error ? err.message : "Failed to build export package." }),
+    onError: (err) =>
+      pushToast({
+        tone: "error",
+        title: "Export failed",
+        body: err instanceof Error ? err.message : "Failed to build export package.",
+      }),
   });
 
   useEffect(() => {
@@ -174,7 +199,11 @@ export function CompanyExport() {
     if (treeSearch) result = filterTree(result, treeSearch);
     result = sortByChecked(result, checkedFiles);
     const paginated = paginateTaskNodes(result, taskLimit, checkedFiles, treeSearch);
-    return { displayTree: paginated.nodes, totalTaskChildren: paginated.totalTaskChildren, visibleTaskChildren: paginated.visibleTaskChildren };
+    return {
+      displayTree: paginated.nodes,
+      totalTaskChildren: paginated.totalTaskChildren,
+      visibleTaskChildren: paginated.visibleTaskChildren,
+    };
   }, [tree, treeSearch, checkedFiles, taskLimit]);
 
   const effectiveFiles = useMemo(() => {
@@ -187,7 +216,12 @@ export function CompanyExport() {
     if (typeof exportData.files["README.md"] === "string") {
       const companyName = exportData.manifest.company?.name ?? selectedCompany?.name ?? "Company";
       const companyDescription = exportData.manifest.company?.description ?? null;
-      filtered["README.md"] = generateReadmeFromSelection(exportData.manifest, checkedFiles, companyName, companyDescription);
+      filtered["README.md"] = generateReadmeFromSelection(
+        exportData.manifest,
+        checkedFiles,
+        companyName,
+        companyDescription,
+      );
     }
     return filtered;
   }, [exportData, checkedFiles, selectedCompany?.name]);
@@ -203,7 +237,8 @@ export function CompanyExport() {
   function handleToggleDir(path: string) {
     setExpandedDirs((prev) => {
       const next = new Set(prev);
-      if (next.has(path)) next.delete(path); else next.add(path);
+      if (next.has(path)) next.delete(path);
+      else next.add(path);
       return next;
     });
   }
@@ -213,7 +248,8 @@ export function CompanyExport() {
     setCheckedFiles((prev) => {
       const next = new Set(prev);
       if (kind === "file") {
-        if (next.has(path)) next.delete(path); else next.add(path);
+        if (next.has(path)) next.delete(path);
+        else next.add(path);
       } else {
         const dirTree = buildFileTree(exportData.files);
         const findNode = (nodes: FileTreeNode[], target: string): FileTreeNode | null => {
@@ -232,7 +268,8 @@ export function CompanyExport() {
           }
           const allChecked = [...childFiles].every((p) => next.has(p));
           for (const f of childFiles) {
-            if (allChecked) next.delete(f); else next.add(f);
+            if (allChecked) next.delete(f);
+            else next.add(f);
           }
         }
       }
@@ -247,7 +284,11 @@ export function CompanyExport() {
     setTreeSearch(query);
     if (isSearching) {
       const matchedParents = collectMatchedParentDirs(tree, query);
-      setExpandedDirs((prev) => { const next = new Set(prev); for (const d of matchedParents) next.add(d); return next; });
+      setExpandedDirs((prev) => {
+        const next = new Set(prev);
+        for (const d of matchedParents) next.add(d);
+        return next;
+      });
     } else if (wasSearching && savedExpandedRef.current) {
       setExpandedDirs(savedExpandedRef.current);
       savedExpandedRef.current = null;
@@ -265,7 +306,10 @@ export function CompanyExport() {
       next.add("skills");
       const parts = skillPath.split("/").slice(0, -1);
       let current = "";
-      for (const part of parts) { current = current ? `${current}/${part}` : part; next.add(current); }
+      for (const part of parts) {
+        current = current ? `${current}/${part}` : part;
+        next.add(current);
+      }
       return next;
     });
   }
@@ -309,7 +353,12 @@ export function CompanyExport() {
           onShowMoreTasks={() => setTaskLimit((prev) => prev + TASKS_PAGE_SIZE)}
         />
         <div className="min-w-0 overflow-y-auto pl-6">
-          <ExportPreviewPane selectedFile={selectedFile} content={previewContent} allFiles={effectiveFiles} onSkillClick={handleSkillClick} />
+          <ExportPreviewPane
+            selectedFile={selectedFile}
+            content={previewContent}
+            allFiles={effectiveFiles}
+            onSkillClick={handleSkillClick}
+          />
         </div>
       </div>
     </div>

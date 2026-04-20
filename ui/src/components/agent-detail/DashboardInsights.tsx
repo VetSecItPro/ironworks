@@ -1,19 +1,20 @@
+import type { AgentDetail as AgentDetailRecord, HeartbeatRun } from "@ironworksai/shared";
+import { useQuery } from "@tanstack/react-query";
+import { AlertTriangle, BookOpen, Clock, MessageSquare, TrendingDown, Zap } from "lucide-react";
 import { useMemo } from "react";
 import { Link } from "@/lib/router";
-import { useQuery } from "@tanstack/react-query";
-import { agentMemoryApi } from "../../api/agentMemory";
 import { activityApi } from "../../api/activity";
+import { agentMemoryApi } from "../../api/agentMemory";
 import { queryKeys } from "../../lib/queryKeys";
 import { formatDate, relativeTime } from "../../lib/utils";
-import { Clock, AlertTriangle, BookOpen, MessageSquare, TrendingDown, Zap } from "lucide-react";
-import type {
-  AgentDetail as AgentDetailRecord,
-  HeartbeatRun,
-} from "@ironworksai/shared";
 
 /* -- Underperformer Callout Banner -- */
 
-export function UnderperformerBanner({ agent, runs, issues }: {
+export function UnderperformerBanner({
+  agent,
+  runs,
+  issues,
+}: {
   agent: AgentDetailRecord;
   runs: HeartbeatRun[];
   issues: Array<{ status: string }>;
@@ -47,7 +48,10 @@ export function UnderperformerBanner({ agent, runs, issues }: {
 
 /* -- Current Task Spotlight -- */
 
-export function CurrentTaskSpotlight({ issues, agentRouteId }: {
+export function CurrentTaskSpotlight({
+  issues,
+  agentRouteId,
+}: {
   issues: Array<{ id: string; title: string; status: string; identifier?: string | null }>;
   agentRouteId: string;
 }) {
@@ -76,7 +80,12 @@ export function CurrentTaskSpotlight({ issues, agentRouteId }: {
 
 /* -- Performance History Chart (30-day tasks/errors/cost) -- */
 
-export function PerformanceHistoryChart({ runs, issues, companyId, agentId }: {
+export function PerformanceHistoryChart({
+  runs,
+  issues,
+  companyId,
+  agentId,
+}: {
   runs: HeartbeatRun[];
   issues: Array<{ status: string; completedAt?: Date | string | null; createdAt: Date | string }>;
   companyId: string;
@@ -118,8 +127,14 @@ export function PerformanceHistoryChart({ runs, issues, companyId, agentId }: {
         <polyline points={errorPoints} fill="none" className="stroke-red-500" strokeWidth="1.5" strokeDasharray="3 2" />
       </svg>
       <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
-        <span className="flex items-center gap-1"><span className="h-0.5 w-3 bg-emerald-500" />Tasks completed</span>
-        <span className="flex items-center gap-1"><span className="h-0.5 w-3 bg-red-500" />Errors</span>
+        <span className="flex items-center gap-1">
+          <span className="h-0.5 w-3 bg-emerald-500" />
+          Tasks completed
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="h-0.5 w-3 bg-red-500" />
+          Errors
+        </span>
       </div>
     </div>
   );
@@ -209,9 +224,9 @@ export function AgentJournal({ companyId, agentId }: { companyId: string; agentI
           <div key={day.date} className="text-sm">
             <span className="font-medium">{day.date}</span>
             <span className="text-muted-foreground ml-2">
-              {Array.from(day.actions.entries()).map(([action, count]) =>
-                `${count} ${action}${count !== 1 ? "s" : ""}`
-              ).join(", ")}
+              {Array.from(day.actions.entries())
+                .map(([action, count]) => `${count} ${action}${count !== 1 ? "s" : ""}`)
+                .join(", ")}
             </span>
             <span className="text-[10px] text-muted-foreground/80 ml-1">({day.total} total)</span>
           </div>
@@ -232,20 +247,22 @@ export function DecisionLog({ companyId, agentId }: { companyId: string; agentId
   });
 
   const decisions = useMemo(() => {
-    return (activity ?? []).map((e) => {
-      const details = (e.details ?? {}) as Record<string, unknown>;
-      return {
-        id: e.id,
-        createdAt: e.createdAt,
-        decision: String(details.decision ?? ""),
-        reasoning: details.reasoning ? String(details.reasoning) : null,
-        alternatives: Array.isArray(details.alternativesConsidered)
-          ? (details.alternativesConsidered as unknown[]).map(String)
-          : null,
-        issueId: details.issueId ? String(details.issueId) : null,
-        issueTitle: details.issueTitle ? String(details.issueTitle) : null,
-      };
-    }).filter((d) => d.decision.length > 0);
+    return (activity ?? [])
+      .map((e) => {
+        const details = (e.details ?? {}) as Record<string, unknown>;
+        return {
+          id: e.id,
+          createdAt: e.createdAt,
+          decision: String(details.decision ?? ""),
+          reasoning: details.reasoning ? String(details.reasoning) : null,
+          alternatives: Array.isArray(details.alternativesConsidered)
+            ? (details.alternativesConsidered as unknown[]).map(String)
+            : null,
+          issueId: details.issueId ? String(details.issueId) : null,
+          issueTitle: details.issueTitle ? String(details.issueTitle) : null,
+        };
+      })
+      .filter((d) => d.decision.length > 0);
   }, [activity]);
 
   if (decisions.length === 0) return null;
@@ -326,7 +343,10 @@ export function AgentScheduleInfo({ agent, runs }: { agent: AgentDetailRecord; r
   const scheduleCron = runtimeConfig.schedule as string | undefined;
 
   const lastRun = [...runs].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
-  const nextRunEstimate = lastRun && heartbeatInterval ? new Date(new Date(lastRun.createdAt).getTime() + heartbeatInterval * 60 * 1000) : null;
+  const nextRunEstimate =
+    lastRun && heartbeatInterval
+      ? new Date(new Date(lastRun.createdAt).getTime() + heartbeatInterval * 60 * 1000)
+      : null;
 
   return (
     <div className="space-y-1.5 text-sm">
@@ -353,7 +373,13 @@ export function AgentScheduleInfo({ agent, runs }: { agent: AgentDetailRecord; r
 
 /* -- Succession Warning -- */
 
-export function SuccessionWarning({ agentName, issues }: { agentName: string; issues: { id: string; status: string }[] }) {
+export function SuccessionWarning({
+  agentName,
+  issues,
+}: {
+  agentName: string;
+  issues: { id: string; status: string }[];
+}) {
   const openIssues = issues.filter((i) => i.status !== "done" && i.status !== "cancelled");
   if (openIssues.length === 0) return null;
 
@@ -363,8 +389,8 @@ export function SuccessionWarning({ agentName, issues }: { agentName: string; is
       <div className="text-sm">
         <p className="font-medium text-amber-600 dark:text-amber-400">Succession Impact</p>
         <p className="text-muted-foreground mt-0.5">
-          If {agentName} is removed, <strong>{openIssues.length}</strong> open mission{openIssues.length !== 1 ? "s" : ""} would be
-          unassigned.
+          If {agentName} is removed, <strong>{openIssues.length}</strong> open mission
+          {openIssues.length !== 1 ? "s" : ""} would be unassigned.
         </p>
       </div>
     </div>

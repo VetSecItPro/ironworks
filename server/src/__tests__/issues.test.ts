@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -66,15 +66,28 @@ vi.mock("../services/index.js", () => ({
   accessService: () => mockAccessService,
   agentService: () => ({ getById: vi.fn().mockResolvedValue(null), list: vi.fn().mockResolvedValue([]) }),
   executionWorkspaceService: () => ({ getById: vi.fn() }),
-  goalService: () => ({ getById: vi.fn().mockResolvedValue(null), getDefaultCompanyGoal: vi.fn().mockResolvedValue(null) }),
+  goalService: () => ({
+    getById: vi.fn().mockResolvedValue(null),
+    getDefaultCompanyGoal: vi.fn().mockResolvedValue(null),
+  }),
   heartbeatService: () => ({ wakeup: vi.fn(), getActiveRun: vi.fn(), listRuns: vi.fn().mockResolvedValue([]) }),
-  issueApprovalService: () => ({ list: vi.fn().mockResolvedValue([]), listApprovalsForIssue: vi.fn().mockResolvedValue([]), link: vi.fn(), unlink: vi.fn() }),
+  issueApprovalService: () => ({
+    list: vi.fn().mockResolvedValue([]),
+    listApprovalsForIssue: vi.fn().mockResolvedValue([]),
+    link: vi.fn(),
+    unlink: vi.fn(),
+  }),
   issueService: () => mockIssueService,
   documentService: () => ({ getIssueDocumentPayload: vi.fn().mockResolvedValue({}) }),
   logActivity: mockLogActivity,
   projectService: () => ({ getById: vi.fn().mockResolvedValue(null), listByIds: vi.fn().mockResolvedValue([]) }),
   routineService: () => ({ list: vi.fn().mockResolvedValue([]) }),
-  workProductService: () => ({ listForIssue: vi.fn().mockResolvedValue([]), create: vi.fn(), update: vi.fn(), remove: vi.fn() }),
+  workProductService: () => ({
+    listForIssue: vi.fn().mockResolvedValue([]),
+    create: vi.fn(),
+    update: vi.fn(),
+    remove: vi.fn(),
+  }),
 }));
 
 vi.mock("../services/activity-log.js", () => ({
@@ -210,23 +223,16 @@ describe("issue routes", () => {
   describe("POST /api/companies/:companyId/issues", () => {
     it("creates an issue with required fields", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post(`/api/companies/${COMPANY_ID}/issues`)
-        .send({ title: "New bug" });
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/issues`).send({ title: "New bug" });
 
       expect(res.status).toBe(201);
       expect(res.body).toMatchObject({ title: "New bug", status: "backlog" });
-      expect(mockIssueService.create).toHaveBeenCalledWith(
-        COMPANY_ID,
-        expect.objectContaining({ title: "New bug" }),
-      );
+      expect(mockIssueService.create).toHaveBeenCalledWith(COMPANY_ID, expect.objectContaining({ title: "New bug" }));
     });
 
     it("rejects issue creation without title (validation error)", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post(`/api/companies/${COMPANY_ID}/issues`)
-        .send({});
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/issues`).send({});
 
       // Zod validation should catch missing title
       expect(res.status).toBe(400);
@@ -235,9 +241,7 @@ describe("issue routes", () => {
     it("enforces company access on issue creation", async () => {
       const otherCompany = randomUUID();
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post(`/api/companies/${otherCompany}/issues`)
-        .send({ title: "Exploit" });
+      const res = await request(app).post(`/api/companies/${otherCompany}/issues`).send({ title: "Exploit" });
 
       expect(res.status).toBe(403);
     });

@@ -1,17 +1,11 @@
 import { Archive, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import type { InboxApprovalFilter, InboxTab } from "../../lib/inbox";
 import { PageTabBar } from "../PageTabBar";
 import type { InboxCategoryFilter } from "./inboxTypes";
-import type { InboxApprovalFilter, InboxTab } from "../../lib/inbox";
 
 interface InboxToolbarProps {
   tab: InboxTab;
@@ -108,9 +102,7 @@ export function InboxToolbar({
                 disabled={isBulkArchiving}
               >
                 <Archive className="mr-1.5 h-3.5 w-3.5" />
-                {isBulkArchiving
-                  ? "Archiving..."
-                  : `Archive ${selectedIssueIds.size} selected`}
+                {isBulkArchiving ? "Archiving..." : `Archive ${selectedIssueIds.size} selected`}
               </Button>
             )}
           </div>

@@ -38,9 +38,7 @@ export function LibrarySearchResults({ results, onSelectFile, onClearSearch }: L
               <div className="truncate">{entry.name}</div>
               <div className="text-[11px] text-muted-foreground truncate">{entry.path}</div>
               {entry.matchContext && (
-                <div className="text-[11px] text-muted-foreground/70 truncate mt-0.5 italic">
-                  {entry.matchContext}
-                </div>
+                <div className="text-[11px] text-muted-foreground/70 truncate mt-0.5 italic">{entry.matchContext}</div>
               )}
             </div>
           </button>

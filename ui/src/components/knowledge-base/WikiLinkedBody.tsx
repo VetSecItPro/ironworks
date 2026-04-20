@@ -1,7 +1,7 @@
+import { BookOpen } from "lucide-react";
 import { useMemo } from "react";
 import type { KnowledgePage } from "../../api/knowledge";
 import { cn } from "../../lib/utils";
-import { BookOpen } from "lucide-react";
 
 export function WikiLinkedBody({
   body,

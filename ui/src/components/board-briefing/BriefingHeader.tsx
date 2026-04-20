@@ -1,11 +1,11 @@
+import { Download, Printer } from "lucide-react";
 import { cn } from "../../lib/utils";
-import { Printer, Download } from "lucide-react";
 
 type BriefingPeriod = "7d" | "30d" | "this_month";
 const PERIOD_LABELS: Record<BriefingPeriod, string> = {
   "7d": "This Week",
   "30d": "Last 30 Days",
-  "this_month": "This Month",
+  this_month: "This Month",
 };
 
 interface BriefingHeaderProps {

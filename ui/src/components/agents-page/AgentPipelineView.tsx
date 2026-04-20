@@ -1,7 +1,13 @@
+import {
+  AGENT_LIFECYCLE_LABELS,
+  AGENT_LIFECYCLE_STAGES,
+  AGENT_ROLE_LABELS,
+  type Agent,
+  type AgentLifecycleStage,
+} from "@ironworksai/shared";
 import { Link } from "@/lib/router";
-import { AGENT_ROLE_LABELS, AGENT_LIFECYCLE_STAGES, AGENT_LIFECYCLE_LABELS, type Agent, type AgentLifecycleStage } from "@ironworksai/shared";
+import { agentUrl, cn } from "../../lib/utils";
 import { AgentIcon } from "../AgentIconPicker";
-import { cn, agentUrl } from "../../lib/utils";
 
 const roleLabels = AGENT_ROLE_LABELS as Record<string, string>;
 
@@ -15,9 +21,7 @@ export function AgentPipelineView({
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       {AGENT_LIFECYCLE_STAGES.map((stage) => {
-        const stageAgents = agents.filter(
-          (a) => deriveLifecycleStage(a) === stage,
-        );
+        const stageAgents = agents.filter((a) => deriveLifecycleStage(a) === stage);
         return (
           <div key={stage} className="space-y-2">
             <div className="flex items-center justify-between">
@@ -47,9 +51,7 @@ export function AgentPipelineView({
                       <AgentIcon icon={agent.icon} className="h-4 w-4 shrink-0 text-muted-foreground" />
                       <span className="text-sm font-medium truncate">{agent.name}</span>
                     </div>
-                    <div className="text-xs text-muted-foreground truncate">
-                      {roleLabels[agent.role] ?? agent.role}
-                    </div>
+                    <div className="text-xs text-muted-foreground truncate">{roleLabels[agent.role] ?? agent.role}</div>
                     <span
                       className={cn(
                         "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold",

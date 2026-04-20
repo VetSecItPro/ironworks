@@ -1,2 +1,2 @@
 export { ProjectProperties } from "./ProjectProperties";
-export type { ProjectFieldSaveState, ProjectConfigFieldKey } from "./types";
+export type { ProjectConfigFieldKey, ProjectFieldSaveState } from "./types";

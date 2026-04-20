@@ -1,8 +1,8 @@
-import { afterEach, describe, expect, it } from "vitest";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { testEnvironment } from "@ironworksai/adapter-claude-local/server";
+import { afterEach, describe, expect, it } from "vitest";
 
 const ORIGINAL_ANTHROPIC = process.env.ANTHROPIC_API_KEY;
 
@@ -30,9 +30,7 @@ describe("claude_local environment diagnostics", () => {
     expect(result.status).toBe("warn");
     expect(
       result.checks.some(
-        (check) =>
-          check.code === "claude_anthropic_api_key_overrides_subscription" &&
-          check.level === "warn",
+        (check) => check.code === "claude_anthropic_api_key_overrides_subscription" && check.level === "warn",
       ),
     ).toBe(true);
     expect(result.checks.some((check) => check.level === "error")).toBe(false);
@@ -56,9 +54,7 @@ describe("claude_local environment diagnostics", () => {
     expect(result.status).toBe("warn");
     expect(
       result.checks.some(
-        (check) =>
-          check.code === "claude_anthropic_api_key_overrides_subscription" &&
-          check.level === "warn",
+        (check) => check.code === "claude_anthropic_api_key_overrides_subscription" && check.level === "warn",
       ),
     ).toBe(true);
     expect(result.checks.some((check) => check.level === "error")).toBe(false);

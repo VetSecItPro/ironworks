@@ -1,7 +1,7 @@
-import { and, eq } from "drizzle-orm";
+import type { HireApprovedPayload } from "@ironworksai/adapter-utils";
 import type { Db } from "@ironworksai/db";
 import { agents } from "@ironworksai/db";
-import type { HireApprovedPayload } from "@ironworksai/adapter-utils";
+import { and, eq } from "drizzle-orm";
 import { findServerAdapter } from "../adapters/registry.js";
 import { logger } from "../middleware/logger.js";
 import { logActivity } from "./activity-log.js";
@@ -21,10 +21,7 @@ export interface NotifyHireApprovedInput {
  * Invokes the adapter's onHireApproved hook when an agent is approved (join-request or hire_agent approval).
  * Failures are non-fatal: we log and write to activity, never throw.
  */
-export async function notifyHireApproved(
-  db: Db,
-  input: NotifyHireApprovedInput,
-): Promise<void> {
+export async function notifyHireApproved(db: Db, input: NotifyHireApprovedInput): Promise<void> {
   const { companyId, agentId, source, sourceId } = input;
   const approvedAt = input.approvedAt ?? new Date();
 
@@ -91,10 +88,7 @@ export async function notifyHireApproved(
       details: { source, sourceId, adapterType, error: result.error, detail: result.detail },
     });
   } catch (err) {
-    logger.error(
-      { err, companyId, agentId, adapterType, source, sourceId },
-      "hire hook: adapter threw",
-    );
+    logger.error({ err, companyId, agentId, adapterType, source, sourceId }, "hire hook: adapter threw");
     await logActivity(db, {
       companyId,
       actorType: "system",

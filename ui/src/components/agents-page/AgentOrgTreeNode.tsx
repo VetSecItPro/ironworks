@@ -1,12 +1,12 @@
-import { Link } from "@/lib/router";
 import { AGENT_ROLE_LABELS, type Agent } from "@ironworksai/shared";
+import { Link } from "@/lib/router";
 import type { OrgNode } from "../../api/agents";
-import { StatusBadge } from "../StatusBadge";
-import { EmploymentBadge } from "../EmploymentBadge";
-import { AgentIcon } from "../AgentIconPicker";
+import { getAgentRingClass, getRoleLevel } from "../../lib/role-icons";
 import { agentStatusDot, agentStatusDotDefault } from "../../lib/status-colors";
-import { relativeTime, cn, agentRouteRef, agentUrl } from "../../lib/utils";
-import { getRoleLevel, getAgentRingClass } from "../../lib/role-icons";
+import { agentRouteRef, agentUrl, cn, relativeTime } from "../../lib/utils";
+import { AgentIcon } from "../AgentIconPicker";
+import { EmploymentBadge } from "../EmploymentBadge";
+import { StatusBadge } from "../StatusBadge";
 import { LiveRunIndicator } from "./AgentListView";
 
 const adapterLabels: Record<string, string> = {
@@ -53,7 +53,10 @@ export function AgentOrgTreeNode({
                 : getRoleLevel(node.role) === "management"
                   ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
                   : "bg-muted text-muted-foreground",
-              getAgentRingClass(node.role, (agent as unknown as Record<string, unknown> | undefined)?.employmentType as string | undefined),
+              getAgentRingClass(
+                node.role,
+                (agent as unknown as Record<string, unknown> | undefined)?.employmentType as string | undefined,
+              ),
             )}
           >
             <AgentIcon icon={agent?.icon} className="h-3.5 w-3.5" />
@@ -91,7 +94,9 @@ export function AgentOrgTreeNode({
             )}
             {agent && (
               <>
-                <EmploymentBadge type={(agent as unknown as Record<string, unknown>).employmentType as string ?? "full_time"} />
+                <EmploymentBadge
+                  type={((agent as unknown as Record<string, unknown>).employmentType as string) ?? "full_time"}
+                />
                 <span className="text-xs text-muted-foreground font-mono w-14 text-right">
                   {adapterLabels[agent.adapterType] ?? agent.adapterType}
                 </span>
@@ -114,7 +119,13 @@ export function AgentOrgTreeNode({
       {node.reports && node.reports.length > 0 && (
         <div className="border-l border-border/50 ml-4">
           {node.reports.map((child) => (
-            <AgentOrgTreeNode key={child.id} node={child} depth={depth + 1} agentMap={agentMap} liveRunByAgent={liveRunByAgent} />
+            <AgentOrgTreeNode
+              key={child.id}
+              node={child}
+              depth={depth + 1}
+              agentMap={agentMap}
+              liveRunByAgent={liveRunByAgent}
+            />
           ))}
         </div>
       )}

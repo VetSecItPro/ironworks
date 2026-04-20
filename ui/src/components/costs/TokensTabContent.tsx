@@ -1,9 +1,9 @@
 import { ArrowDownLeft, ArrowUpRight, Coins, DollarSign, TrendingDown } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatTokens } from "../../lib/utils";
 import { EmptyState } from "../EmptyState";
 import { PageSkeleton } from "../PageSkeleton";
 import { MetricTile } from "./MetricTile";
-import { formatTokens } from "../../lib/utils";
 
 interface TokenAnalyticsData {
   totalInputTokens: number;
@@ -100,11 +100,15 @@ export function TokensTabContent({
                         <span className="font-medium">{agent.agentName ?? agent.agentId}</span>
                       </td>
                       <td className="py-2 pr-4 text-right font-mono text-xs">{formatTokens(agent.totalInputTokens)}</td>
-                      <td className="py-2 pr-4 text-right font-mono text-xs">{formatTokens(agent.totalOutputTokens)}</td>
+                      <td className="py-2 pr-4 text-right font-mono text-xs">
+                        {formatTokens(agent.totalOutputTokens)}
+                      </td>
                       <td className="py-2 pr-4 text-right font-mono text-xs">{formatTokens(agent.totalCacheTokens)}</td>
                       <td className="py-2 pr-4 text-right font-mono text-xs">{agent.runsCount}</td>
                       <td className="py-2 pr-4 text-right font-mono text-xs">{formatTokens(agent.avgTokensPerRun)}</td>
-                      <td className="py-2 text-right font-mono text-xs">{agent.totalCost > 0 ? `$${agent.totalCost.toFixed(4)}` : "-"}</td>
+                      <td className="py-2 text-right font-mono text-xs">
+                        {agent.totalCost > 0 ? `$${agent.totalCost.toFixed(4)}` : "-"}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

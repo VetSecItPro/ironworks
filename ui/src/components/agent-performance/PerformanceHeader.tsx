@@ -1,6 +1,6 @@
 import { Building2, Download } from "lucide-react";
-import { cn } from "../../lib/utils";
 import { exportToCSV } from "../../lib/exportCSV";
+import { cn } from "../../lib/utils";
 import type { AgentPerfRow, TimeRange } from "../performance/ratingUtils";
 
 interface PerformanceHeaderProps {
@@ -24,7 +24,9 @@ export function PerformanceHeader({ range, setRange, showDeptAgg, setShowDeptAgg
         <button
           className={cn(
             "flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border transition-colors",
-            showDeptAgg ? "bg-accent text-foreground border-foreground/20" : "border-border text-muted-foreground hover:text-foreground",
+            showDeptAgg
+              ? "bg-accent text-foreground border-foreground/20"
+              : "border-border text-muted-foreground hover:text-foreground",
           )}
           onClick={() => setShowDeptAgg(!showDeptAgg)}
         >

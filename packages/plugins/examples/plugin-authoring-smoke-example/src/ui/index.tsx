@@ -1,4 +1,4 @@
-import { usePluginAction, usePluginData, type PluginWidgetProps } from "@ironworksai/plugin-sdk/ui";
+import { type PluginWidgetProps, usePluginAction, usePluginData } from "@ironworksai/plugin-sdk/ui";
 
 type HealthData = {
   status: "ok" | "degraded" | "error";

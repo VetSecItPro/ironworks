@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -200,9 +200,7 @@ describe("announcement routes", () => {
       };
 
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]), fakeDb);
-      const res = await request(app).delete(
-        `/api/companies/${COMPANY_ID}/announcements/${ANNOUNCEMENT_ID}`,
-      );
+      const res = await request(app).delete(`/api/companies/${COMPANY_ID}/announcements/${ANNOUNCEMENT_ID}`);
 
       expect(res.status).toBe(200);
       expect(res.body.ok).toBe(true);
@@ -217,18 +215,14 @@ describe("announcement routes", () => {
       };
 
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]), fakeDb);
-      const res = await request(app).delete(
-        `/api/companies/${COMPANY_ID}/announcements/${randomUUID()}`,
-      );
+      const res = await request(app).delete(`/api/companies/${COMPANY_ID}/announcements/${randomUUID()}`);
 
       expect(res.status).toBe(404);
     });
 
     it("rejects unauthenticated delete with 401", async () => {
       const app = await createApp(noActor());
-      const res = await request(app).delete(
-        `/api/companies/${COMPANY_ID}/announcements/${ANNOUNCEMENT_ID}`,
-      );
+      const res = await request(app).delete(`/api/companies/${COMPANY_ID}/announcements/${ANNOUNCEMENT_ID}`);
       expect(res.status).toBe(401);
     });
   });

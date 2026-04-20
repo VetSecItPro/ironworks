@@ -1,6 +1,6 @@
-import { and, eq } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { agents, channelResponseState } from "@ironworksai/db";
+import { and, eq } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 
 interface RouteResult {
@@ -48,20 +48,13 @@ export async function selectRespondingAgents(
   const idleAgents = await db
     .select({ id: agents.id, name: agents.name, role: agents.role, department: agents.department })
     .from(agents)
-    .where(
-      and(
-        eq(agents.companyId, companyId),
-        eq(agents.status, "idle"),
-      ),
-    );
+    .where(and(eq(agents.companyId, companyId), eq(agents.status, "idle")));
 
   if (idleAgents.length === 0) return [];
 
   // Rule 4: If explicit @mentions, only wake those agents
   if (mentions.length > 0) {
-    const mentioned = idleAgents.filter((a) =>
-      mentions.some((m) => a.name.toLowerCase().includes(m)),
-    );
+    const mentioned = idleAgents.filter((a) => mentions.some((m) => a.name.toLowerCase().includes(m)));
     return mentioned.slice(0, 2).map((a, i) => ({
       agentId: a.id,
       agentName: a.name,
@@ -109,10 +102,7 @@ export async function selectRespondingAgents(
     .slice(0, channelName === "leadership" || channelName === "company" ? 2 : 1);
 
   if (eligible.length > 0) {
-    logger.debug(
-      { channelName, agents: eligible.map((a) => a.name) },
-      "channel router scored agents for message",
-    );
+    logger.debug({ channelName, agents: eligible.map((a) => a.name) }, "channel router scored agents for message");
   }
 
   return eligible.map((a, i) => ({
@@ -126,10 +116,7 @@ async function checkChannelRateLimit(db: Db, channelId: string, companyId: strin
   const TEN_MINUTES_MS = 10 * 60 * 1000;
   const MAX_RESPONSES = 3;
 
-  const [state] = await db
-    .select()
-    .from(channelResponseState)
-    .where(eq(channelResponseState.channelId, channelId));
+  const [state] = await db.select().from(channelResponseState).where(eq(channelResponseState.channelId, channelId));
 
   if (!state) return true; // No state yet = no responses yet
 
@@ -142,10 +129,7 @@ async function checkChannelRateLimit(db: Db, channelId: string, companyId: strin
 export async function recordAgentResponse(db: Db, channelId: string, companyId: string): Promise<void> {
   const TEN_MINUTES_MS = 10 * 60 * 1000;
 
-  const [existing] = await db
-    .select()
-    .from(channelResponseState)
-    .where(eq(channelResponseState.channelId, channelId));
+  const [existing] = await db.select().from(channelResponseState).where(eq(channelResponseState.channelId, channelId));
 
   if (!existing) {
     await db.insert(channelResponseState).values({
@@ -178,10 +162,7 @@ export async function recordAgentResponse(db: Db, channelId: string, companyId: 
 }
 
 export async function recordHumanMessage(db: Db, channelId: string, companyId: string): Promise<void> {
-  const [existing] = await db
-    .select()
-    .from(channelResponseState)
-    .where(eq(channelResponseState.channelId, channelId));
+  const [existing] = await db.select().from(channelResponseState).where(eq(channelResponseState.channelId, channelId));
 
   if (!existing) {
     await db.insert(channelResponseState).values({
@@ -203,4 +184,3 @@ export async function recordHumanMessage(db: Db, channelId: string, companyId: s
       .where(eq(channelResponseState.channelId, channelId));
   }
 }
-

@@ -2,8 +2,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "../../lib/utils";
 import type { CreateCheckInPayload } from "../../api/goalCheckIns";
+import { cn } from "../../lib/utils";
 
 export const CHECKIN_STATUS_COLORS: Record<string, string> = {
   on_track: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
@@ -15,7 +15,12 @@ export const CHECKIN_STATUS_COLORS: Record<string, string> = {
 
 export function CheckInStatusBadge({ status }: { status: string }) {
   return (
-    <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full font-medium", CHECKIN_STATUS_COLORS[status] ?? "bg-muted text-muted-foreground")}>
+    <span
+      className={cn(
+        "text-[10px] px-1.5 py-0.5 rounded-full font-medium",
+        CHECKIN_STATUS_COLORS[status] ?? "bg-muted text-muted-foreground",
+      )}
+    >
       {status.replace(/_/g, " ")}
     </span>
   );

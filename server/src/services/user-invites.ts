@@ -1,8 +1,8 @@
 import { createHash, randomBytes } from "node:crypto";
-import { and, eq, isNull, gt } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import { userInvites, authUsers, companyMemberships } from "@ironworksai/db";
+import { authUsers, companyMemberships, userInvites } from "@ironworksai/db";
 import type { MembershipRole } from "@ironworksai/shared";
+import { and, eq, gt, isNull } from "drizzle-orm";
 import { conflict, notFound, unprocessable } from "../errors.js";
 
 const USER_INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
@@ -188,11 +188,7 @@ export function userInviteService(db: Db) {
   }
 
   async function listForCompany(companyId: string) {
-    return db
-      .select()
-      .from(userInvites)
-      .where(eq(userInvites.companyId, companyId))
-      .orderBy(userInvites.createdAt);
+    return db.select().from(userInvites).where(eq(userInvites.companyId, companyId)).orderBy(userInvites.createdAt);
   }
 
   async function revoke(inviteId: string, companyId: string) {

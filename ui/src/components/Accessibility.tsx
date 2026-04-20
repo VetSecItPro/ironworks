@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 
 // ---------------------------------------------------------------------------
 // ARIA Live Region for screen reader announcements
@@ -119,10 +119,7 @@ interface TouchTargetProps {
  */
 export function TouchTarget({ children, className = "", as: Tag = "div", ...props }: TouchTargetProps) {
   return (
-    <Tag
-      className={`min-h-[44px] min-w-[44px] flex items-center justify-center ${className}`}
-      {...props}
-    >
+    <Tag className={`min-h-[44px] min-w-[44px] flex items-center justify-center ${className}`} {...props}>
       {children}
     </Tag>
   );

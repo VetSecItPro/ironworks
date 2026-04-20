@@ -2,8 +2,8 @@
 import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { createInterface } from "node:readline/promises";
 import { stdin, stdout } from "node:process";
+import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
 import { shouldTrackDevServerPath } from "./dev-runner-paths.mjs";
 
@@ -36,24 +36,11 @@ const watchedFiles = [
   "vitest.config.ts",
 ].map((relativePath) => path.join(repoRoot, relativePath));
 
-const ignoredDirectoryNames = new Set([
-  ".git",
-  ".turbo",
-  ".vite",
-  "coverage",
-  "dist",
-  "node_modules",
-  "ui-dist",
-]);
+const ignoredDirectoryNames = new Set([".git", ".turbo", ".vite", "coverage", "dist", "node_modules", "ui-dist"]);
 
-const ignoredRelativePaths = new Set([
-  ".ironworks/dev-server-status.json",
-]);
+const ignoredRelativePaths = new Set([".ironworks/dev-server-status.json"]);
 
-const tailscaleAuthFlagNames = new Set([
-  "--tailscale-auth",
-  "--authenticated-private",
-]);
+const tailscaleAuthFlagNames = new Set(["--tailscale-auth", "--authenticated-private"]);
 
 let tailscaleAuth = false;
 const forwardedArgs = [];
@@ -228,14 +215,18 @@ function writeDevServerStatus() {
   const changedPaths = [...dirtyPaths].sort();
   writeFileSync(
     devServerStatusFilePath,
-    `${JSON.stringify({
-      dirty: changedPaths.length > 0 || pendingMigrations.length > 0,
-      lastChangedAt,
-      changedPathCount: changedPaths.length,
-      changedPathsSample: changedPaths.slice(0, changedPathSampleLimit),
-      pendingMigrations,
-      lastRestartAt,
-    }, null, 2)}\n`,
+    `${JSON.stringify(
+      {
+        dirty: changedPaths.length > 0 || pendingMigrations.length > 0,
+        lastChangedAt,
+        changedPathCount: changedPaths.length,
+        changedPathsSample: changedPaths.slice(0, changedPathSampleLimit),
+        pendingMigrations,
+        lastRestartAt,
+      },
+      null,
+      2,
+    )}\n`,
     "utf8",
   );
 }
@@ -280,10 +271,9 @@ async function runPnpm(args, options = {}) {
 }
 
 async function getMigrationStatusPayload() {
-  const status = await runPnpm(
-    ["--filter", "@ironworksai/db", "exec", "tsx", "src/migration-status.ts", "--json"],
-    { env },
-  );
+  const status = await runPnpm(["--filter", "@ironworksai/db", "exec", "tsx", "src/migration-status.ts", "--json"], {
+    env,
+  });
   if (status.code !== 0) {
     process.stderr.write(
       status.stderr ||
@@ -297,9 +287,7 @@ async function getMigrationStatusPayload() {
     return JSON.parse(status.stdout.trim());
   } catch (error) {
     process.stderr.write(
-      status.stderr ||
-        status.stdout ||
-        "[ironworks] migration-status returned invalid JSON payload\n",
+      status.stderr || status.stdout || "[ironworks] migration-status returned invalid JSON payload\n",
     );
     throw toError(error, "Unable to parse migration-status JSON output");
   }
@@ -379,10 +367,7 @@ async function maybePreflightMigrations(options = {}) {
 
 async function buildPluginSdk() {
   console.log("[ironworks] building plugin sdk...");
-  const result = await runPnpm(
-    ["--filter", "@ironworksai/plugin-sdk", "build"],
-    { stdio: "inherit" },
-  );
+  const result = await runPnpm(["--filter", "@ironworksai/plugin-sdk", "build"], { stdio: "inherit" });
   if (result.signal) {
     exitForSignal(result.signal);
     return;
@@ -456,11 +441,11 @@ async function startServerChild() {
   await buildPluginSdk();
 
   const serverScript = mode === "watch" ? "dev:watch" : "dev";
-  child = spawn(
-    pnpmBin,
-    ["--filter", "@ironworksai/server", serverScript, ...forwardedArgs],
-    { stdio: "inherit", env, shell: process.platform === "win32" },
-  );
+  child = spawn(pnpmBin, ["--filter", "@ironworksai/server", serverScript, ...forwardedArgs], {
+    stdio: "inherit",
+    env,
+    shell: process.platform === "win32",
+  });
 
   childExitPromise = new Promise((resolve, reject) => {
     child.on("error", reject);

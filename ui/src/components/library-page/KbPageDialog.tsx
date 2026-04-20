@@ -1,19 +1,7 @@
-import { Button } from "@/components/ui/button";
 import { Save } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface KbPageDialogProps {
   open: boolean;
@@ -100,10 +88,12 @@ export function KbPageDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
           <Button disabled={!title.trim() || isSaving} onClick={onSave}>
             <Save className="h-3.5 w-3.5 mr-1.5" />
-            {isEdit ? (isSaving ? "Saving..." : "Save") : (isSaving ? "Creating..." : "Create")}
+            {isEdit ? (isSaving ? "Saving..." : "Save") : isSaving ? "Creating..." : "Create"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,8 +1,8 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { issueRoutes } from "../routes/issues.js";
 import { errorHandler } from "../middleware/index.js";
+import { issueRoutes } from "../routes/issues.js";
 
 const mockIssueService = vi.hoisted(() => ({
   getById: vi.fn(),
@@ -49,7 +49,13 @@ vi.mock("../services/index.js", () => ({
   companyService: () => ({}),
   playbookService: () => ({ seedDefaults: vi.fn() }),
   budgetService: () => ({ upsertPolicy: vi.fn() }),
-  userInviteService: () => ({ create: vi.fn(), getByToken: vi.fn(), accept: vi.fn(), listForCompany: vi.fn(), revoke: vi.fn() }),
+  userInviteService: () => ({
+    create: vi.fn(),
+    getByToken: vi.fn(),
+    accept: vi.fn(),
+    listForCompany: vi.fn(),
+    revoke: vi.fn(),
+  }),
   projectService: () => ({}),
   routineService: () => ({
     syncRunStatusForIssue: vi.fn(async () => undefined),

@@ -1,6 +1,6 @@
-import { and, desc, eq, gte, ne, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import { agents, issues, issueLabels, labels } from "@ironworksai/db";
+import { agents, issueLabels, issues, labels } from "@ironworksai/db";
+import { and, desc, eq, gte, ne, sql } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 
 export interface AgentSkillEntry {
@@ -31,10 +31,7 @@ export interface ExpertiseMapResult {
  * Compute an expertise map for all agents in a company based on their
  * issue completion history across label categories.
  */
-export async function computeExpertiseMap(
-  db: Db,
-  companyId: string,
-): Promise<ExpertiseMapResult> {
+export async function computeExpertiseMap(db: Db, companyId: string): Promise<ExpertiseMapResult> {
   const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
 
   // Get all active agents
@@ -122,7 +119,7 @@ export async function computeExpertiseMap(
 
     // Skill gaps: categories where blocked/cancelled rate is high (>40%) or completion rate < 50%
     const gaps = allSkills
-      .filter((s) => s.total >= 2 && (s.completionRate < 50 || (s.blocked / s.total) > 0.4))
+      .filter((s) => s.total >= 2 && (s.completionRate < 50 || s.blocked / s.total > 0.4))
       .sort((a, b) => a.completionRate - b.completionRate)
       .slice(0, 3);
 

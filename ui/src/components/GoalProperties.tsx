@@ -1,18 +1,18 @@
-import { useCallback, useRef, useState } from "react";
-import { Link } from "@/lib/router";
-import { useQuery } from "@tanstack/react-query";
 import type { Goal, GoalCadence, GoalHealthStatus } from "@ironworksai/shared";
-import { GOAL_STATUSES, GOAL_LEVELS } from "@ironworksai/shared";
+import { GOAL_LEVELS, GOAL_STATUSES } from "@ironworksai/shared";
+import { useQuery } from "@tanstack/react-query";
+import { useCallback, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
+import { Link } from "@/lib/router";
 import { agentsApi } from "../api/agents";
 import { goalsApi } from "../api/goals";
 import { useCompany } from "../context/CompanyContext";
 import { queryKeys } from "../lib/queryKeys";
+import { agentUrl, cn, formatDate } from "../lib/utils";
 import { StatusBadge } from "./StatusBadge";
-import { formatDate, cn, agentUrl } from "../lib/utils";
-import { Separator } from "@/components/ui/separator";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
 interface GoalPropertiesProps {
   goal: Goal;
@@ -47,9 +47,7 @@ function PickerButton({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button className="cursor-pointer hover:opacity-80 transition-opacity">
-          {children}
-        </button>
+        <button className="cursor-pointer hover:opacity-80 transition-opacity">{children}</button>
       </PopoverTrigger>
       <PopoverContent className="w-40 p-1" align="end">
         {options.map((opt) => (
@@ -89,11 +87,15 @@ function AgentPickerButton({
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const filtered = search.trim()
-    ? agents.filter((a) => a.name.toLowerCase().includes(search.toLowerCase()))
-    : agents;
+  const filtered = search.trim() ? agents.filter((a) => a.name.toLowerCase().includes(search.toLowerCase())) : agents;
   return (
-    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setSearch(""); }}>
+    <Popover
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (!o) setSearch("");
+      }}
+    >
       <PopoverTrigger asChild>
         <button className="cursor-pointer">{children}</button>
       </PopoverTrigger>
@@ -110,7 +112,10 @@ function AgentPickerButton({
             variant="ghost"
             size="sm"
             className={cn("w-full justify-start text-xs", !current && "bg-accent")}
-            onClick={() => { onChange(null); setOpen(false); }}
+            onClick={() => {
+              onChange(null);
+              setOpen(false);
+            }}
           >
             No owner
           </Button>
@@ -120,7 +125,10 @@ function AgentPickerButton({
               variant="ghost"
               size="sm"
               className={cn("w-full justify-start text-xs", agent.id === current && "bg-accent")}
-              onClick={() => { onChange(agent.id); setOpen(false); }}
+              onClick={() => {
+                onChange(agent.id);
+                setOpen(false);
+              }}
             >
               {agent.name}
             </Button>
@@ -146,24 +154,16 @@ export function GoalProperties({ goal, onUpdate }: GoalPropertiesProps) {
     enabled: !!selectedCompanyId,
   });
 
-  const ownerAgent = goal.ownerAgentId
-    ? agents?.find((a) => a.id === goal.ownerAgentId)
-    : null;
+  const ownerAgent = goal.ownerAgentId ? agents?.find((a) => a.id === goal.ownerAgentId) : null;
 
-  const parentGoal = goal.parentId
-    ? allGoals?.find((g) => g.id === goal.parentId)
-    : null;
+  const parentGoal = goal.parentId ? allGoals?.find((g) => g.id === goal.parentId) : null;
 
   return (
     <div className="space-y-4">
       <div className="space-y-1">
         <PropertyRow label="Status">
           {onUpdate ? (
-            <PickerButton
-              current={goal.status}
-              options={GOAL_STATUSES}
-              onChange={(status) => onUpdate({ status })}
-            >
+            <PickerButton current={goal.status} options={GOAL_STATUSES} onChange={(status) => onUpdate({ status })}>
               <StatusBadge status={goal.status} />
             </PickerButton>
           ) : (
@@ -173,11 +173,7 @@ export function GoalProperties({ goal, onUpdate }: GoalPropertiesProps) {
 
         <PropertyRow label="Level">
           {onUpdate ? (
-            <PickerButton
-              current={goal.level}
-              options={GOAL_LEVELS}
-              onChange={(level) => onUpdate({ level })}
-            >
+            <PickerButton current={goal.level} options={GOAL_LEVELS} onChange={(level) => onUpdate({ level })}>
               <span className="text-sm capitalize">{goal.level}</span>
             </PickerButton>
           ) : (
@@ -199,10 +195,7 @@ export function GoalProperties({ goal, onUpdate }: GoalPropertiesProps) {
               )}
             </AgentPickerButton>
           ) : ownerAgent ? (
-            <Link
-              to={agentUrl(ownerAgent)}
-              className="text-sm hover:underline"
-            >
+            <Link to={agentUrl(ownerAgent)} className="text-sm hover:underline">
               {ownerAgent.name}
             </Link>
           ) : (
@@ -212,10 +205,7 @@ export function GoalProperties({ goal, onUpdate }: GoalPropertiesProps) {
 
         {goal.parentId && (
           <PropertyRow label="Parent Goal">
-            <Link
-              to={`/goals/${goal.parentId}`}
-              className="text-sm hover:underline"
-            >
+            <Link to={`/goals/${goal.parentId}`} className="text-sm hover:underline">
               {parentGoal?.title ?? goal.parentId.slice(0, 8)}
             </Link>
           </PropertyRow>
@@ -227,10 +217,7 @@ export function GoalProperties({ goal, onUpdate }: GoalPropertiesProps) {
 
         <PropertyRow label="Confidence">
           {onUpdate ? (
-            <ConfidenceSlider
-              value={goal.confidence ?? 50}
-              onChange={(confidence) => onUpdate({ confidence })}
-            />
+            <ConfidenceSlider value={goal.confidence ?? 50} onChange={(confidence) => onUpdate({ confidence })} />
           ) : (
             <span className="text-sm">{goal.confidence ?? "N/A"}</span>
           )}
@@ -246,14 +233,16 @@ export function GoalProperties({ goal, onUpdate }: GoalPropertiesProps) {
               type="date"
               className="h-7 w-auto text-xs"
               value={goal.startDate ? goal.startDate.slice(0, 10) : ""}
-              onChange={(e) =>
-                onUpdate({ startDate: e.target.value || null })
-              }
+              onChange={(e) => onUpdate({ startDate: e.target.value || null })}
             />
           ) : (
             <span className="text-sm">
               {goal.startDate
-                ? new Date(goal.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                ? new Date(goal.startDate).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })
                 : "Not set"}
             </span>
           )}
@@ -265,14 +254,16 @@ export function GoalProperties({ goal, onUpdate }: GoalPropertiesProps) {
               type="date"
               className="h-7 w-auto text-xs"
               value={goal.targetDate ? goal.targetDate.slice(0, 10) : ""}
-              onChange={(e) =>
-                onUpdate({ targetDate: e.target.value || null })
-              }
+              onChange={(e) => onUpdate({ targetDate: e.target.value || null })}
             />
           ) : (
             <span className="text-sm">
               {goal.targetDate
-                ? new Date(goal.targetDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                ? new Date(goal.targetDate).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })
                 : "Not set"}
             </span>
           )}
@@ -320,11 +311,7 @@ const HEALTH_STATUS_CONFIG: Record<string, { label: string; className: string }>
 function HealthStatusBadge({ status }: { status: GoalHealthStatus | null }) {
   const key = status ?? "no_data";
   const cfg = HEALTH_STATUS_CONFIG[key] ?? HEALTH_STATUS_CONFIG.no_data;
-  return (
-    <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full font-medium", cfg.className)}>
-      {cfg.label}
-    </span>
-  );
+  return <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full font-medium", cfg.className)}>{cfg.label}</span>;
 }
 
 /* ── Confidence Slider ── */

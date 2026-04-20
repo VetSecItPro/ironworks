@@ -1,18 +1,18 @@
+import { X } from "lucide-react";
 import { Dialog, DialogPortal } from "@/components/ui/dialog";
 import { cn } from "../lib/utils";
 import { AsciiArtAnimation } from "./AsciiArtAnimation";
-import { X } from "lucide-react";
+import type { Step } from "./onboarding";
 import {
   ProgressTabs,
-  StepCompany,
-  StepLlmProvider,
   StepAgent,
-  StepTask,
+  StepCompany,
   StepLaunch,
+  StepLlmProvider,
+  StepTask,
   WizardFooter,
 } from "./onboarding";
 import { useWizardState } from "./onboarding/useWizardState";
-import type { Step } from "./onboarding";
 
 export function OnboardingWizard() {
   const w = useWizardState();
@@ -35,7 +35,10 @@ export function OnboardingWizard() {
     <Dialog
       open={w.effectiveOnboardingOpen}
       onOpenChange={(open) => {
-        if (!open) { w.setRouteDismissed(true); w.handleClose(); }
+        if (!open) {
+          w.setRouteDismissed(true);
+          w.handleClose();
+        }
       }}
     >
       <DialogPortal>
@@ -49,10 +52,12 @@ export function OnboardingWizard() {
             <span className="sr-only">Close</span>
           </button>
 
-          <div className={cn(
-            "w-full flex flex-col overflow-y-auto transition-[width] duration-500 ease-in-out",
-            w.step === 1 ? "md:w-1/2" : "md:w-full"
-          )}>
+          <div
+            className={cn(
+              "w-full flex flex-col overflow-y-auto transition-[width] duration-500 ease-in-out",
+              w.step === 1 ? "md:w-1/2" : "md:w-full",
+            )}
+          >
             <div className="w-full max-w-2xl mx-auto my-auto px-10 py-12 shrink-0">
               <ProgressTabs currentStep={w.step} onStepClick={w.setStep} />
 
@@ -183,10 +188,12 @@ export function OnboardingWizard() {
             </div>
           </div>
 
-          <div className={cn(
-            "hidden md:block overflow-hidden bg-[#1d1d1d] transition-[width,opacity] duration-500 ease-in-out",
-            w.step === 1 ? "w-1/2 opacity-100" : "w-0 opacity-0"
-          )}>
+          <div
+            className={cn(
+              "hidden md:block overflow-hidden bg-[#1d1d1d] transition-[width,opacity] duration-500 ease-in-out",
+              w.step === 1 ? "w-1/2 opacity-100" : "w-0 opacity-0",
+            )}
+          >
             <AsciiArtAnimation />
           </div>
         </div>

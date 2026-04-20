@@ -1,14 +1,29 @@
-import { type AnyPgColumn, pgTable, uuid, text, timestamp, jsonb, index, integer, bigint, boolean } from "drizzle-orm/pg-core";
-import { companies } from "./companies.js";
-import { agents } from "./agents.js";
+import {
+  type AnyPgColumn,
+  bigint,
+  boolean,
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { agentWakeupRequests } from "./agent_wakeup_requests.js";
+import { agents } from "./agents.js";
+import { companies } from "./companies.js";
 
 export const heartbeatRuns = pgTable(
   "heartbeat_runs",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    companyId: uuid("company_id").notNull().references(() => companies.id),
-    agentId: uuid("agent_id").notNull().references(() => agents.id),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id),
+    agentId: uuid("agent_id")
+      .notNull()
+      .references(() => agents.id),
     invocationSource: text("invocation_source").notNull().default("on_demand"),
     triggerDetail: text("trigger_detail"),
     status: text("status").notNull().default("queued"),

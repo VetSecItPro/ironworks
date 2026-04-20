@@ -1,15 +1,10 @@
-import type { Request, RequestHandler } from "express";
 import type { IncomingHttpHeaders } from "node:http";
+import type { Db } from "@ironworksai/db";
+import { authAccounts, authSessions, authUsers, authVerifications } from "@ironworksai/db";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { toNodeHandler } from "better-auth/node";
-import type { Db } from "@ironworksai/db";
-import {
-  authAccounts,
-  authSessions,
-  authUsers,
-  authVerifications,
-} from "@ironworksai/db";
+import type { Request, RequestHandler } from "express";
 import type { Config } from "../config.js";
 
 export type BetterAuthSessionUser = {
@@ -67,11 +62,14 @@ export function deriveAuthTrustedOrigins(config: Config): string[] {
 
 export function createBetterAuthInstance(db: Db, config: Config, trustedOrigins?: string[]): BetterAuthInstance {
   const baseUrl = config.authBaseUrlMode === "explicit" ? config.authPublicBaseUrl : undefined;
-  const secret = process.env.BETTER_AUTH_SECRET ?? process.env.IRONWORKS_AGENT_JWT_SECRET ?? (
-    process.env.NODE_ENV !== "development"
-      ? (() => { throw new Error("BETTER_AUTH_SECRET environment variable is required"); })()
-      : "ironworks-dev-secret"
-  );
+  const secret =
+    process.env.BETTER_AUTH_SECRET ??
+    process.env.IRONWORKS_AGENT_JWT_SECRET ??
+    (process.env.NODE_ENV !== "development"
+      ? (() => {
+          throw new Error("BETTER_AUTH_SECRET environment variable is required");
+        })()
+      : "ironworks-dev-secret");
   const effectiveTrustedOrigins = trustedOrigins ?? deriveAuthTrustedOrigins(config);
 
   const publicUrl = process.env.IRONWORKS_PUBLIC_URL ?? baseUrl;
@@ -128,9 +126,8 @@ export async function resolveBetterAuthSessionFromHeaders(
     session?: { id?: string; userId?: string } | null;
     user?: { id?: string; email?: string | null; name?: string | null } | null;
   };
-  const session = value.session?.id && value.session.userId
-    ? { id: value.session.id, userId: value.session.userId }
-    : null;
+  const session =
+    value.session?.id && value.session.userId ? { id: value.session.id, userId: value.session.userId } : null;
   const user = value.user?.id
     ? {
         id: value.user.id,

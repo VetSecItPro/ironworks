@@ -61,10 +61,7 @@ function parseEnvFile(contents: string): Record<string, string> {
       continue;
     }
 
-    if (
-      (value.startsWith("\"") && value.endsWith("\"")) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
       entries[key] = value.slice(1, -1);
       continue;
     }
@@ -122,9 +119,7 @@ function resolveWorktreeRuntimeContext(
   const worktreeName = nonEmpty(env.IRONWORKS_WORKTREE_NAME) ?? path.basename(worktreeRoot);
   const instanceId = nonEmpty(env.IRONWORKS_INSTANCE_ID) ?? sanitizeWorktreeInstanceId(worktreeName);
   const homeDir = resolveHomeAwarePath(
-    nonEmpty(env.IRONWORKS_HOME) ??
-      nonEmpty(env.IRONWORKS_WORKTREES_DIR) ??
-      "~/.ironworks-worktrees",
+    nonEmpty(env.IRONWORKS_HOME) ?? nonEmpty(env.IRONWORKS_WORKTREES_DIR) ?? "~/.ironworks-worktrees",
   );
   const instanceRoot = path.resolve(homeDir, "instances", instanceId);
 
@@ -230,7 +225,7 @@ function buildIsolatedWorktreeConfig(
   const serverPort = portOverrides?.serverPort ?? config.server.port;
   const databasePort =
     config.database.mode === "embedded-postgres"
-      ? portOverrides?.databasePort ?? config.database.embeddedPostgresPort
+      ? (portOverrides?.databasePort ?? config.database.embeddedPostgresPort)
       : undefined;
   const nextConfig: IronworksConfig = {
     ...config,
@@ -281,10 +276,7 @@ function buildIsolatedWorktreeConfig(
   return nextConfig;
 }
 
-function needsWorktreeConfigRepair(
-  config: IronworksConfig,
-  context: WorktreeRuntimeContext,
-): boolean {
+function needsWorktreeConfigRepair(config: IronworksConfig, context: WorktreeRuntimeContext): boolean {
   if (config.database.mode === "embedded-postgres") {
     if (!isPathInside(config.database.embeddedPostgresDataDir, context.instanceRoot)) {
       return true;
@@ -396,9 +388,7 @@ export function maybeRepairLegacyWorktreeConfigAndEnvFiles(): {
         const selectedDatabasePort =
           parsed.database.mode === "embedded-postgres"
             ? findNextUnclaimedPort(
-                parsed.database.embeddedPostgresPort === 54329
-                  ? 54330
-                  : parsed.database.embeddedPostgresPort,
+                parsed.database.embeddedPostgresPort === 54329 ? 54330 : parsed.database.embeddedPostgresPort,
                 new Set([...siblingPorts.databasePorts, selectedServerPort]),
               )
             : undefined;
@@ -428,9 +418,7 @@ export function maybeRepairLegacyWorktreeConfigAndEnvFiles(): {
     IRONWORKS_WORKTREE_NAME: context.worktreeName,
   };
 
-  const repairedEnv = Object.entries(desiredEnvEntries).some(
-    ([key, value]) => existingEnvEntries[key] !== value,
-  );
+  const repairedEnv = Object.entries(desiredEnvEntries).some(([key, value]) => existingEnvEntries[key] !== value);
 
   if (repairedEnv) {
     fs.mkdirSync(path.dirname(context.envPath), { recursive: true });
@@ -440,10 +428,7 @@ export function maybeRepairLegacyWorktreeConfigAndEnvFiles(): {
   return { repairedConfig, repairedEnv };
 }
 
-export function maybePersistWorktreeRuntimePorts(input: {
-  serverPort: number;
-  databasePort?: number | null;
-}): void {
+export function maybePersistWorktreeRuntimePorts(input: { serverPort: number; databasePort?: number | null }): void {
   const context = resolveWorktreeRuntimeContext(process.env);
   if (!context || !fs.existsSync(context.configPath)) return;
 

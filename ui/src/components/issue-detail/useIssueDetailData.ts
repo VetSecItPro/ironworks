@@ -1,31 +1,31 @@
+import type { Agent } from "@ironworksai/shared";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { issuesApi } from "@/api/issues";
 import { activityApi } from "@/api/activity";
-import { heartbeatsApi } from "@/api/heartbeats";
 import { agentsApi } from "@/api/agents";
 import { authApi } from "@/api/auth";
-import { projectsApi } from "@/api/projects";
-import { goalsApi } from "@/api/goals";
 import { goalProgressApi } from "@/api/goalProgress";
+import { goalsApi } from "@/api/goals";
+import { heartbeatsApi } from "@/api/heartbeats";
+import { issuesApi } from "@/api/issues";
+import { projectsApi } from "@/api/projects";
+import type { MentionOption } from "@/components/MarkdownEditor";
 import { useCompany } from "@/context/CompanyContext";
 import { useToast } from "@/context/ToastContext";
+import { useProjectOrder } from "@/hooks/useProjectOrder";
 import { assigneeValueFromSelection, suggestedCommentAssigneeValue } from "@/lib/assignees";
 import { queryKeys } from "@/lib/queryKeys";
-import { useProjectOrder } from "@/hooks/useProjectOrder";
 import { visibleRunCostUsd } from "@/lib/utils";
 import { usePluginSlots } from "@/plugins/slots";
-import type { MentionOption } from "@/components/MarkdownEditor";
-import type { Agent } from "@ironworksai/shared";
+import type { CommentReassignment, IssueCostSummary } from "./issue-detail-utils";
 import {
-  isMarkdownFile,
+  asRecord,
   fileBaseName,
+  isMarkdownFile,
   slugifyDocumentKey,
   titleizeFilename,
-  asRecord,
   usageNumber,
 } from "./issue-detail-utils";
-import type { CommentReassignment, IssueCostSummary } from "./issue-detail-utils";
 
 export function useIssueDetailData(issueId: string | undefined) {
   const { selectedCompanyId } = useCompany();
@@ -33,7 +33,11 @@ export function useIssueDetailData(issueId: string | undefined) {
   const { pushToast } = useToast();
 
   // --- Core issue query ---
-  const { data: issue, isLoading, error } = useQuery({
+  const {
+    data: issue,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: queryKeys.issues.detail(issueId!),
     queryFn: () => issuesApi.get(issueId!),
     enabled: !!issueId,
@@ -200,10 +204,7 @@ export function useIssueDetailData(issueId: string | undefined) {
     return options;
   }, [agents, currentUserId]);
 
-  const actualAssigneeValue = useMemo(
-    () => assigneeValueFromSelection(issue ?? {}),
-    [issue],
-  );
+  const actualAssigneeValue = useMemo(() => assigneeValueFromSelection(issue ?? {}), [issue]);
 
   const suggestedAssigneeValue = useMemo(
     () => suggestedCommentAssigneeValue(issue ?? {}, comments, currentUserId),
@@ -231,8 +232,12 @@ export function useIssueDetailData(issueId: string | undefined) {
   }, [activity, comments, linkedRuns]);
 
   const issueCostSummary = useMemo<IssueCostSummary>(() => {
-    let input = 0, output = 0, cached = 0, cost = 0;
-    let hasCost = false, hasTokens = false;
+    let input = 0,
+      output = 0,
+      cached = 0,
+      cost = 0;
+    let hasCost = false,
+      hasTokens = false;
     for (const run of linkedRuns ?? []) {
       const usage = asRecord(run.usageJson);
       const result = asRecord(run.resultJson);
@@ -251,11 +256,12 @@ export function useIssueDetailData(issueId: string | undefined) {
   }, [linkedRuns]);
 
   const issuePluginTabItems = useMemo(
-    () => issuePluginDetailSlots.map((slot) => ({
-      value: `plugin:${slot.pluginKey}:${slot.id}`,
-      label: slot.displayName,
-      slot,
-    })),
+    () =>
+      issuePluginDetailSlots.map((slot) => ({
+        value: `plugin:${slot.pluginKey}:${slot.id}`,
+        label: slot.displayName,
+        slot,
+      })),
     [issuePluginDetailSlots],
   );
 
@@ -321,7 +327,15 @@ export function useIssueDetailData(issueId: string | undefined) {
   });
 
   const addCommentAndReassign = useMutation({
-    mutationFn: ({ body, reopen, reassignment }: { body: string; reopen?: boolean; reassignment: CommentReassignment }) =>
+    mutationFn: ({
+      body,
+      reopen,
+      reassignment,
+    }: {
+      body: string;
+      reopen?: boolean;
+      reassignment: CommentReassignment;
+    }) =>
       issuesApi.update(issueId!, {
         comment: body,
         assigneeAgentId: reassignment.assigneeAgentId,

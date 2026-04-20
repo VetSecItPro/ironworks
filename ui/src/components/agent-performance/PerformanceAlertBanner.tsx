@@ -19,10 +19,12 @@ export function PerformanceAlertBanner({ rows, prevScoreMap }: PerformanceAlertB
       <div>
         <p className="text-sm font-medium">Significant rating changes detected</p>
         <p className="text-xs text-muted-foreground mt-0.5">
-          {bigDrops.map((r) => {
-            const prev = prevScoreMap.get(r.agentId) ?? 0;
-            return `${r.name} dropped ${prev - r.ratingScore} points`;
-          }).join("; ")}
+          {bigDrops
+            .map((r) => {
+              const prev = prevScoreMap.get(r.agentId) ?? 0;
+              return `${r.name} dropped ${prev - r.ratingScore} points`;
+            })
+            .join("; ")}
         </p>
       </div>
     </div>

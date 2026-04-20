@@ -1,6 +1,5 @@
+import { buildOpenClawGatewayConfig, parseOpenClawGatewayStdoutLine } from "@ironworksai/adapter-openclaw-gateway/ui";
 import type { UIAdapterModule } from "../types";
-import { parseOpenClawGatewayStdoutLine } from "@ironworksai/adapter-openclaw-gateway/ui";
-import { buildOpenClawGatewayConfig } from "@ironworksai/adapter-openclaw-gateway/ui";
 import { OpenClawGatewayConfigFields } from "./config-fields";
 
 export const openClawGatewayUIAdapter: UIAdapterModule = {

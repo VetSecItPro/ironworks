@@ -1,39 +1,33 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate, useParams } from "@/lib/router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Activity as ActivityIcon,
-  Clock3,
-  Play,
-  Repeat,
-  Save,
-} from "lucide-react";
-import { routinesApi, type RoutineTriggerResponse, type RotateRoutineTriggerResponse } from "../api/routines";
-import { heartbeatsApi } from "../api/heartbeats";
-import { agentsApi } from "../api/agents";
-import { projectsApi } from "../api/projects";
-import { useCompany } from "../context/CompanyContext";
-import { useBreadcrumbs } from "../context/BreadcrumbContext";
-import { useToast } from "../context/ToastContext";
-import { queryKeys } from "../lib/queryKeys";
-import { EmptyState } from "../components/EmptyState";
-import { PageSkeleton } from "../components/PageSkeleton";
-import type { InlineEntityOption } from "../components/InlineEntitySelector";
-import { MarkdownEditor, type MarkdownEditorRef } from "../components/MarkdownEditor";
-import { getRecentAssigneeIds, sortAgentsByRecency, trackRecentAssignee } from "../lib/recent-assignees";
+import { Activity as ActivityIcon, Clock3, Play, Repeat, Save } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useLocation, useNavigate, useParams } from "@/lib/router";
+import { agentsApi } from "../api/agents";
+import { heartbeatsApi } from "../api/heartbeats";
+import { projectsApi } from "../api/projects";
+import { type RotateRoutineTriggerResponse, type RoutineTriggerResponse, routinesApi } from "../api/routines";
+import { EmptyState } from "../components/EmptyState";
+import type { InlineEntityOption } from "../components/InlineEntitySelector";
+import { MarkdownEditor, type MarkdownEditorRef } from "../components/MarkdownEditor";
+import { PageSkeleton } from "../components/PageSkeleton";
 import {
-  RoutineHeader,
-  SecretMessageBanner,
-  type SecretMessage,
-  AssignmentRow,
-  AdvancedDeliverySettings,
-  TriggersTab,
-  RunsTab,
   ActivityTab,
+  AdvancedDeliverySettings,
+  AssignmentRow,
+  RoutineHeader,
+  RunsTab,
+  type SecretMessage,
+  SecretMessageBanner,
+  TriggersTab,
 } from "../components/routine-detail";
+import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { useCompany } from "../context/CompanyContext";
+import { useToast } from "../context/ToastContext";
+import { queryKeys } from "../lib/queryKeys";
+import { getRecentAssigneeIds, sortAgentsByRecency, trackRecentAssignee } from "../lib/recent-assignees";
 
 const routineTabs = ["triggers", "runs", "activity"] as const;
 type RoutineTab = (typeof routineTabs)[number];
@@ -90,7 +84,11 @@ export function RoutineDetail() {
   const activeTab = useMemo(() => getRoutineTabFromSearch(location.search), [location.search]);
 
   // ── Queries ──────────────────────────────────────────────────────────
-  const { data: routine, isLoading, error } = useQuery({
+  const {
+    data: routine,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: queryKeys.routines.detail(routineId!),
     queryFn: () => routinesApi.get(routineId!),
     enabled: !!routineId,
@@ -198,8 +196,8 @@ export function RoutineDetail() {
       })),
     [projects],
   );
-  const currentAssignee = editDraft.assigneeAgentId ? agentById.get(editDraft.assigneeAgentId) ?? null : null;
-  const currentProject = editDraft.projectId ? projectById.get(editDraft.projectId) ?? null : null;
+  const currentAssignee = editDraft.assigneeAgentId ? (agentById.get(editDraft.assigneeAgentId) ?? null) : null;
+  const currentProject = editDraft.projectId ? (projectById.get(editDraft.projectId) ?? null) : null;
 
   // ── Effects ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -219,43 +217,89 @@ export function RoutineDetail() {
       await navigator.clipboard.writeText(value);
       pushToast({ title: `${label} copied`, tone: "success" });
     } catch (error) {
-      pushToast({ title: `Failed to copy ${label.toLowerCase()}`, body: error instanceof Error ? error.message : "Clipboard access was denied.", tone: "error" });
+      pushToast({
+        title: `Failed to copy ${label.toLowerCase()}`,
+        body: error instanceof Error ? error.message : "Clipboard access was denied.",
+        tone: "error",
+      });
     }
   };
   const setActiveTab = (value: string) => {
     if (!routineId || !isRoutineTab(value)) return;
     const params = new URLSearchParams(location.search);
-    if (value === "triggers") params.delete("tab"); else params.set("tab", value);
+    if (value === "triggers") params.delete("tab");
+    else params.set("tab", value);
     const search = params.toString();
     navigate({ pathname: location.pathname, search: search ? `?${search}` : "" }, { replace: true });
   };
-  const toastErr = (title: string, fallback: string) => (error: Error) => pushToast({ title, body: error instanceof Error ? error.message : fallback, tone: "error" });
-  const inv = (...keys: ReadonlyArray<readonly unknown[]>) => Promise.all(keys.map((k) => queryClient.invalidateQueries({ queryKey: k as unknown[] })));
-  const invCore = () => inv(queryKeys.routines.detail(routineId!), queryKeys.routines.list(selectedCompanyId!), queryKeys.routines.activity(selectedCompanyId!, routineId!));
+  const toastErr = (title: string, fallback: string) => (error: Error) =>
+    pushToast({ title, body: error instanceof Error ? error.message : fallback, tone: "error" });
+  const inv = (...keys: ReadonlyArray<readonly unknown[]>) =>
+    Promise.all(keys.map((k) => queryClient.invalidateQueries({ queryKey: k as unknown[] })));
+  const invCore = () =>
+    inv(
+      queryKeys.routines.detail(routineId!),
+      queryKeys.routines.list(selectedCompanyId!),
+      queryKeys.routines.activity(selectedCompanyId!, routineId!),
+    );
 
   // ── Mutations ────────────────────────────────────────────────────────
   const saveRoutine = useMutation({
-    mutationFn: () => routinesApi.update(routineId!, { ...editDraft, description: editDraft.description.trim() || null }),
+    mutationFn: () =>
+      routinesApi.update(routineId!, { ...editDraft, description: editDraft.description.trim() || null }),
     onSuccess: () => invCore(),
     onError: toastErr("Failed to save routine", "Ironworks could not save the routine."),
   });
   const runRoutine = useMutation({
     mutationFn: () => routinesApi.run(routineId!),
-    onSuccess: async () => { pushToast({ title: "Routine run started", tone: "success" }); setActiveTab("runs"); await inv(queryKeys.routines.detail(routineId!), queryKeys.routines.runs(routineId!), queryKeys.routines.list(selectedCompanyId!), queryKeys.routines.activity(selectedCompanyId!, routineId!)); },
+    onSuccess: async () => {
+      pushToast({ title: "Routine run started", tone: "success" });
+      setActiveTab("runs");
+      await inv(
+        queryKeys.routines.detail(routineId!),
+        queryKeys.routines.runs(routineId!),
+        queryKeys.routines.list(selectedCompanyId!),
+        queryKeys.routines.activity(selectedCompanyId!, routineId!),
+      );
+    },
     onError: toastErr("Routine run failed", "Ironworks could not start the routine run."),
   });
   const updateRoutineStatus = useMutation({
     mutationFn: (status: string) => routinesApi.update(routineId!, { status }),
-    onSuccess: async (_data, status) => { pushToast({ title: "Routine saved", body: status === "paused" ? "Automation paused." : "Automation enabled.", tone: "success" }); await inv(queryKeys.routines.detail(routineId!), queryKeys.routines.list(selectedCompanyId!)); },
+    onSuccess: async (_data, status) => {
+      pushToast({
+        title: "Routine saved",
+        body: status === "paused" ? "Automation paused." : "Automation enabled.",
+        tone: "success",
+      });
+      await inv(queryKeys.routines.detail(routineId!), queryKeys.routines.list(selectedCompanyId!));
+    },
     onError: toastErr("Failed to update routine", "Ironworks could not update the routine."),
   });
   const createTrigger = useMutation({
     mutationFn: async (): Promise<RoutineTriggerResponse> => {
       const existingOfKind = (routine?.triggers ?? []).filter((t) => t.kind === newTrigger.kind).length;
       const autoLabel = existingOfKind > 0 ? `${newTrigger.kind}-${existingOfKind + 1}` : newTrigger.kind;
-      return routinesApi.createTrigger(routineId!, { kind: newTrigger.kind, label: autoLabel, ...(newTrigger.kind === "schedule" ? { cronExpression: newTrigger.cronExpression.trim(), timezone: getLocalTimezone() } : {}), ...(newTrigger.kind === "webhook" ? { signingMode: newTrigger.signingMode, replayWindowSec: Number(newTrigger.replayWindowSec || "300") } : {}) });
+      return routinesApi.createTrigger(routineId!, {
+        kind: newTrigger.kind,
+        label: autoLabel,
+        ...(newTrigger.kind === "schedule"
+          ? { cronExpression: newTrigger.cronExpression.trim(), timezone: getLocalTimezone() }
+          : {}),
+        ...(newTrigger.kind === "webhook"
+          ? { signingMode: newTrigger.signingMode, replayWindowSec: Number(newTrigger.replayWindowSec || "300") }
+          : {}),
+      });
     },
-    onSuccess: async (result) => { if (result.secretMaterial) setSecretMessage({ title: "Webhook trigger created", webhookUrl: result.secretMaterial.webhookUrl, webhookSecret: result.secretMaterial.webhookSecret }); await invCore(); },
+    onSuccess: async (result) => {
+      if (result.secretMaterial)
+        setSecretMessage({
+          title: "Webhook trigger created",
+          webhookUrl: result.secretMaterial.webhookUrl,
+          webhookSecret: result.secretMaterial.webhookSecret,
+        });
+      await invCore();
+    },
     onError: toastErr("Failed to add trigger", "Ironworks could not create the trigger."),
   });
   const updateTrigger = useMutation({
@@ -270,19 +314,34 @@ export function RoutineDetail() {
   });
   const rotateTrigger = useMutation({
     mutationFn: (id: string): Promise<RotateRoutineTriggerResponse> => routinesApi.rotateTriggerSecret(id),
-    onSuccess: async (result) => { setSecretMessage({ title: "Webhook secret rotated", webhookUrl: result.secretMaterial.webhookUrl, webhookSecret: result.secretMaterial.webhookSecret }); await inv(queryKeys.routines.detail(routineId!), queryKeys.routines.activity(selectedCompanyId!, routineId!)); },
+    onSuccess: async (result) => {
+      setSecretMessage({
+        title: "Webhook secret rotated",
+        webhookUrl: result.secretMaterial.webhookUrl,
+        webhookSecret: result.secretMaterial.webhookSecret,
+      });
+      await inv(queryKeys.routines.detail(routineId!), queryKeys.routines.activity(selectedCompanyId!, routineId!));
+    },
     onError: toastErr("Failed to rotate webhook secret", "Ironworks could not rotate the webhook secret."),
   });
 
   // ── Guard renders ────────────────────────────────────────────────────
   if (!selectedCompanyId) return <EmptyState icon={Repeat} message="Select a company to view routines." />;
   if (isLoading) return <PageSkeleton variant="issues-list" />;
-  if (error || !routine) return <p className="pt-6 text-sm text-destructive">{error instanceof Error ? error.message : "Routine not found"}</p>;
+  if (error || !routine)
+    return (
+      <p className="pt-6 text-sm text-destructive">{error instanceof Error ? error.message : "Routine not found"}</p>
+    );
 
   const automationEnabled = routine.status === "active";
   const automationToggleDisabled = updateRoutineStatus.isPending || routine.status === "archived";
   const automationLabel = routine.status === "archived" ? "Archived" : automationEnabled ? "Active" : "Paused";
-  const automationLabelClassName = routine.status === "archived" ? "text-muted-foreground" : automationEnabled ? "text-emerald-400" : "text-muted-foreground";
+  const automationLabelClassName =
+    routine.status === "archived"
+      ? "text-muted-foreground"
+      : automationEnabled
+        ? "text-emerald-400"
+        : "text-muted-foreground";
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -325,7 +384,9 @@ export function RoutineDetail() {
           setEditDraft((c) => ({ ...c, assigneeAgentId }));
         }}
         onProjectChange={(projectId) => setEditDraft((c) => ({ ...c, projectId }))}
-        onAssigneeConfirm={() => editDraft.projectId ? descriptionEditorRef.current?.focus() : projectSelectorRef.current?.focus()}
+        onAssigneeConfirm={() =>
+          editDraft.projectId ? descriptionEditorRef.current?.focus() : projectSelectorRef.current?.focus()
+        }
         onProjectConfirm={() => descriptionEditorRef.current?.focus()}
       />
 
@@ -337,7 +398,8 @@ export function RoutineDetail() {
         bordered={false}
         contentClassName="min-h-[120px] text-[15px] leading-7"
         onSubmit={() => {
-          if (!saveRoutine.isPending && editDraft.title.trim() && editDraft.projectId && editDraft.assigneeAgentId) saveRoutine.mutate();
+          if (!saveRoutine.isPending && editDraft.title.trim() && editDraft.projectId && editDraft.assigneeAgentId)
+            saveRoutine.mutate();
         }}
       />
 
@@ -358,8 +420,14 @@ export function RoutineDetail() {
 
       <div className="flex items-center justify-between">
         {isEditDirty ? <span className="text-xs text-amber-600">Unsaved changes</span> : <span />}
-        <Button onClick={() => saveRoutine.mutate()} disabled={saveRoutine.isPending || !editDraft.title.trim() || !editDraft.projectId || !editDraft.assigneeAgentId}>
-          <Save className="mr-2 h-4 w-4" />Save routine
+        <Button
+          onClick={() => saveRoutine.mutate()}
+          disabled={
+            saveRoutine.isPending || !editDraft.title.trim() || !editDraft.projectId || !editDraft.assigneeAgentId
+          }
+        >
+          <Save className="mr-2 h-4 w-4" />
+          Save routine
         </Button>
       </div>
 
@@ -367,9 +435,18 @@ export function RoutineDetail() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3">
         <TabsList variant="line" className="w-full justify-start gap-1">
-          <TabsTrigger value="triggers" className="gap-1.5"><Clock3 className="h-3.5 w-3.5" />Triggers</TabsTrigger>
-          <TabsTrigger value="runs" className="gap-1.5"><Play className="h-3.5 w-3.5" />Runs{hasLiveRun && <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />}</TabsTrigger>
-          <TabsTrigger value="activity" className="gap-1.5"><ActivityIcon className="h-3.5 w-3.5" />Activity</TabsTrigger>
+          <TabsTrigger value="triggers" className="gap-1.5">
+            <Clock3 className="h-3.5 w-3.5" />
+            Triggers
+          </TabsTrigger>
+          <TabsTrigger value="runs" className="gap-1.5">
+            <Play className="h-3.5 w-3.5" />
+            Runs{hasLiveRun && <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />}
+          </TabsTrigger>
+          <TabsTrigger value="activity" className="gap-1.5">
+            <ActivityIcon className="h-3.5 w-3.5" />
+            Activity
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="triggers">
           <TriggersTab
@@ -384,7 +461,12 @@ export function RoutineDetail() {
           />
         </TabsContent>
         <TabsContent value="runs">
-          <RunsTab hasLiveRun={hasLiveRun} activeIssueId={activeIssueId} companyId={routine.companyId} runs={routineRuns ?? []} />
+          <RunsTab
+            hasLiveRun={hasLiveRun}
+            activeIssueId={activeIssueId}
+            companyId={routine.companyId}
+            runs={routineRuns ?? []}
+          />
         </TabsContent>
         <TabsContent value="activity">
           <ActivityTab activity={activity ?? []} />

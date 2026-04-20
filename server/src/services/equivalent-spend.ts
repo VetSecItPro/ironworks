@@ -5,41 +5,41 @@
  */
 
 interface ModelRate {
-  inputPer1M: number;   // cents per 1M input tokens
-  outputPer1M: number;  // cents per 1M output tokens
+  inputPer1M: number; // cents per 1M input tokens
+  outputPer1M: number; // cents per 1M output tokens
   cachedInputPer1M: number; // cents per 1M cached input tokens (usually discounted)
 }
 
 const RATE_CARD: Record<string, ModelRate> = {
   // ─── Anthropic ──────────────────────────────────────────
-  "claude-opus-4-20250514":           { inputPer1M: 1500, outputPer1M: 7500, cachedInputPer1M: 750 },
-  "claude-opus-4":                    { inputPer1M: 1500, outputPer1M: 7500, cachedInputPer1M: 750 },
-  "claude-sonnet-4-20250514":         { inputPer1M: 300,  outputPer1M: 1500, cachedInputPer1M: 150 },
-  "claude-sonnet-4":                  { inputPer1M: 300,  outputPer1M: 1500, cachedInputPer1M: 150 },
-  "claude-3-5-sonnet-20241022":       { inputPer1M: 300,  outputPer1M: 1500, cachedInputPer1M: 150 },
-  "claude-3-5-sonnet":                { inputPer1M: 300,  outputPer1M: 1500, cachedInputPer1M: 150 },
-  "claude-3-5-haiku-20241022":        { inputPer1M: 80,   outputPer1M: 400,  cachedInputPer1M: 40 },
-  "claude-3-5-haiku":                 { inputPer1M: 80,   outputPer1M: 400,  cachedInputPer1M: 40 },
-  "claude-haiku-4-5-20251001":        { inputPer1M: 80,   outputPer1M: 400,  cachedInputPer1M: 40 },
+  "claude-opus-4-20250514": { inputPer1M: 1500, outputPer1M: 7500, cachedInputPer1M: 750 },
+  "claude-opus-4": { inputPer1M: 1500, outputPer1M: 7500, cachedInputPer1M: 750 },
+  "claude-sonnet-4-20250514": { inputPer1M: 300, outputPer1M: 1500, cachedInputPer1M: 150 },
+  "claude-sonnet-4": { inputPer1M: 300, outputPer1M: 1500, cachedInputPer1M: 150 },
+  "claude-3-5-sonnet-20241022": { inputPer1M: 300, outputPer1M: 1500, cachedInputPer1M: 150 },
+  "claude-3-5-sonnet": { inputPer1M: 300, outputPer1M: 1500, cachedInputPer1M: 150 },
+  "claude-3-5-haiku-20241022": { inputPer1M: 80, outputPer1M: 400, cachedInputPer1M: 40 },
+  "claude-3-5-haiku": { inputPer1M: 80, outputPer1M: 400, cachedInputPer1M: 40 },
+  "claude-haiku-4-5-20251001": { inputPer1M: 80, outputPer1M: 400, cachedInputPer1M: 40 },
 
   // ─── OpenAI ─────────────────────────────────────────────
-  "gpt-4o":                           { inputPer1M: 250,  outputPer1M: 1000, cachedInputPer1M: 125 },
-  "gpt-4o-2024-11-20":                { inputPer1M: 250,  outputPer1M: 1000, cachedInputPer1M: 125 },
-  "gpt-4o-mini":                      { inputPer1M: 15,   outputPer1M: 60,   cachedInputPer1M: 8 },
-  "gpt-4-turbo":                      { inputPer1M: 1000, outputPer1M: 3000, cachedInputPer1M: 500 },
-  "o1":                               { inputPer1M: 1500, outputPer1M: 6000, cachedInputPer1M: 750 },
-  "o1-mini":                          { inputPer1M: 300,  outputPer1M: 1200, cachedInputPer1M: 150 },
-  "o3":                               { inputPer1M: 1000, outputPer1M: 4000, cachedInputPer1M: 500 },
-  "o3-mini":                          { inputPer1M: 110,  outputPer1M: 440,  cachedInputPer1M: 55 },
-  "o4-mini":                          { inputPer1M: 110,  outputPer1M: 440,  cachedInputPer1M: 55 },
-  "codex-mini":                       { inputPer1M: 150,  outputPer1M: 600,  cachedInputPer1M: 25 },
+  "gpt-4o": { inputPer1M: 250, outputPer1M: 1000, cachedInputPer1M: 125 },
+  "gpt-4o-2024-11-20": { inputPer1M: 250, outputPer1M: 1000, cachedInputPer1M: 125 },
+  "gpt-4o-mini": { inputPer1M: 15, outputPer1M: 60, cachedInputPer1M: 8 },
+  "gpt-4-turbo": { inputPer1M: 1000, outputPer1M: 3000, cachedInputPer1M: 500 },
+  o1: { inputPer1M: 1500, outputPer1M: 6000, cachedInputPer1M: 750 },
+  "o1-mini": { inputPer1M: 300, outputPer1M: 1200, cachedInputPer1M: 150 },
+  o3: { inputPer1M: 1000, outputPer1M: 4000, cachedInputPer1M: 500 },
+  "o3-mini": { inputPer1M: 110, outputPer1M: 440, cachedInputPer1M: 55 },
+  "o4-mini": { inputPer1M: 110, outputPer1M: 440, cachedInputPer1M: 55 },
+  "codex-mini": { inputPer1M: 150, outputPer1M: 600, cachedInputPer1M: 25 },
 
   // ─── Google ─────────────────────────────────────────────
-  "gemini-2.5-pro":                   { inputPer1M: 125,  outputPer1M: 1000, cachedInputPer1M: 32 },
-  "gemini-2.5-flash":                 { inputPer1M: 15,   outputPer1M: 60,   cachedInputPer1M: 4 },
-  "gemini-2.0-flash":                 { inputPer1M: 10,   outputPer1M: 40,   cachedInputPer1M: 3 },
-  "gemini-1.5-pro":                   { inputPer1M: 125,  outputPer1M: 500,  cachedInputPer1M: 32 },
-  "gemini-1.5-flash":                 { inputPer1M: 8,    outputPer1M: 30,   cachedInputPer1M: 2 },
+  "gemini-2.5-pro": { inputPer1M: 125, outputPer1M: 1000, cachedInputPer1M: 32 },
+  "gemini-2.5-flash": { inputPer1M: 15, outputPer1M: 60, cachedInputPer1M: 4 },
+  "gemini-2.0-flash": { inputPer1M: 10, outputPer1M: 40, cachedInputPer1M: 3 },
+  "gemini-1.5-pro": { inputPer1M: 125, outputPer1M: 500, cachedInputPer1M: 32 },
+  "gemini-1.5-flash": { inputPer1M: 8, outputPer1M: 30, cachedInputPer1M: 2 },
 };
 
 // Default rate for unknown models (roughly mid-tier pricing)
@@ -96,8 +96,7 @@ export function calculateTotalEquivalentSpend(
   }>,
 ): number {
   return entries.reduce(
-    (sum, e) =>
-      sum + calculateEquivalentSpendCents(e.model, e.inputTokens, e.cachedInputTokens, e.outputTokens),
+    (sum, e) => sum + calculateEquivalentSpendCents(e.model, e.inputTokens, e.cachedInputTokens, e.outputTokens),
     0,
   );
 }

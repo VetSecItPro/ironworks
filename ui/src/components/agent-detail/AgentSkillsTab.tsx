@@ -1,27 +1,17 @@
-import { useEffect, useMemo, useState, useRef } from "react";
+import type { Agent, AgentSkillEntry } from "@ironworksai/shared";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@/lib/router";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { agentsApi } from "../../api/agents";
 import { companySkillsApi } from "../../api/companySkills";
+import { applyAgentSkillSnapshot, arraysEqual, isReadOnlyUnmanagedSkillEntry } from "../../lib/agent-skills-state";
 import { queryKeys } from "../../lib/queryKeys";
 import { adapterLabels } from "../agent-config-primitives";
 import { PageSkeleton } from "../PageSkeleton";
-import { Loader2 } from "lucide-react";
-import type { Agent, AgentSkillEntry } from "@ironworksai/shared";
-import {
-  applyAgentSkillSnapshot,
-  arraysEqual,
-  isReadOnlyUnmanagedSkillEntry,
-} from "../../lib/agent-skills-state";
-import { SkillRowItem, type SkillRow } from "./SkillRow";
+import { type SkillRow, SkillRowItem } from "./SkillRow";
 
-export function AgentSkillsTab({
-  agent,
-  companyId,
-}: {
-  agent: Agent;
-  companyId?: string;
-}) {
+export function AgentSkillsTab({ agent, companyId }: { agent: Agent; companyId?: string }) {
   const queryClient = useQueryClient();
   const [skillDraft, setSkillDraft] = useState<string[]>([]);
   const [lastSavedSkills, setLastSavedSkills] = useState<string[]>([]);
@@ -101,10 +91,7 @@ export function AgentSkillsTab({
     () => new Map((companySkills ?? []).map((skill) => [skill.key, skill])),
     [companySkills],
   );
-  const companySkillKeys = useMemo(
-    () => new Set((companySkills ?? []).map((skill) => skill.key)),
-    [companySkills],
-  );
+  const companySkillKeys = useMemo(() => new Set((companySkills ?? []).map((skill) => skill.key)), [companySkills]);
   const adapterEntryByKey = useMemo(
     () => new Map((skillSnapshot?.entries ?? []).map((entry) => [entry.key, entry])),
     [skillSnapshot],
@@ -114,11 +101,15 @@ export function AgentSkillsTab({
       (companySkills ?? [])
         .filter((skill) => !adapterEntryByKey.get(skill.key)?.required)
         .map((skill) => ({
-          id: skill.id, key: skill.key, name: skill.name,
-          description: skill.description, detail: adapterEntryByKey.get(skill.key)?.detail ?? null,
+          id: skill.id,
+          key: skill.key,
+          name: skill.name,
+          description: skill.description,
+          detail: adapterEntryByKey.get(skill.key)?.detail ?? null,
           locationLabel: adapterEntryByKey.get(skill.key)?.locationLabel ?? null,
           originLabel: adapterEntryByKey.get(skill.key)?.originLabel ?? null,
-          linkTo: `/skills/${skill.id}`, readOnly: false,
+          linkTo: `/skills/${skill.id}`,
+          readOnly: false,
           adapterEntry: adapterEntryByKey.get(skill.key) ?? null,
         })),
     [adapterEntryByKey, companySkills],
@@ -130,10 +121,16 @@ export function AgentSkillsTab({
         .map((entry) => {
           const cs = companySkillByKey.get(entry.key);
           return {
-            id: cs?.id ?? `required:${entry.key}`, key: entry.key, name: cs?.name ?? entry.key,
-            description: cs?.description ?? null, detail: entry.detail ?? null,
-            locationLabel: entry.locationLabel ?? null, originLabel: entry.originLabel ?? null,
-            linkTo: cs ? `/skills/${cs.id}` : null, readOnly: false, adapterEntry: entry,
+            id: cs?.id ?? `required:${entry.key}`,
+            key: entry.key,
+            name: cs?.name ?? entry.key,
+            description: cs?.description ?? null,
+            detail: entry.detail ?? null,
+            locationLabel: entry.locationLabel ?? null,
+            originLabel: entry.originLabel ?? null,
+            linkTo: cs ? `/skills/${cs.id}` : null,
+            readOnly: false,
+            adapterEntry: entry,
           };
         }),
     [companySkillByKey, skillSnapshot],
@@ -143,10 +140,16 @@ export function AgentSkillsTab({
       (skillSnapshot?.entries ?? [])
         .filter((entry) => isReadOnlyUnmanagedSkillEntry(entry, companySkillKeys))
         .map((entry) => ({
-          id: `external:${entry.key}`, key: entry.key, name: entry.runtimeName ?? entry.key,
-          description: null, detail: entry.detail ?? null,
-          locationLabel: entry.locationLabel ?? null, originLabel: entry.originLabel ?? null,
-          linkTo: null, readOnly: true, adapterEntry: entry,
+          id: `external:${entry.key}`,
+          key: entry.key,
+          name: entry.runtimeName ?? entry.key,
+          description: null,
+          detail: entry.detail ?? null,
+          locationLabel: entry.locationLabel ?? null,
+          originLabel: entry.originLabel ?? null,
+          linkTo: null,
+          readOnly: true,
+          adapterEntry: entry,
         })),
     [companySkillKeys, skillSnapshot],
   );
@@ -156,10 +159,14 @@ export function AgentSkillsTab({
   );
   const skillApplicationLabel = useMemo(() => {
     switch (skillSnapshot?.mode) {
-      case "persistent": return "Kept in the workspace";
-      case "ephemeral": return "Applied when the agent runs";
-      case "unsupported": return "Tracked only";
-      default: return "Unknown";
+      case "persistent":
+        return "Kept in the workspace";
+      case "ephemeral":
+        return "Applied when the agent runs";
+      case "unsupported":
+        return "Tracked only";
+      default:
+        return "Unknown";
     }
   }, [skillSnapshot?.mode]);
   const unsupportedSkillMessage = useMemo(() => {
@@ -170,9 +177,7 @@ export function AgentSkillsTab({
     return "Ironworks cannot manage skills for this adapter yet. Manage them in the adapter directly.";
   }, [agent.adapterType, skillSnapshot?.mode]);
   const hasUnsavedChanges = !arraysEqual(skillDraft, lastSavedSkills);
-  const saveStatusLabel = syncSkills.isPending
-    ? "Saving changes..."
-    : hasUnsavedChanges ? "Saving soon..." : null;
+  const saveStatusLabel = syncSkills.isPending ? "Saving changes..." : hasUnsavedChanges ? "Saving soon..." : null;
 
   const renderSkillRow = (skill: SkillRow) => (
     <SkillRowItem
@@ -189,7 +194,10 @@ export function AgentSkillsTab({
   return (
     <div className="max-w-4xl space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link to="/skills" className="text-sm font-medium text-foreground underline-offset-4 no-underline transition-colors hover:text-foreground/70 hover:underline">
+        <Link
+          to="/skills"
+          className="text-sm font-medium text-foreground underline-offset-4 no-underline transition-colors hover:text-foreground/70 hover:underline"
+        >
           View company skills library
         </Link>
         {saveStatusLabel ? (
@@ -227,9 +235,7 @@ export function AgentSkillsTab({
           ) : (
             <>
               {optionalSkillRows.length > 0 && (
-                <section className="border-y border-border">
-                  {optionalSkillRows.map(renderSkillRow)}
-                </section>
+                <section className="border-y border-border">{optionalSkillRows.map(renderSkillRow)}</section>
               )}
               {requiredSkillRows.length > 0 && (
                 <section className="border-y border-border">
@@ -242,7 +248,9 @@ export function AgentSkillsTab({
               {unmanagedSkillRows.length > 0 && (
                 <section className="border-y border-border">
                   <div className="border-b border-border bg-muted/40 px-3 py-2">
-                    <span className="text-xs font-medium text-muted-foreground">User-installed skills, not managed by Ironworks</span>
+                    <span className="text-xs font-medium text-muted-foreground">
+                      User-installed skills, not managed by Ironworks
+                    </span>
                   </div>
                   {unmanagedSkillRows.map(renderSkillRow)}
                 </section>

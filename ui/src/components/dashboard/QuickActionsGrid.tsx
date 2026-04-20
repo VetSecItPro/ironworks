@@ -1,15 +1,6 @@
+import { BookOpen, CircleDot, DollarSign, FolderOpen, Inbox, Play, Target, Users } from "lucide-react";
 import { memo } from "react";
 import { useNavigate } from "@/lib/router";
-import {
-  CircleDot,
-  Play,
-  Target,
-  FolderOpen,
-  BookOpen,
-  Users,
-  DollarSign,
-  Inbox,
-} from "lucide-react";
 import { cn } from "../../lib/utils";
 
 interface QuickAction {

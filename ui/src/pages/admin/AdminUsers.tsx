@@ -1,25 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useBreadcrumbs } from "@/context/BreadcrumbContext";
-import { adminApi, type AdminUser } from "@/api/admin";
-import { cn } from "@/lib/utils";
-import {
-  RefreshCw,
-  Search,
-  Shield,
-  Users,
-} from "lucide-react";
+import { RefreshCw, Search, Shield, Users } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { type AdminUser, adminApi } from "@/api/admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useBreadcrumbs } from "@/context/BreadcrumbContext";
+import { cn } from "@/lib/utils";
 
 function VerifiedBadge({ verified }: { verified: boolean }) {
   return (
     <span
       className={cn(
         "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium",
-        verified
-          ? "bg-emerald-500/10 text-emerald-400"
-          : "bg-muted text-muted-foreground",
+        verified ? "bg-emerald-500/10 text-emerald-400" : "bg-muted text-muted-foreground",
       )}
     >
       {verified ? "Verified" : "Unverified"}
@@ -30,12 +23,7 @@ function VerifiedBadge({ verified }: { verified: boolean }) {
 function StatusDot({ status }: { status: "active" | "inactive" }) {
   return (
     <span className="flex items-center gap-1.5">
-      <span
-        className={cn(
-          "h-2 w-2 rounded-full",
-          status === "active" ? "bg-emerald-500" : "bg-muted-foreground/40",
-        )}
-      />
+      <span className={cn("h-2 w-2 rounded-full", status === "active" ? "bg-emerald-500" : "bg-muted-foreground/40")} />
       <span className="text-sm capitalize">{status}</span>
     </span>
   );
@@ -81,11 +69,7 @@ export default function AdminUsers() {
     if (!data) return [];
     if (!search) return data;
     const q = search.toLowerCase();
-    return data.filter(
-      (u) =>
-        u.name.toLowerCase().includes(q) ||
-        u.email.toLowerCase().includes(q),
-    );
+    return data.filter((u) => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
   }, [data, search]);
 
   return (
@@ -98,13 +82,7 @@ export default function AdminUsers() {
             {data ? `${data.length} total users` : "All registered users"}
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={isFetching}
-          className="gap-1.5"
-        >
+        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching} className="gap-1.5">
           <RefreshCw className={cn("h-3.5 w-3.5", isFetching && "animate-spin")} />
           Refresh
         </Button>
@@ -122,12 +100,7 @@ export default function AdminUsers() {
           />
         </div>
         {search && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 text-xs text-muted-foreground"
-            onClick={() => setSearch("")}
-          >
+          <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground" onClick={() => setSearch("")}>
             Clear
           </Button>
         )}

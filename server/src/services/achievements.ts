@@ -1,12 +1,6 @@
-import { and, eq, gte, isNull, ne, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import {
-  agentMemoryEntries,
-  agents,
-  costEvents,
-  issues,
-  projects,
-} from "@ironworksai/db";
+import { agentMemoryEntries, agents, costEvents, issues, projects } from "@ironworksai/db";
+import { and, eq, gte, isNull, ne, sql } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 
 // ── Achievement Badge System ───────────────────────────────────────────────
@@ -23,8 +17,18 @@ export interface Achievement {
 
 export const ACHIEVEMENTS: Achievement[] = [
   { key: "first_10", name: "First 10", description: "Completed 10 issues", icon: "trophy" },
-  { key: "perfect_week", name: "Perfect Week", description: "Completed all assigned issues in a week with zero cancellations", icon: "star" },
-  { key: "under_budget", name: "Budget Champion", description: "Stayed under budget for a full month", icon: "dollar-sign" },
+  {
+    key: "perfect_week",
+    name: "Perfect Week",
+    description: "Completed all assigned issues in a week with zero cancellations",
+    icon: "star",
+  },
+  {
+    key: "under_budget",
+    name: "Budget Champion",
+    description: "Stayed under budget for a full month",
+    icon: "dollar-sign",
+  },
   { key: "speed_demon", name: "Speed Demon", description: "Completed 5 issues in a single day", icon: "zap" },
   { key: "knowledge_builder", name: "Knowledge Builder", description: "Created 20+ memory entries", icon: "brain" },
   { key: "team_player", name: "Team Player", description: "Contributed to 5 different projects", icon: "users" },
@@ -35,11 +39,7 @@ export const ACHIEVEMENTS: Achievement[] = [
  *
  * Returns the keys of newly granted achievements.
  */
-export async function checkAndGrantAchievements(
-  db: Db,
-  agentId: string,
-  companyId: string,
-): Promise<string[]> {
+export async function checkAndGrantAchievements(db: Db, agentId: string, companyId: string): Promise<string[]> {
   // Fetch already-earned achievement keys
   const existing = await db
     .select({ content: agentMemoryEntries.content })
@@ -84,21 +84,13 @@ export async function checkAndGrantAchievements(
   }
 
   if (newlyGranted.length > 0) {
-    logger.info(
-      { agentId, companyId, newAchievements: newlyGranted },
-      "granted new achievements to agent",
-    );
+    logger.info({ agentId, companyId, newAchievements: newlyGranted }, "granted new achievements to agent");
   }
 
   return newlyGranted;
 }
 
-async function checkAchievementCriteria(
-  db: Db,
-  agentId: string,
-  companyId: string,
-  key: string,
-): Promise<boolean> {
+async function checkAchievementCriteria(db: Db, agentId: string, companyId: string, key: string): Promise<boolean> {
   switch (key) {
     case "first_10":
       return checkFirst10(db, agentId, companyId);
@@ -122,13 +114,7 @@ async function checkFirst10(db: Db, agentId: string, companyId: string): Promise
   const result = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(issues)
-    .where(
-      and(
-        eq(issues.companyId, companyId),
-        eq(issues.assigneeAgentId, agentId),
-        eq(issues.status, "done"),
-      ),
-    );
+    .where(and(eq(issues.companyId, companyId), eq(issues.assigneeAgentId, agentId), eq(issues.status, "done")));
   return Number(result[0]?.count ?? 0) >= 10;
 }
 
@@ -144,11 +130,7 @@ async function checkPerfectWeek(db: Db, agentId: string, companyId: string): Pro
     })
     .from(issues)
     .where(
-      and(
-        eq(issues.companyId, companyId),
-        eq(issues.assigneeAgentId, agentId),
-        gte(issues.createdAt, sevenDaysAgo),
-      ),
+      and(eq(issues.companyId, companyId), eq(issues.assigneeAgentId, agentId), gte(issues.createdAt, sevenDaysAgo)),
     );
 
   const row = stats[0];
@@ -177,12 +159,7 @@ async function checkUnderBudget(db: Db, agentId: string): Promise<boolean> {
   const costResult = await db
     .select({ totalCents: sql<number>`coalesce(sum(${costEvents.costCents}), 0)::int` })
     .from(costEvents)
-    .where(
-      and(
-        eq(costEvents.agentId, agentId),
-        gte(costEvents.occurredAt, thirtyDaysAgo),
-      ),
-    );
+    .where(and(eq(costEvents.agentId, agentId), gte(costEvents.occurredAt, thirtyDaysAgo)));
 
   const totalSpent = Number(costResult[0]?.totalCents ?? 0);
   return totalSpent <= agentRow.budgetMonthlyCents;
@@ -245,19 +222,11 @@ async function checkTeamPlayer(db: Db, agentId: string, companyId: string): Prom
 /**
  * Run achievement checks for all non-terminated agents in a company.
  */
-export async function checkAllAgentAchievements(
-  db: Db,
-  companyId: string,
-): Promise<void> {
+export async function checkAllAgentAchievements(db: Db, companyId: string): Promise<void> {
   const companyAgents = await db
     .select({ id: agents.id })
     .from(agents)
-    .where(
-      and(
-        eq(agents.companyId, companyId),
-        ne(agents.status, "terminated"),
-      ),
-    );
+    .where(and(eq(agents.companyId, companyId), ne(agents.status, "terminated")));
 
   for (const agent of companyAgents) {
     try {

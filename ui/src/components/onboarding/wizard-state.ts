@@ -1,5 +1,5 @@
-import type { WizardPersistedState } from "./types";
 import { WIZARD_STORAGE_KEY } from "./constants";
+import type { WizardPersistedState } from "./types";
 
 export function loadWizardState(): WizardPersistedState | null {
   try {

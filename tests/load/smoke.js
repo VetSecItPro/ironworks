@@ -7,21 +7,22 @@
  * This smoke test verifies the API can handle basic concurrent load.
  * Extend with scenario-specific tests before scaling to paying customers.
  */
-import http from "k6/http";
+
 import { check, sleep } from "k6";
+import http from "k6/http";
 
 const BASE_URL = __ENV.BASE_URL || "http://localhost:3100";
 
 export const options = {
   // Smoke test: low load, verify system works under basic concurrency
   stages: [
-    { duration: "30s", target: 10 },  // Ramp up to 10 users
-    { duration: "1m", target: 10 },   // Stay at 10 users
-    { duration: "30s", target: 0 },   // Ramp down
+    { duration: "30s", target: 10 }, // Ramp up to 10 users
+    { duration: "1m", target: 10 }, // Stay at 10 users
+    { duration: "30s", target: 0 }, // Ramp down
   ],
   thresholds: {
-    http_req_duration: ["p(95)<500"],  // 95% of requests under 500ms
-    http_req_failed: ["rate<0.01"],    // Less than 1% failure rate
+    http_req_duration: ["p(95)<500"], // 95% of requests under 500ms
+    http_req_failed: ["rate<0.01"], // Less than 1% failure rate
   },
 };
 

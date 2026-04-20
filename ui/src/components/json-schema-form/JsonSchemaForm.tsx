@@ -1,39 +1,35 @@
 import { useCallback, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import type { JsonSchemaFormProps } from "./types";
-import { resolveType, labelFromKey } from "./helpers";
 import { FormField, setJsonSchemaFormRef } from "./FormFields";
+import { labelFromKey, resolveType } from "./helpers";
+import type { JsonSchemaFormProps } from "./types";
 
-// Re-export public API
-export type { JsonSchemaNode, JsonSchemaFormProps } from "./types";
 export {
-  resolveType,
-  labelFromKey,
   getDefaultForSchema,
+  getDefaultValues,
+  labelFromKey,
+  resolveType,
   validateField,
   validateJsonSchemaForm,
-  getDefaultValues,
 } from "./helpers";
+// Re-export public API
+export type { JsonSchemaFormProps, JsonSchemaNode } from "./types";
 
 /**
  * Main JsonSchemaForm component.
  * Renders a form based on a subset of JSON Schema specification.
  * Supports primitive types, enums, secrets, objects, and arrays with recursion.
  */
-export function JsonSchemaForm({
-  schema,
-  values,
-  onChange,
-  errors = {},
-  disabled,
-  className,
-}: JsonSchemaFormProps) {
+export function JsonSchemaForm({ schema, values, onChange, errors = {}, disabled, className }: JsonSchemaFormProps) {
   const type = resolveType(schema);
 
-  const handleRootScalarChange = useCallback((newVal: unknown) => {
-    // If root is a scalar, values IS the value
-    onChange(newVal as Record<string, unknown>);
-  }, [onChange]);
+  const handleRootScalarChange = useCallback(
+    (newVal: unknown) => {
+      // If root is a scalar, values IS the value
+      onChange(newVal as Record<string, unknown>);
+    },
+    [onChange],
+  );
 
   // If it's a scalar at root, render a single FormField
   if (type !== "object") {
@@ -54,10 +50,7 @@ export function JsonSchemaForm({
 
   // Memoize to avoid re-renders when parent provides new object references
   const properties = useMemo(() => schema.properties ?? {}, [schema.properties]);
-  const requiredFields = useMemo(
-    () => new Set(schema.required ?? []),
-    [schema.required],
-  );
+  const requiredFields = useMemo(() => new Set(schema.required ?? []), [schema.required]);
 
   const handleFieldChange = useCallback(
     (key: string, value: unknown) => {
@@ -68,12 +61,7 @@ export function JsonSchemaForm({
 
   if (Object.keys(properties).length === 0) {
     return (
-      <div
-        className={cn(
-          "py-4 text-center text-sm text-muted-foreground",
-          className,
-        )}
-      >
+      <div className={cn("py-4 text-center text-sm text-muted-foreground", className)}>
         No configuration options available.
       </div>
     );

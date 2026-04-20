@@ -1,19 +1,19 @@
-import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Puzzle, ArrowLeft } from "lucide-react";
-import { useCompany } from "@/context/CompanyContext";
-import { useBreadcrumbs } from "@/context/BreadcrumbContext";
-import { Link, Navigate, useParams } from "@/lib/router";
-import { PluginSlotMount, usePluginSlots } from "@/plugins/slots";
+import { ArrowLeft, Puzzle } from "lucide-react";
+import { useEffect, useState } from "react";
 import { pluginsApi } from "@/api/plugins";
-import { queryKeys } from "@/lib/queryKeys";
-import { Button } from "@/components/ui/button";
+import { type JsonSchemaNode } from "@/components/JsonSchemaForm";
+import { PageTabBar } from "@/components/PageTabBar";
+import { PluginConfigForm, PluginStatusTab } from "@/components/plugin-settings";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { PageTabBar } from "@/components/PageTabBar";
-import { type JsonSchemaNode } from "@/components/JsonSchemaForm";
-import { PluginConfigForm, PluginStatusTab } from "@/components/plugin-settings";
+import { useBreadcrumbs } from "@/context/BreadcrumbContext";
+import { useCompany } from "@/context/CompanyContext";
+import { queryKeys } from "@/lib/queryKeys";
+import { Link, Navigate, useParams } from "@/lib/router";
+import { PluginSlotMount, usePluginSlots } from "@/plugins/slots";
 
 /**
  * PluginSettings page component.
@@ -98,12 +98,7 @@ export function PluginSettings() {
   }
 
   const displayStatus = plugin.status;
-  const statusVariant =
-    plugin.status === "ready"
-      ? "default"
-      : plugin.status === "error"
-        ? "destructive"
-        : "secondary";
+  const statusVariant = plugin.status === "ready" ? "default" : plugin.status === "error" ? "destructive" : "secondary";
   const pluginDescription = plugin.manifestJson.description || "No description provided.";
 
   return (
@@ -126,7 +121,11 @@ export function PluginSettings() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "configuration" | "status")} className="space-y-6">
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => setActiveTab(value as "configuration" | "status")}
+        className="space-y-6"
+      >
         <PageTabBar
           align="start"
           items={[
@@ -196,12 +195,12 @@ export function PluginSettings() {
                   initialValues={configData?.configJson}
                   isLoading={configLoading}
                   pluginStatus={plugin.status}
-                  supportsConfigTest={(plugin as unknown as { supportsConfigTest?: boolean }).supportsConfigTest === true}
+                  supportsConfigTest={
+                    (plugin as unknown as { supportsConfigTest?: boolean }).supportsConfigTest === true
+                  }
                 />
               ) : (
-                <p className="text-sm text-muted-foreground">
-                  This plugin does not require any settings.
-                </p>
+                <p className="text-sm text-muted-foreground">This plugin does not require any settings.</p>
               )}
             </section>
           </div>

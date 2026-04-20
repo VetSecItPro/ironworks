@@ -28,13 +28,10 @@ export interface LatestRetrospective {
 
 export const retrospectivesApi = {
   generate: (companyId: string, periodDays = 14) =>
-    api.post<RetrospectiveResult>(
-      `/companies/${encodeURIComponent(companyId)}/retrospectives/generate`,
-      { periodDays },
-    ),
+    api.post<RetrospectiveResult>(`/companies/${encodeURIComponent(companyId)}/retrospectives/generate`, {
+      periodDays,
+    }),
 
   latest: (companyId: string) =>
-    api.get<LatestRetrospective | null>(
-      `/companies/${encodeURIComponent(companyId)}/retrospectives/latest`,
-    ),
+    api.get<LatestRetrospective | null>(`/companies/${encodeURIComponent(companyId)}/retrospectives/latest`),
 };

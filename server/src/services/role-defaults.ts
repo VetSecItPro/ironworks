@@ -108,17 +108,8 @@ export function getDefaultCapabilitiesForRole(role: string): RoleCapabilities {
 // ---------------------------------------------------------------------------
 
 export const ROLE_DEFAULT_HIRING_PERMISSIONS: Record<string, readonly string[]> = {
-  ceo: [
-    "agents:hire:full_time",
-    "agents:hire:contractor",
-    "agents:hire:approve",
-    "agents:hire:bypass_approval",
-  ],
-  vphr: [
-    "agents:hire:full_time",
-    "agents:hire:contractor",
-    "agents:hire:approve",
-  ],
+  ceo: ["agents:hire:full_time", "agents:hire:contractor", "agents:hire:approve", "agents:hire:bypass_approval"],
+  vphr: ["agents:hire:full_time", "agents:hire:contractor", "agents:hire:approve"],
   cto: ["agents:hire:contractor"],
   coo: ["agents:hire:contractor"],
   cmo: ["agents:hire:contractor"],

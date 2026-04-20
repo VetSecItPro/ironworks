@@ -3,17 +3,10 @@
  * Extracted from AgentDetail.tsx to avoid duplication.
  */
 
-import {
-  CheckCircle2,
-  XCircle,
-  Clock,
-  Timer,
-  Loader2,
-  Slash,
-} from "lucide-react";
 import { redactHomePathUserSegments, redactHomePathUserSegmentsInValue } from "@ironworksai/adapter-utils";
-import { visibleRunCostUsd } from "../../lib/utils";
 import type { HeartbeatRun } from "@ironworksai/shared";
+import { CheckCircle2, Clock, Loader2, Slash, Timer, XCircle } from "lucide-react";
+import { visibleRunCostUsd } from "../../lib/utils";
 
 export const runStatusIcons: Record<string, { icon: typeof CheckCircle2; color: string }> = {
   succeeded: { icon: CheckCircle2, color: "text-green-600 dark:text-green-400" },
@@ -110,10 +103,7 @@ export function findScrollContainer(anchor: HTMLElement | null): ScrollContainer
 
 export function readScrollMetrics(container: ScrollContainer): { scrollHeight: number; distanceFromBottom: number } {
   if (isWindowContainer(container)) {
-    const pageHeight = Math.max(
-      document.documentElement.scrollHeight,
-      document.body.scrollHeight,
-    );
+    const pageHeight = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
     const viewportBottom = window.scrollY + window.innerHeight;
     return {
       scrollHeight: pageHeight,
@@ -130,10 +120,7 @@ export function readScrollMetrics(container: ScrollContainer): { scrollHeight: n
 
 export function scrollToContainerBottom(container: ScrollContainer, behavior: ScrollBehavior = "auto") {
   if (isWindowContainer(container)) {
-    const pageHeight = Math.max(
-      document.documentElement.scrollHeight,
-      document.body.scrollHeight,
-    );
+    const pageHeight = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
     window.scrollTo({ top: pageHeight, behavior });
     return;
   }
@@ -141,7 +128,15 @@ export function scrollToContainerBottom(container: ScrollContainer, behavior: Sc
   container.scrollTo({ top: container.scrollHeight, behavior });
 }
 
-export type AgentDetailView = "dashboard" | "instructions" | "configuration" | "skills" | "runs" | "budget" | "memory" | "chat";
+export type AgentDetailView =
+  | "dashboard"
+  | "instructions"
+  | "configuration"
+  | "skills"
+  | "runs"
+  | "budget"
+  | "memory"
+  | "chat";
 
 export function parseAgentDetailView(value: string | null): AgentDetailView {
   if (value === "instructions" || value === "prompts") return "instructions";
@@ -176,12 +171,7 @@ export function runMetrics(run: HeartbeatRun) {
   const result = (run.resultJson ?? null) as Record<string, unknown> | null;
   const input = usageNumber(usage, "inputTokens", "input_tokens");
   const output = usageNumber(usage, "outputTokens", "output_tokens");
-  const cached = usageNumber(
-    usage,
-    "cachedInputTokens",
-    "cached_input_tokens",
-    "cache_read_input_tokens",
-  );
+  const cached = usageNumber(usage, "cachedInputTokens", "cached_input_tokens", "cache_read_input_tokens");
   const cost = visibleRunCostUsd(usage, result);
   return {
     input,
@@ -212,8 +202,7 @@ export function parseStoredLogContent(content: string): RunLogChunk[] {
     if (!trimmed) continue;
     try {
       const raw = JSON.parse(trimmed) as { ts?: unknown; stream?: unknown; chunk?: unknown };
-      const stream =
-        raw.stream === "stderr" || raw.stream === "system" ? raw.stream : "stdout";
+      const stream = raw.stream === "stderr" || raw.stream === "system" ? raw.stream : "stdout";
       const chunk = typeof raw.chunk === "string" ? raw.chunk : "";
       const ts = typeof raw.ts === "string" ? raw.ts : new Date().toISOString();
       if (!chunk) continue;

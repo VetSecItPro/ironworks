@@ -1,10 +1,10 @@
-import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
+import { Button } from "@/components/ui/button";
 import { Link, useParams, useSearchParams } from "@/lib/router";
 import { accessApi } from "../api/access";
 import { authApi } from "../api/auth";
 import { queryKeys } from "../lib/queryKeys";
-import { Button } from "@/components/ui/button";
 
 export function BoardClaimPage() {
   const queryClient = useQueryClient();
@@ -71,9 +71,7 @@ export function BoardClaimPage() {
       <div className="mx-auto max-w-xl py-10">
         <div className="rounded-lg border border-border bg-card p-6">
           <h1 className="text-lg font-semibold">Board ownership claimed</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            This instance is now linked to your authenticated user.
-          </p>
+          <p className="mt-2 text-sm text-muted-foreground">This instance is now linked to your authenticated user.</p>
           <Button asChild className="mt-4">
             <Link to="/">Open board</Link>
           </Button>
@@ -112,11 +110,7 @@ export function BoardClaimPage() {
           </p>
         )}
 
-        <Button
-          className="mt-5"
-          onClick={() => claimMutation.mutate()}
-          disabled={claimMutation.isPending}
-        >
+        <Button className="mt-5" onClick={() => claimMutation.mutate()} disabled={claimMutation.isPending}>
           {claimMutation.isPending ? "Claiming…" : "Claim ownership"}
         </Button>
       </div>

@@ -1,4 +1,4 @@
-import { Users, Clock } from "lucide-react";
+import { Clock, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type EmploymentType = "full_time" | "contractor";

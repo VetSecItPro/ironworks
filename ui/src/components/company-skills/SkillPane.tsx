@@ -1,25 +1,14 @@
-import { Link } from "@/lib/router";
-import type {
-  CompanySkillDetail,
-  CompanySkillFileDetail,
-  CompanySkillUpdateStatus,
-} from "@ironworksai/shared";
-import {
-  Boxes,
-  Code2,
-  Eye,
-  Pencil,
-  RefreshCw,
-  Save,
-} from "lucide-react";
-import { cn } from "../../lib/utils";
+import type { CompanySkillDetail, CompanySkillFileDetail, CompanySkillUpdateStatus } from "@ironworksai/shared";
+import { Boxes, Code2, Eye, Pencil, RefreshCw, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Link } from "@/lib/router";
+import { useToast } from "../../context/ToastContext";
+import { cn } from "../../lib/utils";
 import { EmptyState } from "../EmptyState";
 import { MarkdownBody } from "../MarkdownBody";
 import { MarkdownEditor } from "../MarkdownEditor";
 import { PageSkeleton } from "../PageSkeleton";
-import { useToast } from "../../context/ToastContext";
 import { shortRef, sourceMeta, stripFrontmatter } from "./utils";
 
 export function SkillPane({
@@ -67,18 +56,13 @@ export function SkillPane({
     if (loading) {
       return <PageSkeleton variant="detail" />;
     }
-    return (
-      <EmptyState
-        icon={Boxes}
-        message="Select a skill to inspect its files."
-      />
-    );
+    return <EmptyState icon={Boxes} message="Select a skill to inspect its files." />;
   }
 
   const source = sourceMeta(detail.sourceBadge, detail.sourceLabel);
   const SourceIcon = source.icon;
   const usedBy = detail.usedByAgents;
-  const body = file?.markdown ? stripFrontmatter(file.content) : file?.content ?? "";
+  const body = file?.markdown ? stripFrontmatter(file.content) : (file?.content ?? "");
   const currentPin = shortRef(detail.sourceRef);
   const latestPin = shortRef(updateStatus?.latestRef);
 
@@ -91,9 +75,7 @@ export function SkillPane({
               <SourceIcon className="h-5 w-5 shrink-0 text-muted-foreground" />
               {detail.name}
             </h1>
-            {detail.description && (
-              <p className="mt-2 max-w-3xl text-sm text-muted-foreground">{detail.description}</p>
-            )}
+            {detail.description && <p className="mt-2 max-w-3xl text-sm text-muted-foreground">{detail.description}</p>}
           </div>
           {detail.editable ? (
             <button
@@ -142,15 +124,13 @@ export function SkillPane({
                   onClick={onCheckUpdates}
                   disabled={checkUpdatesPending || updateStatusLoading}
                 >
-                  <RefreshCw className={cn("mr-1.5 h-3.5 w-3.5", (checkUpdatesPending || updateStatusLoading) && "animate-spin")} />
+                  <RefreshCw
+                    className={cn("mr-1.5 h-3.5 w-3.5", (checkUpdatesPending || updateStatusLoading) && "animate-spin")}
+                  />
                   Check for updates
                 </Button>
                 {updateStatus?.supported && updateStatus.hasUpdate && (
-                  <Button
-                    size="sm"
-                    onClick={onInstallUpdate}
-                    disabled={installUpdatePending}
-                  >
+                  <Button size="sm" onClick={onInstallUpdate} disabled={installUpdatePending}>
                     <RefreshCw className={cn("mr-1.5 h-3.5 w-3.5", installUpdatePending && "animate-spin")} />
                     Install update{latestPin ? ` ${latestPin}` : ""}
                   </Button>
@@ -202,7 +182,11 @@ export function SkillPane({
             {file?.markdown && !editMode && (
               <div className="flex items-center border border-border">
                 <button
-                  className={cn("px-3 py-1.5 text-sm", viewMode === "preview" && "text-foreground", viewMode !== "preview" && "text-muted-foreground")}
+                  className={cn(
+                    "px-3 py-1.5 text-sm",
+                    viewMode === "preview" && "text-foreground",
+                    viewMode !== "preview" && "text-muted-foreground",
+                  )}
                   onClick={() => setViewMode("preview")}
                 >
                   <span className="flex items-center gap-1.5">
@@ -211,7 +195,11 @@ export function SkillPane({
                   </span>
                 </button>
                 <button
-                  className={cn("border-l border-border px-3 py-1.5 text-sm", viewMode === "code" && "text-foreground", viewMode !== "code" && "text-muted-foreground")}
+                  className={cn(
+                    "border-l border-border px-3 py-1.5 text-sm",
+                    viewMode === "code" && "text-foreground",
+                    viewMode !== "code" && "text-muted-foreground",
+                  )}
                   onClick={() => setViewMode("code")}
                 >
                   <span className="flex items-center gap-1.5">
@@ -243,12 +231,7 @@ export function SkillPane({
           <div className="text-sm text-muted-foreground">Select a file to inspect.</div>
         ) : editMode && file.editable ? (
           file.markdown ? (
-            <MarkdownEditor
-              value={draft}
-              onChange={setDraft}
-              bordered={false}
-              className="min-h-[520px]"
-            />
+            <MarkdownEditor value={draft} onChange={setDraft} bordered={false} className="min-h-[520px]" />
           ) : (
             <Textarea
               value={draft}

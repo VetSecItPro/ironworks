@@ -1,9 +1,5 @@
 import { HelpCircle } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ChoosePathButton } from "../PathInstructionsModal";
 
 interface ProjectWorkspaceFieldsProps {
@@ -41,7 +37,10 @@ export function ProjectWorkspaceFields({
         <input
           className="w-full rounded border border-border bg-transparent px-2 py-1 text-xs outline-none"
           value={workspaceRepoUrl}
-          onChange={(e) => { setWorkspaceRepoUrl(e.target.value); setWorkspaceError(null); }}
+          onChange={(e) => {
+            setWorkspaceRepoUrl(e.target.value);
+            setWorkspaceError(null);
+          }}
           placeholder="https://github.com/org/repo"
         />
       </div>
@@ -63,16 +62,17 @@ export function ProjectWorkspaceFields({
           <input
             className="w-full rounded border border-border bg-transparent px-2 py-1 text-xs font-mono outline-none"
             value={workspaceLocalPath}
-            onChange={(e) => { setWorkspaceLocalPath(e.target.value); setWorkspaceError(null); }}
+            onChange={(e) => {
+              setWorkspaceLocalPath(e.target.value);
+              setWorkspaceError(null);
+            }}
             placeholder="/absolute/path/to/workspace"
           />
           <ChoosePathButton />
         </div>
       </div>
 
-      {workspaceError && (
-        <p className="text-xs text-destructive">{workspaceError}</p>
-      )}
+      {workspaceError && <p className="text-xs text-destructive">{workspaceError}</p>}
     </div>
   );
 }

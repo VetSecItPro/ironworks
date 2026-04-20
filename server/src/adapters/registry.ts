@@ -1,83 +1,88 @@
-import type { ServerAdapterModule } from "./types.js";
-import { getAdapterSessionManagement } from "@ironworksai/adapter-utils";
+import {
+  agentConfigurationDoc as claudeAgentConfigurationDoc,
+  models as claudeModels,
+} from "@ironworksai/adapter-claude-local";
 import {
   execute as claudeExecute,
+  getQuotaWindows as claudeGetQuotaWindows,
+  sessionCodec as claudeSessionCodec,
+  testEnvironment as claudeTestEnvironment,
   listClaudeSkills,
   syncClaudeSkills,
-  testEnvironment as claudeTestEnvironment,
-  sessionCodec as claudeSessionCodec,
-  getQuotaWindows as claudeGetQuotaWindows,
 } from "@ironworksai/adapter-claude-local/server";
-import { agentConfigurationDoc as claudeAgentConfigurationDoc, models as claudeModels } from "@ironworksai/adapter-claude-local";
+import {
+  agentConfigurationDoc as codexAgentConfigurationDoc,
+  models as codexModels,
+} from "@ironworksai/adapter-codex-local";
 import {
   execute as codexExecute,
+  getQuotaWindows as codexGetQuotaWindows,
+  sessionCodec as codexSessionCodec,
+  testEnvironment as codexTestEnvironment,
   listCodexSkills,
   syncCodexSkills,
-  testEnvironment as codexTestEnvironment,
-  sessionCodec as codexSessionCodec,
-  getQuotaWindows as codexGetQuotaWindows,
 } from "@ironworksai/adapter-codex-local/server";
-import { agentConfigurationDoc as codexAgentConfigurationDoc, models as codexModels } from "@ironworksai/adapter-codex-local";
+import {
+  agentConfigurationDoc as cursorAgentConfigurationDoc,
+  models as cursorModels,
+} from "@ironworksai/adapter-cursor-local";
 import {
   execute as cursorExecute,
+  sessionCodec as cursorSessionCodec,
+  testEnvironment as cursorTestEnvironment,
   listCursorSkills,
   syncCursorSkills,
-  testEnvironment as cursorTestEnvironment,
-  sessionCodec as cursorSessionCodec,
 } from "@ironworksai/adapter-cursor-local/server";
-import { agentConfigurationDoc as cursorAgentConfigurationDoc, models as cursorModels } from "@ironworksai/adapter-cursor-local";
+import {
+  agentConfigurationDoc as geminiAgentConfigurationDoc,
+  models as geminiModels,
+} from "@ironworksai/adapter-gemini-local";
 import {
   execute as geminiExecute,
+  sessionCodec as geminiSessionCodec,
+  testEnvironment as geminiTestEnvironment,
   listGeminiSkills,
   syncGeminiSkills,
-  testEnvironment as geminiTestEnvironment,
-  sessionCodec as geminiSessionCodec,
 } from "@ironworksai/adapter-gemini-local/server";
-import { agentConfigurationDoc as geminiAgentConfigurationDoc, models as geminiModels } from "@ironworksai/adapter-gemini-local";
-import {
-  execute as openCodeExecute,
-  listOpenCodeSkills,
-  syncOpenCodeSkills,
-  testEnvironment as openCodeTestEnvironment,
-  sessionCodec as openCodeSessionCodec,
-  listOpenCodeModels,
-} from "@ironworksai/adapter-opencode-local/server";
-import {
-  agentConfigurationDoc as openCodeAgentConfigurationDoc,
-} from "@ironworksai/adapter-opencode-local";
-import {
-  execute as openclawGatewayExecute,
-  testEnvironment as openclawGatewayTestEnvironment,
-} from "@ironworksai/adapter-openclaw-gateway/server";
 import {
   agentConfigurationDoc as openclawGatewayAgentConfigurationDoc,
   models as openclawGatewayModels,
 } from "@ironworksai/adapter-openclaw-gateway";
-import { listCodexModels } from "./codex-models.js";
-import { listCursorModels } from "./cursor-models.js";
 import {
-  execute as piExecute,
-  listPiSkills,
-  syncPiSkills,
-  testEnvironment as piTestEnvironment,
-  sessionCodec as piSessionCodec,
+  execute as openclawGatewayExecute,
+  testEnvironment as openclawGatewayTestEnvironment,
+} from "@ironworksai/adapter-openclaw-gateway/server";
+import { agentConfigurationDoc as openCodeAgentConfigurationDoc } from "@ironworksai/adapter-opencode-local";
+import {
+  listOpenCodeModels,
+  listOpenCodeSkills,
+  execute as openCodeExecute,
+  sessionCodec as openCodeSessionCodec,
+  testEnvironment as openCodeTestEnvironment,
+  syncOpenCodeSkills,
+} from "@ironworksai/adapter-opencode-local/server";
+import { agentConfigurationDoc as piAgentConfigurationDoc } from "@ironworksai/adapter-pi-local";
+import {
   listPiModels,
+  listPiSkills,
+  execute as piExecute,
+  sessionCodec as piSessionCodec,
+  testEnvironment as piTestEnvironment,
+  syncPiSkills,
 } from "@ironworksai/adapter-pi-local/server";
-import {
-  agentConfigurationDoc as piAgentConfigurationDoc,
-} from "@ironworksai/adapter-pi-local";
+import { getAdapterSessionManagement } from "@ironworksai/adapter-utils";
+import { agentConfigurationDoc as hermesAgentConfigurationDoc, models as hermesModels } from "hermes-paperclip-adapter";
 import {
   execute as hermesExecute,
-  testEnvironment as hermesTestEnvironment,
   sessionCodec as hermesSessionCodec,
+  testEnvironment as hermesTestEnvironment,
 } from "hermes-paperclip-adapter/server";
-import {
-  agentConfigurationDoc as hermesAgentConfigurationDoc,
-  models as hermesModels,
-} from "hermes-paperclip-adapter";
-import { processAdapter } from "./process/index.js";
+import { listCodexModels } from "./codex-models.js";
+import { listCursorModels } from "./cursor-models.js";
 import { httpAdapter } from "./http/index.js";
 import { ollamaCloudAdapter } from "./ollama-cloud/index.js";
+import { processAdapter } from "./process/index.js";
+import type { ServerAdapterModule } from "./types.js";
 
 const claudeLocalAdapter: ServerAdapterModule = {
   type: "claude_local",

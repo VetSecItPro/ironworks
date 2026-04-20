@@ -1,33 +1,31 @@
-import { useEffect, useState } from "react";
 import { Settings } from "lucide-react";
-import { MessagingSetup } from "../components/MessagingSetup";
-import { WebhooksSettings } from "../components/WebhooksSettings";
+import { useEffect, useState } from "react";
+import { SettingsSidebarNav, useCompanySettingsState } from "../components/company-settings";
 import { InviteUserDialog } from "../components/InviteUserDialog";
-
+import { MessagingSetup } from "../components/MessagingSetup";
+import { ApiKeysSection } from "../components/settings/ApiKeysSection";
+import { AppearanceSection } from "../components/settings/AppearanceSection";
+import { AuditTrailSection } from "../components/settings/AuditTrailSection";
+import { AutonomySection } from "../components/settings/AutonomySection";
+import { BrandingSection } from "../components/settings/BrandingSection";
+import { CompanyPackagesSection } from "../components/settings/CompanyPackagesSection";
+import { CostAlertsSection } from "../components/settings/CostAlertsSection";
+import { DangerZoneSection } from "../components/settings/DangerZoneSection";
+import { DataExportSection } from "../components/settings/DataExportSection";
+import { DataPrivacySection } from "../components/settings/DataPrivacySection";
+import { DepartmentTemplatesSection } from "../components/settings/DepartmentTemplatesSection";
+import { GeneralSection } from "../components/settings/GeneralSection";
+import { HiringSection } from "../components/settings/HiringSection";
+import { IntegrationHubSection } from "../components/settings/IntegrationHubSection";
+import { InvitesSection } from "../components/settings/InvitesSection";
+import { ModelRoutingSection } from "../components/settings/ModelRoutingSection";
+import { RiskThresholdsSection } from "../components/settings/RiskThresholdsSection";
+import { SecuritySection } from "../components/settings/SecuritySection";
 // Section components
 import { SettingsErrorBoundary } from "../components/settings/SettingsErrorBoundary";
-import { GeneralSection } from "../components/settings/GeneralSection";
-import { AppearanceSection } from "../components/settings/AppearanceSection";
-import { BrandingSection } from "../components/settings/BrandingSection";
-import { HiringSection } from "../components/settings/HiringSection";
-import { InvitesSection } from "../components/settings/InvitesSection";
-import { ApiKeysSection } from "../components/settings/ApiKeysSection";
-import { SecuritySection } from "../components/settings/SecuritySection";
-import { ModelRoutingSection } from "../components/settings/ModelRoutingSection";
-import { CostAlertsSection } from "../components/settings/CostAlertsSection";
-import { AuditTrailSection } from "../components/settings/AuditTrailSection";
-import { IntegrationHubSection } from "../components/settings/IntegrationHubSection";
-import { DataPrivacySection } from "../components/settings/DataPrivacySection";
-import { DataExportSection } from "../components/settings/DataExportSection";
-import { DangerZoneSection } from "../components/settings/DangerZoneSection";
-import { TeamMembersSection } from "../components/settings/TeamMembersSection";
-import { AutonomySection } from "../components/settings/AutonomySection";
-import { CompanyPackagesSection } from "../components/settings/CompanyPackagesSection";
-import { DepartmentTemplatesSection } from "../components/settings/DepartmentTemplatesSection";
-import { RiskThresholdsSection } from "../components/settings/RiskThresholdsSection";
 import { TalentPoolSection } from "../components/settings/TalentPoolSection";
-
-import { SettingsSidebarNav, useCompanySettingsState } from "../components/company-settings";
+import { TeamMembersSection } from "../components/settings/TeamMembersSection";
+import { WebhooksSettings } from "../components/WebhooksSettings";
 
 const SETTINGS_SECTIONS = [
   { id: "general", label: "General" },

@@ -1,6 +1,6 @@
-import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, lt, lte, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { agentMemoryEntries } from "@ironworksai/db";
+import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, lt, lte, sql } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 
 // Re-export AgentMemoryEntry type for callers (without embedding - optional pgvector column)
@@ -126,17 +126,33 @@ export async function extractMemoriesFromIssue(
 
   // Create a secondary entry if the description suggests domain-specific work
   const technicalTerms = [
-    "api", "database", "migration", "schema", "deploy", "config",
-    "endpoint", "query", "index", "cache", "auth", "token",
-    "service", "middleware", "webhook", "cron", "pipeline",
-    "refactor", "performance", "security", "test", "ci/cd",
+    "api",
+    "database",
+    "migration",
+    "schema",
+    "deploy",
+    "config",
+    "endpoint",
+    "query",
+    "index",
+    "cache",
+    "auth",
+    "token",
+    "service",
+    "middleware",
+    "webhook",
+    "cron",
+    "pipeline",
+    "refactor",
+    "performance",
+    "security",
+    "test",
+    "ci/cd",
   ];
 
   const lowerOutcome = (issueOutcome ?? "").toLowerCase();
   const lowerTitle = (issueTitle ?? "").toLowerCase();
-  const hasTechnicalContent = technicalTerms.some(
-    (term) => lowerOutcome.includes(term) || lowerTitle.includes(term),
-  );
+  const hasTechnicalContent = technicalTerms.some((term) => lowerOutcome.includes(term) || lowerTitle.includes(term));
 
   if (hasTechnicalContent) {
     const techCategory = resolveRoleCategoriesForTechnical(role);
@@ -152,10 +168,7 @@ export async function extractMemoriesFromIssue(
     });
   }
 
-  logger.info(
-    { agentId, issueId, hasTechnicalContent, taskCategory },
-    "extracted memories from completed issue",
-  );
+  logger.info({ agentId, issueId, hasTechnicalContent, taskCategory }, "extracted memories from completed issue");
 }
 
 /**
@@ -267,10 +280,7 @@ export async function consolidateMemories(db: Db, agentId: string): Promise<void
       // Archive the originals
       const entryIds = entries.map((e) => e.id);
       for (const entryId of entryIds) {
-        await tx
-          .update(agentMemoryEntries)
-          .set({ archivedAt: now })
-          .where(eq(agentMemoryEntries.id, entryId));
+        await tx.update(agentMemoryEntries).set({ archivedAt: now }).where(eq(agentMemoryEntries.id, entryId));
       }
     }
   });
@@ -299,12 +309,7 @@ export async function decayStaleMemories(db: Db): Promise<void> {
     .set({
       confidence: sql`greatest(5, ${agentMemoryEntries.confidence} - 20)`,
     })
-    .where(
-      and(
-        isNull(agentMemoryEntries.archivedAt),
-        lte(agentMemoryEntries.lastAccessedAt, ninetyDaysAgo),
-      ),
-    )
+    .where(and(isNull(agentMemoryEntries.archivedAt), lte(agentMemoryEntries.lastAccessedAt, ninetyDaysAgo)))
     .returning({ id: agentMemoryEntries.id });
 
   // 30-90 day decay (milder reduction)
@@ -356,10 +361,7 @@ export interface MemoryHealthResult {
  *   - Stale entries (not accessed in 30+ days)
  *   - Coverage gaps (categories with fewer than 3 active entries)
  */
-export async function getMemoryHealth(
-  db: Db,
-  agentId: string,
-): Promise<MemoryHealthResult> {
+export async function getMemoryHealth(db: Db, agentId: string): Promise<MemoryHealthResult> {
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
   // Total entries
@@ -376,12 +378,7 @@ export async function getMemoryHealth(
       avgConfidence: sql<number>`coalesce(avg(${agentMemoryEntries.confidence}), 0)::int`,
     })
     .from(agentMemoryEntries)
-    .where(
-      and(
-        eq(agentMemoryEntries.agentId, agentId),
-        isNull(agentMemoryEntries.archivedAt),
-      ),
-    );
+    .where(and(eq(agentMemoryEntries.agentId, agentId), isNull(agentMemoryEntries.archivedAt)));
   const activeEntries = Number(activeRow?.count ?? 0);
   const avgConfidence = Number(activeRow?.avgConfidence ?? 0);
   const archivedEntries = totalEntries - activeEntries;
@@ -407,12 +404,7 @@ export async function getMemoryHealth(
       count: sql<number>`count(*)::int`,
     })
     .from(agentMemoryEntries)
-    .where(
-      and(
-        eq(agentMemoryEntries.agentId, agentId),
-        isNull(agentMemoryEntries.archivedAt),
-      ),
-    )
+    .where(and(eq(agentMemoryEntries.agentId, agentId), isNull(agentMemoryEntries.archivedAt)))
     .groupBy(agentMemoryEntries.category);
 
   const coverageGaps: string[] = [];
@@ -447,12 +439,7 @@ export async function enforceMemoryCap(
   const countResult = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(agentMemoryEntries)
-    .where(
-      and(
-        eq(agentMemoryEntries.agentId, agentId),
-        isNull(agentMemoryEntries.archivedAt),
-      ),
-    );
+    .where(and(eq(agentMemoryEntries.agentId, agentId), isNull(agentMemoryEntries.archivedAt)));
 
   const activeCount = Number(countResult[0]?.count ?? 0);
   if (activeCount <= maxEntries) return;
@@ -464,24 +451,13 @@ export async function enforceMemoryCap(
   const toArchive = await db
     .select({ id: agentMemoryEntries.id })
     .from(agentMemoryEntries)
-    .where(
-      and(
-        eq(agentMemoryEntries.agentId, agentId),
-        isNull(agentMemoryEntries.archivedAt),
-      ),
-    )
-    .orderBy(
-      asc(agentMemoryEntries.confidence),
-      asc(agentMemoryEntries.lastAccessedAt),
-    )
+    .where(and(eq(agentMemoryEntries.agentId, agentId), isNull(agentMemoryEntries.archivedAt)))
+    .orderBy(asc(agentMemoryEntries.confidence), asc(agentMemoryEntries.lastAccessedAt))
     .limit(excess);
 
   if (toArchive.length > 0) {
     for (const entry of toArchive) {
-      await db
-        .update(agentMemoryEntries)
-        .set({ archivedAt: now })
-        .where(eq(agentMemoryEntries.id, entry.id));
+      await db.update(agentMemoryEntries).set({ archivedAt: now }).where(eq(agentMemoryEntries.id, entry.id));
     }
 
     logger.info(
@@ -499,9 +475,7 @@ export async function enforceMemoryCap(
  */
 async function isPgvectorAvailable(db: Db): Promise<boolean> {
   try {
-    const rows = await db.execute(
-      sql`SELECT 1 FROM pg_extension WHERE extname = 'vector'`,
-    );
+    const rows = await db.execute(sql`SELECT 1 FROM pg_extension WHERE extname = 'vector'`);
     return (rows as unknown[]).length > 0;
   } catch {
     return false;
@@ -543,7 +517,10 @@ export async function findRelevantMemories(
         // Embeddings exist - run cosine similarity search.
         // This branch is used once the embedding pipeline populates the column.
         // For now we pass through to FTS since no embeddings are generated yet.
-        logger.debug({ agentId, embeddingCount }, "vector search available but embedding pipeline not yet active; using FTS");
+        logger.debug(
+          { agentId, embeddingCount },
+          "vector search available but embedding pipeline not yet active; using FTS",
+        );
       }
     } catch (err) {
       logger.debug({ err, agentId }, "vector similarity check failed, falling back to FTS");
@@ -567,11 +544,54 @@ async function findRelevantMemoriesByFts(
 ): Promise<AgentMemoryEntry[]> {
   // Strip common English stop words and short tokens to build a tsquery
   const STOP_WORDS = new Set([
-    "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for",
-    "of", "with", "by", "from", "is", "was", "are", "were", "be", "been",
-    "being", "have", "has", "had", "do", "does", "did", "will", "would",
-    "could", "should", "may", "might", "shall", "can", "not", "this",
-    "that", "these", "those", "it", "its", "as", "if", "so", "up", "out",
+    "a",
+    "an",
+    "the",
+    "and",
+    "or",
+    "but",
+    "in",
+    "on",
+    "at",
+    "to",
+    "for",
+    "of",
+    "with",
+    "by",
+    "from",
+    "is",
+    "was",
+    "are",
+    "were",
+    "be",
+    "been",
+    "being",
+    "have",
+    "has",
+    "had",
+    "do",
+    "does",
+    "did",
+    "will",
+    "would",
+    "could",
+    "should",
+    "may",
+    "might",
+    "shall",
+    "can",
+    "not",
+    "this",
+    "that",
+    "these",
+    "those",
+    "it",
+    "its",
+    "as",
+    "if",
+    "so",
+    "up",
+    "out",
   ]);
 
   const keywords = queryText
@@ -586,12 +606,7 @@ async function findRelevantMemoriesByFts(
     return db
       .select(memoryColumns)
       .from(agentMemoryEntries)
-      .where(
-        and(
-          eq(agentMemoryEntries.agentId, agentId),
-          isNull(agentMemoryEntries.archivedAt),
-        ),
-      )
+      .where(and(eq(agentMemoryEntries.agentId, agentId), isNull(agentMemoryEntries.archivedAt)))
       .orderBy(desc(agentMemoryEntries.lastAccessedAt))
       .limit(limit);
   }
@@ -640,12 +655,7 @@ async function findRelevantMemoriesByFts(
     return db
       .select(memoryColumns)
       .from(agentMemoryEntries)
-      .where(
-        and(
-          eq(agentMemoryEntries.agentId, agentId),
-          isNull(agentMemoryEntries.archivedAt),
-        ),
-      )
+      .where(and(eq(agentMemoryEntries.agentId, agentId), isNull(agentMemoryEntries.archivedAt)))
       .orderBy(desc(agentMemoryEntries.lastAccessedAt))
       .limit(limit);
   }

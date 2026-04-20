@@ -31,7 +31,9 @@ export function UninstallDialog({ pluginId, pluginName, isPending, onClose, onCo
   return (
     <Dialog
       open={pluginId !== null}
-      onOpenChange={(open) => { if (!open) onClose(); }}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
     >
       <DialogContent>
         <DialogHeader>
@@ -41,7 +43,9 @@ export function UninstallDialog({ pluginId, pluginName, isPending, onClose, onCo
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
           <Button
             variant="destructive"
             disabled={isPending}
@@ -66,7 +70,9 @@ export function ErrorDetailsDialog({ plugin, onClose }: ErrorDetailsDialogProps)
   return (
     <Dialog
       open={plugin !== null}
-      onOpenChange={(open) => { if (!open) onClose(); }}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
     >
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
@@ -80,9 +86,7 @@ export function ErrorDetailsDialog({ plugin, onClose }: ErrorDetailsDialogProps)
             <div className="flex items-start gap-3">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-700 dark:text-red-300" />
               <div className="space-y-1 text-sm">
-                <p className="font-medium text-red-700 dark:text-red-300">
-                  What errored
-                </p>
+                <p className="font-medium text-red-700 dark:text-red-300">What errored</p>
                 <p className="text-red-700/90 dark:text-red-200/90 break-words">
                   {plugin ? getPluginErrorSummary(plugin) : "No error summary available."}
                 </p>

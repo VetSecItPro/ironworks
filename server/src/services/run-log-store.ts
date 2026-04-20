@@ -1,6 +1,6 @@
+import { createHash } from "node:crypto";
 import { createReadStream, promises as fs } from "node:fs";
 import path from "node:path";
-import { createHash } from "node:crypto";
 import { notFound } from "../errors.js";
 import { resolveIronworksInstanceRoot } from "../home-paths.js";
 
@@ -153,4 +153,3 @@ export function getRunLogStore() {
   cachedStore = createLocalFileRunLogStore(basePath);
   return cachedStore;
 }
-

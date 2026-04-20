@@ -85,7 +85,9 @@ export function humanizeLabel(value: string): string {
 
 export function stripWrappedShell(command: string): string {
   const trimmed = compactWhitespace(command);
-  const shellWrapped = trimmed.match(/^(?:(?:\/bin\/)?(?:zsh|bash|sh)|cmd(?:\.exe)?(?:\s+\/d)?(?:\s+\/s)?(?:\s+\/c)?)\s+(?:-lc|\/c)\s+(.+)$/i);
+  const shellWrapped = trimmed.match(
+    /^(?:(?:\/bin\/)?(?:zsh|bash|sh)|cmd(?:\.exe)?(?:\s+\/d)?(?:\s+\/s)?(?:\s+\/c)?)\s+(?:-lc|\/c)\s+(.+)$/i,
+  );
   const inner = shellWrapped?.[1] ?? trimmed;
   const quoted = inner.match(/^(['"])([\s\S]*)\1$/);
   return compactWhitespace(quoted?.[2] ?? inner);
@@ -115,13 +117,7 @@ export function formatToolPayload(value: unknown): string {
 function extractToolUseId(input: unknown): string | undefined {
   const record = asRecord(input);
   if (!record) return undefined;
-  const candidates = [
-    record.toolUseId,
-    record.tool_use_id,
-    record.callId,
-    record.call_id,
-    record.id,
-  ];
+  const candidates = [record.toolUseId, record.tool_use_id, record.callId, record.call_id, record.id];
   for (const candidate of candidates) {
     if (typeof candidate === "string" && candidate.trim()) {
       return candidate;
@@ -168,19 +164,16 @@ export function summarizeToolInput(name: string, input: unknown, density: Transc
     return serialized ? truncate(serialized, compactMax) : `Inspect ${name} input`;
   }
 
-  const command = typeof record.command === "string"
-    ? record.command
-    : typeof record.cmd === "string"
-      ? record.cmd
-      : null;
+  const command =
+    typeof record.command === "string" ? record.command : typeof record.cmd === "string" ? record.cmd : null;
   if (command && isCommandTool(name, record)) {
     return truncate(stripWrappedShell(command), compactMax);
   }
 
   const direct =
-    summarizeRecord(record, ["command", "cmd", "path", "filePath", "file_path", "query", "url", "prompt", "message"])
-    ?? summarizeRecord(record, ["pattern", "name", "title", "target", "tool"])
-    ?? null;
+    summarizeRecord(record, ["command", "cmd", "path", "filePath", "file_path", "query", "url", "prompt", "message"]) ??
+    summarizeRecord(record, ["pattern", "name", "title", "target", "tool"]) ??
+    null;
   if (direct) return truncate(direct, compactMax);
 
   if (Array.isArray(record.paths) && record.paths.length > 0) {
@@ -210,7 +203,8 @@ export function parseStructuredToolResult(result: string | undefined) {
     }
   }
 
-  const body = lines.slice(Math.min(bodyStartIndex + 1, lines.length))
+  const body = lines
+    .slice(Math.min(bodyStartIndex + 1, lines.length))
     .map((line) => compactWhitespace(line))
     .filter(Boolean)
     .join("\n");
@@ -223,7 +217,11 @@ export function parseStructuredToolResult(result: string | undefined) {
   };
 }
 
-export function summarizeToolResult(result: string | undefined, isError: boolean | undefined, density: TranscriptDensity): string {
+export function summarizeToolResult(
+  result: string | undefined,
+  isError: boolean | undefined,
+  density: TranscriptDensity,
+): string {
   if (!result) return isError ? "Tool failed" : "Waiting for result";
   const structured = parseStructuredToolResult(result);
   if (structured) {
@@ -243,7 +241,9 @@ export function summarizeToolResult(result: string | undefined, isError: boolean
   return truncate(firstLine, density === "compact" ? 84 : 140);
 }
 
-function parseSystemActivity(text: string): { activityId?: string; name: string; status: "running" | "completed" } | null {
+function parseSystemActivity(
+  text: string,
+): { activityId?: string; name: string; status: "running" | "completed" } | null {
   const match = text.match(/^item (started|completed):\s*([a-z0-9_-]+)(?:\s+\(id=([^)]+)\))?$/i);
   if (!match) return null;
   return {
@@ -363,8 +363,13 @@ export function normalizeTranscript(entries: TranscriptEntry[], streaming: boole
 
     if (entry.kind === "tool_result") {
       const matched =
-        pendingToolBlocks.get(entry.toolUseId)
-        ?? [...blocks].reverse().find((block): block is Extract<TranscriptBlock, { type: "tool" }> => block.type === "tool" && block.status === "running");
+        pendingToolBlocks.get(entry.toolUseId) ??
+        [...blocks]
+          .reverse()
+          .find(
+            (block): block is Extract<TranscriptBlock, { type: "tool" }> =>
+              block.type === "tool" && block.status === "running",
+          );
 
       if (matched) {
         matched.result = entry.content;
@@ -462,10 +467,12 @@ export function normalizeTranscript(entries: TranscriptEntry[], streaming: boole
       continue;
     }
 
-    const activeCommandBlock = [...blocks].reverse().find(
-      (block): block is Extract<TranscriptBlock, { type: "tool" }> =>
-        block.type === "tool" && block.status === "running" && isCommandTool(block.name, block.input),
-    );
+    const activeCommandBlock = [...blocks]
+      .reverse()
+      .find(
+        (block): block is Extract<TranscriptBlock, { type: "tool" }> =>
+          block.type === "tool" && block.status === "running" && isCommandTool(block.name, block.input),
+      );
     if (activeCommandBlock) {
       activeCommandBlock.result = activeCommandBlock.result
         ? `${activeCommandBlock.result}${activeCommandBlock.result.endsWith("\n") || entry.text.startsWith("\n") ? entry.text : `\n${entry.text}`}`

@@ -6,35 +6,25 @@
  * runtime state updates, and the quality-gate PDCA "act" phase event.
  */
 
-import { and, eq, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import {
-  agentChannels,
-  agentRuntimeState,
-  agents,
-  heartbeatRuns,
-  projects,
-} from "@ironworksai/db";
+import { agentChannels, agentRuntimeState, agents, heartbeatRuns, projects } from "@ironworksai/db";
+import { and, eq, sql } from "drizzle-orm";
 import type { AdapterExecutionResult } from "../adapters/index.js";
-import { logger } from "../middleware/logger.js";
-import { costService } from "./costs.js";
-import type { BudgetEnforcementScope } from "./budgets.js";
-import { saveSessionState } from "./session-state.js";
-import {
-  ensureProjectChannel,
-  findAgentDepartmentChannel,
-  postMessage as postChannelMessage,
-} from "./channels.js";
-import { summarizeHeartbeatRunResultJson } from "./heartbeat-run-summary.js";
+import { parseObject } from "../adapters/utils.js";
 import { extractChannelMessages } from "../lib/channel-extraction.js";
+import { logger } from "../middleware/logger.js";
+import type { BudgetEnforcementScope } from "./budgets.js";
+import { ensureProjectChannel, findAgentDepartmentChannel, postMessage as postChannelMessage } from "./channels.js";
+import { costService } from "./costs.js";
+import { summarizeHeartbeatRunResultJson } from "./heartbeat-run-summary.js";
 import {
-  normalizeLedgerBillingType,
   normalizeBilledCostCents,
-  resolveLedgerBiller,
+  normalizeLedgerBillingType,
   readNonEmptyString,
+  resolveLedgerBiller,
   type UsageTotals,
 } from "./heartbeat-types.js";
-import { parseObject } from "../adapters/utils.js";
+import { saveSessionState } from "./session-state.js";
 
 // Re-export so callers don't need to know where these live internally
 export type { BudgetEnforcementScope };
@@ -104,11 +94,7 @@ export async function updateRuntimeState(
   }
 }
 
-async function resolveLedgerScopeForRun(
-  db: Db,
-  companyId: string,
-  run: typeof heartbeatRuns.$inferSelect,
-) {
+async function resolveLedgerScopeForRun(db: Db, companyId: string, run: typeof heartbeatRuns.$inferSelect) {
   const { issues } = await import("@ironworksai/db");
   const context = parseObject(run.contextSnapshot);
   const contextIssueId = readNonEmptyString(context.issueId);
@@ -147,18 +133,14 @@ export async function savePostRunSessionState(
     const resultSummary = summarizeHeartbeatRunResultJson(
       (opts.adapterResultJson ?? null) as Record<string, unknown> | null,
     );
-    const summaryText =
-      typeof resultSummary?.summary === "string" ? resultSummary.summary : `Run ${opts.outcome}`;
+    const summaryText = typeof resultSummary?.summary === "string" ? resultSummary.summary : `Run ${opts.outcome}`;
     await saveSessionState(db, {
       agentId: opts.agentId,
       companyId: opts.companyId,
       issueId: opts.issueId ?? null,
       summary: summaryText,
       lastAction: `heartbeat run ${opts.runId.slice(0, 8)} - ${opts.outcome}`,
-      pendingWork:
-        opts.outcome === "succeeded"
-          ? null
-          : `Previous run ${opts.outcome} - may need retry`,
+      pendingWork: opts.outcome === "succeeded" ? null : `Previous run ${opts.outcome} - may need retry`,
     });
   } catch (sessionStateErr) {
     logger.warn({ err: sessionStateErr, runId: opts.runId }, "failed to save session state after run");
@@ -203,12 +185,7 @@ export async function postSuccessChannelMessages(
             .then((rows) => rows[0] ?? null);
 
           if (projectRow) {
-            const projectChannelId = await ensureProjectChannel(
-              db,
-              agent.companyId,
-              projectId,
-              projectRow.name,
-            );
+            const projectChannelId = await ensureProjectChannel(db, agent.companyId, projectId, projectRow.name);
             await postChannelMessage(db, {
               channelId: projectChannelId,
               companyId: agent.companyId,
@@ -218,10 +195,7 @@ export async function postSuccessChannelMessages(
             });
           }
         } catch (projChannelErr) {
-          logger.debug(
-            { err: projChannelErr, agentId: agent.id },
-            "project channel post-run message failed, skipping",
-          );
+          logger.debug({ err: projChannelErr, agentId: agent.id }, "project channel post-run message failed, skipping");
         }
       }
     }
@@ -247,12 +221,7 @@ export async function extractAndPostAgentChannelMessages(
       const [targetChannel] = await db
         .select({ id: agentChannels.id })
         .from(agentChannels)
-        .where(
-          and(
-            eq(agentChannels.companyId, agent.companyId),
-            sql`lower(${agentChannels.name}) = ${channelName}`,
-          ),
-        )
+        .where(and(eq(agentChannels.companyId, agent.companyId), sql`lower(${agentChannels.name}) = ${channelName}`))
         .limit(1);
       if (targetChannel) {
         await postChannelMessage(db, {

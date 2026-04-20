@@ -1,15 +1,10 @@
-import { and, eq, sql, desc } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import { knowledgePages, knowledgeChunks } from "@ironworksai/db";
-import { parsePlaybook } from "./playbook-chunker.js";
-import { embedBatch, embedText } from "./ollama-embed.js";
-import {
-  buildChunkCacheKey,
-  getCachedChunks,
-  setCachedChunks,
-  invalidateAllCaches,
-} from "./playbook-chunk-cache.js";
+import { knowledgeChunks, knowledgePages } from "@ironworksai/db";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
+import { embedBatch, embedText } from "./ollama-embed.js";
+import { buildChunkCacheKey, getCachedChunks, invalidateAllCaches, setCachedChunks } from "./playbook-chunk-cache.js";
+import { parsePlaybook } from "./playbook-chunker.js";
 
 /**
  * RAG over playbooks: chunk, embed, lookup.
@@ -90,10 +85,7 @@ export async function reindexPage(db: Db, pageId: string): Promise<number> {
     }
   }
 
-  logger.info(
-    { pageId, slug: page.slug, chunks: rows.length, embedded },
-    "playbook-rag: reindexed page",
-  );
+  logger.info({ pageId, slug: page.slug, chunks: rows.length, embedded }, "playbook-rag: reindexed page");
 
   return rows.length;
 }
@@ -112,7 +104,10 @@ export async function reindexAllPlaybooks(db: Db, companyId: string): Promise<{ 
     try {
       totalChunks += await reindexPage(db, page.id);
     } catch (err) {
-      logger.error({ err: (err as Error).message, pageId: page.id, slug: page.slug }, "playbook-rag: page reindex failed");
+      logger.error(
+        { err: (err as Error).message, pageId: page.id, slug: page.slug },
+        "playbook-rag: page reindex failed",
+      );
     }
   }
 
@@ -151,7 +146,7 @@ export interface LookupResult {
   tokenCount: number;
   department: string | null;
   ownerRole: string | null;
-  score: number;          // blended hybrid score (0..1), or bm25 ts_rank if vector unavailable
+  score: number; // blended hybrid score (0..1), or bm25 ts_rank if vector unavailable
   mode: "hybrid" | "fts";
 }
 
@@ -220,7 +215,11 @@ export async function lookupPlaybook(db: Db, opts: LookupOptions): Promise<Looku
         sql`to_tsvector('english', ${knowledgeChunks.headingPath} || ' ' || ${knowledgeChunks.body}) @@ to_tsquery('english', ${tsquery})`,
       ),
     )
-    .orderBy(desc(sql`ts_rank(to_tsvector('english', ${knowledgeChunks.headingPath} || ' ' || ${knowledgeChunks.body}), to_tsquery('english', ${tsquery}))`))
+    .orderBy(
+      desc(
+        sql`ts_rank(to_tsvector('english', ${knowledgeChunks.headingPath} || ' ' || ${knowledgeChunks.body}), to_tsquery('english', ${tsquery}))`,
+      ),
+    )
     .limit(CANDIDATE_POOL);
 
   if (bm25Candidates.length === 0) {
@@ -249,10 +248,15 @@ export async function lookupPlaybook(db: Db, opts: LookupOptions): Promise<Looku
         distance: sql<number>`${knowledgeChunks.embedding} <=> ${embeddingLit}::vector`,
       })
       .from(knowledgeChunks)
-      .where(and(
-        sql`${knowledgeChunks.id} IN (${sql.join(ids.map(id => sql`${id}`), sql`, `)})`,
-        sql`${knowledgeChunks.embedding} IS NOT NULL`,
-      ));
+      .where(
+        and(
+          sql`${knowledgeChunks.id} IN (${sql.join(
+            ids.map((id) => sql`${id}`),
+            sql`, `,
+          )})`,
+          sql`${knowledgeChunks.embedding} IS NOT NULL`,
+        ),
+      );
 
     const distMap = new Map(reranked.map((r) => [r.chunkId, Number(r.distance)]));
 

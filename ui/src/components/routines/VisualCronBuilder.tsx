@@ -1,12 +1,6 @@
 import { cn } from "../../lib/utils";
 
-export function VisualCronBuilder({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (cron: string) => void;
-}) {
+export function VisualCronBuilder({ value, onChange }: { value: string; onChange: (cron: string) => void }) {
   const daysOfWeek = [
     { value: "1", label: "Mon" },
     { value: "2", label: "Tue" },
@@ -24,9 +18,7 @@ export function VisualCronBuilder({
   const dow = isValid ? parts[4] : "*";
 
   const selectedDays = new Set(
-    dow === "*" ? daysOfWeek.map((d) => d.value) :
-    dow === "1-5" ? ["1", "2", "3", "4", "5"] :
-    dow.split(",")
+    dow === "*" ? daysOfWeek.map((d) => d.value) : dow === "1-5" ? ["1", "2", "3", "4", "5"] : dow.split(","),
   );
 
   const toggleDay = (dayVal: string) => {
@@ -84,9 +76,7 @@ export function VisualCronBuilder({
           </button>
         ))}
       </div>
-      <div className="text-[10px] font-mono text-muted-foreground/80">
-        Cron: {value}
-      </div>
+      <div className="text-[10px] font-mono text-muted-foreground/80">Cron: {value}</div>
     </div>
   );
 }

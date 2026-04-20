@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
-import { Link, useLocation } from "@/lib/router";
 import { AlertTriangle, Compass, Search } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Link, useLocation } from "@/lib/router";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { useCompany } from "../context/CompanyContext";
 import { usePageTitle } from "../hooks/usePageTitle";

@@ -1,27 +1,22 @@
-import { Router } from "express";
-import { eq } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { companies, companySubscriptions } from "@ironworksai/db";
 import {
-  SECRET_PROVIDERS,
-  type SecretProvider,
   createSecretSchema,
   rotateSecretSchema,
+  SECRET_PROVIDERS,
+  type SecretProvider,
   updateSecretSchema,
 } from "@ironworksai/shared";
+import { eq } from "drizzle-orm";
+import { Router } from "express";
 import { validate } from "../middleware/validate.js";
-import { assertBoard, assertCanWrite, assertCompanyAccess } from "./authz.js";
-import { logActivity, secretService } from "../services/index.js";
 import type { LlmAuthMethod } from "../services/billing.js";
+import { logActivity, secretService } from "../services/index.js";
+import { assertBoard, assertCanWrite, assertCompanyAccess } from "./authz.js";
 
 /** Secret names that signal how the company authenticates with their LLM provider. */
-const LLM_API_KEY_SECRET_NAMES = new Set([
-  "ANTHROPIC_API_KEY",
-  "OPENAI_API_KEY",
-]);
-const LLM_OAUTH_SECRET_NAMES = new Set([
-  "ANTHROPIC_OAUTH_TOKEN",
-]);
+const LLM_API_KEY_SECRET_NAMES = new Set(["ANTHROPIC_API_KEY", "OPENAI_API_KEY"]);
+const LLM_OAUTH_SECRET_NAMES = new Set(["ANTHROPIC_OAUTH_TOKEN"]);
 
 /** Default company monthly budget when the company authenticates via API key ($500). */
 const DEFAULT_COMPANY_BUDGET_API_KEY_CENTS = 50_000;
@@ -42,11 +37,7 @@ function llmAuthMethodFromSecretName(name: string): LlmAuthMethod | null {
  * budget set yet, apply the default company budget of $500/mo.
  * No-ops silently if the subscription row doesn't exist yet.
  */
-async function maybeUpdateLlmAuthMethod(
-  db: Db,
-  companyId: string,
-  secretName: string,
-): Promise<void> {
+async function maybeUpdateLlmAuthMethod(db: Db, companyId: string, secretName: string): Promise<void> {
   const method = llmAuthMethodFromSecretName(secretName);
   if (!method) return;
 

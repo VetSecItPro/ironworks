@@ -1,19 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { usePageTitle } from "../hooks/usePageTitle";
+import { Archive, Hexagon, Plus } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { projectsApi } from "../api/projects";
+import { EmptyState } from "../components/EmptyState";
+import { EntityRow } from "../components/EntityRow";
+import { PageSkeleton } from "../components/PageSkeleton";
+import { StatusBadge } from "../components/StatusBadge";
+import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { useCompany } from "../context/CompanyContext";
 import { useDialog } from "../context/DialogContext";
-import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { usePageTitle } from "../hooks/usePageTitle";
 import { queryKeys } from "../lib/queryKeys";
-import { EntityRow } from "../components/EntityRow";
-import { StatusBadge } from "../components/StatusBadge";
-import { EmptyState } from "../components/EmptyState";
-import { PageSkeleton } from "../components/PageSkeleton";
-import { formatDate, projectUrl } from "../lib/utils";
-import { Button } from "@/components/ui/button";
-import { Archive, Hexagon, Plus } from "lucide-react";
-import { cn } from "../lib/utils";
+import { cn, formatDate, projectUrl } from "../lib/utils";
 
 export function Projects() {
   usePageTitle("Projects");
@@ -26,21 +25,19 @@ export function Projects() {
     setBreadcrumbs([{ label: "Projects" }]);
   }, [setBreadcrumbs]);
 
-  const { data: allProjects, isLoading, error } = useQuery({
+  const {
+    data: allProjects,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: queryKeys.projects.list(selectedCompanyId!),
     queryFn: () => projectsApi.list(selectedCompanyId!),
     enabled: !!selectedCompanyId,
   });
 
-  const activeProjects = useMemo(
-    () => (allProjects ?? []).filter((p) => !p.archivedAt),
-    [allProjects],
-  );
+  const activeProjects = useMemo(() => (allProjects ?? []).filter((p) => !p.archivedAt), [allProjects]);
 
-  const archivedProjects = useMemo(
-    () => (allProjects ?? []).filter((p) => !!p.archivedAt),
-    [allProjects],
-  );
+  const archivedProjects = useMemo(() => (allProjects ?? []).filter((p) => !!p.archivedAt), [allProjects]);
 
   if (!selectedCompanyId) {
     return <EmptyState icon={Hexagon} message="Select a company to view projects." />;
@@ -74,12 +71,7 @@ export function Projects() {
       {error && <p className="text-sm text-destructive">{error.message}</p>}
 
       {!isLoading && activeProjects.length === 0 && !showArchived && (
-        <EmptyState
-          icon={Hexagon}
-          message="No projects yet."
-          action="Add Project"
-          onAction={openNewProject}
-        />
+        <EmptyState icon={Hexagon} message="No projects yet." action="Add Project" onAction={openNewProject} />
       )}
 
       {activeProjects.length > 0 && (
@@ -93,9 +85,7 @@ export function Projects() {
               trailing={
                 <div className="flex items-center gap-3">
                   {project.targetDate && (
-                    <span className="text-xs text-muted-foreground">
-                      {formatDate(project.targetDate)}
-                    </span>
+                    <span className="text-xs text-muted-foreground">{formatDate(project.targetDate)}</span>
                   )}
                   <StatusBadge status={project.status} />
                 </div>

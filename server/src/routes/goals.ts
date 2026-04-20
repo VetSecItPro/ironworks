@@ -1,8 +1,8 @@
-import { Router } from "express";
-import { desc, eq, and, gte } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { goalSnapshots } from "@ironworksai/db";
 import { createGoalSchema, updateGoalSchema } from "@ironworksai/shared";
+import { and, desc, eq, gte } from "drizzle-orm";
+import { Router } from "express";
 import { validate } from "../middleware/validate.js";
 import { goalService, logActivity } from "../services/index.js";
 import { assertCanWrite, assertCompanyAccess, getActorInfo } from "./authz.js";

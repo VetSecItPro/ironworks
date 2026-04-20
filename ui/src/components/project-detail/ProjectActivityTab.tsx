@@ -1,6 +1,6 @@
-import { useMemo } from "react";
+import type { ActivityEvent, Agent } from "@ironworksai/shared";
 import { useQuery } from "@tanstack/react-query";
-import type { Agent, ActivityEvent } from "@ironworksai/shared";
+import { useMemo } from "react";
 import { activityApi } from "../../api/activity";
 import { agentsApi } from "../../api/agents";
 import { issuesApi } from "../../api/issues";
@@ -53,9 +53,7 @@ export function ProjectActivityTab({ projectId, companyId }: { projectId: string
       for (const i of issues) {
         entityNameMap.set(`issue:${i.id}`, i.identifier ?? i.id.slice(0, 8));
       }
-      return allActivity.sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      );
+      return allActivity.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     },
     enabled: !!companyId && !!projectId,
   });
@@ -69,9 +67,7 @@ export function ProjectActivityTab({ projectId, companyId }: { projectId: string
         merged.push(evt);
       }
     }
-    return merged.sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    );
+    return merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [activity, issueActivity]);
 
   if (isLoading) {
@@ -85,22 +81,13 @@ export function ProjectActivityTab({ projectId, companyId }: { projectId: string
   }
 
   if (combinedActivity.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground py-8 text-center">
-        No activity recorded for this project yet.
-      </p>
-    );
+    return <p className="text-sm text-muted-foreground py-8 text-center">No activity recorded for this project yet.</p>;
   }
 
   return (
     <div className="divide-y divide-border rounded-lg border border-border overflow-hidden">
       {combinedActivity.slice(0, 50).map((evt) => (
-        <ActivityRow
-          key={evt.id}
-          event={evt}
-          agentMap={agentMap}
-          entityNameMap={entityNameMap}
-        />
+        <ActivityRow key={evt.id} event={evt} agentMap={agentMap} entityNameMap={entityNameMap} />
       ))}
     </div>
   );

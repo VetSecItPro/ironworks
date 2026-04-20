@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -100,14 +100,16 @@ async function createApp(actor: Record<string, unknown>) {
   // Make the db itself callable for select/update/execute
   const dbProxy = new Proxy(fakeDb, {
     get(target, prop) {
-      if (prop === "select") return (...args: any[]) => {
-        const chain = buildChainableQuery([{ count: 0 }]);
-        return chain;
-      };
-      if (prop === "update") return (...args: any[]) => {
-        const chain = buildChainableQuery([MOCK_COMPANY]);
-        return chain;
-      };
+      if (prop === "select")
+        return (...args: any[]) => {
+          const chain = buildChainableQuery([{ count: 0 }]);
+          return chain;
+        };
+      if (prop === "update")
+        return (...args: any[]) => {
+          const chain = buildChainableQuery([MOCK_COMPANY]);
+          return chain;
+        };
       if (prop === "execute") return vi.fn().mockResolvedValue([{ size_bytes: 1024 }]);
       return target[prop as string];
     },

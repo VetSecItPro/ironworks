@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import { ironworksConfigSchema, type IronworksConfig } from "@ironworksai/shared";
+import { type IronworksConfig, ironworksConfigSchema } from "@ironworksai/shared";
 import { resolveIronworksConfigPath } from "./paths.js";
 
 export function readConfigFile(): IronworksConfig | null {

@@ -1,9 +1,9 @@
-import { Router } from "express";
-import { eq, sql, and } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import { goals, issues, agents, projects } from "@ironworksai/db";
-import { assertCompanyAccess } from "./authz.js";
+import { agents, goals, issues, projects } from "@ironworksai/db";
+import { and, eq, sql } from "drizzle-orm";
+import { Router } from "express";
 import { getVelocityData } from "../services/velocity.js";
+import { assertCompanyAccess } from "./authz.js";
 
 export function goalStatsRoutes(db: Db) {
   const router = Router();

@@ -1,7 +1,7 @@
 import type { PluginRecord } from "@ironworksai/shared";
 import { FlaskConical } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Link } from "@/lib/router";
 
 interface ExamplePlugin {

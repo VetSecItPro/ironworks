@@ -2,8 +2,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import type { IronworksConfig } from "../config/schema.js";
 import { addAllowedHostname } from "../commands/allowed-hostname.js";
+import type { IronworksConfig } from "../config/schema.js";
 
 function createTempConfigPath() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "ironworks-allowed-hostname-"));

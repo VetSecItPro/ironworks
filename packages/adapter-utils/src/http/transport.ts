@@ -9,8 +9,8 @@
  * Those concerns compose on top at the adapter layer.
  */
 
-import { Readable } from 'node:stream';
-import { request } from 'undici';
+import { Readable } from "node:stream";
+import { request } from "undici";
 import {
   HttpAdapterAuthError,
   HttpAdapterClientError,
@@ -19,8 +19,8 @@ import {
   HttpAdapterRateLimitError,
   HttpAdapterServerError,
   HttpAdapterTimeoutError,
-} from './errors.js';
-import { redactSecrets } from './redaction.js';
+} from "./errors.js";
+import { redactSecrets } from "./redaction.js";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -67,9 +67,7 @@ export interface Transport {
 }
 
 /** Internal options accepted by createTransport — reserved for future pool tuning. */
-export interface TransportOptions {
-  // Intentionally empty: keepalive pool is managed globally via undici's default agent.
-}
+export type TransportOptions = {};
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -92,10 +90,7 @@ function parseRetryAfter(header: string | undefined, now: number): number | unde
  * Compose caller's optional AbortSignal with an internal timeout signal so
  * either can cancel the request independently.
  */
-function composeSignal(
-  timeoutMs: number,
-  userSignal: AbortSignal | undefined,
-): AbortSignal {
+function composeSignal(timeoutMs: number, userSignal: AbortSignal | undefined): AbortSignal {
   // AbortSignal.timeout is available in Node 17+; always create it so the request
   // has a hard deadline even when the caller supplies no signal.
   const timeoutSignal = AbortSignal.timeout(timeoutMs);
@@ -121,22 +116,19 @@ async function drainReadable(readable: Readable, maxBytes: number): Promise<stri
     const chunk = rawChunk as Buffer | Uint8Array | string;
     const buf = Buffer.isBuffer(chunk)
       ? chunk
-      : typeof chunk === 'string'
-        ? Buffer.from(chunk, 'utf-8')
+      : typeof chunk === "string"
+        ? Buffer.from(chunk, "utf-8")
         : Buffer.from(chunk);
     total += buf.byteLength;
     if (total > maxBytes) {
       // Destroy the stream to release the socket back to the pool quickly.
       readable.destroy();
-      throw new HttpAdapterServerError(
-        `Response too large: exceeded ${maxBytes} byte limit`,
-        { status: 0 },
-      );
+      throw new HttpAdapterServerError(`Response too large: exceeded ${maxBytes} byte limit`, { status: 0 });
     }
     chunks.push(buf);
   }
 
-  return Buffer.concat(chunks).toString('utf-8');
+  return Buffer.concat(chunks).toString("utf-8");
 }
 
 /**
@@ -149,8 +141,8 @@ async function drainForError(readable: Readable, limit: number): Promise<string>
     const chunk = rawChunk as Buffer | Uint8Array | string;
     const buf = Buffer.isBuffer(chunk)
       ? chunk
-      : typeof chunk === 'string'
-        ? Buffer.from(chunk, 'utf-8')
+      : typeof chunk === "string"
+        ? Buffer.from(chunk, "utf-8")
         : Buffer.from(chunk);
     total += buf.byteLength;
     if (total > limit) {
@@ -159,20 +151,18 @@ async function drainForError(readable: Readable, limit: number): Promise<string>
     }
     chunks.push(buf);
   }
-  return Buffer.concat(chunks).toString('utf-8');
+  return Buffer.concat(chunks).toString("utf-8");
 }
 
 /**
  * Flatten undici's IncomingHttpHeaders (may contain string | string[] values)
  * into a plain Record<string, string> for consistent downstream usage.
  */
-function flattenHeaders(
-  raw: Record<string, string | string[] | undefined>,
-): Record<string, string> {
+function flattenHeaders(raw: Record<string, string | string[] | undefined>): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [key, val] of Object.entries(raw)) {
     if (val === undefined) continue;
-    out[key] = Array.isArray(val) ? val.join(', ') : val;
+    out[key] = Array.isArray(val) ? val.join(", ") : val;
   }
   return out;
 }
@@ -188,7 +178,7 @@ function buildHeaders(
 ): Record<string, string> {
   return {
     authorization: `Bearer ${apiKey}`,
-    'content-type': 'application/json',
+    "content-type": "application/json",
     accept,
     ...extraHeaders,
   };
@@ -222,7 +212,7 @@ async function mapHttpError(
   }
 
   if (status === 429) {
-    const retryAfterMs = parseRetryAfter(headers['retry-after'], Date.now());
+    const retryAfterMs = parseRetryAfter(headers["retry-after"], Date.now());
     throw new HttpAdapterRateLimitError(`HTTP 429: ${safeBody}`, { retryAfterMs });
   }
 
@@ -252,16 +242,13 @@ interface RawResponse {
  * Execute a POST request via undici, returning the raw response data.
  * Shared by both sendJson and sendJsonStream.
  */
-async function executeRequest(
-  opts: SendJsonOptions,
-  accept: string,
-): Promise<RawResponse> {
+async function executeRequest(opts: SendJsonOptions, accept: string): Promise<RawResponse> {
   const { url, apiKey, body, extraHeaders, abortSignal } = opts;
   const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 
   // Validate config before touching the network — fail fast on clearly wrong input.
   if (!apiKey) {
-    throw new HttpAdapterConfigError('apiKey must not be empty');
+    throw new HttpAdapterConfigError("apiKey must not be empty");
   }
   try {
     new URL(url);
@@ -269,7 +256,7 @@ async function executeRequest(
     throw new HttpAdapterConfigError(`Invalid URL: ${url}`);
   }
   if (timeoutMs <= 0) {
-    throw new HttpAdapterConfigError('timeoutMs must be > 0');
+    throw new HttpAdapterConfigError("timeoutMs must be > 0");
   }
 
   const signal = composeSignal(timeoutMs, abortSignal);
@@ -280,7 +267,7 @@ async function executeRequest(
     // No explicit dispatcher — uses the global undici Agent (keepalive by default).
     // Tests replace the global dispatcher with MockAgent via setGlobalDispatcher.
     const resp = await request(url, {
-      method: 'POST',
+      method: "POST",
       headers,
       body: serialisedBody,
       signal,
@@ -299,26 +286,23 @@ async function executeRequest(
       // AbortSignal.timeout() fires a DOMException with name === 'TimeoutError'.
       // undici may also surface its own timeout errors.
       if (
-        name === 'TimeoutError' ||
-        msg.includes('Connect Timeout') ||
-        msg.includes('Body Timeout') ||
-        msg.includes('Headers Timeout')
+        name === "TimeoutError" ||
+        msg.includes("Connect Timeout") ||
+        msg.includes("Body Timeout") ||
+        msg.includes("Headers Timeout")
       ) {
         throw new HttpAdapterTimeoutError(`Request timed out after ${timeoutMs}ms`, { cause: err });
       }
 
       // User-supplied signal fired (name === 'AbortError') — re-throw as-is so
       // callers can detect a deliberate cancellation vs. a timeout.
-      if (name === 'AbortError') {
+      if (name === "AbortError") {
         throw err;
       }
 
-      throw new HttpAdapterNetworkError(
-        `Network error: ${safeRedact(msg)}`,
-        { cause: err, retryable: true },
-      );
+      throw new HttpAdapterNetworkError(`Network error: ${safeRedact(msg)}`, { cause: err, retryable: true });
     }
-    throw new HttpAdapterNetworkError('Network error: unknown', { cause: err });
+    throw new HttpAdapterNetworkError("Network error: unknown", { cause: err });
   }
 }
 
@@ -338,10 +322,10 @@ async function executeRequest(
  */
 export async function sendJson(opts: SendJsonOptions): Promise<SendJsonResult> {
   const maxBytes = opts.maxResponseBytes ?? DEFAULT_MAX_RESPONSE_BYTES;
-  const { status, headers: rawHeaders, body } = await executeRequest(opts, 'application/json');
+  const { status, headers: rawHeaders, body } = await executeRequest(opts, "application/json");
 
   const flatHeaders = flattenHeaders(rawHeaders);
-  const contentType = flatHeaders['content-type'] ?? '';
+  const contentType = flatHeaders["content-type"] ?? "";
 
   // Non-2xx: map to typed errors before checking content-type — error pages
   // may arrive as text/html and we want the status-specific error, not a
@@ -352,25 +336,20 @@ export async function sendJson(opts: SendJsonOptions): Promise<SendJsonResult> {
 
   // Early-reject if Content-Length declares more bytes than we're willing to
   // buffer — avoids pulling oversized payloads over the wire at all.
-  const contentLength = flatHeaders['content-length'];
+  const contentLength = flatHeaders["content-length"];
   if (contentLength) {
     const declared = Number(contentLength);
     if (Number.isFinite(declared) && declared > maxBytes) {
       body.destroy();
-      throw new HttpAdapterServerError(
-        `response too large: declared ${declared} bytes, max ${maxBytes}`,
-        { status },
-      );
+      throw new HttpAdapterServerError(`response too large: declared ${declared} bytes, max ${maxBytes}`, { status });
     }
   }
 
   // Enforce application/json on success — HTML error pages that slip through
   // with a 200 are a known failure mode for some CDN/proxy setups.
-  if (!contentType.includes('application/json')) {
+  if (!contentType.includes("application/json")) {
     body.destroy();
-    throw new HttpAdapterServerError(
-      `Unexpected content-type: expected application/json, got "${contentType}"`,
-    );
+    throw new HttpAdapterServerError(`Unexpected content-type: expected application/json, got "${contentType}"`);
   }
 
   const rawText = await drainReadable(body, maxBytes);
@@ -379,10 +358,9 @@ export async function sendJson(opts: SendJsonOptions): Promise<SendJsonResult> {
   try {
     parsed = JSON.parse(rawText);
   } catch (err) {
-    throw new HttpAdapterServerError(
-      `Failed to parse JSON response: ${safeRedact(rawText.slice(0, 200))}`,
-      { cause: err },
-    );
+    throw new HttpAdapterServerError(`Failed to parse JSON response: ${safeRedact(rawText.slice(0, 200))}`, {
+      cause: err,
+    });
   }
 
   return { body: parsed, status, headers: flatHeaders };
@@ -396,10 +374,10 @@ export async function sendJson(opts: SendJsonOptions): Promise<SendJsonResult> {
  */
 export async function sendJsonStream(opts: SendJsonOptions): Promise<SendJsonStreamResult> {
   const maxBytes = opts.maxResponseBytes ?? DEFAULT_MAX_RESPONSE_BYTES;
-  const { status, headers: rawHeaders, body } = await executeRequest(opts, 'text/event-stream');
+  const { status, headers: rawHeaders, body } = await executeRequest(opts, "text/event-stream");
 
   const flatHeaders = flattenHeaders(rawHeaders);
-  const contentType = flatHeaders['content-type'] ?? '';
+  const contentType = flatHeaders["content-type"] ?? "";
 
   // Non-2xx: map to typed errors (consumes the body for the error message).
   if (status < 200 || status >= 300) {
@@ -408,21 +386,18 @@ export async function sendJsonStream(opts: SendJsonOptions): Promise<SendJsonStr
 
   // Early-reject if Content-Length declares more bytes than we're willing to
   // buffer — avoids pulling oversized payloads over the wire at all.
-  const contentLength = flatHeaders['content-length'];
+  const contentLength = flatHeaders["content-length"];
   if (contentLength) {
     const declared = Number(contentLength);
     if (Number.isFinite(declared) && declared > maxBytes) {
       body.destroy();
-      throw new HttpAdapterServerError(
-        `response too large: declared ${declared} bytes, max ${maxBytes}`,
-        { status },
-      );
+      throw new HttpAdapterServerError(`response too large: declared ${declared} bytes, max ${maxBytes}`, { status });
     }
   }
 
   // Require text/event-stream on success — a JSON response here means the
   // provider returned a non-streaming reply despite stream=true in the body.
-  if (!contentType.includes('text/event-stream')) {
+  if (!contentType.includes("text/event-stream")) {
     body.destroy();
     throw new HttpAdapterServerError(
       `Unexpected content-type for streaming: expected text/event-stream, got "${contentType}"`,
@@ -433,19 +408,18 @@ export async function sendJsonStream(opts: SendJsonOptions): Promise<SendJsonStr
   // the SSE parser layer can use the Web Streams API uniformly.
   const webStream = new ReadableStream<Uint8Array>({
     start(controller) {
-      body.on('data', (chunk: Buffer | Uint8Array | string) => {
-        const bytes =
-          Buffer.isBuffer(chunk)
-            ? new Uint8Array(chunk)
-            : typeof chunk === 'string'
-              ? TEXT_ENCODER.encode(chunk)
-              : chunk instanceof Uint8Array
-                ? chunk
-                : new Uint8Array(Buffer.from(chunk as string));
+      body.on("data", (chunk: Buffer | Uint8Array | string) => {
+        const bytes = Buffer.isBuffer(chunk)
+          ? new Uint8Array(chunk)
+          : typeof chunk === "string"
+            ? TEXT_ENCODER.encode(chunk)
+            : chunk instanceof Uint8Array
+              ? chunk
+              : new Uint8Array(Buffer.from(chunk as string));
         controller.enqueue(bytes);
       });
-      body.on('end', () => controller.close());
-      body.on('error', (err: Error) => controller.error(err));
+      body.on("end", () => controller.close());
+      body.on("error", (err: Error) => controller.error(err));
     },
     cancel() {
       body.destroy();

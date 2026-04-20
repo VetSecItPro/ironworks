@@ -1,9 +1,9 @@
+import { type ActivityEvent, type Agent, deriveProjectUrlKey } from "@ironworksai/shared";
 import { memo } from "react";
 import { Link } from "@/lib/router";
-import { Identity } from "./Identity";
 import { timeAgo } from "../lib/timeAgo";
 import { cn } from "../lib/utils";
-import { deriveProjectUrlKey, type ActivityEvent, type Agent } from "@ironworksai/shared";
+import { Identity } from "./Identity";
 
 const ACTION_VERBS: Record<string, string> = {
   "issue.created": "created issue",
@@ -126,12 +126,18 @@ function StatusTransitionBadges({ details }: { details: Record<string, unknown> 
 
 function entityLink(entityType: string, entityId: string, name?: string | null): string | null {
   switch (entityType) {
-    case "issue": return `/issues/${name ?? entityId}`;
-    case "agent": return `/agents/${entityId}`;
-    case "project": return `/projects/${deriveProjectUrlKey(name, entityId)}`;
-    case "goal": return `/goals/${entityId}`;
-    case "approval": return `/approvals/${entityId}`;
-    default: return null;
+    case "issue":
+      return `/issues/${name ?? entityId}`;
+    case "agent":
+      return `/agents/${entityId}`;
+    case "project":
+      return `/projects/${deriveProjectUrlKey(name, entityId)}`;
+    case "goal":
+      return `/goals/${entityId}`;
+    case "approval":
+      return `/approvals/${entityId}`;
+    default:
+      return null;
   }
 }
 
@@ -143,7 +149,13 @@ interface ActivityRowProps {
   className?: string;
 }
 
-export const ActivityRow = memo(function ActivityRow({ event, agentMap, entityNameMap, entityTitleMap, className }: ActivityRowProps) {
+export const ActivityRow = memo(function ActivityRow({
+  event,
+  agentMap,
+  entityNameMap,
+  entityTitleMap,
+  className,
+}: ActivityRowProps) {
   const verb = formatVerb(event.action, event.details);
 
   // Determine verb color using module-level pre-computed keyword list
@@ -151,7 +163,7 @@ export const ActivityRow = memo(function ActivityRow({ event, agentMap, entityNa
 
   const isHeartbeatEvent = event.entityType === "heartbeat_run";
   const heartbeatAgentId = isHeartbeatEvent
-    ? (event.details as Record<string, unknown> | null)?.agentId as string | undefined
+    ? ((event.details as Record<string, unknown> | null)?.agentId as string | undefined)
     : undefined;
 
   const isCostEvent = event.action.startsWith("cost.");
@@ -164,46 +176,47 @@ export const ActivityRow = memo(function ActivityRow({ event, agentMap, entityNa
   const costProvider = isCostEvent ? (details?.provider as string | undefined) : undefined;
 
   const name = isHeartbeatEvent
-    ? (heartbeatAgentId ? entityNameMap.get(`agent:${heartbeatAgentId}`) : null)
+    ? heartbeatAgentId
+      ? entityNameMap.get(`agent:${heartbeatAgentId}`)
+      : null
     : isCostEvent
       ? costAgentName
       : entityNameMap.get(`${event.entityType}:${event.entityId}`);
 
   const entityTitle = isCostEvent
-    ? (costModel ? `${costProvider ?? ""}${costProvider && costModel ? " · " : ""}${costModel}` : undefined)
+    ? costModel
+      ? `${costProvider ?? ""}${costProvider && costModel ? " · " : ""}${costModel}`
+      : undefined
     : entityTitleMap?.get(`${event.entityType}:${event.entityId}`);
 
-  const link = isHeartbeatEvent && heartbeatAgentId
-    ? `/agents/${heartbeatAgentId}/runs/${event.entityId}`
-    : entityLink(event.entityType, event.entityId, name);
+  const link =
+    isHeartbeatEvent && heartbeatAgentId
+      ? `/agents/${heartbeatAgentId}/runs/${event.entityId}`
+      : entityLink(event.entityType, event.entityId, name);
 
   const actor = event.actorType === "agent" ? agentMap.get(event.actorId) : null;
-  const actorName = actor?.name ?? (event.actorType === "system" ? "System" : event.actorType === "user" ? "Board" : event.actorId || "Unknown");
+  const actorName =
+    actor?.name ??
+    (event.actorType === "system" ? "System" : event.actorType === "user" ? "Board" : event.actorId || "Unknown");
 
   const inner = (
     <div className="flex gap-3">
       <p className="flex-1 min-w-0 truncate">
-        <Identity
-          name={actorName}
-          size="xs"
-          className="align-baseline"
-        />
+        <Identity name={actorName} size="xs" className="align-baseline" />
         <span className={cn("ml-1", verbColor)}>{verb} </span>
         {name && <span className="font-medium">{name}</span>}
-        {event.action === "issue.updated" && details && (details._previous as Record<string, unknown> | undefined)?.status !== undefined && (
-          <StatusTransitionBadges details={details} />
-        )}
+        {event.action === "issue.updated" &&
+          details &&
+          (details._previous as Record<string, unknown> | undefined)?.status !== undefined && (
+            <StatusTransitionBadges details={details} />
+          )}
         {entityTitle && <span className="text-muted-foreground ml-1">- {entityTitle}</span>}
       </p>
       <span className="text-xs text-muted-foreground shrink-0 pt-0.5">{timeAgo(event.createdAt)}</span>
     </div>
   );
 
-  const classes = cn(
-    "px-4 py-2 text-sm",
-    link && "cursor-pointer hover:bg-accent/50 transition-colors",
-    className,
-  );
+  const classes = cn("px-4 py-2 text-sm", link && "cursor-pointer hover:bg-accent/50 transition-colors", className);
 
   if (link) {
     return (
@@ -213,9 +226,5 @@ export const ActivityRow = memo(function ActivityRow({ event, agentMap, entityNa
     );
   }
 
-  return (
-    <div className={classes}>
-      {inner}
-    </div>
-  );
+  return <div className={classes}>{inner}</div>;
 });

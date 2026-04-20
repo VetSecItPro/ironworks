@@ -1,7 +1,7 @@
-import { cn } from "../../lib/utils";
 import { Activity } from "lucide-react";
-import { HealthBreakdownItem } from "../briefing/BriefingCards";
 import type { CompanyHealthScore } from "../../api/executive";
+import { cn } from "../../lib/utils";
+import { HealthBreakdownItem } from "../briefing/BriefingCards";
 
 interface CompanyHealthScoreCardProps {
   healthScore: CompanyHealthScore;
@@ -16,12 +16,18 @@ export function CompanyHealthScoreCard({ healthScore }: CompanyHealthScoreCardPr
       </h3>
       <div className="flex items-center gap-6">
         <div className="flex flex-col items-center">
-          <span className={cn(
-            "text-5xl font-bold tabular-nums",
-            healthScore.score >= 80 ? "text-emerald-400" :
-            healthScore.score >= 60 ? "text-blue-400" :
-            healthScore.score >= 40 ? "text-amber-400" : "text-red-400",
-          )}>
+          <span
+            className={cn(
+              "text-5xl font-bold tabular-nums",
+              healthScore.score >= 80
+                ? "text-emerald-400"
+                : healthScore.score >= 60
+                  ? "text-blue-400"
+                  : healthScore.score >= 40
+                    ? "text-amber-400"
+                    : "text-red-400",
+            )}
+          >
             {healthScore.score}
           </span>
           <span className="text-xs text-muted-foreground mt-1">out of 100</span>

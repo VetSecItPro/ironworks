@@ -1,8 +1,8 @@
-import { and, eq, gte, ne, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import { agents, issues, companies } from "@ironworksai/db";
-import { logActivity } from "./activity-log.js";
+import { agents, companies, issues } from "@ironworksai/db";
+import { and, eq, gte, ne, sql } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
+import { logActivity } from "./activity-log.js";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -18,11 +18,7 @@ function formatDateCT(date: Date): string {
  * Covers the last 24 hours for completed items and current assignments.
  * Saved to the activity log (standups are ephemeral).
  */
-export async function generateDailyStandup(
-  db: Db,
-  agentId: string,
-  companyId: string,
-): Promise<string> {
+export async function generateDailyStandup(db: Db, agentId: string, companyId: string): Promise<string> {
   const now = new Date();
   const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
   const today = formatDateCT(now);
@@ -56,44 +52,25 @@ export async function generateDailyStandup(
   const inProgressIssues = await db
     .select({ title: issues.title, identifier: issues.identifier })
     .from(issues)
-    .where(
-      and(
-        eq(issues.companyId, companyId),
-        eq(issues.assigneeAgentId, agentId),
-        eq(issues.status, "in_progress"),
-      ),
-    );
+    .where(and(eq(issues.companyId, companyId), eq(issues.assigneeAgentId, agentId), eq(issues.status, "in_progress")));
 
   // Blocked
   const blockedIssues = await db
     .select({ title: issues.title, identifier: issues.identifier })
     .from(issues)
-    .where(
-      and(
-        eq(issues.companyId, companyId),
-        eq(issues.assigneeAgentId, agentId),
-        eq(issues.status, "blocked"),
-      ),
-    );
+    .where(and(eq(issues.companyId, companyId), eq(issues.assigneeAgentId, agentId), eq(issues.status, "blocked")));
 
   // Format issue lines
   const formatIssue = (i: { title: string; identifier: string | null }) =>
     i.identifier ? `- [${i.identifier}] ${i.title}` : `- ${i.title}`;
 
   const completedSection =
-    completedIssues.length > 0
-      ? completedIssues.map(formatIssue).join("\n")
-      : "- Nothing completed";
+    completedIssues.length > 0 ? completedIssues.map(formatIssue).join("\n") : "- Nothing completed";
 
   const inProgressSection =
-    inProgressIssues.length > 0
-      ? inProgressIssues.map(formatIssue).join("\n")
-      : "- No active work";
+    inProgressIssues.length > 0 ? inProgressIssues.map(formatIssue).join("\n") : "- No active work";
 
-  const blockedSection =
-    blockedIssues.length > 0
-      ? blockedIssues.map(formatIssue).join("\n")
-      : "- No blockers";
+  const blockedSection = blockedIssues.length > 0 ? blockedIssues.map(formatIssue).join("\n") : "- No blockers";
 
   const markdown = [
     `## ${agent.name} - Daily Update`,
@@ -127,10 +104,7 @@ export async function generateDailyStandup(
     },
   });
 
-  logger.info(
-    { agentId, companyId, date: today },
-    "generated daily standup",
-  );
+  logger.info({ agentId, companyId, date: today }, "generated daily standup");
 
   return markdown;
 }
@@ -140,19 +114,11 @@ export async function generateDailyStandup(
 /**
  * Generate daily standups for all non-terminated agents in a company.
  */
-export async function runDailyStandups(
-  db: Db,
-  companyId: string,
-): Promise<void> {
+export async function runDailyStandups(db: Db, companyId: string): Promise<void> {
   const companyAgents = await db
     .select({ id: agents.id })
     .from(agents)
-    .where(
-      and(
-        eq(agents.companyId, companyId),
-        ne(agents.status, "terminated"),
-      ),
-    );
+    .where(and(eq(agents.companyId, companyId), ne(agents.status, "terminated")));
 
   for (const agent of companyAgents) {
     try {

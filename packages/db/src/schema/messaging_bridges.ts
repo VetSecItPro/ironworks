@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, jsonb, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { index, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { companies } from "./companies.js";
 
 /**
@@ -10,7 +10,9 @@ export const messagingBridges = pgTable(
   "messaging_bridges",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    companyId: uuid("company_id").notNull().references(() => companies.id),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id),
     /** Platform identifier: "telegram" | "email" | "slack" | "discord" */
     platform: text("platform").notNull(),
     /** Connection status: "connected" | "disconnected" | "error" */
@@ -26,9 +28,6 @@ export const messagingBridges = pgTable(
   },
   (table) => ({
     companyIdx: index("messaging_bridges_company_idx").on(table.companyId),
-    companyPlatformUq: uniqueIndex("messaging_bridges_company_platform_uq").on(
-      table.companyId,
-      table.platform,
-    ),
+    companyPlatformUq: uniqueIndex("messaging_bridges_company_platform_uq").on(table.companyId, table.platform),
   }),
 );

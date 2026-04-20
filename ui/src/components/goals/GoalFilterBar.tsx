@@ -1,7 +1,7 @@
 import { ArrowUpDown, CalendarRange, Filter, LayoutList, Network, Search } from "lucide-react";
-import { cn } from "../../lib/utils";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "../../lib/utils";
 
 export type GoalSortField = "title" | "progress" | "updated";
 export type GoalStatusFilter = "all" | "planned" | "active" | "achieved" | "cancelled";

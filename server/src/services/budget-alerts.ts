@@ -1,8 +1,8 @@
-import { and, eq, gte, ilike, lt, ne, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { agents, companies, companySubscriptions, issues } from "@ironworksai/db";
-import { logActivity } from "./activity-log.js";
+import { and, eq, gte, ilike, lt, ne, sql } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
+import { logActivity } from "./activity-log.js";
 
 function currentUtcMonthWindow(now = new Date()) {
   const year = now.getUTCFullYear();
@@ -149,13 +149,7 @@ export async function checkBudgetAlerts(db: Db, companyId: string): Promise<void
     const nonCeoAgents = await db
       .select({ id: agents.id })
       .from(agents)
-      .where(
-        and(
-          eq(agents.companyId, companyId),
-          ne(agents.role, "ceo"),
-          ne(agents.status, "paused"),
-        ),
-      );
+      .where(and(eq(agents.companyId, companyId), ne(agents.role, "ceo"), ne(agents.status, "paused")));
 
     if (nonCeoAgents.length > 0) {
       await db
@@ -166,13 +160,7 @@ export async function checkBudgetAlerts(db: Db, companyId: string): Promise<void
           pausedAt: now,
           updatedAt: now,
         })
-        .where(
-          and(
-            eq(agents.companyId, companyId),
-            ne(agents.role, "ceo"),
-            ne(agents.status, "paused"),
-          ),
-        );
+        .where(and(eq(agents.companyId, companyId), ne(agents.role, "ceo"), ne(agents.status, "paused")));
     }
 
     return; // Don't also fire the 80% alert.

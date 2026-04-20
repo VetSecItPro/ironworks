@@ -1,17 +1,13 @@
+import { MEMORY_TYPE_LABELS, MEMORY_TYPES, type MemoryType } from "@ironworksai/shared";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Brain, ChevronDown, ChevronRight, Plus, X } from "lucide-react";
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { agentMemoryApi, type AgentMemoryEntry } from "../../api/agentMemory";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { type AgentMemoryEntry, agentMemoryApi } from "../../api/agentMemory";
 import { executiveApi } from "../../api/executive";
 import { queryKeys } from "../../lib/queryKeys";
 import { cn, relativeTime } from "../../lib/utils";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  MEMORY_TYPES,
-  MEMORY_TYPE_LABELS,
-  type MemoryType,
-} from "@ironworksai/shared";
-import { Brain, ChevronDown, ChevronRight, Plus, X } from "lucide-react";
 
 const memoryTypeColors: Record<string, string> = {
   episodic: "bg-violet-500/10 text-violet-600 dark:text-violet-400 ring-violet-500/20",
@@ -51,9 +47,7 @@ function MemoryCard({
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className="text-[10px] text-muted-foreground">
-            {relativeTime(entry.createdAt)}
-          </span>
+          <span className="text-[10px] text-muted-foreground">{relativeTime(entry.createdAt)}</span>
           <button
             type="button"
             aria-label="Delete memory entry"
@@ -109,9 +103,7 @@ function MemoryCard({
           <span className="text-[10px] text-muted-foreground tabular-nums">{entry.confidence}%</span>
         </div>
         {entry.accessCount > 0 && (
-          <span className="text-[10px] text-muted-foreground">
-            Accessed {entry.accessCount}x
-          </span>
+          <span className="text-[10px] text-muted-foreground">Accessed {entry.accessCount}x</span>
         )}
       </div>
     </div>
@@ -143,7 +135,9 @@ function AddMemoryForm({
             className="w-full text-xs bg-transparent border border-border rounded px-2 py-1.5"
           >
             {MEMORY_TYPES.map((t) => (
-              <option key={t} value={t}>{(MEMORY_TYPE_LABELS as Record<string, string>)[t]}</option>
+              <option key={t} value={t}>
+                {(MEMORY_TYPE_LABELS as Record<string, string>)[t]}
+              </option>
             ))}
           </select>
         </div>
@@ -183,13 +177,7 @@ function AddMemoryForm({
   );
 }
 
-export function AgentMemoryTab({
-  companyId,
-  agentId,
-}: {
-  companyId: string;
-  agentId: string;
-}) {
+export function AgentMemoryTab({ companyId, agentId }: { companyId: string; agentId: string }) {
   const queryClient = useQueryClient();
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [showAddForm, setShowAddForm] = useState(false);
@@ -245,27 +233,36 @@ export function AgentMemoryTab({
           </div>
           <div className="space-y-0.5">
             <p className="text-[10px] uppercase text-muted-foreground tracking-wide">Avg Confidence</p>
-            <p className={cn(
-              "text-lg font-bold tabular-nums",
-              memoryHealth.avgConfidence >= 70 ? "text-emerald-400" :
-              memoryHealth.avgConfidence >= 40 ? "text-amber-400" : "text-red-400",
-            )}>
+            <p
+              className={cn(
+                "text-lg font-bold tabular-nums",
+                memoryHealth.avgConfidence >= 70
+                  ? "text-emerald-400"
+                  : memoryHealth.avgConfidence >= 40
+                    ? "text-amber-400"
+                    : "text-red-400",
+              )}
+            >
               {memoryHealth.avgConfidence}%
             </p>
           </div>
           <div className="space-y-0.5">
             <p className="text-[10px] uppercase text-muted-foreground tracking-wide">Stale</p>
-            <p className={cn(
-              "text-lg font-bold tabular-nums",
-              memoryHealth.staleCount === 0 ? "" : memoryHealth.staleCount < 10 ? "text-amber-400" : "text-red-400",
-            )}>
+            <p
+              className={cn(
+                "text-lg font-bold tabular-nums",
+                memoryHealth.staleCount === 0 ? "" : memoryHealth.staleCount < 10 ? "text-amber-400" : "text-red-400",
+              )}
+            >
               {memoryHealth.staleCount}
             </p>
           </div>
           {memoryHealth.coverageGaps.length > 0 && (
             <div className="col-span-2 space-y-0.5">
               <p className="text-[10px] uppercase text-muted-foreground tracking-wide">Coverage Gaps</p>
-              <p className="text-xs text-amber-400 leading-relaxed">{memoryHealth.coverageGaps.slice(0, 4).join(", ")}</p>
+              <p className="text-xs text-amber-400 leading-relaxed">
+                {memoryHealth.coverageGaps.slice(0, 4).join(", ")}
+              </p>
             </div>
           )}
         </div>
@@ -287,14 +284,12 @@ export function AgentMemoryTab({
           >
             <option value="all">All types</option>
             {MEMORY_TYPES.map((t) => (
-              <option key={t} value={t}>{(MEMORY_TYPE_LABELS as Record<string, string>)[t]}</option>
+              <option key={t} value={t}>
+                {(MEMORY_TYPE_LABELS as Record<string, string>)[t]}
+              </option>
             ))}
           </select>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowAddForm(!showAddForm)}
-          >
+          <Button variant="outline" size="sm" onClick={() => setShowAddForm(!showAddForm)}>
             <Plus className="h-3.5 w-3.5 mr-1" />
             Add Memory
           </Button>

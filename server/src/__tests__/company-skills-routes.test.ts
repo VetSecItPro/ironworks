@@ -1,8 +1,8 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { companySkillRoutes } from "../routes/company-skills.js";
 import { errorHandler } from "../middleware/index.js";
+import { companySkillRoutes } from "../routes/company-skills.js";
 
 const mockAgentService = vi.hoisted(() => ({
   getById: vi.fn(),
@@ -41,7 +41,13 @@ vi.mock("../services/index.js", () => ({
   routineService: () => ({}),
   playbookService: () => ({ seedDefaults: vi.fn() }),
   budgetService: () => ({ upsertPolicy: vi.fn() }),
-  userInviteService: () => ({ create: vi.fn(), getByToken: vi.fn(), accept: vi.fn(), listForCompany: vi.fn(), revoke: vi.fn() }),
+  userInviteService: () => ({
+    create: vi.fn(),
+    getByToken: vi.fn(),
+    accept: vi.fn(),
+    listForCompany: vi.fn(),
+    revoke: vi.fn(),
+  }),
 }));
 
 function createApp(actor: Record<string, unknown>) {
@@ -69,13 +75,15 @@ describe("company skill mutation permissions", () => {
   });
 
   it("allows local board operators to mutate company skills", async () => {
-    const res = await request(createApp({
-      type: "board",
-      userId: "local-board",
-      companyIds: ["company-1"],
-      source: "local_implicit",
-      isInstanceAdmin: false,
-    }))
+    const res = await request(
+      createApp({
+        type: "board",
+        userId: "local-board",
+        companyIds: ["company-1"],
+        source: "local_implicit",
+        isInstanceAdmin: false,
+      }),
+    )
       .post("/api/companies/company-1/skills/import")
       .send({ source: "https://github.com/vercel-labs/agent-browser" });
 
@@ -93,12 +101,14 @@ describe("company skill mutation permissions", () => {
       permissions: {},
     });
 
-    const res = await request(createApp({
-      type: "agent",
-      agentId: "agent-1",
-      companyId: "company-1",
-      runId: "run-1",
-    }))
+    const res = await request(
+      createApp({
+        type: "agent",
+        agentId: "agent-1",
+        companyId: "company-1",
+        runId: "run-1",
+      }),
+    )
       .post("/api/companies/company-1/skills/import")
       .send({ source: "https://github.com/vercel-labs/agent-browser" });
 
@@ -113,12 +123,14 @@ describe("company skill mutation permissions", () => {
       permissions: { canCreateAgents: true },
     });
 
-    const res = await request(createApp({
-      type: "agent",
-      agentId: "agent-1",
-      companyId: "company-1",
-      runId: "run-1",
-    }))
+    const res = await request(
+      createApp({
+        type: "agent",
+        agentId: "agent-1",
+        companyId: "company-1",
+        runId: "run-1",
+      }),
+    )
       .post("/api/companies/company-1/skills/import")
       .send({ source: "https://github.com/vercel-labs/agent-browser" });
 

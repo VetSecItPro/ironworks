@@ -1,11 +1,11 @@
-import { and, eq, isNull, ne, lte, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import { agents, agentMemoryEntries, issues } from "@ironworksai/db";
+import { agentMemoryEntries, agents, issues } from "@ironworksai/db";
 import type { TerminationReason } from "@ironworksai/shared";
+import { and, eq, isNull, lte, ne, sql } from "drizzle-orm";
+import { logger } from "../middleware/logger.js";
 import { logActivity } from "./activity-log.js";
 import { archiveAgentWorkspace } from "./agent-workspace.js";
 import { createTerminationRecord } from "./hr-personnel.js";
-import { logger } from "../middleware/logger.js";
 
 // ── Contractor Lifecycle Check ──────────────────────────────────────────────
 //
@@ -36,12 +36,7 @@ async function terminateContractor(
     await tx
       .update(agentMemoryEntries)
       .set({ archivedAt: now })
-      .where(
-        and(
-          eq(agentMemoryEntries.agentId, agent.id),
-          isNull(agentMemoryEntries.archivedAt),
-        ),
-      );
+      .where(and(eq(agentMemoryEntries.agentId, agent.id), isNull(agentMemoryEntries.archivedAt)));
   });
 
   await logActivity(db, {
@@ -72,10 +67,7 @@ async function terminateContractor(
     logger.error({ agentId: agent.id, err }, "failed to archive workspace or create termination record");
   }
 
-  logger.info(
-    { agentId: agent.id, agentName: agent.name, reason },
-    "contractor agent terminated",
-  );
+  logger.info({ agentId: agent.id, agentName: agent.name, reason }, "contractor agent terminated");
 }
 
 /**
@@ -106,13 +98,7 @@ export async function checkContractorLifecycles(db: Db): Promise<number> {
       pausedAt: agents.pausedAt,
     })
     .from(agents)
-    .where(
-      and(
-        eq(agents.employmentType, "contractor"),
-        ne(agents.status, "terminated"),
-        isNull(agents.terminatedAt),
-      ),
-    );
+    .where(and(eq(agents.employmentType, "contractor"), ne(agents.status, "terminated"), isNull(agents.terminatedAt)));
 
   let terminatedCount = 0;
 
@@ -198,7 +184,6 @@ export async function checkContractorLifecycles(db: Db): Promise<number> {
       if (total > 0 && terminal === total) {
         await terminateContractor(db, agentRef, "contract_complete");
         terminatedCount++;
-        continue;
       }
     }
   }

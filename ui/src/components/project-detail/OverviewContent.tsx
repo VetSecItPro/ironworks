@@ -1,8 +1,8 @@
 import type { BudgetPolicySummary } from "@ironworksai/shared";
-import { MarkdownBody } from "../MarkdownBody";
-import { InlineEditor } from "../InlineEditor";
-import { StatusBadge } from "../StatusBadge";
 import { cn } from "../../lib/utils";
+import { InlineEditor } from "../InlineEditor";
+import { MarkdownBody } from "../MarkdownBody";
+import { StatusBadge } from "../StatusBadge";
 
 function formatBudgetCents(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
@@ -90,15 +90,16 @@ export function OverviewContent({
             <div
               className={cn(
                 "h-full rounded-full transition-[width] duration-500",
-                budgetSummary.utilizationPercent > 90 ? "bg-red-500" :
-                budgetSummary.utilizationPercent > 70 ? "bg-amber-500" : "bg-emerald-500",
+                budgetSummary.utilizationPercent > 90
+                  ? "bg-red-500"
+                  : budgetSummary.utilizationPercent > 70
+                    ? "bg-amber-500"
+                    : "bg-emerald-500",
               )}
               style={{ width: `${Math.min(budgetSummary.utilizationPercent, 100)}%` }}
             />
           </div>
-          <p className="text-xs text-muted-foreground">
-            {budgetSummary.utilizationPercent.toFixed(1)}% utilized
-          </p>
+          <p className="text-xs text-muted-foreground">{budgetSummary.utilizationPercent.toFixed(1)}% utilized</p>
         </div>
       )}
     </div>

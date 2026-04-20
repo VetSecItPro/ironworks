@@ -1,6 +1,6 @@
 import { Cpu } from "lucide-react";
-import { DORAMetricBlock } from "../briefing/BriefingCards";
 import type { DORAMetrics } from "../../api/executive";
+import { DORAMetricBlock } from "../briefing/BriefingCards";
 
 interface EngineeringMetricsSectionProps {
   doraMetrics: DORAMetrics;
@@ -17,25 +17,61 @@ export function EngineeringMetricsSection({ doraMetrics }: EngineeringMetricsSec
         <DORAMetricBlock
           label="Deployment Frequency"
           value={`${doraMetrics.deploymentFrequency.toFixed(1)}/day`}
-          tier={doraMetrics.deploymentFrequency >= 1 ? "elite" : doraMetrics.deploymentFrequency >= 0.14 ? "high" : doraMetrics.deploymentFrequency >= 0.03 ? "medium" : "low"}
+          tier={
+            doraMetrics.deploymentFrequency >= 1
+              ? "elite"
+              : doraMetrics.deploymentFrequency >= 0.14
+                ? "high"
+                : doraMetrics.deploymentFrequency >= 0.03
+                  ? "medium"
+                  : "low"
+          }
           description="Heartbeat runs per day (proxy)"
         />
         <DORAMetricBlock
           label="Lead Time"
           value={doraMetrics.leadTime < 60 ? `${doraMetrics.leadTime}m` : `${Math.round(doraMetrics.leadTime / 60)}h`}
-          tier={doraMetrics.leadTime <= 60 ? "elite" : doraMetrics.leadTime <= 1440 ? "high" : doraMetrics.leadTime <= 10080 ? "medium" : "low"}
+          tier={
+            doraMetrics.leadTime <= 60
+              ? "elite"
+              : doraMetrics.leadTime <= 1440
+                ? "high"
+                : doraMetrics.leadTime <= 10080
+                  ? "medium"
+                  : "low"
+          }
           description="Avg issue created to done"
         />
         <DORAMetricBlock
           label="Change Failure Rate"
           value={`${doraMetrics.changeFailureRate.toFixed(1)}%`}
-          tier={doraMetrics.changeFailureRate <= 5 ? "elite" : doraMetrics.changeFailureRate <= 10 ? "high" : doraMetrics.changeFailureRate <= 15 ? "medium" : "low"}
+          tier={
+            doraMetrics.changeFailureRate <= 5
+              ? "elite"
+              : doraMetrics.changeFailureRate <= 10
+                ? "high"
+                : doraMetrics.changeFailureRate <= 15
+                  ? "medium"
+                  : "low"
+          }
           description="Cancelled / total issues"
         />
         <DORAMetricBlock
           label="Mean Time to Recovery"
-          value={doraMetrics.meanTimeToRecovery < 60 ? `${doraMetrics.meanTimeToRecovery}m` : `${Math.round(doraMetrics.meanTimeToRecovery / 60)}h`}
-          tier={doraMetrics.meanTimeToRecovery <= 60 ? "elite" : doraMetrics.meanTimeToRecovery <= 1440 ? "high" : doraMetrics.meanTimeToRecovery <= 10080 ? "medium" : "low"}
+          value={
+            doraMetrics.meanTimeToRecovery < 60
+              ? `${doraMetrics.meanTimeToRecovery}m`
+              : `${Math.round(doraMetrics.meanTimeToRecovery / 60)}h`
+          }
+          tier={
+            doraMetrics.meanTimeToRecovery <= 60
+              ? "elite"
+              : doraMetrics.meanTimeToRecovery <= 1440
+                ? "high"
+                : doraMetrics.meanTimeToRecovery <= 10080
+                  ? "medium"
+                  : "low"
+          }
           description="Critical/high issue resolution time"
         />
       </div>

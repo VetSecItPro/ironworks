@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { Plus, Save, Settings2 } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "../../lib/utils";
@@ -69,7 +69,7 @@ export function StatusesSection({ statuses, onPersist, onToast }: StatusesSectio
             key={status.id}
             status={status}
             onUpdate={(updated) => {
-              const next = statuses.map((s) => s.id === updated.id ? updated : s);
+              const next = statuses.map((s) => (s.id === updated.id ? updated : s));
               onPersist(next);
             }}
             onDelete={() => {
@@ -92,7 +92,9 @@ export function StatusesSection({ statuses, onPersist, onToast }: StatusesSectio
               onChange={(e) => setNewStatusLabel(e.target.value)}
               placeholder="Status name"
               className="h-7 text-xs flex-1"
-              onKeyDown={(e) => { if (e.key === "Enter") addStatus(); }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") addStatus();
+              }}
               autoFocus
             />
             <select
@@ -105,7 +107,9 @@ export function StatusesSection({ statuses, onPersist, onToast }: StatusesSectio
             </select>
           </div>
           <div className="flex items-center gap-2 justify-end">
-            <Button size="sm" variant="ghost" onClick={() => setShowNewStatus(false)}>Cancel</Button>
+            <Button size="sm" variant="ghost" onClick={() => setShowNewStatus(false)}>
+              Cancel
+            </Button>
             <Button size="sm" onClick={addStatus} disabled={!newStatusLabel.trim()}>
               <Save className="h-3 w-3 mr-1" />
               Add
@@ -119,25 +123,33 @@ export function StatusesSection({ statuses, onPersist, onToast }: StatusesSectio
         <h3 className="text-xs font-medium text-muted-foreground mb-2">Status Category Mapping</h3>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <p className="text-[10px] font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-1">Open</p>
+            <p className="text-[10px] font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-1">
+              Open
+            </p>
             <div className="space-y-0.5">
-              {statuses.filter((s) => s.category === "open").map((s) => (
-                <div key={s.id} className="flex items-center gap-1.5 text-xs">
-                  <div className={cn("h-2 w-2 rounded-full", s.color)} />
-                  {s.label}
-                </div>
-              ))}
+              {statuses
+                .filter((s) => s.category === "open")
+                .map((s) => (
+                  <div key={s.id} className="flex items-center gap-1.5 text-xs">
+                    <div className={cn("h-2 w-2 rounded-full", s.color)} />
+                    {s.label}
+                  </div>
+                ))}
             </div>
           </div>
           <div>
-            <p className="text-[10px] font-medium text-green-600 dark:text-green-400 uppercase tracking-wider mb-1">Closed</p>
+            <p className="text-[10px] font-medium text-green-600 dark:text-green-400 uppercase tracking-wider mb-1">
+              Closed
+            </p>
             <div className="space-y-0.5">
-              {statuses.filter((s) => s.category === "closed").map((s) => (
-                <div key={s.id} className="flex items-center gap-1.5 text-xs">
-                  <div className={cn("h-2 w-2 rounded-full", s.color)} />
-                  {s.label}
-                </div>
-              ))}
+              {statuses
+                .filter((s) => s.category === "closed")
+                .map((s) => (
+                  <div key={s.id} className="flex items-center gap-1.5 text-xs">
+                    <div className={cn("h-2 w-2 rounded-full", s.color)} />
+                    {s.label}
+                  </div>
+                ))}
             </div>
           </div>
         </div>

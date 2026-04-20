@@ -5,7 +5,10 @@ export function EfficiencyMiniBar({ value, max, color }: { value: number; max: n
   return (
     <div className="flex items-center gap-1.5 w-full">
       <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-        <div className={cn("h-full rounded-full transition-[width] duration-300", color)} style={{ width: `${pct}%` }} />
+        <div
+          className={cn("h-full rounded-full transition-[width] duration-300", color)}
+          style={{ width: `${pct}%` }}
+        />
       </div>
     </div>
   );

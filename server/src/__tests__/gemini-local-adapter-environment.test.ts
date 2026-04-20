@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { testEnvironment } from "@ironworksai/adapter-gemini-local/server";
+import { describe, expect, it } from "vitest";
 
 async function writeFakeGeminiCommand(binDir: string, argsCapturePath: string): Promise<string> {
   const commandPath = path.join(binDir, "gemini");

@@ -1,14 +1,8 @@
-import { useEffect, useRef, useState } from "react";
 import { Clock } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { SNOOZE_OPTIONS } from "./inboxSnoozeUtils";
 
-export function SnoozeButton({
-  itemKey,
-  onSnooze,
-}: {
-  itemKey: string;
-  onSnooze: (key: string, ms: number) => void;
-}) {
+export function SnoozeButton({ itemKey, onSnooze }: { itemKey: string; onSnooze: (key: string, ms: number) => void }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -27,7 +21,11 @@ export function SnoozeButton({
     <div className="relative" ref={ref}>
       <button
         type="button"
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(!open); }}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setOpen(!open);
+        }}
         className="rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground group-hover:opacity-100"
         aria-label="Snooze"
         title="Snooze"

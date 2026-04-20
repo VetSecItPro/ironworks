@@ -19,8 +19,7 @@ export function IntegrationHubSection() {
       </div>
       <div className="rounded-md border border-border px-4 py-4 space-y-4">
         <p className="text-sm text-muted-foreground">
-          Connect external tools and services to your company via webhooks and
-          API integrations.
+          Connect external tools and services to your company via webhooks and API integrations.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {INTEGRATIONS.map((integration) => (
@@ -40,16 +39,10 @@ export function IntegrationHubSection() {
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {integration.description}
-                </p>
+                <p className="text-xs text-muted-foreground">{integration.description}</p>
               </div>
               {integration.status === "available" && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 text-xs shrink-0"
-                >
+                <Button size="sm" variant="outline" className="h-7 text-xs shrink-0">
                   Connect
                 </Button>
               )}

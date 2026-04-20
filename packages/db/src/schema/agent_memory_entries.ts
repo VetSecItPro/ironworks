@@ -1,12 +1,4 @@
-import {
-  customType,
-  pgTable,
-  uuid,
-  text,
-  integer,
-  timestamp,
-  index,
-} from "drizzle-orm/pg-core";
+import { customType, index, integer, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { agents } from "./agents.js";
 import { companies } from "./companies.js";
 
@@ -38,8 +30,12 @@ export const agentMemoryEntries = pgTable(
   "agent_memory_entries",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    agentId: uuid("agent_id").notNull().references(() => agents.id, { onDelete: "cascade" }),
-    companyId: uuid("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+    agentId: uuid("agent_id")
+      .notNull()
+      .references(() => agents.id, { onDelete: "cascade" }),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
     memoryType: text("memory_type").notNull().default("semantic"),
     category: text("category"),
     content: text("content").notNull(),

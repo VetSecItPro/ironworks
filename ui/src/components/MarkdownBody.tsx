@@ -1,9 +1,9 @@
-import { isValidElement, useEffect, useId, useState, type ReactNode } from "react";
+import { isValidElement, type ReactNode, useEffect, useId, useState } from "react";
 import Markdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { cn } from "../lib/utils";
 import { useTheme } from "../context/ThemeContext";
 import { mentionChipInlineStyle, parseMentionChipHref } from "../lib/mention-chips";
+import { cn } from "../lib/utils";
 
 interface MarkdownBodyProps {
   children: string;
@@ -66,10 +66,7 @@ function MermaidDiagramBlock({ source, darkMode }: { source: string; darkMode: b
       })
       .catch((err) => {
         if (!active) return;
-        const message =
-          err instanceof Error && err.message
-            ? err.message
-            : "Failed to render Mermaid diagram.";
+        const message = err instanceof Error && err.message ? err.message : "Failed to render Mermaid diagram.";
         setError(message);
       });
 
@@ -109,9 +106,7 @@ export function MarkdownBody({ children, className, resolveImageSrc }: MarkdownB
     a: ({ href, children: linkChildren }) => {
       const parsed = href ? parseMentionChipHref(href) : null;
       if (parsed) {
-        const targetHref = parsed.kind === "project"
-          ? `/projects/${parsed.projectId}`
-          : `/agents/${parsed.agentId}`;
+        const targetHref = parsed.kind === "project" ? `/projects/${parsed.projectId}` : `/agents/${parsed.agentId}`;
         return (
           <a
             href={targetHref}
@@ -149,11 +144,15 @@ export function MarkdownBody({ children, className, resolveImageSrc }: MarkdownB
         className,
       )}
     >
-      <Markdown remarkPlugins={[remarkGfm]} components={components} urlTransform={(url) => {
-        const lower = url.trim().toLowerCase();
-        if (lower.startsWith("javascript:") || lower.startsWith("data:") || lower.startsWith("vbscript:")) return "#";
-        return url;
-      }}>
+      <Markdown
+        remarkPlugins={[remarkGfm]}
+        components={components}
+        urlTransform={(url) => {
+          const lower = url.trim().toLowerCase();
+          if (lower.startsWith("javascript:") || lower.startsWith("data:") || lower.startsWith("vbscript:")) return "#";
+          return url;
+        }}
+      >
         {children}
       </Markdown>
     </div>

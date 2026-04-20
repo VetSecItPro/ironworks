@@ -1,9 +1,9 @@
-import { describe, it, expect } from 'vitest';
-import { computeCost, type CostSummary } from '../cost.js';
+import { describe, expect, it } from "vitest";
+import { type CostSummary, computeCost } from "../cost.js";
 
-describe('computeCost — Anthropic with caching', () => {
-  it('Claude Opus 4.7: 1k input, 500 output', () => {
-    const cost = computeCost('anthropic', 'claude-opus-4-7', {
+describe("computeCost — Anthropic with caching", () => {
+  it("Claude Opus 4.7: 1k input, 500 output", () => {
+    const cost = computeCost("anthropic", "claude-opus-4-7", {
       promptTokens: 1000,
       completionTokens: 500,
       totalTokens: 1500,
@@ -17,8 +17,8 @@ describe('computeCost — Anthropic with caching', () => {
     expect(cost.warnings).toEqual([]);
   });
 
-  it('Claude Sonnet 4.6 with cache read: 1000 prompt (800 cached), 500 output', () => {
-    const cost = computeCost('anthropic', 'claude-sonnet-4-6', {
+  it("Claude Sonnet 4.6 with cache read: 1000 prompt (800 cached), 500 output", () => {
+    const cost = computeCost("anthropic", "claude-sonnet-4-6", {
       promptTokens: 1000,
       completionTokens: 500,
       totalTokens: 1500,
@@ -34,8 +34,8 @@ describe('computeCost — Anthropic with caching', () => {
     expect(cost.breakdown.outputUsd).toBeCloseTo(0.0075, 5);
   });
 
-  it('Claude Opus with cache write: 1000 prompt, 400 written to cache, 600 fresh, 200 output', () => {
-    const cost = computeCost('anthropic', 'claude-opus-4-7', {
+  it("Claude Opus with cache write: 1000 prompt, 400 written to cache, 600 fresh, 200 output", () => {
+    const cost = computeCost("anthropic", "claude-opus-4-7", {
       promptTokens: 1000,
       completionTokens: 200,
       totalTokens: 1200,
@@ -49,8 +49,8 @@ describe('computeCost — Anthropic with caching', () => {
     expect(cost.breakdown.cachedWriteUsd).toBeCloseTo(0.0075, 5);
   });
 
-  it('combined: some cached, some fresh, some written, output', () => {
-    const cost = computeCost('anthropic', 'claude-sonnet-4-6', {
+  it("combined: some cached, some fresh, some written, output", () => {
+    const cost = computeCost("anthropic", "claude-sonnet-4-6", {
       promptTokens: 2000,
       completionTokens: 500,
       totalTokens: 2500,
@@ -68,9 +68,9 @@ describe('computeCost — Anthropic with caching', () => {
   });
 });
 
-describe('computeCost — OpenAI with reasoning', () => {
-  it('o4: 1000 prompt, 500 reasoning, 300 output', () => {
-    const cost = computeCost('openai', 'o4', {
+describe("computeCost — OpenAI with reasoning", () => {
+  it("o4: 1000 prompt, 500 reasoning, 300 output", () => {
+    const cost = computeCost("openai", "o4", {
       promptTokens: 1000,
       completionTokens: 300,
       totalTokens: 1800,
@@ -85,8 +85,8 @@ describe('computeCost — OpenAI with reasoning', () => {
     expect(cost.totalUsd).toBeCloseTo(0.063, 4);
   });
 
-  it('gpt-5-mini: cheap model math', () => {
-    const cost = computeCost('openai', 'gpt-5-mini', {
+  it("gpt-5-mini: cheap model math", () => {
+    const cost = computeCost("openai", "gpt-5-mini", {
       promptTokens: 10_000,
       completionTokens: 2000,
       totalTokens: 12_000,
@@ -97,26 +97,26 @@ describe('computeCost — OpenAI with reasoning', () => {
   });
 });
 
-describe('computeCost — Poe (no caching)', () => {
-  it('Claude Sonnet 4.6 via Poe: 1000/500 — no cache discount applied even if reported', () => {
-    const cost = computeCost('poe', 'claude-sonnet-4.6', {
+describe("computeCost — Poe (no caching)", () => {
+  it("Claude Sonnet 4.6 via Poe: 1000/500 — no cache discount applied even if reported", () => {
+    const cost = computeCost("poe", "claude-sonnet-4.6", {
       promptTokens: 1000,
       completionTokens: 500,
       totalTokens: 1500,
-      cachedPromptTokens: 800,  // Poe doesn't charge caching differently
+      cachedPromptTokens: 800, // Poe doesn't charge caching differently
     });
     // Poe model has no cachedInputTokens rate → cached tokens treated as uncached
     // All 1000 @ $4.5/1M = $0.0045
     // Output: 500 @ $22.5/1M = $0.01125
     expect(cost.totalUsd).toBeCloseTo(0.01575, 4);
-    expect(cost.warnings.length).toBeGreaterThan(0);  // warned that caching was requested but N/A
+    expect(cost.warnings.length).toBeGreaterThan(0); // warned that caching was requested but N/A
     expect(cost.warnings[0]).toMatch(/cach/i);
   });
 });
 
-describe('computeCost — missing data paths', () => {
-  it('unknown provider returns 0 USD with warning', () => {
-    const cost = computeCost('unknown' as any, 'anything', {
+describe("computeCost — missing data paths", () => {
+  it("unknown provider returns 0 USD with warning", () => {
+    const cost = computeCost("unknown" as any, "anything", {
       promptTokens: 100,
       completionTokens: 50,
       totalTokens: 150,
@@ -125,8 +125,8 @@ describe('computeCost — missing data paths', () => {
     expect(cost.warnings[0]).toMatch(/no pricing/i);
   });
 
-  it('unknown model returns 0 USD with warning', () => {
-    const cost = computeCost('anthropic', 'claude-nonexistent-v99', {
+  it("unknown model returns 0 USD with warning", () => {
+    const cost = computeCost("anthropic", "claude-nonexistent-v99", {
       promptTokens: 100,
       completionTokens: 50,
       totalTokens: 150,
@@ -135,8 +135,8 @@ describe('computeCost — missing data paths', () => {
     expect(cost.warnings[0]).toMatch(/no pricing/i);
   });
 
-  it('zero usage returns 0 USD with no warnings', () => {
-    const cost = computeCost('anthropic', 'claude-sonnet-4-6', {
+  it("zero usage returns 0 USD with no warnings", () => {
+    const cost = computeCost("anthropic", "claude-sonnet-4-6", {
       promptTokens: 0,
       completionTokens: 0,
       totalTokens: 0,
@@ -145,43 +145,43 @@ describe('computeCost — missing data paths', () => {
     expect(cost.warnings).toEqual([]);
   });
 
-  it('reasoning tokens reported but model has no reasoning rate → treat as output', () => {
-    const cost = computeCost('anthropic', 'claude-sonnet-4-6', {
+  it("reasoning tokens reported but model has no reasoning rate → treat as output", () => {
+    const cost = computeCost("anthropic", "claude-sonnet-4-6", {
       promptTokens: 0,
       completionTokens: 100,
       totalTokens: 600,
-      reasoningTokens: 500,  // Anthropic doesn't separately bill reasoning
+      reasoningTokens: 500, // Anthropic doesn't separately bill reasoning
     });
     // Should fall back to output rate or similar; must not NaN or produce negative cost
     expect(cost.totalUsd).toBeGreaterThanOrEqual(0);
     expect(Number.isFinite(cost.totalUsd)).toBe(true);
   });
 
-  it('warns when reasoning tokens fall back to output rate', () => {
-    const cost = computeCost('anthropic', 'claude-sonnet-4-6', {
+  it("warns when reasoning tokens fall back to output rate", () => {
+    const cost = computeCost("anthropic", "claude-sonnet-4-6", {
       promptTokens: 0,
       completionTokens: 100,
       totalTokens: 600,
       reasoningTokens: 500,
     });
-    expect(cost.warnings.some(w => /reasoning/i.test(w))).toBe(true);
+    expect(cost.warnings.some((w) => /reasoning/i.test(w))).toBe(true);
   });
 
-  it('warns when cache write falls back to input rate', () => {
+  it("warns when cache write falls back to input rate", () => {
     // Use an OpenRouter Anthropic model where cache write rate is not defined
-    const cost = computeCost('openrouter', 'anthropic/claude-sonnet-4.5', {
+    const cost = computeCost("openrouter", "anthropic/claude-sonnet-4.5", {
       promptTokens: 1000,
       completionTokens: 500,
       totalTokens: 1500,
       cachedWriteTokens: 200,
     });
-    expect(cost.warnings.some(w => /cache write/i.test(w))).toBe(true);
+    expect(cost.warnings.some((w) => /cache write/i.test(w))).toBe(true);
   });
 });
 
-describe('computeCost — edge cases', () => {
-  it('never returns NaN', () => {
-    const cost = computeCost('anthropic', 'claude-opus-4-7', {
+describe("computeCost — edge cases", () => {
+  it("never returns NaN", () => {
+    const cost = computeCost("anthropic", "claude-opus-4-7", {
       promptTokens: 0,
       completionTokens: 0,
       totalTokens: 0,
@@ -189,21 +189,21 @@ describe('computeCost — edge cases', () => {
     expect(Number.isFinite(cost.totalUsd)).toBe(true);
   });
 
-  it('cached tokens exceed prompt tokens → clamps uncached to 0 (defensive)', () => {
+  it("cached tokens exceed prompt tokens → clamps uncached to 0 (defensive)", () => {
     // Shouldn't happen in practice but provider bug could cause it
-    const cost = computeCost('anthropic', 'claude-sonnet-4-6', {
+    const cost = computeCost("anthropic", "claude-sonnet-4-6", {
       promptTokens: 100,
       completionTokens: 50,
       totalTokens: 150,
-      cachedPromptTokens: 200,  // more cached than total input — bogus but defend
+      cachedPromptTokens: 200, // more cached than total input — bogus but defend
     });
     expect(cost.breakdown.inputUsd).toBeGreaterThanOrEqual(0);
     expect(cost.breakdown.cachedInputUsd).toBeGreaterThanOrEqual(0);
     expect(cost.totalUsd).toBeGreaterThanOrEqual(0);
   });
 
-  it('totalUsd sums the breakdown exactly', () => {
-    const cost = computeCost('anthropic', 'claude-sonnet-4-6', {
+  it("totalUsd sums the breakdown exactly", () => {
+    const cost = computeCost("anthropic", "claude-sonnet-4-6", {
       promptTokens: 1000,
       completionTokens: 500,
       totalTokens: 1500,

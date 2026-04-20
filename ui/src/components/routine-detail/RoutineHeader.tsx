@@ -78,9 +78,7 @@ export function RoutineHeader({
             }`}
           />
         </button>
-        <span className={`min-w-[3.75rem] text-sm font-medium ${automationLabelClassName}`}>
-          {automationLabel}
-        </span>
+        <span className={`min-w-[3.75rem] text-sm font-medium ${automationLabelClassName}`}>{automationLabel}</span>
       </div>
     </div>
   );

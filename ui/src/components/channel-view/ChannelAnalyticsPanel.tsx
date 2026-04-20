@@ -24,9 +24,7 @@ export function ChannelAnalyticsPanel({ companyId, channelId }: ChannelAnalytics
 
   if (isLoading && !data) {
     return (
-      <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
-        Loading analytics...
-      </div>
+      <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">Loading analytics...</div>
     );
   }
   if (!data) return null;

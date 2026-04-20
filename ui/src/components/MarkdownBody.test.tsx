@@ -1,8 +1,8 @@
 // @vitest-environment node
 
-import { describe, expect, it } from "vitest";
-import { renderToStaticMarkup } from "react-dom/server";
 import { buildAgentMentionHref, buildProjectMentionHref } from "@ironworksai/shared";
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it } from "vitest";
 import { ThemeProvider } from "../context/ThemeContext";
 import { MarkdownBody } from "./MarkdownBody";
 

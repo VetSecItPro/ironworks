@@ -1,13 +1,7 @@
-import { useEffect, useRef, useState } from "react";
 import { PROJECT_COLORS } from "@ironworksai/shared";
+import { useEffect, useRef, useState } from "react";
 
-export function ColorPicker({
-  currentColor,
-  onSelect,
-}: {
-  currentColor: string;
-  onSelect: (color: string) => void;
-}) {
+export function ColorPicker({ currentColor, onSelect }: { currentColor: string; onSelect: (color: string) => void }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 

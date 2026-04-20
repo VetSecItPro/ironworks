@@ -1,5 +1,5 @@
+import { AlertTriangle, BarChart3 } from "lucide-react";
 import { Link } from "../../lib/router";
-import { BarChart3, AlertTriangle } from "lucide-react";
 import { AgentPerfSummaryRow } from "../briefing/BriefingCards";
 
 interface PerfRow {
@@ -17,11 +17,7 @@ interface AgentPerformanceSectionProps {
   bottomPerformers: PerfRow[];
 }
 
-export function AgentPerformanceSection({
-  perfRows,
-  topPerformers,
-  bottomPerformers,
-}: AgentPerformanceSectionProps) {
+export function AgentPerformanceSection({ perfRows, topPerformers, bottomPerformers }: AgentPerformanceSectionProps) {
   return (
     <div className="rounded-xl border border-border p-5 space-y-4">
       <div className="flex items-center justify-between">

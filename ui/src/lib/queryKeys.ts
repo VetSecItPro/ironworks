@@ -36,8 +36,7 @@ export const queryKeys = {
     listTouchedByMe: (companyId: string) => ["issues", companyId, "touched-by-me"] as const,
     listUnreadTouchedByMe: (companyId: string) => ["issues", companyId, "unread-touched-by-me"] as const,
     labels: (companyId: string) => ["issues", companyId, "labels"] as const,
-    listByProject: (companyId: string, projectId: string) =>
-      ["issues", companyId, "project", projectId] as const,
+    listByProject: (companyId: string, projectId: string) => ["issues", companyId, "project", projectId] as const,
     detail: (id: string) => ["issues", "detail", id] as const,
     comments: (issueId: string) => ["issues", "comments", issueId] as const,
     attachments: (issueId: string) => ["issues", "attachments", issueId] as const,
@@ -68,19 +67,15 @@ export const queryKeys = {
   goals: {
     list: (companyId: string) => ["goals", companyId] as const,
     detail: (id: string) => ["goals", "detail", id] as const,
-    keyResults: (companyId: string, goalId: string) =>
-      ["goals", "key-results", companyId, goalId] as const,
-    checkIns: (companyId: string, goalId: string) =>
-      ["goals", "check-ins", companyId, goalId] as const,
-    snapshots: (companyId: string, goalId: string) =>
-      ["goals", "snapshots", companyId, goalId] as const,
+    keyResults: (companyId: string, goalId: string) => ["goals", "key-results", companyId, goalId] as const,
+    checkIns: (companyId: string, goalId: string) => ["goals", "check-ins", companyId, goalId] as const,
+    snapshots: (companyId: string, goalId: string) => ["goals", "snapshots", companyId, goalId] as const,
   },
   budgets: {
     overview: (companyId: string) => ["budgets", "overview", companyId] as const,
   },
   approvals: {
-    list: (companyId: string, status?: string) =>
-      ["approvals", companyId, status] as const,
+    list: (companyId: string, status?: string) => ["approvals", companyId, status] as const,
     detail: (approvalId: string) => ["approvals", "detail", approvalId] as const,
     comments: (approvalId: string) => ["approvals", "comments", approvalId] as const,
     issues: (approvalId: string) => ["approvals", "issues", approvalId] as const,
@@ -112,26 +107,19 @@ export const queryKeys = {
   warRoom: (companyId: string) => ["war-room", companyId] as const,
   sidebarBadges: (companyId: string) => ["sidebar-badges", companyId] as const,
   activity: (companyId: string) => ["activity", companyId] as const,
-  costs: (companyId: string, from?: string, to?: string) =>
-    ["costs", companyId, from, to] as const,
+  costs: (companyId: string, from?: string, to?: string) => ["costs", companyId, from, to] as const,
   usageByProvider: (companyId: string, from?: string, to?: string) =>
     ["usage-by-provider", companyId, from, to] as const,
-  usageByBiller: (companyId: string, from?: string, to?: string) =>
-    ["usage-by-biller", companyId, from, to] as const,
-  financeSummary: (companyId: string, from?: string, to?: string) =>
-    ["finance-summary", companyId, from, to] as const,
+  usageByBiller: (companyId: string, from?: string, to?: string) => ["usage-by-biller", companyId, from, to] as const,
+  financeSummary: (companyId: string, from?: string, to?: string) => ["finance-summary", companyId, from, to] as const,
   financeByBiller: (companyId: string, from?: string, to?: string) =>
     ["finance-by-biller", companyId, from, to] as const,
-  financeByKind: (companyId: string, from?: string, to?: string) =>
-    ["finance-by-kind", companyId, from, to] as const,
+  financeByKind: (companyId: string, from?: string, to?: string) => ["finance-by-kind", companyId, from, to] as const,
   financeEvents: (companyId: string, from?: string, to?: string, limit: number = 100) =>
     ["finance-events", companyId, from, to, limit] as const,
-  usageWindowSpend: (companyId: string) =>
-    ["usage-window-spend", companyId] as const,
-  usageQuotaWindows: (companyId: string) =>
-    ["usage-quota-windows", companyId] as const,
-  heartbeats: (companyId: string, agentId?: string) =>
-    ["heartbeats", companyId, agentId] as const,
+  usageWindowSpend: (companyId: string) => ["usage-window-spend", companyId] as const,
+  usageQuotaWindows: (companyId: string) => ["usage-quota-windows", companyId] as const,
+  heartbeats: (companyId: string, agentId?: string) => ["heartbeats", companyId, agentId] as const,
   runDetail: (runId: string) => ["heartbeat-run", runId] as const,
   runWorkspaceOperations: (runId: string) => ["heartbeat-run", runId, "workspace-operations"] as const,
   liveRuns: (companyId: string) => ["live-runs", companyId] as const,
@@ -142,8 +130,7 @@ export const queryKeys = {
   },
   playbooks: {
     list: (companyId: string) => ["playbooks", companyId] as const,
-    detail: (companyId: string, playbookId: string) =>
-      ["playbooks", companyId, playbookId] as const,
+    detail: (companyId: string, playbookId: string) => ["playbooks", companyId, playbookId] as const,
   },
   knowledge: {
     list: (companyId: string) => ["companies", companyId, "knowledge"] as const,
@@ -153,12 +140,9 @@ export const queryKeys = {
     list: (companyId: string) => ["announcements", companyId] as const,
   },
   library: {
-    tree: (companyId: string, dirPath: string) =>
-      ["library", companyId, "tree", dirPath] as const,
-    file: (companyId: string, filePath: string) =>
-      ["library", companyId, "file", filePath] as const,
-    search: (companyId: string, query: string) =>
-      ["library", companyId, "search", query] as const,
+    tree: (companyId: string, dirPath: string) => ["library", companyId, "tree", dirPath] as const,
+    file: (companyId: string, filePath: string) => ["library", companyId, "file", filePath] as const,
+    search: (companyId: string, query: string) => ["library", companyId, "search", query] as const,
   },
   hiring: {
     list: (companyId: string) => ["hiring-requests", companyId] as const,
@@ -169,8 +153,7 @@ export const queryKeys = {
       ["agent-memory", companyId, agentId, memoryType ?? "__all__"] as const,
   },
   agentChat: {
-    issue: (companyId: string, agentId: string) =>
-      ["agent-chat", companyId, agentId, "issue"] as const,
+    issue: (companyId: string, agentId: string) => ["agent-chat", companyId, agentId, "issue"] as const,
     comments: (companyId: string, agentId: string, issueId: string) =>
       ["agent-chat", companyId, agentId, "comments", issueId] as const,
   },
@@ -179,23 +162,18 @@ export const queryKeys = {
     detail: (companyId: string, id: string) => ["role-templates", companyId, id] as const,
   },
   headcount: (companyId: string) => ["headcount", companyId] as const,
-  velocity: (companyId: string, weeks: number = 12) =>
-    ["velocity", companyId, weeks] as const,
+  velocity: (companyId: string, weeks: number = 12) => ["velocity", companyId, weeks] as const,
   billing: {
     subscription: (companyId: string) => ["billing", "subscription", companyId] as const,
   },
   channels: {
     list: (companyId: string) => ["channels", companyId] as const,
-    messages: (companyId: string, channelId: string) =>
-      ["channels", companyId, channelId, "messages"] as const,
-    decisions: (companyId: string, channelId: string) =>
-      ["channels", companyId, channelId, "decisions"] as const,
-    pinned: (companyId: string, channelId: string) =>
-      ["channels", companyId, channelId, "pinned"] as const,
+    messages: (companyId: string, channelId: string) => ["channels", companyId, channelId, "messages"] as const,
+    decisions: (companyId: string, channelId: string) => ["channels", companyId, channelId, "decisions"] as const,
+    pinned: (companyId: string, channelId: string) => ["channels", companyId, channelId, "pinned"] as const,
     analytics: (companyId: string, channelId: string, periodDays?: number) =>
       ["channels", companyId, channelId, "analytics", periodDays ?? 30] as const,
-    expertiseMap: (companyId: string) =>
-      ["channels", companyId, "expertise-map"] as const,
+    expertiseMap: (companyId: string) => ["channels", companyId, "expertise-map"] as const,
     summary: (companyId: string, channelId: string, days?: number) =>
       ["channels", companyId, channelId, "summary", days ?? 7] as const,
     quorum: (companyId: string, channelId: string, messageId: string) =>

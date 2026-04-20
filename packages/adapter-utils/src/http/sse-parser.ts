@@ -1,5 +1,5 @@
-import { createParser } from 'eventsource-parser';
-import type { EventSourceMessage } from 'eventsource-parser';
+import type { EventSourceMessage } from "eventsource-parser";
+import { createParser } from "eventsource-parser";
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -13,7 +13,7 @@ import type { EventSourceMessage } from 'eventsource-parser';
  * Use 'anthropic' for Anthropic's native /v1/messages streaming format
  * (named event types, message_stop terminator).
  */
-export type SseFormat = 'openai' | 'anthropic';
+export type SseFormat = "openai" | "anthropic";
 
 /**
  * Raw SSE event as delivered by the underlying parser library, before normalization.
@@ -44,13 +44,13 @@ export interface UsageSummary {
  * code stays fully format-agnostic. Discriminated by `type`.
  */
 export type NormalizedStreamEvent =
-  | { type: 'text_delta'; text: string }
-  | { type: 'tool_use_start'; toolCallId: string; toolName: string; index: number }
-  | { type: 'tool_use_delta'; toolCallId: string; argsDelta: string; index: number }
-  | { type: 'tool_use_complete'; toolCallId: string; argsJson: string; index: number }
-  | { type: 'stream_error'; code: string; message: string; raw?: unknown }
-  | { type: 'parse_warning'; code: string; message: string; rawLine?: string }
-  | { type: 'done'; usage?: UsageSummary };
+  | { type: "text_delta"; text: string }
+  | { type: "tool_use_start"; toolCallId: string; toolName: string; index: number }
+  | { type: "tool_use_delta"; toolCallId: string; argsDelta: string; index: number }
+  | { type: "tool_use_complete"; toolCallId: string; argsJson: string; index: number }
+  | { type: "stream_error"; code: string; message: string; raw?: unknown }
+  | { type: "parse_warning"; code: string; message: string; rawLine?: string }
+  | { type: "done"; usage?: UsageSummary };
 
 /** Options accepted by {@link parseSseStream}. */
 export interface ParseSseOptions {
@@ -133,22 +133,22 @@ export async function* parseSseStream(
         if (abortSignal?.aborted) break;
 
         const normalized =
-          format === 'openai'
+          format === "openai"
             ? normalizeOpenAiEvent(evt, openAiToolCalls, pendingUsage)
             : normalizeAnthropicEvent(evt, anthropicToolBlocks, pendingUsage);
 
         for (const ne of normalized) {
-          if ('_captureUsage' in ne) {
+          if ("_captureUsage" in ne) {
             // Usage sentinel from a pre-done chunk (OpenAI) or message_delta (Anthropic).
             // Store it; the subsequent done event will read pendingUsage rather than ne.usage.
             pendingUsage = (ne as unknown as { _captureUsage: UsageSummary })._captureUsage;
-          } else if (ne.type === 'done') {
+          } else if (ne.type === "done") {
             // Merge any usage the normalizer embedded with any usage captured via sentinel.
             // Normalizer-provided usage takes precedence; sentinel fills the gap when the
             // provider sends usage in a separate chunk before the terminal signal.
             const finalUsage = ne.usage ?? pendingUsage;
             doneSeen = true;
-            yield { type: 'done', usage: finalUsage };
+            yield { type: "done", usage: finalUsage };
             // First DONE wins — stop consuming the stream entirely so any provider
             // events that arrive after the terminal signal are never yielded.
             return;
@@ -167,11 +167,11 @@ export async function* parseSseStream(
 
   if (!doneSeen) {
     yield {
-      type: 'parse_warning',
-      code: 'stream_ended_without_done',
-      message: 'Stream ended without a terminal signal ([DONE] or message_stop).',
+      type: "parse_warning",
+      code: "stream_ended_without_done",
+      message: "Stream ended without a terminal signal ([DONE] or message_stop).",
     };
-    yield { type: 'done', usage: pendingUsage };
+    yield { type: "done", usage: pendingUsage };
   }
 }
 
@@ -194,14 +194,14 @@ function normalizeOpenAiEvent(
 ): NormalizedStreamEvent[] {
   const out: NormalizedStreamEvent[] = [];
 
-  if (evt.data === '[DONE]') {
+  if (evt.data === "[DONE]") {
     // Flush any still-open tool calls before signalling done.
     for (const [idx, tc] of toolCalls) {
-      out.push({ type: 'tool_use_complete', toolCallId: tc.id, argsJson: tc.argsAccumulated, index: idx });
+      out.push({ type: "tool_use_complete", toolCallId: tc.id, argsJson: tc.argsAccumulated, index: idx });
     }
     toolCalls.clear();
     // done event emitted with already-captured usage — caller builds it in generator.
-    out.push({ type: 'done' });
+    out.push({ type: "done" });
     return out;
   }
 
@@ -209,21 +209,31 @@ function normalizeOpenAiEvent(
   try {
     parsed = JSON.parse(evt.data);
   } catch {
-    out.push({ type: 'parse_warning', code: 'invalid_json', message: 'Could not parse SSE data as JSON.', rawLine: evt.data });
+    out.push({
+      type: "parse_warning",
+      code: "invalid_json",
+      message: "Could not parse SSE data as JSON.",
+      rawLine: evt.data,
+    });
     return out;
   }
 
   if (!isRecord(parsed)) {
-    out.push({ type: 'parse_warning', code: 'invalid_json', message: 'SSE data is not a JSON object.', rawLine: evt.data });
+    out.push({
+      type: "parse_warning",
+      code: "invalid_json",
+      message: "SSE data is not a JSON object.",
+      rawLine: evt.data,
+    });
     return out;
   }
 
   // Provider-level error inside the SSE envelope (not an HTTP error).
   if (isRecord(parsed.error)) {
     const err = parsed.error;
-    const msg = typeof err.message === 'string' ? err.message : JSON.stringify(err);
-    const code = typeof err.type === 'string' ? err.type : 'upstream_error';
-    out.push({ type: 'stream_error', code, message: msg, raw: parsed.error });
+    const msg = typeof err.message === "string" ? err.message : JSON.stringify(err);
+    const code = typeof err.type === "string" ? err.type : "upstream_error";
+    out.push({ type: "stream_error", code, message: msg, raw: parsed.error });
     return out;
   }
 
@@ -250,8 +260,8 @@ function normalizeOpenAiEvent(
   if (!isRecord(delta)) return out;
 
   // Text delta — most common path.
-  if (typeof delta.content === 'string' && delta.content.length > 0) {
-    out.push({ type: 'text_delta', text: delta.content });
+  if (typeof delta.content === "string" && delta.content.length > 0) {
+    out.push({ type: "text_delta", text: delta.content });
   }
 
   // Tool call deltas — accumulate across chunks.
@@ -265,26 +275,26 @@ function normalizeOpenAiEvent(
 
       if (!toolCalls.has(idx)) {
         // First appearance for this index carries id and name.
-        const id = typeof tcRaw.id === 'string' ? tcRaw.id : '';
-        const name = fnRaw && typeof fnRaw.name === 'string' ? fnRaw.name : '';
-        toolCalls.set(idx, { id, name, argsAccumulated: '' });
-        out.push({ type: 'tool_use_start', toolCallId: id, toolName: name, index: idx });
+        const id = typeof tcRaw.id === "string" ? tcRaw.id : "";
+        const name = fnRaw && typeof fnRaw.name === "string" ? fnRaw.name : "";
+        toolCalls.set(idx, { id, name, argsAccumulated: "" });
+        out.push({ type: "tool_use_start", toolCallId: id, toolName: name, index: idx });
       }
 
       const state = toolCalls.get(idx)!;
-      const argFragment = fnRaw && typeof fnRaw.arguments === 'string' ? fnRaw.arguments : '';
+      const argFragment = fnRaw && typeof fnRaw.arguments === "string" ? fnRaw.arguments : "";
       if (argFragment.length > 0) {
         state.argsAccumulated += argFragment;
-        out.push({ type: 'tool_use_delta', toolCallId: state.id, argsDelta: argFragment, index: idx });
+        out.push({ type: "tool_use_delta", toolCallId: state.id, argsDelta: argFragment, index: idx });
       }
     }
   }
 
   // finish_reason: 'tool_calls' signals all tool call argument accumulation is done.
   const finishReason = choice.finish_reason;
-  if (typeof finishReason === 'string' && finishReason === 'tool_calls') {
+  if (typeof finishReason === "string" && finishReason === "tool_calls") {
     for (const [idx, tc] of toolCalls) {
-      out.push({ type: 'tool_use_complete', toolCallId: tc.id, argsJson: tc.argsAccumulated, index: idx });
+      out.push({ type: "tool_use_complete", toolCallId: tc.id, argsJson: tc.argsAccumulated, index: idx });
     }
     toolCalls.clear();
   }
@@ -312,72 +322,77 @@ function normalizeAnthropicEvent(
   const eventType = evt.event;
 
   // ping events carry no useful payload.
-  if (eventType === 'ping') return out;
+  if (eventType === "ping") return out;
 
   let parsed: unknown;
   try {
     parsed = JSON.parse(evt.data);
   } catch {
-    out.push({ type: 'parse_warning', code: 'invalid_json', message: 'Could not parse Anthropic SSE data as JSON.', rawLine: evt.data });
+    out.push({
+      type: "parse_warning",
+      code: "invalid_json",
+      message: "Could not parse Anthropic SSE data as JSON.",
+      rawLine: evt.data,
+    });
     return out;
   }
 
   if (!isRecord(parsed)) return out;
 
-  const msgType = typeof parsed.type === 'string' ? parsed.type : eventType ?? '';
+  const msgType = typeof parsed.type === "string" ? parsed.type : (eventType ?? "");
 
   switch (msgType) {
-    case 'message_start':
-    case 'content_block_start': {
-      if (msgType === 'content_block_start') {
+    case "message_start":
+    case "content_block_start": {
+      if (msgType === "content_block_start") {
         const idx = asNumber(parsed.index, -1);
         const block = isRecord(parsed.content_block) ? parsed.content_block : undefined;
-        if (block && block.type === 'tool_use' && idx >= 0) {
-          const id = typeof block.id === 'string' ? block.id : '';
-          const name = typeof block.name === 'string' ? block.name : '';
-          toolBlocks.set(idx, { id, name, argsAccumulated: '' });
-          out.push({ type: 'tool_use_start', toolCallId: id, toolName: name, index: idx });
+        if (block && block.type === "tool_use" && idx >= 0) {
+          const id = typeof block.id === "string" ? block.id : "";
+          const name = typeof block.name === "string" ? block.name : "";
+          toolBlocks.set(idx, { id, name, argsAccumulated: "" });
+          out.push({ type: "tool_use_start", toolCallId: id, toolName: name, index: idx });
         }
       }
       break;
     }
 
-    case 'content_block_delta': {
+    case "content_block_delta": {
       const idx = asNumber(parsed.index, -1);
       const delta = isRecord(parsed.delta) ? parsed.delta : undefined;
       if (!delta) break;
 
-      if (delta.type === 'text_delta' && typeof delta.text === 'string') {
-        out.push({ type: 'text_delta', text: delta.text });
-      } else if (delta.type === 'input_json_delta' && typeof delta.partial_json === 'string') {
+      if (delta.type === "text_delta" && typeof delta.text === "string") {
+        out.push({ type: "text_delta", text: delta.text });
+      } else if (delta.type === "input_json_delta" && typeof delta.partial_json === "string") {
         const block = toolBlocks.get(idx);
         if (!block) {
           // Provider sent tool argument data before opening the block — emit a warning so
           // callers can detect malformed streams rather than silently losing the delta.
           out.push({
-            type: 'parse_warning',
-            code: 'orphan_tool_delta',
+            type: "parse_warning",
+            code: "orphan_tool_delta",
             message: `input_json_delta at index ${idx} with no preceding content_block_start`,
           });
         } else {
           block.argsAccumulated += delta.partial_json;
-          out.push({ type: 'tool_use_delta', toolCallId: block.id, argsDelta: delta.partial_json, index: idx });
+          out.push({ type: "tool_use_delta", toolCallId: block.id, argsDelta: delta.partial_json, index: idx });
         }
       }
       break;
     }
 
-    case 'content_block_stop': {
+    case "content_block_stop": {
       const idx = asNumber(parsed.index, -1);
       const block = toolBlocks.get(idx);
       if (block) {
-        out.push({ type: 'tool_use_complete', toolCallId: block.id, argsJson: block.argsAccumulated, index: idx });
+        out.push({ type: "tool_use_complete", toolCallId: block.id, argsJson: block.argsAccumulated, index: idx });
         toolBlocks.delete(idx);
       }
       break;
     }
 
-    case 'message_delta': {
+    case "message_delta": {
       // Usage arrives here (input_tokens, output_tokens, cache_read_input_tokens, cache_creation_input_tokens).
       if (isRecord(parsed.usage)) {
         const u = parsed.usage;
@@ -398,19 +413,17 @@ function normalizeAnthropicEvent(
       break;
     }
 
-    case 'message_stop': {
+    case "message_stop": {
       // done event emitted here; generator will pick up pendingUsage.
-      out.push({ type: 'done' });
+      out.push({ type: "done" });
       break;
     }
 
-    case 'error': {
+    case "error": {
       const errBlock = isRecord(parsed.error) ? parsed.error : undefined;
-      const msg = errBlock && typeof errBlock.message === 'string'
-        ? errBlock.message
-        : JSON.stringify(parsed);
-      const code = errBlock && typeof errBlock.type === 'string' ? errBlock.type : 'upstream_error';
-      out.push({ type: 'stream_error', code, message: msg, raw: parsed.error });
+      const msg = errBlock && typeof errBlock.message === "string" ? errBlock.message : JSON.stringify(parsed);
+      const code = errBlock && typeof errBlock.type === "string" ? errBlock.type : "upstream_error";
+      out.push({ type: "stream_error", code, message: msg, raw: parsed.error });
       break;
     }
 
@@ -427,11 +440,11 @@ function normalizeAnthropicEvent(
 // ---------------------------------------------------------------------------
 
 function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v);
+  return typeof v === "object" && v !== null && !Array.isArray(v);
 }
 
 function asNumber(v: unknown, fallback: number): number {
-  return typeof v === 'number' ? v : fallback;
+  return typeof v === "number" ? v : fallback;
 }
 
 // ---------------------------------------------------------------------------

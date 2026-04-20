@@ -1,7 +1,7 @@
+import { Check, Save } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Check, Save } from "lucide-react";
 
 const PREFIX = "ironworks:prefs";
 const SAVED_FILTERS_KEY = `${PREFIX}:saved-filters`;
@@ -22,7 +22,9 @@ export function loadSavedFilters(page?: string): SavedFilter[] {
       const all = JSON.parse(raw) as SavedFilter[];
       return page ? all.filter((f) => f.page === page) : all;
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return [];
 }
 
@@ -36,7 +38,9 @@ export function saveSavedFilter(filter: Omit<SavedFilter, "id" | "createdAt">) {
   all.push(newFilter);
   try {
     localStorage.setItem(SAVED_FILTERS_KEY, JSON.stringify(all));
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return newFilter;
 }
 
@@ -45,7 +49,9 @@ export function deleteSavedFilter(id: string) {
   const next = all.filter((f) => f.id !== id);
   try {
     localStorage.setItem(SAVED_FILTERS_KEY, JSON.stringify(next));
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 interface SavedFiltersBarProps {
@@ -107,14 +113,18 @@ export function SavedFiltersBar({ page, onApply, currentFilters }: SavedFiltersB
             placeholder="Filter name..."
             className="h-6 w-32 text-xs"
             autoFocus
-            onKeyDown={(e) => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") setShowSave(false); }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleSave();
+              if (e.key === "Escape") setShowSave(false);
+            }}
           />
           <Button variant="ghost" size="sm" onClick={handleSave} className="h-6 text-xs px-1.5">
             <Check className="h-3 w-3" />
           </Button>
         </div>
       ) : (
-        currentFilters && Object.keys(currentFilters).length > 0 && (
+        currentFilters &&
+        Object.keys(currentFilters).length > 0 && (
           <button
             type="button"
             onClick={() => setShowSave(true)}

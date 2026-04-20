@@ -1,14 +1,8 @@
+import type { Issue, Project } from "@ironworksai/shared";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn, formatCents } from "../../lib/utils";
 import { Identity } from "../Identity";
 import type { AgentPerfRow } from "./ratingUtils";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import type { Issue, Project } from "@ironworksai/shared";
 
 interface ProjectRow extends Omit<AgentPerfRow, "completionRate"> {
   done: number;
@@ -37,22 +31,14 @@ export function PerformanceByProject({
 }) {
   const activeProjects = projects.filter((p) => !p.archivedAt);
   const effectiveProjectId = selectedProjectId || activeProjects[0]?.id || "";
-  const selectedProject = activeProjects.find(
-    (p) => p.id === effectiveProjectId,
-  );
+  const selectedProject = activeProjects.find((p) => p.id === effectiveProjectId);
   const projectIssues = issues.filter((i) => i.projectId === effectiveProjectId);
 
   const projectRows: ProjectRow[] = rows.map((r) => {
-    const agentIssues = projectIssues.filter(
-      (i) => i.assigneeAgentId === r.agentId,
-    );
+    const agentIssues = projectIssues.filter((i) => i.assigneeAgentId === r.agentId);
     const done = agentIssues.filter((i) => i.status === "done").length;
-    const active = agentIssues.filter(
-      (i) => i.status === "in_progress",
-    ).length;
-    const inReview = agentIssues.filter(
-      (i) => i.status === "in_review",
-    ).length;
+    const active = agentIssues.filter((i) => i.status === "in_progress").length;
+    const inReview = agentIssues.filter((i) => i.status === "in_review").length;
     const todo = agentIssues.filter((i) => i.status === "todo").length;
     const backlog = agentIssues.filter((i) => i.status === "backlog").length;
     const blocked = agentIssues.filter((i) => i.status === "blocked").length;
@@ -62,23 +48,13 @@ export function PerformanceByProject({
     let closeCount = 0;
     for (const i of agentIssues.filter((i) => i.status === "done")) {
       if (i.startedAt && i.completedAt) {
-        closeMs +=
-          new Date(i.completedAt).getTime() -
-          new Date(i.startedAt).getTime();
+        closeMs += new Date(i.completedAt).getTime() - new Date(i.startedAt).getTime();
         closeCount++;
       }
     }
-    const avgCloseH =
-      closeCount > 0 ? closeMs / closeCount / (1000 * 60 * 60) : null;
-    const cancelled = agentIssues.filter(
-      (i) => i.status === "cancelled",
-    ).length;
-    const completionRate =
-      done + cancelled > 0
-        ? Math.round((done / (done + cancelled)) * 100)
-        : total > 0
-          ? 0
-          : null;
+    const avgCloseH = closeCount > 0 ? closeMs / closeCount / (1000 * 60 * 60) : null;
+    const cancelled = agentIssues.filter((i) => i.status === "cancelled").length;
+    const completionRate = done + cancelled > 0 ? Math.round((done / (done + cancelled)) * 100) : total > 0 ? 0 : null;
 
     return {
       ...r,
@@ -97,17 +73,10 @@ export function PerformanceByProject({
   return (
     <div className="rounded-xl border border-border p-4 space-y-3">
       <div className="flex items-center justify-between gap-3">
-        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Performance by Project
-        </h4>
+        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Performance by Project</h4>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground shrink-0">
-            Project:
-          </span>
-          <Select
-            value={effectiveProjectId}
-            onValueChange={onSelectProject}
-          >
+          <span className="text-xs text-muted-foreground shrink-0">Project:</span>
+          <Select value={effectiveProjectId} onValueChange={onSelectProject}>
             <SelectTrigger className="w-[200px] h-8 text-xs">
               <SelectValue placeholder="Select project" />
             </SelectTrigger>
@@ -115,10 +84,7 @@ export function PerformanceByProject({
               {activeProjects.map((p) => (
                 <SelectItem key={p.id} value={p.id}>
                   <div className="flex items-center gap-1.5">
-                    <span
-                      className="h-2 w-2 rounded-full shrink-0"
-                      style={{ backgroundColor: p.color ?? "#6366f1" }}
-                    />
+                    <span className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: p.color ?? "#6366f1" }} />
                     {p.name}
                   </div>
                 </SelectItem>
@@ -130,31 +96,16 @@ export function PerformanceByProject({
 
       {selectedProject && (
         <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          <span
-            className="h-2.5 w-2.5 rounded-full"
-            style={{ backgroundColor: selectedProject.color ?? "#6366f1" }}
-          />
+          <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: selectedProject.color ?? "#6366f1" }} />
           <span>{projectIssues.length} total missions</span>
           <span>·</span>
-          <span>
-            {projectIssues.filter((i) => i.status === "done").length} done
-          </span>
+          <span>{projectIssues.filter((i) => i.status === "done").length} done</span>
           <span>·</span>
-          <span>
-            {
-              projectIssues.filter((i) => i.status === "in_progress").length
-            }{" "}
-            active
-          </span>
+          <span>{projectIssues.filter((i) => i.status === "in_progress").length} active</span>
           {projectIssues.filter((i) => i.status === "blocked").length > 0 && (
             <>
               <span>·</span>
-              <span className="text-red-400">
-                {
-                  projectIssues.filter((i) => i.status === "blocked").length
-                }{" "}
-                blocked
-              </span>
+              <span className="text-red-400">{projectIssues.filter((i) => i.status === "blocked").length} blocked</span>
             </>
           )}
         </div>
@@ -166,44 +117,20 @@ export function PerformanceByProject({
           <div key={r.agentId} className="p-3 space-y-2">
             <div className="flex items-center justify-between">
               <span className="font-medium truncate">{r.name}</span>
-              <span className="text-xs text-muted-foreground shrink-0">
-                {r.total} total
-              </span>
+              <span className="text-xs text-muted-foreground shrink-0">{r.total} total</span>
             </div>
             <div className="grid grid-cols-3 gap-2 text-sm tabular-nums">
               <div>
                 <div className="text-xs text-muted-foreground/80">Done</div>
-                <div
-                  className={
-                    r.done > 0
-                      ? "text-emerald-400"
-                      : "text-muted-foreground/40"
-                  }
-                >
-                  {r.done}
-                </div>
+                <div className={r.done > 0 ? "text-emerald-400" : "text-muted-foreground/40"}>{r.done}</div>
               </div>
               <div>
                 <div className="text-xs text-muted-foreground/80">Active</div>
-                <div
-                  className={
-                    r.active > 0 ? "text-blue-400" : "text-muted-foreground/40"
-                  }
-                >
-                  {r.active}
-                </div>
+                <div className={r.active > 0 ? "text-blue-400" : "text-muted-foreground/40"}>{r.active}</div>
               </div>
               <div>
                 <div className="text-xs text-muted-foreground/80">Blocked</div>
-                <div
-                  className={
-                    r.blocked > 0
-                      ? "text-red-400"
-                      : "text-muted-foreground/40"
-                  }
-                >
-                  {r.blocked}
-                </div>
+                <div className={r.blocked > 0 ? "text-red-400" : "text-muted-foreground/40"}>{r.blocked}</div>
               </div>
             </div>
           </div>
@@ -245,10 +172,7 @@ export function PerformanceByProject({
           </thead>
           <tbody className="divide-y divide-border">
             {projectRows.map((r) => (
-              <tr
-                key={r.agentId}
-                className="hover:bg-accent/30 transition-colors"
-              >
+              <tr key={r.agentId} className="hover:bg-accent/30 transition-colors">
                 <td className="px-4 py-2.5">
                   <Identity name={r.name} size="sm" />
                 </td>
@@ -288,11 +212,7 @@ export function PerformanceByProject({
                   )}
                 </td>
                 <td className="px-4 py-2.5 text-center tabular-nums font-medium">
-                  {r.total > 0 ? (
-                    r.total
-                  ) : (
-                    <span className="text-muted-foreground/40">0</span>
-                  )}
+                  {r.total > 0 ? r.total : <span className="text-muted-foreground/40">0</span>}
                 </td>
                 <td className="px-4 py-2.5 text-right tabular-nums text-muted-foreground">
                   {r.avgCloseH !== null ? `${r.avgCloseH.toFixed(1)}h` : "-"}

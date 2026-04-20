@@ -16,8 +16,8 @@
  * present in error details or context blobs never reach logs or collectors.
  */
 
-import { redactSecrets } from './redaction.js';
-import type { UsageSummary } from './sse-parser.js';
+import { redactSecrets } from "./redaction.js";
+import type { UsageSummary } from "./sse-parser.js";
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 
@@ -36,7 +36,7 @@ export interface AdapterCallEvent {
   /** Wall-clock duration from request dispatch to final byte received. */
   duration_ms: number;
   /** `success` or `error`; drives downstream alerting and retry dashboards. */
-  status: 'success' | 'error';
+  status: "success" | "error";
   /** Provider-reported token counts; absent when not available (e.g. streamed no-usage path). */
   token_usage?: UsageSummary;
   /** Estimated cost in USD; computed by the cost utility (B.5). */
@@ -67,10 +67,7 @@ export interface AdapterCallEvent {
  * `http:` prefix carries the full URL as the suffix so the type system encodes
  * the shape without needing a wrapper object.
  */
-export type TelemetrySink =
-  | 'stdout'
-  | 'none'
-  | `http:${string}`;
+export type TelemetrySink = "stdout" | "none" | `http:${string}`;
 
 /** Construction options for `createObserver`. */
 export interface ObserverOptions {
@@ -134,8 +131,8 @@ function safeStringify(event: AdapterCallEvent): string {
       model: event.model,
       duration_ms: event.duration_ms,
       status: event.status,
-      error_code: 'telemetry_serialization_failed',
-      error_detail: 'event payload contained a circular reference or unserializable value',
+      error_code: "telemetry_serialization_failed",
+      error_detail: "event payload contained a circular reference or unserializable value",
     });
   }
 }
@@ -151,13 +148,13 @@ function safeStringify(event: AdapterCallEvent): string {
  */
 function resolveSinkFromEnv(): TelemetrySink {
   const raw = process.env.IRONWORKS_TELEMETRY_SINK;
-  if (!raw) return 'stdout';
-  if (raw === 'stdout' || raw === 'none') return raw;
+  if (!raw) return "stdout";
+  if (raw === "stdout" || raw === "none") return raw;
 
   // Extract URL portion from bare URLs or already-prefixed `http:` values.
   let urlString: string | undefined;
-  if (raw.startsWith('http://') || raw.startsWith('https://')) urlString = raw;
-  else if (raw.startsWith('http:')) urlString = raw.slice(5);
+  if (raw.startsWith("http://") || raw.startsWith("https://")) urlString = raw;
+  else if (raw.startsWith("http:")) urlString = raw.slice(5);
 
   if (urlString) {
     try {
@@ -169,15 +166,13 @@ function resolveSinkFromEnv(): TelemetrySink {
       process.stderr.write(
         `[observability] invalid IRONWORKS_TELEMETRY_SINK URL: ${urlString}; falling back to stdout\n`,
       );
-      return 'stdout';
+      return "stdout";
     }
   }
 
   // Unknown sink value — warn and fall back rather than silently ignoring.
-  process.stderr.write(
-    `[observability] unknown IRONWORKS_TELEMETRY_SINK value: ${raw}; falling back to stdout\n`,
-  );
-  return 'stdout';
+  process.stderr.write(`[observability] unknown IRONWORKS_TELEMETRY_SINK value: ${raw}; falling back to stdout\n`);
+  return "stdout";
 }
 
 // ─── Public factory ───────────────────────────────────────────────────────────
@@ -201,21 +196,21 @@ export function createObserver(options: ObserverOptions = {}): Observer {
 
   return {
     emit(event: AdapterCallEvent): void {
-      if (sink === 'none') return;
+      if (sink === "none") return;
 
       // Redact before serialisation: error_detail, context blobs, etc. may
       // contain credentials that leaked through from caller code.
       const redacted = redactSecrets(event as unknown as Record<string, unknown>);
 
       // safeStringify handles circular refs in context without throwing.
-      const line = safeStringify(redacted as unknown as AdapterCallEvent) + '\n';
+      const line = safeStringify(redacted as unknown as AdapterCallEvent) + "\n";
 
-      if (sink === 'stdout') {
+      if (sink === "stdout") {
         process.stdout.write(line);
         return;
       }
 
-      if (sink.startsWith('http:')) {
+      if (sink.startsWith("http:")) {
         // Cap concurrent in-flight requests to prevent unbounded memory growth
         // when a collector is slow or unreachable for an extended period.
         if (inflight.size >= MAX_INFLIGHT_HTTP) {
@@ -236,12 +231,12 @@ export function createObserver(options: ObserverOptions = {}): Observer {
         // Strip the `http:` sentinel to recover the real URL.
         const url = sink.slice(5);
         const p = fetchFn(url, {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'content-type': 'application/json',
+            "content-type": "application/json",
             // Identify the emitting library so collectors can distinguish
             // adapter-utils telemetry from other ironworks components.
-            'x-ironworks-source': 'adapter-utils',
+            "x-ironworks-source": "adapter-utils",
           },
           body: line,
         }).catch(() => {

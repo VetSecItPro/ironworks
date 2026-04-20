@@ -1,7 +1,13 @@
 import { useState } from "react";
 import type { VelocityWeek } from "../../api/velocity";
 
-export function VelocityChart({ weeks, onWeekClick }: { weeks: VelocityWeek[]; onWeekClick?: (weekStart: string) => void }) {
+export function VelocityChart({
+  weeks,
+  onWeekClick,
+}: {
+  weeks: VelocityWeek[];
+  onWeekClick?: (weekStart: string) => void;
+}) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const maxVal = Math.max(...weeks.map((w) => w.issuesCompleted + w.issuesCancelled), 1);
   const chartW = 400;
@@ -48,16 +54,7 @@ export function VelocityChart({ weeks, onWeekClick }: { weeks: VelocityWeek[]; o
               onMouseLeave={() => setHoveredIdx(null)}
               onClick={() => onWeekClick?.(w.weekStart)}
             >
-              {isHovered && (
-                <rect
-                  x={x - 1}
-                  y={0}
-                  width={barW + 2}
-                  height={chartH}
-                  className="fill-accent/30"
-                  rx={2}
-                />
-              )}
+              {isHovered && <rect x={x - 1} y={0} width={barW + 2} height={chartH} className="fill-accent/30" rx={2} />}
               {completedH > 0 && (
                 <rect
                   x={x}
@@ -78,23 +75,9 @@ export function VelocityChart({ weeks, onWeekClick }: { weeks: VelocityWeek[]; o
                   className="fill-muted-foreground/30"
                 />
               )}
-              {total === 0 && (
-                <rect
-                  x={x}
-                  y={chartH - 2}
-                  width={barW}
-                  height={2}
-                  rx={1}
-                  className="fill-muted/30"
-                />
-              )}
+              {total === 0 && <rect x={x} y={chartH - 2} width={barW} height={2} rx={1} className="fill-muted/30" />}
               {showLabel && (
-                <text
-                  x={x + barW / 2}
-                  y={labelY}
-                  textAnchor="middle"
-                  className="fill-muted-foreground text-[10px]"
-                >
+                <text x={x + barW / 2} y={labelY} textAnchor="middle" className="fill-muted-foreground text-[10px]">
                   {label}
                 </text>
               )}

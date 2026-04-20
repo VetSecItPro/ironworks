@@ -1,16 +1,16 @@
 import type {
+  AdapterEnvironmentTestResult,
   Agent,
+  AgentConfigRevision,
   AgentDetail,
   AgentInstructionsBundle,
   AgentInstructionsFileDetail,
-  AgentSkillSnapshot,
-  AdapterEnvironmentTestResult,
   AgentKeyCreated,
   AgentRuntimeState,
+  AgentSkillSnapshot,
   AgentTaskSession,
-  HeartbeatRun,
   Approval,
-  AgentConfigRevision,
+  HeartbeatRun,
 } from "@ironworksai/shared";
 import { isUuidLike, normalizeAgentUrlKey } from "@ironworksai/shared";
 import { ApiError, api } from "./client";
@@ -88,12 +88,7 @@ export const agentsApi = {
     } catch (error) {
       // Backward-compat fallback: if backend shortname lookup reports ambiguity,
       // resolve using company agent list while ignoring terminated agents.
-      if (
-        !(error instanceof ApiError) ||
-        error.status !== 409 ||
-        !companyId ||
-        isUuidLike(id)
-      ) {
+      if (!(error instanceof ApiError) || error.status !== 409 || !companyId || isUuidLike(id)) {
         throw error;
       }
 
@@ -116,8 +111,7 @@ export const agentsApi = {
     api.get<AgentConfigRevision>(agentPath(id, companyId, `/config-revisions/${revisionId}`)),
   rollbackConfigRevision: (id: string, revisionId: string, companyId?: string) =>
     api.post<Agent>(agentPath(id, companyId, `/config-revisions/${revisionId}/rollback`), {}),
-  create: (companyId: string, data: Record<string, unknown>) =>
-    api.post<Agent>(`/companies/${companyId}/agents`, data),
+  create: (companyId: string, data: Record<string, unknown>) => api.post<Agent>(`/companies/${companyId}/agents`, data),
   deployTeamPack: (
     companyId: string,
     data: {
@@ -172,8 +166,7 @@ export const agentsApi = {
   terminate: (id: string, companyId?: string) => api.post<Agent>(agentPath(id, companyId, "/terminate"), {}),
   remove: (id: string, companyId?: string) => api.delete<{ ok: true }>(agentPath(id, companyId)),
   listKeys: (id: string, companyId?: string) => api.get<AgentKey[]>(agentPath(id, companyId, "/keys")),
-  skills: (id: string, companyId?: string) =>
-    api.get<AgentSkillSnapshot>(agentPath(id, companyId, "/skills")),
+  skills: (id: string, companyId?: string) => api.get<AgentSkillSnapshot>(agentPath(id, companyId, "/skills")),
   syncSkills: (id: string, desiredSkills: string[], companyId?: string) =>
     api.post<AgentSkillSnapshot>(agentPath(id, companyId, "/skills/sync"), { desiredSkills }),
   createKey: (id: string, name: string, companyId?: string) =>
@@ -194,18 +187,9 @@ export const agentsApi = {
   resetSession: (id: string, taskKey?: string | null, companyId?: string) =>
     api.post<void>(agentPath(id, companyId, "/runtime-state/reset-session"), { taskKey: taskKey ?? null }),
   adapterModels: (companyId: string, type: string) =>
-    api.get<AdapterModel[]>(
-      `/companies/${encodeURIComponent(companyId)}/adapters/${encodeURIComponent(type)}/models`,
-    ),
-  testEnvironment: (
-    companyId: string,
-    type: string,
-    data: { adapterConfig: Record<string, unknown> },
-  ) =>
-    api.post<AdapterEnvironmentTestResult>(
-      `/companies/${companyId}/adapters/${type}/test-environment`,
-      data,
-    ),
+    api.get<AdapterModel[]>(`/companies/${encodeURIComponent(companyId)}/adapters/${encodeURIComponent(type)}/models`),
+  testEnvironment: (companyId: string, type: string, data: { adapterConfig: Record<string, unknown> }) =>
+    api.post<AdapterEnvironmentTestResult>(`/companies/${companyId}/adapters/${type}/test-environment`, data),
   invoke: (id: string, companyId?: string) => api.post<HeartbeatRun>(agentPath(id, companyId, "/heartbeat/invoke"), {}),
   wakeup: (
     id: string,
@@ -220,12 +204,10 @@ export const agentsApi = {
   ) => api.post<HeartbeatRun | { status: "skipped" }>(agentPath(id, companyId, "/wakeup"), data),
   loginWithClaude: (id: string, companyId?: string) =>
     api.post<ClaudeLoginResult>(agentPath(id, companyId, "/claude-login"), {}),
-  headcount: (companyId: string) =>
-    api.get<HeadcountResponse>(`/companies/${companyId}/agents/headcount`),
+  headcount: (companyId: string) => api.get<HeadcountResponse>(`/companies/${companyId}/agents/headcount`),
   terminateWithReason: (companyId: string, agentId: string, terminationReason: string) =>
     api.post<Agent>(`/companies/${companyId}/agents/${agentId}/terminate`, { terminationReason }),
-  availableSkills: () =>
-    api.get<{ skills: AvailableSkill[] }>("/skills/available"),
+  availableSkills: () => api.get<{ skills: AvailableSkill[] }>("/skills/available"),
   /** Send a chat message to an agent. Returns the issueId + commentId. */
   sendChat: (companyId: string, agentId: string, message: string) =>
     api.post<{ issueId: string; commentId: string }>(

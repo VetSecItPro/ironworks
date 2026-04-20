@@ -5,7 +5,13 @@ export function ScheduleCalendarView({
   agentById,
   onRoutineClick,
 }: {
-  routines: Array<{ id: string; title: string; status: string; assigneeAgentId: string | null; triggers?: Array<{ enabled: boolean; nextRunAt?: string | null; schedule?: string | null }> }>;
+  routines: Array<{
+    id: string;
+    title: string;
+    status: string;
+    assigneeAgentId: string | null;
+    triggers?: Array<{ enabled: boolean; nextRunAt?: string | null; schedule?: string | null }>;
+  }>;
   agentById: Map<string, { id: string; name: string; icon?: string | null }>;
   onRoutineClick: (id: string) => void;
 }) {
@@ -30,13 +36,25 @@ export function ScheduleCalendarView({
         // Runs on multiple days
         const runDays = dow === "*" ? [0, 1, 2, 3, 4, 5, 6] : [0, 1, 2, 3, 4];
         for (const d of runDays) {
-          slots.push({ routineId: routine.id, title: routine.title, agentName: agent?.name ?? "-", day: d, hour: hourNum });
+          slots.push({
+            routineId: routine.id,
+            title: routine.title,
+            agentName: agent?.name ?? "-",
+            day: d,
+            hour: hourNum,
+          });
         }
       } else if (/^\d$/.test(dow)) {
         const d = parseInt(dow, 10);
         // Convert: 0=Sun -> index 6, 1=Mon -> index 0, etc.
         const dayIdx = d === 0 ? 6 : d - 1;
-        slots.push({ routineId: routine.id, title: routine.title, agentName: agent?.name ?? "-", day: dayIdx, hour: hourNum });
+        slots.push({
+          routineId: routine.id,
+          title: routine.title,
+          agentName: agent?.name ?? "-",
+          day: dayIdx,
+          hour: hourNum,
+        });
       }
     }
   }
@@ -62,31 +80,33 @@ export function ScheduleCalendarView({
           ))}
         </div>
         {/* Hour rows - show only hours 6-22 */}
-        {hours.filter((h) => h >= 6 && h <= 22).map((hour) => (
-          <div key={hour} className="grid grid-cols-[60px_repeat(7,1fr)] gap-px bg-border/10 min-h-[28px]">
-            <div className="bg-background flex items-center justify-end pr-2 text-[10px] text-muted-foreground/80">
-              {hour === 0 ? "12AM" : hour < 12 ? `${hour}AM` : hour === 12 ? "12PM" : `${hour - 12}PM`}
+        {hours
+          .filter((h) => h >= 6 && h <= 22)
+          .map((hour) => (
+            <div key={hour} className="grid grid-cols-[60px_repeat(7,1fr)] gap-px bg-border/10 min-h-[28px]">
+              <div className="bg-background flex items-center justify-end pr-2 text-[10px] text-muted-foreground/80">
+                {hour === 0 ? "12AM" : hour < 12 ? `${hour}AM` : hour === 12 ? "12PM" : `${hour - 12}PM`}
+              </div>
+              {days.map((_, dayIdx) => {
+                const key = `${dayIdx}-${hour}`;
+                const cellSlots = grid.get(key) ?? [];
+                return (
+                  <div key={dayIdx} className="bg-background p-0.5 min-h-[28px]">
+                    {cellSlots.map((slot, si) => (
+                      <button
+                        key={si}
+                        onClick={() => onRoutineClick(slot.routineId)}
+                        className="block w-full text-left text-[10px] rounded px-1 py-0.5 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors truncate"
+                        title={`${slot.title} (${slot.agentName})`}
+                      >
+                        {slot.title}
+                      </button>
+                    ))}
+                  </div>
+                );
+              })}
             </div>
-            {days.map((_, dayIdx) => {
-              const key = `${dayIdx}-${hour}`;
-              const cellSlots = grid.get(key) ?? [];
-              return (
-                <div key={dayIdx} className="bg-background p-0.5 min-h-[28px]">
-                  {cellSlots.map((slot, si) => (
-                    <button
-                      key={si}
-                      onClick={() => onRoutineClick(slot.routineId)}
-                      className="block w-full text-left text-[10px] rounded px-1 py-0.5 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors truncate"
-                      title={`${slot.title} (${slot.agentName})`}
-                    >
-                      {slot.title}
-                    </button>
-                  ))}
-                </div>
-              );
-            })}
-          </div>
-        ))}
+          ))}
       </div>
     </div>
   );

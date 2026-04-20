@@ -1,7 +1,7 @@
 import { CalendarDays, Filter, LayoutGrid, LayoutList, Search } from "lucide-react";
-import { cn } from "../../lib/utils";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "../../lib/utils";
 
 export type RoutineViewMode = "list" | "calendar";
 
@@ -62,7 +62,9 @@ export function RoutineFilterBar({
           <SelectContent>
             <SelectItem value="all">All agents</SelectItem>
             {activeAgents.map((agent) => (
-              <SelectItem key={agent.id} value={agent.id}>{agent.name}</SelectItem>
+              <SelectItem key={agent.id} value={agent.id}>
+                {agent.name}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>

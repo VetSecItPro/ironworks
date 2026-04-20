@@ -1,7 +1,7 @@
+import { Briefcase, Building2, Check, ChevronRight, Users } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Building2, Users, Briefcase, ChevronRight, Check } from "lucide-react";
 import { cn } from "../lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -170,9 +170,7 @@ export function FirstLoginWizard({ open, onComplete }: FirstLoginWizardProps) {
               <div className="text-sm font-medium">{size.label}</div>
               <div className="text-xs text-muted-foreground">{size.description}</div>
             </div>
-            {teamSize === size.value && (
-              <Check className="h-4 w-4 text-primary shrink-0" />
-            )}
+            {teamSize === size.value && <Check className="h-4 w-4 text-primary shrink-0" />}
           </button>
         ))}
       </div>
@@ -218,19 +216,10 @@ export function FirstLoginWizard({ open, onComplete }: FirstLoginWizardProps) {
             Back
           </button>
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleFinish}
-              className="text-xs text-muted-foreground"
-            >
+            <Button variant="ghost" size="sm" onClick={handleFinish} className="text-xs text-muted-foreground">
               Skip
             </Button>
-            <Button
-              size="sm"
-              disabled={!canProceed}
-              onClick={isLast ? handleFinish : () => setStep((s) => s + 1)}
-            >
+            <Button size="sm" disabled={!canProceed} onClick={isLast ? handleFinish : () => setStep((s) => s + 1)}>
               {isLast ? (
                 <>
                   Get Started

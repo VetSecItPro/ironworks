@@ -1,11 +1,11 @@
 import { createHash } from "node:crypto";
-import type { IncomingMessage, Server as HttpServer } from "node:http";
+import type { Server as HttpServer, IncomingMessage } from "node:http";
 import { createRequire } from "node:module";
 import type { Duplex } from "node:stream";
-import { and, eq, isNull } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { agentApiKeys, companies, companyMemberships, instanceUserRoles } from "@ironworksai/db";
 import type { DeploymentMode } from "@ironworksai/shared";
+import { and, eq, isNull } from "drizzle-orm";
 import type { BetterAuthSessionResult } from "../auth/better-auth.js";
 import { logger } from "../middleware/logger.js";
 import { subscribeCompanyLiveEvents } from "../services/live-events.js";
@@ -25,12 +25,7 @@ interface WsServer {
   clients: Set<WsSocket>;
   on(event: "connection", listener: (socket: WsSocket, req: IncomingMessage) => void): void;
   on(event: "close", listener: () => void): void;
-  handleUpgrade(
-    req: IncomingMessage,
-    socket: Duplex,
-    head: Buffer,
-    callback: (ws: WsSocket) => void,
-  ): void;
+  handleUpgrade(req: IncomingMessage, socket: Duplex, head: Buffer, callback: (ws: WsSocket) => void): void;
   emit(event: "connection", ws: WsSocket, req: IncomingMessage): boolean;
 }
 
@@ -172,10 +167,7 @@ async function authorizeUpgrade(
     return null;
   }
 
-  await db
-    .update(agentApiKeys)
-    .set({ lastUsedAt: new Date() })
-    .where(eq(agentApiKeys.id, key.id));
+  await db.update(agentApiKeys).set({ lastUsedAt: new Date() }).where(eq(agentApiKeys.id, key.id));
 
   return {
     companyId,

@@ -1,31 +1,24 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  CheckSquare,
-  Folder,
-  Plus,
-  RefreshCw,
-  Search,
-} from "lucide-react";
-import { libraryApi, type LibraryEntry } from "../api/library";
-import { knowledgeApi, type KnowledgePage } from "../api/knowledge";
+import { CheckSquare, Folder, Plus, RefreshCw, Search } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { agentsApi } from "../api/agents";
-import { useCompany } from "../context/CompanyContext";
+import { type KnowledgePage, knowledgeApi } from "../api/knowledge";
+import { type LibraryEntry, libraryApi } from "../api/library";
+import { LibrarySettingsButton } from "../components/LibrarySettings";
+import { AgentWorkspacePanel } from "../components/library/AgentWorkspacePanel";
+import { BulkOperationsToolbar } from "../components/library/BulkOperationsToolbar";
+import { TreeNode } from "../components/library/LibraryFileTree";
+import { WorkspaceDocViewer } from "../components/library/WorkspaceDocViewer";
+import { KbPageDialog, LibraryRightPane, LibrarySearchResults } from "../components/library-page";
+import { PageSkeleton } from "../components/PageSkeleton";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { useCompany } from "../context/CompanyContext";
 import { useToast } from "../context/ToastContext";
 import { queryKeys } from "../lib/queryKeys";
 import { cn } from "../lib/utils";
-import { PageSkeleton } from "../components/PageSkeleton";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { LibrarySettingsButton } from "../components/LibrarySettings";
-import { AgentWorkspacePanel } from "../components/library/AgentWorkspacePanel";
-import { WorkspaceDocViewer } from "../components/library/WorkspaceDocViewer";
-import { TreeNode } from "../components/library/LibraryFileTree";
-import { BulkOperationsToolbar } from "../components/library/BulkOperationsToolbar";
-
-import { KbPageDialog, LibraryRightPane, LibrarySearchResults } from "../components/library-page";
 
 export function Library() {
   const { selectedCompanyId } = useCompany();
@@ -59,26 +52,55 @@ export function Library() {
   const [selectedPageId, setSelectedPageId] = useState<string | null>(null);
 
   function openKbCreate() {
-    setKbEditPageId(null); setKbTitle(""); setKbBody(""); setKbVisibility("company"); setKbDepartment("");
+    setKbEditPageId(null);
+    setKbTitle("");
+    setKbBody("");
+    setKbVisibility("company");
+    setKbDepartment("");
     setKbDialogOpen(true);
   }
 
   function openKbEdit(page: KnowledgePage) {
-    setKbEditPageId(page.id); setKbTitle(page.title); setKbBody(page.body);
+    setKbEditPageId(page.id);
+    setKbTitle(page.title);
+    setKbBody(page.body);
     setKbVisibility(page.visibility === "private" ? "private" : "company");
-    setKbDepartment(page.department ?? ""); setKbDialogOpen(true);
+    setKbDepartment(page.department ?? "");
+    setKbDialogOpen(true);
   }
 
   const createKbPage = useMutation({
-    mutationFn: () => knowledgeApi.create(selectedCompanyId!, { title: kbTitle.trim(), body: kbBody, visibility: kbVisibility, department: kbDepartment.trim() || undefined }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["knowledge-agent"] }); queryClient.invalidateQueries({ queryKey: queryKeys.knowledge.list(selectedCompanyId!) }); setKbDialogOpen(false); pushToast({ title: "Page created", tone: "success" }); },
-    onError: () => { pushToast({ title: "Failed to create page", tone: "error" }); },
+    mutationFn: () =>
+      knowledgeApi.create(selectedCompanyId!, {
+        title: kbTitle.trim(),
+        body: kbBody,
+        visibility: kbVisibility,
+        department: kbDepartment.trim() || undefined,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["knowledge-agent"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.knowledge.list(selectedCompanyId!) });
+      setKbDialogOpen(false);
+      pushToast({ title: "Page created", tone: "success" });
+    },
+    onError: () => {
+      pushToast({ title: "Failed to create page", tone: "error" });
+    },
   });
 
   const updateKbPage = useMutation({
-    mutationFn: () => knowledgeApi.update(kbEditPageId!, { title: kbTitle.trim(), body: kbBody, visibility: kbVisibility }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["knowledge-agent"] }); queryClient.invalidateQueries({ queryKey: queryKeys.knowledge.list(selectedCompanyId!) }); queryClient.invalidateQueries({ queryKey: ["knowledge-page", kbEditPageId] }); setKbDialogOpen(false); pushToast({ title: "Page saved", tone: "success" }); },
-    onError: () => { pushToast({ title: "Failed to save page", tone: "error" }); },
+    mutationFn: () =>
+      knowledgeApi.update(kbEditPageId!, { title: kbTitle.trim(), body: kbBody, visibility: kbVisibility }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["knowledge-agent"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.knowledge.list(selectedCompanyId!) });
+      queryClient.invalidateQueries({ queryKey: ["knowledge-page", kbEditPageId] });
+      setKbDialogOpen(false);
+      pushToast({ title: "Page saved", tone: "success" });
+    },
+    onError: () => {
+      pushToast({ title: "Failed to save page", tone: "error" });
+    },
   });
 
   const dirPaths = useMemo(() => ["", ...Array.from(expandedDirs)], [expandedDirs]);
@@ -99,8 +121,13 @@ export function Library() {
 
   const scanMutation = useMutation({
     mutationFn: () => libraryApi.scan(selectedCompanyId!),
-    onSuccess: (data) => { pushToast({ title: "Library scanned", body: `${data.registered} files registered`, tone: "success" }); queryClient.invalidateQueries({ queryKey: ["library", selectedCompanyId] }); },
-    onError: () => { pushToast({ title: "Scan failed", tone: "error" }); },
+    onSuccess: (data) => {
+      pushToast({ title: "Library scanned", body: `${data.registered} files registered`, tone: "success" });
+      queryClient.invalidateQueries({ queryKey: ["library", selectedCompanyId] });
+    },
+    onError: () => {
+      pushToast({ title: "Scan failed", tone: "error" });
+    },
   });
 
   const { data: agentsData } = useQuery({
@@ -127,13 +154,19 @@ export function Library() {
     setExpandedDirs((prev) => {
       const next = new Set(prev);
       if (next.has(dirPath)) {
-        for (const p of next) { if (p === dirPath || p.startsWith(dirPath + "/")) next.delete(p); }
-      } else { next.add(dirPath); }
+        for (const p of next) {
+          if (p === dirPath || p.startsWith(dirPath + "/")) next.delete(p);
+        }
+      } else {
+        next.add(dirPath);
+      }
       return next;
     });
   }, []);
 
-  const handleSearch = useCallback(() => { setSearchQuery(searchInput.trim()); }, [searchInput]);
+  const handleSearch = useCallback(() => {
+    setSearchQuery(searchInput.trim());
+  }, [searchInput]);
 
   if (!selectedCompanyId) return null;
 
@@ -146,13 +179,25 @@ export function Library() {
           <p className="text-sm text-muted-foreground mt-0.5">Documents, reports, and files created by your agents.</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button size="sm" variant={bulkMode ? "default" : "outline"} onClick={() => { setBulkMode(!bulkMode); setBulkSelected(new Set()); }}>
-            <CheckSquare className="h-3.5 w-3.5 mr-1.5" />{bulkMode ? "Exit Select" : "Select"}
+          <Button
+            size="sm"
+            variant={bulkMode ? "default" : "outline"}
+            onClick={() => {
+              setBulkMode(!bulkMode);
+              setBulkSelected(new Set());
+            }}
+          >
+            <CheckSquare className="h-3.5 w-3.5 mr-1.5" />
+            {bulkMode ? "Exit Select" : "Select"}
           </Button>
-          <Button size="sm" variant="outline" onClick={openKbCreate}><Plus className="h-3.5 w-3.5 mr-1.5" />New Page</Button>
+          <Button size="sm" variant="outline" onClick={openKbCreate}>
+            <Plus className="h-3.5 w-3.5 mr-1.5" />
+            New Page
+          </Button>
           <LibrarySettingsButton />
           <Button variant="outline" size="sm" onClick={() => scanMutation.mutate()} disabled={scanMutation.isPending}>
-            <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", scanMutation.isPending && "animate-spin")} />Scan
+            <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", scanMutation.isPending && "animate-spin")} />
+            Scan
           </Button>
         </div>
       </div>
@@ -162,35 +207,97 @@ export function Library() {
         {/* Left pane */}
         <div className="w-72 shrink-0 border-r border-border flex flex-col bg-background">
           <div className="px-2 py-2 border-b border-border shrink-0">
-            <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }} className="flex gap-1">
-              <Input value={searchInput} onChange={(e) => { setSearchInput(e.target.value); if (!e.target.value.trim()) setSearchQuery(""); }} placeholder="Search files..." className="h-7 text-xs" />
-              <Button type="submit" variant="ghost" size="icon-sm" className="shrink-0"><Search className="h-3.5 w-3.5" /></Button>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSearch();
+              }}
+              className="flex gap-1"
+            >
+              <Input
+                value={searchInput}
+                onChange={(e) => {
+                  setSearchInput(e.target.value);
+                  if (!e.target.value.trim()) setSearchQuery("");
+                }}
+                placeholder="Search files..."
+                className="h-7 text-xs"
+              />
+              <Button type="submit" variant="ghost" size="icon-sm" className="shrink-0">
+                <Search className="h-3.5 w-3.5" />
+              </Button>
             </form>
             <label className="flex items-center gap-1.5 mt-1.5 px-1 text-[11px] text-muted-foreground cursor-pointer">
-              <input type="checkbox" checked={searchContent} onChange={(e) => setSearchContent(e.target.checked)} className="rounded border-border" />Search inside files
+              <input
+                type="checkbox"
+                checked={searchContent}
+                onChange={(e) => setSearchContent(e.target.checked)}
+                className="rounded border-border"
+              />
+              Search inside files
             </label>
           </div>
 
           {bulkMode && (
             <BulkOperationsToolbar
               selectedCount={bulkSelected.size}
-              onChangeVisibility={(v) => { pushToast({ title: "Visibility updated", body: `${bulkSelected.size} files set to ${v}`, tone: "success" }); setBulkSelected(new Set()); setBulkMode(false); }}
-              onDelete={() => { pushToast({ title: "Files deleted", body: `${bulkSelected.size} files removed`, tone: "success" }); setBulkSelected(new Set()); setBulkMode(false); }}
+              onChangeVisibility={(v) => {
+                pushToast({
+                  title: "Visibility updated",
+                  body: `${bulkSelected.size} files set to ${v}`,
+                  tone: "success",
+                });
+                setBulkSelected(new Set());
+                setBulkMode(false);
+              }}
+              onDelete={() => {
+                pushToast({ title: "Files deleted", body: `${bulkSelected.size} files removed`, tone: "success" });
+                setBulkSelected(new Set());
+                setBulkMode(false);
+              }}
               onClearSelection={() => setBulkSelected(new Set())}
             />
           )}
 
           <ScrollArea className="flex-1 min-h-0">
-            <AgentWorkspacePanel companyId={selectedCompanyId!} agents={workspaceAgents} selectedAgentId={selectedAgentId} onSelectAgent={(id) => { setSelectedAgentId(id); setSelectedPageId(null); if (id !== null) setSelectedFile(null); }} />
+            <AgentWorkspacePanel
+              companyId={selectedCompanyId!}
+              agents={workspaceAgents}
+              selectedAgentId={selectedAgentId}
+              onSelectAgent={(id) => {
+                setSelectedAgentId(id);
+                setSelectedPageId(null);
+                if (id !== null) setSelectedFile(null);
+              }}
+            />
 
             {selectedAgentId !== null ? (
-              <WorkspaceDocViewer companyId={selectedCompanyId!} agentId={selectedAgentId} agentName={workspaceAgents.find((a) => a.id === selectedAgentId)?.name ?? "Agent"} onSelectPage={(pageId) => setSelectedPageId(pageId)} selectedPageId={selectedPageId} />
+              <WorkspaceDocViewer
+                companyId={selectedCompanyId!}
+                agentId={selectedAgentId}
+                agentName={workspaceAgents.find((a) => a.id === selectedAgentId)?.name ?? "Agent"}
+                onSelectPage={(pageId) => setSelectedPageId(pageId)}
+                selectedPageId={selectedPageId}
+              />
             ) : searchQuery && searchResults ? (
-              <LibrarySearchResults results={searchResults.results} onSelectFile={(path) => { setSelectedFile(path); }} onClearSearch={() => { setSearchQuery(""); setSearchInput(""); }} />
+              <LibrarySearchResults
+                results={searchResults.results}
+                onSelectFile={(path) => {
+                  setSelectedFile(path);
+                }}
+                onClearSearch={() => {
+                  setSearchQuery("");
+                  setSearchInput("");
+                }}
+              />
             ) : rootLoading ? (
-              <div className="p-3"><PageSkeleton variant="list" /></div>
+              <div className="p-3">
+                <PageSkeleton variant="list" />
+              </div>
             ) : rootError ? (
-              <div className="p-3 text-sm text-destructive">{rootError instanceof Error ? rootError.message : "Failed to load library"}</div>
+              <div className="p-3 text-sm text-destructive">
+                {rootError instanceof Error ? rootError.message : "Failed to load library"}
+              </div>
             ) : rootEntries.length === 0 ? (
               <div className="px-3 py-8 text-center">
                 <Folder className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
@@ -200,7 +307,16 @@ export function Library() {
             ) : (
               <div className="py-1">
                 {rootEntries.map((entry) => (
-                  <TreeNode key={entry.path} entry={entry} depth={0} selectedPath={selectedFile} expandedDirs={expandedDirs} onToggleDir={toggleDir} onSelectFile={setSelectedFile} childEntries={childEntries} />
+                  <TreeNode
+                    key={entry.path}
+                    entry={entry}
+                    depth={0}
+                    selectedPath={selectedFile}
+                    expandedDirs={expandedDirs}
+                    onToggleDir={toggleDir}
+                    onSelectFile={setSelectedFile}
+                    childEntries={childEntries}
+                  />
                 ))}
               </div>
             )}
@@ -209,7 +325,15 @@ export function Library() {
 
         {/* Right pane */}
         <div className="flex-1 min-w-0 bg-background">
-          <LibraryRightPane companyId={selectedCompanyId} selectedAgentId={selectedAgentId} selectedPageId={selectedPageId} selectedFile={selectedFile} onEdit={openKbEdit} onScan={() => scanMutation.mutate()} isScanPending={scanMutation.isPending} />
+          <LibraryRightPane
+            companyId={selectedCompanyId}
+            selectedAgentId={selectedAgentId}
+            selectedPageId={selectedPageId}
+            selectedFile={selectedFile}
+            onEdit={openKbEdit}
+            onScan={() => scanMutation.mutate()}
+            isScanPending={scanMutation.isPending}
+          />
         </div>
       </div>
 
@@ -226,7 +350,7 @@ export function Library() {
         department={kbDepartment}
         setDepartment={setKbDepartment}
         isSaving={kbEditPageId ? updateKbPage.isPending : createKbPage.isPending}
-        onSave={() => kbEditPageId ? updateKbPage.mutate() : createKbPage.mutate()}
+        onSave={() => (kbEditPageId ? updateKbPage.mutate() : createKbPage.mutate())}
       />
     </div>
   );

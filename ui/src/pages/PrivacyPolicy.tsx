@@ -1,6 +1,6 @@
-import { MarkdownBody } from "../components/MarkdownBody";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Shield } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { MarkdownBody } from "../components/MarkdownBody";
 
 const PRIVACY_POLICY = `
 # Privacy Policy

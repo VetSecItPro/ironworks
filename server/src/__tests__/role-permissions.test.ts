@@ -1,5 +1,5 @@
+import { MEMBERSHIP_ROLES, PERMISSION_KEYS, ROLE_ACTIONS, ROLE_PERMISSIONS } from "@ironworksai/shared";
 import { describe, expect, it } from "vitest";
-import { MEMBERSHIP_ROLES, PERMISSION_KEYS, ROLE_PERMISSIONS, ROLE_ACTIONS } from "@ironworksai/shared";
 
 describe("Role Permissions — constants", () => {
   it("defines all four membership roles", () => {

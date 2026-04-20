@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import type { Request } from "express";
+import { describe, expect, it } from "vitest";
 import { buildInviteOnboardingTextDocument } from "../routes/access.js";
 
 function buildReq(host: string): Request {
@@ -45,7 +45,7 @@ describe("buildInviteOnboardingTextDocument", () => {
     expect(text).toContain("http://localhost:3100");
     expect(text).toContain("host.docker.internal");
     expect(text).toContain("ironworksApiUrl");
-    expect(text).toContain("adapterType \"openclaw_gateway\"");
+    expect(text).toContain('adapterType "openclaw_gateway"');
     expect(text).toContain("headers.x-openclaw-token");
     expect(text).toContain("Do NOT use /v1/responses or /hooks/*");
     expect(text).toContain("set the first reachable candidate as agentDefaultsPayload.ironworksApiUrl");

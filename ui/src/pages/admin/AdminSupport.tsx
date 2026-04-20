@@ -1,19 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useBreadcrumbs } from "@/context/BreadcrumbContext";
-import { useToast } from "@/context/ToastContext";
-import { adminApi, type SupportTicket } from "@/api/admin";
-import { cn } from "@/lib/utils";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, ChevronRight, Headphones, RefreshCw, Search, Send } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { adminApi, type SupportTicket } from "@/api/admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useBreadcrumbs } from "@/context/BreadcrumbContext";
+import { useToast } from "@/context/ToastContext";
+import { cn } from "@/lib/utils";
 
 /* ── Badge helpers ────────────────────────────────────────────── */
 function TypeBadge({ type }: { type: SupportTicket["type"] }) {
@@ -21,9 +15,7 @@ function TypeBadge({ type }: { type: SupportTicket["type"] }) {
     <span
       className={cn(
         "inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide",
-        type === "bug"
-          ? "bg-red-500/15 text-red-400"
-          : "bg-blue-500/15 text-blue-400",
+        type === "bug" ? "bg-red-500/15 text-red-400" : "bg-blue-500/15 text-blue-400",
       )}
     >
       {type === "bug" ? "Bug" : "Feature"}
@@ -40,7 +32,12 @@ function StatusBadge({ status }: { status: SupportTicket["status"] }) {
         : "bg-emerald-500/15 text-emerald-400";
   const label = status === "in-progress" ? "In Progress" : status.charAt(0).toUpperCase() + status.slice(1);
   return (
-    <span className={cn("inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide", cls)}>
+    <span
+      className={cn(
+        "inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide",
+        cls,
+      )}
+    >
       {label}
     </span>
   );
@@ -54,8 +51,7 @@ function TicketRow({ ticket }: { ticket: SupportTicket }) {
   const queryClient = useQueryClient();
 
   const replyMutation = useMutation({
-    mutationFn: ({ id, body }: { id: string; body: string }) =>
-      adminApi.replyToTicket(id, body),
+    mutationFn: ({ id, body }: { id: string; body: string }) => adminApi.replyToTicket(id, body),
     onSuccess: () => {
       pushToast({ title: "Reply sent", tone: "success" });
       setReplyText("");
@@ -85,13 +81,19 @@ function TicketRow({ ticket }: { ticket: SupportTicket }) {
         onClick={() => setExpanded((v) => !v)}
       >
         <td className="px-3 py-3 w-6">
-          {expanded
-            ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-            : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
+          {expanded ? (
+            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+          )}
         </td>
         <td className="px-3 py-3 text-sm font-medium truncate max-w-[200px]">{ticket.subject}</td>
-        <td className="px-3 py-3"><TypeBadge type={ticket.type} /></td>
-        <td className="px-3 py-3"><StatusBadge status={ticket.status} /></td>
+        <td className="px-3 py-3">
+          <TypeBadge type={ticket.type} />
+        </td>
+        <td className="px-3 py-3">
+          <StatusBadge status={ticket.status} />
+        </td>
         <td className="px-3 py-3 text-xs text-muted-foreground">{ticket.userEmail}</td>
         <td className="px-3 py-3 text-xs text-muted-foreground hidden lg:table-cell">{ticket.companyName ?? "—"}</td>
         <td className="px-3 py-3 text-xs text-muted-foreground whitespace-nowrap">
@@ -118,18 +120,23 @@ function TicketRow({ ticket }: { ticket: SupportTicket }) {
                         key={c.id}
                         className={cn(
                           "rounded-lg border p-3 text-sm",
-                          c.isAdmin
-                            ? "border-primary/20 bg-primary/5"
-                            : "border-border bg-background",
+                          c.isAdmin ? "border-primary/20 bg-primary/5" : "border-border bg-background",
                         )}
                       >
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-xs font-medium">{c.authorName ?? c.authorEmail}</span>
                           {c.isAdmin && (
-                            <span className="text-[10px] bg-primary/15 text-primary px-1.5 py-0.5 rounded font-semibold">Admin</span>
+                            <span className="text-[10px] bg-primary/15 text-primary px-1.5 py-0.5 rounded font-semibold">
+                              Admin
+                            </span>
                           )}
                           <span className="ml-auto text-xs text-muted-foreground">
-                            {new Date(c.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                            {new Date(c.createdAt).toLocaleString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
                           </span>
                         </div>
                         <p className="text-muted-foreground whitespace-pre-wrap">{c.body}</p>
@@ -174,10 +181,7 @@ function TicketRow({ ticket }: { ticket: SupportTicket }) {
                       statusMutation.mutate({ id: ticket.id, status: val as SupportTicket["status"] });
                     }}
                   >
-                    <SelectTrigger
-                      className="w-[160px] text-xs"
-                      onClick={(e) => e.stopPropagation()}
-                    >
+                    <SelectTrigger className="w-[160px] text-xs" onClick={(e) => e.stopPropagation()}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent onClick={(e) => e.stopPropagation()}>
@@ -204,13 +208,14 @@ export default function AdminSupport() {
   const [statusFilter, setStatusFilter] = useState<"all" | "open" | "in-progress" | "resolved">("all");
 
   useEffect(() => {
-    setBreadcrumbs([
-      { label: "IronWorks Admin" },
-      { label: "Support" },
-    ]);
+    setBreadcrumbs([{ label: "IronWorks Admin" }, { label: "Support" }]);
   }, [setBreadcrumbs]);
 
-  const { data: tickets = [], isLoading, refetch } = useQuery({
+  const {
+    data: tickets = [],
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ["admin", "support"],
     queryFn: () => adminApi.getSupportTickets(),
     staleTime: 30_000,
@@ -296,7 +301,9 @@ export default function AdminSupport() {
               <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Type</th>
               <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Status</th>
               <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">User</th>
-              <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground hidden lg:table-cell">Company</th>
+              <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground hidden lg:table-cell">
+                Company
+              </th>
               <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Created</th>
             </tr>
           </thead>

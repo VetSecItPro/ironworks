@@ -1,12 +1,4 @@
-import {
-  pgTable,
-  uuid,
-  date,
-  integer,
-  real,
-  timestamp,
-  uniqueIndex,
-} from "drizzle-orm/pg-core";
+import { date, integer, pgTable, real, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 export const analyticsSnapshots = pgTable(
   "analytics_snapshots",

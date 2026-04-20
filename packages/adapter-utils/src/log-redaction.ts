@@ -1,8 +1,5 @@
+import { redactHeaders, redactSecrets as redactStructured } from "./http/redaction.js";
 import type { TranscriptEntry } from "./types.js";
-import {
-  redactSecrets as redactStructured,
-  redactHeaders,
-} from "./http/redaction.js";
 
 export const REDACTED_HOME_PATH_USER = "*";
 
@@ -95,7 +92,7 @@ export function redactAny(value: unknown): unknown {
 
 // Re-exported so callers that already know their input shape can use the
 // structured redactor or header redactor without importing from http/redaction directly
-export { redactStructured, redactHeaders };
+export { redactHeaders, redactStructured };
 
 export function redactTranscriptEntryPaths(entry: TranscriptEntry, opts?: HomePathRedactionOptions): TranscriptEntry {
   switch (entry.kind) {

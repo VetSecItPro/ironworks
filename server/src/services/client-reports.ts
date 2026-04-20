@@ -1,6 +1,6 @@
-import { and, desc, eq, gte, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import { projects, issues, goals, knowledgePages } from "@ironworksai/db";
+import { goals, issues, knowledgePages, projects } from "@ironworksai/db";
+import { and, desc, eq, gte, sql } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 
 /** Format a Date as YYYY-MM-DD in Central Time. */
@@ -85,13 +85,7 @@ export async function generateProjectReport(
     })
     .from(goals)
     .innerJoin(issues, eq(issues.goalId, goals.id))
-    .where(
-      and(
-        eq(issues.companyId, companyId),
-        eq(issues.projectId, projectId),
-        eq(goals.status, "achieved"),
-      ),
-    )
+    .where(and(eq(issues.companyId, companyId), eq(issues.projectId, projectId), eq(goals.status, "achieved")))
     .orderBy(desc(goals.updatedAt))
     .limit(20);
 
@@ -169,29 +163,25 @@ export async function generateProjectReport(
       planned: sql<number>`count(*) filter (where ${issues.status} in ('todo', 'backlog'))::int`,
     })
     .from(issues)
-    .where(
-      and(
-        eq(issues.companyId, companyId),
-        eq(issues.projectId, projectId),
-      ),
-    );
+    .where(and(eq(issues.companyId, companyId), eq(issues.projectId, projectId)));
 
   const totalCompleted = Number(counts?.completed ?? 0);
   const totalInProgress = Number(counts?.inProgress ?? 0);
   const totalPlanned = Number(counts?.planned ?? 0);
 
   // Build markdown
-  const milestonesSection = milestones.length > 0
-    ? milestones.map((m) => `- ${m.title}`).join("\n")
-    : "- No milestones achieved yet";
+  const milestonesSection =
+    milestones.length > 0 ? milestones.map((m) => `- ${m.title}`).join("\n") : "- No milestones achieved yet";
 
-  const deliverablesSection = deliverables.length > 0
-    ? deliverables.map((d) => `- ${d.title}`).join("\n")
-    : "- No deliverables completed this period";
+  const deliverablesSection =
+    deliverables.length > 0
+      ? deliverables.map((d) => `- ${d.title}`).join("\n")
+      : "- No deliverables completed this period";
 
-  const nextStepsSection = nextSteps.length > 0
-    ? nextSteps.map((s) => `- [${s.priority.toUpperCase()}] ${s.title}`).join("\n")
-    : "- No upcoming items planned";
+  const nextStepsSection =
+    nextSteps.length > 0
+      ? nextSteps.map((s) => `- [${s.priority.toUpperCase()}] ${s.title}`).join("\n")
+      : "- No upcoming items planned";
 
   const markdown = [
     `# Project Progress Report: ${project.name}`,

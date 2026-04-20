@@ -1,5 +1,5 @@
-import { cn } from "../../lib/utils";
 import type { Agent, LiveEvent } from "@ironworksai/shared";
+import { cn } from "../../lib/utils";
 import type { LiveFeedEvent } from "../../types/dashboard";
 
 export type { LiveFeedEvent };
@@ -19,11 +19,7 @@ function liveFeedEventColor(sseType: string, payload: Record<string, unknown>): 
   return "text-muted-foreground";
 }
 
-function liveFeedDescription(
-  sseType: string,
-  event: LiveEvent,
-  agentMap: Map<string, Agent>,
-): string {
+function liveFeedDescription(sseType: string, event: LiveEvent, agentMap: Map<string, Agent>): string {
   const payload = event.payload;
   if (sseType === "activity") {
     const action = (payload.action as string | undefined) ?? event.type;
@@ -32,7 +28,7 @@ function liveFeedDescription(
     const entityId = (payload.entityId as string | undefined) ?? "";
     const actorName = agentId
       ? (agentMap.get(agentId)?.name ?? agentId.slice(0, 8))
-      : (payload.actorId as string | undefined) ?? "System";
+      : ((payload.actorId as string | undefined) ?? "System");
     const label = action.replace(/[._]/g, " ");
     const entity = entityType ? `${entityType} ${entityId.slice(0, 8)}` : "";
     return entity ? `${actorName} - ${label} (${entity})` : `${actorName} - ${label}`;
@@ -46,13 +42,7 @@ function liveFeedDescription(
   return event.type.replace(/[._]/g, " ");
 }
 
-function LiveFeedRow({
-  entry,
-  agentMap,
-}: {
-  entry: LiveFeedEvent;
-  agentMap: Map<string, Agent>;
-}) {
+function LiveFeedRow({ entry, agentMap }: { entry: LiveFeedEvent; agentMap: Map<string, Agent> }) {
   const color = liveFeedEventColor(entry.sseType, entry.event.payload);
   const description = liveFeedDescription(entry.sseType, entry.event, agentMap);
   const timeStr = entry.receivedAt.toLocaleTimeString("en-US", {
@@ -64,15 +54,15 @@ function LiveFeedRow({
 
   return (
     <div className="flex items-center gap-3 px-4 py-2 text-sm live-feed-row-enter hover:bg-accent/20 transition-colors">
-      <span className="shrink-0 tabular-nums text-[11px] text-muted-foreground/70 font-mono w-[62px]">
-        {timeStr}
-      </span>
-      <span className={cn("shrink-0 h-1.5 w-1.5 rounded-full", {
-        "bg-emerald-500": color === "text-emerald-400",
-        "bg-red-500": color === "text-red-400",
-        "bg-blue-500": color === "text-blue-400",
-        "bg-muted-foreground/50": color === "text-muted-foreground",
-      })} />
+      <span className="shrink-0 tabular-nums text-[11px] text-muted-foreground/70 font-mono w-[62px]">{timeStr}</span>
+      <span
+        className={cn("shrink-0 h-1.5 w-1.5 rounded-full", {
+          "bg-emerald-500": color === "text-emerald-400",
+          "bg-red-500": color === "text-red-400",
+          "bg-blue-500": color === "text-blue-400",
+          "bg-muted-foreground/50": color === "text-muted-foreground",
+        })}
+      />
       <span className={cn("truncate", color)}>{description}</span>
     </div>
   );
@@ -95,7 +85,10 @@ export function LiveFeedPanel({
     <div>
       <div className="flex items-center justify-between border-b border-border/50 pb-2 mb-4">
         <div className="flex items-center gap-2">
-          <a href="/activity" className="text-sm font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors no-underline">
+          <a
+            href="/activity"
+            className="text-sm font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors no-underline"
+          >
             Live Feed
           </a>
           {liveConnected ? (
@@ -111,10 +104,7 @@ export function LiveFeedPanel({
           )}
         </div>
         {liveEvents.length > 0 && (
-          <button
-            onClick={onClear}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
+          <button onClick={onClear} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
             Clear
           </button>
         )}
@@ -122,17 +112,11 @@ export function LiveFeedPanel({
 
       <div className="rounded-lg border border-border overflow-hidden">
         {liveEvents.length === 0 ? (
-          <div className="px-4 py-6 text-sm text-muted-foreground text-center">
-            Waiting for events...
-          </div>
+          <div className="px-4 py-6 text-sm text-muted-foreground text-center">Waiting for events...</div>
         ) : (
           <div className="divide-y divide-border max-h-80 overflow-y-auto">
             {liveEvents.map((entry) => (
-              <LiveFeedRow
-                key={entry.id}
-                entry={entry}
-                agentMap={agentMap}
-              />
+              <LiveFeedRow key={entry.id} entry={entry} agentMap={agentMap} />
             ))}
             <div ref={liveFeedBottomRef} />
           </div>

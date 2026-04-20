@@ -1,8 +1,8 @@
 import { randomBytes, timingSafeEqual } from "node:crypto";
-import { and, eq } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { companies, companyMemberships, instanceUserRoles } from "@ironworksai/db";
 import type { DeploymentMode } from "@ironworksai/shared";
+import { and, eq } from "drizzle-orm";
 
 const LOCAL_BOARD_USER_ID = "local-board";
 const CLAIM_TTL_MS = 1000 * 60 * 60 * 24;
@@ -48,10 +48,7 @@ function getChallengeStatus(token: string, code: string | undefined): ChallengeS
   return "available";
 }
 
-export async function initializeBoardClaimChallenge(
-  db: Db,
-  opts: { deploymentMode: DeploymentMode },
-): Promise<void> {
+export async function initializeBoardClaimChallenge(db: Db, opts: { deploymentMode: DeploymentMode }): Promise<void> {
   if (opts.deploymentMode !== "authenticated") {
     activeChallenge = null;
     return;

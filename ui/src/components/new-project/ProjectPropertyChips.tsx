@@ -1,13 +1,9 @@
-import { useState } from "react";
 import type { Goal } from "@ironworksai/shared";
-import { Target, Calendar, Plus, X } from "lucide-react";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { StatusBadge } from "../StatusBadge";
+import { Calendar, Plus, Target, X } from "lucide-react";
+import { useState } from "react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "../../lib/utils";
+import { StatusBadge } from "../StatusBadge";
 
 const projectStatuses = [
   { value: "backlog", label: "Backlog" },
@@ -56,9 +52,12 @@ export function ProjectPropertyChips({
               key={s.value}
               className={cn(
                 "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",
-                s.value === status && "bg-accent"
+                s.value === status && "bg-accent",
               )}
-              onClick={() => { setStatus(s.value); setStatusOpen(false); }}
+              onClick={() => {
+                setStatus(s.value);
+                setStatusOpen(false);
+              }}
             >
               {s.label}
             </button>
@@ -90,7 +89,11 @@ export function ProjectPropertyChips({
             className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/50 transition-colors disabled:opacity-60"
             disabled={selectedGoals.length > 0 && availableGoals.length === 0}
           >
-            {selectedGoals.length > 0 ? <Plus className="h-3 w-3 text-muted-foreground" /> : <Target className="h-3 w-3 text-muted-foreground" />}
+            {selectedGoals.length > 0 ? (
+              <Plus className="h-3 w-3 text-muted-foreground" />
+            ) : (
+              <Target className="h-3 w-3 text-muted-foreground" />
+            )}
             {selectedGoals.length > 0 ? "+ Goal" : "Goal"}
           </button>
         </PopoverTrigger>
@@ -116,9 +119,7 @@ export function ProjectPropertyChips({
             </button>
           ))}
           {selectedGoals.length > 0 && availableGoals.length === 0 && (
-            <div className="px-2 py-1.5 text-xs text-muted-foreground">
-              All goals already selected.
-            </div>
+            <div className="px-2 py-1.5 text-xs text-muted-foreground">All goals already selected.</div>
           )}
         </PopoverContent>
       </Popover>

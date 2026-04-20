@@ -1,10 +1,10 @@
+import { BookOpen, Link as LinkIcon } from "lucide-react";
 import type { KnowledgePage } from "../../api/knowledge";
 import { MarkdownBody } from "../MarkdownBody";
-import { BookOpen, Link as LinkIcon } from "lucide-react";
-import { WikiLinkedBody } from "./WikiLinkedBody";
-import { IssueReferenceChips } from "./IssueReferenceChips";
 import { AutoTableOfContents } from "./AutoTableOfContents";
+import { IssueReferenceChips } from "./IssueReferenceChips";
 import { PageAnalytics } from "./PageAnalytics";
+import { WikiLinkedBody } from "./WikiLinkedBody";
 
 export function KBPageContent({
   selectedPage,
@@ -22,11 +22,7 @@ export function KBPageContent({
   return (
     <div className="p-4 space-y-6">
       {/* Wiki cross-links */}
-      <WikiLinkedBody
-        body={selectedPage.body}
-        pages={pages}
-        onNavigate={onNavigateToSlug}
-      />
+      <WikiLinkedBody body={selectedPage.body} pages={pages} onNavigate={onNavigateToSlug} />
       {/* Issue reference chips */}
       <IssueReferenceChips body={selectedPage.body} companyPrefix={selectedPage.companyId} />
       {/* Auto table of contents */}
@@ -37,7 +33,8 @@ export function KBPageContent({
       {suggestedPages.length > 0 && (
         <div className="border-t border-border pt-4 mt-6">
           <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 flex items-center gap-1.5">
-            <LinkIcon className="h-3 w-3" />Suggested Pages
+            <LinkIcon className="h-3 w-3" />
+            Suggested Pages
           </h4>
           <div className="flex flex-wrap gap-2">
             {suggestedPages.map((sp) => (

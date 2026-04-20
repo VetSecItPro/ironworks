@@ -1,16 +1,16 @@
-import { sql, ne, eq, gte, and } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import {
-  analyticsSnapshots,
-  companies,
-  authUsers,
   agents,
+  analyticsSnapshots,
+  authUsers,
+  companies,
   companySubscriptions,
-  issues,
   heartbeatRuns,
+  issues,
 } from "@ironworksai/db";
-import { PLAN_DEFINITIONS } from "./billing.js";
+import { and, eq, gte, ne, sql } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
+import { PLAN_DEFINITIONS } from "./billing.js";
 
 // ── MRR calculation: sum plan prices for active subscriptions ────────────────
 
@@ -70,21 +70,13 @@ export async function gatherLiveMetrics(db: Db): Promise<AnalyticsMetrics> {
     successRateRows,
   ] = await Promise.all([
     // Active companies
-    db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(companies)
-      .where(ne(companies.status, "deleted")),
+    db.select({ count: sql<number>`count(*)::int` }).from(companies).where(ne(companies.status, "deleted")),
 
     // All users
-    db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(authUsers),
+    db.select({ count: sql<number>`count(*)::int` }).from(authUsers),
 
     // Active agents
-    db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(agents)
-      .where(ne(agents.status, "terminated")),
+    db.select({ count: sql<number>`count(*)::int` }).from(agents).where(ne(agents.status, "terminated")),
 
     // Active subscriptions for MRR
     db
@@ -96,33 +88,19 @@ export async function gatherLiveMetrics(db: Db): Promise<AnalyticsMetrics> {
     db
       .select({ count: sql<number>`count(*)::int` })
       .from(companies)
-      .where(
-        and(
-          ne(companies.status, "deleted"),
-          gte(companies.createdAt, todayStart),
-        ),
-      ),
+      .where(and(ne(companies.status, "deleted"), gte(companies.createdAt, todayStart))),
 
     // Churn: companies that moved to "deleted" or "pending_erasure" in last 30 days
     db
       .select({ count: sql<number>`count(*)::int` })
       .from(companies)
-      .where(
-        and(
-          eq(companies.status, "pending_erasure"),
-          gte(companies.updatedAt, thirtyDaysAgo),
-        ),
-      ),
+      .where(and(eq(companies.status, "pending_erasure"), gte(companies.updatedAt, thirtyDaysAgo))),
 
     // Total issues
-    db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(issues),
+    db.select({ count: sql<number>`count(*)::int` }).from(issues),
 
     // Total heartbeat runs
-    db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(heartbeatRuns),
+    db.select({ count: sql<number>`count(*)::int` }).from(heartbeatRuns),
 
     // Success rate (all time)
     db
@@ -133,10 +111,7 @@ export async function gatherLiveMetrics(db: Db): Promise<AnalyticsMetrics> {
       .from(heartbeatRuns),
   ]);
 
-  const mrrCents = activeSubsRows.reduce(
-    (sum, row) => sum + planTierToMrrCents(row.planTier),
-    0,
-  );
+  const mrrCents = activeSubsRows.reduce((sum, row) => sum + planTierToMrrCents(row.planTier), 0);
 
   const sr = successRateRows[0] ?? { total: 0, succeeded: 0 };
   const total = Number(sr.total);

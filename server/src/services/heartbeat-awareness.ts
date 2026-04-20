@@ -19,9 +19,7 @@ export function buildPlatformAwareness(agent: {
   const roleLine = agent.role ? `You are ${agent.name}, ${agent.role}` : `You are ${agent.name}`;
   const deptLine = agent.department ? ` in the ${agent.department} department.` : ".";
 
-  const deptChannel = agent.department
-    ? `#${agent.department.toLowerCase().replace(/\s+/g, "-")}`
-    : "#company";
+  const deptChannel = agent.department ? `#${agent.department.toLowerCase().replace(/\s+/g, "-")}` : "#company";
 
   return `## Platform Awareness — IronWorks AI Workforce
 

@@ -1,12 +1,11 @@
-import type { BudgetIncident, FinanceEvent } from "@ironworksai/shared";
+import type { BudgetIncident, CostByAgentModel, FinanceEvent } from "@ironworksai/shared";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BudgetIncidentCard } from "../BudgetIncidentCard";
 import { cn, formatCents, formatTokens } from "../../lib/utils";
-import type { CostByAgentModel } from "@ironworksai/shared";
+import { BudgetIncidentCard } from "../BudgetIncidentCard";
 import { ByAgentCard } from "./ByAgentCard";
 import { ByProjectCard } from "./ByProjectCard";
-import { FinanceBreakdownSection } from "./FinanceBreakdownSection";
 import { EconomicsRow } from "./EconomicsRow";
+import { FinanceBreakdownSection } from "./FinanceBreakdownSection";
 
 interface SpendSummary {
   spendCents: number;
@@ -86,7 +85,10 @@ export function OverviewTabContent({
   toggleAgent,
 }: {
   activeBudgetIncidents: BudgetIncident[];
-  incidentMutation: { isPending: boolean; mutate: (args: { incidentId: string; action: "keep_paused" | "raise_budget_and_resume"; amount?: number }) => void };
+  incidentMutation: {
+    isPending: boolean;
+    mutate: (args: { incidentId: string; action: "keep_paused" | "raise_budget_and_resume"; amount?: number }) => void;
+  };
   spendData?: { summary: SpendSummary; byAgent: ByAgentRow[]; byProject: ByProjectRow[] } | null;
   financeData?: { summary: FinanceSummary; byBiller: Array<{ biller: string }>; byKind: Array<unknown> } | null;
   topFinanceEvents: FinanceEvent[];
@@ -98,11 +100,10 @@ export function OverviewTabContent({
   expandedAgents: Set<string>;
   toggleAgent: (agentId: string) => void;
 }) {
-  const inferenceTokenTotal =
-    (spendData?.byAgent ?? []).reduce(
-      (sum, row) => sum + row.inputTokens + row.cachedInputTokens + row.outputTokens,
-      0,
-    );
+  const inferenceTokenTotal = (spendData?.byAgent ?? []).reduce(
+    (sum, row) => sum + row.inputTokens + row.cachedInputTokens + row.outputTokens,
+    0,
+  );
 
   return (
     <>
@@ -119,7 +120,8 @@ export function OverviewTabContent({
                   incidentId: incident.id,
                   action: "raise_budget_and_resume",
                   amount,
-                })}
+                })
+              }
             />
           ))}
         </div>
@@ -145,9 +147,7 @@ export function OverviewTabContent({
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-xl font-semibold tabular-nums">
-                  {formatTokens(inferenceTokenTotal)}
-                </div>
+                <div className="text-xl font-semibold tabular-nums">{formatTokens(inferenceTokenTotal)}</div>
                 <div className="text-sm text-muted-foreground">tokens used</div>
               </div>
             </div>
@@ -179,7 +179,9 @@ export function OverviewTabContent({
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Subscription value (covered)</span>
-                  <span className="font-mono font-medium text-blue-500">{formatCents(equivalentSpend.subscriptionEquivalentCents)}</span>
+                  <span className="font-mono font-medium text-blue-500">
+                    {formatCents(equivalentSpend.subscriptionEquivalentCents)}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between text-sm pt-1 border-t border-border/50">
                   <span className="font-medium">Total compute value</span>
@@ -216,7 +218,9 @@ export function OverviewTabContent({
                   </div>
                   {budget > 0 && (
                     <div className={cn("text-sm", overBudget ? "text-red-400" : "text-emerald-400")}>
-                      {overBudget ? `Over budget by ${formatCents(projected - budget)}` : `Under budget by ${formatCents(budget - projected)}`}
+                      {overBudget
+                        ? `Over budget by ${formatCents(projected - budget)}`
+                        : `Under budget by ${formatCents(budget - projected)}`}
                     </div>
                   )}
                   <div className="relative h-3 bg-muted rounded-full overflow-hidden">
@@ -252,19 +256,27 @@ export function OverviewTabContent({
             <div className="grid grid-cols-2 gap-3">
               <div className="border border-border rounded-lg p-3">
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Debits</div>
-                <div className="text-xl font-semibold tabular-nums mt-1">{formatCents(financeData?.summary.debitCents ?? 0)}</div>
+                <div className="text-xl font-semibold tabular-nums mt-1">
+                  {formatCents(financeData?.summary.debitCents ?? 0)}
+                </div>
               </div>
               <div className="border border-border rounded-lg p-3">
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Credits</div>
-                <div className="text-xl font-semibold tabular-nums mt-1">{formatCents(financeData?.summary.creditCents ?? 0)}</div>
+                <div className="text-xl font-semibold tabular-nums mt-1">
+                  {formatCents(financeData?.summary.creditCents ?? 0)}
+                </div>
               </div>
               <div className="border border-border rounded-lg p-3">
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Net</div>
-                <div className="text-xl font-semibold tabular-nums mt-1">{formatCents(financeData?.summary.netCents ?? 0)}</div>
+                <div className="text-xl font-semibold tabular-nums mt-1">
+                  {formatCents(financeData?.summary.netCents ?? 0)}
+                </div>
               </div>
               <div className="border border-border rounded-lg p-3">
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Estimated</div>
-                <div className="text-xl font-semibold tabular-nums mt-1">{formatCents(financeData?.summary.estimatedDebitCents ?? 0)}</div>
+                <div className="text-xl font-semibold tabular-nums mt-1">
+                  {formatCents(financeData?.summary.estimatedDebitCents ?? 0)}
+                </div>
               </div>
             </div>
           </CardContent>
@@ -282,16 +294,22 @@ export function OverviewTabContent({
             ) : (
               <div className="space-y-2">
                 {topFinanceEvents.slice(0, 5).map((event) => (
-                  <div key={event.id} className="flex items-center justify-between text-sm border-b border-border pb-2 last:border-0">
+                  <div
+                    key={event.id}
+                    className="flex items-center justify-between text-sm border-b border-border pb-2 last:border-0"
+                  >
                     <div className="min-w-0">
                       <div className="text-sm font-medium truncate">{event.description ?? event.eventKind}</div>
                       <div className="text-[10px] text-muted-foreground">{event.biller}</div>
                     </div>
-                    <span className={cn(
-                      "font-mono text-sm shrink-0 ml-2",
-                      event.direction === "credit" ? "text-emerald-500" : "",
-                    )}>
-                      {event.direction === "credit" ? "+" : "-"}{formatCents(event.amountCents)}
+                    <span
+                      className={cn(
+                        "font-mono text-sm shrink-0 ml-2",
+                        event.direction === "credit" ? "text-emerald-500" : "",
+                      )}
+                    >
+                      {event.direction === "credit" ? "+" : "-"}
+                      {formatCents(event.amountCents)}
                     </span>
                   </div>
                 ))}
@@ -301,11 +319,7 @@ export function OverviewTabContent({
         </Card>
       </div>
 
-      <EconomicsRow
-        unitEconomics={unitEconomics}
-        burnRateData={burnRateData}
-        costAllocation={costAllocation}
-      />
+      <EconomicsRow unitEconomics={unitEconomics} burnRateData={burnRateData} costAllocation={costAllocation} />
 
       <div className="grid gap-4 xl:grid-cols-2">
         <ByAgentCard
@@ -317,12 +331,7 @@ export function OverviewTabContent({
         <ByProjectCard byProject={spendData?.byProject ?? []} />
       </div>
 
-      {financeData && (
-        <FinanceBreakdownSection
-          financeData={financeData}
-          topFinanceEvents={topFinanceEvents}
-        />
-      )}
+      {financeData && <FinanceBreakdownSection financeData={financeData} topFinanceEvents={topFinanceEvents} />}
     </>
   );
 }

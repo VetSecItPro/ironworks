@@ -1,8 +1,8 @@
-import { and, eq } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { agents } from "@ironworksai/db";
-import { createAgentDocument } from "./agent-workspace.js";
+import { and, eq } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
+import { createAgentDocument } from "./agent-workspace.js";
 
 type EmploymentEventType = "hired" | "department_change" | "performance_review" | "promotion" | "terminated";
 
@@ -13,12 +13,13 @@ type EmploymentEventType = "hired" | "department_change" | "performance_review" 
 // agent's workspace. Otherwise they are created with agent_id = null.
 
 function slugifyName(name: string): string {
-  return name
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    || "agent";
+  return (
+    name
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "agent"
+  );
 }
 
 function formatDate(date: Date): string {
@@ -32,12 +33,7 @@ async function findHrAgent(db: Db, companyId: string): Promise<string | null> {
   const [hr] = await db
     .select({ id: agents.id })
     .from(agents)
-    .where(
-      and(
-        eq(agents.companyId, companyId),
-        eq(agents.role, "vp_hr"),
-      ),
-    )
+    .where(and(eq(agents.companyId, companyId), eq(agents.role, "vp_hr")))
     .limit(1);
 
   if (hr) return hr.id;
@@ -50,10 +46,7 @@ async function findHrAgent(db: Db, companyId: string): Promise<string | null> {
 
   for (const row of rows) {
     const r = row.role.toLowerCase();
-    if (
-      (r.includes("hr") && (r.includes("vp") || r.includes("vice") || r.includes("head"))) ||
-      r === "hr_director"
-    ) {
+    if ((r.includes("hr") && (r.includes("vp") || r.includes("vice") || r.includes("head"))) || r === "hr_director") {
       return row.id;
     }
   }
@@ -77,18 +70,11 @@ export async function createHiringRecord(
     hiredByAgentId: string | null;
   },
 ): Promise<void> {
-  const {
-    companyId,
-    hiredAgentId,
-    hiredAgentName,
-    hiredAgentRole,
-    employmentType,
-    hiredByUserId,
-    hiredByAgentId,
-  } = opts;
+  const { companyId, hiredAgentId, hiredAgentName, hiredAgentRole, employmentType, hiredByUserId, hiredByAgentId } =
+    opts;
 
   // Resolve HR agent if not provided
-  const hrAgentId = opts.hrAgentId ?? await findHrAgent(db, companyId);
+  const hrAgentId = opts.hrAgentId ?? (await findHrAgent(db, companyId));
 
   const nameSlug = slugifyName(hiredAgentName);
   const date = formatDate(new Date());
@@ -131,10 +117,7 @@ export async function createHiringRecord(
     createdByUserId: "system",
   });
 
-  logger.info(
-    { companyId, hiredAgentId, hiredAgentName, hrAgentId },
-    "hiring record created",
-  );
+  logger.info({ companyId, hiredAgentId, hiredAgentName, hrAgentId }, "hiring record created");
 }
 
 /**
@@ -150,14 +133,9 @@ export async function createTerminationRecord(
     reason: string;
   },
 ): Promise<void> {
-  const {
-    companyId,
-    terminatedAgentId,
-    terminatedAgentName,
-    reason,
-  } = opts;
+  const { companyId, terminatedAgentId, terminatedAgentName, reason } = opts;
 
-  const hrAgentId = opts.hrAgentId ?? await findHrAgent(db, companyId);
+  const hrAgentId = opts.hrAgentId ?? (await findHrAgent(db, companyId));
 
   const nameSlug = slugifyName(terminatedAgentName);
   const date = formatDate(new Date());
@@ -195,10 +173,7 @@ export async function createTerminationRecord(
     createdByUserId: "system",
   });
 
-  logger.info(
-    { companyId, terminatedAgentId, terminatedAgentName, hrAgentId },
-    "termination record created",
-  );
+  logger.info({ companyId, terminatedAgentId, terminatedAgentName, hrAgentId }, "termination record created");
 }
 
 /**
@@ -215,15 +190,9 @@ export async function createPerformanceReview(
     summary: string;
   },
 ): Promise<void> {
-  const {
-    companyId,
-    reviewedAgentId,
-    reviewedAgentName,
-    performanceScore,
-    summary,
-  } = opts;
+  const { companyId, reviewedAgentId, reviewedAgentName, performanceScore, summary } = opts;
 
-  const hrAgentId = opts.hrAgentId ?? await findHrAgent(db, companyId);
+  const hrAgentId = opts.hrAgentId ?? (await findHrAgent(db, companyId));
 
   const nameSlug = slugifyName(reviewedAgentName);
   const date = formatDate(new Date());
@@ -338,8 +307,5 @@ export async function createEmploymentHistoryEntry(
     createdByUserId: "system",
   });
 
-  logger.info(
-    { companyId, agentId, agentName, eventType, hrAgentId },
-    "employment history entry created",
-  );
+  logger.info({ companyId, agentId, agentName, eventType, hrAgentId }, "employment history entry created");
 }

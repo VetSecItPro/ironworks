@@ -17,7 +17,9 @@ export function LeaderboardHighlights({ topPerformer, mostImproved, prevScoreMap
           <Award className="h-5 w-5 text-amber-400 shrink-0" />
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-wide text-amber-400">Top Performer</div>
-            <div className="text-sm font-medium">{topPerformer.name} <span className="text-muted-foreground">- Score {topPerformer.ratingScore}</span></div>
+            <div className="text-sm font-medium">
+              {topPerformer.name} <span className="text-muted-foreground">- Score {topPerformer.ratingScore}</span>
+            </div>
           </div>
         </div>
       )}

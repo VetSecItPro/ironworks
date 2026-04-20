@@ -1,31 +1,31 @@
-import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@/lib/router";
 import { Plus, Repeat } from "lucide-react";
-import { usePageTitle } from "../hooks/usePageTitle";
-import { routinesApi } from "../api/routines";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { useNavigate } from "@/lib/router";
 import { agentsApi } from "../api/agents";
 import { projectsApi } from "../api/projects";
-import { useCompany } from "../context/CompanyContext";
+import { routinesApi } from "../api/routines";
+import { EmptyState } from "../components/EmptyState";
+import type { InlineEntityOption } from "../components/InlineEntitySelector";
+import type { MarkdownEditorRef } from "../components/MarkdownEditor";
+import { PageSkeleton } from "../components/PageSkeleton";
+import {
+  CreateRoutineDialog,
+  type RoutineDraft,
+  RoutineFilterBar,
+  RoutineListTable,
+  type RoutineViewMode,
+  ScheduleCalendarView,
+} from "../components/routines";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { useCompany } from "../context/CompanyContext";
 import { useToast } from "../context/ToastContext";
+import { usePageTitle } from "../hooks/usePageTitle";
 import { queryKeys } from "../lib/queryKeys";
 import { getRecentAssigneeIds, sortAgentsByRecency, trackRecentAssignee } from "../lib/recent-assignees";
 import { cn } from "../lib/utils";
-import { EmptyState } from "../components/EmptyState";
-import { PageSkeleton } from "../components/PageSkeleton";
-import type { InlineEntityOption } from "../components/InlineEntitySelector";
-import type { MarkdownEditorRef } from "../components/MarkdownEditor";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  ScheduleCalendarView,
-  CreateRoutineDialog,
-  RoutineFilterBar,
-  RoutineListTable,
-  type RoutineDraft,
-  type RoutineViewMode,
-} from "../components/routines";
 
 export function Routines() {
   usePageTitle("Routines");
@@ -57,7 +57,11 @@ export function Routines() {
     setBreadcrumbs([{ label: "Routines" }]);
   }, [setBreadcrumbs]);
 
-  const { data: routines, isLoading, error } = useQuery({
+  const {
+    data: routines,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: queryKeys.routines.list(selectedCompanyId!),
     queryFn: () => routinesApi.list(selectedCompanyId!),
     enabled: !!selectedCompanyId,
@@ -169,14 +173,8 @@ export function Routines() {
       })),
     [projects],
   );
-  const agentById = useMemo(
-    () => new Map((agents ?? []).map((agent) => [agent.id, agent])),
-    [agents],
-  );
-  const projectById = useMemo(
-    () => new Map((projects ?? []).map((project) => [project.id, project])),
-    [projects],
-  );
+  const agentById = useMemo(() => new Map((agents ?? []).map((agent) => [agent.id, agent])), [agents]);
+  const projectById = useMemo(() => new Map((projects ?? []).map((project) => [project.id, project])), [projects]);
 
   if (!selectedCompanyId) {
     return <EmptyState icon={Repeat} message="Select a company to view routines." />;

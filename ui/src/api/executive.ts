@@ -257,56 +257,39 @@ export interface ContextWindowUtilization {
 }
 
 export const executiveApi = {
-  unitEconomics: (companyId: string) =>
-    api.get<UnitEconomics>(`/companies/${companyId}/executive/unit-economics`),
+  unitEconomics: (companyId: string) => api.get<UnitEconomics>(`/companies/${companyId}/executive/unit-economics`),
 
-  burnRate: (companyId: string) =>
-    api.get<BurnRate>(`/companies/${companyId}/executive/burn-rate`),
+  burnRate: (companyId: string) => api.get<BurnRate>(`/companies/${companyId}/executive/burn-rate`),
 
   costAllocation: (companyId: string) =>
     api.get<CostAllocationRow[]>(`/companies/${companyId}/executive/cost-allocation`),
 
-  slaCompliance: (companyId: string) =>
-    api.get<SlaCompliance>(`/companies/${companyId}/executive/sla-compliance`),
+  slaCompliance: (companyId: string) => api.get<SlaCompliance>(`/companies/${companyId}/executive/sla-compliance`),
 
-  techDebt: (companyId: string) =>
-    api.get<TechDebt>(`/companies/${companyId}/executive/tech-debt`),
+  techDebt: (companyId: string) => api.get<TechDebt>(`/companies/${companyId}/executive/tech-debt`),
 
-  riskRegister: (companyId: string) =>
-    api.get<RiskRegister>(`/companies/${companyId}/executive/risk-register`),
+  riskRegister: (companyId: string) => api.get<RiskRegister>(`/companies/${companyId}/executive/risk-register`),
 
-  healthScore: (companyId: string) =>
-    api.get<CompanyHealthScore>(`/companies/${companyId}/executive/health-score`),
+  healthScore: (companyId: string) => api.get<CompanyHealthScore>(`/companies/${companyId}/executive/health-score`),
 
   emergencyPauseAll: (companyId: string) =>
-    api.post<{ paused: number; message: string }>(
-      `/companies/${companyId}/agents/emergency-pause-all`,
-      {},
-    ),
+    api.post<{ paused: number; message: string }>(`/companies/${companyId}/agents/emergency-pause-all`, {}),
 
   tokenAnalytics: (companyId: string, periodDays = 30) =>
-    api.get<CompanyTokenSummary>(
-      `/companies/${companyId}/token-analytics?periodDays=${periodDays}`,
-    ),
+    api.get<CompanyTokenSummary>(`/companies/${companyId}/token-analytics?periodDays=${periodDays}`),
 
   agentTokenAnalytics: (companyId: string, agentId: string, periodDays = 30) =>
-    api.get<AgentTokenAnalytics>(
-      `/companies/${companyId}/token-analytics/${agentId}?periodDays=${periodDays}`,
-    ),
+    api.get<AgentTokenAnalytics>(`/companies/${companyId}/token-analytics/${agentId}?periodDays=${periodDays}`),
 
   agentSecurityProfile: (companyId: string, agentId: string) =>
-    api.get<AgentSecurityProfile>(
-      `/companies/${companyId}/agents/${agentId}/security-profile`,
-    ),
+    api.get<AgentSecurityProfile>(`/companies/${companyId}/agents/${agentId}/security-profile`),
 
   complianceExport: (companyId: string, from?: string, to?: string) => {
     const params = new URLSearchParams();
     if (from) params.set("from", from);
     if (to) params.set("to", to);
     const qs = params.toString();
-    return api.get<ComplianceExportData>(
-      `/companies/${companyId}/compliance-export${qs ? `?${qs}` : ""}`,
-    );
+    return api.get<ComplianceExportData>(`/companies/${companyId}/compliance-export${qs ? `?${qs}` : ""}`);
   },
 
   complianceExportCsv: (companyId: string, from?: string, to?: string) => {
@@ -316,10 +299,7 @@ export const executiveApi = {
     window.location.href = `/api/companies/${companyId}/compliance-export?${params.toString()}`;
   },
 
-  permissionMatrix: (companyId: string) =>
-    api.get<PermissionMatrixData>(
-      `/companies/${companyId}/permission-matrix`,
-    ),
+  permissionMatrix: (companyId: string) => api.get<PermissionMatrixData>(`/companies/${companyId}/permission-matrix`),
 
   getAlerts: (companyId: string, severity: AlertSeverity = "medium") =>
     api.get<SmartAlert[]>(`/companies/${companyId}/alerts?severity=${severity}`),
@@ -330,8 +310,7 @@ export const executiveApi = {
   departmentSpending: (companyId: string) =>
     api.get<DepartmentSpendingRow[]>(`/companies/${companyId}/department-spending`),
 
-  getRiskSettings: (companyId: string) =>
-    api.get<CompanyRiskSettings>(`/companies/${companyId}/risk-settings`),
+  getRiskSettings: (companyId: string) => api.get<CompanyRiskSettings>(`/companies/${companyId}/risk-settings`),
 
   updateRiskSettings: (companyId: string, settings: Partial<CompanyRiskSettings>) =>
     api.patch<CompanyRiskSettings>(`/companies/${companyId}/risk-settings`, settings),
@@ -339,8 +318,7 @@ export const executiveApi = {
   doraMetrics: (companyId: string, days = 30) =>
     api.get<DORAMetrics>(`/companies/${companyId}/dora-metrics?days=${days}`),
 
-  budgetForecast: (companyId: string) =>
-    api.get<BudgetForecast>(`/companies/${companyId}/budget-forecast`),
+  budgetForecast: (companyId: string) => api.get<BudgetForecast>(`/companies/${companyId}/budget-forecast`),
 
   memoryHealth: (companyId: string, agentId: string) =>
     api.get<MemoryHealth>(`/companies/${companyId}/agents/${agentId}/memory-health`),

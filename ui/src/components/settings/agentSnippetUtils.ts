@@ -11,9 +11,7 @@ export function buildAgentSnippet(input: AgentSnippetInput) {
   const resolutionTestUrl = buildResolutionTestUrl(input);
 
   const candidateList =
-    candidateUrls.length > 0
-      ? candidateUrls.map((u) => `- ${u}`).join("\n")
-      : "- (No candidate URLs available yet.)";
+    candidateUrls.length > 0 ? candidateUrls.map((u) => `- ${u}`).join("\n") : "- (No candidate URLs available yet.)";
 
   const connectivityBlock =
     candidateUrls.length === 0
@@ -68,9 +66,7 @@ Then after you've connected to Ironworks (exchanged keys etc.) you MUST review a
 }
 
 export function buildCandidateOnboardingUrls(input: AgentSnippetInput): string[] {
-  const candidates = (input.connectionCandidates ?? [])
-    .map((candidate) => candidate.trim())
-    .filter(Boolean);
+  const candidates = (input.connectionCandidates ?? []).map((candidate) => candidate.trim()).filter(Boolean);
   const urls = new Set<string>();
   let onboardingUrl: URL | null = null;
 
@@ -110,10 +106,7 @@ export function buildResolutionTestUrl(input: AgentSnippetInput): string | null 
 
   try {
     const onboardingUrl = new URL(input.onboardingTextUrl);
-    const testPath = onboardingUrl.pathname.replace(
-      /\/onboarding\.txt$/,
-      "/test-resolution"
-    );
+    const testPath = onboardingUrl.pathname.replace(/\/onboarding\.txt$/, "/test-resolution");
     return `${onboardingUrl.origin}${testPath}`;
   } catch {
     return null;

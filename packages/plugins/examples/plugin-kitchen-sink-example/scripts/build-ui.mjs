@@ -1,6 +1,6 @@
-import esbuild from "esbuild";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import esbuild from "esbuild";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,11 +14,6 @@ await esbuild.build({
   platform: "browser",
   target: ["es2022"],
   sourcemap: true,
-  external: [
-    "react",
-    "react-dom",
-    "react/jsx-runtime",
-    "@ironworksai/plugin-sdk/ui",
-  ],
+  external: ["react", "react-dom", "react/jsx-runtime", "@ironworksai/plugin-sdk/ui"],
   logLevel: "info",
 });

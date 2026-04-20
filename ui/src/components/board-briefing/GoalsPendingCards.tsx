@@ -1,6 +1,6 @@
+import { ClipboardList, Target } from "lucide-react";
 import { Link } from "../../lib/router";
 import { cn } from "../../lib/utils";
-import { Target, ClipboardList } from "lucide-react";
 import { StatBlock } from "../briefing/BriefingCards";
 
 interface GoalStats {
@@ -27,11 +27,7 @@ interface GoalsPendingCardsProps {
   pendingApprovalsCount: number;
 }
 
-export function GoalsPendingCards({
-  goalStats,
-  pendingHiringCount,
-  pendingApprovalsCount,
-}: GoalsPendingCardsProps) {
+export function GoalsPendingCards({ goalStats, pendingHiringCount, pendingApprovalsCount }: GoalsPendingCardsProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <Link to="/goals" className="no-underline text-inherit block">
@@ -44,8 +40,16 @@ export function GoalsPendingCards({
             <StatBlock label="Total Goals" value={goalStats.total} />
             <StatBlock label="Completion Rate" value={`${goalStats.completionRate}%`} color="text-blue-400" />
             <StatBlock label="On Track" value={goalStats.onTrack} color="text-emerald-400" />
-            <StatBlock label="At Risk" value={goalStats.healthAtRisk} color={goalStats.healthAtRisk > 0 ? "text-amber-400" : undefined} />
-            <StatBlock label="Off Track" value={goalStats.offTrack} color={goalStats.offTrack > 0 ? "text-red-400" : undefined} />
+            <StatBlock
+              label="At Risk"
+              value={goalStats.healthAtRisk}
+              color={goalStats.healthAtRisk > 0 ? "text-amber-400" : undefined}
+            />
+            <StatBlock
+              label="Off Track"
+              value={goalStats.offTrack}
+              color={goalStats.offTrack > 0 ? "text-red-400" : undefined}
+            />
             <StatBlock label="Completed" value={goalStats.completed} color="text-emerald-400" />
           </div>
           {goalStats.topAtRisk.length > 0 && (
@@ -53,10 +57,12 @@ export function GoalsPendingCards({
               <span className="text-[10px] text-muted-foreground font-medium uppercase">Top at-risk goals</span>
               {goalStats.topAtRisk.map((g) => (
                 <div key={g.id} className="flex items-center gap-2 text-xs">
-                  <span className={cn(
-                    "h-1.5 w-1.5 rounded-full shrink-0",
-                    g.healthStatus === "off_track" ? "bg-red-500" : "bg-amber-500",
-                  )} />
+                  <span
+                    className={cn(
+                      "h-1.5 w-1.5 rounded-full shrink-0",
+                      g.healthStatus === "off_track" ? "bg-red-500" : "bg-amber-500",
+                    )}
+                  />
                   <span className="truncate flex-1">{g.title}</span>
                   {g.healthScore != null && (
                     <span className="text-muted-foreground tabular-nums shrink-0">{g.healthScore}</span>
@@ -90,7 +96,10 @@ export function GoalsPendingCards({
             <div className="flex items-center gap-2">
               <span className="font-medium tabular-nums">{pendingApprovalsCount}</span>
               {pendingApprovalsCount > 0 && (
-                <Link to="/approvals/pending" className="text-xs text-blue-400 hover:text-blue-300 underline underline-offset-2">
+                <Link
+                  to="/approvals/pending"
+                  className="text-xs text-blue-400 hover:text-blue-300 underline underline-offset-2"
+                >
                   Review
                 </Link>
               )}

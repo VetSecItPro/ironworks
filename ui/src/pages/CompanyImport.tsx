@@ -1,43 +1,35 @@
-import { useEffect, useMemo, useState, type ChangeEvent } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { CreateConfigValues } from "@ironworksai/adapter-utils";
 import type {
+  CompanyPortabilityAdapterOverride,
   CompanyPortabilityCollisionStrategy,
   CompanyPortabilityFileEntry,
   CompanyPortabilityPreviewResult,
   CompanyPortabilitySource,
-  CompanyPortabilityAdapterOverride,
 } from "@ironworksai/shared";
-import { useCompany } from "../context/CompanyContext";
-import { useBreadcrumbs } from "../context/BreadcrumbContext";
-import { useToast } from "../context/ToastContext";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Download } from "lucide-react";
+import { type ChangeEvent, useEffect, useMemo, useState } from "react";
+import { getUIAdapter } from "../adapters";
+import { agentsApi } from "../api/agents";
 import { authApi } from "../api/auth";
 import { companiesApi } from "../api/companies";
-import { agentsApi } from "../api/agents";
-import { queryKeys } from "../lib/queryKeys";
+import { ImportPreviewResults } from "../components/company-import/ImportPreviewResults";
+import { ImportSourceForm } from "../components/company-import/ImportSourceForm";
+import { applyImportedSidebarOrder, readLocalPackageZip } from "../components/company-import/import-helpers";
 import { EmptyState } from "../components/EmptyState";
-import { Download } from "lucide-react";
-import { getUIAdapter } from "../adapters";
-import type { CreateConfigValues } from "@ironworksai/adapter-utils";
-import {
-  type FileTreeNode,
-  buildFileTree,
-  countFiles,
-  collectAllPaths,
-} from "../components/PackageFileTree";
+import type { AdapterPickerItem } from "../components/import/AdapterPickerList";
 import {
   buildActionMap,
   buildConflictList,
   deriveSourcePrefix,
-  prefixedName,
   ensureMarkdownPath,
+  prefixedName,
 } from "../components/import/ImportHelpers";
-import type { AdapterPickerItem } from "../components/import/AdapterPickerList";
-import { ImportSourceForm } from "../components/company-import/ImportSourceForm";
-import { ImportPreviewResults } from "../components/company-import/ImportPreviewResults";
-import {
-  applyImportedSidebarOrder,
-  readLocalPackageZip,
-} from "../components/company-import/import-helpers";
+import { buildFileTree, collectAllPaths, countFiles, type FileTreeNode } from "../components/PackageFileTree";
+import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { useCompany } from "../context/CompanyContext";
+import { useToast } from "../context/ToastContext";
+import { queryKeys } from "../lib/queryKeys";
 
 // ── Main page ─────────────────────────────────────────────────────────
 
@@ -95,10 +87,7 @@ export function CompanyImport() {
   }, [companyAgents]);
 
   useEffect(() => {
-    setBreadcrumbs([
-      { label: "Org Chart", href: "/org" },
-      { label: "Import" },
-    ]);
+    setBreadcrumbs([{ label: "Org Chart", href: "/org" }, { label: "Import" }]);
   }, [setBreadcrumbs]);
 
   function buildSource(): CompanyPortabilitySource | null {
@@ -154,11 +143,7 @@ export function CompanyImport() {
       setAdapterConfigValues({});
 
       const allFiles = new Set(Object.keys(result.files));
-      if (
-        targetMode === "existing" &&
-        result.manifest.company &&
-        result.plan.companyAction === "update"
-      ) {
+      if (targetMode === "existing" && result.manifest.company && result.plan.companyAction === "update") {
         const companyPath = ensureMarkdownPath(result.manifest.company.path);
         allFiles.delete(companyPath);
       }
@@ -250,10 +235,7 @@ export function CompanyImport() {
             queryFn: () => authApi.getSession(),
           });
       const sidebarOrderUserId =
-        currentUserId ??
-        refreshedSession?.user?.id ??
-        refreshedSession?.session?.userId ??
-        null;
+        currentUserId ?? refreshedSession?.user?.id ?? refreshedSession?.session?.userId ?? null;
       applyImportedSidebarOrder(importPreview, result, sidebarOrderUserId);
       setSelectedCompanyId(importedCompany.id);
       pushToast({
@@ -298,10 +280,7 @@ export function CompanyImport() {
     [importPreview, actionMap],
   );
 
-  const conflicts = useMemo(
-    () => (importPreview ? buildConflictList(importPreview) : []),
-    [importPreview],
-  );
+  const conflicts = useMemo(() => (importPreview ? buildConflictList(importPreview) : []), [importPreview]);
 
   const renameMap = useMemo(() => {
     const map = new Map<string, string>();

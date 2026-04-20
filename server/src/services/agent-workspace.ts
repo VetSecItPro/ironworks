@@ -1,6 +1,14 @@
-import { and, asc, eq, isNull } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import { agents, approvalComments, approvals, issueComments, issues, knowledgePages, knowledgePageRevisions } from "@ironworksai/db";
+import {
+  agents,
+  approvalComments,
+  approvals,
+  issueComments,
+  issues,
+  knowledgePageRevisions,
+  knowledgePages,
+} from "@ironworksai/db";
+import { and, asc, eq, isNull } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 
 // ── Workspace Templates ─────────────────────────────────────────────────────
@@ -101,8 +109,10 @@ function resolveTemplateKey(role: string): string {
   if (normalized.includes("vp") && normalized.includes("hr")) return "vp_hr";
   if (normalized.includes("hr") && (normalized.includes("vice") || normalized.includes("head"))) return "vp_hr";
   if (normalized.includes("compliance") || normalized.includes("audit")) return "compliance";
-  if (normalized.includes("engineer") || normalized.includes("developer") || normalized.includes("devops")) return "engineer";
-  if (normalized.includes("content") || normalized.includes("marketer") || normalized.includes("writer")) return "content";
+  if (normalized.includes("engineer") || normalized.includes("developer") || normalized.includes("devops"))
+    return "engineer";
+  if (normalized.includes("content") || normalized.includes("marketer") || normalized.includes("writer"))
+    return "content";
 
   return "default";
 }
@@ -124,12 +134,7 @@ function makeSlug(agentId: string, folder: string): string {
  * Auto-create workspace folder pages when an agent is hired.
  * Each folder becomes a knowledge_page with document_type = "folder".
  */
-export async function createAgentWorkspace(
-  db: Db,
-  agentId: string,
-  companyId: string,
-  role: string,
-): Promise<void> {
+export async function createAgentWorkspace(db: Db, agentId: string, companyId: string, role: string): Promise<void> {
   const template = getTemplate(role);
 
   for (const folder of template.folders) {
@@ -178,20 +183,14 @@ export async function createAgentWorkspace(
     });
   }
 
-  logger.info(
-    { agentId, companyId, role, folders: template.folders.length },
-    "agent workspace created",
-  );
+  logger.info({ agentId, companyId, role, folders: template.folders.length }, "agent workspace created");
 }
 
 /**
  * Archive all knowledge pages owned by an agent.
  * Sets visibility to "archived" so they become read-only in the UI.
  */
-export async function archiveAgentWorkspace(
-  db: Db,
-  agentId: string,
-): Promise<void> {
+export async function archiveAgentWorkspace(db: Db, agentId: string): Promise<void> {
   const now = new Date();
 
   await db
@@ -351,10 +350,7 @@ export async function createPostMortem(
     createdByUserId: null,
   });
 
-  logger.info(
-    { companyId, issueId, agentId },
-    "created post-mortem knowledge page",
-  );
+  logger.info({ companyId, issueId, agentId }, "created post-mortem knowledge page");
 }
 
 /**
@@ -413,10 +409,7 @@ export async function createDecisionRecord(
     createdByUserId: null,
   });
 
-  logger.info(
-    { companyId, agentId, title, status },
-    "created decision record knowledge page",
-  );
+  logger.info({ companyId, agentId, title, status }, "created decision record knowledge page");
 }
 
 /**
@@ -503,11 +496,7 @@ export async function generateMeetingMinutes(
     }
 
     const discussionPoints = comments.map((c, i) => {
-      const author = c.authorAgentId
-        ? `Agent`
-        : c.authorUserId
-        ? `User`
-        : "Unknown";
+      const author = c.authorAgentId ? `Agent` : c.authorUserId ? `User` : "Unknown";
       return `${i + 1}. [${author}]: ${c.body.slice(0, 300)}${c.body.length > 300 ? "..." : ""}`;
     });
 
@@ -525,7 +514,11 @@ export async function generateMeetingMinutes(
       ...(discussionPoints.length > 0 ? discussionPoints : ["- No comments recorded"]),
       "",
       "## Decision",
-      approval.status === "approved" ? "- Approved" : approval.status === "rejected" ? "- Rejected" : `- Status: ${approval.status}`,
+      approval.status === "approved"
+        ? "- Approved"
+        : approval.status === "rejected"
+          ? "- Rejected"
+          : `- Status: ${approval.status}`,
       ...(approval.decisionNote ? [`- Note: ${approval.decisionNote}`] : []),
       "",
       "## Decision Made By",
@@ -582,7 +575,10 @@ export async function generateMeetingMinutes(
       .orderBy(asc(issueComments.createdAt));
 
     if (comments.length < 5) {
-      logger.debug({ sourceId, commentCount: comments.length }, "issue does not have enough comments for meeting minutes");
+      logger.debug(
+        { sourceId, commentCount: comments.length },
+        "issue does not have enough comments for meeting minutes",
+      );
       return;
     }
 
@@ -627,15 +623,8 @@ export async function generateMeetingMinutes(
 /**
  * Get all documents for an agent's workspace.
  */
-export async function getAgentDocuments(
-  db: Db,
-  agentId: string,
-) {
-  return db
-    .select()
-    .from(knowledgePages)
-    .where(eq(knowledgePages.agentId, agentId))
-    .orderBy(knowledgePages.updatedAt);
+export async function getAgentDocuments(db: Db, agentId: string) {
+  return db.select().from(knowledgePages).where(eq(knowledgePages.agentId, agentId)).orderBy(knowledgePages.updatedAt);
 }
 
 // ── Tech Debt Register ─────────────────────────────────────────────────────────

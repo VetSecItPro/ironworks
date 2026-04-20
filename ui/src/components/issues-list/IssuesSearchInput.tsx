@@ -1,6 +1,6 @@
+import { Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
 import { ISSUE_SEARCH_COMMIT_DELAY_MS } from "./types";
 
 interface IssuesSearchInputProps {
@@ -12,8 +12,12 @@ export function IssuesSearchInput({ initialValue, onValueCommitted }: IssuesSear
   const [value, setValue] = useState(initialValue);
   const onValueCommittedRef = useRef(onValueCommitted);
 
-  useEffect(() => { setValue(initialValue); }, [initialValue]);
-  useEffect(() => { onValueCommittedRef.current = onValueCommitted; }, [onValueCommitted]);
+  useEffect(() => {
+    setValue(initialValue);
+  }, [initialValue]);
+  useEffect(() => {
+    onValueCommittedRef.current = onValueCommitted;
+  }, [onValueCommitted]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {

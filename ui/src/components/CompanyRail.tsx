@@ -1,35 +1,19 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Hammer, Plus } from "lucide-react";
-import { useQueries, useQuery } from "@tanstack/react-query";
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy,
-  arrayMove,
-} from "@dnd-kit/sortable";
+import { closestCenter, DndContext, type DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import type { Company } from "@ironworksai/shared";
+import { useQueries, useQuery } from "@tanstack/react-query";
+import { Hammer, Plus } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useLocation, useNavigate } from "@/lib/router";
+import { billingApi, type PlanTier } from "../api/billing";
+import { heartbeatsApi } from "../api/heartbeats";
+import { sidebarBadgesApi } from "../api/sidebarBadges";
 import { useCompany } from "../context/CompanyContext";
 import { useDialog } from "../context/DialogContext";
-import { cn } from "../lib/utils";
 import { queryKeys } from "../lib/queryKeys";
-import { sidebarBadgesApi } from "../api/sidebarBadges";
-import { heartbeatsApi } from "../api/heartbeats";
-import { billingApi, type PlanTier } from "../api/billing";
-import { useLocation, useNavigate } from "@/lib/router";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import type { Company } from "@ironworksai/shared";
+import { cn } from "../lib/utils";
 import { CompanyPatternIcon } from "./CompanyPatternIcon";
 import { TierLimitModal } from "./TierLimitModal";
 
@@ -51,7 +35,9 @@ function getStoredOrder(): string[] {
   try {
     const raw = localStorage.getItem(ORDER_STORAGE_KEY);
     if (raw) return JSON.parse(raw);
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return [];
 }
 
@@ -94,14 +80,7 @@ function SortableCompanyItem({
   hasUnreadInbox: boolean;
   onSelect: () => void;
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: company.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: company.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -126,9 +105,7 @@ function SortableCompanyItem({
             <div
               className={cn(
                 "absolute left-[-14px] w-1 rounded-r-full bg-foreground transition-[height] duration-150",
-                isSelected
-                  ? "h-5"
-                  : "h-0 group-hover:h-2"
+                isSelected ? "h-5" : "h-0 group-hover:h-2",
               )}
             />
             <div
@@ -139,9 +116,7 @@ function SortableCompanyItem({
                 logoUrl={company.logoUrl}
                 brandColor={company.brandColor}
                 className={cn(
-                  isSelected
-                    ? "rounded-[14px]"
-                    : "rounded-[22px] group-hover:rounded-[14px]",
+                  isSelected ? "rounded-[14px]" : "rounded-[22px] group-hover:rounded-[14px]",
                   isDragging && "shadow-lg",
                 )}
               />
@@ -178,10 +153,7 @@ export function CompanyRail() {
   const location = useLocation();
   const isInstanceRoute = location.pathname.startsWith("/instance/");
   const highlightedCompanyId = isInstanceRoute ? null : selectedCompanyId;
-  const sidebarCompanies = useMemo(
-    () => companies.filter((company) => company.status !== "archived"),
-    [companies],
-  );
+  const sidebarCompanies = useMemo(() => companies.filter((company) => company.status !== "archived"), [companies]);
   const companyIds = useMemo(() => sidebarCompanies.map((company) => company.id), [sidebarCompanies]);
 
   const liveRunsQueries = useQueries({
@@ -214,9 +186,7 @@ export function CompanyRail() {
   }, [companyIds, sidebarBadgeQueries]);
 
   // Maintain sorted order in local state, synced from companies + localStorage
-  const [orderedIds, setOrderedIds] = useState<string[]>(() =>
-    sortByStoredOrder(sidebarCompanies).map((c) => c.id)
-  );
+  const [orderedIds, setOrderedIds] = useState<string[]>(() => sortByStoredOrder(sidebarCompanies).map((c) => c.id));
 
   // Re-sync orderedIds from localStorage whenever companies changes.
   // Handles initial data load (companies starts as [] before query resolves)
@@ -236,7 +206,9 @@ export function CompanyRail() {
       try {
         const ids: string[] = e.newValue ? JSON.parse(e.newValue) : [];
         setOrderedIds(ids);
-      } catch { /* ignore malformed data */ }
+      } catch {
+        /* ignore malformed data */
+      }
     };
     window.addEventListener("storage", handleStorage);
     return () => window.removeEventListener("storage", handleStorage);
@@ -288,13 +260,9 @@ export function CompanyRail() {
     }
 
     const upgradeTo = TIER_UPGRADE_TARGETS[currentTier];
-    const upgradeLabel = upgradeTo
-      ? upgradeTo.charAt(0).toUpperCase() + upgradeTo.slice(1)
-      : "a higher plan";
+    const upgradeLabel = upgradeTo ? upgradeTo.charAt(0).toUpperCase() + upgradeTo.slice(1) : "a higher plan";
 
-    setLimitModalMessage(
-      `Upgrade to ${upgradeLabel} to add more companies.`,
-    );
+    setLimitModalMessage(`Upgrade to ${upgradeLabel} to add more companies.`);
     setLimitModalLimit(`${limit} company${limit === 1 ? "" : " companies"}`);
     setLimitModalPlan(currentTier.charAt(0).toUpperCase() + currentTier.slice(1));
     setLimitModalOpen(true);
@@ -304,7 +272,7 @@ export function CompanyRail() {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 8 },
-    })
+    }),
   );
 
   const handleDragEnd = useCallback(
@@ -321,7 +289,7 @@ export function CompanyRail() {
       setOrderedIds(newIds);
       saveOrder(newIds);
     },
-    [orderedCompanies]
+    [orderedCompanies],
   );
 
   return (
@@ -333,15 +301,8 @@ export function CompanyRail() {
 
       {/* Company list */}
       <div className="flex-1 flex flex-col items-center gap-2 py-3 w-full overflow-y-auto overflow-x-hidden scrollbar-none">
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={orderedCompanies.map((c) => c.id)}
-            strategy={verticalListSortingStrategy}
-          >
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={orderedCompanies.map((c) => c.id)} strategy={verticalListSortingStrategy}>
             {orderedCompanies.map((company) => (
               <SortableCompanyItem
                 key={company.id}

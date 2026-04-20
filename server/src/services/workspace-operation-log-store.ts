@@ -1,6 +1,6 @@
+import { createHash } from "node:crypto";
 import { createReadStream, promises as fs } from "node:fs";
 import path from "node:path";
-import { createHash } from "node:crypto";
 import { notFound } from "../errors.js";
 import { resolveIronworksInstanceRoot } from "../home-paths.js";
 
@@ -34,7 +34,10 @@ export interface WorkspaceOperationLogStore {
     event: { stream: "stdout" | "stderr" | "system"; chunk: string; ts: string },
   ): Promise<void>;
   finalize(handle: WorkspaceOperationLogHandle): Promise<WorkspaceOperationLogFinalizeSummary>;
-  read(handle: WorkspaceOperationLogHandle, opts?: WorkspaceOperationLogReadOptions): Promise<WorkspaceOperationLogReadResult>;
+  read(
+    handle: WorkspaceOperationLogHandle,
+    opts?: WorkspaceOperationLogReadOptions,
+  ): Promise<WorkspaceOperationLogReadResult>;
 }
 
 function safeSegments(...segments: string[]) {
@@ -56,7 +59,11 @@ function createLocalFileWorkspaceOperationLogStore(basePath: string): WorkspaceO
     await fs.mkdir(dir, { recursive: true });
   }
 
-  async function readFileRange(filePath: string, offset: number, limitBytes: number): Promise<WorkspaceOperationLogReadResult> {
+  async function readFileRange(
+    filePath: string,
+    offset: number,
+    limitBytes: number,
+  ): Promise<WorkspaceOperationLogReadResult> {
     const stat = await fs.stat(filePath).catch(() => null);
     if (!stat) throw notFound("Workspace operation log not found");
 
@@ -149,8 +156,9 @@ let cachedStore: WorkspaceOperationLogStore | null = null;
 
 export function getWorkspaceOperationLogStore() {
   if (cachedStore) return cachedStore;
-  const basePath = process.env.WORKSPACE_OPERATION_LOG_BASE_PATH
-    ?? path.resolve(resolveIronworksInstanceRoot(), "data", "workspace-operation-logs");
+  const basePath =
+    process.env.WORKSPACE_OPERATION_LOG_BASE_PATH ??
+    path.resolve(resolveIronworksInstanceRoot(), "data", "workspace-operation-logs");
   cachedStore = createLocalFileWorkspaceOperationLogStore(basePath);
   return cachedStore;
 }

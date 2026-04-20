@@ -1,57 +1,144 @@
-export { billingService, verifyPolarWebhookSignature, PLAN_DEFINITIONS, type PlanTier, type SubscriptionStatus, type PlanDefinition, type SubscriptionRecord } from "./billing.js";
-export { companyService } from "./companies.js";
-export { companySkillService } from "./company-skills.js";
-export { agentService, deduplicateAgentName } from "./agents.js";
-export { agentInstructionsService, syncInstructionsBundleConfigFromFilePath } from "./agent-instructions.js";
-export { assetService } from "./assets.js";
-export { documentService, extractLegacyPlanBody } from "./documents.js";
-export { projectService } from "./projects.js";
-export { issueService, type IssueFilters } from "./issues.js";
-export { issueApprovalService } from "./issue-approvals.js";
-export { goalService } from "./goals.js";
-export { activityService, type ActivityFilters } from "./activity.js";
-export { approvalService } from "./approvals.js";
-export { budgetService } from "./budgets.js";
-export { secretService } from "./secrets.js";
-export { routineService } from "./routines.js";
-export { playbookService } from "./playbooks.js";
-export { costService } from "./costs.js";
-export { financeService } from "./finance.js";
-export { heartbeatService } from "./heartbeat.js";
-export { dashboardService } from "./dashboard.js";
-export { sidebarBadgeService } from "./sidebar-badges.js";
-export { accessService } from "./access.js";
-export { userInviteService } from "./user-invites.js";
-export { boardAuthService } from "./board-auth.js";
-export { instanceSettingsService } from "./instance-settings.js";
-export { companyPortabilityService } from "./company-portability.js";
-export { executionWorkspaceService } from "./execution-workspaces.js";
-export { workspaceOperationService } from "./workspace-operations.js";
-export { workProductService } from "./work-products.js";
-export { logActivity, type LogActivityInput } from "./activity-log.js";
-export { notifyHireApproved, type NotifyHireApprovedInput } from "./hire-hook.js";
-export { publishLiveEvent, subscribeCompanyLiveEvents } from "./live-events.js";
-export { reconcilePersistedRuntimeServicesOnStartup } from "./workspace-runtime.js";
-export { messagingBridgeService } from "./messaging-bridges.js";
 export { createStorageServiceFromConfig, getStorageService } from "../storage/index.js";
+export { accessService } from "./access.js";
+export {
+  ACHIEVEMENTS,
+  type Achievement,
+  checkAllAgentAchievements,
+  checkAndGrantAchievements,
+  runAllAchievementChecks,
+} from "./achievements.js";
+export { type ActivityFilters, activityService } from "./activity.js";
+export { type LogActivityInput, logActivity } from "./activity-log.js";
+export { agentInstructionsService, syncInstructionsBundleConfigFromFilePath } from "./agent-instructions.js";
+export {
+  type AgentMemoryEntry,
+  consolidateMemories,
+  decayStaleMemories,
+  enforceMemoryCap,
+  extractMemoriesFromIssue,
+  findRelevantMemories,
+  getContextualMemories,
+  getMemoryHealth,
+  type MemoryHealthResult,
+} from "./agent-memory.js";
+export {
+  createHandoffIssue,
+  extractLessonFromRejection,
+  generatePromptOptimizationSuggestion,
+  identifySkillGaps,
+  type OutputQualityResult,
+  type PromptOptimizationResult,
+  performPostTaskReflection,
+  reviewOutputQuality,
+} from "./agent-reflection.js";
+export {
+  archiveAgentWorkspace,
+  createAgentDocument,
+  createAgentWorkspace,
+  createDecisionRecord,
+  createPostMortem,
+  generateMeetingMinutes,
+  getAgentDocuments,
+  updateTechDebtRegister,
+} from "./agent-workspace.js";
+export { agentService, deduplicateAgentName } from "./agents.js";
+export { approvalService } from "./approvals.js";
+export { assetService } from "./assets.js";
+export {
+  billingService,
+  PLAN_DEFINITIONS,
+  type PlanDefinition,
+  type PlanTier,
+  type SubscriptionRecord,
+  type SubscriptionStatus,
+  verifyPolarWebhookSignature,
+} from "./billing.js";
+export { boardAuthService } from "./board-auth.js";
+export { budgetService } from "./budgets.js";
+export { companyService } from "./companies.js";
+export { companyPortabilityService } from "./company-portability.js";
+export { companySkillService } from "./company-skills.js";
+export { CONFIDENCE_TAGGING_PROMPT, validateConfidenceTags } from "./confidence-tags.js";
 export { checkContractorLifecycles } from "./contractor-lifecycle.js";
-export { extractMemoriesFromIssue, consolidateMemories, decayStaleMemories, enforceMemoryCap, getMemoryHealth, findRelevantMemories, getContextualMemories, type MemoryHealthResult, type AgentMemoryEntry } from "./agent-memory.js";
-export { performPostTaskReflection, extractLessonFromRejection, identifySkillGaps, createHandoffIssue, reviewOutputQuality, generatePromptOptimizationSuggestion, type OutputQualityResult, type PromptOptimizationResult } from "./agent-reflection.js";
 export { buildOnboardingPacket, type OnboardingPacket } from "./contractor-onboarding.js";
-export { computePerformanceScore, updateAllPerformanceScores, computeAgentUtilization, capturePerformanceSnapshot, captureAllPerformanceSnapshots } from "./performance-score.js";
-export { checkAndGrantAchievements, checkAllAgentAchievements, runAllAchievementChecks, ACHIEVEMENTS, type Achievement } from "./achievements.js";
-export { createAgentWorkspace, archiveAgentWorkspace, createAgentDocument, getAgentDocuments, createPostMortem, createDecisionRecord, generateMeetingMinutes, updateTechDebtRegister } from "./agent-workspace.js";
-export { createHiringRecord, createTerminationRecord, createPerformanceReview, createEmploymentHistoryEntry } from "./hr-personnel.js";
-export { saveSessionState, getLatestSessionState, buildMorningBriefing, detectContextDrift, pruneContextIfNeeded, type ContextDriftResult } from "./session-state.js";
-export { generateAgentWeeklyReport, generateCompanyWeeklyReport, generateRetrospective, generateHRWeeklyReport, generateCFOWeeklyReport, generateBoardMeetingPacket, runWeeklyReports, runAllWeeklyReports, generateMonthlyCostSummary, runAllMonthlyCostSummaries, generateClientUpdate, generateTeamRetrospective, runAllTeamRetrospectives } from "./weekly-reports.js";
-export { generateDailyStandup, runDailyStandups, runAllDailyStandups } from "./daily-standup.js";
-export { getVelocityData, type VelocityWeek } from "./velocity.js";
-export { seedSystemRoleTemplates } from "./seed-role-templates.js";
-export { executiveAnalyticsService, budgetForecast, systemHealthSummary, type BudgetForecastResult, type DepartmentSpendingRow, type SystemHealthSummary } from "./executive-analytics.js";
+export { costService } from "./costs.js";
+export { generateDailyStandup, runAllDailyStandups, runDailyStandups } from "./daily-standup.js";
+export { dashboardService } from "./dashboard.js";
+export { documentService, extractLegacyPlanBody } from "./documents.js";
 export { computeDORAMetrics, type DORAMetrics } from "./dora-metrics.js";
+export { executionWorkspaceService } from "./execution-workspaces.js";
+export {
+  type BudgetForecastResult,
+  budgetForecast,
+  type DepartmentSpendingRow,
+  executiveAnalyticsService,
+  type SystemHealthSummary,
+  systemHealthSummary,
+} from "./executive-analytics.js";
+export { financeService } from "./finance.js";
 export { computeGoalHealth, type HealthResult } from "./goal-health.js";
-export { snapshotGoal, snapshotAllGoals, snapshotAllCompanyGoals } from "./goal-snapshots.js";
-export { validateConfidenceTags, CONFIDENCE_TAGGING_PROMPT } from "./confidence-tags.js";
+export { snapshotAllCompanyGoals, snapshotAllGoals, snapshotGoal } from "./goal-snapshots.js";
+export { goalService } from "./goals.js";
+export { heartbeatService } from "./heartbeat.js";
+export { type NotifyHireApprovedInput, notifyHireApproved } from "./hire-hook.js";
+export {
+  createEmploymentHistoryEntry,
+  createHiringRecord,
+  createPerformanceReview,
+  createTerminationRecord,
+} from "./hr-personnel.js";
+export { instanceSettingsService } from "./instance-settings.js";
+export { issueApprovalService } from "./issue-approvals.js";
+export { type IssueFilters, issueService } from "./issues.js";
+export { publishLiveEvent, subscribeCompanyLiveEvents } from "./live-events.js";
+export { messagingBridgeService } from "./messaging-bridges.js";
+export {
+  captureAllPerformanceSnapshots,
+  capturePerformanceSnapshot,
+  computeAgentUtilization,
+  computePerformanceScore,
+  updateAllPerformanceScores,
+} from "./performance-score.js";
+export { playbookService } from "./playbooks.js";
+export { projectService } from "./projects.js";
+export {
+  createQualityGateReview,
+  evaluateQualityGate,
+  getQualityExamples,
+  recordQualityExample,
+  resolveQualityGate,
+} from "./quality-gate.js";
+export { routineService } from "./routines.js";
+export { secretService } from "./secrets.js";
+export { seedSystemRoleTemplates } from "./seed-role-templates.js";
+export {
+  buildMorningBriefing,
+  type ContextDriftResult,
+  detectContextDrift,
+  getLatestSessionState,
+  pruneContextIfNeeded,
+  saveSessionState,
+} from "./session-state.js";
+export { sidebarBadgeService } from "./sidebar-badges.js";
 export { validateSpec } from "./spec-validation.js";
-export { createQualityGateReview, evaluateQualityGate, resolveQualityGate, getQualityExamples, recordQualityExample } from "./quality-gate.js";
-export { getReviewRequirements, recordCompletion, promoteToRun } from "./workflow-maturity.js";
+export { userInviteService } from "./user-invites.js";
+export { getVelocityData, type VelocityWeek } from "./velocity.js";
+export {
+  generateAgentWeeklyReport,
+  generateBoardMeetingPacket,
+  generateCFOWeeklyReport,
+  generateClientUpdate,
+  generateCompanyWeeklyReport,
+  generateHRWeeklyReport,
+  generateMonthlyCostSummary,
+  generateRetrospective,
+  generateTeamRetrospective,
+  runAllMonthlyCostSummaries,
+  runAllTeamRetrospectives,
+  runAllWeeklyReports,
+  runWeeklyReports,
+} from "./weekly-reports.js";
+export { workProductService } from "./work-products.js";
+export { getReviewRequirements, promoteToRun, recordCompletion } from "./workflow-maturity.js";
+export { workspaceOperationService } from "./workspace-operations.js";
+export { reconcilePersistedRuntimeServicesOnStartup } from "./workspace-runtime.js";

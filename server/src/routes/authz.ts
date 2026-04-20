@@ -1,7 +1,7 @@
-import { and, eq } from "drizzle-orm";
-import type { Request } from "express";
 import type { Db } from "@ironworksai/db";
 import { companyMemberships } from "@ironworksai/db";
+import { and, eq } from "drizzle-orm";
+import type { Request } from "express";
 import { forbidden, unauthorized } from "../errors.js";
 import { logActivity } from "../services/activity-log.js";
 

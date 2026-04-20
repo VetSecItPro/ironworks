@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, jsonb, index, uniqueIndex, boolean } from "drizzle-orm/pg-core";
+import { boolean, index, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { companies } from "./companies.js";
 import { plugins } from "./plugins.js";
 
@@ -33,9 +33,6 @@ export const pluginCompanySettings = pgTable(
   (table) => ({
     companyIdx: index("plugin_company_settings_company_idx").on(table.companyId),
     pluginIdx: index("plugin_company_settings_plugin_idx").on(table.pluginId),
-    companyPluginUq: uniqueIndex("plugin_company_settings_company_plugin_uq").on(
-      table.companyId,
-      table.pluginId,
-    ),
+    companyPluginUq: uniqueIndex("plugin_company_settings_company_plugin_uq").on(table.companyId, table.pluginId),
   }),
 );

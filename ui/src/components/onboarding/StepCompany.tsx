@@ -1,5 +1,5 @@
-import { cn } from "../../lib/utils";
 import { Building2 } from "lucide-react";
+import { cn } from "../../lib/utils";
 
 interface StepCompanyProps {
   companyName: string;
@@ -8,12 +8,7 @@ interface StepCompanyProps {
   onCompanyGoalChange: (value: string) => void;
 }
 
-export function StepCompany({
-  companyName,
-  companyGoal,
-  onCompanyNameChange,
-  onCompanyGoalChange,
-}: StepCompanyProps) {
+export function StepCompany({ companyName, companyGoal, onCompanyNameChange, onCompanyGoalChange }: StepCompanyProps) {
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-3 mb-1">
@@ -22,18 +17,14 @@ export function StepCompany({
         </div>
         <div>
           <h2 className="text-lg font-semibold tracking-tight">Name your company</h2>
-          <p className="text-sm text-muted-foreground">
-            This is the organization your agents will work for.
-          </p>
+          <p className="text-sm text-muted-foreground">This is the organization your agents will work for.</p>
         </div>
       </div>
       <div className="mt-3 group">
         <label
           className={cn(
             "text-xs mb-1 block transition-colors",
-            companyName.trim()
-              ? "text-foreground"
-              : "text-muted-foreground group-focus-within:text-foreground"
+            companyName.trim() ? "text-foreground" : "text-muted-foreground group-focus-within:text-foreground",
           )}
         >
           Company name
@@ -49,11 +40,21 @@ export function StepCompany({
           <p className="mt-1.5 text-xs text-muted-foreground">
             Your issues will be{" "}
             <span className="font-mono font-medium text-foreground/80">
-              {companyName.trim().substring(0, 4).toUpperCase().replace(/[^A-Z0-9]/g, "")}-1
+              {companyName
+                .trim()
+                .substring(0, 4)
+                .toUpperCase()
+                .replace(/[^A-Z0-9]/g, "")}
+              -1
             </span>
             ,{" "}
             <span className="font-mono font-medium text-foreground/80">
-              {companyName.trim().substring(0, 4).toUpperCase().replace(/[^A-Z0-9]/g, "")}-2
+              {companyName
+                .trim()
+                .substring(0, 4)
+                .toUpperCase()
+                .replace(/[^A-Z0-9]/g, "")}
+              -2
             </span>
             ...
           </p>
@@ -63,9 +64,7 @@ export function StepCompany({
         <label
           className={cn(
             "text-xs mb-1 block transition-colors",
-            companyGoal.trim()
-              ? "text-foreground"
-              : "text-muted-foreground group-focus-within:text-foreground"
+            companyGoal.trim() ? "text-foreground" : "text-muted-foreground group-focus-within:text-foreground",
           )}
         >
           Mission / goal (optional)

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -179,9 +179,7 @@ describe("goal routes", () => {
 
     it("rejects unauthenticated create with 401", async () => {
       const app = await createApp(noActor());
-      const res = await request(app)
-        .post(`/api/companies/${COMPANY_ID}/goals`)
-        .send({ title: "Test" });
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/goals`).send({ title: "Test" });
       expect(res.status).toBe(401);
     });
   });
@@ -191,9 +189,7 @@ describe("goal routes", () => {
       const updated = { ...MOCK_GOAL, status: "completed" };
       mockGoalService.update.mockResolvedValue(updated);
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .patch(`/api/goals/${GOAL_ID}`)
-        .send({ status: "completed" });
+      const res = await request(app).patch(`/api/goals/${GOAL_ID}`).send({ status: "completed" });
 
       expect(res.status).toBe(200);
       expect(res.body.status).toBe("completed");
@@ -203,9 +199,7 @@ describe("goal routes", () => {
     it("returns 404 for non-existent goal update", async () => {
       mockGoalService.getById.mockResolvedValue(null);
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .patch(`/api/goals/${randomUUID()}`)
-        .send({ status: "completed" });
+      const res = await request(app).patch(`/api/goals/${randomUUID()}`).send({ status: "completed" });
       expect(res.status).toBe(404);
     });
   });
@@ -269,7 +263,9 @@ describe("goal routes", () => {
     it("returns 404 for non-existent key result", async () => {
       mockGoalService.removeKeyResult.mockResolvedValue(null);
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app).delete(`/api/companies/${COMPANY_ID}/goals/${GOAL_ID}/key-results/${randomUUID()}`);
+      const res = await request(app).delete(
+        `/api/companies/${COMPANY_ID}/goals/${GOAL_ID}/key-results/${randomUUID()}`,
+      );
       expect(res.status).toBe(404);
     });
   });

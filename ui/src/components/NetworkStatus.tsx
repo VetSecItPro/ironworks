@@ -1,14 +1,12 @@
-import { useEffect, useState } from "react";
 import { WifiOff } from "lucide-react";
+import { useEffect, useState } from "react";
 
 /**
  * Detects online/offline state and shows a top banner when the
  * browser goes offline. Automatically hides when connectivity returns.
  */
 export function NetworkStatus() {
-  const [online, setOnline] = useState(
-    typeof navigator !== "undefined" ? navigator.onLine : true,
-  );
+  const [online, setOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
 
   useEffect(() => {
     const handleOnline = () => setOnline(true);

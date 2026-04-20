@@ -1,14 +1,14 @@
+import { PROMPT_MAX_LENGTHS, redactSecrets, sanitizeForPrompt } from "../../lib/prompt-security.js";
+import { logger } from "../../middleware/logger.js";
 import type { AdapterExecutionContext, AdapterExecutionResult } from "../types.js";
 import { asString } from "../utils.js";
-import { sanitizeForPrompt, redactSecrets, PROMPT_MAX_LENGTHS } from "../../lib/prompt-security.js";
-import { logger } from "../../middleware/logger.js";
 
 export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExecutionResult> {
   const { config, agent, context } = ctx;
 
   // Get API endpoint and key - check config.apiKey, then env bindings, then process.env
   const apiUrl = asString(config.url, "https://ollama.com/api/chat");
-  const envRecord = (config.env && typeof config.env === "object") ? config.env as Record<string, string> : {};
+  const envRecord = config.env && typeof config.env === "object" ? (config.env as Record<string, string>) : {};
   const apiKey = asString(config.apiKey, envRecord.OLLAMA_API_KEY ?? process.env.OLLAMA_API_KEY ?? "");
   const primaryModel = asString(config.model, "kimi-k2.5");
   const fallbackModel = asString(config.fallbackModel, "");
@@ -26,7 +26,8 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   }
 
   // System prompt from DB agent instructions, falling back to legacy promptTemplate in config
-  const systemPrompt = strVal(context.systemPrompt) || strVal(context.ironworksSystemPrompt) || strVal(config.promptTemplate);
+  const systemPrompt =
+    strVal(context.systemPrompt) || strVal(context.ironworksSystemPrompt) || strVal(config.promptTemplate);
   const agentInstructions = strVal(context.agentInstructions);
   if (systemPrompt && agentInstructions) {
     messages.push({ role: "system", content: `${systemPrompt}\n\n${agentInstructions}` });
@@ -77,15 +78,18 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   for (const key of channelContextKeys) {
     const updates = context[key];
     if (Array.isArray(updates) && updates.length > 0) {
-      const formatted = updates.map((u: Record<string, unknown>) =>
-        `[${u.at ? new Date(u.at as string).toLocaleTimeString() : ""}] ${u.author}: ${u.body}`
-      ).join("\n");
+      const formatted = updates
+        .map(
+          (u: Record<string, unknown>) =>
+            `[${u.at ? new Date(u.at as string).toLocaleTimeString() : ""}] ${u.author}: ${u.body}`,
+        )
+        .join("\n");
       messages.push({ role: "system", content: `## Recent Channel Messages\n${formatted}` });
       logger.info({ count: updates.length, key }, "[ollama-cloud] Injected channel messages");
     }
   }
   // Debug: log which channel keys are present
-  const presentKeys = channelContextKeys.filter(k => context[k]);
+  const presentKeys = channelContextKeys.filter((k) => context[k]);
   if (presentKeys.length === 0) {
     logger.info({ keysChecked: channelContextKeys }, "[ollama-cloud] No channel messages in context");
   }
@@ -114,7 +118,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   // The agent MUST respond using [CHANNEL #name] format for messages to appear.
   if (!rawTaskContext && !rawLatestComment) {
     // Build a more explicit check-in prompt that forces the [CHANNEL] format
-    const hasChannelMessages = channelContextKeys.some(key => {
+    const hasChannelMessages = channelContextKeys.some((key) => {
       const val = context[key];
       return Array.isArray(val) && val.length > 0;
     });
@@ -146,7 +150,9 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   const PROMPT_CHAR_BUDGET = 100_000;
   const totalChars = () => messages.reduce((sum, m) => sum + m.content.length, 0);
   if (totalChars() > PROMPT_CHAR_BUDGET) {
-    console.warn(`[ollama-cloud] Prompt size ${totalChars()} chars exceeds budget of ${PROMPT_CHAR_BUDGET}; truncating longest non-system messages`);
+    console.warn(
+      `[ollama-cloud] Prompt size ${totalChars()} chars exceeds budget of ${PROMPT_CHAR_BUDGET}; truncating longest non-system messages`,
+    );
     const nonSystem = messages.filter((m) => m.role !== "system");
     // Sort descending by length so we truncate the biggest messages first
     nonSystem.sort((a, b) => b.content.length - a.content.length);
@@ -172,7 +178,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`,
+          Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
           model,
@@ -188,7 +194,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
         throw new Error(`Ollama Cloud API returned ${res.status}: ${errorText}`);
       }
 
-      const data = await res.json() as {
+      const data = (await res.json()) as {
         message?: { content?: string };
         eval_count?: number;
         prompt_eval_count?: number;
@@ -224,7 +230,8 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   } catch (primaryErr) {
     // If primary fails and we have a fallback, try it
     const errMsg = (primaryErr as Error).message ?? "";
-    const isRetryable = errMsg.includes("404") || errMsg.includes("503") || errMsg.includes("not found") || errMsg.includes("overloaded");
+    const isRetryable =
+      errMsg.includes("404") || errMsg.includes("503") || errMsg.includes("not found") || errMsg.includes("overloaded");
 
     if (fallbackModel && isRetryable) {
       try {

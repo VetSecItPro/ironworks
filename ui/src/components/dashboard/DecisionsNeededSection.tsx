@@ -1,5 +1,5 @@
-import { Link } from "@/lib/router";
 import { Briefcase, ShieldCheck, UserPlus } from "lucide-react";
+import { Link } from "@/lib/router";
 
 export function DecisionsNeededSection({
   pendingHiringCount,
@@ -25,7 +25,9 @@ export function DecisionsNeededSection({
             <div className="flex items-center gap-2.5">
               <UserPlus className="h-4 w-4 text-amber-400 shrink-0" />
               <div>
-                <p className="text-sm font-medium">{pendingHiringCount} hiring request{pendingHiringCount !== 1 ? "s" : ""}</p>
+                <p className="text-sm font-medium">
+                  {pendingHiringCount} hiring request{pendingHiringCount !== 1 ? "s" : ""}
+                </p>
                 <p className="text-xs text-muted-foreground">Pending review</p>
               </div>
             </div>
@@ -40,7 +42,9 @@ export function DecisionsNeededSection({
             <div className="flex items-center gap-2.5">
               <ShieldCheck className="h-4 w-4 text-amber-400 shrink-0" />
               <div>
-                <p className="text-sm font-medium">{pendingApprovalsCount} pending approval{pendingApprovalsCount !== 1 ? "s" : ""}</p>
+                <p className="text-sm font-medium">
+                  {pendingApprovalsCount} pending approval{pendingApprovalsCount !== 1 ? "s" : ""}
+                </p>
                 <p className="text-xs text-muted-foreground">Awaiting board review</p>
               </div>
             </div>

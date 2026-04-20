@@ -6,53 +6,53 @@
  * orchestration logic.
  */
 
-import { and, asc, desc, eq, gte, inArray, notInArray, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import {
   agentRuntimeState,
+  agents,
   agentTaskSessions,
   agentWakeupRequests,
-  agents,
   heartbeatRuns,
   issues,
 } from "@ironworksai/db";
-import { DEFAULT_ITERATION_LIMITS } from "@ironworksai/shared";
 import type { SchedulerSettings } from "@ironworksai/shared";
+import { DEFAULT_ITERATION_LIMITS } from "@ironworksai/shared";
+import { and, asc, desc, eq, gte, inArray, notInArray, sql } from "drizzle-orm";
 import type { AdapterSessionCodec } from "../adapters/index.js";
 import { getServerAdapter, runningProcesses } from "../adapters/index.js";
-import { notFound, conflict } from "../errors.js";
-import { logger } from "../middleware/logger.js";
-import { publishLiveEvent } from "./live-events.js";
-import { logActivity } from "./activity-log.js";
+import { asBoolean, asNumber, parseObject } from "../adapters/utils.js";
+import { conflict, notFound } from "../errors.js";
 import { resolveDefaultAgentWorkspaceDir } from "../home-paths.js";
-import { parseObject, asBoolean, asNumber } from "../adapters/utils.js";
-import { budgetService } from "./budgets.js";
+import { logger } from "../middleware/logger.js";
+import { logActivity } from "./activity-log.js";
 import type { BudgetEnforcementScope } from "./budgets.js";
+import { budgetService } from "./budgets.js";
 import {
+  buildExplicitResumeSessionOverride,
   DEFERRED_WAKE_CONTEXT_KEY,
   DETACHED_PROCESS_ERROR_CODE,
-  HEARTBEAT_MAX_CONCURRENT_RUNS_DEFAULT,
-  HEARTBEAT_MAX_CONCURRENT_RUNS_MAX,
-  MANAGED_WORKSPACE_GIT_CLONE_TIMEOUT_MS,
-  SESSIONED_LOCAL_ADAPTERS,
-  startLocksByAgent,
-  enrichWakeContextSnapshot,
+  deriveCommentId,
   deriveTaskKey,
   deriveTaskKeyWithHeartbeatFallback,
-  deriveCommentId,
+  enrichWakeContextSnapshot,
+  HEARTBEAT_MAX_CONCURRENT_RUNS_DEFAULT,
+  HEARTBEAT_MAX_CONCURRENT_RUNS_MAX,
+  isProcessAlive,
   isSameTaskScope,
   isTrackedLocalChildProcessAdapter,
-  isProcessAlive,
+  MANAGED_WORKSPACE_GIT_CLONE_TIMEOUT_MS,
   mergeCoalescedContextSnapshot,
   normalizeAgentNameKey,
   normalizeMaxConcurrentRuns,
   normalizeSessionParams,
   readNonEmptyString,
   readRawUsageTotals,
+  SESSIONED_LOCAL_ADAPTERS,
+  startLocksByAgent,
   truncateDisplayId,
   type WakeupOptions,
 } from "./heartbeat-types.js";
-import { buildExplicitResumeSessionOverride } from "./heartbeat-types.js";
+import { publishLiveEvent } from "./live-events.js";
 
 // ── Idle detection ────────────────────────────────────────────────────────
 
@@ -136,10 +136,7 @@ export function parseHeartbeatPolicy(agent: typeof agents.$inferSelect) {
     enabled: asBoolean(heartbeat.enabled, true),
     intervalSec: Math.max(0, asNumber(heartbeat.intervalSec, 0)),
     wakeOnDemand: asBoolean(
-      heartbeat.wakeOnDemand ??
-        heartbeat.wakeOnAssignment ??
-        heartbeat.wakeOnOnDemand ??
-        heartbeat.wakeOnAutomation,
+      heartbeat.wakeOnDemand ?? heartbeat.wakeOnAssignment ?? heartbeat.wakeOnOnDemand ?? heartbeat.wakeOnAutomation,
       true,
     ),
     maxConcurrentRuns: normalizeMaxConcurrentRuns(heartbeat.maxConcurrentRuns),
@@ -154,12 +151,7 @@ async function countAgentRunsToday(db: Db, agentId: string): Promise<number> {
   const [{ count }] = await db
     .select({ count: sql<number>`count(*)` })
     .from(heartbeatRuns)
-    .where(
-      and(
-        eq(heartbeatRuns.agentId, agentId),
-        gte(heartbeatRuns.createdAt, startOfDay),
-      ),
-    );
+    .where(and(eq(heartbeatRuns.agentId, agentId), gte(heartbeatRuns.createdAt, startOfDay)));
   return Number(count ?? 0);
 }
 
@@ -221,12 +213,7 @@ async function pauseAgentForIterationLimit(
       pausedAt: now,
       updatedAt: now,
     })
-    .where(
-      and(
-        eq(agents.id, agentId),
-        inArray(agents.status, ["active", "idle", "running", "error"]),
-      ),
-    );
+    .where(and(eq(agents.id, agentId), inArray(agents.status, ["active", "idle", "running", "error"])));
 
   await logActivity(db, {
     companyId,
@@ -296,9 +283,7 @@ export async function resolveSessionBeforeForWakeup(
         ),
       )
       .then((rows) => rows[0] ?? null);
-    const parsedParams = normalizeSessionParams(
-      codec.deserialize(existingTaskSession?.sessionParamsJson ?? null),
-    );
+    const parsedParams = normalizeSessionParams(codec.deserialize(existingTaskSession?.sessionParamsJson ?? null));
     return truncateDisplayId(
       existingTaskSession?.sessionDisplayId ??
         (codec.getDisplayId ? codec.getDisplayId(parsedParams) : null) ??
@@ -372,8 +357,7 @@ export async function resolveExplicitResumeSessionOverride(
     resumeFromRunId,
     taskKey: resumeTaskKey,
     issueId: readNonEmptyString(resumeContext.issueId),
-    taskId:
-      readNonEmptyString(resumeContext.taskId) ?? readNonEmptyString(resumeContext.issueId),
+    taskId: readNonEmptyString(resumeContext.taskId) ?? readNonEmptyString(resumeContext.issueId),
     sessionDisplayId: sessionOverride.sessionDisplayId,
     sessionParams: sessionOverride.sessionParams,
   };
@@ -459,8 +443,7 @@ export async function reapOrphanedRuns(
       continue;
     }
 
-    const shouldRetry =
-      tracksLocalChild && !!run.processPid && (run.processLossRetryCount ?? 0) < 1;
+    const shouldRetry = tracksLocalChild && !!run.processPid && (run.processLossRetryCount ?? 0) < 1;
     const baseMessage = run.processPid
       ? `Process lost -- child pid ${run.processPid} is no longer running`
       : "Process lost -- server may have restarted";
@@ -491,22 +474,16 @@ export async function reapOrphanedRuns(
       await hooks.releaseIssueExecutionAndPromote(finalizedRun);
     }
 
-    await hooks.appendRunEvent(
-      finalizedRun,
-      await hooks.nextRunEventSeq(finalizedRun.id),
-      {
-        eventType: "lifecycle",
-        stream: "system",
-        level: "error",
-        message: shouldRetry
-          ? `${baseMessage}; queued retry ${retriedRun?.id ?? ""}`.trim()
-          : baseMessage,
-        payload: {
-          ...(run.processPid ? { processPid: run.processPid } : {}),
-          ...(retriedRun ? { retryRunId: retriedRun.id } : {}),
-        },
+    await hooks.appendRunEvent(finalizedRun, await hooks.nextRunEventSeq(finalizedRun.id), {
+      eventType: "lifecycle",
+      stream: "system",
+      level: "error",
+      message: shouldRetry ? `${baseMessage}; queued retry ${retriedRun?.id ?? ""}`.trim() : baseMessage,
+      payload: {
+        ...(run.processPid ? { processPid: run.processPid } : {}),
+        ...(retriedRun ? { retryRunId: retriedRun.id } : {}),
       },
-    );
+    });
 
     await hooks.finalizeAgentStatus(run.agentId, "failed");
     await hooks.startNextQueuedRunForAgent(run.agentId);
@@ -541,12 +518,7 @@ async function autoResumePausedAgents(db: Db, now: Date): Promise<number> {
   const pausedAgents = await db
     .select()
     .from(agents)
-    .where(
-      and(
-        eq(agents.status, "paused"),
-        sql`${agents.pauseReason} IS NOT NULL`,
-      ),
-    );
+    .where(and(eq(agents.status, "paused"), sql`${agents.pauseReason} IS NOT NULL`));
 
   if (pausedAgents.length === 0) return 0;
 
@@ -800,21 +772,19 @@ export async function releaseIssueExecutionAndPromote(
       const deferredContextSeed = parseObject(deferredPayload[DEFERRED_WAKE_CONTEXT_KEY]);
       const promotedContextSeed: Record<string, unknown> = { ...deferredContextSeed };
       const promotedReason = readNonEmptyString(deferred.reason) ?? "issue_execution_promoted";
-      const promotedSource =
-        (readNonEmptyString(deferred.source) as WakeupOptions["source"]) ?? "automation";
+      const promotedSource = (readNonEmptyString(deferred.source) as WakeupOptions["source"]) ?? "automation";
       const promotedTriggerDetail =
         (readNonEmptyString(deferred.triggerDetail) as WakeupOptions["triggerDetail"]) ?? null;
       const promotedPayload = deferredPayload;
       delete promotedPayload[DEFERRED_WAKE_CONTEXT_KEY];
 
-      const { contextSnapshot: promotedContextSnapshot, taskKey: promotedTaskKey } =
-        enrichWakeContextSnapshot({
-          contextSnapshot: promotedContextSeed,
-          reason: promotedReason,
-          source: promotedSource,
-          triggerDetail: promotedTriggerDetail,
-          payload: promotedPayload,
-        });
+      const { contextSnapshot: promotedContextSnapshot, taskKey: promotedTaskKey } = enrichWakeContextSnapshot({
+        contextSnapshot: promotedContextSeed,
+        reason: promotedReason,
+        source: promotedSource,
+        triggerDetail: promotedTriggerDetail,
+        payload: promotedPayload,
+      });
 
       const sessionBefore =
         readNonEmptyString(promotedContextSnapshot.resumeSessionDisplayId) ??
@@ -897,11 +867,7 @@ export async function enqueueWakeup(
       taskKey: string | null,
     ) => Promise<string | null>;
     startNextQueuedRunForAgent: (agentId: string) => Promise<unknown>;
-    checkIterationLimits: (
-      agentId: string,
-      companyId: string,
-      issueId: string | null,
-    ) => Promise<string | null>;
+    checkIterationLimits: (agentId: string, companyId: string, issueId: string | null) => Promise<string | null>;
   },
 ): Promise<typeof heartbeatRuns.$inferSelect | null> {
   const source = opts.source ?? "on_demand";
@@ -931,11 +897,7 @@ export async function enqueueWakeup(
     .then((rows) => rows[0] ?? null);
   if (!agent) throw notFound("Agent not found");
 
-  const explicitResumeSession = await hooks.resolveExplicitResumeSessionOverride(
-    agent,
-    payload,
-    taskKey,
-  );
+  const explicitResumeSession = await hooks.resolveExplicitResumeSessionOverride(agent, payload, taskKey);
   if (explicitResumeSession) {
     enrichedContextSnapshot.resumeFromRunId = explicitResumeSession.resumeFromRunId;
     enrichedContextSnapshot.resumeSessionDisplayId = explicitResumeSession.sessionDisplayId;
@@ -954,8 +916,7 @@ export async function enqueueWakeup(
 
   const effectiveTaskKey = readNonEmptyString(enrichedContextSnapshot.taskKey) ?? taskKey;
   const sessionBefore =
-    explicitResumeSession?.sessionDisplayId ??
-    (await hooks.resolveSessionBeforeForWakeup(agent, effectiveTaskKey));
+    explicitResumeSession?.sessionDisplayId ?? (await hooks.resolveSessionBeforeForWakeup(agent, effectiveTaskKey));
 
   const writeSkippedRequest = async (skipReason: string) => {
     await db.insert(agentWakeupRequests).values({
@@ -1006,11 +967,7 @@ export async function enqueueWakeup(
     return null;
   }
 
-  if (
-    agent.status === "paused" ||
-    agent.status === "terminated" ||
-    agent.status === "pending_approval"
-  ) {
+  if (agent.status === "paused" || agent.status === "terminated" || agent.status === "pending_approval") {
     throw conflict("Agent is not invokable in its current state", { status: agent.status });
   }
 
@@ -1033,9 +990,7 @@ export async function enqueueWakeup(
     const agentNameKey = normalizeAgentNameKey(agent.name);
 
     const outcome = await db.transaction(async (tx) => {
-      await tx.execute(
-        sql`select id from issues where id = ${issueId} and company_id = ${agent.companyId} for update`,
-      );
+      await tx.execute(sql`select id from issues where id = ${issueId} and company_id = ${agent.companyId} for update`);
 
       const issue = await tx
         .select({
@@ -1073,11 +1028,7 @@ export async function enqueueWakeup(
             .then((rows) => rows[0] ?? null)
         : null;
 
-      if (
-        activeExecutionRun &&
-        activeExecutionRun.status !== "queued" &&
-        activeExecutionRun.status !== "running"
-      ) {
+      if (activeExecutionRun && activeExecutionRun.status !== "queued" && activeExecutionRun.status !== "running") {
         activeExecutionRun = null;
       }
 
@@ -1104,10 +1055,7 @@ export async function enqueueWakeup(
               sql`${heartbeatRuns.contextSnapshot} ->> 'issueId' = ${issue.id}`,
             ),
           )
-          .orderBy(
-            sql`case when ${heartbeatRuns.status} = 'running' then 0 else 1 end`,
-            asc(heartbeatRuns.createdAt),
-          )
+          .orderBy(sql`case when ${heartbeatRuns.status} = 'running' then 0 else 1 end`, asc(heartbeatRuns.createdAt))
           .limit(1)
           .then((rows) => rows[0] ?? null);
 
@@ -1137,14 +1085,10 @@ export async function enqueueWakeup(
           .where(eq(agents.id, activeExecutionRun.agentId))
           .then((rows) => rows[0] ?? null);
         const executionAgentNameKey =
-          normalizeAgentNameKey(issue.executionAgentNameKey) ??
-          normalizeAgentNameKey(executionAgent?.name);
-        const isSameExecutionAgent =
-          Boolean(executionAgentNameKey) && executionAgentNameKey === agentNameKey;
+          normalizeAgentNameKey(issue.executionAgentNameKey) ?? normalizeAgentNameKey(executionAgent?.name);
+        const isSameExecutionAgent = Boolean(executionAgentNameKey) && executionAgentNameKey === agentNameKey;
         const shouldQueueFollowupForCommentWake =
-          Boolean(wakeCommentId) &&
-          activeExecutionRun.status === "running" &&
-          isSameExecutionAgent;
+          Boolean(wakeCommentId) && activeExecutionRun.status === "running" && isSameExecutionAgent;
 
         if (isSameExecutionAgent && !shouldQueueFollowupForCommentWake) {
           const mergedContextSnapshot = mergeCoalescedContextSnapshot(
@@ -1201,10 +1145,7 @@ export async function enqueueWakeup(
         if (existingDeferred) {
           const existingDeferredPayload = parseObject(existingDeferred.payload);
           const existingDeferredContext = parseObject(existingDeferredPayload[DEFERRED_WAKE_CONTEXT_KEY]);
-          const mergedDeferredContext = mergeCoalescedContextSnapshot(
-            existingDeferredContext,
-            enrichedContextSnapshot,
-          );
+          const mergedDeferredContext = mergeCoalescedContextSnapshot(existingDeferredContext, enrichedContextSnapshot);
           const mergedDeferredPayload = {
             ...existingDeferredPayload,
             ...(payload ?? {}),
@@ -1314,34 +1255,23 @@ export async function enqueueWakeup(
   const activeRuns = await db
     .select()
     .from(heartbeatRuns)
-    .where(
-      and(
-        eq(heartbeatRuns.agentId, agentId),
-        inArray(heartbeatRuns.status, ["queued", "running"]),
-      ),
-    )
+    .where(and(eq(heartbeatRuns.agentId, agentId), inArray(heartbeatRuns.status, ["queued", "running"])))
     .orderBy(desc(heartbeatRuns.createdAt));
 
   const sameScopeQueuedRun = activeRuns.find(
-    (candidate) =>
-      candidate.status === "queued" && isSameTaskScope(runTaskKey(candidate), taskKey),
+    (candidate) => candidate.status === "queued" && isSameTaskScope(runTaskKey(candidate), taskKey),
   );
   const sameScopeRunningRun = activeRuns.find(
-    (candidate) =>
-      candidate.status === "running" && isSameTaskScope(runTaskKey(candidate), taskKey),
+    (candidate) => candidate.status === "running" && isSameTaskScope(runTaskKey(candidate), taskKey),
   );
   const shouldQueueFollowupForCommentWake =
     Boolean(wakeCommentId) && Boolean(sameScopeRunningRun) && !sameScopeQueuedRun;
 
   const coalescedTargetRun =
-    sameScopeQueuedRun ??
-    (shouldQueueFollowupForCommentWake ? null : (sameScopeRunningRun ?? null));
+    sameScopeQueuedRun ?? (shouldQueueFollowupForCommentWake ? null : (sameScopeRunningRun ?? null));
 
   if (coalescedTargetRun) {
-    const mergedContextSnapshot = mergeCoalescedContextSnapshot(
-      coalescedTargetRun.contextSnapshot,
-      contextSnapshot,
-    );
+    const mergedContextSnapshot = mergeCoalescedContextSnapshot(coalescedTargetRun.contextSnapshot, contextSnapshot);
     const mergedRun = await db
       .update(heartbeatRuns)
       .set({ contextSnapshot: mergedContextSnapshot, updatedAt: new Date() })

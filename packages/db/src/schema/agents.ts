@@ -1,13 +1,4 @@
-import {
-  type AnyPgColumn,
-  pgTable,
-  uuid,
-  text,
-  integer,
-  timestamp,
-  jsonb,
-  index,
-} from "drizzle-orm/pg-core";
+import { type AnyPgColumn, index, integer, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { companies } from "./companies.js";
 import { projects } from "./projects.js";
 
@@ -15,7 +6,9 @@ export const agents = pgTable(
   "agents",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    companyId: uuid("company_id").notNull().references(() => companies.id),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id),
     name: text("name").notNull(),
     role: text("role").notNull().default("general"),
     title: text("title"),

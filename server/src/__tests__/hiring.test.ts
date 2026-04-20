@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -41,7 +41,11 @@ function createFakeDb() {
   // select chain
   const selectLimit = vi.fn().mockImplementation(() => mockDbRows());
   const selectOrderBy = vi.fn().mockReturnValue({ limit: selectLimit });
-  const selectWhere = vi.fn().mockReturnValue({ orderBy: selectOrderBy, limit: selectLimit, then: vi.fn().mockImplementation((cb: any) => mockDbRows().then(cb)) });
+  const selectWhere = vi.fn().mockReturnValue({
+    orderBy: selectOrderBy,
+    limit: selectLimit,
+    then: vi.fn().mockImplementation((cb: any) => mockDbRows().then(cb)),
+  });
   const selectFrom = vi.fn().mockReturnValue({ where: selectWhere });
   const selectObj = vi.fn().mockReturnValue({ from: selectFrom });
 
@@ -96,7 +100,7 @@ vi.mock("../middleware/logger.js", () => ({
 
 // Mock assertCanWrite to avoid DB calls
 vi.mock("../routes/authz.js", async (importOriginal) => {
-  const original = await importOriginal() as any;
+  const original = (await importOriginal()) as any;
   return {
     ...original,
     assertCanWrite: vi.fn().mockResolvedValue(undefined),
@@ -191,23 +195,19 @@ describe("hiring routes", () => {
 
     it("rejects missing title with 400", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post(`/api/companies/${COMPANY_ID}/hiring-requests`)
-        .send({ role: "engineer" });
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/hiring-requests`).send({ role: "engineer" });
 
       expect(res.status).toBe(400);
     });
 
     it("accepts optional fields like department and justification", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post(`/api/companies/${COMPANY_ID}/hiring-requests`)
-        .send({
-          role: "engineer",
-          title: "SE",
-          department: "Platform",
-          justification: "Scaling needs",
-        });
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/hiring-requests`).send({
+        role: "engineer",
+        title: "SE",
+        department: "Platform",
+        justification: "Scaling needs",
+      });
 
       expect(res.status).toBe(201);
     });

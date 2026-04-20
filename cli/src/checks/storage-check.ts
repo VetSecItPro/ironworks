@@ -48,4 +48,3 @@ export function storageCheck(config: IronworksConfig, configPath?: string): Chec
     repairHint: "Verify credentials and endpoint in deployment environment",
   };
 }
-

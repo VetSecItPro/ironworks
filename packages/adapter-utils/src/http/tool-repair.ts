@@ -11,14 +11,14 @@
  * model structurally cannot produce conforming args for a given schema.
  */
 
-import { validateToolArgs, type ToolInvocation } from './tool-normalize.js';
+import { type ToolInvocation, validateToolArgs } from "./tool-normalize.js";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 /** The three possible outcomes of a repair attempt. */
-export type RepairOutcome = 'valid' | 'repaired' | 'unrepaired';
+export type RepairOutcome = "valid" | "repaired" | "unrepaired";
 
 export interface RepairResult {
   outcome: RepairOutcome;
@@ -80,7 +80,7 @@ export async function attemptToolRepair(
   // Fast path: args are already valid — no repair needed.
   const firstCheck = validateToolArgs(invocation.args, schema);
   if (firstCheck.valid) {
-    return { outcome: 'valid', invocation, errors: [] };
+    return { outcome: "valid", invocation, errors: [] };
   }
 
   // Single repair attempt. Catch any prompter-level failure (network, timeout,
@@ -90,17 +90,14 @@ export async function attemptToolRepair(
   try {
     repaired = await prompter(invocation, schema, firstCheck.errors);
   } catch {
-    return { outcome: 'unrepaired', invocation, errors: firstCheck.errors };
+    return { outcome: "unrepaired", invocation, errors: firstCheck.errors };
   }
 
   // Identity guard: repair must target the same tool call. A prompter that
   // returns a different toolCallId or toolName has drifted — likely a bug in
   // the adapter or an unexpected model hallucination.
-  if (
-    repaired.toolCallId !== invocation.toolCallId ||
-    repaired.toolName !== invocation.toolName
-  ) {
-    return { outcome: 'unrepaired', invocation, errors: firstCheck.errors };
+  if (repaired.toolCallId !== invocation.toolCallId || repaired.toolName !== invocation.toolName) {
+    return { outcome: "unrepaired", invocation, errors: firstCheck.errors };
   }
 
   // Validate the repaired args. If still invalid, return original invocation
@@ -110,10 +107,10 @@ export async function attemptToolRepair(
     // Surface the first-attempt errors on a successful repair so callers can
     // log what the model got wrong initially — useful for adapter telemetry
     // ("Model misfired on arg X but self-corrected").
-    return { outcome: 'repaired', invocation: repaired, errors: firstCheck.errors };
+    return { outcome: "repaired", invocation: repaired, errors: firstCheck.errors };
   }
 
-  return { outcome: 'unrepaired', invocation, errors: secondCheck.errors };
+  return { outcome: "unrepaired", invocation, errors: secondCheck.errors };
 }
 
 // ---------------------------------------------------------------------------

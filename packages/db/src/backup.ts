@@ -104,7 +104,9 @@ async function main() {
   console.log(`Config path: ${configPath}`);
   console.log(`Backing up database to: ${backupDir}`);
   if (retentionPolicy) {
-    console.log(`Retention policy: ${retentionPolicy.dailyDays}d daily, ${retentionPolicy.weeklyWeeks}w weekly, ${retentionPolicy.monthlyMonths}m monthly`);
+    console.log(
+      `Retention policy: ${retentionPolicy.dailyDays}d daily, ${retentionPolicy.weeklyWeeks}w weekly, ${retentionPolicy.monthlyMonths}m monthly`,
+    );
   } else {
     console.log(`Retention window: ${retentionDays} day(s)`);
   }

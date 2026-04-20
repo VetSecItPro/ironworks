@@ -1,23 +1,19 @@
-import {
-  pgTable,
-  uuid,
-  text,
-  numeric,
-  integer,
-  timestamp,
-  index,
-} from "drizzle-orm/pg-core";
-import { goals } from "./goals.js";
-import { companies } from "./companies.js";
+import { index, integer, numeric, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { agents } from "./agents.js";
 import { authUsers } from "./auth.js";
+import { companies } from "./companies.js";
+import { goals } from "./goals.js";
 
 export const goalCheckIns = pgTable(
   "goal_check_ins",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    goalId: uuid("goal_id").notNull().references(() => goals.id, { onDelete: "cascade" }),
-    companyId: uuid("company_id").notNull().references(() => companies.id),
+    goalId: uuid("goal_id")
+      .notNull()
+      .references(() => goals.id, { onDelete: "cascade" }),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id),
     authorAgentId: uuid("author_agent_id").references(() => agents.id),
     authorUserId: text("author_user_id").references(() => authUsers.id),
     progressPercent: numeric("progress_percent", { precision: 5, scale: 2 }),

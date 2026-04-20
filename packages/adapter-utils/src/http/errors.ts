@@ -1,20 +1,20 @@
-import type { AdapterExecutionResult } from '../types.js';
+import type { AdapterExecutionResult } from "../types.js";
 
 // ---------------------------------------------------------------------------
 // Error code literal union (Finding 3)
 // ---------------------------------------------------------------------------
 
 export type HttpAdapterErrorCode =
-  | 'auth_failed'
-  | 'rate_limited'
-  | 'client_error'
-  | 'server_error'
-  | 'timeout'
-  | 'stream_break'
-  | 'circuit_open'
-  | 'config_error'
-  | 'network_error'
-  | 'unknown_error';
+  | "auth_failed"
+  | "rate_limited"
+  | "client_error"
+  | "server_error"
+  | "timeout"
+  | "stream_break"
+  | "circuit_open"
+  | "config_error"
+  | "network_error"
+  | "unknown_error";
 
 // ---------------------------------------------------------------------------
 // Message redaction (tactical: error messages only)
@@ -22,18 +22,20 @@ export type HttpAdapterErrorCode =
 // ---------------------------------------------------------------------------
 
 function redactErrorMessage(msg: string): string {
-  return msg
-    // Bearer token pattern - apply first so the token inside is caught
-    .replace(/Bearer\s+[A-Za-z0-9\-_.]+/g, 'Bearer [REDACTED]')
-    // Provider-specific key prefixes (more specific before generic)
-    .replace(/sk-ant-[A-Za-z0-9\-_.]{10,}/g, '[REDACTED]')
-    .replace(/sk-proj-[A-Za-z0-9\-_.]{10,}/g, '[REDACTED]')
-    .replace(/sk-or-v1-[A-Za-z0-9\-_.]{10,}/g, '[REDACTED]')
-    .replace(/sk-poe-[A-Za-z0-9\-_.]{10,}/g, '[REDACTED]')
-    // Generic OpenAI-style sk-* (apply AFTER more specific patterns)
-    .replace(/sk-[A-Za-z0-9\-_.]{20,}/g, '[REDACTED]')
-    // Cloudflare tokens
-    .replace(/cfut_[A-Za-z0-9]{40,}/g, '[REDACTED]');
+  return (
+    msg
+      // Bearer token pattern - apply first so the token inside is caught
+      .replace(/Bearer\s+[A-Za-z0-9\-_.]+/g, "Bearer [REDACTED]")
+      // Provider-specific key prefixes (more specific before generic)
+      .replace(/sk-ant-[A-Za-z0-9\-_.]{10,}/g, "[REDACTED]")
+      .replace(/sk-proj-[A-Za-z0-9\-_.]{10,}/g, "[REDACTED]")
+      .replace(/sk-or-v1-[A-Za-z0-9\-_.]{10,}/g, "[REDACTED]")
+      .replace(/sk-poe-[A-Za-z0-9\-_.]{10,}/g, "[REDACTED]")
+      // Generic OpenAI-style sk-* (apply AFTER more specific patterns)
+      .replace(/sk-[A-Za-z0-9\-_.]{20,}/g, "[REDACTED]")
+      // Cloudflare tokens
+      .replace(/cfut_[A-Za-z0-9]{40,}/g, "[REDACTED]")
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -44,12 +46,9 @@ export class HttpAdapterError extends Error {
   readonly code: HttpAdapterErrorCode;
   readonly retryable: boolean;
 
-  constructor(
-    message: string,
-    options: { code: HttpAdapterErrorCode; retryable: boolean; cause?: unknown },
-  ) {
+  constructor(message: string, options: { code: HttpAdapterErrorCode; retryable: boolean; cause?: unknown }) {
     super(message, { cause: options.cause }); // native ES2022 path (Finding 2)
-    this.name = 'HttpAdapterError';
+    this.name = "HttpAdapterError";
     this.code = options.code;
     this.retryable = options.retryable;
     // Restore prototype chain for instanceof checks
@@ -63,8 +62,8 @@ export class HttpAdapterError extends Error {
 
 export class HttpAdapterAuthError extends HttpAdapterError {
   constructor(message: string, options?: { cause?: unknown }) {
-    super(message, { code: 'auth_failed', retryable: false, cause: options?.cause });
-    this.name = 'HttpAdapterAuthError';
+    super(message, { code: "auth_failed", retryable: false, cause: options?.cause });
+    this.name = "HttpAdapterAuthError";
   }
 }
 
@@ -72,8 +71,8 @@ export class HttpAdapterRateLimitError extends HttpAdapterError {
   readonly retryAfterMs?: number;
 
   constructor(message: string, options?: { retryAfterMs?: number; cause?: unknown }) {
-    super(message, { code: 'rate_limited', retryable: true, cause: options?.cause });
-    this.name = 'HttpAdapterRateLimitError';
+    super(message, { code: "rate_limited", retryable: true, cause: options?.cause });
+    this.name = "HttpAdapterRateLimitError";
     this.retryAfterMs = options?.retryAfterMs;
   }
 }
@@ -82,16 +81,16 @@ export class HttpAdapterServerError extends HttpAdapterError {
   readonly status?: number;
 
   constructor(message: string, options?: { status?: number; cause?: unknown }) {
-    super(message, { code: 'server_error', retryable: true, cause: options?.cause });
-    this.name = 'HttpAdapterServerError';
+    super(message, { code: "server_error", retryable: true, cause: options?.cause });
+    this.name = "HttpAdapterServerError";
     this.status = options?.status;
   }
 }
 
 export class HttpAdapterTimeoutError extends HttpAdapterError {
   constructor(message: string, options?: { cause?: unknown }) {
-    super(message, { code: 'timeout', retryable: true, cause: options?.cause });
-    this.name = 'HttpAdapterTimeoutError';
+    super(message, { code: "timeout", retryable: true, cause: options?.cause });
+    this.name = "HttpAdapterTimeoutError";
   }
 }
 
@@ -100,8 +99,8 @@ export class HttpAdapterStreamBreak extends HttpAdapterError {
   readonly toolCallEmitted: boolean;
 
   constructor(message: string, options?: { toolCallEmitted?: boolean; cause?: unknown }) {
-    super(message, { code: 'stream_break', retryable: false, cause: options?.cause });
-    this.name = 'HttpAdapterStreamBreak';
+    super(message, { code: "stream_break", retryable: false, cause: options?.cause });
+    this.name = "HttpAdapterStreamBreak";
     this.toolCallEmitted = options?.toolCallEmitted ?? false;
   }
 }
@@ -110,16 +109,16 @@ export class HttpAdapterCircuitOpenError extends HttpAdapterError {
   readonly reopenAtMs?: number;
 
   constructor(message: string, options?: { reopenAtMs?: number; cause?: unknown }) {
-    super(message, { code: 'circuit_open', retryable: false, cause: options?.cause });
-    this.name = 'HttpAdapterCircuitOpenError';
+    super(message, { code: "circuit_open", retryable: false, cause: options?.cause });
+    this.name = "HttpAdapterCircuitOpenError";
     this.reopenAtMs = options?.reopenAtMs;
   }
 }
 
 export class HttpAdapterConfigError extends HttpAdapterError {
   constructor(message: string, options?: { cause?: unknown }) {
-    super(message, { code: 'config_error', retryable: false, cause: options?.cause });
-    this.name = 'HttpAdapterConfigError';
+    super(message, { code: "config_error", retryable: false, cause: options?.cause });
+    this.name = "HttpAdapterConfigError";
   }
 }
 
@@ -132,8 +131,8 @@ export class HttpAdapterConfigError extends HttpAdapterError {
 export class HttpAdapterClientError extends HttpAdapterError {
   readonly status?: number;
   constructor(message: string, options: { status?: number; cause?: unknown } = {}) {
-    super(message, { code: 'client_error', retryable: false, cause: options.cause });
-    this.name = 'HttpAdapterClientError';
+    super(message, { code: "client_error", retryable: false, cause: options.cause });
+    this.name = "HttpAdapterClientError";
     this.status = options.status;
     Object.setPrototypeOf(this, new.target.prototype);
   }
@@ -146,16 +145,13 @@ export class HttpAdapterClientError extends HttpAdapterError {
  * mid-connect) where a retry is warranted.
  */
 export class HttpAdapterNetworkError extends HttpAdapterError {
-  constructor(
-    message: string,
-    options: { cause?: unknown; retryable?: boolean } = {},
-  ) {
+  constructor(message: string, options: { cause?: unknown; retryable?: boolean } = {}) {
     super(message, {
-      code: 'network_error',
+      code: "network_error",
       retryable: options.retryable ?? false,
       cause: options.cause,
     });
-    this.name = 'HttpAdapterNetworkError';
+    this.name = "HttpAdapterNetworkError";
   }
 }
 
@@ -214,14 +210,13 @@ export function toAdapterExecutionResult(err: unknown): AdapterExecutionResult {
   }
 
   // Unknown error
-  const message =
-    err instanceof Error ? err.message : typeof err === 'string' ? err : String(err);
+  const message = err instanceof Error ? err.message : typeof err === "string" ? err : String(err);
 
   return {
     exitCode: 1,
     signal: null,
     timedOut: false,
-    errorCode: 'unknown_error' as HttpAdapterErrorCode,
+    errorCode: "unknown_error" as HttpAdapterErrorCode,
     errorMessage: redactErrorMessage(message),
   };
 }

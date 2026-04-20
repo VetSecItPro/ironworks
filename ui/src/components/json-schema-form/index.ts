@@ -1,10 +1,10 @@
 export {
-  JsonSchemaForm,
-  resolveType,
-  labelFromKey,
   getDefaultForSchema,
+  getDefaultValues,
+  JsonSchemaForm,
+  labelFromKey,
+  resolveType,
   validateField,
   validateJsonSchemaForm,
-  getDefaultValues,
 } from "./JsonSchemaForm";
-export type { JsonSchemaNode, JsonSchemaFormProps } from "./types";
+export type { JsonSchemaFormProps, JsonSchemaNode } from "./types";

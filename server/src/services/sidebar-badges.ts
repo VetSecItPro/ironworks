@@ -1,8 +1,8 @@
-import { and, desc, eq, gte, inArray, isNotNull, not, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { agents, approvals, heartbeatRuns, knowledgePages } from "@ironworksai/db";
 import type { SidebarBadges } from "@ironworksai/shared";
 import { DELIVERABLE_DOCUMENT_TYPES } from "@ironworksai/shared";
+import { and, desc, eq, gte, inArray, isNotNull, not, sql } from "drizzle-orm";
 
 const ACTIONABLE_APPROVAL_STATUSES = ["pending", "revision_requested"];
 const FAILED_HEARTBEAT_STATUSES = ["failed", "timed_out"];
@@ -20,12 +20,7 @@ export function sidebarBadgeService(db: Db) {
         db
           .select({ count: sql<number>`count(*)` })
           .from(approvals)
-          .where(
-            and(
-              eq(approvals.companyId, companyId),
-              inArray(approvals.status, ACTIONABLE_APPROVAL_STATUSES),
-            ),
-          )
+          .where(and(eq(approvals.companyId, companyId), inArray(approvals.status, ACTIONABLE_APPROVAL_STATUSES)))
           .then((rows) => Number(rows[0]?.count ?? 0)),
 
         db
@@ -58,9 +53,7 @@ export function sidebarBadgeService(db: Db) {
           .then((rows) => Number(rows[0]?.count ?? 0)),
       ]);
 
-      const failedRuns = latestRunByAgent.filter((row) =>
-        FAILED_HEARTBEAT_STATUSES.includes(row.runStatus),
-      ).length;
+      const failedRuns = latestRunByAgent.filter((row) => FAILED_HEARTBEAT_STATUSES.includes(row.runStatus)).length;
 
       const joinRequests = extra?.joinRequests ?? 0;
       const unreadTouchedIssues = extra?.unreadTouchedIssues ?? 0;

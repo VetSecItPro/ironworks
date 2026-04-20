@@ -10,11 +10,11 @@
  * No persistent connections needed — purely webhook-driven.
  */
 
-import { and, eq } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { companies, issues } from "@ironworksai/db";
-import { issueService } from "../services/issues.js";
+import { and, eq } from "drizzle-orm";
 import { agentService } from "../services/agents.js";
+import { issueService } from "../services/issues.js";
 
 // ── Types ──
 
@@ -60,10 +60,7 @@ function slugify(name: string): string {
     .replace(/^-|-$/g, "");
 }
 
-async function findCompanyBySlug(
-  db: Db,
-  slug: string,
-): Promise<{ id: string; name: string } | null> {
+async function findCompanyBySlug(db: Db, slug: string): Promise<{ id: string; name: string } | null> {
   const allCompanies = await db
     .select({ id: companies.id, name: companies.name })
     .from(companies)
@@ -85,9 +82,7 @@ async function findCeoAgent(db: Db, companyId: string): Promise<string | null> {
   try {
     const agents = await svc.list(companyId);
     const ceo = (agents as Array<{ id: string; role?: string; title?: string }>).find(
-      (a) =>
-        a.role?.toLowerCase() === "ceo" ||
-        a.title?.toLowerCase()?.includes("ceo"),
+      (a) => a.role?.toLowerCase() === "ceo" || a.title?.toLowerCase()?.includes("ceo"),
     );
     return ceo?.id ?? (agents as Array<{ id: string }>)[0]?.id ?? null;
   } catch {
@@ -124,13 +119,7 @@ async function findExistingThread(
       const found = await db
         .select({ id: issues.id })
         .from(issues)
-        .where(
-          and(
-            eq(issues.companyId, companyId),
-            eq(issues.originKind, "email_bridge"),
-            eq(issues.originId, mid),
-          ),
-        )
+        .where(and(eq(issues.companyId, companyId), eq(issues.originKind, "email_bridge"), eq(issues.originId, mid)))
         .limit(1);
       if (found.length > 0) return found[0].id;
     } catch {
@@ -218,23 +207,16 @@ export async function handleInboundEmail(
   }
 
   // Check for existing thread (reply to existing issue)
-  const existingIssueId = await findExistingThread(
-    db,
-    company.id,
-    parsed.inReplyTo,
-    parsed.references,
-  );
+  const existingIssueId = await findExistingThread(db, company.id, parsed.inReplyTo, parsed.references);
 
   const issueSvc = issueService(db);
 
   if (existingIssueId) {
     // Add comment to existing issue
     try {
-      await issueSvc.addComment(
-        existingIssueId,
-        `[Email from ${parsed.from}]:\n\n${parsed.body}`,
-        { userId: "email-bridge" },
-      );
+      await issueSvc.addComment(existingIssueId, `[Email from ${parsed.from}]:\n\n${parsed.body}`, {
+        userId: "email-bridge",
+      });
       return { ok: true, issueId: existingIssueId };
     } catch (err) {
       return { ok: false, error: (err as Error).message };

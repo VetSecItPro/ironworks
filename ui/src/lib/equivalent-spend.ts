@@ -12,7 +12,7 @@ const RATES: Record<string, { input: number; output: number; cached: number }> =
   "claude-haiku-4-5": { input: 80, output: 400, cached: 40 },
   "gpt-4o": { input: 250, output: 1000, cached: 125 },
   "gpt-4o-mini": { input: 15, output: 60, cached: 8 },
-  "o1": { input: 1500, output: 6000, cached: 750 },
+  o1: { input: 1500, output: 6000, cached: 750 },
   "o3-mini": { input: 110, output: 440, cached: 55 },
   "o4-mini": { input: 110, output: 440, cached: 55 },
   "codex-mini": { input: 150, output: 600, cached: 25 },
@@ -44,8 +44,8 @@ export function equivalentSpendCents(
   const nonCached = Math.max(0, inputTokens - cachedInputTokens);
   return Math.round(
     (nonCached / 1_000_000) * rate.input +
-    (cachedInputTokens / 1_000_000) * rate.cached +
-    (outputTokens / 1_000_000) * rate.output,
+      (cachedInputTokens / 1_000_000) * rate.cached +
+      (outputTokens / 1_000_000) * rate.output,
   );
 }
 

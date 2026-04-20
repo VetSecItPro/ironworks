@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { ArrowDown, ArrowUp, Check, GripVertical, Pencil, Trash2, X } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "../../lib/utils";
@@ -16,15 +16,7 @@ interface StatusRowProps {
   isLast: boolean;
 }
 
-export function StatusRow({
-  status,
-  onUpdate,
-  onDelete,
-  onMoveUp,
-  onMoveDown,
-  isFirst,
-  isLast,
-}: StatusRowProps) {
+export function StatusRow({ status, onUpdate, onDelete, onMoveUp, onMoveDown, isFirst, isLast }: StatusRowProps) {
   const [editing, setEditing] = useState(false);
   const [label, setLabel] = useState(status.label);
 
@@ -45,7 +37,10 @@ export function StatusRow({
           <Input
             value={label}
             onChange={(e) => setLabel(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") setEditing(false); }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleSave();
+              if (e.key === "Escape") setEditing(false);
+            }}
             className="h-7 text-xs flex-1"
             autoFocus
           />
@@ -60,12 +55,14 @@ export function StatusRow({
         <span className="text-sm flex-1">{status.label}</span>
       )}
 
-      <span className={cn(
-        "text-[10px] px-1.5 py-0.5 rounded-full font-medium",
-        status.category === "open"
-          ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
-          : "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300",
-      )}>
+      <span
+        className={cn(
+          "text-[10px] px-1.5 py-0.5 rounded-full font-medium",
+          status.category === "open"
+            ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
+            : "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300",
+        )}
+      >
         {status.category}
       </span>
 
@@ -76,7 +73,9 @@ export function StatusRow({
         className="h-6 text-[10px] bg-muted border border-border rounded px-1"
       >
         {COLOR_OPTIONS.map((c) => (
-          <option key={c} value={c}>{c.replace("bg-", "").replace("-500", "")}</option>
+          <option key={c} value={c}>
+            {c.replace("bg-", "").replace("-500", "")}
+          </option>
         ))}
       </select>
 

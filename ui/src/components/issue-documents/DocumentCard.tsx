@@ -1,9 +1,6 @@
 import type { IssueDocument } from "@ironworksai/shared";
-import { cn, relativeTime } from "../../lib/utils";
-import { MarkdownBody } from "../MarkdownBody";
-import { MarkdownEditor, type MentionOption } from "../MarkdownEditor";
+import { Check, ChevronDown, ChevronRight, Copy, Download, MoreHorizontal, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,10 +8,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Check, ChevronDown, ChevronRight, Copy, Download, MoreHorizontal, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { cn, relativeTime } from "../../lib/utils";
+import { MarkdownBody } from "../MarkdownBody";
+import { MarkdownEditor, type MentionOption } from "../MarkdownEditor";
 
-import type { DraftState, DocumentConflictState } from "./types";
-import { isPlanKey, titlesMatchKey, downloadDocumentFile } from "./types";
+import type { DocumentConflictState, DraftState } from "./types";
+import { downloadDocumentFile, isPlanKey, titlesMatchKey } from "./types";
 
 function renderBody(body: string, className?: string) {
   return <MarkdownBody className={className}>{body}</MarkdownBody>;
@@ -135,36 +135,22 @@ export function DocumentCard({
             title={copiedDocumentKey === doc.key ? "Copied" : "Copy document"}
             onClick={() => onCopyBody(doc.key, activeDraft?.body ?? doc.body)}
           >
-            {copiedDocumentKey === doc.key ? (
-              <Check className="h-3.5 w-3.5" />
-            ) : (
-              <Copy className="h-3.5 w-3.5" />
-            )}
+            {copiedDocumentKey === doc.key ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                className="text-muted-foreground"
-                title="Document actions"
-              >
+              <Button variant="ghost" size="icon-xs" className="text-muted-foreground" title="Document actions">
                 <MoreHorizontal className="h-3.5 w-3.5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={() => downloadDocumentFile(doc.key, activeDraft?.body ?? doc.body)}
-              >
+              <DropdownMenuItem onClick={() => downloadDocumentFile(doc.key, activeDraft?.body ?? doc.body)}>
                 <Download className="h-3.5 w-3.5" />
                 Download document
               </DropdownMenuItem>
               {canDeleteDocuments ? <DropdownMenuSeparator /> : null}
               {canDeleteDocuments ? (
-                <DropdownMenuItem
-                  variant="destructive"
-                  onClick={() => onSetConfirmDelete(doc.key)}
-                >
+                <DropdownMenuItem variant="destructive" onClick={() => onSetConfirmDelete(doc.key)}>
                   <Trash2 className="h-3.5 w-3.5" />
                   Delete document
                 </DropdownMenuItem>
@@ -212,11 +198,7 @@ export function DocumentCard({
                   <Button variant="outline" size="sm" onClick={() => onReloadRemote(doc.key)}>
                     Reload remote
                   </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => onOverwrite(doc.key)}
-                    disabled={upsertPending}
-                  >
+                  <Button size="sm" onClick={() => onOverwrite(doc.key)} disabled={upsertPending}>
                     {upsertPending ? "Saving..." : "Overwrite remote"}
                   </Button>
                 </div>
@@ -296,24 +278,12 @@ export function DocumentCard({
 
       {confirmDeleteKey === doc.key && (
         <div className="mt-3 flex items-center justify-between gap-3 rounded-md border border-destructive/20 bg-destructive/5 px-4 py-3">
-          <p className="text-sm text-destructive font-medium">
-            Delete this document? This cannot be undone.
-          </p>
+          <p className="text-sm text-destructive font-medium">Delete this document? This cannot be undone.</p>
           <div className="flex items-center gap-2 shrink-0">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onSetConfirmDelete(null)}
-              disabled={deletePending}
-            >
+            <Button variant="ghost" size="sm" onClick={() => onSetConfirmDelete(null)} disabled={deletePending}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => onDelete(doc.key)}
-              disabled={deletePending}
-            >
+            <Button variant="destructive" size="sm" onClick={() => onDelete(doc.key)} disabled={deletePending}>
               {deletePending ? "Deleting..." : "Delete"}
             </Button>
           </div>

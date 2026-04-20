@@ -1,25 +1,14 @@
-import { useState, type ComponentType } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "@/lib/router";
-import { useDialog } from "../context/DialogContext";
-import { useCompany } from "../context/CompanyContext";
-import { agentsApi } from "../api/agents";
-import { queryKeys } from "../lib/queryKeys";
-import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog";
+import { ArrowLeft, Bot, Code, Gem, MousePointer2, Terminal, Wand2 } from "lucide-react";
+import { type ComponentType, useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  ArrowLeft,
-  Bot,
-  Code,
-  Gem,
-  MousePointer2,
-  Wand2,
-  Terminal,
-} from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useNavigate } from "@/lib/router";
 import { cn } from "@/lib/utils";
+import { agentsApi } from "../api/agents";
+import { useCompany } from "../context/CompanyContext";
+import { useDialog } from "../context/DialogContext";
+import { queryKeys } from "../lib/queryKeys";
 import { OpenCodeLogoIcon } from "./OpenCodeLogoIcon";
 
 type AdvancedAdapterType =
@@ -134,10 +123,7 @@ export function NewAgentDialog() {
         }
       }}
     >
-      <DialogContent
-        showCloseButton={false}
-        className="sm:max-w-md p-0 gap-0 overflow-hidden"
-      >
+      <DialogContent showCloseButton={false} className="sm:max-w-md p-0 gap-0 overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
           <span className="text-sm text-muted-foreground">Add a new agent</span>
@@ -163,9 +149,8 @@ export function NewAgentDialog() {
                   <Wand2 className="h-6 w-6 text-foreground" />
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  We recommend letting your CEO handle agent setup — they know the
-                  org structure and can configure reporting, permissions, and
-                  adapters.
+                  We recommend letting your CEO handle agent setup — they know the org structure and can configure
+                  reporting, permissions, and adapters.
                 </p>
               </div>
 
@@ -194,9 +179,7 @@ export function NewAgentDialog() {
                   <ArrowLeft className="h-3.5 w-3.5" />
                   Back
                 </button>
-                <p className="text-sm text-muted-foreground">
-                  Choose your adapter type for advanced setup.
-                </p>
+                <p className="text-sm text-muted-foreground">Choose your adapter type for advanced setup.</p>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
@@ -204,7 +187,7 @@ export function NewAgentDialog() {
                   <button
                     key={opt.value}
                     className={cn(
-                      "flex flex-col items-center gap-1.5 rounded-md border border-border p-3 text-xs transition-colors hover:bg-accent/50 relative"
+                      "flex flex-col items-center gap-1.5 rounded-md border border-border p-3 text-xs transition-colors hover:bg-accent/50 relative",
                     )}
                     onClick={() => handleAdvancedAdapterPick(opt.value)}
                   >
@@ -215,9 +198,7 @@ export function NewAgentDialog() {
                     )}
                     <opt.icon className="h-4 w-4" />
                     <span className="font-medium">{opt.label}</span>
-                    <span className="text-muted-foreground text-[10px]">
-                      {opt.desc}
-                    </span>
+                    <span className="text-muted-foreground text-[10px]">{opt.desc}</span>
                   </button>
                 ))}
               </div>

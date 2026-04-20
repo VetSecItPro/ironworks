@@ -13,9 +13,7 @@ export function resolveIronworksHomeDir(): string {
 export function resolveIronworksInstanceId(override?: string): string {
   const raw = override?.trim() || process.env.IRONWORKS_INSTANCE_ID?.trim() || DEFAULT_INSTANCE_ID;
   if (!INSTANCE_ID_RE.test(raw)) {
-    throw new Error(
-      `Invalid instance id '${raw}'. Allowed characters: letters, numbers, '_' and '-'.`,
-    );
+    throw new Error(`Invalid instance id '${raw}'. Allowed characters: letters, numbers, '_' and '-'.`);
   }
   return raw;
 }

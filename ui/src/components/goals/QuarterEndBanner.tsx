@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { CalendarRange } from "lucide-react";
+import { useState } from "react";
 
 function getQuarterInfo(): { quarter: number; daysRemaining: number; endDate: Date } | null {
   const now = new Date();
@@ -7,13 +7,14 @@ function getQuarterInfo(): { quarter: number; daysRemaining: number; endDate: Da
   const month = now.getMonth(); // 0-based
 
   // Quarter boundaries: Q1=Jan-Mar, Q2=Apr-Jun, Q3=Jul-Sep, Q4=Oct-Dec
-  const quarterEnd = month < 3
-    ? new Date(year, 3, 1) // Apr 1
-    : month < 6
-      ? new Date(year, 6, 1) // Jul 1
-      : month < 9
-        ? new Date(year, 9, 1) // Oct 1
-        : new Date(year + 1, 0, 1); // Jan 1 next year
+  const quarterEnd =
+    month < 3
+      ? new Date(year, 3, 1) // Apr 1
+      : month < 6
+        ? new Date(year, 6, 1) // Jul 1
+        : month < 9
+          ? new Date(year, 9, 1) // Oct 1
+          : new Date(year + 1, 0, 1); // Jan 1 next year
 
   const quarter = Math.floor(month / 3) + 1;
   const msRemaining = quarterEnd.getTime() - now.getTime();
@@ -45,7 +46,9 @@ export function QuarterEndBanner({ inProgressCount }: { inProgressCount: number 
   const dismiss = () => {
     const now = new Date();
     const currentQ = `${now.getFullYear()}-Q${Math.floor(now.getMonth() / 3) + 1}`;
-    try { localStorage.setItem("ironworks:quarter-banner-dismissed", JSON.stringify(currentQ)); } catch {}
+    try {
+      localStorage.setItem("ironworks:quarter-banner-dismissed", JSON.stringify(currentQ));
+    } catch {}
     setDismissed(true);
   };
 
@@ -54,12 +57,15 @@ export function QuarterEndBanner({ inProgressCount }: { inProgressCount: number 
       <CalendarRange className="h-4 w-4 text-amber-500 shrink-0" />
       <p className="text-xs text-amber-700 dark:text-amber-300 flex-1">
         Q{info.quarter} ends in {info.daysRemaining} day{info.daysRemaining !== 1 ? "s" : ""}.
-        {inProgressCount > 0 && <> {inProgressCount} goal{inProgressCount !== 1 ? "s are" : " is"} still in progress. Consider reviewing and closing out the quarter.</>}
+        {inProgressCount > 0 && (
+          <>
+            {" "}
+            {inProgressCount} goal{inProgressCount !== 1 ? "s are" : " is"} still in progress. Consider reviewing and
+            closing out the quarter.
+          </>
+        )}
       </p>
-      <button
-        onClick={dismiss}
-        className="text-xs text-amber-600 dark:text-amber-400 hover:underline shrink-0"
-      >
+      <button onClick={dismiss} className="text-xs text-amber-600 dark:text-amber-400 hover:underline shrink-0">
         Dismiss
       </button>
     </div>

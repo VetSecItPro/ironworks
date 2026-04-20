@@ -1,21 +1,8 @@
+import { ArrowRight, CheckCircle2, Clock, Loader2, ShieldCheck, SkipForward, Users, XCircle } from "lucide-react";
 import { useState } from "react";
-import {
-  ArrowRight,
-  CheckCircle2,
-  Clock,
-  Loader2,
-  ShieldCheck,
-  SkipForward,
-  Users,
-  XCircle,
-} from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { PlaybookWithSteps } from "../../api/playbooks";
 import { cn } from "../../lib/utils";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { loadStepConditions, type StepCondition } from "./PlaybookDetailPanel";
 
 const STEP_CONDITIONS_KEY = "ironworks.playbook-step-conditions";
@@ -108,9 +95,7 @@ export function StepTimeline({ playbook }: { playbook: PlaybookWithSteps }) {
               </div>
 
               {step.instructions && (
-                <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-                  {step.instructions}
-                </p>
+                <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">{step.instructions}</p>
               )}
 
               <div className="flex items-center gap-3 mt-2">

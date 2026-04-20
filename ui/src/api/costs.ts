@@ -1,15 +1,15 @@
 import type {
-  CostSummary,
   CostByAgent,
-  CostByProviderModel,
-  CostByBiller,
   CostByAgentModel,
+  CostByBiller,
   CostByProject,
+  CostByProviderModel,
+  CostSummary,
   CostWindowSpendRow,
-  FinanceSummary,
   FinanceByBiller,
   FinanceByKind,
   FinanceEvent,
+  FinanceSummary,
   ProviderQuotaResult,
 } from "@ironworksai/shared";
 import { api } from "./client";
@@ -43,21 +43,22 @@ export const costsApi = {
     api.get<FinanceByKind[]>(`/companies/${companyId}/costs/finance-by-kind${dateParams(from, to)}`),
   financeEvents: (companyId: string, from?: string, to?: string, limit: number = 100) =>
     api.get<FinanceEvent[]>(`/companies/${companyId}/costs/finance-events${dateParamsWithLimit(from, to, limit)}`),
-  windowSpend: (companyId: string) =>
-    api.get<CostWindowSpendRow[]>(`/companies/${companyId}/costs/window-spend`),
-  quotaWindows: (companyId: string) =>
-    api.get<ProviderQuotaResult[]>(`/companies/${companyId}/costs/quota-windows`),
+  windowSpend: (companyId: string) => api.get<CostWindowSpendRow[]>(`/companies/${companyId}/costs/window-spend`),
+  quotaWindows: (companyId: string) => api.get<ProviderQuotaResult[]>(`/companies/${companyId}/costs/quota-windows`),
 
-  createFinanceEvent: (companyId: string, event: {
-    eventKind: string;
-    direction: "debit" | "credit";
-    biller: string;
-    provider?: string;
-    amountCents: number;
-    currency: string;
-    description: string;
-    occurredAt: string;
-  }) => api.post<unknown>(`/companies/${companyId}/finance-events`, event),
+  createFinanceEvent: (
+    companyId: string,
+    event: {
+      eventKind: string;
+      direction: "debit" | "credit";
+      biller: string;
+      provider?: string;
+      amountCents: number;
+      currency: string;
+      description: string;
+      occurredAt: string;
+    },
+  ) => api.post<unknown>(`/companies/${companyId}/finance-events`, event),
 
   equivalentSpend: (companyId: string, from?: string, to?: string) =>
     api.get<EquivalentSpendResult>(`/companies/${companyId}/costs/equivalent-spend${dateParams(from, to)}`),

@@ -1,13 +1,13 @@
-import { Plus } from "lucide-react";
 import type { FinanceEvent } from "@ironworksai/shared";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { PageSkeleton } from "../PageSkeleton";
-import { NewFinanceEventDialog } from "../NewFinanceEventDialog";
-import { FinanceSummaryCard } from "./FinanceSummaryCard";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FinanceBillerCard } from "../FinanceBillerCard";
 import { FinanceKindCard } from "../FinanceKindCard";
 import { FinanceTimelineCard } from "../FinanceTimelineCard";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { NewFinanceEventDialog } from "../NewFinanceEventDialog";
+import { PageSkeleton } from "../PageSkeleton";
+import { FinanceSummaryCard } from "./FinanceSummaryCard";
 
 interface FinanceSummaryData {
   debitCents: number;
@@ -80,20 +80,27 @@ export function FinanceTabContent({
               <Card>
                 <CardHeader className="px-5 pt-5 pb-2">
                   <CardTitle className="text-base">By biller</CardTitle>
-                  <CardDescription>Account-level financial events grouped by who charged or credited them.</CardDescription>
+                  <CardDescription>
+                    Account-level financial events grouped by who charged or credited them.
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-4 px-5 pb-5 pt-2 md:grid-cols-2">
                   {(financeData?.byBiller.length ?? 0) === 0 ? (
                     <p className="text-sm text-muted-foreground">No finance events yet.</p>
                   ) : (
-                    financeData?.byBiller.map((row) => <FinanceBillerCard key={(row as { biller: string }).biller} row={row as Parameters<typeof FinanceBillerCard>[0]["row"]} />)
+                    financeData?.byBiller.map((row) => (
+                      <FinanceBillerCard
+                        key={(row as { biller: string }).biller}
+                        row={row as Parameters<typeof FinanceBillerCard>[0]["row"]}
+                      />
+                    ))
                   )}
                 </CardContent>
               </Card>
               <FinanceTimelineCard rows={topFinanceEvents} />
             </div>
 
-            <FinanceKindCard rows={financeData?.byKind as Parameters<typeof FinanceKindCard>[0]["rows"] ?? []} />
+            <FinanceKindCard rows={(financeData?.byKind as Parameters<typeof FinanceKindCard>[0]["rows"]) ?? []} />
           </div>
         </>
       )}

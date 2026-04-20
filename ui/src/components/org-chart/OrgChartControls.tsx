@@ -1,12 +1,8 @@
-import { Link } from "@/lib/router";
-import { Button } from "@/components/ui/button";
 import { Copy, Download, Upload } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Link } from "@/lib/router";
 
-export function OrgChartToolbar({
-  containerRef,
-}: {
-  containerRef: React.RefObject<HTMLDivElement | null>;
-}) {
+export function OrgChartToolbar({ containerRef }: { containerRef: React.RefObject<HTMLDivElement | null> }) {
   return (
     <div className="mb-2 flex items-center justify-start gap-2 shrink-0">
       <Link to="/company/import">
@@ -129,20 +125,49 @@ export function OrgChartVacantPositions({
         <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1">
           <span className="h-3 w-3 inline-block">
             {/* UserPlus inline to avoid import bloat */}
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <line x1="19" x2="19" y1="8" y2="14" />
+              <line x1="22" x2="16" y1="11" y2="11" />
+            </svg>
           </span>
           Open Positions
         </p>
-        {openPositions
-          .slice(0, 4)
-          .map((h) => (
-            <div key={h.id} className="flex items-center gap-2 text-xs">
-              <div className="h-6 w-6 rounded-full border-2 border-dashed border-amber-400/50 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400/50"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
-              </div>
-              <span className="text-muted-foreground">{h.title ?? roleLabel(h.role)}</span>
+        {openPositions.slice(0, 4).map((h) => (
+          <div key={h.id} className="flex items-center gap-2 text-xs">
+            <div className="h-6 w-6 rounded-full border-2 border-dashed border-amber-400/50 flex items-center justify-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-amber-400/50"
+              >
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <line x1="19" x2="19" y1="8" y2="14" />
+                <line x1="22" x2="16" y1="11" y2="11" />
+              </svg>
             </div>
-          ))}
+            <span className="text-muted-foreground">{h.title ?? roleLabel(h.role)}</span>
+          </div>
+        ))}
       </div>
     </div>
   );

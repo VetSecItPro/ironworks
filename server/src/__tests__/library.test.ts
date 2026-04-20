@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -142,18 +142,14 @@ describe("library routes", () => {
 
     it("rejects path traversal with 400", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app).get(
-        `/api/companies/${COMPANY_ID}/library/tree?path=../../etc`,
-      );
+      const res = await request(app).get(`/api/companies/${COMPANY_ID}/library/tree?path=../../etc`);
       expect(res.status).toBe(400);
     });
 
     it("returns 404 for non-existent directory", async () => {
       mockFs.stat.mockRejectedValue(new Error("ENOENT"));
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app).get(
-        `/api/companies/${COMPANY_ID}/library/tree?path=nonexistent`,
-      );
+      const res = await request(app).get(`/api/companies/${COMPANY_ID}/library/tree?path=nonexistent`);
       expect(res.status).toBe(404);
     });
   });
@@ -164,9 +160,7 @@ describe("library routes", () => {
       mockFs.readFile.mockResolvedValue("# Test Content");
 
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app).get(
-        `/api/companies/${COMPANY_ID}/library/file?path=shared/test.md`,
-      );
+      const res = await request(app).get(`/api/companies/${COMPANY_ID}/library/file?path=shared/test.md`);
 
       expect(res.status).toBe(200);
       expect(res.body.content).toBe("# Test Content");
@@ -184,9 +178,7 @@ describe("library routes", () => {
       mockFs.stat.mockResolvedValue({ isFile: () => true, size: bigSize, mtime: new Date() });
 
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app).get(
-        `/api/companies/${COMPANY_ID}/library/file?path=shared/big.bin`,
-      );
+      const res = await request(app).get(`/api/companies/${COMPANY_ID}/library/file?path=shared/big.bin`);
 
       expect(res.status).toBe(200);
       expect(res.body.content).toBeNull();
@@ -202,15 +194,11 @@ describe("library routes", () => {
     });
 
     it("returns search results for name matches", async () => {
-      mockFs.readdir.mockResolvedValue([
-        { name: "test-report.md", isDirectory: () => false },
-      ]);
+      mockFs.readdir.mockResolvedValue([{ name: "test-report.md", isDirectory: () => false }]);
       mockFs.stat.mockResolvedValue({ size: 100, mtime: new Date() });
 
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app).get(
-        `/api/companies/${COMPANY_ID}/library/search?q=test-report`,
-      );
+      const res = await request(app).get(`/api/companies/${COMPANY_ID}/library/search?q=test-report`);
 
       expect(res.status).toBe(200);
       expect(res.body.query).toBe("test-report");
@@ -220,9 +208,7 @@ describe("library routes", () => {
   describe("POST /api/companies/:companyId/library/register", () => {
     it("rejects missing filePath with 400", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post(`/api/companies/${COMPANY_ID}/library/register`)
-        .send({});
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/library/register`).send({});
       expect(res.status).toBe(400);
     });
   });

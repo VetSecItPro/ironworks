@@ -1,16 +1,19 @@
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import type { Agent, Issue, LiveEvent } from "@ironworksai/shared";
+import { type QueryClient, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createContext, type ReactNode, useContext, useEffect, useRef, useState } from "react";
 import type { RunForIssue } from "../api/activity";
-import type { ActiveRunForIssue, LiveRunForIssue } from "../api/heartbeats";
 import { authApi } from "../api/auth";
+import type { ActiveRunForIssue, LiveRunForIssue } from "../api/heartbeats";
+import { queryKeys } from "../lib/queryKeys";
 import { useCompany } from "./CompanyContext";
 import type { ToastInput } from "./ToastContext";
 import { useToast } from "./ToastContext";
-import { queryKeys } from "../lib/queryKeys";
 
 const LiveConnectionContext = createContext<{ connected: boolean }>({ connected: true });
-export function useLiveConnectionStatus() { return useContext(LiveConnectionContext); }
+export function useLiveConnectionStatus() {
+  return useContext(LiveConnectionContext);
+}
+
 import { toCompanyRelativePath } from "../lib/company-routes";
 import { useLocation } from "../lib/router";
 
@@ -31,11 +34,7 @@ function shortId(value: string) {
   return value.slice(0, 8);
 }
 
-function resolveAgentName(
-  queryClient: QueryClient,
-  companyId: string,
-  agentId: string,
-): string | null {
+function resolveAgentName(queryClient: QueryClient, companyId: string, agentId: string): string | null {
   const agents = queryClient.getQueryData<Agent[]>(queryKeys.agents.list(companyId));
   if (!agents) return null;
   const agent = agents.find((a) => a.id === agentId);
@@ -89,9 +88,7 @@ function resolveIssueQueryRefs(
   const refs = new Set<string>([issueId]);
   const detailIssue = queryClient.getQueryData<Issue>(queryKeys.issues.detail(issueId));
   const listIssues = queryClient.getQueryData<Issue[]>(queryKeys.issues.list(companyId));
-  const detailsIdentifier =
-    readString(details?.identifier) ??
-    readString(details?.issueIdentifier);
+  const detailsIdentifier = readString(details?.identifier) ?? readString(details?.issueIdentifier);
 
   if (detailsIdentifier) refs.add(detailsIdentifier);
 
@@ -129,11 +126,7 @@ function resolveIssueToastContext(
     readString(details?.issueIdentifier) ??
     cachedIssue?.identifier ??
     `Issue ${shortId(issueId)}`;
-  const title =
-    readString(details?.title) ??
-    readString(details?.issueTitle) ??
-    cachedIssue?.title ??
-    null;
+  const title = readString(details?.title) ?? readString(details?.issueTitle) ?? cachedIssue?.title ?? null;
   return {
     ref,
     title,
@@ -349,7 +342,7 @@ function buildActivityToast(
       ? issue.title
         ? `${reopenedLabel} - ${issue.title}`
         : reopenedLabel
-      : issue.title ?? undefined;
+      : (issue.title ?? undefined);
   return {
     title,
     body: body ? truncate(body, 96) : undefined,
@@ -359,9 +352,7 @@ function buildActivityToast(
   };
 }
 
-function buildJoinRequestToast(
-  payload: Record<string, unknown>,
-): ToastInput | null {
+function buildJoinRequestToast(payload: Record<string, unknown>): ToastInput | null {
   const entityType = readString(payload.entityType);
   const action = readString(payload.action);
   const entityId = readString(payload.entityId);
@@ -394,10 +385,7 @@ function buildAgentStatusToast(
 
   const tone = status === "error" ? "error" : "info";
   const name = nameOf(agentId) ?? `Agent ${shortId(agentId)}`;
-  const title =
-    status === "running"
-      ? `${name} started`
-      : `${name} errored`;
+  const title = status === "running" ? `${name} started` : `${name} errored`;
 
   const agents = queryClient.getQueryData<Agent[]>(queryKeys.agents.list(companyId));
   const agent = agents?.find((a) => a.id === agentId);
@@ -426,9 +414,12 @@ function buildRunStatusToast(
   const name = nameOf(agentId) ?? `Agent ${shortId(agentId)}`;
   const tone = status === "succeeded" ? "success" : status === "cancelled" ? "warn" : "error";
   const statusLabel =
-    status === "succeeded" ? "succeeded"
-      : status === "failed" ? "failed"
-        : status === "timed_out" ? "timed out"
+    status === "succeeded"
+      ? "succeeded"
+      : status === "failed"
+        ? "failed"
+        : status === "timed_out"
+          ? "timed out"
           : "cancelled";
   const title = `${name} run ${statusLabel}`;
 
@@ -610,10 +601,7 @@ function handleLiveEvent(
     invalidateHeartbeatQueries(queryClient, expectedCompanyId, payload);
     if (event.type === "heartbeat.run.status") {
       const toast = buildRunStatusToast(payload, nameOf);
-      if (
-        toast &&
-        !shouldSuppressRunStatusToastForVisibleIssue(queryClient, pathname, payload)
-      ) {
+      if (toast && !shouldSuppressRunStatusToastForVisibleIssue(queryClient, pathname, payload)) {
         gatedPushToast(gate, pushToast, "run-status", toast);
       }
     }
@@ -631,10 +619,7 @@ function handleLiveEvent(
     const agentId = readString(payload.agentId);
     if (agentId) queryClient.invalidateQueries({ queryKey: queryKeys.agents.detail(agentId) });
     const toast = buildAgentStatusToast(payload, nameOf, queryClient, expectedCompanyId);
-    if (
-      toast &&
-      !shouldSuppressAgentStatusToastForVisibleIssue(queryClient, pathname, payload)
-    ) {
+    if (toast && !shouldSuppressAgentStatusToastForVisibleIssue(queryClient, pathname, payload)) {
       gatedPushToast(gate, pushToast, "agent-status", toast);
     }
     return;
@@ -644,12 +629,8 @@ function handleLiveEvent(
     invalidateActivityQueries(queryClient, expectedCompanyId, payload);
     const action = readString(payload.action);
     const toast =
-      buildActivityToast(queryClient, expectedCompanyId, payload, currentActor) ??
-      buildJoinRequestToast(payload);
-    if (
-      toast &&
-      !shouldSuppressActivityToastForVisibleIssue(queryClient, pathname, payload)
-    ) {
+      buildActivityToast(queryClient, expectedCompanyId, payload, currentActor) ?? buildJoinRequestToast(payload);
+    if (toast && !shouldSuppressActivityToastForVisibleIssue(queryClient, pathname, payload)) {
       gatedPushToast(gate, pushToast, `activity:${action ?? "unknown"}`, toast);
     }
   }

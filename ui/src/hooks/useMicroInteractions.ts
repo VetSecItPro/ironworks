@@ -30,10 +30,7 @@ export function useStaggeredEntry(itemCount: number, delayPerItem = 30) {
   }, []);
 
   return useCallback(
-    (index: number) =>
-      visible
-        ? { animationDelay: `${index * delayPerItem}ms` }
-        : { opacity: 0 },
+    (index: number) => (visible ? { animationDelay: `${index * delayPerItem}ms` } : { opacity: 0 }),
     [visible, delayPerItem],
   );
 }

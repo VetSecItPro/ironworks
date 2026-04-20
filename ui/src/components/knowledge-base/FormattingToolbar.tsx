@@ -1,13 +1,4 @@
-import {
-  Bold,
-  Code,
-  Heading1,
-  Heading2,
-  Italic,
-  Link as LinkIcon,
-  List,
-  ListOrdered,
-} from "lucide-react";
+import { Bold, Code, Heading1, Heading2, Italic, Link as LinkIcon, List, ListOrdered } from "lucide-react";
 
 export function FormattingToolbar({
   textareaRef,

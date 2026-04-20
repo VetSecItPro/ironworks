@@ -1,6 +1,6 @@
 import { TrendingUp } from "lucide-react";
-import { UsageProjection } from "./billingHelpers";
 import type { SubscriptionResponse } from "@/api/billing";
+import { UsageProjection } from "./billingHelpers";
 
 interface UsageProjectionsCardProps {
   plan: SubscriptionResponse["plan"];
@@ -26,7 +26,7 @@ export function UsageProjectionsCard({ plan, usage }: UsageProjectionsCardProps)
         label="Storage"
         current={usage.storageBytes / (1024 * 1024 * 1024)}
         limit={plan.storageGB}
-        growthPerMonth={Math.max(0.1, (usage.storageBytes / (1024 * 1024 * 1024)) / 4)}
+        growthPerMonth={Math.max(0.1, usage.storageBytes / (1024 * 1024 * 1024) / 4)}
         unit="GB"
       />
     </div>

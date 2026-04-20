@@ -1,19 +1,13 @@
-import {
-  pgTable,
-  uuid,
-  text,
-  jsonb,
-  timestamp,
-  index,
-  uniqueIndex,
-} from "drizzle-orm/pg-core";
+import { index, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { companies } from "./companies.js";
 
 export const agentChannels = pgTable(
   "agent_channels",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    companyId: uuid("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
     scopeType: text("scope_type").notNull().default("company"),
     scopeId: text("scope_id"),
     name: text("name").notNull(),

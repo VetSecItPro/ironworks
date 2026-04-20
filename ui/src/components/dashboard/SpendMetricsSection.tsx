@@ -1,8 +1,8 @@
 import { Link } from "@/lib/router";
 import { cn, formatCents } from "../../lib/utils";
-import { LastUpdatedBadge } from "./LastUpdatedBadge";
-import { EfficiencyMiniBar } from "./EfficiencyMiniBar";
 import type { AgentPerfRow } from "../../pages/AgentPerformance";
+import { EfficiencyMiniBar } from "./EfficiencyMiniBar";
+import { LastUpdatedBadge } from "./LastUpdatedBadge";
 
 interface ProjectActivityEntry {
   id: string;
@@ -44,7 +44,12 @@ export function SpendMetricsSection({
       {/* Today's Spend */}
       <div className="rounded-xl border border-border p-4 space-y-3">
         <div className="flex items-center justify-between">
-          <Link to="/costs" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground transition-colors no-underline">Today's Spend</Link>
+          <Link
+            to="/costs"
+            className="text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground transition-colors no-underline"
+          >
+            Today's Spend
+          </Link>
           <LastUpdatedBadge dataUpdatedAt={Date.now()} />
         </div>
         <div className="flex items-baseline gap-2">
@@ -59,7 +64,11 @@ export function SpendMetricsSection({
           {spendDeltaPercent !== 0 && (
             <div className="flex justify-between">
               <span>vs average</span>
-              <span className={spendDeltaPercent > 20 ? "text-amber-400" : spendDeltaPercent < -20 ? "text-emerald-400" : ""}>
+              <span
+                className={
+                  spendDeltaPercent > 20 ? "text-amber-400" : spendDeltaPercent < -20 ? "text-emerald-400" : ""
+                }
+              >
                 {spendDeltaPercent > 0 ? "↑" : "↓"} {Math.abs(spendDeltaPercent)}%
               </span>
             </div>
@@ -78,8 +87,12 @@ export function SpendMetricsSection({
       {/* Agent Efficiency */}
       <div className="rounded-xl border border-border p-4 space-y-3">
         <div className="flex items-center justify-between">
-          <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">Agent Efficiency <LastUpdatedBadge dataUpdatedAt={Date.now()} /></h4>
-          <Link to="/performance" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Details</Link>
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+            Agent Efficiency <LastUpdatedBadge dataUpdatedAt={Date.now()} />
+          </h4>
+          <Link to="/performance" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+            Details
+          </Link>
         </div>
         {agentEfficiency.length === 0 ? (
           <p className="text-sm text-muted-foreground">No agent cost data yet.</p>
@@ -88,18 +101,25 @@ export function SpendMetricsSection({
             <div className="space-y-2">
               {agentEfficiency.map((a) => {
                 const maxScore = 100;
-                const barColor = a.ratingScore >= 80 ? "bg-emerald-500" : a.ratingScore >= 50 ? "bg-amber-500" : "bg-red-500";
+                const barColor =
+                  a.ratingScore >= 80 ? "bg-emerald-500" : a.ratingScore >= 50 ? "bg-amber-500" : "bg-red-500";
                 return (
                   <div key={a.agentId} className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className={cn(
-                        "inline-flex items-center justify-center h-5 w-5 rounded text-[10px] font-bold shrink-0",
-                        a.rating === "A" ? "text-emerald-400 bg-emerald-500/10" :
-                        a.rating === "B" ? "text-blue-400 bg-blue-500/10" :
-                        a.rating === "C" ? "text-amber-400 bg-amber-500/10" :
-                        a.rating === "D" ? "text-orange-400 bg-orange-500/10" :
-                        "text-red-400 bg-red-500/10",
-                      )}>
+                      <span
+                        className={cn(
+                          "inline-flex items-center justify-center h-5 w-5 rounded text-[10px] font-bold shrink-0",
+                          a.rating === "A"
+                            ? "text-emerald-400 bg-emerald-500/10"
+                            : a.rating === "B"
+                              ? "text-blue-400 bg-blue-500/10"
+                              : a.rating === "C"
+                                ? "text-amber-400 bg-amber-500/10"
+                                : a.rating === "D"
+                                  ? "text-orange-400 bg-orange-500/10"
+                                  : "text-red-400 bg-red-500/10",
+                        )}
+                      >
                         {a.rating}
                       </span>
                       <span className="text-sm truncate flex-1">{a.name}</span>

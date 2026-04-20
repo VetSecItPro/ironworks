@@ -1,11 +1,11 @@
-import { AGENT_ROLE_LABELS, DEPARTMENT_LABELS, type Agent } from "@ironworksai/shared";
+import { AGENT_ROLE_LABELS, type Agent, DEPARTMENT_LABELS } from "@ironworksai/shared";
 import { Users } from "lucide-react";
-import { AgentIcon } from "../AgentIconPicker";
-import { getRoleLevel, getAgentRingClass } from "../../lib/role-icons";
-import { cn, relativeTime, agentUrl } from "../../lib/utils";
-import type { LayoutNode } from "./orgChartLayout";
-import { CARD_W, CARD_H } from "./orgChartLayout";
 import type { AgentExpertiseProfile } from "../../api/expertiseMap";
+import { getAgentRingClass, getRoleLevel } from "../../lib/role-icons";
+import { agentUrl, cn, relativeTime } from "../../lib/utils";
+import { AgentIcon } from "../AgentIconPicker";
+import type { LayoutNode } from "./orgChartLayout";
+import { CARD_H, CARD_W } from "./orgChartLayout";
 
 const adapterLabels: Record<string, string> = {
   claude_local: "Claude",
@@ -103,15 +103,17 @@ export function OrgChartCard({
       <div className="flex items-start px-4 py-4 gap-3">
         {/* Agent icon + status dot */}
         <div className="relative shrink-0">
-          <div className={cn(
-            "w-10 h-10 rounded-full flex items-center justify-center mt-0.5",
-            getRoleLevel(node.role) === "executive"
-              ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-              : getRoleLevel(node.role) === "management"
-                ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                : "bg-muted text-foreground/70",
-            getAgentRingClass(node.role, empType),
-          )}>
+          <div
+            className={cn(
+              "w-10 h-10 rounded-full flex items-center justify-center mt-0.5",
+              getRoleLevel(node.role) === "executive"
+                ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                : getRoleLevel(node.role) === "management"
+                  ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                  : "bg-muted text-foreground/70",
+              getAgentRingClass(node.role, empType),
+            )}
+          >
             <AgentIcon icon={agent?.icon} className="h-5 w-5" />
           </div>
           <span
@@ -122,21 +124,27 @@ export function OrgChartCard({
         {/* Name + role + badges + model */}
         <div className="flex flex-col items-start min-w-0 flex-1">
           <div className="flex items-center gap-1.5">
-            <span className="text-sm font-semibold text-foreground leading-tight">
-              {node.name}
-            </span>
+            <span className="text-sm font-semibold text-foreground leading-tight">{node.name}</span>
             {/* Role level badge */}
             {getRoleLevel(node.role) === "executive" && (
-              <span className="text-[10px] font-semibold px-1 py-0 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 leading-tight">C</span>
+              <span className="text-[10px] font-semibold px-1 py-0 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 leading-tight">
+                C
+              </span>
             )}
             {getRoleLevel(node.role) === "management" && (
-              <span className="text-[10px] font-semibold px-1 py-0 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 leading-tight">M</span>
+              <span className="text-[10px] font-semibold px-1 py-0 rounded-full bg-blue-500/15 text-blue-600 dark:text-blue-400 leading-tight">
+                M
+              </span>
             )}
             {getRoleLevel(node.role) === "staff" && !isContractor && (
-              <span className="text-[10px] font-semibold px-1 py-0 rounded-full bg-green-500/15 text-green-600 dark:text-green-400 leading-tight">FTE</span>
+              <span className="text-[10px] font-semibold px-1 py-0 rounded-full bg-green-500/15 text-green-600 dark:text-green-400 leading-tight">
+                FTE
+              </span>
             )}
             {isContractor && (
-              <span className="text-[10px] font-semibold px-1 py-0 rounded-full border border-dashed border-amber-400/60 text-amber-500 leading-tight">CTR</span>
+              <span className="text-[10px] font-semibold px-1 py-0 rounded-full border border-dashed border-amber-400/60 text-amber-500 leading-tight">
+                CTR
+              </span>
             )}
           </div>
           <span className="text-[11px] text-muted-foreground leading-tight mt-0.5">
@@ -147,17 +155,20 @@ export function OrgChartCard({
               {departmentLabels[dept] ?? dept}
             </span>
           )}
-          {agent ? (() => {
-            const cfg = agent.adapterConfig as Record<string, unknown> | null;
-            const modelRaw = cfg?.model as string | undefined;
-            const modelName = modelRaw ? modelRaw.replace(/:cloud$/, "") : null;
-            const provider: string = adapterLabels[agent.adapterType] ?? agent.adapterType;
-            return (
-              <span className="text-[10px] text-muted-foreground/80 font-mono leading-tight mt-1.5">
-                {provider}{modelName ? ` - ${modelName}` : ""}
-              </span>
-            );
-          })() : null}
+          {agent
+            ? (() => {
+                const cfg = agent.adapterConfig as Record<string, unknown> | null;
+                const modelRaw = cfg?.model as string | undefined;
+                const modelName = modelRaw ? modelRaw.replace(/:cloud$/, "") : null;
+                const provider: string = adapterLabels[agent.adapterType] ?? agent.adapterType;
+                return (
+                  <span className="text-[10px] text-muted-foreground/80 font-mono leading-tight mt-1.5">
+                    {provider}
+                    {modelName ? ` - ${modelName}` : ""}
+                  </span>
+                );
+              })()
+            : null}
           {/* Span of control metric for managers (12.14) */}
           {node.children.length > 0 && (
             <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 mt-1">
@@ -168,7 +179,11 @@ export function OrgChartCard({
           {/* Members since date (12.69) */}
           {agent != null && typeof (agent as unknown as Record<string, unknown>).createdAt === "string" ? (
             <span className="text-[10px] text-muted-foreground/70 mt-0.5">
-              Member since {new Date(String((agent as unknown as Record<string, unknown>).createdAt)).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+              Member since{" "}
+              {new Date(String((agent as unknown as Record<string, unknown>).createdAt)).toLocaleDateString("en-US", {
+                month: "short",
+                year: "numeric",
+              })}
             </span>
           ) : null}
           {/* Skill tags from expertise map */}
@@ -204,9 +219,7 @@ export function OrgChartCard({
             </div>
             <div>
               <div className="text-[10px] text-muted-foreground">Score</div>
-              <div className="text-sm font-bold tabular-nums">
-                {perfScore !== undefined ? `${perfScore}%` : "-"}
-              </div>
+              <div className="text-sm font-bold tabular-nums">{perfScore !== undefined ? `${perfScore}%` : "-"}</div>
             </div>
             <div>
               <div className="text-[10px] text-muted-foreground">Tenure</div>

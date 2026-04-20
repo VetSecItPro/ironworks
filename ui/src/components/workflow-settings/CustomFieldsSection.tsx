@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { Plus, Save, Settings2 } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CustomFieldRow } from "./CustomFieldRow";
@@ -26,9 +26,13 @@ export function CustomFieldsSection({ fields, onPersist, onToast }: CustomFields
         id: generateId(),
         name: newFieldName.trim(),
         type: newFieldType,
-        selectOptions: newFieldType === "select"
-          ? newFieldOptions.split(",").map((s) => s.trim()).filter(Boolean)
-          : undefined,
+        selectOptions:
+          newFieldType === "select"
+            ? newFieldOptions
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean)
+            : undefined,
         required: false,
       },
     ];
@@ -68,7 +72,7 @@ export function CustomFieldsSection({ fields, onPersist, onToast }: CustomFields
             key={field.id}
             field={field}
             onUpdate={(updated) => {
-              onPersist(fields.map((f) => f.id === updated.id ? updated : f));
+              onPersist(fields.map((f) => (f.id === updated.id ? updated : f)));
             }}
             onDelete={() => {
               onPersist(fields.filter((f) => f.id !== field.id));
@@ -86,7 +90,9 @@ export function CustomFieldsSection({ fields, onPersist, onToast }: CustomFields
               onChange={(e) => setNewFieldName(e.target.value)}
               placeholder="Field name"
               className="h-7 text-xs flex-1"
-              onKeyDown={(e) => { if (e.key === "Enter") addField(); }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") addField();
+              }}
               autoFocus
             />
             <select
@@ -95,7 +101,9 @@ export function CustomFieldsSection({ fields, onPersist, onToast }: CustomFields
               className="h-7 text-xs bg-background border border-border rounded px-2"
             >
               {FIELD_TYPES.map((t) => (
-                <option key={t.value} value={t.value}>{t.label}</option>
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
               ))}
             </select>
           </div>
@@ -108,7 +116,9 @@ export function CustomFieldsSection({ fields, onPersist, onToast }: CustomFields
             />
           )}
           <div className="flex items-center gap-2 justify-end">
-            <Button size="sm" variant="ghost" onClick={() => setShowNewField(false)}>Cancel</Button>
+            <Button size="sm" variant="ghost" onClick={() => setShowNewField(false)}>
+              Cancel
+            </Button>
             <Button size="sm" onClick={addField} disabled={!newFieldName.trim()}>
               <Save className="h-3 w-3 mr-1" />
               Add

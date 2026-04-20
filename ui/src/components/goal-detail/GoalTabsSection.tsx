@@ -1,18 +1,17 @@
+import type { ActivityEvent, Agent, Goal, GoalCheckIn, Issue, Project } from "@ironworksai/shared";
+import { History, Plus, Target, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { History, Plus, Target, Trash2 } from "lucide-react";
-import { cn } from "../../lib/utils";
-import { EntityRow } from "../EntityRow";
+import type { CreateCheckInPayload } from "../../api/goalCheckIns";
+import type { GoalKeyResult } from "../../api/goalKeyResults";
+import { cn, projectUrl } from "../../lib/utils";
 import { ActivityRow } from "../ActivityRow";
+import { EntityRow } from "../EntityRow";
 import { GoalTree } from "../GoalTree";
 import { StatusBadge } from "../StatusBadge";
-import { projectUrl } from "../../lib/utils";
 import { AddCheckInForm, CheckInStatusBadge } from "./AddCheckInForm";
-import type { GoalKeyResult } from "../../api/goalKeyResults";
-import type { CreateCheckInPayload } from "../../api/goalCheckIns";
-import type { Goal, Issue, Project, GoalCheckIn, Agent, ActivityEvent } from "@ironworksai/shared";
 
 interface GoalTabsSectionProps {
   goal: Goal;
@@ -87,24 +86,12 @@ export function GoalTabsSection({
   return (
     <Tabs defaultValue={goalIssues.length > 0 ? "issues" : "children"}>
       <TabsList>
-        <TabsTrigger value="issues">
-          Issues ({goalIssues.length})
-        </TabsTrigger>
-        <TabsTrigger value="key-results">
-          Key Results ({(keyResults ?? []).length})
-        </TabsTrigger>
-        <TabsTrigger value="children">
-          Sub-Goals ({childGoals.length})
-        </TabsTrigger>
-        <TabsTrigger value="projects">
-          Projects ({linkedProjects.length})
-        </TabsTrigger>
-        <TabsTrigger value="check-ins">
-          Check-ins ({(checkIns ?? []).length})
-        </TabsTrigger>
-        <TabsTrigger value="activity">
-          Activity ({goalActivity.length})
-        </TabsTrigger>
+        <TabsTrigger value="issues">Issues ({goalIssues.length})</TabsTrigger>
+        <TabsTrigger value="key-results">Key Results ({(keyResults ?? []).length})</TabsTrigger>
+        <TabsTrigger value="children">Sub-Goals ({childGoals.length})</TabsTrigger>
+        <TabsTrigger value="projects">Projects ({linkedProjects.length})</TabsTrigger>
+        <TabsTrigger value="check-ins">Check-ins ({(checkIns ?? []).length})</TabsTrigger>
+        <TabsTrigger value="activity">Activity ({goalActivity.length})</TabsTrigger>
       </TabsList>
 
       <TabsContent value="issues" className="mt-4 space-y-3">
@@ -137,11 +124,7 @@ export function GoalTabsSection({
 
       <TabsContent value="key-results" className="mt-4 space-y-3">
         <div className="flex items-center justify-start">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setShowKrForm(true)}
-          >
+          <Button size="sm" variant="outline" onClick={() => setShowKrForm(true)}>
             <Plus className="h-3.5 w-3.5 mr-1.5" />
             Add Key Result
           </Button>
@@ -164,23 +147,17 @@ export function GoalTabsSection({
                 onChange={(e) => setKrTarget(e.target.value)}
                 className="w-24"
               />
-              <Input
-                placeholder="Unit"
-                value={krUnit}
-                onChange={(e) => setKrUnit(e.target.value)}
-                className="w-20"
-              />
-              <Button
-                size="sm"
-                disabled={!krDescription.trim() || isCreatingKr}
-                onClick={onCreateKr}
-              >
+              <Input placeholder="Unit" value={krUnit} onChange={(e) => setKrUnit(e.target.value)} className="w-20" />
+              <Button size="sm" disabled={!krDescription.trim() || isCreatingKr} onClick={onCreateKr}>
                 Save
               </Button>
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={() => { setShowKrForm(false); setKrDescription(""); }}
+                onClick={() => {
+                  setShowKrForm(false);
+                  setKrDescription("");
+                }}
               >
                 Cancel
               </Button>
@@ -222,12 +199,17 @@ export function GoalTabsSection({
                               if (e.key === "Escape") setEditingKrId(null);
                             }}
                           />
-                          <span className="text-xs text-muted-foreground">/ {kr.targetValue} {kr.unit}</span>
+                          <span className="text-xs text-muted-foreground">
+                            / {kr.targetValue} {kr.unit}
+                          </span>
                         </div>
                       ) : (
                         <button
                           className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                          onClick={() => { setEditingKrId(kr.id); setEditingKrValue(kr.currentValue); }}
+                          onClick={() => {
+                            setEditingKrId(kr.id);
+                            setEditingKrValue(kr.currentValue);
+                          }}
                         >
                           {current} / {kr.targetValue} {kr.unit} ({pct}%)
                         </button>
@@ -258,11 +240,7 @@ export function GoalTabsSection({
 
       <TabsContent value="children" className="mt-4 space-y-3">
         <div className="flex items-center justify-start">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onOpenNewGoal({ parentId: goalId })}
-          >
+          <Button size="sm" variant="outline" onClick={() => onOpenNewGoal({ parentId: goalId })}>
             <Plus className="h-3.5 w-3.5 mr-1.5" />
             Sub Goal
           </Button>
@@ -317,18 +295,14 @@ export function GoalTabsSection({
                   </span>
                   <CheckInStatusBadge status={ci.status} />
                   {ci.confidence != null && (
-                    <span className="text-[10px] text-muted-foreground">
-                      Confidence: {ci.confidence}%
-                    </span>
+                    <span className="text-[10px] text-muted-foreground">Confidence: {ci.confidence}%</span>
                   )}
                   {ci.authorAgentId && (
                     <span className="text-[10px] text-muted-foreground">
                       by {agentMap.get(ci.authorAgentId)?.name ?? "Agent"}
                     </span>
                   )}
-                  {ci.authorUserId && (
-                    <span className="text-[10px] text-muted-foreground">by User</span>
-                  )}
+                  {ci.authorUserId && <span className="text-[10px] text-muted-foreground">by User</span>}
                 </div>
                 {ci.note && <p className="text-sm">{ci.note}</p>}
                 {ci.blockers && (

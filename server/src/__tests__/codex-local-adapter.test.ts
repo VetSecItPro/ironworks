@@ -1,7 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
+import { printCodexStreamEvent } from "@ironworksai/adapter-codex-local/cli";
 import { isCodexUnknownSessionError, parseCodexJsonl } from "@ironworksai/adapter-codex-local/server";
 import { parseCodexStdoutLine } from "@ironworksai/adapter-codex-local/ui";
-import { printCodexStreamEvent } from "@ironworksai/adapter-codex-local/cli";
+import { describe, expect, it, vi } from "vitest";
 
 describe("codex_local parser", () => {
   it("extracts session, summary, usage, and terminal error message", () => {
@@ -49,9 +49,7 @@ describe("codex_local ui stdout parser", () => {
         }),
         ts,
       ),
-    ).toEqual([
-      { kind: "thinking", ts, text: "**Preparing to use ironworks skill**" },
-    ]);
+    ).toEqual([{ kind: "thinking", ts, text: "**Preparing to use ironworks skill**" }]);
   });
 
   it("parses command execution and file changes", () => {
@@ -230,21 +228,21 @@ describe("codex_local cli formatter", () => {
         false,
       );
 
-      const lines = spy.mock.calls
-        .map((call) => call.map((v) => String(v)).join(" "))
-        .map(stripAnsi);
+      const lines = spy.mock.calls.map((call) => call.map((v) => String(v)).join(" ")).map(stripAnsi);
 
-      expect(lines).toEqual(expect.arrayContaining([
-        "turn started",
-        "tool_call: command_execution",
-        "/bin/zsh -lc ls",
-        "tool_result: command_execution command=\"/bin/zsh -lc ls\" status=completed exit_code=0",
-        "agents",
-        "file_change: update /home/user/project/ui/src/pages/AgentDetail.tsx",
-        "turn failed: model access denied",
-        "tokens: in=10 out=4 cached=2",
-        "error: resume model mismatch",
-      ]));
+      expect(lines).toEqual(
+        expect.arrayContaining([
+          "turn started",
+          "tool_call: command_execution",
+          "/bin/zsh -lc ls",
+          'tool_result: command_execution command="/bin/zsh -lc ls" status=completed exit_code=0',
+          "agents",
+          "file_change: update /home/user/project/ui/src/pages/AgentDetail.tsx",
+          "turn failed: model access denied",
+          "tokens: in=10 out=4 cached=2",
+          "error: resume model mismatch",
+        ]),
+      );
     } finally {
       spy.mockRestore();
     }

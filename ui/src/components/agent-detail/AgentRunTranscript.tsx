@@ -1,30 +1,31 @@
+import type { HeartbeatRun } from "@ironworksai/shared";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ChevronRight, RotateCcw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, Link } from "@/lib/router";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Link, useNavigate } from "@/lib/router";
+import { activityApi } from "../../api/activity";
 import { agentsApi, type ClaudeLoginResult } from "../../api/agents";
 import { heartbeatsApi } from "../../api/heartbeats";
-import { activityApi } from "../../api/activity";
 import { queryKeys } from "../../lib/queryKeys";
-import { StatusBadge } from "../StatusBadge";
+import { cn, formatTokens, relativeTime } from "../../lib/utils";
 import { CopyText } from "../CopyText";
 import { ScrollToBottom } from "../ScrollToBottom";
-import { formatTokens, relativeTime, cn } from "../../lib/utils";
-import { Button } from "@/components/ui/button";
-import {
-  ChevronRight,
-  RotateCcw,
-} from "lucide-react";
-import type { HeartbeatRun } from "@ironworksai/shared";
-import {
-  runMetrics,
-  asRecord,
-  asNonEmptyString,
-} from "./agent-detail-utils";
+import { StatusBadge } from "../StatusBadge";
+import { asNonEmptyString, asRecord, runMetrics } from "./agent-detail-utils";
 import { LogViewer } from "./LogViewer";
 
 /* ---- Run Detail (expanded) ---- */
 
-export function RunDetail({ run: initialRun, agentRouteId, adapterType }: { run: HeartbeatRun; agentRouteId: string; adapterType: string }) {
+export function RunDetail({
+  run: initialRun,
+  agentRouteId,
+  adapterType,
+}: {
+  run: HeartbeatRun;
+  agentRouteId: string;
+  adapterType: string;
+}) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { data: hydratedRun } = useQuery({
@@ -66,12 +67,16 @@ export function RunDetail({ run: initialRun, agentRouteId, adapterType }: { run:
   }, [run.contextSnapshot, run.id]);
   const resumeRun = useMutation({
     mutationFn: async () => {
-      const result = await agentsApi.wakeup(run.agentId, {
-        source: "on_demand",
-        triggerDetail: "manual",
-        reason: "resume_process_lost_run",
-        payload: resumePayload,
-      }, run.companyId);
+      const result = await agentsApi.wakeup(
+        run.agentId,
+        {
+          source: "on_demand",
+          triggerDetail: "manual",
+          reason: "resume_process_lost_run",
+          payload: resumePayload,
+        },
+        run.companyId,
+      );
       if (!("id" in result)) {
         throw new Error("Resume request was skipped because the agent is not currently invokable.");
       }
@@ -98,12 +103,16 @@ export function RunDetail({ run: initialRun, agentRouteId, adapterType }: { run:
   }, [run.contextSnapshot]);
   const retryRun = useMutation({
     mutationFn: async () => {
-      const result = await agentsApi.wakeup(run.agentId, {
-        source: "on_demand",
-        triggerDetail: "manual",
-        reason: "retry_failed_run",
-        payload: retryPayload,
-      }, run.companyId);
+      const result = await agentsApi.wakeup(
+        run.agentId,
+        {
+          source: "on_demand",
+          triggerDetail: "manual",
+          reason: "retry_failed_run",
+          payload: retryPayload,
+        },
+        run.companyId,
+      );
       if (!("id" in result)) {
         throw new Error("Retry was skipped because the agent is not currently invokable.");
       }
@@ -160,12 +169,18 @@ export function RunDetail({ run: initialRun, agentRouteId, adapterType }: { run:
     return () => clearInterval(id);
   }, [isRunning, run.startedAt]);
 
-  const timeFormat: Intl.DateTimeFormatOptions = { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false };
+  const timeFormat: Intl.DateTimeFormatOptions = {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  };
   const startTime = run.startedAt ? new Date(run.startedAt).toLocaleTimeString("en-US", timeFormat) : null;
   const endTime = run.finishedAt ? new Date(run.finishedAt).toLocaleTimeString("en-US", timeFormat) : null;
-  const durationSec = run.startedAt && run.finishedAt
-    ? Math.round((new Date(run.finishedAt).getTime() - new Date(run.startedAt).getTime()) / 1000)
-    : null;
+  const durationSec =
+    run.startedAt && run.finishedAt
+      ? Math.round((new Date(run.finishedAt).getTime() - new Date(run.startedAt).getTime()) / 1000)
+      : null;
   const displayDurationSec = durationSec ?? (isRunning ? elapsedSec : null);
   const hasMetrics = metrics.input > 0 || metrics.output > 0 || metrics.cached > 0 || metrics.cost > 0;
   const hasSession = !!(run.sessionIdBefore || run.sessionIdAfter);
@@ -246,7 +261,10 @@ export function RunDetail({ run: initialRun, agentRouteId, adapterType }: { run:
                 </div>
                 {displayDurationSec !== null && (
                   <div className="text-xs text-muted-foreground">
-                    Duration: {displayDurationSec >= 60 ? `${Math.floor(displayDurationSec / 60)}m ${displayDurationSec % 60}s` : `${displayDurationSec}s`}
+                    Duration:{" "}
+                    {displayDurationSec >= 60
+                      ? `${Math.floor(displayDurationSec / 60)}m ${displayDurationSec % 60}s`
+                      : `${displayDurationSec}s`}
                   </div>
                 )}
               </div>
@@ -329,7 +347,9 @@ export function RunDetail({ run: initialRun, agentRouteId, adapterType }: { run:
               </div>
               <div>
                 <div className="text-xs text-muted-foreground">Cost</div>
-                <div className="text-sm font-medium font-mono">{metrics.cost > 0 ? `$${metrics.cost.toFixed(4)}` : "-"}</div>
+                <div className="text-sm font-medium font-mono">
+                  {metrics.cost > 0 ? `$${metrics.cost.toFixed(4)}` : "-"}
+                </div>
               </div>
             </div>
           )}
@@ -409,7 +429,9 @@ export function RunDetail({ run: initialRun, agentRouteId, adapterType }: { run:
                   <StatusBadge status={issue.status} />
                   <span className="truncate">{issue.title}</span>
                 </div>
-                <span className="font-mono text-muted-foreground shrink-0 ml-2">{issue.identifier ?? issue.issueId.slice(0, 8)}</span>
+                <span className="font-mono text-muted-foreground shrink-0 ml-2">
+                  {issue.identifier ?? issue.issueId.slice(0, 8)}
+                </span>
               </Link>
             ))}
           </div>
@@ -420,7 +442,9 @@ export function RunDetail({ run: initialRun, agentRouteId, adapterType }: { run:
       {run.stderrExcerpt && (
         <div className="space-y-1">
           <span className="text-xs font-medium text-red-600 dark:text-red-400">stderr</span>
-          <pre className="bg-neutral-100 dark:bg-neutral-950 rounded-md p-3 text-xs font-mono text-red-700 dark:text-red-300 overflow-x-auto whitespace-pre-wrap">{run.stderrExcerpt}</pre>
+          <pre className="bg-neutral-100 dark:bg-neutral-950 rounded-md p-3 text-xs font-mono text-red-700 dark:text-red-300 overflow-x-auto whitespace-pre-wrap">
+            {run.stderrExcerpt}
+          </pre>
         </div>
       )}
 
@@ -428,7 +452,9 @@ export function RunDetail({ run: initialRun, agentRouteId, adapterType }: { run:
       {run.stdoutExcerpt && !run.logRef && (
         <div className="space-y-1">
           <span className="text-xs font-medium text-muted-foreground">stdout</span>
-          <pre className="bg-neutral-100 dark:bg-neutral-950 rounded-md p-3 text-xs font-mono text-foreground overflow-x-auto whitespace-pre-wrap">{run.stdoutExcerpt}</pre>
+          <pre className="bg-neutral-100 dark:bg-neutral-950 rounded-md p-3 text-xs font-mono text-foreground overflow-x-auto whitespace-pre-wrap">
+            {run.stdoutExcerpt}
+          </pre>
         </div>
       )}
 
@@ -438,4 +464,3 @@ export function RunDetail({ run: initialRun, agentRouteId, adapterType }: { run:
     </div>
   );
 }
-

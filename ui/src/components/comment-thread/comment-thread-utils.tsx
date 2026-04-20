@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, Copy, SmilePlus } from "lucide-react";
 import type { IssueComment } from "@ironworksai/shared";
+import { Check, Copy, SmilePlus } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -49,14 +49,18 @@ function loadReactions(): ReactionMap {
   try {
     const raw = localStorage.getItem(REACTIONS_STORAGE_KEY);
     if (raw) return JSON.parse(raw) as ReactionMap;
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return {};
 }
 
 function saveReactions(reactions: ReactionMap) {
   try {
     localStorage.setItem(REACTIONS_STORAGE_KEY, JSON.stringify(reactions));
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 export function useCommentReactions() {
@@ -106,9 +110,7 @@ export function ReactionBar({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showPicker]);
 
-  const activeReactions = reactions
-    ? REACTION_EMOJIS.filter((r) => (reactions[r.emoji] ?? 0) > 0)
-    : [];
+  const activeReactions = reactions ? REACTION_EMOJIS.filter((r) => (reactions[r.emoji] ?? 0) > 0) : [];
 
   return (
     <div className="flex items-center gap-1 mt-1">
@@ -139,7 +141,10 @@ export function ReactionBar({
               <button
                 key={r.label}
                 type="button"
-                onClick={() => { onToggle(commentId, r.emoji); setShowPicker(false); }}
+                onClick={() => {
+                  onToggle(commentId, r.emoji);
+                  setShowPicker(false);
+                }}
                 className="h-7 w-7 rounded-md flex items-center justify-center hover:bg-accent transition-colors text-base"
                 title={r.label}
               >

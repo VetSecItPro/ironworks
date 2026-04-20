@@ -1,32 +1,28 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { trackFeatureUsed } from "../../lib/analytics";
-import { executionWorkspacesApi } from "../../api/execution-workspaces";
-import { issuesApi } from "../../api/issues";
-import { instanceSettingsApi } from "../../api/instanceSettings";
-import { projectsApi } from "../../api/projects";
-import { goalsApi } from "../../api/goals";
 import { agentsApi } from "../../api/agents";
-import { authApi } from "../../api/auth";
 import { assetsApi } from "../../api/assets";
-import { queryKeys } from "../../lib/queryKeys";
-import { useProjectOrder } from "../../hooks/useProjectOrder";
-import { getRecentAssigneeIds, sortAgentsByRecency } from "../../lib/recent-assignees";
+import { authApi } from "../../api/auth";
+import { executionWorkspacesApi } from "../../api/execution-workspaces";
+import { goalsApi } from "../../api/goals";
+import { instanceSettingsApi } from "../../api/instanceSettings";
+import { issuesApi } from "../../api/issues";
+import { projectsApi } from "../../api/projects";
 import { useToast } from "../../context/ToastContext";
-import {
-  assigneeValueFromSelection,
-  currentUserAssigneeOption,
-  parseAssigneeValue,
-} from "../../lib/assignees";
+import { useProjectOrder } from "../../hooks/useProjectOrder";
+import { trackFeatureUsed } from "../../lib/analytics";
+import { assigneeValueFromSelection, currentUserAssigneeOption, parseAssigneeValue } from "../../lib/assignees";
 import { extractProviderIdWithFallback } from "../../lib/model-utils";
-import type { MentionOption } from "../MarkdownEditor";
+import { queryKeys } from "../../lib/queryKeys";
+import { getRecentAssigneeIds, sortAgentsByRecency } from "../../lib/recent-assignees";
 import type { InlineEntityOption } from "../InlineEntitySelector";
+import type { MentionOption } from "../MarkdownEditor";
 import {
-  type StagedIssueFile,
-  ISSUE_OVERRIDE_ADAPTER_TYPES,
-  findSimilarIssues,
-  suggestPriority,
   clearDraft,
+  findSimilarIssues,
+  ISSUE_OVERRIDE_ADAPTER_TYPES,
+  type StagedIssueFile,
+  suggestPriority,
 } from "./constants";
 
 interface UseNewIssueQueriesArgs {
@@ -103,10 +99,7 @@ export function useNewIssueQueries({
   });
 
   const currentUserId = session?.user?.id ?? session?.session?.userId ?? null;
-  const activeProjects = useMemo(
-    () => (projects ?? []).filter((p) => !p.archivedAt),
-    [projects],
-  );
+  const activeProjects = useMemo(() => (projects ?? []).filter((p) => !p.archivedAt), [projects]);
   const { orderedProjects } = useProjectOrder({
     projects: activeProjects,
     companyId: effectiveCompanyId,
@@ -139,14 +132,20 @@ export function useNewIssueQueries({
       .sort((a, b) => a.name.localeCompare(b.name));
     for (const agent of activeAgents) {
       options.push({
-        id: `agent:${agent.id}`, name: agent.name, kind: "agent",
-        agentId: agent.id, agentIcon: agent.icon,
+        id: `agent:${agent.id}`,
+        name: agent.name,
+        kind: "agent",
+        agentId: agent.id,
+        agentIcon: agent.icon,
       });
     }
     for (const project of orderedProjects) {
       options.push({
-        id: `project:${project.id}`, name: project.name, kind: "project",
-        projectId: project.id, projectColor: project.color,
+        id: `project:${project.id}`,
+        name: project.name,
+        kind: "project",
+        projectId: project.id,
+        projectColor: project.color,
       });
     }
     return options;
@@ -169,9 +168,12 @@ export function useNewIssueQueries({
     [agents, currentUserId, recentAssigneeIds],
   );
   const projectOptions = useMemo<InlineEntityOption[]>(
-    () => orderedProjects.map((project) => ({
-      id: project.id, label: project.name, searchText: project.description ?? "",
-    })),
+    () =>
+      orderedProjects.map((project) => ({
+        id: project.id,
+        label: project.name,
+        searchText: project.description ?? "",
+      })),
     [orderedProjects],
   );
   const activeGoals = useMemo(
@@ -179,31 +181,36 @@ export function useNewIssueQueries({
     [goals],
   );
   const goalOptions = useMemo<InlineEntityOption[]>(
-    () => activeGoals.map((g) => ({
-      id: g.id, label: g.title, searchText: `${g.level} ${g.description ?? ""}`,
-    })),
+    () =>
+      activeGoals.map((g) => ({
+        id: g.id,
+        label: g.title,
+        searchText: `${g.level} ${g.description ?? ""}`,
+      })),
     [activeGoals],
   );
   const modelOverrideOptions = useMemo<InlineEntityOption[]>(
-    () => [...(assigneeAdapterModels ?? [])]
-      .sort((a, b) => {
-        const providerA = extractProviderIdWithFallback(a.id);
-        const providerB = extractProviderIdWithFallback(b.id);
-        const byProvider = providerA.localeCompare(providerB);
-        if (byProvider !== 0) return byProvider;
-        return a.id.localeCompare(b.id);
-      })
-      .map((model) => ({
-        id: model.id, label: model.label,
-        searchText: `${model.id} ${extractProviderIdWithFallback(model.id)}`,
-      })),
+    () =>
+      [...(assigneeAdapterModels ?? [])]
+        .sort((a, b) => {
+          const providerA = extractProviderIdWithFallback(a.id);
+          const providerB = extractProviderIdWithFallback(b.id);
+          const byProvider = providerA.localeCompare(providerB);
+          if (byProvider !== 0) return byProvider;
+          return a.id.localeCompare(b.id);
+        })
+        .map((model) => ({
+          id: model.id,
+          label: model.label,
+          searchText: `${model.id} ${extractProviderIdWithFallback(model.id)}`,
+        })),
     [assigneeAdapterModels],
   );
 
   // Workspace deduplication
   const deduplicatedReusableWorkspaces = useMemo(() => {
     const workspaces = reusableExecutionWorkspaces ?? [];
-    const seen = new Map<string, typeof workspaces[number]>();
+    const seen = new Map<string, (typeof workspaces)[number]>();
     for (const ws of workspaces) {
       const key = ws.cwd ?? ws.id;
       const existing = seen.get(key);
@@ -233,8 +240,10 @@ export function useNewIssueQueries({
           if (stagedFile.kind === "document") {
             const body = await stagedFile.file.text();
             await issuesApi.upsertDocument(issue.id, stagedFile.documentKey ?? "document", {
-              title: stagedFile.documentKey === "plan" ? null : stagedFile.title ?? null,
-              format: "markdown", body, baseRevisionId: null,
+              title: stagedFile.documentKey === "plan" ? null : (stagedFile.title ?? null),
+              format: "markdown",
+              body,
+              baseRevisionId: null,
             });
           } else {
             await issuesApi.uploadAttachment(companyId, issue.id, stagedFile.file);
@@ -259,9 +268,7 @@ export function useNewIssueQueries({
           title: `Created ${issueRef} with upload warnings`,
           body: `${failures.length} staged ${failures.length === 1 ? "file" : "files"} could not be added.`,
           tone: "warn",
-          action: prefix
-            ? { label: `Open ${issueRef}`, href: `/${prefix}/issues/${issueRef}` }
-            : undefined,
+          action: prefix ? { label: `Open ${issueRef}`, href: `/${prefix}/issues/${issueRef}` } : undefined,
         });
       }
       clearDraft();
@@ -277,15 +284,16 @@ export function useNewIssueQueries({
     },
   });
 
-  const currentAssignee = selectedAssigneeAgentId
-    ? (agents ?? []).find((a) => a.id === selectedAssigneeAgentId)
-    : null;
+  const currentAssignee = selectedAssigneeAgentId ? (agents ?? []).find((a) => a.id === selectedAssigneeAgentId) : null;
 
   const assigneeOptionsTitle =
-    assigneeAdapterType === "claude_local" ? "Claude options"
-    : assigneeAdapterType === "codex_local" ? "Codex options"
-    : assigneeAdapterType === "opencode_local" ? "OpenCode options"
-    : "Agent options";
+    assigneeAdapterType === "claude_local"
+      ? "Claude options"
+      : assigneeAdapterType === "codex_local"
+        ? "Codex options"
+        : assigneeAdapterType === "opencode_local"
+          ? "OpenCode options"
+          : "Agent options";
 
   return {
     agents,

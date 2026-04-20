@@ -1,6 +1,6 @@
-import { useMemo } from "react";
-import { TrendingUp } from "lucide-react";
 import type { Goal } from "@ironworksai/shared";
+import { TrendingUp } from "lucide-react";
+import { useMemo } from "react";
 import type { GoalProgressItem } from "../../api/goalProgress";
 import { resolveGoalHealth } from "./goal-health";
 

@@ -14,13 +14,7 @@ interface ConfigActionBarProps {
  * instructions tab has unsaved changes. Renders differently for
  * desktop (sticky float-right) vs mobile (fixed bottom).
  */
-export function ConfigActionBar({
-  isMobile,
-  showBar,
-  isSaving,
-  onSave,
-  onCancel,
-}: ConfigActionBarProps) {
+export function ConfigActionBar({ isMobile, showBar, isSaving, onSave, onCancel }: ConfigActionBarProps) {
   if (isMobile) {
     if (!showBar) return null;
     return (

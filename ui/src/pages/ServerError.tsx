@@ -1,6 +1,6 @@
-import { Link } from "@/lib/router";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "@/lib/router";
 import { usePageTitle } from "../hooks/usePageTitle";
 
 export function ServerErrorPage() {
@@ -28,9 +28,7 @@ export function ServerErrorPage() {
           </Button>
         </div>
 
-        <p className="mt-8 text-xs text-muted-foreground">
-          Error 500 - Internal Server Error
-        </p>
+        <p className="mt-8 text-xs text-muted-foreground">Error 500 - Internal Server Error</p>
       </div>
     </div>
   );

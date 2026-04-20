@@ -71,9 +71,7 @@ export function SimpleDiff({ oldText, newText }: { oldText: string; newText: str
           {line.text}
         </div>
       ))}
-      {diff.length === 0 && (
-        <div className="px-3 py-2 text-muted-foreground text-center">No differences found.</div>
-      )}
+      {diff.length === 0 && <div className="px-3 py-2 text-muted-foreground text-center">No differences found.</div>}
     </div>
   );
 }

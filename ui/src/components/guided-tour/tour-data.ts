@@ -68,13 +68,19 @@ const TOUR_STORAGE_KEY = "ironworks:guided-tour-completed";
 const TOUR_VERSION = "1";
 
 export function isTourCompleted(): boolean {
-  try { return localStorage.getItem(TOUR_STORAGE_KEY) === TOUR_VERSION; }
-  catch { return false; }
+  try {
+    return localStorage.getItem(TOUR_STORAGE_KEY) === TOUR_VERSION;
+  } catch {
+    return false;
+  }
 }
 
 export function markTourCompleted() {
-  try { localStorage.setItem(TOUR_STORAGE_KEY, TOUR_VERSION); }
-  catch { /* ignore */ }
+  try {
+    localStorage.setItem(TOUR_STORAGE_KEY, TOUR_VERSION);
+  } catch {
+    /* ignore */
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -85,10 +91,20 @@ export function useGuidedTour() {
   const [active, setActive] = useState(false);
   const [step, setStep] = useState(0);
 
-  const start = useCallback(() => { setStep(0); setActive(true); }, []);
-  const dismiss = useCallback(() => { setActive(false); markTourCompleted(); }, []);
-  const next = useCallback(() => { setStep((s) => s + 1); }, []);
-  const prev = useCallback(() => { setStep((s) => Math.max(0, s - 1)); }, []);
+  const start = useCallback(() => {
+    setStep(0);
+    setActive(true);
+  }, []);
+  const dismiss = useCallback(() => {
+    setActive(false);
+    markTourCompleted();
+  }, []);
+  const next = useCallback(() => {
+    setStep((s) => s + 1);
+  }, []);
+  const prev = useCallback(() => {
+    setStep((s) => Math.max(0, s - 1));
+  }, []);
 
   return { active, step, start, dismiss, next, prev, completed: isTourCompleted() };
 }
@@ -101,11 +117,17 @@ const FIRST_RUN_KEY = "ironworks:first-run-seen";
 const FIRST_RUN_VERSION = "1";
 
 export function isFirstRun(): boolean {
-  try { return localStorage.getItem(FIRST_RUN_KEY) !== FIRST_RUN_VERSION; }
-  catch { return false; }
+  try {
+    return localStorage.getItem(FIRST_RUN_KEY) !== FIRST_RUN_VERSION;
+  } catch {
+    return false;
+  }
 }
 
 export function markFirstRunSeen() {
-  try { localStorage.setItem(FIRST_RUN_KEY, FIRST_RUN_VERSION); }
-  catch { /* ignore */ }
+  try {
+    localStorage.setItem(FIRST_RUN_KEY, FIRST_RUN_VERSION);
+  } catch {
+    /* ignore */
+  }
 }

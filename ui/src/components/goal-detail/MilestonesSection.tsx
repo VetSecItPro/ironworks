@@ -1,7 +1,7 @@
+import { CheckSquare, ClipboardCheck, Plus, Square, Trash2 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CheckSquare, ClipboardCheck, Plus, Square, Trash2 } from "lucide-react";
 import { cn } from "../../lib/utils";
 
 export interface Milestone {
@@ -59,11 +59,7 @@ export function useMilestones(goalId: string) {
   return { milestones, add, toggle, remove };
 }
 
-export function MilestonesSection({
-  milestonesHook,
-}: {
-  milestonesHook: ReturnType<typeof useMilestones>;
-}) {
+export function MilestonesSection({ milestonesHook }: { milestonesHook: ReturnType<typeof useMilestones> }) {
   const [showMilestoneForm, setShowMilestoneForm] = useState(false);
   const [milestoneTitle, setMilestoneTitle] = useState("");
   const [milestoneDate, setMilestoneDate] = useState("");
@@ -75,11 +71,7 @@ export function MilestonesSection({
           <ClipboardCheck className="h-3.5 w-3.5" />
           Milestones
         </h4>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => setShowMilestoneForm(true)}
-        >
+        <Button size="sm" variant="outline" onClick={() => setShowMilestoneForm(true)}>
           <Plus className="h-3 w-3 mr-1" />
           Add
         </Button>
@@ -115,7 +107,10 @@ export function MilestonesSection({
           <Button
             size="sm"
             variant="ghost"
-            onClick={() => { setShowMilestoneForm(false); setMilestoneTitle(""); }}
+            onClick={() => {
+              setShowMilestoneForm(false);
+              setMilestoneTitle("");
+            }}
           >
             Cancel
           </Button>
@@ -132,11 +127,7 @@ export function MilestonesSection({
                 onClick={() => milestonesHook.toggle(ms.id)}
                 className="text-muted-foreground hover:text-foreground transition-colors"
               >
-                {ms.completed ? (
-                  <CheckSquare className="h-4 w-4 text-emerald-500" />
-                ) : (
-                  <Square className="h-4 w-4" />
-                )}
+                {ms.completed ? <CheckSquare className="h-4 w-4 text-emerald-500" /> : <Square className="h-4 w-4" />}
               </button>
               <span className={cn("text-sm flex-1", ms.completed && "line-through text-muted-foreground")}>
                 {ms.title}

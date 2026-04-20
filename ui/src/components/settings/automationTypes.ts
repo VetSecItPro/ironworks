@@ -1,14 +1,6 @@
-export type Trigger =
-  | "issue_created"
-  | "status_changed"
-  | "agent_failed"
-  | "budget_threshold_reached";
+export type Trigger = "issue_created" | "status_changed" | "agent_failed" | "budget_threshold_reached";
 
-export type Action =
-  | "assign_agent"
-  | "change_status"
-  | "send_notification"
-  | "create_issue";
+export type Action = "assign_agent" | "change_status" | "send_notification" | "create_issue";
 
 export interface AutomationRule {
   id: string;

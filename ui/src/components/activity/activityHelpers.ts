@@ -1,4 +1,4 @@
-import type { Agent, ActivityEvent } from "@ironworksai/shared";
+import type { ActivityEvent, Agent } from "@ironworksai/shared";
 import type { AggregatedGroup } from "../../types/dashboard";
 
 export function getTimeGroup(date: Date): string {

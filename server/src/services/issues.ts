@@ -1,7 +1,8 @@
-import { and, asc, desc, eq, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
+import { and, asc, desc, eq, inArray, isNull, ne, or, sql } from "drizzle-orm";
 
 type DbOrTx = Parameters<Db["transaction"]>[0] extends (tx: infer T) => unknown ? T | Db : Db;
+
 import {
   activityLog,
   agents,
@@ -9,31 +10,31 @@ import {
   companies,
   companyMemberships,
   documents,
+  executionWorkspaces,
   goals,
   heartbeatRuns,
-  executionWorkspaces,
   issueAttachments,
-  issueInboxArchives,
-  issueLabels,
   issueComments,
   issueDocuments,
+  issueInboxArchives,
+  issueLabels,
   issueReadStates,
   issues,
   labels,
-  projectWorkspaces,
   projects,
+  projectWorkspaces,
 } from "@ironworksai/db";
 import { extractAgentMentionIds, extractProjectMentionIds } from "@ironworksai/shared";
 import { conflict, notFound, unprocessable } from "../errors.js";
+import { redactCurrentUserText } from "../log-redaction.js";
 import {
   defaultIssueExecutionWorkspaceSettingsForProject,
   gateProjectExecutionWorkspacePolicy,
   parseProjectExecutionWorkspacePolicy,
 } from "./execution-workspace-policy.js";
-import { instanceSettingsService } from "./instance-settings.js";
-import { redactCurrentUserText } from "../log-redaction.js";
-import { resolveIssueGoalId, resolveNextIssueGoalId } from "./issue-goal-fallback.js";
 import { getDefaultCompanyGoal } from "./goals.js";
+import { instanceSettingsService } from "./instance-settings.js";
+import { resolveIssueGoalId, resolveNextIssueGoalId } from "./issue-goal-fallback.js";
 
 const ALL_ISSUE_STATUSES = ["backlog", "todo", "in_progress", "in_review", "blocked", "done", "cancelled"];
 const MAX_ISSUE_COMMENT_PAGE_LIMIT = 500;
@@ -118,11 +119,7 @@ function escapeLikePattern(value: string): string {
   return value.replace(/[\\%_]/g, "\\$&");
 }
 
-async function getProjectDefaultGoalId(
-  db: ProjectGoalReader,
-  companyId: string,
-  projectId: string | null | undefined,
-) {
+async function getProjectDefaultGoalId(db: ProjectGoalReader, companyId: string, projectId: string | null | undefined) {
   if (!projectId) return null;
   const row = await db
     .select({ goalId: projects.goalId })
@@ -321,10 +318,10 @@ export function deriveIssueUserContext(
   userId: string,
   stats:
     | {
-      myLastCommentAt: Date | string | null;
-      myLastReadAt: Date | string | null;
-      lastExternalCommentAt: Date | string | null;
-    }
+        myLastCommentAt: Date | string | null;
+        myLastReadAt: Date | string | null;
+        lastExternalCommentAt: Date | string | null;
+      }
     | null
     | undefined,
 ) {
@@ -339,14 +336,13 @@ export function deriveIssueUserContext(
   const myLastReadAt = normalizeDate(stats?.myLastReadAt);
   const createdTouchAt = issue.createdByUserId === userId ? normalizeDate(issue.createdAt) : null;
   const assignedTouchAt = issue.assigneeUserId === userId ? normalizeDate(issue.updatedAt) : null;
-  const myLastTouchAt = [myLastCommentAt, myLastReadAt, createdTouchAt, assignedTouchAt]
-    .filter((value): value is Date => value instanceof Date)
-    .sort((a, b) => b.getTime() - a.getTime())[0] ?? null;
+  const myLastTouchAt =
+    [myLastCommentAt, myLastReadAt, createdTouchAt, assignedTouchAt]
+      .filter((value): value is Date => value instanceof Date)
+      .sort((a, b) => b.getTime() - a.getTime())[0] ?? null;
   const lastExternalCommentAt = normalizeDate(stats?.lastExternalCommentAt);
   const isUnreadForMe = Boolean(
-    myLastTouchAt &&
-    lastExternalCommentAt &&
-    lastExternalCommentAt.getTime() > myLastTouchAt.getTime(),
+    myLastTouchAt && lastExternalCommentAt && lastExternalCommentAt.getTime() > myLastTouchAt.getTime(),
   );
 
   return {
@@ -379,7 +375,10 @@ async function labelMapForIssues(dbOrTx: DbOrTx, issueIds: string[]): Promise<Ma
 
 async function withIssueLabels(dbOrTx: DbOrTx, rows: IssueRow[]): Promise<IssueWithLabels[]> {
   if (rows.length === 0) return [];
-  const labelsByIssueId = await labelMapForIssues(dbOrTx, rows.map((row) => row.id));
+  const labelsByIssueId = await labelMapForIssues(
+    dbOrTx,
+    rows.map((row) => row.id),
+  );
   return rows.map((row) => {
     const issueLabels = labelsByIssueId.get(row.id) ?? [];
     return {
@@ -397,9 +396,7 @@ async function activeRunMapForIssues(
   issueRows: readonly { executionRunId: string | null }[],
 ): Promise<Map<string, IssueActiveRunRow>> {
   const map = new Map<string, IssueActiveRunRow>();
-  const runIds = issueRows
-    .map((row) => row.executionRunId)
-    .filter((id): id is string => id != null);
+  const runIds = issueRows.map((row) => row.executionRunId).filter((id): id is string => id != null);
   if (runIds.length === 0) return map;
 
   const rows = await dbOrTx
@@ -414,12 +411,7 @@ async function activeRunMapForIssues(
       createdAt: heartbeatRuns.createdAt,
     })
     .from(heartbeatRuns)
-    .where(
-      and(
-        inArray(heartbeatRuns.id, runIds),
-        inArray(heartbeatRuns.status, ACTIVE_RUN_STATUSES),
-      ),
-    );
+    .where(and(inArray(heartbeatRuns.id, runIds), inArray(heartbeatRuns.status, ACTIVE_RUN_STATUSES)));
 
   for (const row of rows) {
     map.set(row.id, row);
@@ -427,10 +419,7 @@ async function activeRunMapForIssues(
   return map;
 }
 
-function withActiveRuns(
-  issueRows: IssueWithLabels[],
-  runMap: Map<string, IssueActiveRunRow>,
-): IssueWithLabelsAndRun[] {
+function withActiveRuns(issueRows: IssueWithLabels[], runMap: Map<string, IssueActiveRunRow>): IssueWithLabelsAndRun[] {
   return issueRows.map((row) => ({
     ...row,
     activeRun: row.executionRunId ? (runMap.get(row.executionRunId) ?? null) : null,
@@ -488,7 +477,11 @@ export function issueService(db: Db) {
     }
   }
 
-  async function assertValidProjectWorkspace(companyId: string, projectId: string | null | undefined, projectWorkspaceId: string) {
+  async function assertValidProjectWorkspace(
+    companyId: string,
+    projectId: string | null | undefined,
+    projectWorkspaceId: string,
+  ) {
     const workspace = await db
       .select({
         id: projectWorkspaces.id,
@@ -505,7 +498,11 @@ export function issueService(db: Db) {
     }
   }
 
-  async function assertValidExecutionWorkspace(companyId: string, projectId: string | null | undefined, executionWorkspaceId: string) {
+  async function assertValidExecutionWorkspace(
+    companyId: string,
+    projectId: string | null | undefined,
+    executionWorkspaceId: string,
+  ) {
     const workspace = await db
       .select({
         id: executionWorkspaces.id,
@@ -533,12 +530,7 @@ export function issueService(db: Db) {
     }
   }
 
-  async function syncIssueLabels(
-    issueId: string,
-    companyId: string,
-    labelIds: string[],
-    dbOrTx: DbOrTx = db,
-  ) {
+  async function syncIssueLabels(issueId: string, companyId: string, labelIds: string[], dbOrTx: DbOrTx = db) {
     const deduped = [...new Set(labelIds)];
     await assertValidLabelIds(companyId, deduped, dbOrTx);
     await dbOrTx.delete(issueLabels).where(eq(issueLabels.issueId, issueId));
@@ -658,16 +650,16 @@ export function issueService(db: Db) {
           .from(issueLabels)
           .where(and(eq(issueLabels.companyId, companyId), eq(issueLabels.labelId, filters.labelId)));
         if (labeledIssueIds.length === 0) return [];
-        conditions.push(inArray(issues.id, labeledIssueIds.map((row) => row.issueId)));
+        conditions.push(
+          inArray(
+            issues.id,
+            labeledIssueIds.map((row) => row.issueId),
+          ),
+        );
       }
       if (hasSearch) {
         conditions.push(
-          or(
-            titleContainsMatch,
-            identifierContainsMatch,
-            descriptionContainsMatch,
-            commentContainsMatch,
-          )!,
+          or(titleContainsMatch, identifierContainsMatch, descriptionContainsMatch, commentContainsMatch)!,
         );
       }
       if (!filters?.includeRoutineExecutions && !filters?.originKind && !filters?.originId) {
@@ -733,10 +725,7 @@ export function issueService(db: Db) {
         .where(and(...conditions))
         .orderBy(hasSearch ? asc(searchOrder) : asc(priorityOrder), asc(priorityOrder), desc(issues.updatedAt));
       // Fetch labels and active runs in parallel (was sequential: labels first, then runs)
-      const [withLabels, runMap] = await Promise.all([
-        withIssueLabels(db, rows),
-        activeRunMapForIssues(db, rows),
-      ]);
+      const [withLabels, runMap] = await Promise.all([withIssueLabels(db, rows), activeRunMapForIssues(db, rows)]);
       const withRuns = withActiveRuns(withLabels, runMap);
       if (!contextUserId || withRuns.length === 0) {
         return withRuns;
@@ -760,12 +749,7 @@ export function issueService(db: Db) {
             `,
           })
           .from(issueComments)
-          .where(
-            and(
-              eq(issueComments.companyId, companyId),
-              inArray(issueComments.issueId, issueIds),
-            ),
-          )
+          .where(and(eq(issueComments.companyId, companyId), inArray(issueComments.issueId, issueIds)))
           .groupBy(issueComments.issueId),
         db
           .select({
@@ -802,7 +786,10 @@ export function issueService(db: Db) {
         ne(issues.originKind, "routine_execution"),
       ];
       if (status) {
-        const statuses = status.split(",").map((s) => s.trim()).filter(Boolean);
+        const statuses = status
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
         if (statuses.length === 1) {
           conditions.push(eq(issues.status, statuses[0]));
         } else if (statuses.length > 1) {
@@ -936,13 +923,12 @@ export function issueService(db: Db) {
             .from(projects)
             .where(and(eq(projects.id, issueData.projectId), eq(projects.companyId, companyId)))
             .then((rows) => rows[0] ?? null);
-          executionWorkspaceSettings =
-            defaultIssueExecutionWorkspaceSettingsForProject(
-              gateProjectExecutionWorkspacePolicy(
-                parseProjectExecutionWorkspacePolicy(project?.executionWorkspacePolicy),
-                isolatedWorkspacesEnabled,
-              ),
-            ) as Record<string, unknown> | null;
+          executionWorkspaceSettings = defaultIssueExecutionWorkspaceSettingsForProject(
+            gateProjectExecutionWorkspacePolicy(
+              parseProjectExecutionWorkspacePolicy(project?.executionWorkspacePolicy),
+              isolatedWorkspacesEnabled,
+            ),
+          ) as Record<string, unknown> | null;
         }
         let projectWorkspaceId = issueData.projectWorkspaceId ?? null;
         if (!projectWorkspaceId && issueData.projectId) {
@@ -959,7 +945,9 @@ export function issueService(db: Db) {
             projectWorkspaceId = await tx
               .select({ id: projectWorkspaces.id })
               .from(projectWorkspaces)
-              .where(and(eq(projectWorkspaces.projectId, issueData.projectId), eq(projectWorkspaces.companyId, companyId)))
+              .where(
+                and(eq(projectWorkspaces.projectId, issueData.projectId), eq(projectWorkspaces.companyId, companyId)),
+              )
               .orderBy(desc(projectWorkspaces.isPrimary), asc(projectWorkspaces.createdAt), asc(projectWorkspaces.id))
               .then((rows) => rows[0]?.id ?? null);
           }
@@ -1130,15 +1118,21 @@ export function issueService(db: Db) {
           .then((rows) => rows[0] ?? null);
 
         if (removedIssue && attachmentAssetIds.length > 0) {
-          await tx
-            .delete(assets)
-            .where(inArray(assets.id, attachmentAssetIds.map((row) => row.assetId)));
+          await tx.delete(assets).where(
+            inArray(
+              assets.id,
+              attachmentAssetIds.map((row) => row.assetId),
+            ),
+          );
         }
 
         if (removedIssue && issueDocumentIds.length > 0) {
-          await tx
-            .delete(documents)
-            .where(inArray(documents.id, issueDocumentIds.map((row) => row.documentId)));
+          await tx.delete(documents).where(
+            inArray(
+              documents.id,
+              issueDocumentIds.map((row) => row.documentId),
+            ),
+          );
         }
 
         if (!removedIssue) return null;
@@ -1158,9 +1152,9 @@ export function issueService(db: Db) {
       const now = new Date();
       const sameRunAssigneeCondition = checkoutRunId
         ? and(
-          eq(issues.assigneeAgentId, agentId),
-          or(isNull(issues.checkoutRunId), eq(issues.checkoutRunId, checkoutRunId)),
-        )
+            eq(issues.assigneeAgentId, agentId),
+            or(isNull(issues.checkoutRunId), eq(issues.checkoutRunId, checkoutRunId)),
+          )
         : and(eq(issues.assigneeAgentId, agentId), isNull(issues.checkoutRunId));
       const executionLockCondition = checkoutRunId
         ? or(isNull(issues.executionRunId), eq(issues.executionRunId, checkoutRunId))
@@ -1248,7 +1242,11 @@ export function issueService(db: Db) {
           expectedCheckoutRunId: current.checkoutRunId,
         });
         if (adopted) {
-          const row = await db.select().from(issues).where(eq(issues.id, id)).then((rows) => rows[0]!);
+          const row = await db
+            .select()
+            .from(issues)
+            .where(eq(issues.id, id))
+            .then((rows) => rows[0]!);
           const [enriched] = await withIssueLabels(db, [row]);
           return enriched;
         }
@@ -1260,7 +1258,11 @@ export function issueService(db: Db) {
         current.status === "in_progress" &&
         sameRunLock(current.checkoutRunId, checkoutRunId)
       ) {
-        const row = await db.select().from(issues).where(eq(issues.id, id)).then((rows) => rows[0]!);
+        const row = await db
+          .select()
+          .from(issues)
+          .where(eq(issues.id, id))
+          .then((rows) => rows[0]!);
         const [enriched] = await withIssueLabels(db, [row]);
         return enriched;
       }
@@ -1410,9 +1412,7 @@ export function issueService(db: Db) {
       const order = opts?.order === "asc" ? "asc" : "desc";
       const afterCommentId = opts?.afterCommentId?.trim() || null;
       const limit =
-        opts?.limit && opts.limit > 0
-          ? Math.min(Math.floor(opts.limit), MAX_ISSUE_COMMENT_PAGE_LIMIT)
-          : null;
+        opts?.limit && opts.limit > 0 ? Math.min(Math.floor(opts.limit), MAX_ISSUE_COMMENT_PAGE_LIMIT) : null;
 
       const conditions = [eq(issueComments.issueId, issueId)];
       if (afterCommentId) {
@@ -1484,15 +1484,21 @@ export function issueService(db: Db) {
     getComment: (commentId: string) =>
       instanceSettings.getGeneral().then(({ censorUsernameInLogs }) =>
         db
-        .select()
-        .from(issueComments)
-        .where(eq(issueComments.id, commentId))
-        .then((rows) => {
-          const comment = rows[0] ?? null;
-          return comment ? redactIssueComment(comment, censorUsernameInLogs) : null;
-        })),
+          .select()
+          .from(issueComments)
+          .where(eq(issueComments.id, commentId))
+          .then((rows) => {
+            const comment = rows[0] ?? null;
+            return comment ? redactIssueComment(comment, censorUsernameInLogs) : null;
+          }),
+      ),
 
-    addComment: async (issueId: string, body: string, actor: { agentId?: string; userId?: string }, replyToId?: string | null) => {
+    addComment: async (
+      issueId: string,
+      body: string,
+      actor: { agentId?: string; userId?: string },
+      replyToId?: string | null,
+    ) => {
       const issue = await db
         .select({ companyId: issues.companyId })
         .from(issues)
@@ -1518,10 +1524,7 @@ export function issueService(db: Db) {
         .returning();
 
       // Update issue's updatedAt so comment activity is reflected in recency sorting
-      await db
-        .update(issues)
-        .set({ updatedAt: new Date() })
-        .where(eq(issues.id, issueId));
+      await db.update(issues).set({ updatedAt: new Date() }).where(eq(issues.id, issueId));
 
       return redactIssueComment(comment, currentUserRedactionOptions.enabled);
     },
@@ -1693,8 +1696,10 @@ export function issueService(db: Db) {
 
       const explicitAgentMentionIds = extractAgentMentionIds(body);
       if (tokens.size === 0 && explicitAgentMentionIds.length === 0) return [];
-      const rows = await db.select({ id: agents.id, name: agents.name })
-        .from(agents).where(eq(agents.companyId, companyId));
+      const rows = await db
+        .select({ id: agents.id, name: agents.name })
+        .from(agents)
+        .where(eq(agents.companyId, companyId));
       const resolved = new Set<string>(explicitAgentMentionIds);
       for (const agent of rows) {
         if (tokens.has(agent.name.toLowerCase())) {
@@ -1722,11 +1727,7 @@ export function issueService(db: Db) {
         .where(eq(issueComments.issueId, issueId));
 
       const mentionedIds = new Set<string>();
-      for (const source of [
-        issue.title,
-        issue.description ?? "",
-        ...comments.map((comment) => comment.body),
-      ]) {
+      for (const source of [issue.title, issue.description ?? "", ...comments.map((comment) => comment.body)]) {
         for (const projectId of extractProjectMentionIds(source)) {
           mentionedIds.add(projectId);
         }
@@ -1736,81 +1737,107 @@ export function issueService(db: Db) {
       const rows = await db
         .select({ id: projects.id })
         .from(projects)
-        .where(
-          and(
-            eq(projects.companyId, issue.companyId),
-            inArray(projects.id, [...mentionedIds]),
-          ),
-        );
+        .where(and(eq(projects.companyId, issue.companyId), inArray(projects.id, [...mentionedIds])));
       const valid = new Set(rows.map((row) => row.id));
       return [...mentionedIds].filter((projectId) => valid.has(projectId));
     },
 
     getAncestors: async (issueId: string) => {
       const raw: Array<{
-        id: string; identifier: string | null; title: string; description: string | null;
-        status: string; priority: string;
-        assigneeAgentId: string | null; projectId: string | null; goalId: string | null;
+        id: string;
+        identifier: string | null;
+        title: string;
+        description: string | null;
+        status: string;
+        priority: string;
+        assigneeAgentId: string | null;
+        projectId: string | null;
+        goalId: string | null;
       }> = [];
       const visited = new Set<string>([issueId]);
-      const start = await db.select().from(issues).where(eq(issues.id, issueId)).then(r => r[0] ?? null);
+      const start = await db
+        .select()
+        .from(issues)
+        .where(eq(issues.id, issueId))
+        .then((r) => r[0] ?? null);
       let currentId = start?.parentId ?? null;
       while (currentId && !visited.has(currentId) && raw.length < 50) {
         visited.add(currentId);
-        const parent = await db.select({
-          id: issues.id, identifier: issues.identifier, title: issues.title, description: issues.description,
-          status: issues.status, priority: issues.priority,
-          assigneeAgentId: issues.assigneeAgentId, projectId: issues.projectId,
-          goalId: issues.goalId, parentId: issues.parentId,
-        }).from(issues).where(eq(issues.id, currentId)).then(r => r[0] ?? null);
+        const parent = await db
+          .select({
+            id: issues.id,
+            identifier: issues.identifier,
+            title: issues.title,
+            description: issues.description,
+            status: issues.status,
+            priority: issues.priority,
+            assigneeAgentId: issues.assigneeAgentId,
+            projectId: issues.projectId,
+            goalId: issues.goalId,
+            parentId: issues.parentId,
+          })
+          .from(issues)
+          .where(eq(issues.id, currentId))
+          .then((r) => r[0] ?? null);
         if (!parent) break;
         raw.push({
-          id: parent.id, identifier: parent.identifier ?? null, title: parent.title, description: parent.description ?? null,
-          status: parent.status, priority: parent.priority,
+          id: parent.id,
+          identifier: parent.identifier ?? null,
+          title: parent.title,
+          description: parent.description ?? null,
+          status: parent.status,
+          priority: parent.priority,
           assigneeAgentId: parent.assigneeAgentId ?? null,
-          projectId: parent.projectId ?? null, goalId: parent.goalId ?? null,
+          projectId: parent.projectId ?? null,
+          goalId: parent.goalId ?? null,
         });
         currentId = parent.parentId ?? null;
       }
 
       // Batch-fetch referenced projects and goals
-      const projectIds = [...new Set(raw.map(a => a.projectId).filter((id): id is string => id != null))];
-      const goalIds = [...new Set(raw.map(a => a.goalId).filter((id): id is string => id != null))];
+      const projectIds = [...new Set(raw.map((a) => a.projectId).filter((id): id is string => id != null))];
+      const goalIds = [...new Set(raw.map((a) => a.goalId).filter((id): id is string => id != null))];
 
-      const projectMap = new Map<string, {
-        id: string;
-        name: string;
-        description: string | null;
-        status: string;
-        goalId: string | null;
-        workspaces: Array<{
+      const projectMap = new Map<
+        string,
+        {
           id: string;
-          companyId: string;
-          projectId: string;
           name: string;
-          cwd: string | null;
-          repoUrl: string | null;
-          repoRef: string | null;
-          metadata: Record<string, unknown> | null;
-          isPrimary: boolean;
-          createdAt: Date;
-          updatedAt: Date;
-        }>;
-        primaryWorkspace: {
-          id: string;
-          companyId: string;
-          projectId: string;
-          name: string;
-          cwd: string | null;
-          repoUrl: string | null;
-          repoRef: string | null;
-          metadata: Record<string, unknown> | null;
-          isPrimary: boolean;
-          createdAt: Date;
-          updatedAt: Date;
-        } | null;
-      }>();
-      const goalMap = new Map<string, { id: string; title: string; description: string | null; level: string; status: string }>();
+          description: string | null;
+          status: string;
+          goalId: string | null;
+          workspaces: Array<{
+            id: string;
+            companyId: string;
+            projectId: string;
+            name: string;
+            cwd: string | null;
+            repoUrl: string | null;
+            repoRef: string | null;
+            metadata: Record<string, unknown> | null;
+            isPrimary: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+          }>;
+          primaryWorkspace: {
+            id: string;
+            companyId: string;
+            projectId: string;
+            name: string;
+            cwd: string | null;
+            repoUrl: string | null;
+            repoRef: string | null;
+            metadata: Record<string, unknown> | null;
+            isPrimary: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+          } | null;
+        }
+      >();
+      const goalMap = new Map<
+        string,
+        { id: string; title: string; description: string | null; level: string; status: string }
+      >();
 
       if (projectIds.length > 0) {
         const workspaceRows = await db
@@ -1825,10 +1852,16 @@ export function issueService(db: Db) {
           else workspaceMap.set(workspace.projectId, [workspace]);
         }
 
-        const rows = await db.select({
-          id: projects.id, name: projects.name, description: projects.description,
-          status: projects.status, goalId: projects.goalId,
-        }).from(projects).where(inArray(projects.id, projectIds));
+        const rows = await db
+          .select({
+            id: projects.id,
+            name: projects.name,
+            description: projects.description,
+            status: projects.status,
+            goalId: projects.goalId,
+          })
+          .from(projects)
+          .where(inArray(projects.id, projectIds));
         for (const r of rows) {
           const projectWorkspaceRows = workspaceMap.get(r.id) ?? [];
           const workspaces = projectWorkspaceRows.map((workspace) => ({
@@ -1856,17 +1889,23 @@ export function issueService(db: Db) {
       }
 
       if (goalIds.length > 0) {
-        const rows = await db.select({
-          id: goals.id, title: goals.title, description: goals.description,
-          level: goals.level, status: goals.status,
-        }).from(goals).where(inArray(goals.id, goalIds));
+        const rows = await db
+          .select({
+            id: goals.id,
+            title: goals.title,
+            description: goals.description,
+            level: goals.level,
+            status: goals.status,
+          })
+          .from(goals)
+          .where(inArray(goals.id, goalIds));
         for (const r of rows) goalMap.set(r.id, r);
       }
 
-      return raw.map(a => ({
+      return raw.map((a) => ({
         ...a,
-        project: a.projectId ? projectMap.get(a.projectId) ?? null : null,
-        goal: a.goalId ? goalMap.get(a.goalId) ?? null : null,
+        project: a.projectId ? (projectMap.get(a.projectId) ?? null) : null,
+        goal: a.goalId ? (goalMap.get(a.goalId) ?? null) : null,
       }));
     },
 
@@ -1882,13 +1921,15 @@ export function issueService(db: Db) {
     /** Find all issues that depend on a given issue ID. */
     getDependants: async (companyId: string, issueId: string) => {
       return db
-        .select({ id: issues.id, identifier: issues.identifier, title: issues.title, assigneeAgentId: issues.assigneeAgentId })
+        .select({
+          id: issues.id,
+          identifier: issues.identifier,
+          title: issues.title,
+          assigneeAgentId: issues.assigneeAgentId,
+        })
         .from(issues)
         .where(
-          and(
-            eq(issues.companyId, companyId),
-            sql`${issues.dependsOn}::jsonb @> ${JSON.stringify([issueId])}::jsonb`,
-          ),
+          and(eq(issues.companyId, companyId), sql`${issues.dependsOn}::jsonb @> ${JSON.stringify([issueId])}::jsonb`),
         );
     },
   };

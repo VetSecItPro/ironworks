@@ -1,19 +1,13 @@
-import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import {
-  AlertTriangle,
-  Database,
-  Download,
-  Shield,
-  Trash2,
-} from "lucide-react";
+import { AlertTriangle, Database, Download, Shield, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { privacyApi } from "../api/privacy";
-import { useCompany } from "../context/CompanyContext";
+import { CookieSettingsLink } from "../components/CookieConsent";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { useCompany } from "../context/CompanyContext";
 import { useToast } from "../context/ToastContext";
 import { cn } from "../lib/utils";
-import { Button } from "@/components/ui/button";
-import { CookieSettingsLink } from "../components/CookieConsent";
 
 export function PrivacySettings() {
   const { selectedCompanyId } = useCompany();
@@ -21,10 +15,7 @@ export function PrivacySettings() {
   const { pushToast } = useToast();
 
   useEffect(() => {
-    setBreadcrumbs([
-      { label: "Settings" },
-      { label: "Privacy & Data" },
-    ]);
+    setBreadcrumbs([{ label: "Settings" }, { label: "Privacy & Data" }]);
     return () => setBreadcrumbs([]);
   }, [setBreadcrumbs]);
 
@@ -72,17 +63,12 @@ export function PrivacySettings() {
           <h2 className="text-sm font-semibold">Data We Store</h2>
           <div className="grid gap-2">
             {summary.dataCategories.map((cat) => (
-              <div
-                key={cat.category}
-                className="flex items-center justify-between p-3 rounded-lg border border-border"
-              >
+              <div key={cat.category} className="flex items-center justify-between p-3 rounded-lg border border-border">
                 <div>
                   <span className="text-sm font-medium">{cat.category}</span>
                   <p className="text-xs text-muted-foreground">{cat.description}</p>
                 </div>
-                <span className="text-sm font-mono text-muted-foreground">
-                  {cat.count.toLocaleString()} records
-                </span>
+                <span className="text-sm font-mono text-muted-foreground">{cat.count.toLocaleString()} records</span>
               </div>
             ))}
           </div>
@@ -98,10 +84,7 @@ export function PrivacySettings() {
           </p>
           <div className="grid gap-2">
             {Object.entries(summary.retentionPolicies).map(([key, value]) => (
-              <div
-                key={key}
-                className="flex items-center justify-between p-3 rounded-lg border border-border"
-              >
+              <div key={key} className="flex items-center justify-between p-3 rounded-lg border border-border">
                 <span className="text-sm">{key.replace(/([A-Z])/g, " $1").replace(/^./, (s) => s.toUpperCase())}</span>
                 <span className="text-sm font-mono text-muted-foreground">{value}</span>
               </div>
@@ -120,8 +103,8 @@ export function PrivacySettings() {
             <div className="flex-1">
               <p className="text-sm font-medium">Export Your Data</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Download a complete copy of all your company data in machine-readable JSON format.
-                This includes agents, projects, issues, comments, costs, and activity logs.
+                Download a complete copy of all your company data in machine-readable JSON format. This includes agents,
+                projects, issues, comments, costs, and activity logs.
               </p>
               <Button
                 variant="outline"
@@ -157,9 +140,8 @@ export function PrivacySettings() {
             <div className="flex-1">
               <p className="text-sm font-medium text-destructive">Request Data Erasure</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Permanently delete all company data. This action schedules deletion in 30 days,
-                giving you time to cancel if needed. After 30 days, all data is permanently and
-                irreversibly removed.
+                Permanently delete all company data. This action schedules deletion in 30 days, giving you time to
+                cancel if needed. After 30 days, all data is permanently and irreversibly removed.
               </p>
               {erasureConfirm ? (
                 <div className="flex items-center gap-2 mt-3">
@@ -175,21 +157,12 @@ export function PrivacySettings() {
                   >
                     {erasureMutation.isPending ? "Requesting..." : "Confirm Erasure"}
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setErasureConfirm(false)}
-                  >
+                  <Button variant="outline" size="sm" onClick={() => setErasureConfirm(false)}>
                     Cancel
                   </Button>
                 </div>
               ) : (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="mt-2"
-                  onClick={() => setErasureConfirm(true)}
-                >
+                <Button variant="destructive" size="sm" className="mt-2" onClick={() => setErasureConfirm(true)}>
                   <Trash2 className="h-3.5 w-3.5 mr-1.5" />
                   Request Data Erasure
                 </Button>

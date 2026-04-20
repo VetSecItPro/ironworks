@@ -1,5 +1,5 @@
-import { cn } from "../../lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "../../lib/utils";
 
 export function PropertyRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -49,9 +49,7 @@ export function PropertyPicker({
           {extra}
         </PropertyRow>
         {open && (
-          <div className={cn("rounded-md border border-border bg-popover p-1 mb-2", popoverClassName)}>
-            {children}
-          </div>
+          <div className={cn("rounded-md border border-border bg-popover p-1 mb-2", popoverClassName)}>{children}</div>
         )}
       </div>
     );

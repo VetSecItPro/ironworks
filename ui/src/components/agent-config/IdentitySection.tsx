@@ -1,9 +1,5 @@
 import { cn } from "../../lib/utils";
-import {
-  Field,
-  help,
-  DraftInput,
-} from "../agent-config-primitives";
+import { DraftInput, Field, help } from "../agent-config-primitives";
 import { MarkdownEditor } from "../MarkdownEditor";
 import { ReportsToPicker } from "../ReportsToPicker";
 import type { Agent, SectionCommonProps } from "./types";
@@ -31,10 +27,11 @@ export function IdentitySection({
 }: IdentitySectionProps) {
   return (
     <div className={cn(!cards && "border-b border-border")}>
-      {cards
-        ? <h3 className="text-sm font-medium mb-3">Identity</h3>
-        : <div className="px-4 py-2 text-xs font-medium text-muted-foreground">Identity</div>
-      }
+      {cards ? (
+        <h3 className="text-sm font-medium mb-3">Identity</h3>
+      ) : (
+        <div className="px-4 py-2 text-xs font-medium text-muted-foreground">Identity</div>
+      )}
       <div className={cn(cards ? "border border-border rounded-lg p-4 space-y-3" : "px-4 pb-3 space-y-3")}>
         <Field label="Name" hint={help.name}>
           <DraftInput
@@ -78,11 +75,7 @@ export function IdentitySection({
           <>
             <Field label="Prompt Template" hint={help.promptTemplate}>
               <MarkdownEditor
-                value={eff(
-                  "adapterConfig",
-                  "promptTemplate",
-                  String(config.promptTemplate ?? ""),
-                )}
+                value={eff("adapterConfig", "promptTemplate", String(config.promptTemplate ?? ""))}
                 onChange={(v) => mark("adapterConfig", "promptTemplate", v ?? "")}
                 placeholder="You are agent {{ agent.name }}. Your role is {{ agent.role }}..."
                 contentClassName="min-h-[88px] text-sm font-mono"
@@ -92,7 +85,8 @@ export function IdentitySection({
               />
             </Field>
             <div className="rounded-md border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
-              Prompt template is replayed on every heartbeat. Keep it compact and dynamic to avoid recurring token cost and cache churn.
+              Prompt template is replayed on every heartbeat. Keep it compact and dynamic to avoid recurring token cost
+              and cache churn.
             </div>
           </>
         )}

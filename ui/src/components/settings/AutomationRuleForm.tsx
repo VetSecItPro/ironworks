@@ -1,12 +1,7 @@
+import { ChevronDown, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { X, ChevronDown } from "lucide-react";
-import type { Trigger, Action } from "./automationTypes";
-import {
-  TRIGGER_OPTIONS,
-  ACTION_OPTIONS,
-  TRIGGER_VALUE_LABELS,
-  ACTION_VALUE_LABELS,
-} from "./automationTypes";
+import type { Action, Trigger } from "./automationTypes";
+import { ACTION_OPTIONS, ACTION_VALUE_LABELS, TRIGGER_OPTIONS, TRIGGER_VALUE_LABELS } from "./automationTypes";
 
 interface AutomationRuleFormProps {
   editingId: string | null;
@@ -42,9 +37,7 @@ export function AutomationRuleForm({
   return (
     <div className="rounded-lg border border-border p-5 space-y-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold">
-          {editingId ? "Edit Rule" : "Create Rule"}
-        </h2>
+        <h2 className="text-sm font-semibold">{editingId ? "Edit Rule" : "Create Rule"}</h2>
         <button
           className="text-muted-foreground hover:text-foreground transition-colors"
           onClick={onCancel}
@@ -68,9 +61,7 @@ export function AutomationRuleForm({
         {/* WHEN */}
         <div className="space-y-3 rounded-md border border-border p-4 bg-muted/20">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400">
-              When
-            </span>
+            <span className="text-xs font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400">When</span>
             <span className="text-xs text-muted-foreground">(trigger)</span>
           </div>
           <div className="space-y-1.5">
@@ -94,9 +85,7 @@ export function AutomationRuleForm({
             </p>
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs text-muted-foreground">
-              {TRIGGER_VALUE_LABELS[formTrigger]}
-            </label>
+            <label className="text-xs text-muted-foreground">{TRIGGER_VALUE_LABELS[formTrigger]}</label>
             <input
               className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
               value={formTriggerValue}
@@ -109,9 +98,7 @@ export function AutomationRuleForm({
         {/* THEN */}
         <div className="space-y-3 rounded-md border border-border p-4 bg-muted/20">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-wide text-blue-600 dark:text-blue-400">
-              Then
-            </span>
+            <span className="text-xs font-bold uppercase tracking-wide text-blue-600 dark:text-blue-400">Then</span>
             <span className="text-xs text-muted-foreground">(action)</span>
           </div>
           <div className="space-y-1.5">
@@ -135,9 +122,7 @@ export function AutomationRuleForm({
             </p>
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs text-muted-foreground">
-              {ACTION_VALUE_LABELS[formAction]}
-            </label>
+            <label className="text-xs text-muted-foreground">{ACTION_VALUE_LABELS[formAction]}</label>
             <input
               className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
               value={formActionValue}

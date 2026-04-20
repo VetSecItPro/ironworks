@@ -1,15 +1,15 @@
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   copyGitHooksToWorktreeGitDir,
   copySeededSecretsKey,
   readSourceAttachmentBody,
   rebindWorkspaceCwd,
-  resolveSourceConfigPath,
   resolveGitWorktreeAddArgs,
+  resolveSourceConfigPath,
   resolveWorktreeMakeTargetPath,
   worktreeInitCommand,
   worktreeMakeCommand,
@@ -19,8 +19,8 @@ import {
   buildWorktreeEnvEntries,
   formatShellExports,
   generateWorktreeColor,
-  resolveWorktreeSeedPlan,
   resolveWorktreeLocalPaths,
+  resolveWorktreeSeedPlan,
   rewriteLocalUrlPort,
   sanitizeWorktreeInstanceId,
 } from "../commands/worktree-lib.js";
@@ -104,9 +104,7 @@ describe("worktree helpers", () => {
   });
 
   it("resolves worktree:make target paths under the user home directory", () => {
-    expect(resolveWorktreeMakeTargetPath("ironworks-pr-432")).toBe(
-      path.resolve(os.homedir(), "ironworks-pr-432"),
-    );
+    expect(resolveWorktreeMakeTargetPath("ironworks-pr-432")).toBe(path.resolve(os.homedir(), "ironworks-pr-432"));
   });
 
   it("rejects worktree:make names that are not safe directory/branch names", () => {
@@ -332,7 +330,7 @@ describe("worktree helpers", () => {
       const envContents = fs.readFileSync(envPath, "utf8");
       expect(envContents).toContain("IRONWORKS_AGENT_JWT_SECRET=worktree-shared-secret");
       expect(envContents).toContain("IRONWORKS_WORKTREE_NAME=repo");
-      expect(envContents).toMatch(/IRONWORKS_WORKTREE_COLOR=\"#[0-9a-f]{6}\"/);
+      expect(envContents).toMatch(/IRONWORKS_WORKTREE_COLOR="#[0-9a-f]{6}"/);
     } finally {
       process.chdir(originalCwd);
       if (originalJwtSecret === undefined) {

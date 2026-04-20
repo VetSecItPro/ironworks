@@ -1,20 +1,20 @@
 import * as p from "@clack/prompts";
 import pc from "picocolors";
-import { readConfig, writeConfig, configExists, resolveConfigPath } from "../config/store.js";
-import type { IronworksConfig } from "../config/schema.js";
-import { ensureLocalSecretsKeyFile } from "../config/secrets-key.js";
-import { promptDatabase } from "../prompts/database.js";
-import { promptLlm } from "../prompts/llm.js";
-import { promptLogging } from "../prompts/logging.js";
-import { defaultSecretsConfig, promptSecrets } from "../prompts/secrets.js";
-import { defaultStorageConfig, promptStorage } from "../prompts/storage.js";
-import { promptServer } from "../prompts/server.js";
 import {
   resolveDefaultBackupDir,
   resolveDefaultEmbeddedPostgresDir,
   resolveDefaultLogsDir,
   resolveIronworksInstanceId,
 } from "../config/home.js";
+import type { IronworksConfig } from "../config/schema.js";
+import { ensureLocalSecretsKeyFile } from "../config/secrets-key.js";
+import { configExists, readConfig, resolveConfigPath, writeConfig } from "../config/store.js";
+import { promptDatabase } from "../prompts/database.js";
+import { promptLlm } from "../prompts/llm.js";
+import { promptLogging } from "../prompts/logging.js";
+import { defaultSecretsConfig, promptSecrets } from "../prompts/secrets.js";
+import { promptServer } from "../prompts/server.js";
+import { defaultStorageConfig, promptStorage } from "../prompts/storage.js";
 import { printIronworksCliBanner } from "../utils/banner.js";
 
 type Section = "llm" | "database" | "logging" | "server" | "storage" | "secrets";
@@ -68,10 +68,7 @@ function defaultConfig(): IronworksConfig {
   };
 }
 
-export async function configure(opts: {
-  config?: string;
-  section?: string;
-}): Promise<void> {
+export async function configure(opts: { config?: string; section?: string }): Promise<void> {
   printIronworksCliBanner();
   p.intro(pc.bgCyan(pc.black(" ironworks configure ")));
   const configPath = resolveConfigPath(opts.config);

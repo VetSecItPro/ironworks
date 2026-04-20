@@ -1,22 +1,20 @@
-import { readConfigFile } from "./config-file.js";
 import { existsSync, realpathSync } from "node:fs";
 import { resolve } from "node:path";
-import { config as loadDotenv } from "dotenv";
-import { resolveIronworksEnvPath } from "./paths.js";
-import { maybeRepairLegacyWorktreeConfigAndEnvFiles } from "./worktree-config.js";
 import {
   AUTH_BASE_URL_MODES,
+  type AuthBaseUrlMode,
+  type BackupRetentionPolicy,
   DEPLOYMENT_EXPOSURES,
   DEPLOYMENT_MODES,
-  SECRET_PROVIDERS,
-  STORAGE_PROVIDERS,
-  type AuthBaseUrlMode,
   type DeploymentExposure,
   type DeploymentMode,
+  SECRET_PROVIDERS,
   type SecretProvider,
+  STORAGE_PROVIDERS,
   type StorageProvider,
-  type BackupRetentionPolicy,
 } from "@ironworksai/shared";
+import { config as loadDotenv } from "dotenv";
+import { readConfigFile } from "./config-file.js";
 import {
   resolveDefaultBackupDir,
   resolveDefaultEmbeddedPostgresDir,
@@ -24,6 +22,8 @@ import {
   resolveDefaultStorageDir,
   resolveHomeAwarePath,
 } from "./home-paths.js";
+import { resolveIronworksEnvPath } from "./paths.js";
+import { maybeRepairLegacyWorktreeConfigAndEnvFiles } from "./worktree-config.js";
 
 const IRONWORKS_ENV_FILE_PATH = resolveIronworksEnvPath();
 if (existsSync(IRONWORKS_ENV_FILE_PATH)) {
@@ -31,9 +31,10 @@ if (existsSync(IRONWORKS_ENV_FILE_PATH)) {
 }
 
 const CWD_ENV_PATH = resolve(process.cwd(), ".env");
-const isSameFile = existsSync(CWD_ENV_PATH) && existsSync(IRONWORKS_ENV_FILE_PATH)
-  ? realpathSync(CWD_ENV_PATH) === realpathSync(IRONWORKS_ENV_FILE_PATH)
-  : CWD_ENV_PATH === IRONWORKS_ENV_FILE_PATH;
+const isSameFile =
+  existsSync(CWD_ENV_PATH) && existsSync(IRONWORKS_ENV_FILE_PATH)
+    ? realpathSync(CWD_ENV_PATH) === realpathSync(IRONWORKS_ENV_FILE_PATH)
+    : CWD_ENV_PATH === IRONWORKS_ENV_FILE_PATH;
 if (!isSameFile && existsSync(CWD_ENV_PATH)) {
   loadDotenv({ path: CWD_ENV_PATH, override: false, quiet: true });
 }
@@ -79,21 +80,17 @@ export interface Config {
 
 export function loadConfig(): Config {
   const fileConfig = readConfigFile();
-  const fileDatabaseMode =
-    (fileConfig?.database.mode === "postgres" ? "postgres" : "embedded-postgres") as DatabaseMode;
+  const fileDatabaseMode = (
+    fileConfig?.database.mode === "postgres" ? "postgres" : "embedded-postgres"
+  ) as DatabaseMode;
 
-  const fileDbUrl =
-    fileDatabaseMode === "postgres"
-      ? fileConfig?.database.connectionString
-      : undefined;
+  const fileDbUrl = fileDatabaseMode === "postgres" ? fileConfig?.database.connectionString : undefined;
   const fileDatabaseBackup = fileConfig?.database.backup;
   const fileSecrets = fileConfig?.secrets;
   const fileStorage = fileConfig?.storage;
   const strictModeFromEnv = process.env.IRONWORKS_SECRETS_STRICT_MODE;
   const secretsStrictMode =
-    strictModeFromEnv !== undefined
-      ? strictModeFromEnv === "true"
-      : (fileSecrets?.strictMode ?? false);
+    strictModeFromEnv !== undefined ? strictModeFromEnv === "true" : (fileSecrets?.strictMode ?? false);
 
   const providerFromEnvRaw = process.env.IRONWORKS_SECRETS_PROVIDER;
   const providerFromEnv =
@@ -110,9 +107,7 @@ export function loadConfig(): Config {
       : null;
   const storageProvider: StorageProvider = storageProviderFromEnv ?? fileStorage?.provider ?? "local_disk";
   const storageLocalDiskBaseDir = resolveHomeAwarePath(
-    process.env.IRONWORKS_STORAGE_LOCAL_DIR ??
-      fileStorage?.localDisk?.baseDir ??
-      resolveDefaultStorageDir(),
+    process.env.IRONWORKS_STORAGE_LOCAL_DIR ?? fileStorage?.localDisk?.baseDir ?? resolveDefaultStorageDir(),
   );
   const storageS3Bucket = process.env.IRONWORKS_STORAGE_S3_BUCKET ?? fileStorage?.s3?.bucket ?? "ironworks";
   const storageS3Region = process.env.IRONWORKS_STORAGE_S3_REGION ?? fileStorage?.s3?.region ?? "us-east-1";
@@ -131,8 +126,7 @@ export function loadConfig(): Config {
   const deploymentMode: DeploymentMode = deploymentModeFromEnv ?? fileConfig?.server.deploymentMode ?? "local_trusted";
   const deploymentExposureFromEnvRaw = process.env.IRONWORKS_DEPLOYMENT_EXPOSURE;
   const deploymentExposureFromEnv =
-    deploymentExposureFromEnvRaw &&
-    DEPLOYMENT_EXPOSURES.includes(deploymentExposureFromEnvRaw as DeploymentExposure)
+    deploymentExposureFromEnvRaw && DEPLOYMENT_EXPOSURES.includes(deploymentExposureFromEnvRaw as DeploymentExposure)
       ? (deploymentExposureFromEnvRaw as DeploymentExposure)
       : null;
   const deploymentExposure: DeploymentExposure =
@@ -141,8 +135,7 @@ export function loadConfig(): Config {
       : (deploymentExposureFromEnv ?? fileConfig?.server.exposure ?? "private");
   const authBaseUrlModeFromEnvRaw = process.env.IRONWORKS_AUTH_BASE_URL_MODE;
   const authBaseUrlModeFromEnv =
-    authBaseUrlModeFromEnvRaw &&
-    AUTH_BASE_URL_MODES.includes(authBaseUrlModeFromEnvRaw as AuthBaseUrlMode)
+    authBaseUrlModeFromEnvRaw && AUTH_BASE_URL_MODES.includes(authBaseUrlModeFromEnvRaw as AuthBaseUrlMode)
       ? (authBaseUrlModeFromEnvRaw as AuthBaseUrlMode)
       : null;
   const publicUrlFromEnv = process.env.IRONWORKS_PUBLIC_URL;
@@ -154,29 +147,25 @@ export function loadConfig(): Config {
     fileConfig?.auth?.publicBaseUrl;
   const authPublicBaseUrl = authPublicBaseUrlRaw?.trim() || undefined;
   const authBaseUrlMode: AuthBaseUrlMode =
-    authBaseUrlModeFromEnv ??
-    fileConfig?.auth?.baseUrlMode ??
-    (authPublicBaseUrl ? "explicit" : "auto");
+    authBaseUrlModeFromEnv ?? fileConfig?.auth?.baseUrlMode ?? (authPublicBaseUrl ? "explicit" : "auto");
   const disableSignUpFromEnv = process.env.IRONWORKS_AUTH_DISABLE_SIGN_UP;
   const authDisableSignUp: boolean =
-    disableSignUpFromEnv !== undefined
-      ? disableSignUpFromEnv === "true"
-      : (fileConfig?.auth?.disableSignUp ?? false);
+    disableSignUpFromEnv !== undefined ? disableSignUpFromEnv === "true" : (fileConfig?.auth?.disableSignUp ?? false);
   const allowedHostnamesFromEnvRaw = process.env.IRONWORKS_ALLOWED_HOSTNAMES;
   const allowedHostnamesFromEnv = allowedHostnamesFromEnvRaw
     ? allowedHostnamesFromEnvRaw
-      .split(",")
-      .map((value) => value.trim().toLowerCase())
-      .filter((value) => value.length > 0)
+        .split(",")
+        .map((value) => value.trim().toLowerCase())
+        .filter((value) => value.length > 0)
     : null;
   const publicUrlHostname = authPublicBaseUrl
     ? (() => {
-      try {
-        return new URL(authPublicBaseUrl).hostname.trim().toLowerCase();
-      } catch {
-        return null;
-      }
-    })()
+        try {
+          return new URL(authPublicBaseUrl).hostname.trim().toLowerCase();
+        } catch {
+          return null;
+        }
+      })()
     : null;
   const allowedHostnames = Array.from(
     new Set(
@@ -190,37 +179,28 @@ export function loadConfig(): Config {
   );
   const companyDeletionEnvRaw = process.env.IRONWORKS_ENABLE_COMPANY_DELETION;
   const companyDeletionEnabled =
-    companyDeletionEnvRaw !== undefined
-      ? companyDeletionEnvRaw === "true"
-      : deploymentMode === "local_trusted";
+    companyDeletionEnvRaw !== undefined ? companyDeletionEnvRaw === "true" : deploymentMode === "local_trusted";
   const databaseBackupEnabled =
     process.env.IRONWORKS_DB_BACKUP_ENABLED !== undefined
       ? process.env.IRONWORKS_DB_BACKUP_ENABLED === "true"
       : (fileDatabaseBackup?.enabled ?? true);
   const databaseBackupIntervalMinutes = Math.max(
     1,
-    Number(process.env.IRONWORKS_DB_BACKUP_INTERVAL_MINUTES) ||
-      fileDatabaseBackup?.intervalMinutes ||
-      60,
+    Number(process.env.IRONWORKS_DB_BACKUP_INTERVAL_MINUTES) || fileDatabaseBackup?.intervalMinutes || 60,
   );
   const databaseBackupRetentionDays = Math.max(
     1,
-    Number(process.env.IRONWORKS_DB_BACKUP_RETENTION_DAYS) ||
-      fileDatabaseBackup?.retentionDays ||
-      30,
+    Number(process.env.IRONWORKS_DB_BACKUP_RETENTION_DAYS) || fileDatabaseBackup?.retentionDays || 30,
   );
-  const databaseBackupRetentionPolicy: BackupRetentionPolicy | undefined =
-    fileDatabaseBackup?.retentionPolicy
-      ? {
-          dailyDays: Math.max(1, fileDatabaseBackup.retentionPolicy.dailyDays),
-          weeklyWeeks: Math.max(0, fileDatabaseBackup.retentionPolicy.weeklyWeeks),
-          monthlyMonths: Math.max(0, fileDatabaseBackup.retentionPolicy.monthlyMonths),
-        }
-      : undefined;
+  const databaseBackupRetentionPolicy: BackupRetentionPolicy | undefined = fileDatabaseBackup?.retentionPolicy
+    ? {
+        dailyDays: Math.max(1, fileDatabaseBackup.retentionPolicy.dailyDays),
+        weeklyWeeks: Math.max(0, fileDatabaseBackup.retentionPolicy.weeklyWeeks),
+        monthlyMonths: Math.max(0, fileDatabaseBackup.retentionPolicy.monthlyMonths),
+      }
+    : undefined;
   const databaseBackupDir = resolveHomeAwarePath(
-    process.env.IRONWORKS_DB_BACKUP_DIR ??
-      fileDatabaseBackup?.dir ??
-      resolveDefaultBackupDir(),
+    process.env.IRONWORKS_DB_BACKUP_DIR ?? fileDatabaseBackup?.dir ?? resolveDefaultBackupDir(),
   );
 
   return {
@@ -244,18 +224,15 @@ export function loadConfig(): Config {
     databaseBackupRetentionPolicy,
     databaseBackupDir,
     serveUi:
-      process.env.SERVE_UI !== undefined
-        ? process.env.SERVE_UI === "true"
-        : fileConfig?.server.serveUi ?? true,
+      process.env.SERVE_UI !== undefined ? process.env.SERVE_UI === "true" : (fileConfig?.server.serveUi ?? true),
     uiDevMiddleware: process.env.IRONWORKS_UI_DEV_MIDDLEWARE === "true",
     secretsProvider,
     secretsStrictMode,
-    secretsMasterKeyFilePath:
-      resolveHomeAwarePath(
-        process.env.IRONWORKS_SECRETS_MASTER_KEY_FILE ??
-          fileSecrets?.localEncrypted.keyFilePath ??
-          resolveDefaultSecretsKeyFilePath(),
-      ),
+    secretsMasterKeyFilePath: resolveHomeAwarePath(
+      process.env.IRONWORKS_SECRETS_MASTER_KEY_FILE ??
+        fileSecrets?.localEncrypted.keyFilePath ??
+        resolveDefaultSecretsKeyFilePath(),
+    ),
     storageProvider,
     storageLocalDiskBaseDir,
     storageS3Bucket,

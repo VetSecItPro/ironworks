@@ -10,7 +10,5 @@ export interface VelocityWeek {
 
 export const velocityApi = {
   get: (companyId: string, weeks = 12) =>
-    api.get<VelocityWeek[]>(
-      `/companies/${companyId}/velocity?weeks=${encodeURIComponent(weeks)}`,
-    ),
+    api.get<VelocityWeek[]>(`/companies/${companyId}/velocity?weeks=${encodeURIComponent(weeks)}`),
 };

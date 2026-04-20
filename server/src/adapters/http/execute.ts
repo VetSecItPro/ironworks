@@ -1,6 +1,6 @@
+import { PROMPT_MAX_LENGTHS, redactSecrets, sanitizeForPrompt } from "../../lib/prompt-security.js";
 import type { AdapterExecutionContext, AdapterExecutionResult } from "../types.js";
-import { asString, asNumber, parseObject } from "../utils.js";
-import { sanitizeForPrompt, redactSecrets, PROMPT_MAX_LENGTHS } from "../../lib/prompt-security.js";
+import { asNumber, asString, parseObject } from "../utils.js";
 
 export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExecutionResult> {
   const { config, runId, agent, context } = ctx;
@@ -24,15 +24,20 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
 
   // LLM01-A: Sanitize user-controllable context fields before sending to external webhook.
   // Clone context so we don't mutate the shared object, then sanitize in place.
-  const sanitizedContext: Record<string, unknown> = context && typeof context === "object"
-    ? { ...(context as Record<string, unknown>) }
-    : {};
+  const sanitizedContext: Record<string, unknown> =
+    context && typeof context === "object" ? { ...(context as Record<string, unknown>) } : {};
   const strField = (v: unknown) => (typeof v === "string" ? v : "");
   if (strField(sanitizedContext.taskContext)) {
-    sanitizedContext.taskContext = sanitizeForPrompt(redactSecrets(strField(sanitizedContext.taskContext)), PROMPT_MAX_LENGTHS.taskContext);
+    sanitizedContext.taskContext = sanitizeForPrompt(
+      redactSecrets(strField(sanitizedContext.taskContext)),
+      PROMPT_MAX_LENGTHS.taskContext,
+    );
   }
   if (strField(sanitizedContext.latestComment)) {
-    sanitizedContext.latestComment = sanitizeForPrompt(redactSecrets(strField(sanitizedContext.latestComment)), PROMPT_MAX_LENGTHS.comment);
+    sanitizedContext.latestComment = sanitizeForPrompt(
+      redactSecrets(strField(sanitizedContext.latestComment)),
+      PROMPT_MAX_LENGTHS.comment,
+    );
   }
   if (strField(sanitizedContext.ironworksMorningBriefing)) {
     sanitizedContext.ironworksMorningBriefing = redactSecrets(strField(sanitizedContext.ironworksMorningBriefing));

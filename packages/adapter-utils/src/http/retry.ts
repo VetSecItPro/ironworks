@@ -1,7 +1,4 @@
-import {
-  HttpAdapterError,
-  HttpAdapterRateLimitError,
-} from './errors.js';
+import { HttpAdapterError, HttpAdapterRateLimitError } from "./errors.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -120,7 +117,7 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
       // { once: true } only auto-removes on the abort event itself, not on
       // normal timer expiry. Explicit removal prevents listener accumulation
       // on long-lived AbortControllers reused across many retry operations.
-      if (signal && onAbort) signal.removeEventListener('abort', onAbort);
+      if (signal && onAbort) signal.removeEventListener("abort", onAbort);
       resolve();
     }, ms);
 
@@ -129,7 +126,7 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
         clearTimeout(timer);
         reject(signal.reason);
       };
-      signal.addEventListener('abort', onAbort, { once: true });
+      signal.addEventListener("abort", onAbort, { once: true });
     }
   });
 }
@@ -162,10 +159,7 @@ function applyJitter(baseMs: number, ratio: number): number {
  *                attempt so it can mutate the shared `toolCallFlag`.
  * @param options Policy, shared flag, optional callbacks, and abort support.
  */
-export async function runWithRetry<T>(
-  fn: (ctx: RetryContext) => Promise<T>,
-  options: RetryOptions,
-): Promise<T> {
+export async function runWithRetry<T>(fn: (ctx: RetryContext) => Promise<T>, options: RetryOptions): Promise<T> {
   const { policy, onRetry, abortSignal } = options;
   // Use a caller-supplied flag when available so SSE consumers can signal
   // tool emission from inside the stream without a separate return channel.
@@ -220,7 +214,7 @@ export async function runWithRetry<T>(
         // Node normalises setTimeout(..., -1) to 0 but intent should be explicit.
         delayMs = Math.max(0, err.retryAfterMs);
       } else {
-        delayMs = applyJitter(policy.baseDelayMs * Math.pow(2, attempt), policy.jitterRatio);
+        delayMs = applyJitter(policy.baseDelayMs * 2 ** attempt, policy.jitterRatio);
       }
 
       // Clamp to remaining total-timeout budget.
@@ -237,7 +231,7 @@ export async function runWithRetry<T>(
   }
 
   // Unreachable: the loop always returns or throws, but TypeScript needs this.
-  throw lastError ?? new Error('runWithRetry: exhausted without result or error');
+  throw lastError ?? new Error("runWithRetry: exhausted without result or error");
 }
 
 // ---------------------------------------------------------------------------

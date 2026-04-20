@@ -1,8 +1,8 @@
-import { and, eq, lt, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { agents, issueComments, issues } from "@ironworksai/db";
-import { createAlert } from "./smart-alerts.js";
+import { and, eq, lt, sql } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
+import { createAlert } from "./smart-alerts.js";
 
 const HEARTBEAT_CYCLE_MS = 30 * 60 * 1000; // 30 minutes
 
@@ -72,9 +72,7 @@ export async function checkAndResolveBlockers(
               .then((rows) => rows[0] ?? null)
           : null;
 
-        const managerNote = assignee?.reportsTo
-          ? " Notifying department head."
-          : "";
+        const managerNote = assignee?.reportsTo ? " Notifying department head." : "";
         await postBlockerComment(
           db,
           companyId,
@@ -100,12 +98,7 @@ export async function checkAndResolveBlockers(
   return { escalated, autoResolved };
 }
 
-async function postBlockerComment(
-  db: Db,
-  companyId: string,
-  issueId: string,
-  body: string,
-): Promise<void> {
+async function postBlockerComment(db: Db, companyId: string, issueId: string, body: string): Promise<void> {
   // Check if we already posted a nearly identical comment recently (avoid spam)
   const recentComment = await db
     .select({ id: issueComments.id })
@@ -114,10 +107,7 @@ async function postBlockerComment(
       and(
         eq(issueComments.companyId, companyId),
         eq(issueComments.issueId, issueId),
-        lt(
-          sql`extract(epoch from (now() - ${issueComments.createdAt})) / 60`,
-          sql`${35}`,
-        ),
+        lt(sql`extract(epoch from (now() - ${issueComments.createdAt})) / 60`, sql`${35}`),
         sql`${issueComments.body} like '%blocked%'`,
         sql`${issueComments.authorAgentId} is null`,
       ),
@@ -134,10 +124,7 @@ async function postBlockerComment(
     body,
   });
 
-  await db
-    .update(issues)
-    .set({ updatedAt: new Date() })
-    .where(eq(issues.id, issueId));
+  await db.update(issues).set({ updatedAt: new Date() }).where(eq(issues.id, issueId));
 }
 
 /**
@@ -145,26 +132,21 @@ async function postBlockerComment(
  * and comments. Returns a category string useful for triage dashboards and COO
  * reporting.
  */
-export type BlockerCategory =
-  | "dependency"
-  | "missing_info"
-  | "approval_pending"
-  | "cross_department"
-  | "external";
+export type BlockerCategory = "dependency" | "missing_info" | "approval_pending" | "cross_department" | "external";
 
 export function categorizeBlocker(
   issueTitle: string,
   issueDescription: string | null | undefined,
   comments: string[] = [],
 ): BlockerCategory {
-  const haystack = [issueTitle, issueDescription ?? "", ...comments]
-    .join(" ")
-    .toLowerCase();
+  const haystack = [issueTitle, issueDescription ?? "", ...comments].join(" ").toLowerCase();
 
   // Order matters - more specific patterns first
   if (/\bapproval\b|\bpending review\b|\bsign off\b/.test(haystack)) return "approval_pending";
-  if (/\bfrom marketing\b|\bfrom engineering\b|\bcross[- ]team\b|\bcross[- ]department\b/.test(haystack)) return "cross_department";
-  if (/\bvendor\b|\bthird[- ]party\b|\bexternal\b|\b(?:api|API)\s+(?:key|rate|limit|down)\b/.test(haystack)) return "external";
+  if (/\bfrom marketing\b|\bfrom engineering\b|\bcross[- ]team\b|\bcross[- ]department\b/.test(haystack))
+    return "cross_department";
+  if (/\bvendor\b|\bthird[- ]party\b|\bexternal\b|\b(?:api|API)\s+(?:key|rate|limit|down)\b/.test(haystack))
+    return "external";
   if (/\bneed info\b|\bquestion\b|\bunclear\b|\bmissing\b|\bneed clarification\b/.test(haystack)) return "missing_info";
   if (/\bdepends on\b|\bwaiting for\b|\bblocked by\b|\bdependency\b/.test(haystack)) return "dependency";
 
@@ -188,20 +170,12 @@ export async function detectStaleCards(db: Db, companyId: string): Promise<numbe
       updatedAt: issues.updatedAt,
     })
     .from(issues)
-    .where(
-      and(
-        eq(issues.companyId, companyId),
-        eq(issues.status, "in_progress"),
-        lt(issues.updatedAt, threeHoursAgo),
-      ),
-    );
+    .where(and(eq(issues.companyId, companyId), eq(issues.status, "in_progress"), lt(issues.updatedAt, threeHoursAgo)));
 
   let flagged = 0;
 
   for (const issue of staleIssues) {
-    const hoursStale = Math.round(
-      (Date.now() - new Date(issue.updatedAt).getTime()) / 3600000,
-    );
+    const hoursStale = Math.round((Date.now() - new Date(issue.updatedAt).getTime()) / 3600000);
 
     // Don't spam - check for a recent stale comment
     const recentStaleComment = await db
@@ -211,10 +185,7 @@ export async function detectStaleCards(db: Db, companyId: string): Promise<numbe
         and(
           eq(issueComments.companyId, companyId),
           eq(issueComments.issueId, issue.id),
-          lt(
-            sql`extract(epoch from (now() - ${issueComments.createdAt})) / 3600`,
-            sql`${4}`,
-          ),
+          lt(sql`extract(epoch from (now() - ${issueComments.createdAt})) / 3600`, sql`${4}`),
           sql`${issueComments.body} like '%in progress%hours with no updates%'`,
         ),
       )
@@ -232,10 +203,7 @@ export async function detectStaleCards(db: Db, companyId: string): Promise<numbe
       body: `This issue has been in progress for ${hoursStale} hours with no updates.${assigneeMention}`,
     });
 
-    await db
-      .update(issues)
-      .set({ updatedAt: new Date() })
-      .where(eq(issues.id, issue.id));
+    await db.update(issues).set({ updatedAt: new Date() }).where(eq(issues.id, issue.id));
 
     flagged++;
   }

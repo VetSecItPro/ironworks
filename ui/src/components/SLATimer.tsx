@@ -1,5 +1,5 @@
+import { AlertTriangle, Clock } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Clock, AlertTriangle } from "lucide-react";
 import { cn } from "../lib/utils";
 
 /* ------------------------------------------------------------------ */
@@ -28,7 +28,9 @@ function loadPolicies(): SLAPolicies {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw) as SLAPolicies;
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return { ...DEFAULT_POLICIES };
 }
 
@@ -117,19 +119,17 @@ export function SLATimer({ priority, status, createdAt, className }: SLATimerPro
   return (
     <div className={cn("flex items-center gap-3 text-xs", className)}>
       {/* Response SLA */}
-      <div className={cn(
-        "inline-flex items-center gap-1.5 px-2 py-1 rounded-md border",
-        responseBreached
-          ? "border-red-300 bg-red-50 text-red-700 dark:border-red-700 dark:bg-red-950/30 dark:text-red-400"
-          : responseWarning
-            ? "border-yellow-300 bg-yellow-50 text-yellow-700 dark:border-yellow-700 dark:bg-yellow-950/30 dark:text-yellow-400"
-            : "border-border bg-muted/30 text-muted-foreground",
-      )}>
-        {responseBreached ? (
-          <AlertTriangle className="h-3 w-3" />
-        ) : (
-          <Clock className="h-3 w-3" />
+      <div
+        className={cn(
+          "inline-flex items-center gap-1.5 px-2 py-1 rounded-md border",
+          responseBreached
+            ? "border-red-300 bg-red-50 text-red-700 dark:border-red-700 dark:bg-red-950/30 dark:text-red-400"
+            : responseWarning
+              ? "border-yellow-300 bg-yellow-50 text-yellow-700 dark:border-yellow-700 dark:bg-yellow-950/30 dark:text-yellow-400"
+              : "border-border bg-muted/30 text-muted-foreground",
         )}
+      >
+        {responseBreached ? <AlertTriangle className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
         <span className="font-medium">Response:</span>
         <span className={cn("font-mono tabular-nums", responseBreached && "font-semibold")}>
           {formatCountdown(responseRemaining)}
@@ -138,19 +138,17 @@ export function SLATimer({ priority, status, createdAt, className }: SLATimerPro
       </div>
 
       {/* Resolution SLA */}
-      <div className={cn(
-        "inline-flex items-center gap-1.5 px-2 py-1 rounded-md border",
-        resolutionBreached
-          ? "border-red-300 bg-red-50 text-red-700 dark:border-red-700 dark:bg-red-950/30 dark:text-red-400"
-          : resolutionWarning
-            ? "border-yellow-300 bg-yellow-50 text-yellow-700 dark:border-yellow-700 dark:bg-yellow-950/30 dark:text-yellow-400"
-            : "border-border bg-muted/30 text-muted-foreground",
-      )}>
-        {resolutionBreached ? (
-          <AlertTriangle className="h-3 w-3" />
-        ) : (
-          <Clock className="h-3 w-3" />
+      <div
+        className={cn(
+          "inline-flex items-center gap-1.5 px-2 py-1 rounded-md border",
+          resolutionBreached
+            ? "border-red-300 bg-red-50 text-red-700 dark:border-red-700 dark:bg-red-950/30 dark:text-red-400"
+            : resolutionWarning
+              ? "border-yellow-300 bg-yellow-50 text-yellow-700 dark:border-yellow-700 dark:bg-yellow-950/30 dark:text-yellow-400"
+              : "border-border bg-muted/30 text-muted-foreground",
         )}
+      >
+        {resolutionBreached ? <AlertTriangle className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
         <span className="font-medium">Resolution:</span>
         <span className={cn("font-mono tabular-nums", resolutionBreached && "font-semibold")}>
           {formatCountdown(resolutionRemaining)}

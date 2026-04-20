@@ -1,5 +1,5 @@
-import { useMemo } from "react";
 import { Clock } from "lucide-react";
+import { useMemo } from "react";
 import { cn } from "../lib/utils";
 
 interface DeadlineCountdownProps {
@@ -62,7 +62,9 @@ export function DeadlineCountdown({ targetDate, status, className }: DeadlineCou
   }[info.tone];
 
   return (
-    <span className={cn("inline-flex items-center gap-1 text-[11px] font-medium whitespace-nowrap", toneClass, className)}>
+    <span
+      className={cn("inline-flex items-center gap-1 text-[11px] font-medium whitespace-nowrap", toneClass, className)}
+    >
       <Clock className="h-3 w-3" />
       {info.label}
     </span>

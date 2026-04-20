@@ -95,9 +95,9 @@ export function createRateLimiter(options: RateLimiterOptions = {}): RateLimiter
   const maxCapacity = options.maxCapacity ?? 60;
   const maxKeys = options.maxKeys ?? 256;
 
-  if (tokensPerSecond <= 0) throw new Error('tokensPerSecond must be > 0');
-  if (maxCapacity <= 0) throw new Error('maxCapacity must be > 0');
-  if (maxKeys <= 0) throw new Error('maxKeys must be > 0');
+  if (tokensPerSecond <= 0) throw new Error("tokensPerSecond must be > 0");
+  if (maxCapacity <= 0) throw new Error("maxCapacity must be > 0");
+  if (maxKeys <= 0) throw new Error("maxKeys must be > 0");
 
   // Map insertion order = LRU; delete+re-insert on access moves entry to tail.
   const states = new Map<string, KeyState>();
@@ -190,7 +190,7 @@ export function createRateLimiter(options: RateLimiterOptions = {}): RateLimiter
       if (head.signal && head.onAbort) {
         // Remove the listener from the original signal before resolving — long-lived
         // signals shared across multiple acquires would otherwise accumulate listeners.
-        head.signal.removeEventListener('abort', head.onAbort);
+        head.signal.removeEventListener("abort", head.onAbort);
       }
       head.onAbort = null;
 
@@ -217,18 +217,12 @@ export function createRateLimiter(options: RateLimiterOptions = {}): RateLimiter
     // Reject impossible requests early — they can never be satisfied regardless
     // of how long the caller waits, so queuing them would block others forever.
     if (cost > maxCapacity) {
-      return Promise.reject(
-        new Error(`acquire cost ${cost} exceeds capacity ${maxCapacity}`),
-      );
+      return Promise.reject(new Error(`acquire cost ${cost} exceeds capacity ${maxCapacity}`));
     }
 
     // Reject immediately if the signal is already cancelled — do not consume tokens
     if (signal?.aborted) {
-      return Promise.reject(
-        signal.reason instanceof Error
-          ? signal.reason
-          : new Error('Aborted'),
-      );
+      return Promise.reject(signal.reason instanceof Error ? signal.reason : new Error("Aborted"));
     }
 
     const s = getOrInit(key);
@@ -263,11 +257,7 @@ export function createRateLimiter(options: RateLimiterOptions = {}): RateLimiter
           // Null the back-reference so processQueue's cleanup no-ops if it runs
           waiter.onAbort = null;
 
-          reject(
-            signal.reason instanceof Error
-              ? signal.reason
-              : new Error('Aborted'),
-          );
+          reject(signal.reason instanceof Error ? signal.reason : new Error("Aborted"));
 
           // Reschedule the timer in case the evicted head was the one blocking others
           if (s.queue.length > 0 && s.timerId === null) {
@@ -275,7 +265,7 @@ export function createRateLimiter(options: RateLimiterOptions = {}): RateLimiter
           }
         };
         waiter.onAbort = onAbort;
-        signal.addEventListener('abort', onAbort, { once: true });
+        signal.addEventListener("abort", onAbort, { once: true });
       }
 
       s.queue.push(waiter);
@@ -301,9 +291,9 @@ export function createRateLimiter(options: RateLimiterOptions = {}): RateLimiter
     // Drain queue first — waiters would otherwise hang on unresolvable promises.
     for (const waiter of s.queue) {
       if (waiter.signal && waiter.onAbort) {
-        waiter.signal.removeEventListener('abort', waiter.onAbort);
+        waiter.signal.removeEventListener("abort", waiter.onAbort);
       }
-      waiter.reject(new Error('rate limiter reset'));
+      waiter.reject(new Error("rate limiter reset"));
     }
 
     // Clear any pending wake-up timer

@@ -4,9 +4,7 @@ interface SpotlightProps {
 
 export function SpotlightOverlay({ targetRect }: SpotlightProps) {
   if (!targetRect) {
-    return (
-      <div className="fixed inset-0 z-[9998] bg-black/60 transition-opacity duration-300" />
-    );
+    return <div className="fixed inset-0 z-[9998] bg-black/60 transition-opacity duration-300" />;
   }
 
   const padding = 8;
@@ -29,12 +27,7 @@ export function SpotlightOverlay({ targetRect }: SpotlightProps) {
           <rect x={x} y={y} width={w} height={h} rx={r} ry={r} fill="black" />
         </mask>
       </defs>
-      <rect
-        width="100%"
-        height="100%"
-        fill="rgba(0,0,0,0.6)"
-        mask="url(#tour-spotlight-mask)"
-      />
+      <rect width="100%" height="100%" fill="rgba(0,0,0,0.6)" mask="url(#tour-spotlight-mask)" />
     </svg>
   );
 }

@@ -1,6 +1,6 @@
-import { and, eq, gte, isNotNull, lt, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { heartbeatRuns, issues } from "@ironworksai/db";
+import { and, eq, gte, isNotNull, lt, sql } from "drizzle-orm";
 
 // ── DORA Metrics ────────────────────────────────────────────────────────────
 //
@@ -45,9 +45,7 @@ export async function computeDORAMetrics(
       ),
     );
   const runCount = Number(runCountRow?.count ?? 0);
-  const deploymentFrequency = periodDays > 0
-    ? Math.round((runCount / periodDays) * 100) / 100
-    : 0;
+  const deploymentFrequency = periodDays > 0 ? Math.round((runCount / periodDays) * 100) / 100 : 0;
 
   // -- Lead Time --
   // Average minutes from issue.createdAt to issue.completedAt for done issues
@@ -79,17 +77,11 @@ export async function computeDORAMetrics(
       cancelled: sql<number>`count(*) filter (where ${issues.status} = 'cancelled' and ${issues.cancelledAt} >= ${periodStart})::int`,
     })
     .from(issues)
-    .where(
-      and(
-        eq(issues.companyId, companyId),
-      ),
-    );
+    .where(and(eq(issues.companyId, companyId)));
   const completed = Number(failureRow?.completed ?? 0);
   const cancelled = Number(failureRow?.cancelled ?? 0);
   const total = completed + cancelled;
-  const changeFailureRate = total > 0
-    ? Math.round((cancelled / total) * 100 * 10) / 10
-    : 0;
+  const changeFailureRate = total > 0 ? Math.round((cancelled / total) * 100 * 10) / 10 : 0;
 
   // -- Mean Time to Recovery --
   // Avg resolution time for critical/high priority issues completed in the period

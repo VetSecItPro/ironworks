@@ -10,7 +10,8 @@ export interface GoalRiskAssessmentResult {
 
 export function calculateGoalRisk(issues: Issue[], targetDate: string | null): GoalRiskAssessmentResult {
   const total = issues.length;
-  if (total === 0) return { level: "low", blockedPercent: 0, overdueCount: 0, totalIssues: 0, description: "No linked issues" };
+  if (total === 0)
+    return { level: "low", blockedPercent: 0, overdueCount: 0, totalIssues: 0, description: "No linked issues" };
 
   const blockedCount = issues.filter((i) => i.status === "blocked").length;
   const blockedPercent = Math.round((blockedCount / total) * 100);

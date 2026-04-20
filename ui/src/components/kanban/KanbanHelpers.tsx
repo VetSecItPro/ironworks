@@ -1,21 +1,10 @@
-import { cn } from "../../lib/utils";
-import {
-  ChevronDown,
-  ChevronRight,
-  X,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
 import type { Issue } from "@ironworksai/shared";
+import { ChevronDown, ChevronRight, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "../../lib/utils";
 import type { Agent, KanbanGoalInfo, SwimlaneMode } from "./types";
-import { statusLabel, HEALTH_BADGE_COLORS } from "./types";
+import { HEALTH_BADGE_COLORS, statusLabel } from "./types";
 
 /* ---- Column Health Indicator ---- */
 
@@ -74,7 +63,9 @@ export function BulkOperationsBar({
           </SelectTrigger>
           <SelectContent>
             {agents.map((a) => (
-              <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+              <SelectItem key={a.id} value={a.id}>
+                {a.name}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -132,13 +123,7 @@ export function SwimlaneHeader({
 
 /* ---- Swimlane Toggle Bar ---- */
 
-export function SwimlaneToggle({
-  mode,
-  onChange,
-}: {
-  mode: SwimlaneMode;
-  onChange: (mode: SwimlaneMode) => void;
-}) {
+export function SwimlaneToggle({ mode, onChange }: { mode: SwimlaneMode; onChange: (mode: SwimlaneMode) => void }) {
   const options: { value: SwimlaneMode; label: string }[] = [
     { value: "none", label: "No lanes" },
     { value: "agent", label: "By Agent" },
@@ -187,7 +172,9 @@ export function GoalBoardHeader({ goalInfo }: { goalInfo: KanbanGoalInfo }) {
             {healthLabel}
           </span>
         )}
-        <span className="text-xs text-muted-foreground tabular-nums ml-auto shrink-0">{Math.round(goalInfo.progressPercent)}%</span>
+        <span className="text-xs text-muted-foreground tabular-nums ml-auto shrink-0">
+          {Math.round(goalInfo.progressPercent)}%
+        </span>
       </div>
       <div className="h-1.5 bg-muted rounded-full overflow-hidden">
         <div

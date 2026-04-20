@@ -51,7 +51,9 @@ export function loadStatuses(): CustomStatus[] {
   try {
     const raw = localStorage.getItem(STATUS_STORAGE_KEY);
     if (raw) return JSON.parse(raw) as CustomStatus[];
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return [...DEFAULT_STATUSES];
 }
 
@@ -63,7 +65,9 @@ export function loadFields(): CustomField[] {
   try {
     const raw = localStorage.getItem(FIELDS_STORAGE_KEY);
     if (raw) return JSON.parse(raw) as CustomField[];
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return [];
 }
 

@@ -1,10 +1,9 @@
-import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { heartbeatsApi } from "../../api/heartbeats";
-import { cn } from "../../lib/utils";
-import { relativeTime } from "../../lib/utils";
 import type { WorkspaceOperation } from "@ironworksai/shared";
-import { redactPathText, asNonEmptyString, asRecord, parseStoredLogContent } from "./agent-detail-utils";
+import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { heartbeatsApi } from "../../api/heartbeats";
+import { cn, relativeTime } from "../../lib/utils";
+import { asNonEmptyString, asRecord, parseStoredLogContent, redactPathText } from "./agent-detail-utils";
 
 function workspaceOperationPhaseLabel(phase: WorkspaceOperation["phase"]) {
   switch (phase) {
@@ -57,17 +56,18 @@ function WorkspaceOperationLogViewer({
   censorUsernameInLogs: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const { data: logData, isLoading, error } = useQuery({
+  const {
+    data: logData,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["workspace-operation-log", operation.id],
     queryFn: () => heartbeatsApi.workspaceOperationLog(operation.id),
     enabled: open && Boolean(operation.logRef),
     refetchInterval: open && operation.status === "running" ? 2000 : false,
   });
 
-  const chunks = useMemo(
-    () => (logData?.content ? parseStoredLogContent(logData.content) : []),
-    [logData?.content],
-  );
+  const chunks = useMemo(() => (logData?.content ? parseStoredLogContent(logData.content) : []), [logData?.content]);
 
   return (
     <div className="space-y-2">
@@ -108,7 +108,9 @@ function WorkspaceOperationLogViewer({
                   >
                     [{chunk.stream}]
                   </span>
-                  <span className="whitespace-pre-wrap break-all">{redactPathText(chunk.chunk, censorUsernameInLogs)}</span>
+                  <span className="whitespace-pre-wrap break-all">
+                    {redactPathText(chunk.chunk, censorUsernameInLogs)}
+                  </span>
                 </div>
               ))}
             </div>
@@ -130,9 +132,7 @@ export function WorkspaceOperationsSection({
 
   return (
     <div className="rounded-lg border border-border bg-background/60 p-3 space-y-3">
-      <div className="text-xs font-medium text-muted-foreground">
-        Workspace ({operations.length})
-      </div>
+      <div className="text-xs font-medium text-muted-foreground">Workspace ({operations.length})</div>
       <div className="space-y-3">
         {operations.map((operation) => {
           const metadata = asRecord(operation.metadata);
@@ -158,26 +158,41 @@ export function WorkspaceOperationsSection({
                   <span className="font-mono">{operation.cwd}</span>
                 </div>
               )}
-              {(asNonEmptyString(metadata?.branchName)
-                || asNonEmptyString(metadata?.baseRef)
-                || asNonEmptyString(metadata?.worktreePath)
-                || asNonEmptyString(metadata?.repoRoot)
-                || asNonEmptyString(metadata?.cleanupAction)) && (
+              {(asNonEmptyString(metadata?.branchName) ||
+                asNonEmptyString(metadata?.baseRef) ||
+                asNonEmptyString(metadata?.worktreePath) ||
+                asNonEmptyString(metadata?.repoRoot) ||
+                asNonEmptyString(metadata?.cleanupAction)) && (
                 <div className="grid gap-1 text-xs sm:grid-cols-2">
                   {asNonEmptyString(metadata?.branchName) && (
-                    <div><span className="text-muted-foreground">Branch: </span><span className="font-mono">{metadata?.branchName as string}</span></div>
+                    <div>
+                      <span className="text-muted-foreground">Branch: </span>
+                      <span className="font-mono">{metadata?.branchName as string}</span>
+                    </div>
                   )}
                   {asNonEmptyString(metadata?.baseRef) && (
-                    <div><span className="text-muted-foreground">Base ref: </span><span className="font-mono">{metadata?.baseRef as string}</span></div>
+                    <div>
+                      <span className="text-muted-foreground">Base ref: </span>
+                      <span className="font-mono">{metadata?.baseRef as string}</span>
+                    </div>
                   )}
                   {asNonEmptyString(metadata?.worktreePath) && (
-                    <div className="break-all"><span className="text-muted-foreground">Worktree: </span><span className="font-mono">{metadata?.worktreePath as string}</span></div>
+                    <div className="break-all">
+                      <span className="text-muted-foreground">Worktree: </span>
+                      <span className="font-mono">{metadata?.worktreePath as string}</span>
+                    </div>
                   )}
                   {asNonEmptyString(metadata?.repoRoot) && (
-                    <div className="break-all"><span className="text-muted-foreground">Repo root: </span><span className="font-mono">{metadata?.repoRoot as string}</span></div>
+                    <div className="break-all">
+                      <span className="text-muted-foreground">Repo root: </span>
+                      <span className="font-mono">{metadata?.repoRoot as string}</span>
+                    </div>
                   )}
                   {asNonEmptyString(metadata?.cleanupAction) && (
-                    <div><span className="text-muted-foreground">Cleanup: </span><span className="font-mono">{metadata?.cleanupAction as string}</span></div>
+                    <div>
+                      <span className="text-muted-foreground">Cleanup: </span>
+                      <span className="font-mono">{metadata?.cleanupAction as string}</span>
+                    </div>
                   )}
                 </div>
               )}
@@ -203,10 +218,7 @@ export function WorkspaceOperationsSection({
                 </div>
               )}
               {operation.logRef && (
-                <WorkspaceOperationLogViewer
-                  operation={operation}
-                  censorUsernameInLogs={censorUsernameInLogs}
-                />
+                <WorkspaceOperationLogViewer operation={operation} censorUsernameInLogs={censorUsernameInLogs} />
               )}
             </div>
           );

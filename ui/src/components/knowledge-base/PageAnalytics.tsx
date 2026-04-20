@@ -1,6 +1,6 @@
+import { BarChart3 } from "lucide-react";
 import { useMemo } from "react";
 import type { KnowledgePage } from "../../api/knowledge";
-import { BarChart3 } from "lucide-react";
 
 export function PageAnalytics({ page }: { page: KnowledgePage }) {
   // Mock analytics - in production this would come from an API

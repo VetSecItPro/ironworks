@@ -1,20 +1,10 @@
-import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useBreadcrumbs } from "@/context/BreadcrumbContext";
+import { Activity, AlertTriangle, Building2, Database, HardDrive, RefreshCw, Server, Timer, Zap } from "lucide-react";
+import { useEffect } from "react";
 import { adminApi } from "@/api/admin";
-import { cn, formatCents } from "@/lib/utils";
-import {
-  Activity,
-  AlertTriangle,
-  Building2,
-  Database,
-  HardDrive,
-  RefreshCw,
-  Server,
-  Timer,
-  Zap,
-} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useBreadcrumbs } from "@/context/BreadcrumbContext";
+import { cn, formatCents } from "@/lib/utils";
 
 function UsageCard({
   label,
@@ -36,9 +26,7 @@ function UsageCard({
   return (
     <div className="rounded-xl border border-border p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          {label}
-        </h4>
+        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</h4>
         <Icon className="h-4 w-4 text-muted-foreground/70" />
       </div>
       <div className="flex items-baseline gap-1.5">
@@ -72,9 +60,7 @@ function StatCard({
     <div className="rounded-xl border border-border px-4 py-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <p className={cn("text-2xl font-semibold tracking-tight tabular-nums", valueClass)}>
-            {value}
-          </p>
+          <p className={cn("text-2xl font-semibold tracking-tight tabular-nums", valueClass)}>{value}</p>
           <p className="text-xs text-muted-foreground mt-1">{label}</p>
         </div>
         <Icon className="h-4 w-4 text-muted-foreground/70 shrink-0 mt-1" />
@@ -114,17 +100,9 @@ export default function AdminMonitoring() {
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold">Platform Monitoring</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Server health, agent run statistics, and error log
-          </p>
+          <p className="text-sm text-muted-foreground mt-0.5">Server health, agent run statistics, and error log</p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={isFetching}
-          className="gap-1.5"
-        >
+        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching} className="gap-1.5">
           <RefreshCw className={cn("h-3.5 w-3.5", isFetching && "animate-spin")} />
           Refresh
         </Button>
@@ -148,17 +126,9 @@ export default function AdminMonitoring() {
         <>
           {/* Server metrics */}
           <div>
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">
-              Server Health
-            </h2>
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">Server Health</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2">
-              <UsageCard
-                label="CPU Usage"
-                used={data.cpuUsagePercent}
-                total={100}
-                unit="%"
-                icon={Server}
-              />
+              <UsageCard label="CPU Usage" used={data.cpuUsagePercent} total={100} unit="%" icon={Server} />
               <UsageCard
                 label="Memory"
                 used={data.memoryUsedMb / 1024}
@@ -166,13 +136,7 @@ export default function AdminMonitoring() {
                 unit="GB"
                 icon={HardDrive}
               />
-              <UsageCard
-                label="Disk"
-                used={data.diskUsedGb}
-                total={data.diskTotalGb}
-                unit="GB"
-                icon={Database}
-              />
+              <UsageCard label="Disk" used={data.diskUsedGb} total={data.diskTotalGb} unit="GB" icon={Database} />
               <StatCard
                 label="Process Uptime"
                 value={formatUptime(data.uptimeSeconds)}
@@ -195,11 +159,7 @@ export default function AdminMonitoring() {
                 value={`${successRatePct}%`}
                 icon={Zap}
                 valueClass={
-                  successRatePct >= 95
-                    ? "text-emerald-400"
-                    : successRatePct >= 85
-                      ? "text-amber-400"
-                      : "text-red-400"
+                  successRatePct >= 95 ? "text-emerald-400" : successRatePct >= 85 ? "text-amber-400" : "text-red-400"
                 }
               />
               <StatCard label="Currently Running" value={data.currentlyRunning} icon={Activity} />
@@ -240,12 +200,8 @@ export default function AdminMonitoring() {
                             <span className="font-medium">{c.companyName}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-muted-foreground tabular-nums">
-                          {c.agentCount}
-                        </td>
-                        <td className="px-4 py-3 text-right font-medium tabular-nums">
-                          {formatCents(c.spendCents)}
-                        </td>
+                        <td className="px-4 py-3 text-muted-foreground tabular-nums">{c.agentCount}</td>
+                        <td className="px-4 py-3 text-right font-medium tabular-nums">{formatCents(c.spendCents)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -314,13 +270,9 @@ export default function AdminMonitoring() {
                           </td>
                           <td className="px-4 py-3 hidden md:table-cell">
                             {err.errorCode ? (
-                              <span className="text-xs font-mono text-muted-foreground">
-                                {err.errorCode}
-                              </span>
+                              <span className="text-xs font-mono text-muted-foreground">{err.errorCode}</span>
                             ) : err.exitCode != null ? (
-                              <span className="text-xs font-mono text-muted-foreground">
-                                exit {err.exitCode}
-                              </span>
+                              <span className="text-xs font-mono text-muted-foreground">exit {err.exitCode}</span>
                             ) : (
                               <span className="text-muted-foreground/40">—</span>
                             )}

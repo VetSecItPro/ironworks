@@ -1,10 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type {
-  AdapterSkillContext,
-  AdapterSkillEntry,
-  AdapterSkillSnapshot,
-} from "@ironworksai/adapter-utils";
+import type { AdapterSkillContext, AdapterSkillEntry, AdapterSkillSnapshot } from "@ironworksai/adapter-utils";
 import {
   readIronworksRuntimeSkillEntries,
   resolveIronworksDesiredSkillNames,
@@ -12,9 +8,7 @@ import {
 
 const __moduleDir = path.dirname(fileURLToPath(import.meta.url));
 
-async function buildCodexSkillSnapshot(
-  config: Record<string, unknown>,
-): Promise<AdapterSkillSnapshot> {
+async function buildCodexSkillSnapshot(config: Record<string, unknown>): Promise<AdapterSkillSnapshot> {
   const availableEntries = await readIronworksRuntimeSkillEntries(config, __moduleDir);
   const availableByKey = new Map(availableEntries.map((entry) => [entry.key, entry]));
   const desiredSkills = resolveIronworksDesiredSkillNames(config, availableEntries);

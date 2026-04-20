@@ -1,19 +1,21 @@
+import type { HeartbeatRun } from "@ironworksai/shared";
+import { ArrowLeft, Clock } from "lucide-react";
 import { Link } from "@/lib/router";
 import { useSidebar } from "../../context/SidebarContext";
+import { cn, formatTokens, relativeTime } from "../../lib/utils";
 import { StatusBadge } from "../StatusBadge";
 import { RunDetail } from "./AgentRunTranscript";
-import { formatTokens, relativeTime, cn } from "../../lib/utils";
-import { Clock, ArrowLeft } from "lucide-react";
-import type { HeartbeatRun } from "@ironworksai/shared";
-import { runStatusIcons, runMetrics, sourceLabels } from "./agent-detail-utils";
+import { runMetrics, runStatusIcons, sourceLabels } from "./agent-detail-utils";
 
 function RunListItem({ run, isSelected, agentId }: { run: HeartbeatRun; isSelected: boolean; agentId: string }) {
   const statusInfo = runStatusIcons[run.status] ?? { icon: Clock, color: "text-neutral-400" };
   const StatusIcon = statusInfo.icon;
   const metrics = runMetrics(run);
   const summary = run.resultJson
-    ? String((run.resultJson as Record<string, unknown>).summary ?? (run.resultJson as Record<string, unknown>).result ?? "")
-    : run.error ?? "";
+    ? String(
+        (run.resultJson as Record<string, unknown>).summary ?? (run.resultJson as Record<string, unknown>).result ?? "",
+      )
+    : (run.error ?? "");
 
   return (
     <Link
@@ -24,28 +26,27 @@ function RunListItem({ run, isSelected, agentId }: { run: HeartbeatRun; isSelect
       )}
     >
       <div className="flex items-center gap-2">
-        <StatusIcon className={cn("h-3.5 w-3.5 shrink-0", statusInfo.color, run.status === "running" && "animate-spin")} />
-        <span className="font-mono text-xs text-muted-foreground">
-          {run.id.slice(0, 8)}
-        </span>
-        <span className={cn(
-          "inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium shrink-0",
-          run.invocationSource === "timer" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
-            : run.invocationSource === "assignment" ? "bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300"
-            : run.invocationSource === "on_demand" ? "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-300"
-            : "bg-muted text-muted-foreground"
-        )}>
+        <StatusIcon
+          className={cn("h-3.5 w-3.5 shrink-0", statusInfo.color, run.status === "running" && "animate-spin")}
+        />
+        <span className="font-mono text-xs text-muted-foreground">{run.id.slice(0, 8)}</span>
+        <span
+          className={cn(
+            "inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium shrink-0",
+            run.invocationSource === "timer"
+              ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
+              : run.invocationSource === "assignment"
+                ? "bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300"
+                : run.invocationSource === "on_demand"
+                  ? "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-300"
+                  : "bg-muted text-muted-foreground",
+          )}
+        >
           {sourceLabels[run.invocationSource] ?? run.invocationSource}
         </span>
-        <span className="ml-auto text-[11px] text-muted-foreground shrink-0">
-          {relativeTime(run.createdAt)}
-        </span>
+        <span className="ml-auto text-[11px] text-muted-foreground shrink-0">{relativeTime(run.createdAt)}</span>
       </div>
-      {summary && (
-        <span className="text-xs text-muted-foreground truncate pl-5.5">
-          {summary.slice(0, 60)}
-        </span>
-      )}
+      {summary && <span className="text-xs text-muted-foreground truncate pl-5.5">{summary.slice(0, 60)}</span>}
       {(metrics.totalTokens > 0 || metrics.cost > 0) && (
         <div className="flex items-center gap-2 pl-5.5 text-[11px] text-muted-foreground tabular-nums">
           {metrics.totalTokens > 0 && <span>{formatTokens(metrics.totalTokens)} tok</span>}
@@ -78,9 +79,7 @@ export function RunsTab({
   }
 
   // Sort by created descending
-  const sorted = [...runs].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+  const sorted = [...runs].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   // On mobile, don't auto-select so the list shows first; on desktop, auto-select latest
   const effectiveRunId = isMobile ? selectedRunId : (selectedRunId ?? sorted[0]?.id ?? null);
@@ -115,14 +114,11 @@ export function RunsTab({
   return (
     <div className="flex gap-0">
       {/* Left: run list -- border stretches full height, content sticks */}
-      <div className={cn(
-        "shrink-0 border border-border rounded-lg",
-        selectedRun ? "w-72" : "w-full",
-      )}>
+      <div className={cn("shrink-0 border border-border rounded-lg", selectedRun ? "w-72" : "w-full")}>
         <div className="sticky top-4 overflow-y-auto" style={{ maxHeight: "calc(100vh - 2rem)" }}>
-        {sorted.map((run) => (
-          <RunListItem key={run.id} run={run} isSelected={run.id === effectiveRunId} agentId={agentRouteId} />
-        ))}
+          {sorted.map((run) => (
+            <RunListItem key={run.id} run={run} isSelected={run.id === effectiveRunId} agentId={agentRouteId} />
+          ))}
         </div>
       </div>
 

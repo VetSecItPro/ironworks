@@ -1,33 +1,22 @@
-import { useState, useMemo } from "react";
-import { Link } from "@/lib/router";
-import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
-import { StatusBadge } from "../StatusBadge";
-import { EmploymentBadge } from "../EmploymentBadge";
-import { MarkdownBody } from "../MarkdownBody";
+import type { AgentDetail as AgentDetailRecord, AgentRuntimeState, HeartbeatRun } from "@ironworksai/shared";
+import { AUTONOMY_LEVELS, type AutonomyLevel, DEPARTMENT_LABELS, TERMINATION_REASONS } from "@ironworksai/shared";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertTriangle, CheckCircle2, Circle, Clock } from "lucide-react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { formatCents, formatTokens, formatDate, relativeTime, cn } from "../../lib/utils";
+import { Link } from "@/lib/router";
 import { agentsApi } from "../../api/agents";
 import { queryKeys } from "../../lib/queryKeys";
-import { Clock, AlertTriangle, CheckCircle2, Circle } from "lucide-react";
-import {
-  DEPARTMENT_LABELS,
-  TERMINATION_REASONS,
-  AUTONOMY_LEVELS,
-  type AutonomyLevel,
-} from "@ironworksai/shared";
-import type {
-  AgentDetail as AgentDetailRecord,
-  HeartbeatRun,
-  AgentRuntimeState,
-} from "@ironworksai/shared";
-import { runStatusIcons, runMetrics, sourceLabels } from "./agent-detail-utils";
+import { cn, formatCents, formatDate, formatTokens, relativeTime } from "../../lib/utils";
+import { EmploymentBadge } from "../EmploymentBadge";
+import { MarkdownBody } from "../MarkdownBody";
+import { StatusBadge } from "../StatusBadge";
+import { runMetrics, runStatusIcons, sourceLabels } from "./agent-detail-utils";
 
 export function LatestRunCard({ runs, agentId }: { runs: HeartbeatRun[]; agentId: string }) {
   if (runs.length === 0) return null;
 
-  const sorted = [...runs].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+  const sorted = [...runs].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const liveRun = sorted.find((r) => r.status === "running" || r.status === "queued");
   const run = liveRun ?? sorted[0];
@@ -35,8 +24,10 @@ export function LatestRunCard({ runs, agentId }: { runs: HeartbeatRun[]; agentId
   const statusInfo = runStatusIcons[run.status] ?? { icon: Clock, color: "text-neutral-400" };
   const StatusIcon = statusInfo.icon;
   const summary = run.resultJson
-    ? String((run.resultJson as Record<string, unknown>).summary ?? (run.resultJson as Record<string, unknown>).result ?? "")
-    : run.error ?? "";
+    ? String(
+        (run.resultJson as Record<string, unknown>).summary ?? (run.resultJson as Record<string, unknown>).result ?? "",
+      )
+    : (run.error ?? "");
 
   return (
     <div className="space-y-3">
@@ -62,20 +53,25 @@ export function LatestRunCard({ runs, agentId }: { runs: HeartbeatRun[]; agentId
         to={`/agents/${agentId}/runs/${run.id}`}
         className={cn(
           "block border rounded-lg p-4 space-y-2 w-full no-underline transition-colors hover:bg-muted/50 cursor-pointer",
-          isLive ? "border-cyan-500/30 shadow-[0_0_12px_rgba(6,182,212,0.08)]" : "border-border"
+          isLive ? "border-cyan-500/30 shadow-[0_0_12px_rgba(6,182,212,0.08)]" : "border-border",
         )}
       >
         <div className="flex items-center gap-2">
           <StatusIcon className={cn("h-3.5 w-3.5", statusInfo.color, run.status === "running" && "animate-spin")} />
           <StatusBadge status={run.status} />
           <span className="font-mono text-xs text-muted-foreground">{run.id.slice(0, 8)}</span>
-          <span className={cn(
-            "inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium",
-            run.invocationSource === "timer" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
-              : run.invocationSource === "assignment" ? "bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300"
-              : run.invocationSource === "on_demand" ? "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-300"
-              : "bg-muted text-muted-foreground"
-          )}>
+          <span
+            className={cn(
+              "inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium",
+              run.invocationSource === "timer"
+                ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
+                : run.invocationSource === "assignment"
+                  ? "bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300"
+                  : run.invocationSource === "on_demand"
+                    ? "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-300"
+                    : "bg-muted text-muted-foreground",
+            )}
+          >
             {sourceLabels[run.invocationSource] ?? run.invocationSource}
           </span>
           <span className="ml-auto text-xs text-muted-foreground">{relativeTime(run.createdAt)}</span>
@@ -91,13 +87,7 @@ export function LatestRunCard({ runs, agentId }: { runs: HeartbeatRun[]; agentId
   );
 }
 
-export function CostsSection({
-  runtimeState,
-  runs,
-}: {
-  runtimeState?: AgentRuntimeState;
-  runs: HeartbeatRun[];
-}) {
+export function CostsSection({ runtimeState, runs }: { runtimeState?: AgentRuntimeState; runs: HeartbeatRun[] }) {
   const runsWithCost = runs
     .filter((r) => {
       const metrics = runMetrics(r);
@@ -151,10 +141,7 @@ export function CostsSection({
                     <td className="px-3 py-2 text-right tabular-nums">{formatTokens(metrics.input)}</td>
                     <td className="px-3 py-2 text-right tabular-nums">{formatTokens(metrics.output)}</td>
                     <td className="px-3 py-2 text-right tabular-nums">
-                      {metrics.cost > 0
-                        ? `$${metrics.cost.toFixed(4)}`
-                        : "-"
-                      }
+                      {metrics.cost > 0 ? `$${metrics.cost.toFixed(4)}` : "-"}
                     </td>
                   </tr>
                 );
@@ -184,9 +171,7 @@ export function OnboardingChecklist({
   if (ageMs > sevenDaysMs) return null;
 
   const hasPermissionGrants = (agent.access?.grants?.length ?? 0) > 0;
-  const hasAdapterConfig =
-    agent.adapterConfig != null &&
-    Object.keys(agent.adapterConfig).length > 0;
+  const hasAdapterConfig = agent.adapterConfig != null && Object.keys(agent.adapterConfig).length > 0;
   const hasCompletedIssue = assignedIssues.some((i) => i.status === "done");
   const hasSucceededRun = runs.some((r) => r.status === "succeeded");
 
@@ -202,12 +187,8 @@ export function OnboardingChecklist({
   return (
     <div className="rounded-xl border border-border p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Onboarding Status
-        </h3>
-        {allDone && (
-          <span className="text-xs text-emerald-500 font-medium">Complete</span>
-        )}
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Onboarding Status</h3>
+        {allDone && <span className="text-xs text-emerald-500 font-medium">Complete</span>}
       </div>
       <ul className="space-y-2">
         {items.map((item) => (
@@ -217,9 +198,7 @@ export function OnboardingChecklist({
             ) : (
               <Circle className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40" />
             )}
-            <span className={item.done ? "text-foreground" : "text-muted-foreground"}>
-              {item.label}
-            </span>
+            <span className={item.done ? "text-foreground" : "text-muted-foreground"}>{item.label}</span>
           </li>
         ))}
       </ul>
@@ -252,7 +231,7 @@ export function ModelStrategyCard({ agent }: { agent: AgentDetailRecord }) {
     queryKey: ["agents", agent.id, "council-activity"],
     queryFn: async () => {
       const res = await fetch(
-        `/api/companies/${agent.companyId}/activity?agentId=${agent.id}&action=model_council.completed&limit=5`
+        `/api/companies/${agent.companyId}/activity?agentId=${agent.id}&action=model_council.completed&limit=5`,
       );
       if (!res.ok) return [];
       const data = await res.json();
@@ -269,7 +248,9 @@ export function ModelStrategyCard({ agent }: { agent: AgentDetailRecord }) {
       <div className="grid grid-cols-2 gap-3">
         <div>
           <span className="text-xs text-muted-foreground block">Strategy</span>
-          <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium mt-1", strategyColor)}>
+          <span
+            className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium mt-1", strategyColor)}
+          >
             {strategyLabel}
           </span>
         </div>
@@ -289,14 +270,19 @@ export function ModelStrategyCard({ agent }: { agent: AgentDetailRecord }) {
             const strategy = (details.strategy as string) ?? "unknown";
             const winningModel = (details.winningModel as string) ?? "unknown";
             const models = Array.isArray(details.models) ? details.models : [];
-            const winnerScore = models.find(
-              (m: unknown) => (m as Record<string, unknown>).model === winningModel
-            ) as Record<string, unknown> | undefined;
+            const winnerScore = models.find((m: unknown) => (m as Record<string, unknown>).model === winningModel) as
+              | Record<string, unknown>
+              | undefined;
             const score = typeof winnerScore?.score === "number" ? winnerScore.score : 0;
             const importance = (details.importance as string) ?? "";
             return (
               <div key={idx} className="text-xs text-muted-foreground">
-                <span className={cn("inline-flex items-center rounded px-1 py-0.5 text-[10px] font-medium mr-1", STRATEGY_COLORS[strategy] ?? STRATEGY_COLORS.single)}>
+                <span
+                  className={cn(
+                    "inline-flex items-center rounded px-1 py-0.5 text-[10px] font-medium mr-1",
+                    STRATEGY_COLORS[strategy] ?? STRATEGY_COLORS.single,
+                  )}
+                >
                   {strategy}
                 </span>
                 {importance ? <span className="mr-1">[{importance}]</span> : null}
@@ -305,10 +291,14 @@ export function ModelStrategyCard({ agent }: { agent: AgentDetailRecord }) {
                 {score > 0 ? ` (score ${score})` : ""}
                 {models.length > 1 && (
                   <span className="ml-1">
-                    vs {models.filter((m: unknown) => (m as Record<string, unknown>).model !== winningModel).map((m: unknown) => {
-                      const entry = m as Record<string, unknown>;
-                      return `${String(entry.model ?? "").split(":")[0]} (${entry.score ?? 0})`;
-                    }).join(", ")}
+                    vs{" "}
+                    {models
+                      .filter((m: unknown) => (m as Record<string, unknown>).model !== winningModel)
+                      .map((m: unknown) => {
+                        const entry = m as Record<string, unknown>;
+                        return `${String(entry.model ?? "").split(":")[0]} (${entry.score ?? 0})`;
+                      })
+                      .join(", ")}
                   </span>
                 )}
               </div>
@@ -320,13 +310,7 @@ export function ModelStrategyCard({ agent }: { agent: AgentDetailRecord }) {
   );
 }
 
-export function EmploymentCard({
-  agent,
-  companyId,
-}: {
-  agent: AgentDetailRecord;
-  companyId: string;
-}) {
+export function EmploymentCard({ agent, companyId }: { agent: AgentDetailRecord; companyId: string }) {
   const queryClient = useQueryClient();
   const [showTerminateConfirm, setShowTerminateConfirm] = useState(false);
   const [terminationReason, setTerminationReason] = useState<string>("manual");
@@ -339,9 +323,7 @@ export function EmploymentCard({
   const contractEndAt = ext.contractEndAt as string | null;
   const contractBudgetCents = ext.contractBudgetCents as number | null;
   const autonomyLevel = (ext.autonomyLevel as AutonomyLevel | null) ?? null;
-  const autonomyInfo = autonomyLevel
-    ? AUTONOMY_LEVELS.find((l) => l.key === autonomyLevel) ?? null
-    : null;
+  const autonomyInfo = autonomyLevel ? (AUTONOMY_LEVELS.find((l) => l.key === autonomyLevel) ?? null) : null;
 
   const terminateMutation = useMutation({
     mutationFn: () => agentsApi.terminateWithReason(companyId, agent.id, terminationReason),
@@ -352,9 +334,7 @@ export function EmploymentCard({
     },
   });
 
-  const isRecentHire = hiredAt
-    ? Date.now() - new Date(hiredAt).getTime() < 30 * 24 * 60 * 60 * 1000
-    : false;
+  const isRecentHire = hiredAt ? Date.now() - new Date(hiredAt).getTime() < 30 * 24 * 60 * 60 * 1000 : false;
   const onboardingMetricsQuery = useQuery({
     queryKey: ["agents", agent.id, "onboarding-metrics"],
     queryFn: () => agentsApi.onboardingMetrics(agent.id, companyId),
@@ -490,8 +470,8 @@ export function EmploymentCard({
                   Active issues will be unassigned
                 </li>
                 <li className="flex items-start gap-1.5">
-                  <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-muted-foreground/50 shrink-0" />
-                  A termination record will be created
+                  <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-muted-foreground/50 shrink-0" />A termination
+                  record will be created
                 </li>
               </ul>
               <div>
@@ -502,7 +482,9 @@ export function EmploymentCard({
                   className="w-full text-xs bg-transparent border border-border rounded px-2 py-1.5"
                 >
                   {TERMINATION_REASONS.map((r) => (
-                    <option key={r} value={r}>{reasonLabels[r] ?? r}</option>
+                    <option key={r} value={r}>
+                      {reasonLabels[r] ?? r}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -516,8 +498,8 @@ export function EmploymentCard({
                   {terminateMutation.isPending
                     ? "Processing..."
                     : employmentType === "full_time"
-                    ? "Confirm Decommission"
-                    : "Confirm Terminate"}
+                      ? "Confirm Decommission"
+                      : "Confirm Terminate"}
                 </Button>
                 <Button
                   variant="ghost"

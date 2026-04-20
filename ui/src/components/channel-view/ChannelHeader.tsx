@@ -57,7 +57,9 @@ export function ChannelHeader({
             onClick={onSearchToggle}
             className={cn(
               "p-1.5 rounded-full transition-colors",
-              searchOpen ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
+              searchOpen
+                ? "bg-accent text-foreground"
+                : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
             )}
           >
             <Search className="h-3.5 w-3.5" />
@@ -115,7 +117,13 @@ export function ChannelHeader({
               {filteredCount} result{filteredCount !== 1 ? "s" : ""}
             </span>
           )}
-          <button onClick={() => { onSearchToggle(); onSearchTermChange(""); }} className="text-muted-foreground hover:text-foreground">
+          <button
+            onClick={() => {
+              onSearchToggle();
+              onSearchTermChange("");
+            }}
+            className="text-muted-foreground hover:text-foreground"
+          >
             <X className="h-3.5 w-3.5" />
           </button>
         </div>

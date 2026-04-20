@@ -6,9 +6,9 @@
  * walk->run requires explicit user approval.
  */
 
-import { eq, and, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { workflowMaturity } from "@ironworksai/db";
+import { and, eq, sql } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 
 export type MaturityLevel = "crawl" | "walk" | "run";
@@ -37,12 +37,7 @@ export async function getReviewRequirements(
   const [record] = await db
     .select()
     .from(workflowMaturity)
-    .where(
-      and(
-        eq(workflowMaturity.companyId, companyId),
-        eq(workflowMaturity.workflowType, workflowType),
-      ),
-    );
+    .where(and(eq(workflowMaturity.companyId, companyId), eq(workflowMaturity.workflowType, workflowType)));
 
   const level: MaturityLevel = (record?.maturityLevel as MaturityLevel) ?? "crawl";
 
@@ -90,12 +85,7 @@ export async function recordCompletion(
   const [existing] = await db
     .select()
     .from(workflowMaturity)
-    .where(
-      and(
-        eq(workflowMaturity.companyId, companyId),
-        eq(workflowMaturity.workflowType, workflowType),
-      ),
-    );
+    .where(and(eq(workflowMaturity.companyId, companyId), eq(workflowMaturity.workflowType, workflowType)));
 
   const now = new Date();
 
@@ -115,9 +105,7 @@ export async function recordCompletion(
   }
 
   // Update existing record
-  const newConsecutive = passed && (qualityScore ?? 0) >= 8
-    ? existing.consecutivePasses + 1
-    : 0;
+  const newConsecutive = passed && (qualityScore ?? 0) >= 8 ? existing.consecutivePasses + 1 : 0;
 
   const newTotal = existing.totalCompleted + 1;
   const newRejections = passed
@@ -165,12 +153,7 @@ export async function promoteToRun(
   const [record] = await db
     .select()
     .from(workflowMaturity)
-    .where(
-      and(
-        eq(workflowMaturity.companyId, companyId),
-        eq(workflowMaturity.workflowType, workflowType),
-      ),
-    );
+    .where(and(eq(workflowMaturity.companyId, companyId), eq(workflowMaturity.workflowType, workflowType)));
 
   if (!record) {
     return { success: false, message: "No workflow maturity record found" };
@@ -194,10 +177,7 @@ export async function promoteToRun(
     })
     .where(eq(workflowMaturity.id, record.id));
 
-  logger.info(
-    { companyId, workflowType, userId },
-    "[workflow-maturity] User promoted walk -> run",
-  );
+  logger.info({ companyId, workflowType, userId }, "[workflow-maturity] User promoted walk -> run");
 
   return { success: true, message: "Workflow promoted to run level" };
 }

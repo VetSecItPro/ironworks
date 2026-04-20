@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -56,11 +56,27 @@ const mockLogActivity = vi.hoisted(() => vi.fn());
 vi.mock("../services/index.js", () => ({
   accessService: () => mockAccessService,
   agentService: () => mockAgentService,
-  agentInstructionsService: () => ({ getBundle: vi.fn(), updateBundle: vi.fn(), listFiles: vi.fn().mockResolvedValue([]) }),
+  agentInstructionsService: () => ({
+    getBundle: vi.fn(),
+    updateBundle: vi.fn(),
+    listFiles: vi.fn().mockResolvedValue([]),
+  }),
   approvalService: () => ({ list: vi.fn().mockResolvedValue([]) }),
-  budgetService: () => ({ upsertPolicy: vi.fn(), getPolicy: vi.fn(), listPolicies: vi.fn().mockResolvedValue([]), listIncidents: vi.fn().mockResolvedValue([]), resolveIncident: vi.fn() }),
+  budgetService: () => ({
+    upsertPolicy: vi.fn(),
+    getPolicy: vi.fn(),
+    listPolicies: vi.fn().mockResolvedValue([]),
+    listIncidents: vi.fn().mockResolvedValue([]),
+    resolveIncident: vi.fn(),
+  }),
   companySkillService: () => ({ list: vi.fn().mockResolvedValue([]), scan: vi.fn() }),
-  heartbeatService: () => ({ cancelBudgetScopeWork: vi.fn(), cancelActiveForAgent: vi.fn(), wakeup: vi.fn(), getActiveRun: vi.fn(), listRuns: vi.fn().mockResolvedValue([]) }),
+  heartbeatService: () => ({
+    cancelBudgetScopeWork: vi.fn(),
+    cancelActiveForAgent: vi.fn(),
+    wakeup: vi.fn(),
+    getActiveRun: vi.fn(),
+    listRuns: vi.fn().mockResolvedValue([]),
+  }),
   issueApprovalService: () => ({ list: vi.fn().mockResolvedValue([]) }),
   issueService: () => ({ list: vi.fn().mockResolvedValue([]) }),
   logActivity: mockLogActivity,

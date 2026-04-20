@@ -8,7 +8,10 @@ export function RoutineHealthBadge({ lastRunAt, status }: { lastRunAt?: string |
   // Consider "late" if active routine hasn't run in 48+ hours
   if (hoursSinceRun < 48) return null;
   return (
-    <span className="inline-flex items-center gap-1 text-[10px] text-amber-500" title={`Last run ${Math.round(hoursSinceRun)}h ago`}>
+    <span
+      className="inline-flex items-center gap-1 text-[10px] text-amber-500"
+      title={`Last run ${Math.round(hoursSinceRun)}h ago`}
+    >
       <AlertTriangle className="h-3 w-3" />
       Late
     </span>

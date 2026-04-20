@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useState, useEffect, type ReactNode } from "react";
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from "react";
 
 interface SidebarContextValue {
   sidebarOpen: boolean;
@@ -36,7 +36,9 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
   const setSidebarWidth = useCallback((w: number) => {
     const clamped = Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, w));
     setSidebarWidthState(clamped);
-    try { localStorage.setItem(SIDEBAR_WIDTH_KEY, String(clamped)); } catch {}
+    try {
+      localStorage.setItem(SIDEBAR_WIDTH_KEY, String(clamped));
+    } catch {}
   }, []);
 
   useEffect(() => {
@@ -52,7 +54,9 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
   const toggleSidebar = useCallback(() => setSidebarOpen((v) => !v), []);
 
   return (
-    <SidebarContext.Provider value={{ sidebarOpen, setSidebarOpen, toggleSidebar, isMobile, sidebarWidth, setSidebarWidth }}>
+    <SidebarContext.Provider
+      value={{ sidebarOpen, setSidebarOpen, toggleSidebar, isMobile, sidebarWidth, setSidebarWidth }}
+    >
       {children}
     </SidebarContext.Provider>
   );

@@ -1,12 +1,6 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Link } from "@/lib/router";
 
 interface TierLimitModalProps {
@@ -17,13 +11,7 @@ interface TierLimitModalProps {
   currentPlan: string;
 }
 
-export function TierLimitModal({
-  open,
-  onOpenChange,
-  message,
-  limit,
-  currentPlan,
-}: TierLimitModalProps) {
+export function TierLimitModal({ open, onOpenChange, message, limit, currentPlan }: TierLimitModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -51,9 +39,7 @@ export function TierLimitModal({
             Cancel
           </Button>
           <Link to="/settings/billing">
-            <Button onClick={() => onOpenChange(false)}>
-              Upgrade Now
-            </Button>
+            <Button onClick={() => onOpenChange(false)}>Upgrade Now</Button>
           </Link>
         </div>
       </DialogContent>

@@ -1,10 +1,10 @@
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ExternalLink, Square } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "@/lib/router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { heartbeatsApi, type LiveRunForIssue } from "../api/heartbeats";
 import { queryKeys } from "../lib/queryKeys";
 import { formatDateTime } from "../lib/utils";
-import { ExternalLink, Square } from "lucide-react";
 import { Identity } from "./Identity";
 import { StatusBadge } from "./StatusBadge";
 import { RunTranscriptView } from "./transcript/RunTranscriptView";
@@ -62,9 +62,7 @@ export function LiveRunWidget({ issueId, companyId }: LiveRunWidgetProps) {
         issueId,
       });
     }
-    return [...deduped.values()].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    );
+    return [...deduped.values()].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [activeRun, issueId, liveRuns]);
 
   const { transcriptByRun, hasOutputForRun } = useLiveRunTranscripts({ runs, companyId });
@@ -148,7 +146,9 @@ export function LiveRunWidget({ issueId, companyId }: LiveRunWidgetProps) {
                   limit={8}
                   streaming={isActive}
                   collapseStdout
-                  emptyMessage={hasOutputForRun(run.id) ? "Waiting for transcript parsing..." : "Waiting for run output..."}
+                  emptyMessage={
+                    hasOutputForRun(run.id) ? "Waiting for transcript parsing..." : "Waiting for run output..."
+                  }
                 />
               </div>
             </section>

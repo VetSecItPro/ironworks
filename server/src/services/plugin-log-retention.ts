@@ -1,6 +1,6 @@
-import { lt, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { pluginLogs } from "@ironworksai/db";
+import { lt, sql } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 
 /** Default retention period: 7 days. */
@@ -20,10 +20,7 @@ const MAX_ITERATIONS = 100;
  *
  * @returns The total number of rows deleted.
  */
-export async function prunePluginLogs(
-  db: Db,
-  retentionDays: number = DEFAULT_RETENTION_DAYS,
-): Promise<number> {
+export async function prunePluginLogs(db: Db, retentionDays: number = DEFAULT_RETENTION_DAYS): Promise<number> {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - retentionDays);
 

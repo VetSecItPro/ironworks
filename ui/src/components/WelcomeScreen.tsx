@@ -1,6 +1,6 @@
+import { Hammer } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Hammer } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Storage
@@ -69,9 +69,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
       {/* Animated hammer icon */}
       <div
         className={`transition-all duration-700 ease-out ${
-          phase === "visible"
-            ? "scale-100 opacity-100 translate-y-0"
-            : "scale-75 opacity-0 translate-y-4"
+          phase === "visible" ? "scale-100 opacity-100 translate-y-0" : "scale-75 opacity-0 translate-y-4"
         }`}
       >
         <div className="relative">
@@ -83,9 +81,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
       {/* Title */}
       <h1
         className={`mt-8 text-4xl font-bold tracking-tight transition-all duration-700 delay-300 ${
-          phase === "visible"
-            ? "opacity-100 translate-y-0"
-            : "opacity-0 translate-y-4"
+          phase === "visible" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
         }`}
       >
         IronWorks
@@ -94,9 +90,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
       {/* Tagline */}
       <p
         className={`mt-3 text-lg text-muted-foreground transition-all duration-700 delay-500 ${
-          phase === "visible"
-            ? "opacity-100 translate-y-0"
-            : "opacity-0 translate-y-4"
+          phase === "visible" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
         }`}
       >
         Forge your AI workforce
@@ -105,9 +99,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
       {/* Subtitle */}
       <p
         className={`mt-1 text-sm text-muted-foreground/70 transition-all duration-700 delay-700 ${
-          phase === "visible"
-            ? "opacity-100 translate-y-0"
-            : "opacity-0 translate-y-4"
+          phase === "visible" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
         }`}
       >
         Manage, orchestrate, and scale autonomous agents

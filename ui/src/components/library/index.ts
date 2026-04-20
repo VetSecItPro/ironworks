@@ -5,6 +5,6 @@ export { EventHistory, UsageAnalyticsPanel } from "./FileHistory";
 export { FileMetaBar } from "./FileMetaBar";
 export { FileViewer } from "./FileViewer";
 export { KnowledgePageViewer } from "./KnowledgePageViewer";
-export { DocTypeBadge, AutoBadge } from "./LibraryBadges";
+export { AutoBadge, DocTypeBadge } from "./LibraryBadges";
 export { TreeNode } from "./LibraryFileTree";
 export { WorkspaceDocViewer } from "./WorkspaceDocViewer";

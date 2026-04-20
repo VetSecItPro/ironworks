@@ -153,15 +153,22 @@
 /* ── Global Transition Defaults ── */
 @layer base {
   /* Smooth transitions on all interactive elements */
-  a, button, [role="button"], input, select, textarea,
-  [data-slot="card"], [data-slot="select-trigger"] {
+  a,
+  button,
+  [role="button"],
+  input,
+  select,
+  textarea,
+  [data-slot="card"],
+  [data-slot="select-trigger"] {
     transition-property: color, background-color, border-color, box-shadow, opacity, transform;
     transition-duration: 200ms;
     transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   /* Active press feedback on all clickable elements */
-  button:active:not(:disabled), [role="button"]:active:not(:disabled),
+  button:active:not(:disabled),
+  [role="button"]:active:not(:disabled),
   a:active {
     transform: scale(0.98);
   }
@@ -206,15 +213,24 @@
 }
 
 @keyframes feature-dot-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(0.8); }
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
 }
 
 /* Password strength meter */
 .password-strength-bar {
   height: 4px;
   border-radius: 2px;
-  transition: width 0.3s ease, background-color 0.3s ease;
+  transition:
+    width 0.3s ease,
+    background-color 0.3s ease;
 }
 
 /* Dark mode scrollbars */
@@ -275,16 +291,34 @@
 
 /* Setup celebration animations */
 @keyframes scaleIn {
-  from { transform: scale(0); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 @keyframes fadeInCheck {
-  from { opacity: 0; transform: scale(0.5); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ARIA live regions */
@@ -404,8 +438,12 @@
    shimmer gradients in the same viewport coordinate space so they move
    in perfect unison regardless of where each element sits on the page. */
 @keyframes skeleton-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .skeleton {
@@ -429,8 +467,14 @@
 
 /* Page entry animation — subtle fade + lift on route transitions */
 @keyframes page-enter {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 #root > * {
@@ -438,7 +482,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #root > * { animation: none; }
+  #root > * {
+    animation: none;
+  }
 }
 
 /* MDXEditor theme integration */
@@ -1037,11 +1083,15 @@ a.ironworks-project-mention-chip {
     page-break-inside: avoid;
   }
 
-  h1, h2, h3 {
+  h1,
+  h2,
+  h3 {
     page-break-after: avoid;
   }
 
-  table, figure, img {
+  table,
+  figure,
+  img {
     page-break-inside: avoid;
   }
 
@@ -1140,12 +1190,24 @@ a.ironworks-project-mention-chip {
 
 /* Smooth number transitions (rolling counter) */
 @keyframes number-roll-up {
-  from { transform: translateY(100%); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 @keyframes number-roll-down {
-  from { transform: translateY(-100%); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 .number-roll-up {
   animation: number-roll-up 250ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -1156,8 +1218,14 @@ a.ironworks-project-mention-chip {
 
 /* Staggered list item entry */
 @keyframes list-item-enter {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .list-item-enter {
   animation: list-item-enter 200ms ease-out both;
@@ -1165,8 +1233,14 @@ a.ironworks-project-mention-chip {
 
 /* Status change confetti - small particle burst */
 @keyframes confetti-particle {
-  0% { opacity: 1; transform: translate(0, 0) scale(1); }
-  100% { opacity: 0; transform: translate(var(--confetti-x), var(--confetti-y)) scale(0); }
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--confetti-x), var(--confetti-y)) scale(0);
+  }
 }
 .confetti-particle {
   position: absolute;
@@ -1179,9 +1253,18 @@ a.ironworks-project-mention-chip {
 
 /* Goal celebration confetti burst */
 @keyframes confetti-burst {
-  0% { opacity: 0; transform: scale(0); }
-  30% { opacity: 1; transform: scale(1.2); }
-  100% { opacity: 0; transform: scale(0.5); }
+  0% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
 }
 
 /* Progress bar smooth fill */
@@ -1191,8 +1274,12 @@ a.ironworks-project-mention-chip {
 
 /* Tab switch cross-fade */
 @keyframes tab-content-enter {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 .tab-content-enter {
   animation: tab-content-enter 150ms ease-out;
@@ -1200,8 +1287,14 @@ a.ironworks-project-mention-chip {
 
 /* Scroll-triggered fade-in */
 @keyframes scroll-fade-in {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .scroll-fade-in {
   animation: scroll-fade-in 400ms ease-out both;
@@ -1209,7 +1302,9 @@ a.ironworks-project-mention-chip {
 
 /* Inline cell editing highlight */
 .inline-edit-cell {
-  transition: background-color 150ms ease, box-shadow 150ms ease;
+  transition:
+    background-color 150ms ease,
+    box-shadow 150ms ease;
 }
 .inline-edit-cell:hover {
   background-color: color-mix(in oklab, var(--accent) 30%, transparent);

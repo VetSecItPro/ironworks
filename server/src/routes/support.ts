@@ -1,9 +1,9 @@
-import { Router } from "express";
-import { eq, desc, and } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import { supportTickets, supportTicketComments } from "@ironworksai/db";
+import { supportTicketComments, supportTickets } from "@ironworksai/db";
+import { and, desc, eq } from "drizzle-orm";
+import { Router } from "express";
+import { badRequest, notFound } from "../errors.js";
 import { assertInstanceAdmin } from "./authz.js";
-import { notFound, badRequest } from "../errors.js";
 
 const VALID_TYPES = ["bug", "feature", "billing", "security", "other"] as const;
 const VALID_STATUSES = ["open", "in-progress", "resolved"] as const;
@@ -89,8 +89,7 @@ export function supportPublicRoutes(db: Db) {
     // SEC-001: If the request is authenticated, ignore any userId/companyId from
     // the body and use only the authenticated session values. Unauthenticated
     // callers (e.g. the landing site contact form) may not supply these at all.
-    const authenticatedUserId =
-      req.actor?.type === "board" && req.actor.userId ? req.actor.userId : null;
+    const authenticatedUserId = req.actor?.type === "board" && req.actor.userId ? req.actor.userId : null;
     const resolvedUserId = authenticatedUserId ?? null;
     // companyId from body is only accepted when not authenticated, and only as
     // a hint (it is not verified against any membership — purely informational).
@@ -109,10 +108,7 @@ export function supportPublicRoutes(db: Db) {
       throw badRequest("body is required");
     }
 
-    const ticketType =
-      typeof type === "string" && (VALID_TYPES as readonly string[]).includes(type)
-        ? type
-        : "bug";
+    const ticketType = typeof type === "string" && (VALID_TYPES as readonly string[]).includes(type) ? type : "bug";
 
     // FIND-002: strip HTML from user-supplied text fields
     const safeSubject = stripHtml(subject.trim());
@@ -186,11 +182,7 @@ export function supportAdminRoutes(db: Db) {
 
     const ticketId = req.params.id as string;
 
-    const [ticket] = await db
-      .select()
-      .from(supportTickets)
-      .where(eq(supportTickets.id, ticketId))
-      .limit(1);
+    const [ticket] = await db.select().from(supportTickets).where(eq(supportTickets.id, ticketId)).limit(1);
 
     if (!ticket) {
       throw notFound("Ticket not found");
@@ -248,10 +240,7 @@ export function supportAdminRoutes(db: Db) {
       .returning();
 
     // Bump ticket updatedAt when a comment is added
-    await db
-      .update(supportTickets)
-      .set({ updatedAt: new Date() })
-      .where(eq(supportTickets.id, ticketId));
+    await db.update(supportTickets).set({ updatedAt: new Date() }).where(eq(supportTickets.id, ticketId));
 
     res.status(201).json(comment);
   });

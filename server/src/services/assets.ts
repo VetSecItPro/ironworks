@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { assets } from "@ironworksai/db";
+import { eq } from "drizzle-orm";
 
 export function assetService(db: Db) {
   return {
@@ -19,4 +19,3 @@ export function assetService(db: Db) {
         .then((rows) => rows[0] ?? null),
   };
 }
-

@@ -1,8 +1,8 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { accessRoutes } from "../routes/access.js";
 import { errorHandler } from "../middleware/index.js";
+import { accessRoutes } from "../routes/access.js";
 
 const mockAccessService = vi.hoisted(() => ({
   hasPermission: vi.fn(),
@@ -40,7 +40,13 @@ vi.mock("../services/index.js", () => ({
   agentService: () => mockAgentService,
   boardAuthService: () => mockBoardAuthService,
   budgetService: () => ({ upsertPolicy: vi.fn() }),
-  userInviteService: () => ({ create: vi.fn(), getByToken: vi.fn(), accept: vi.fn(), listForCompany: vi.fn(), revoke: vi.fn() }),
+  userInviteService: () => ({
+    create: vi.fn(),
+    getByToken: vi.fn(),
+    accept: vi.fn(),
+    listForCompany: vi.fn(),
+    revoke: vi.fn(),
+  }),
   deduplicateAgentName: vi.fn(),
   logActivity: mockLogActivity,
   companyPortabilityService: () => ({}),
@@ -130,9 +136,7 @@ describe("POST /companies/:companyId/openclaw/invite-prompt", () => {
       db,
     );
 
-    const res = await request(app)
-      .post("/api/companies/company-1/openclaw/invite-prompt")
-      .send({});
+    const res = await request(app).post("/api/companies/company-1/openclaw/invite-prompt").send({});
 
     expect(res.status).toBe(403);
     expect(res.body.error).toContain("Only CEO agents");
@@ -179,9 +183,7 @@ describe("POST /companies/:companyId/openclaw/invite-prompt", () => {
       db,
     );
 
-    const res = await request(app)
-      .post("/api/companies/company-1/openclaw/invite-prompt")
-      .send({});
+    const res = await request(app).post("/api/companies/company-1/openclaw/invite-prompt").send({});
 
     expect(res.status).toBe(201);
     expect(res.body.allowedJoinTypes).toBe("agent");
@@ -201,9 +203,7 @@ describe("POST /companies/:companyId/openclaw/invite-prompt", () => {
       db,
     );
 
-    const res = await request(app)
-      .post("/api/companies/company-1/openclaw/invite-prompt")
-      .send({});
+    const res = await request(app).post("/api/companies/company-1/openclaw/invite-prompt").send({});
 
     expect(res.status).toBe(403);
     expect(res.body.error).toBe("Permission denied");

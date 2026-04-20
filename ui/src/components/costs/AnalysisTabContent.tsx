@@ -1,8 +1,8 @@
 import { Coins, DollarSign, Flame, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn, formatCents } from "../../lib/utils";
 import { EmptyState } from "../EmptyState";
 import { MetricTile } from "./MetricTile";
-import { cn, formatCents } from "../../lib/utils";
 
 interface BudgetForecastData {
   currentMonthSpend: number;
@@ -57,9 +57,7 @@ export function AnalysisTabContent({
         <Card>
           <CardHeader className="px-5 pt-5 pb-2">
             <CardTitle className="text-base">Budget Forecast</CardTitle>
-            <CardDescription>
-              Projected month-end spend based on current daily run rate.
-            </CardDescription>
+            <CardDescription>Projected month-end spend based on current daily run rate.</CardDescription>
           </CardHeader>
           <CardContent className="px-5 pb-5 pt-2 space-y-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -83,21 +81,31 @@ export function AnalysisTabContent({
               />
               <MetricTile
                 label="Days Until Exhausted"
-                value={budgetForecastData.daysUntilBudgetExhausted !== null ? `${budgetForecastData.daysUntilBudgetExhausted}d` : "N/A"}
+                value={
+                  budgetForecastData.daysUntilBudgetExhausted !== null
+                    ? `${budgetForecastData.daysUntilBudgetExhausted}d`
+                    : "N/A"
+                }
                 subtitle={budgetForecastData.monthlyBudget ? "At current rate" : "No budget set"}
                 icon={Flame}
               />
             </div>
-            <div className={cn(
-              "rounded-lg border px-4 py-3 text-sm",
-              budgetForecastData.trend === "under" ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400" :
-              budgetForecastData.trend === "on_track" ? "border-blue-500/30 bg-blue-500/5 text-blue-600 dark:text-blue-400" :
-              "border-red-500/30 bg-red-500/5 text-red-600 dark:text-red-400",
-            )}>
+            <div
+              className={cn(
+                "rounded-lg border px-4 py-3 text-sm",
+                budgetForecastData.trend === "under"
+                  ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400"
+                  : budgetForecastData.trend === "on_track"
+                    ? "border-blue-500/30 bg-blue-500/5 text-blue-600 dark:text-blue-400"
+                    : "border-red-500/30 bg-red-500/5 text-red-600 dark:text-red-400",
+              )}
+            >
               <span className="font-semibold">
-                {budgetForecastData.trend === "under" ? "Under Budget" :
-                 budgetForecastData.trend === "on_track" ? "On Track" :
-                 "Over Budget"}
+                {budgetForecastData.trend === "under"
+                  ? "Under Budget"
+                  : budgetForecastData.trend === "on_track"
+                    ? "On Track"
+                    : "Over Budget"}
                 {" - "}
               </span>
               {budgetForecastData.recommendation}
@@ -110,9 +118,7 @@ export function AnalysisTabContent({
         <Card>
           <CardHeader className="px-5 pt-5 pb-2">
             <CardTitle className="text-base">Top Cost Drivers by Project</CardTitle>
-            <CardDescription>
-              Projects with the highest agent cost this month.
-            </CardDescription>
+            <CardDescription>Projects with the highest agent cost this month.</CardDescription>
           </CardHeader>
           <CardContent className="px-5 pb-5 pt-2 space-y-3">
             {(() => {
@@ -161,11 +167,9 @@ export function AnalysisTabContent({
                         {hasBudget && ` / ${formatCents(row.budget!)}`}
                       </span>
                       {hasBudget && (
-                        <span className={cn(
-                          "font-semibold",
-                          overBudget ? "text-red-400" : "text-emerald-400",
-                        )}>
-                          {overBudget ? "+" : ""}{formatCents(row.variance)}
+                        <span className={cn("font-semibold", overBudget ? "text-red-400" : "text-emerald-400")}>
+                          {overBudget ? "+" : ""}
+                          {formatCents(row.variance)}
                         </span>
                       )}
                     </span>
@@ -175,8 +179,11 @@ export function AnalysisTabContent({
                       <div
                         className={cn(
                           "h-full rounded-full transition-[width] duration-500",
-                          utilizationPct >= 100 ? "bg-red-500" :
-                          utilizationPct >= 80 ? "bg-amber-500" : "bg-emerald-500",
+                          utilizationPct >= 100
+                            ? "bg-red-500"
+                            : utilizationPct >= 80
+                              ? "bg-amber-500"
+                              : "bg-emerald-500",
                         )}
                         style={{ width: `${utilizationPct}%` }}
                       />
@@ -214,16 +221,20 @@ export function AnalysisTabContent({
                     <td className="py-1.5 pr-4 text-muted-foreground tabular-nums">{idx + 1}</td>
                     <td className="py-1.5 pr-4 font-medium truncate max-w-[180px]">{row.agentName}</td>
                     <td className="py-1.5 pr-4 text-right tabular-nums">{row.issuesCompleted}</td>
-                    <td className="py-1.5 pr-4 text-right tabular-nums">
-                      {formatCents(row.costPerIssue)}
-                    </td>
+                    <td className="py-1.5 pr-4 text-right tabular-nums">{formatCents(row.costPerIssue)}</td>
                     <td className="py-1.5 text-right tabular-nums">
-                      <span className={cn(
-                        "font-semibold",
-                        row.performanceScore >= 80 ? "text-emerald-400" :
-                        row.performanceScore >= 60 ? "text-blue-400" :
-                        row.performanceScore >= 40 ? "text-amber-400" : "text-red-400",
-                      )}>
+                      <span
+                        className={cn(
+                          "font-semibold",
+                          row.performanceScore >= 80
+                            ? "text-emerald-400"
+                            : row.performanceScore >= 60
+                              ? "text-blue-400"
+                              : row.performanceScore >= 40
+                                ? "text-amber-400"
+                                : "text-red-400",
+                        )}
+                      >
                         {row.performanceScore}
                       </span>
                     </td>

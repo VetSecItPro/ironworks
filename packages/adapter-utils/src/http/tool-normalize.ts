@@ -12,7 +12,7 @@
 // NodeNext resolution with esModuleInterop requires the named class export when
 // Ajv ships a CJS-with-default bundle — the `import Ajv from 'ajv'` default form
 // resolves to the module namespace object instead of the constructor.
-import { Ajv, type ValidateFunction } from 'ajv';
+import { Ajv, type ValidateFunction } from "ajv";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -45,7 +45,7 @@ export interface ToolResult {
 }
 
 /** Which wire format to speak. Poe + OpenRouter alias to 'openai'. */
-export type ProviderToolFormat = 'openai' | 'anthropic';
+export type ProviderToolFormat = "openai" | "anthropic";
 
 // ---------------------------------------------------------------------------
 // Outbound: IronWorks → provider (request payload)
@@ -59,13 +59,10 @@ export type ProviderToolFormat = 'openai' | 'anthropic';
  * `input_schema` instead of `parameters` and drops the `type` wrapper.
  * Input objects are never mutated — each conversion allocates fresh objects.
  */
-export function toProviderToolDefinitions(
-  tools: ToolDefinition[],
-  format: ProviderToolFormat,
-): unknown[] {
-  if (format === 'openai') {
-    return tools.map(t => ({
-      type: 'function',
+export function toProviderToolDefinitions(tools: ToolDefinition[], format: ProviderToolFormat): unknown[] {
+  if (format === "openai") {
+    return tools.map((t) => ({
+      type: "function",
       function: {
         name: t.name,
         description: t.description,
@@ -75,7 +72,7 @@ export function toProviderToolDefinitions(
   }
 
   // Anthropic drops the outer `type`/`function` wrapper and calls the schema `input_schema`
-  return tools.map(t => ({
+  return tools.map((t) => ({
     name: t.name,
     description: t.description,
     input_schema: t.parameters,
@@ -101,82 +98,77 @@ export function toProviderToolDefinitions(
  * you must re-stringify before calling this function — we expect the raw JSON
  * string form per the wire protocol.
  */
-export function fromProviderToolCall(
-  call: unknown,
-  format: ProviderToolFormat,
-): ToolInvocation {
-  if (call === null || typeof call !== 'object') {
-    throw new Error('invalid tool call: expected object');
+export function fromProviderToolCall(call: unknown, format: ProviderToolFormat): ToolInvocation {
+  if (call === null || typeof call !== "object") {
+    throw new Error("invalid tool call: expected object");
   }
 
   const raw = call as Record<string, unknown>;
 
-  if (format === 'openai') {
+  if (format === "openai") {
     // Validate required OpenAI fields
-    if (typeof raw['id'] !== 'string' || raw['id'] === '') {
-      throw new Error('invalid tool call: missing id');
+    if (typeof raw["id"] !== "string" || raw["id"] === "") {
+      throw new Error("invalid tool call: missing id");
     }
-    if (raw['type'] !== 'function') {
+    if (raw["type"] !== "function") {
       throw new Error('invalid tool call: type must be "function"');
     }
 
-    const fn = raw['function'];
-    if (fn === null || typeof fn !== 'object') {
-      throw new Error('invalid tool call: missing function object');
+    const fn = raw["function"];
+    if (fn === null || typeof fn !== "object") {
+      throw new Error("invalid tool call: missing function object");
     }
     const fnObj = fn as Record<string, unknown>;
 
-    if (typeof fnObj['name'] !== 'string' || fnObj['name'] === '') {
-      throw new Error('invalid tool call: missing function.name');
+    if (typeof fnObj["name"] !== "string" || fnObj["name"] === "") {
+      throw new Error("invalid tool call: missing function.name");
     }
-    if (typeof fnObj['arguments'] !== 'string') {
-      throw new Error('invalid tool call: function.arguments must be a string');
+    if (typeof fnObj["arguments"] !== "string") {
+      throw new Error("invalid tool call: function.arguments must be a string");
     }
 
     // Parse the JSON string — empty string is intentionally rejected here
     // so malformed streamed chunks surface immediately rather than silently
     // producing empty args
-    const argsString = fnObj['arguments'] as string;
+    const argsString = fnObj["arguments"] as string;
     let args: unknown;
     try {
       args = JSON.parse(argsString);
     } catch {
-      throw new Error(
-        `invalid tool call: failed to parse function.arguments as JSON: ${argsString.slice(0, 100)}`,
-      );
+      throw new Error(`invalid tool call: failed to parse function.arguments as JSON: ${argsString.slice(0, 100)}`);
     }
 
-    if (args === null || typeof args !== 'object' || Array.isArray(args)) {
-      throw new Error('invalid tool call: parsed arguments must be an object');
+    if (args === null || typeof args !== "object" || Array.isArray(args)) {
+      throw new Error("invalid tool call: parsed arguments must be an object");
     }
 
     return {
-      toolCallId: raw['id'] as string,
-      toolName: fnObj['name'] as string,
+      toolCallId: raw["id"] as string,
+      toolName: fnObj["name"] as string,
       args: args as Record<string, unknown>,
     };
   }
 
   // Anthropic format
-  if (raw['type'] !== 'tool_use') {
+  if (raw["type"] !== "tool_use") {
     throw new Error('invalid tool call: type must be "tool_use"');
   }
-  if (typeof raw['id'] !== 'string' || raw['id'] === '') {
-    throw new Error('invalid tool call: missing id');
+  if (typeof raw["id"] !== "string" || raw["id"] === "") {
+    throw new Error("invalid tool call: missing id");
   }
-  if (typeof raw['name'] !== 'string' || raw['name'] === '') {
-    throw new Error('invalid tool call: missing name');
+  if (typeof raw["name"] !== "string" || raw["name"] === "") {
+    throw new Error("invalid tool call: missing name");
   }
 
-  const input = raw['input'];
+  const input = raw["input"];
   // Anthropic sends args as a pre-parsed object; null signals a malformed response
-  if (input === null || typeof input !== 'object' || Array.isArray(input)) {
-    throw new Error('invalid tool call: input must be a non-null object');
+  if (input === null || typeof input !== "object" || Array.isArray(input)) {
+    throw new Error("invalid tool call: input must be a non-null object");
   }
 
   return {
-    toolCallId: raw['id'] as string,
-    toolName: raw['name'] as string,
+    toolCallId: raw["id"] as string,
+    toolName: raw["name"] as string,
     args: input as Record<string, unknown>,
   };
 }
@@ -196,14 +188,11 @@ export function fromProviderToolCall(
  * message's content array.  Supports an explicit `is_error` boolean so the
  * model can distinguish tool errors from normal output without parsing content.
  */
-export function toProviderToolResult(
-  result: ToolResult,
-  format: ProviderToolFormat,
-): Record<string, unknown> {
-  if (format === 'openai') {
+export function toProviderToolResult(result: ToolResult, format: ProviderToolFormat): Record<string, unknown> {
+  if (format === "openai") {
     // OpenAI has no dedicated error flag; the error text travels in content
     return {
-      role: 'tool',
+      role: "tool",
       tool_call_id: result.toolCallId,
       content: result.content,
     };
@@ -211,12 +200,12 @@ export function toProviderToolResult(
 
   // Anthropic: include is_error only when true to keep the object clean
   const block: Record<string, unknown> = {
-    type: 'tool_result',
+    type: "tool_result",
     tool_use_id: result.toolCallId,
     content: result.content,
   };
   if (result.isError) {
-    block['is_error'] = true;
+    block["is_error"] = true;
   }
   return block;
 }
@@ -273,17 +262,12 @@ function getValidator(schema: Record<string, unknown>): ValidateFunction {
  * Used by adapters to catch schema violations before the tool function runs,
  * which surfaces clearer errors than letting the tool itself crash.
  */
-export function validateToolArgs(
-  args: unknown,
-  schema: Record<string, unknown>,
-): { valid: boolean; errors: string[] } {
+export function validateToolArgs(args: unknown, schema: Record<string, unknown>): { valid: boolean; errors: string[] } {
   const validator = getValidator(schema);
   const valid = validator(args) as boolean;
   if (valid) return { valid: true, errors: [] };
 
-  const errors = (validator.errors ?? []).map(e =>
-    `${e.instancePath} ${e.message}`.trim(),
-  );
+  const errors = (validator.errors ?? []).map((e) => `${e.instancePath} ${e.message}`.trim());
   return { valid: false, errors };
 }
 

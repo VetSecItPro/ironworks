@@ -1,4 +1,3 @@
-import { Router } from "express";
 import type { Db } from "@ironworksai/db";
 import {
   createCostEventSchema,
@@ -7,21 +6,22 @@ import {
   updateBudgetSchema,
   upsertBudgetPolicySchema,
 } from "@ironworksai/shared";
+import { Router } from "express";
+import { badRequest } from "../errors.js";
 import { validate } from "../middleware/validate.js";
+import { costPerIssue } from "../services/costs.js";
+import { calculateTotalEquivalentSpend, getRateCard } from "../services/equivalent-spend.js";
 import {
+  agentService,
   budgetService,
+  companyService,
   costService,
   financeService,
-  companyService,
-  agentService,
   heartbeatService,
   logActivity,
 } from "../services/index.js";
-import { costPerIssue } from "../services/costs.js";
-import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
 import { fetchAllQuotaWindows } from "../services/quota-windows.js";
-import { badRequest } from "../errors.js";
-import { calculateTotalEquivalentSpend, getRateCard } from "../services/equivalent-spend.js";
+import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
 
 export function costRoutes(db: Db) {
   const router = Router();
@@ -101,7 +101,7 @@ export function costRoutes(db: Db) {
     const to = toRaw ? new Date(toRaw) : undefined;
     if (from && isNaN(from.getTime())) throw badRequest("invalid 'from' date");
     if (to && isNaN(to.getTime())) throw badRequest("invalid 'to' date");
-    return (from || to) ? { from, to } : undefined;
+    return from || to ? { from, to } : undefined;
   }
 
   function parseLimit(query: Record<string, unknown>) {
@@ -216,17 +216,13 @@ export function costRoutes(db: Db) {
     res.json(overview);
   });
 
-  router.post(
-    "/companies/:companyId/budgets/policies",
-    validate(upsertBudgetPolicySchema),
-    async (req, res) => {
-      assertBoard(req);
-      const companyId = req.params.companyId as string;
-      assertCompanyAccess(req, companyId);
-      const summary = await budgets.upsertPolicy(companyId, req.body, req.actor.userId ?? "board");
-      res.json(summary);
-    },
-  );
+  router.post("/companies/:companyId/budgets/policies", validate(upsertBudgetPolicySchema), async (req, res) => {
+    assertBoard(req);
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+    const summary = await budgets.upsertPolicy(companyId, req.body, req.actor.userId ?? "board");
+    res.json(summary);
+  });
 
   router.post(
     "/companies/:companyId/budget-incidents/:incidentId/resolve",
@@ -264,12 +260,9 @@ export function costRoutes(db: Db) {
     // Separate subscription vs API usage
     const subscriptionEntries = byAgentModel.filter(
       (e: Record<string, unknown>) =>
-        (e.billingType as string) === "subscription_included" ||
-        (e.billingType as string) === "subscription_overage",
+        (e.billingType as string) === "subscription_included" || (e.billingType as string) === "subscription_overage",
     );
-    const apiEntries = byAgentModel.filter(
-      (e: Record<string, unknown>) => (e.billingType as string) === "metered_api",
-    );
+    const apiEntries = byAgentModel.filter((e: Record<string, unknown>) => (e.billingType as string) === "metered_api");
 
     const subscriptionEquivalentCents = calculateTotalEquivalentSpend(
       subscriptionEntries.map((e: Record<string, unknown>) => ({
@@ -290,13 +283,8 @@ export function costRoutes(db: Db) {
     // Determine billing mode
     const hasSubscription = subscriptionEntries.length > 0;
     const hasApi = apiEntries.length > 0;
-    const billingMode = hasSubscription && hasApi
-      ? "mixed"
-      : hasSubscription
-        ? "subscription"
-        : hasApi
-          ? "api"
-          : "none";
+    const billingMode =
+      hasSubscription && hasApi ? "mixed" : hasSubscription ? "subscription" : hasApi ? "api" : "none";
 
     res.json({
       billingMode,
@@ -305,21 +293,31 @@ export function costRoutes(db: Db) {
       totalEquivalentCents,
       subscriptionTokens: {
         input: subscriptionEntries.reduce((s: number, e: Record<string, unknown>) => s + Number(e.inputTokens ?? 0), 0),
-        cachedInput: subscriptionEntries.reduce((s: number, e: Record<string, unknown>) => s + Number(e.cachedInputTokens ?? 0), 0),
-        output: subscriptionEntries.reduce((s: number, e: Record<string, unknown>) => s + Number(e.outputTokens ?? 0), 0),
+        cachedInput: subscriptionEntries.reduce(
+          (s: number, e: Record<string, unknown>) => s + Number(e.cachedInputTokens ?? 0),
+          0,
+        ),
+        output: subscriptionEntries.reduce(
+          (s: number, e: Record<string, unknown>) => s + Number(e.outputTokens ?? 0),
+          0,
+        ),
       },
       apiTokens: {
         input: apiEntries.reduce((s: number, e: Record<string, unknown>) => s + Number(e.inputTokens ?? 0), 0),
-        cachedInput: apiEntries.reduce((s: number, e: Record<string, unknown>) => s + Number(e.cachedInputTokens ?? 0), 0),
+        cachedInput: apiEntries.reduce(
+          (s: number, e: Record<string, unknown>) => s + Number(e.cachedInputTokens ?? 0),
+          0,
+        ),
         output: apiEntries.reduce((s: number, e: Record<string, unknown>) => s + Number(e.outputTokens ?? 0), 0),
       },
-      note: billingMode === "subscription"
-        ? "All usage is covered by your subscription. Equivalent spend shows what this would cost per API call."
-        : billingMode === "mixed"
-          ? "Some usage is subscription-covered, some is API-metered."
-          : billingMode === "api"
-            ? "All usage is billed per API call."
-            : "No usage recorded for this period.",
+      note:
+        billingMode === "subscription"
+          ? "All usage is covered by your subscription. Equivalent spend shows what this would cost per API call."
+          : billingMode === "mixed"
+            ? "Some usage is subscription-covered, some is API-metered."
+            : billingMode === "api"
+              ? "All usage is billed per API call."
+              : "No usage recorded for this period.",
     });
   });
 
@@ -397,12 +395,15 @@ export function costRoutes(db: Db) {
       const cachedInputTokens = Number(entry.cachedInputTokens ?? 0);
       const outputTokens = Number(entry.outputTokens ?? 0);
       const actualCost = Number(entry.costCents ?? 0) / 100;
-      const equivCost = calculateTotalEquivalentSpend([{
-        model: (entry.model as string) ?? "unknown",
-        inputTokens,
-        cachedInputTokens,
-        outputTokens,
-      }]) / 100;
+      const equivCost =
+        calculateTotalEquivalentSpend([
+          {
+            model: (entry.model as string) ?? "unknown",
+            inputTokens,
+            cachedInputTokens,
+            outputTokens,
+          },
+        ]) / 100;
 
       lines.push(
         `"${period}","${entry.agentName ?? "Unknown"}","${entry.model ?? ""}","${entry.provider ?? ""}","${entry.billingType ?? ""}",${inputTokens},${cachedInputTokens},${outputTokens},${actualCost.toFixed(2)},${equivCost.toFixed(2)}`,
@@ -511,7 +512,7 @@ export function costRoutes(db: Db) {
         amount: updated.budgetMonthlyCents,
         windowKind: "calendar_month_utc",
       },
-      req.actor.type === "board" ? req.actor.userId ?? "board" : null,
+      req.actor.type === "board" ? (req.actor.userId ?? "board") : null,
     );
 
     res.json(updated);

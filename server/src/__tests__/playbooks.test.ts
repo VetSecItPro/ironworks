@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -234,9 +234,7 @@ describe("playbook routes", () => {
   describe("POST /api/companies/:companyId/playbooks/:playbookId/run", () => {
     it("runs a playbook and returns 201", async () => {
       const app = await createApp(instanceAdmin(USER_ID));
-      const res = await request(app)
-        .post(`/api/companies/${COMPANY_ID}/playbooks/${PLAYBOOK_ID}/run`)
-        .send({});
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/playbooks/${PLAYBOOK_ID}/run`).send({});
 
       expect(res.status).toBe(201);
       expect(res.body).toMatchObject({ status: "running" });
@@ -266,9 +264,7 @@ describe("playbook routes", () => {
 
     it("rejects missing issueId with 400", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post(`/api/companies/${COMPANY_ID}/playbook-runs/issue-completed`)
-        .send({});
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/playbook-runs/issue-completed`).send({});
       expect(res.status).toBe(400);
     });
   });

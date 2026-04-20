@@ -59,14 +59,19 @@ export function ExecutionWorkspaceSection({
             <option value="">Choose an existing workspace</option>
             {deduplicatedReusableWorkspaces.map((workspace) => (
               <option key={workspace.id} value={workspace.id}>
-                {workspace.name} · {workspace.status} · {workspace.branchName ?? workspace.cwd ?? workspace.id.slice(0, 8)}
+                {workspace.name} · {workspace.status} ·{" "}
+                {workspace.branchName ?? workspace.cwd ?? workspace.id.slice(0, 8)}
               </option>
             ))}
           </select>
         )}
         {executionWorkspaceMode === "reuse_existing" && selectedReusableExecutionWorkspace && (
           <div className="text-[11px] text-muted-foreground">
-            Reusing {selectedReusableExecutionWorkspace.name} from {selectedReusableExecutionWorkspace.branchName ?? selectedReusableExecutionWorkspace.cwd ?? "existing execution workspace"}.
+            Reusing {selectedReusableExecutionWorkspace.name} from{" "}
+            {selectedReusableExecutionWorkspace.branchName ??
+              selectedReusableExecutionWorkspace.cwd ??
+              "existing execution workspace"}
+            .
           </div>
         )}
       </div>

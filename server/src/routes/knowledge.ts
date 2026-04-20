@@ -1,10 +1,10 @@
-import { Router } from "express";
 import type { Db } from "@ironworksai/db";
-import { knowledgeService } from "../services/knowledge.js";
+import { Router } from "express";
 import { logActivity } from "../services/activity-log.js";
-import { assertCompanyAccess, getActorInfo } from "./authz.js";
-import { lookupPlaybook, reindexPage, reindexAllPlaybooks } from "../services/playbook-rag.js";
+import { knowledgeService } from "../services/knowledge.js";
 import { auditAgentRun } from "../services/playbook-audit.js";
+import { lookupPlaybook, reindexAllPlaybooks, reindexPage } from "../services/playbook-rag.js";
+import { assertCompanyAccess, getActorInfo } from "./authz.js";
 
 function actorForService(actor: ReturnType<typeof getActorInfo>) {
   return {
@@ -32,7 +32,10 @@ export function knowledgeRoutes(db: Db) {
   // Get a single page by ID
   router.get("/knowledge/:pageId", async (req, res) => {
     const page = await svc.getById(req.params.pageId as string);
-    if (!page) { res.status(404).json({ error: "Page not found" }); return; }
+    if (!page) {
+      res.status(404).json({ error: "Page not found" });
+      return;
+    }
     assertCompanyAccess(req, page.companyId);
     res.json(page);
   });
@@ -42,7 +45,10 @@ export function knowledgeRoutes(db: Db) {
     const companyId = req.params.companyId as string;
     assertCompanyAccess(req, companyId);
     const page = await svc.getBySlug(companyId, req.params.slug as string);
-    if (!page) { res.status(404).json({ error: "Page not found" }); return; }
+    if (!page) {
+      res.status(404).json({ error: "Page not found" });
+      return;
+    }
     res.json(page);
   });
 
@@ -53,12 +59,18 @@ export function knowledgeRoutes(db: Db) {
     const actor = getActorInfo(req);
     const { title, body, visibility, projectId, department, folder } = req.body;
     if (!title || typeof title !== "string" || title.trim().length === 0) {
-      res.status(400).json({ error: "Title is required" }); return;
+      res.status(400).json({ error: "Title is required" });
+      return;
     }
     if (title.trim().length > 200) {
-      res.status(400).json({ error: "Title must be 200 characters or less" }); return;
+      res.status(400).json({ error: "Title must be 200 characters or less" });
+      return;
     }
-    const page = await svc.create(companyId, { title, body, visibility, projectId, department, folder }, actorForService(actor));
+    const page = await svc.create(
+      companyId,
+      { title, body, visibility, projectId, department, folder },
+      actorForService(actor),
+    );
     await logActivity(db, {
       companyId,
       actorType: actor.actorType,
@@ -74,7 +86,10 @@ export function knowledgeRoutes(db: Db) {
   // Update a page
   router.patch("/knowledge/:pageId", async (req, res) => {
     const page = await svc.getById(req.params.pageId as string);
-    if (!page) { res.status(404).json({ error: "Page not found" }); return; }
+    if (!page) {
+      res.status(404).json({ error: "Page not found" });
+      return;
+    }
     assertCompanyAccess(req, page.companyId);
 
     // HR document immutability: auto-generated personnel records cannot be modified
@@ -86,7 +101,11 @@ export function knowledgeRoutes(db: Db) {
 
     const actor = getActorInfo(req);
     const { title, body, visibility, projectId, department, changeSummary } = req.body;
-    const updated = await svc.update(page.id, { title, body, visibility, projectId, department, changeSummary }, actorForService(actor));
+    const updated = await svc.update(
+      page.id,
+      { title, body, visibility, projectId, department, changeSummary },
+      actorForService(actor),
+    );
     await logActivity(db, {
       companyId: page.companyId,
       actorType: actor.actorType,
@@ -102,7 +121,10 @@ export function knowledgeRoutes(db: Db) {
   // Delete a page
   router.delete("/knowledge/:pageId", async (req, res) => {
     const page = await svc.getById(req.params.pageId as string);
-    if (!page) { res.status(404).json({ error: "Page not found" }); return; }
+    if (!page) {
+      res.status(404).json({ error: "Page not found" });
+      return;
+    }
     assertCompanyAccess(req, page.companyId);
     const actor = getActorInfo(req);
     await svc.remove(page.id);
@@ -121,7 +143,10 @@ export function knowledgeRoutes(db: Db) {
   // List revisions for a page
   router.get("/knowledge/:pageId/revisions", async (req, res) => {
     const page = await svc.getById(req.params.pageId as string);
-    if (!page) { res.status(404).json({ error: "Page not found" }); return; }
+    if (!page) {
+      res.status(404).json({ error: "Page not found" });
+      return;
+    }
     assertCompanyAccess(req, page.companyId);
     const revisions = await svc.listRevisions(page.id);
     res.json(revisions);
@@ -130,17 +155,26 @@ export function knowledgeRoutes(db: Db) {
   // Get a specific revision
   router.get("/knowledge/:pageId/revisions/:revisionNumber", async (req, res) => {
     const page = await svc.getById(req.params.pageId as string);
-    if (!page) { res.status(404).json({ error: "Page not found" }); return; }
+    if (!page) {
+      res.status(404).json({ error: "Page not found" });
+      return;
+    }
     assertCompanyAccess(req, page.companyId);
     const rev = await svc.getRevision(page.id, parseInt(req.params.revisionNumber as string, 10));
-    if (!rev) { res.status(404).json({ error: "Revision not found" }); return; }
+    if (!rev) {
+      res.status(404).json({ error: "Revision not found" });
+      return;
+    }
     res.json(rev);
   });
 
   // Revert to a specific revision
   router.post("/knowledge/:pageId/revisions/:revisionNumber/revert", async (req, res) => {
     const page = await svc.getById(req.params.pageId as string);
-    if (!page) { res.status(404).json({ error: "Page not found" }); return; }
+    if (!page) {
+      res.status(404).json({ error: "Page not found" });
+      return;
+    }
     assertCompanyAccess(req, page.companyId);
     const actor = getActorInfo(req);
     const revNum = parseInt(req.params.revisionNumber as string, 10);

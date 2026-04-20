@@ -2,17 +2,19 @@
  * @fileoverview Plugin Manager page - admin UI for discovering,
  * installing, enabling/disabling, and uninstalling plugins.
  */
-import { useEffect, useMemo, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
 import type { PluginRecord } from "@ironworksai/shared";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Plus, Puzzle } from "lucide-react";
-import { useCompany } from "@/context/CompanyContext";
-import { useBreadcrumbs } from "@/context/BreadcrumbContext";
+import { useEffect, useMemo, useState } from "react";
 import { pluginsApi } from "@/api/plugins";
-import { queryKeys } from "@/lib/queryKeys";
+import {
+  AvailablePluginsSection,
+  ErrorDetailsDialog,
+  InstalledPluginsSection,
+  UninstallDialog,
+} from "@/components/plugin-manager";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -22,14 +24,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useBreadcrumbs } from "@/context/BreadcrumbContext";
+import { useCompany } from "@/context/CompanyContext";
 import { useToast } from "@/context/ToastContext";
-
-import {
-  AvailablePluginsSection,
-  InstalledPluginsSection,
-  UninstallDialog,
-  ErrorDetailsDialog,
-} from "@/components/plugin-manager";
+import { queryKeys } from "@/lib/queryKeys";
 
 export function PluginManager() {
   const { selectedCompany } = useCompany();
@@ -51,7 +51,11 @@ export function PluginManager() {
     ]);
   }, [selectedCompany?.name, setBreadcrumbs]);
 
-  const { data: plugins, isLoading, error } = useQuery({
+  const {
+    data: plugins,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: queryKeys.plugins.all,
     queryFn: () => pluginsApi.list(),
   });
@@ -94,14 +98,24 @@ export function PluginManager() {
 
   const enableMutation = useMutation({
     mutationFn: (pluginId: string) => pluginsApi.enable(pluginId),
-    onSuccess: () => { invalidatePluginQueries(); pushToast({ title: "Plugin enabled", tone: "success" }); },
-    onError: (err: Error) => { pushToast({ title: "Failed to enable plugin", body: err.message, tone: "error" }); },
+    onSuccess: () => {
+      invalidatePluginQueries();
+      pushToast({ title: "Plugin enabled", tone: "success" });
+    },
+    onError: (err: Error) => {
+      pushToast({ title: "Failed to enable plugin", body: err.message, tone: "error" });
+    },
   });
 
   const disableMutation = useMutation({
     mutationFn: (pluginId: string) => pluginsApi.disable(pluginId),
-    onSuccess: () => { invalidatePluginQueries(); pushToast({ title: "Plugin disabled", tone: "info" }); },
-    onError: (err: Error) => { pushToast({ title: "Failed to disable plugin", body: err.message, tone: "error" }); },
+    onSuccess: () => {
+      invalidatePluginQueries();
+      pushToast({ title: "Plugin disabled", tone: "info" });
+    },
+    onError: (err: Error) => {
+      pushToast({ title: "Failed to disable plugin", body: err.message, tone: "error" });
+    },
   });
 
   const installedPlugins = plugins ?? [];
@@ -111,7 +125,10 @@ export function PluginManager() {
   const errorSummaryByPluginId = useMemo(() => {
     const firstLine = (val: string | null | undefined) => {
       if (!val) return "Plugin entered an error state without a stored error message.";
-      const line = val.split(/\r?\n/).map((l) => l.trim()).find(Boolean);
+      const line = val
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .find(Boolean);
       return line ?? "Plugin entered an error state without a stored error message.";
     };
     return new Map(installedPlugins.map((p) => [p.id, firstLine(p.lastError)]));
@@ -142,12 +159,22 @@ export function PluginManager() {
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label htmlFor="packageName">npm Package Name</Label>
-                <Input id="packageName" placeholder="@ironworksai/plugin-example" value={installPackage} onChange={(e) => setInstallPackage(e.target.value)} />
+                <Input
+                  id="packageName"
+                  placeholder="@ironworksai/plugin-example"
+                  value={installPackage}
+                  onChange={(e) => setInstallPackage(e.target.value)}
+                />
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setInstallDialogOpen(false)}>Cancel</Button>
-              <Button onClick={() => installMutation.mutate({ packageName: installPackage })} disabled={!installPackage || installMutation.isPending}>
+              <Button variant="outline" onClick={() => setInstallDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={() => installMutation.mutate({ packageName: installPackage })}
+                disabled={!installPackage || installMutation.isPending}
+              >
                 {installMutation.isPending ? "Installing..." : "Install"}
               </Button>
             </DialogFooter>
@@ -181,7 +208,10 @@ export function PluginManager() {
         enableMutation={enableMutation}
         disableMutation={disableMutation}
         uninstallMutation={uninstallMutation}
-        onUninstall={(id, name) => { setUninstallPluginId(id); setUninstallPluginName(name); }}
+        onUninstall={(id, name) => {
+          setUninstallPluginId(id);
+          setUninstallPluginName(name);
+        }}
         onShowError={setErrorDetailsPlugin}
       />
 

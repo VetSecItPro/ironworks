@@ -72,29 +72,14 @@ export function SkillsSidebar({
             placeholder="Paste path, GitHub URL, or skills.sh command"
             className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           />
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={onAddSource}
-            disabled={importPending}
-          >
+          <Button size="sm" variant="ghost" onClick={onAddSource} disabled={importPending}>
             {importPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : "Add"}
           </Button>
         </div>
-        {scanStatusMessage && (
-          <p className="mt-3 text-xs text-muted-foreground">
-            {scanStatusMessage}
-          </p>
-        )}
+        {scanStatusMessage && <p className="mt-3 text-xs text-muted-foreground">{scanStatusMessage}</p>}
       </div>
 
-      {createOpen && (
-        <NewSkillForm
-          onCreate={onCreateSkill}
-          isPending={createPending}
-          onCancel={onCancelCreate}
-        />
-      )}
+      {createOpen && <NewSkillForm onCreate={onCreateSkill} isPending={createPending} onCancel={onCancelCreate} />}
 
       {skillsLoading ? (
         <PageSkeleton variant="list" />

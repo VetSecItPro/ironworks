@@ -1,20 +1,20 @@
-import { useMemo, useRef, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useDialog } from "../../context/DialogContext";
-import { useCompany } from "../../context/CompanyContext";
-import { projectsApi } from "../../api/projects";
-import { agentsApi } from "../../api/agents";
-import { goalsApi } from "../../api/goals";
-import { assetsApi } from "../../api/assets";
-import { queryKeys } from "../../lib/queryKeys";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { PROJECT_COLORS } from "@ironworksai/shared";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { agentsApi } from "../../api/agents";
+import { assetsApi } from "../../api/assets";
+import { goalsApi } from "../../api/goals";
+import { projectsApi } from "../../api/projects";
+import { useCompany } from "../../context/CompanyContext";
+import { useDialog } from "../../context/DialogContext";
+import { queryKeys } from "../../lib/queryKeys";
 import { cn } from "../../lib/utils";
 import { MarkdownEditor, type MarkdownEditorRef, type MentionOption } from "../MarkdownEditor";
 import { ProjectDialogHeader } from "./ProjectDialogHeader";
-import { ProjectWorkspaceFields } from "./ProjectWorkspaceFields";
 import { ProjectPropertyChips } from "./ProjectPropertyChips";
+import { ProjectWorkspaceFields } from "./ProjectWorkspaceFields";
 
 export function NewProjectDialog() {
   const { newProjectOpen, closeNewProject } = useDialog();
@@ -57,8 +57,7 @@ export function NewProjectDialog() {
   }, [agents]);
 
   const createProject = useMutation({
-    mutationFn: (data: Record<string, unknown>) =>
-      projectsApi.create(selectedCompanyId!, data),
+    mutationFn: (data: Record<string, unknown>) => projectsApi.create(selectedCompanyId!, data),
   });
 
   const uploadDescriptionImage = useMutation({
@@ -69,9 +68,15 @@ export function NewProjectDialog() {
   });
 
   function reset() {
-    setName(""); setDescription(""); setStatus("planned");
-    setGoalIds([]); setTargetDate(""); setExpanded(false);
-    setWorkspaceLocalPath(""); setWorkspaceRepoUrl(""); setWorkspaceError(null);
+    setName("");
+    setDescription("");
+    setStatus("planned");
+    setGoalIds([]);
+    setTargetDate("");
+    setExpanded(false);
+    setWorkspaceLocalPath("");
+    setWorkspaceRepoUrl("");
+    setWorkspaceError(null);
   }
 
   const isAbsolutePath = (value: string) => value.startsWith("/") || /^[A-Za-z]:[\\/]/.test(value);
@@ -81,29 +86,45 @@ export function NewProjectDialog() {
       const host = parsed.hostname.toLowerCase();
       if (host !== "github.com" && host !== "www.github.com") return false;
       return parsed.pathname.split("/").filter(Boolean).length >= 2;
-    } catch { return false; }
+    } catch {
+      return false;
+    }
   };
   const deriveWorkspaceNameFromPath = (value: string) => {
-    const segments = value.trim().replace(/[\\/]+$/, "").split(/[\\/]/).filter(Boolean);
+    const segments = value
+      .trim()
+      .replace(/[\\/]+$/, "")
+      .split(/[\\/]/)
+      .filter(Boolean);
     return segments[segments.length - 1] ?? "Local folder";
   };
   const deriveWorkspaceNameFromRepo = (value: string) => {
     try {
       const segments = new URL(value).pathname.split("/").filter(Boolean);
       return segments[segments.length - 1]?.replace(/\.git$/i, "") || "GitHub repo";
-    } catch { return "GitHub repo"; }
+    } catch {
+      return "GitHub repo";
+    }
   };
 
   async function handleSubmit() {
     if (!selectedCompanyId || !name.trim()) return;
     const localPath = workspaceLocalPath.trim();
     const repoUrl = workspaceRepoUrl.trim();
-    if (localPath && !isAbsolutePath(localPath)) { setWorkspaceError("Local folder must be a full absolute path."); return; }
-    if (repoUrl && !isGitHubRepoUrl(repoUrl)) { setWorkspaceError("Repo must use a valid GitHub repo URL."); return; }
+    if (localPath && !isAbsolutePath(localPath)) {
+      setWorkspaceError("Local folder must be a full absolute path.");
+      return;
+    }
+    if (repoUrl && !isGitHubRepoUrl(repoUrl)) {
+      setWorkspaceError("Repo must use a valid GitHub repo URL.");
+      return;
+    }
     setWorkspaceError(null);
     try {
       const created = await createProject.mutateAsync({
-        name: name.trim(), description: description.trim() || undefined, status,
+        name: name.trim(),
+        description: description.trim() || undefined,
+        status,
         color: PROJECT_COLORS[Math.floor(Math.random() * PROJECT_COLORS.length)],
         ...(goalIds.length > 0 ? { goalIds } : {}),
         ...(targetDate ? { targetDate } : {}),
@@ -117,18 +138,29 @@ export function NewProjectDialog() {
       }
       queryClient.invalidateQueries({ queryKey: queryKeys.projects.list(selectedCompanyId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(created.id) });
-      reset(); closeNewProject();
-    } catch { /* surface through createProject.isError */ }
+      reset();
+      closeNewProject();
+    } catch {
+      /* surface through createProject.isError */
+    }
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); handleSubmit(); }
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      handleSubmit();
+    }
   }
 
   return (
     <Dialog
       open={newProjectOpen}
-      onOpenChange={(open) => { if (!open) { reset(); closeNewProject(); } }}
+      onOpenChange={(open) => {
+        if (!open) {
+          reset();
+          closeNewProject();
+        }
+      }}
     >
       <DialogContent
         showCloseButton={false}
@@ -139,7 +171,10 @@ export function NewProjectDialog() {
           companyName={selectedCompany?.name}
           expanded={expanded}
           setExpanded={setExpanded}
-          onClose={() => { reset(); closeNewProject(); }}
+          onClose={() => {
+            reset();
+            closeNewProject();
+          }}
         />
 
         <div className="px-4 pt-4 pb-2 shrink-0">
@@ -149,7 +184,10 @@ export function NewProjectDialog() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Tab" && !e.shiftKey) { e.preventDefault(); descriptionEditorRef.current?.focus(); }
+              if (e.key === "Tab" && !e.shiftKey) {
+                e.preventDefault();
+                descriptionEditorRef.current?.focus();
+              }
             }}
             autoFocus
           />
@@ -191,9 +229,7 @@ export function NewProjectDialog() {
         />
 
         <div className="flex items-center justify-between px-4 py-2.5 border-t border-border">
-          {createProject.isError ? (
-            <p className="text-xs text-destructive">Failed to create project.</p>
-          ) : ( <span /> )}
+          {createProject.isError ? <p className="text-xs text-destructive">Failed to create project.</p> : <span />}
           <Button size="sm" disabled={!name.trim() || createProject.isPending} onClick={handleSubmit}>
             {createProject.isPending ? "Creating\u2026" : "Create project"}
           </Button>

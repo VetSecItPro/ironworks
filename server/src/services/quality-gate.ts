@@ -6,12 +6,12 @@
  * examples in agent memory for future reference.
  */
 
-import { eq, and, desc, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import { approvals, agentMemoryEntries, issues } from "@ironworksai/db";
+import { agentMemoryEntries, approvals, issues } from "@ironworksai/db";
+import { and, desc, eq, sql } from "drizzle-orm";
+import { logger } from "../middleware/logger.js";
 import { validateConfidenceTags } from "./confidence-tags.js";
 import { recordCompletion } from "./workflow-maturity.js";
-import { logger } from "../middleware/logger.js";
 
 export interface QualityGateScore {
   qualityScore: number;
@@ -53,14 +53,8 @@ export async function createQualityGateReview(
  *   - confidenceTagScore (0-3): Are confidence tags present and well-distributed?
  *   - actionabilityScore (0-3): Is the output actionable (has clear next steps, deliverables)?
  */
-export async function evaluateQualityGate(
-  db: Db,
-  approvalId: string,
-): Promise<QualityGateScore> {
-  const [approval] = await db
-    .select()
-    .from(approvals)
-    .where(eq(approvals.id, approvalId));
+export async function evaluateQualityGate(db: Db, approvalId: string): Promise<QualityGateScore> {
+  const [approval] = await db.select().from(approvals).where(eq(approvals.id, approvalId));
 
   if (!approval) {
     throw new Error(`Approval ${approvalId} not found`);
@@ -71,10 +65,7 @@ export async function evaluateQualityGate(
   const notes: string[] = [];
 
   // Fetch the issue for context
-  const [issue] = await db
-    .select()
-    .from(issues)
-    .where(eq(issues.id, issueId));
+  const [issue] = await db.select().from(issues).where(eq(issues.id, issueId));
 
   // 1. Spec match (0-4)
   let specMatch = 2; // Default: neutral if no spec
@@ -118,9 +109,7 @@ export async function evaluateQualityGate(
 
   const qualityScore = specMatch + confidenceTagScore + actionabilityScore;
   const verdict: "pass" | "fail" | "pass_with_notes" =
-    qualityScore >= 8 ? "pass" :
-    qualityScore >= 5 ? "pass_with_notes" :
-    "fail";
+    qualityScore >= 8 ? "pass" : qualityScore >= 5 ? "pass_with_notes" : "fail";
 
   return {
     qualityScore,
@@ -188,10 +177,7 @@ export async function recordQualityExample(
  * REQ-03: Retrieve recent quality examples for heartbeat context injection.
  * Returns 3 good + 3 bad examples (most recent first).
  */
-export async function getQualityExamples(
-  db: Db,
-  agentId: string,
-): Promise<{ good: string[]; bad: string[] }> {
+export async function getQualityExamples(db: Db, agentId: string): Promise<{ good: string[]; bad: string[] }> {
   const goodExamples = await db
     .select({ content: agentMemoryEntries.content })
     .from(agentMemoryEntries)
@@ -237,10 +223,7 @@ export async function resolveQualityGate(
   const score = await evaluateQualityGate(db, approvalId);
 
   // Get approval details
-  const [approval] = await db
-    .select()
-    .from(approvals)
-    .where(eq(approvals.id, approvalId));
+  const [approval] = await db.select().from(approvals).where(eq(approvals.id, approvalId));
 
   if (!approval) throw new Error(`Approval ${approvalId} not found`);
 

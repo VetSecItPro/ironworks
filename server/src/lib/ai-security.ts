@@ -81,14 +81,7 @@ export const generatedPlaybookSchema = z.object({
   name: z.string().min(1).max(200),
   description: z.string().min(1).max(500),
   body: z.string().min(1).max(5000),
-  category: z.enum([
-    "onboarding",
-    "security",
-    "engineering",
-    "operations",
-    "marketing",
-    "custom",
-  ]),
+  category: z.enum(["onboarding", "security", "engineering", "operations", "marketing", "custom"]),
   steps: z.array(playbookStepSchema).min(1).max(20),
 });
 

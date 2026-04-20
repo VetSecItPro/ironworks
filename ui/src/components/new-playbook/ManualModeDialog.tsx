@@ -1,7 +1,5 @@
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +8,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "../../lib/utils";
 import type { StepDraft } from "./playbook-types";
 import { CATEGORIES, emptyStep } from "./playbook-types";
@@ -52,9 +52,7 @@ export function ManualModeDialog({
   }
 
   function updateStep(idx: number, field: keyof StepDraft, value: string | boolean) {
-    setSteps((prev) =>
-      prev.map((s, i) => (i === idx ? { ...s, [field]: value } : s)),
-    );
+    setSteps((prev) => prev.map((s, i) => (i === idx ? { ...s, [field]: value } : s)));
   }
 
   return (
@@ -62,9 +60,7 @@ export function ManualModeDialog({
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create Playbook</DialogTitle>
-          <DialogDescription>
-            Define your multi-agent workflow step by step.
-          </DialogDescription>
+          <DialogDescription>Define your multi-agent workflow step by step.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">

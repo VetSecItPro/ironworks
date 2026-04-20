@@ -1,8 +1,8 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { issueRoutes } from "../routes/issues.js";
 import { errorHandler } from "../middleware/index.js";
+import { issueRoutes } from "../routes/issues.js";
 
 const mockIssueService = vi.hoisted(() => ({
   getById: vi.fn(),
@@ -149,9 +149,7 @@ describe("issue goal context routes", () => {
       updatedAt: new Date("2026-03-20T00:00:00Z"),
     });
     mockProjectService.listByIds.mockResolvedValue([]);
-    mockGoalService.getById.mockImplementation(async (id: string) =>
-      id === projectGoal.id ? projectGoal : null,
-    );
+    mockGoalService.getById.mockImplementation(async (id: string) => (id === projectGoal.id ? projectGoal : null));
     mockGoalService.getDefaultCompanyGoal.mockResolvedValue(null);
   });
 
@@ -170,9 +168,7 @@ describe("issue goal context routes", () => {
   });
 
   it("surfaces the project goal from GET /issues/:id/heartbeat-context", async () => {
-    const res = await request(createApp()).get(
-      "/api/issues/11111111-1111-4111-8111-111111111111/heartbeat-context",
-    );
+    const res = await request(createApp()).get("/api/issues/11111111-1111-4111-8111-111111111111/heartbeat-context");
 
     expect(res.status).toBe(200);
     expect(res.body.issue.goalId).toBe(projectGoal.id);

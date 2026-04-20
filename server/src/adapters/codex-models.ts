@@ -1,6 +1,6 @@
-import type { AdapterModel } from "./types.js";
 import { models as codexFallbackModels } from "@ironworksai/adapter-codex-local";
 import { readConfigFile } from "../config-file.js";
+import type { AdapterModel } from "./types.js";
 
 const OPENAI_MODELS_ENDPOINT = "https://api.openai.com/v1/models";
 const OPENAI_MODELS_TIMEOUT_MS = 5000;
@@ -25,10 +25,9 @@ function dedupeModels(models: AdapterModel[]): AdapterModel[] {
 }
 
 function mergedWithFallback(models: AdapterModel[]): AdapterModel[] {
-  return dedupeModels([
-    ...models,
-    ...codexFallbackModels,
-  ]).sort((a, b) => a.id.localeCompare(b.id, "en", { numeric: true, sensitivity: "base" }));
+  return dedupeModels([...models, ...codexFallbackModels]).sort((a, b) =>
+    a.id.localeCompare(b.id, "en", { numeric: true, sensitivity: "base" }),
+  );
 }
 
 function resolveOpenAiApiKey(): string | null {

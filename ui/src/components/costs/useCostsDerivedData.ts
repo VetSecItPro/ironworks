@@ -1,5 +1,11 @@
+import type {
+  CostByBiller,
+  CostByProviderModel,
+  CostWindowSpendRow,
+  ProviderQuotaResult,
+  QuotaWindow,
+} from "@ironworksai/shared";
 import { useEffect, useMemo, useState } from "react";
-import type { CostByProviderModel, CostByBiller, CostWindowSpendRow, ProviderQuotaResult, QuotaWindow } from "@ironworksai/shared";
 import type { DatePreset } from "../../hooks/useDateRange";
 
 interface UseCostsDerivedDataParams {
@@ -105,7 +111,10 @@ export function useCostsDerivedData({
       const providerCostCents = rows.reduce((sum, row) => sum + row.costCents, 0);
       const providerShare = totalSpend > 0 ? providerCostCents / totalSpend : 0;
       const providerBudget = budget * providerShare;
-      if (providerBudget <= 0) { map.set(providerKey, false); continue; }
+      if (providerBudget <= 0) {
+        map.set(providerKey, false);
+        continue;
+      }
       const burnRate = providerCostCents / Math.max(daysElapsed, 1);
       map.set(providerKey, providerCostCents + burnRate * (daysInMonth - daysElapsed) > providerBudget);
     }
@@ -116,10 +125,14 @@ export function useCostsDerivedData({
   const billers = useMemo(() => Array.from(byBiller.keys()), [byBiller]);
 
   const effectiveProvider = activeProvider === "all" || providers.includes(activeProvider) ? activeProvider : "all";
-  useEffect(() => { if (effectiveProvider !== activeProvider) setActiveProvider("all"); }, [effectiveProvider, activeProvider]);
+  useEffect(() => {
+    if (effectiveProvider !== activeProvider) setActiveProvider("all");
+  }, [effectiveProvider, activeProvider]);
 
   const effectiveBiller = activeBiller === "all" || billers.includes(activeBiller) ? activeBiller : "all";
-  useEffect(() => { if (effectiveBiller !== activeBiller) setActiveBiller("all"); }, [effectiveBiller, activeBiller]);
+  useEffect(() => {
+    if (effectiveBiller !== activeBiller) setActiveBiller("all");
+  }, [effectiveBiller, activeBiller]);
 
   return {
     byProvider,

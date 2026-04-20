@@ -1,30 +1,18 @@
 import type { CompanyPortabilityFileEntry } from "@ironworksai/shared";
 import { Package } from "lucide-react";
+import { getPortableFileDataUrl, getPortableFileText, isPortableImageFile } from "../../lib/portable-files";
+import { cn } from "../../lib/utils";
 import { EmptyState } from "../EmptyState";
 import { MarkdownBody } from "../MarkdownBody";
-import { cn } from "../../lib/utils";
-import { getPortableFileDataUrl, getPortableFileText, isPortableImageFile } from "../../lib/portable-files";
-import {
-  type FrontmatterData,
-  parseFrontmatter,
-  FRONTMATTER_FIELD_LABELS,
-} from "../PackageFileTree";
+import { FRONTMATTER_FIELD_LABELS, type FrontmatterData, parseFrontmatter } from "../PackageFileTree";
 
-function FrontmatterCard({
-  data,
-  onSkillClick,
-}: {
-  data: FrontmatterData;
-  onSkillClick?: (skill: string) => void;
-}) {
+function FrontmatterCard({ data, onSkillClick }: { data: FrontmatterData; onSkillClick?: (skill: string) => void }) {
   return (
     <div className="rounded-md border border-border bg-accent/20 px-4 py-3 mb-4">
       <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-sm">
         {Object.entries(data).map(([key, value]) => (
           <div key={key} className="contents">
-            <dt className="text-muted-foreground whitespace-nowrap py-0.5">
-              {FRONTMATTER_FIELD_LABELS[key] ?? key}
-            </dt>
+            <dt className="text-muted-foreground whitespace-nowrap py-0.5">{FRONTMATTER_FIELD_LABELS[key] ?? key}</dt>
             <dd className="py-0.5">
               {Array.isArray(value) ? (
                 <div className="flex flex-wrap gap-1.5">
@@ -34,7 +22,9 @@ function FrontmatterCard({
                       type="button"
                       className={cn(
                         "inline-flex items-center rounded-md border border-border bg-background px-2 py-0.5 text-xs",
-                        key === "skills" && onSkillClick && "cursor-pointer hover:bg-accent/50 hover:border-foreground/30 transition-colors",
+                        key === "skills" &&
+                          onSkillClick &&
+                          "cursor-pointer hover:bg-accent/50 hover:border-foreground/30 transition-colors",
                       )}
                       onClick={() => key === "skills" && onSkillClick?.(item)}
                     >
@@ -65,9 +55,7 @@ export function ExportPreviewPane({
   onSkillClick?: (skill: string) => void;
 }) {
   if (!selectedFile || content === null) {
-    return (
-      <EmptyState icon={Package} message="Select a file to preview its contents." />
-    );
+    return <EmptyState icon={Package} message="Select a file to preview its contents." />;
   }
 
   const textContent = getPortableFileText(content);

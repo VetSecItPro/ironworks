@@ -1,18 +1,10 @@
-import { useState, useEffect } from "react";
-import { Link } from "@/lib/router";
 import { useQuery } from "@tanstack/react-query";
+import { BookText, Bot, CircleDot, DollarSign, LayoutDashboard, Wand2, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Link } from "@/lib/router";
 import { authApi } from "../api/auth";
 import { queryKeys } from "../lib/queryKeys";
-import { Button } from "@/components/ui/button";
-import {
-  LayoutDashboard,
-  CircleDot,
-  Bot,
-  BookText,
-  DollarSign,
-  X,
-  Wand2,
-} from "lucide-react";
 
 const STEPS = [
   {
@@ -104,9 +96,7 @@ export function WelcomeBanner() {
           >
             <step.icon className="h-4 w-4 text-muted-foreground group-hover:text-foreground mb-2 transition-colors" />
             <div className="text-xs font-medium">{step.title}</div>
-            <div className="text-[11px] text-muted-foreground leading-relaxed mt-1">
-              {step.description}
-            </div>
+            <div className="text-[11px] text-muted-foreground leading-relaxed mt-1">{step.description}</div>
           </Link>
         ))}
       </div>

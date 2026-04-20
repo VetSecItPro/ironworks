@@ -1,5 +1,5 @@
-import { Link } from "@/lib/router";
 import { Zap } from "lucide-react";
+import { Link } from "@/lib/router";
 import { formatCents } from "../../lib/utils";
 
 interface ImpactMetrics {
@@ -27,11 +27,13 @@ export function WorkforceImpactSection({
           <Zap className="h-3.5 w-3.5" aria-hidden="true" />
           AI Workforce Impact
         </h4>
-        <Link to="/performance" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Details</Link>
+        <Link to="/performance" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+          Details
+        </Link>
       </div>
       <p className="text-sm text-foreground">
-        Your {agentCount} agents completed{" "}
-        <span className="font-semibold">{impactMetrics.doneThisWeek}</span> tasks this week
+        Your {agentCount} agents completed <span className="font-semibold">{impactMetrics.doneThisWeek}</span> tasks
+        this week
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="space-y-0.5">

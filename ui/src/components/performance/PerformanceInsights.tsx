@@ -1,6 +1,6 @@
+import { AlertTriangle, CheckCircle2, Lightbulb } from "lucide-react";
 import { useMemo } from "react";
 import { Link } from "@/lib/router";
-import { AlertTriangle, CheckCircle2, Lightbulb } from "lucide-react";
 import { cn, formatCents } from "../../lib/utils";
 import type { AgentPerfRow } from "./ratingUtils";
 
@@ -16,16 +16,9 @@ interface Insight {
 function generateInsights(rows: AgentPerfRow[]): Insight[] {
   const insights: Insight[] = [];
   const withTasks = rows.filter((r) => r.tasksDone > 0);
-  const avgCost =
-    withTasks.length > 0
-      ? withTasks.reduce((s, r) => s + (r.costPerTask ?? 0), 0) /
-        withTasks.length
-      : 0;
+  const avgCost = withTasks.length > 0 ? withTasks.reduce((s, r) => s + (r.costPerTask ?? 0), 0) / withTasks.length : 0;
   const avgClose = withTasks.filter((r) => r.avgCloseH !== null);
-  const avgCloseH =
-    avgClose.length > 0
-      ? avgClose.reduce((s, r) => s + r.avgCloseH!, 0) / avgClose.length
-      : 0;
+  const avgCloseH = avgClose.length > 0 ? avgClose.reduce((s, r) => s + r.avgCloseH!, 0) / avgClose.length : 0;
 
   const anyTasksDone = rows.some((r) => r.tasksDone > 0);
   if (!anyTasksDone && rows.length > 0) {
@@ -68,11 +61,7 @@ function generateInsights(rows: AgentPerfRow[]): Insight[] {
       continue;
     }
 
-    if (
-      row.costPerTask !== null &&
-      avgCost > 0 &&
-      row.costPerTask > avgCost * 2
-    ) {
+    if (row.costPerTask !== null && avgCost > 0 && row.costPerTask > avgCost * 2) {
       insights.push({
         type: "suggestion",
         agent: row.name,
@@ -83,11 +72,7 @@ function generateInsights(rows: AgentPerfRow[]): Insight[] {
       });
     }
 
-    if (
-      row.avgCloseH !== null &&
-      avgCloseH > 0 &&
-      row.avgCloseH > avgCloseH * 2
-    ) {
+    if (row.avgCloseH !== null && avgCloseH > 0 && row.avgCloseH > avgCloseH * 2) {
       insights.push({
         type: "suggestion",
         agent: row.name,
@@ -138,8 +123,7 @@ export function PerformanceInsights({ rows }: { rows: AgentPerfRow[] }) {
       </h4>
       {insights.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          No insights yet. Insights will appear as agents complete tasks and
-          build up performance history.
+          No insights yet. Insights will appear as agents complete tasks and build up performance history.
         </p>
       ) : (
         <div className="space-y-2">
@@ -148,15 +132,9 @@ export function PerformanceInsights({ rows }: { rows: AgentPerfRow[] }) {
               key={`${insight.agent}-${i}`}
               className="flex items-start gap-2.5 rounded-lg border border-border/60 bg-muted/20 px-3 py-2.5 text-sm"
             >
-              {insight.type === "warning" && (
-                <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-red-400" />
-              )}
-              {insight.type === "suggestion" && (
-                <Lightbulb className="h-4 w-4 shrink-0 mt-0.5 text-amber-400" />
-              )}
-              {insight.type === "positive" && (
-                <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-emerald-400" />
-              )}
+              {insight.type === "warning" && <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-red-400" />}
+              {insight.type === "suggestion" && <Lightbulb className="h-4 w-4 shrink-0 mt-0.5 text-amber-400" />}
+              {insight.type === "positive" && <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5 text-emerald-400" />}
               <div className="flex-1 min-w-0">
                 <span className="text-muted-foreground">{insight.message}</span>
                 <span className="mx-1.5 text-border">·</span>
@@ -164,12 +142,9 @@ export function PerformanceInsights({ rows }: { rows: AgentPerfRow[] }) {
                   to={insight.actionHref}
                   className={cn(
                     "text-xs font-medium underline underline-offset-2 transition-colors",
-                    insight.type === "warning" &&
-                      "text-red-400 hover:text-red-300",
-                    insight.type === "suggestion" &&
-                      "text-amber-400 hover:text-amber-300",
-                    insight.type === "positive" &&
-                      "text-emerald-400 hover:text-emerald-300",
+                    insight.type === "warning" && "text-red-400 hover:text-red-300",
+                    insight.type === "suggestion" && "text-amber-400 hover:text-amber-300",
+                    insight.type === "positive" && "text-emerald-400 hover:text-emerald-300",
                   )}
                 >
                   {insight.actionLabel} &rarr;

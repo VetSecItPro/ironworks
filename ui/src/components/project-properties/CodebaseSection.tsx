@@ -1,9 +1,9 @@
-import { useState } from "react";
 import type { Project } from "@ironworksai/shared";
-import { cn } from "../../lib/utils";
+import { ExternalLink, Github, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ExternalLink, Github, Trash2 } from "lucide-react";
+import { cn } from "../../lib/utils";
 import { ChoosePathButton } from "../PathInstructionsModal";
 
 interface CodebaseSectionProps {
@@ -192,7 +192,8 @@ export function CodebaseSection({
 
         {hasAdditionalLegacyWorkspaces && (
           <div className="text-[11px] text-muted-foreground">
-            Additional legacy workspace records exist on this project. Ironworks is using the primary workspace as the codebase view.
+            Additional legacy workspace records exist on this project. Ironworks is using the primary workspace as the
+            codebase view.
           </div>
         )}
 
@@ -221,11 +222,16 @@ export function CodebaseSection({
                   </div>
                   <div className="text-[11px] text-muted-foreground">
                     {service.url ? (
-                      <a href={service.url} target="_blank" rel="noreferrer" className="hover:text-foreground hover:underline">
+                      <a
+                        href={service.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="hover:text-foreground hover:underline"
+                      >
                         {service.url}
                       </a>
                     ) : (
-                      service.command ?? "No URL"
+                      (service.command ?? "No URL")
                     )}
                   </div>
                 </div>
@@ -248,10 +254,25 @@ export function CodebaseSection({
             <ChoosePathButton />
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="xs" className="h-6 px-2" disabled={(!workspaceCwd.trim() && !primaryCodebaseWorkspace) || createPending || updatePending} onClick={onSubmitLocal}>
+            <Button
+              variant="outline"
+              size="xs"
+              className="h-6 px-2"
+              disabled={(!workspaceCwd.trim() && !primaryCodebaseWorkspace) || createPending || updatePending}
+              onClick={onSubmitLocal}
+            >
               Save
             </Button>
-            <Button variant="ghost" size="xs" className="h-6 px-2" onClick={() => { onSetWorkspaceMode(null); onSetWorkspaceCwd(""); onSetWorkspaceError(null); }}>
+            <Button
+              variant="ghost"
+              size="xs"
+              className="h-6 px-2"
+              onClick={() => {
+                onSetWorkspaceMode(null);
+                onSetWorkspaceCwd("");
+                onSetWorkspaceError(null);
+              }}
+            >
               Cancel
             </Button>
           </div>
@@ -267,10 +288,25 @@ export function CodebaseSection({
             placeholder="https://github.com/org/repo"
           />
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="xs" className="h-6 px-2" disabled={(!workspaceRepoUrl.trim() && !primaryCodebaseWorkspace) || createPending || updatePending} onClick={onSubmitRepo}>
+            <Button
+              variant="outline"
+              size="xs"
+              className="h-6 px-2"
+              disabled={(!workspaceRepoUrl.trim() && !primaryCodebaseWorkspace) || createPending || updatePending}
+              onClick={onSubmitRepo}
+            >
               Save
             </Button>
-            <Button variant="ghost" size="xs" className="h-6 px-2" onClick={() => { onSetWorkspaceMode(null); onSetWorkspaceRepoUrl(""); onSetWorkspaceError(null); }}>
+            <Button
+              variant="ghost"
+              size="xs"
+              className="h-6 px-2"
+              onClick={() => {
+                onSetWorkspaceMode(null);
+                onSetWorkspaceRepoUrl("");
+                onSetWorkspaceError(null);
+              }}
+            >
               Cancel
             </Button>
           </div>

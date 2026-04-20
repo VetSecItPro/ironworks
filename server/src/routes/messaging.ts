@@ -1,17 +1,16 @@
-import { Router } from "express";
 import type { Db } from "@ironworksai/db";
-import { assertBoard, assertCompanyAccess } from "./authz.js";
-import { logActivity, secretService } from "../services/index.js";
-import { logger } from "../middleware/logger.js";
-import { messagingBridgeService } from "../services/messaging-bridges.js";
+import { Router } from "express";
+import { getCompanyEmailAddress, handleInboundEmail } from "../bridges/email.js";
 import {
-  testTelegramToken,
+  isTelegramBridgeRunning,
   startTelegramBridge,
   stopTelegramBridge,
-  isTelegramBridgeRunning,
+  testTelegramToken,
 } from "../bridges/telegram.js";
-import { handleInboundEmail, getCompanyEmailAddress } from "../bridges/email.js";
-import { companyService } from "../services/index.js";
+import { logger } from "../middleware/logger.js";
+import { companyService, logActivity, secretService } from "../services/index.js";
+import { messagingBridgeService } from "../services/messaging-bridges.js";
+import { assertBoard, assertCompanyAccess } from "./authz.js";
 
 export function messagingRoutes(db: Db) {
   const router = Router();
@@ -79,12 +78,16 @@ export function messagingRoutes(db: Db) {
         value: token.trim(),
       });
     } else {
-      secret = await secretSvc.create(companyId, {
-        name: "TELEGRAM_BOT_TOKEN",
-        provider: "local_encrypted",
-        value: token.trim(),
-        description: `Telegram bot token (@${botUsername})`,
-      }, { userId: req.actor.userId ?? "board", agentId: null });
+      secret = await secretSvc.create(
+        companyId,
+        {
+          name: "TELEGRAM_BOT_TOKEN",
+          provider: "local_encrypted",
+          value: token.trim(),
+          description: `Telegram bot token (@${botUsername})`,
+        },
+        { userId: req.actor.userId ?? "board", agentId: null },
+      );
     }
 
     // Upsert bridge config

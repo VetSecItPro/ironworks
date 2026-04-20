@@ -1,24 +1,32 @@
-import { useEffect, useRef, useState, useMemo, useCallback } from "react";
-import { useNavigate } from "@/lib/router";
+import { AGENT_ROLE_LABELS, type Agent, type Issue } from "@ironworksai/shared";
 import { useQuery } from "@tanstack/react-query";
+import { Network } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "@/lib/router";
 import { agentsApi, type OrgNode } from "../api/agents";
-import { issuesApi } from "../api/issues";
-import { hiringApi } from "../api/hiring";
 import { expertiseMapApi } from "../api/expertiseMap";
-import { useCompany } from "../context/CompanyContext";
+import { hiringApi } from "../api/hiring";
+import { issuesApi } from "../api/issues";
+import { EmptyState } from "../components/EmptyState";
+import {
+  CARD_W,
+  collectEdges,
+  flattenLayout,
+  type LayoutNode,
+  layoutForest,
+  OrgChartCard,
+  OrgChartMinimap,
+  OrgChartSvgLayer,
+  OrgChartToolbar,
+  OrgChartVacantPositions,
+  OrgChartZoomControls,
+  PADDING,
+} from "../components/org-chart";
+import { PageSkeleton } from "../components/PageSkeleton";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { useCompany } from "../context/CompanyContext";
 import { queryKeys } from "../lib/queryKeys";
 import { agentUrl } from "../lib/utils";
-import { EmptyState } from "../components/EmptyState";
-import { PageSkeleton } from "../components/PageSkeleton";
-import { Network } from "lucide-react";
-import { AGENT_ROLE_LABELS, type Agent, type Issue } from "@ironworksai/shared";
-import {
-  layoutForest, flattenLayout, collectEdges, CARD_W, PADDING,
-  OrgChartCard, OrgChartSvgLayer, OrgChartMinimap,
-  OrgChartToolbar, OrgChartZoomControls, OrgChartVacantPositions,
-  type LayoutNode,
-} from "../components/org-chart";
 
 const CARD_H = 130;
 
@@ -29,35 +37,159 @@ function roleLabel(role: string): string {
 
 // Mock data for local dev preview when no agents exist
 const MOCK_ORG: OrgNode[] = [
-  { id: "m-ceo", name: "CEO", role: "ceo", status: "active", reports: [
-    { id: "m-cto", name: "CTO", role: "cto", status: "active", reports: [
-      { id: "m-eng", name: "SeniorEngineer", role: "engineer", status: "active", reports: [] },
-      { id: "m-devops", name: "DevOpsEngineer", role: "engineer", status: "active", reports: [] },
-      { id: "m-sec", name: "SecurityEngineer", role: "engineer", status: "active", reports: [] },
-    ]},
-    { id: "m-cfo", name: "CFO", role: "cfo", status: "active", reports: [] },
-    { id: "m-cmo", name: "CMO", role: "cmo", status: "active", reports: [
-      { id: "m-content", name: "ContentMarketer", role: "marketer", status: "active", reports: [] },
-    ]},
-    { id: "m-vphr", name: "VPofHR", role: "director", status: "active", reports: [] },
-    { id: "m-legal", name: "LegalCounsel", role: "director", status: "active", reports: [] },
-    { id: "m-comp", name: "ComplianceDirector", role: "director", status: "active", reports: [] },
-    { id: "m-ux", name: "UXDesigner", role: "designer", status: "idle", reports: [] },
-  ]},
+  {
+    id: "m-ceo",
+    name: "CEO",
+    role: "ceo",
+    status: "active",
+    reports: [
+      {
+        id: "m-cto",
+        name: "CTO",
+        role: "cto",
+        status: "active",
+        reports: [
+          { id: "m-eng", name: "SeniorEngineer", role: "engineer", status: "active", reports: [] },
+          { id: "m-devops", name: "DevOpsEngineer", role: "engineer", status: "active", reports: [] },
+          { id: "m-sec", name: "SecurityEngineer", role: "engineer", status: "active", reports: [] },
+        ],
+      },
+      { id: "m-cfo", name: "CFO", role: "cfo", status: "active", reports: [] },
+      {
+        id: "m-cmo",
+        name: "CMO",
+        role: "cmo",
+        status: "active",
+        reports: [{ id: "m-content", name: "ContentMarketer", role: "marketer", status: "active", reports: [] }],
+      },
+      { id: "m-vphr", name: "VPofHR", role: "director", status: "active", reports: [] },
+      { id: "m-legal", name: "LegalCounsel", role: "director", status: "active", reports: [] },
+      { id: "m-comp", name: "ComplianceDirector", role: "director", status: "active", reports: [] },
+      { id: "m-ux", name: "UXDesigner", role: "designer", status: "idle", reports: [] },
+    ],
+  },
 ];
 const MOCK_AGENTS: Agent[] = [
-  { id: "m-ceo", name: "CEO", role: "ceo", title: "Chief Executive Officer", status: "active", icon: "crown", adapterType: "ollama_cloud", adapterConfig: { model: "kimi-k2.5" } },
-  { id: "m-cto", name: "CTO", role: "cto", title: "Chief Technology Officer", status: "active", icon: "code", adapterType: "ollama_cloud", adapterConfig: { model: "deepseek-v3.2" } },
-  { id: "m-cfo", name: "CFO", role: "cfo", title: "Chief Financial Officer", status: "active", icon: "dollar-sign", adapterType: "ollama_cloud", adapterConfig: { model: "deepseek-v3.2" } },
-  { id: "m-cmo", name: "CMO", role: "cmo", title: "Chief Marketing Officer", status: "active", icon: "megaphone", adapterType: "ollama_cloud", adapterConfig: { model: "kimi-k2.5" } },
-  { id: "m-vphr", name: "VPofHR", role: "director", title: "VP of Human Resources", status: "active", icon: "users", adapterType: "ollama_cloud", adapterConfig: { model: "qwen3.5:397b" } },
-  { id: "m-legal", name: "LegalCounsel", role: "director", title: "Legal Counsel", status: "active", icon: "gavel", adapterType: "ollama_cloud", adapterConfig: { model: "deepseek-v3.2" } },
-  { id: "m-comp", name: "ComplianceDirector", role: "director", title: "Compliance Director", status: "active", icon: "scale", adapterType: "ollama_cloud", adapterConfig: { model: "deepseek-v3.2" } },
-  { id: "m-eng", name: "SeniorEngineer", role: "engineer", title: "Senior Full-Stack Engineer", status: "active", icon: "terminal", adapterType: "ollama_cloud", adapterConfig: { model: "deepseek-v3.2" } },
-  { id: "m-devops", name: "DevOpsEngineer", role: "engineer", title: "DevOps & Infrastructure Engineer", status: "active", icon: "server", adapterType: "ollama_cloud", adapterConfig: { model: "deepseek-v3.2" } },
-  { id: "m-sec", name: "SecurityEngineer", role: "engineer", title: "Application Security Engineer", status: "active", icon: "shield", adapterType: "ollama_cloud", adapterConfig: { model: "deepseek-v3.2" } },
-  { id: "m-ux", name: "UXDesigner", role: "designer", title: "UX Designer", status: "idle", icon: "palette", adapterType: "ollama_cloud", adapterConfig: { model: "kimi-k2.5" } },
-  { id: "m-content", name: "ContentMarketer", role: "marketer", title: "Content Marketer", status: "active", icon: "pen-line", adapterType: "ollama_cloud", adapterConfig: { model: "qwen3.5:397b" } },
+  {
+    id: "m-ceo",
+    name: "CEO",
+    role: "ceo",
+    title: "Chief Executive Officer",
+    status: "active",
+    icon: "crown",
+    adapterType: "ollama_cloud",
+    adapterConfig: { model: "kimi-k2.5" },
+  },
+  {
+    id: "m-cto",
+    name: "CTO",
+    role: "cto",
+    title: "Chief Technology Officer",
+    status: "active",
+    icon: "code",
+    adapterType: "ollama_cloud",
+    adapterConfig: { model: "deepseek-v3.2" },
+  },
+  {
+    id: "m-cfo",
+    name: "CFO",
+    role: "cfo",
+    title: "Chief Financial Officer",
+    status: "active",
+    icon: "dollar-sign",
+    adapterType: "ollama_cloud",
+    adapterConfig: { model: "deepseek-v3.2" },
+  },
+  {
+    id: "m-cmo",
+    name: "CMO",
+    role: "cmo",
+    title: "Chief Marketing Officer",
+    status: "active",
+    icon: "megaphone",
+    adapterType: "ollama_cloud",
+    adapterConfig: { model: "kimi-k2.5" },
+  },
+  {
+    id: "m-vphr",
+    name: "VPofHR",
+    role: "director",
+    title: "VP of Human Resources",
+    status: "active",
+    icon: "users",
+    adapterType: "ollama_cloud",
+    adapterConfig: { model: "qwen3.5:397b" },
+  },
+  {
+    id: "m-legal",
+    name: "LegalCounsel",
+    role: "director",
+    title: "Legal Counsel",
+    status: "active",
+    icon: "gavel",
+    adapterType: "ollama_cloud",
+    adapterConfig: { model: "deepseek-v3.2" },
+  },
+  {
+    id: "m-comp",
+    name: "ComplianceDirector",
+    role: "director",
+    title: "Compliance Director",
+    status: "active",
+    icon: "scale",
+    adapterType: "ollama_cloud",
+    adapterConfig: { model: "deepseek-v3.2" },
+  },
+  {
+    id: "m-eng",
+    name: "SeniorEngineer",
+    role: "engineer",
+    title: "Senior Full-Stack Engineer",
+    status: "active",
+    icon: "terminal",
+    adapterType: "ollama_cloud",
+    adapterConfig: { model: "deepseek-v3.2" },
+  },
+  {
+    id: "m-devops",
+    name: "DevOpsEngineer",
+    role: "engineer",
+    title: "DevOps & Infrastructure Engineer",
+    status: "active",
+    icon: "server",
+    adapterType: "ollama_cloud",
+    adapterConfig: { model: "deepseek-v3.2" },
+  },
+  {
+    id: "m-sec",
+    name: "SecurityEngineer",
+    role: "engineer",
+    title: "Application Security Engineer",
+    status: "active",
+    icon: "shield",
+    adapterType: "ollama_cloud",
+    adapterConfig: { model: "deepseek-v3.2" },
+  },
+  {
+    id: "m-ux",
+    name: "UXDesigner",
+    role: "designer",
+    title: "UX Designer",
+    status: "idle",
+    icon: "palette",
+    adapterType: "ollama_cloud",
+    adapterConfig: { model: "kimi-k2.5" },
+  },
+  {
+    id: "m-content",
+    name: "ContentMarketer",
+    role: "marketer",
+    title: "Content Marketer",
+    status: "active",
+    icon: "pen-line",
+    adapterType: "ollama_cloud",
+    adapterConfig: { model: "qwen3.5:397b" },
+  },
 ] as unknown as Agent[];
 
 export function OrgChart() {
@@ -105,8 +237,8 @@ export function OrgChart() {
   }, [skillMap]);
 
   const useMockData = !orgTree || orgTree.length === 0;
-  const effectiveOrg = useMockData ? MOCK_ORG : orgTree ?? [];
-  const effectiveAgents = useMockData ? MOCK_AGENTS : agents ?? [];
+  const effectiveOrg = useMockData ? MOCK_ORG : (orgTree ?? []);
+  const effectiveAgents = useMockData ? MOCK_AGENTS : (agents ?? []);
 
   const agentMap = useMemo(() => {
     const m = new Map<string, Agent>();
@@ -161,7 +293,8 @@ export function OrgChart() {
 
   const bounds = useMemo(() => {
     if (allNodes.length === 0) return { width: 800, height: 600 };
-    let maxX = 0, maxY = 0;
+    let maxX = 0,
+      maxY = 0;
     for (const n of allNodes) {
       maxX = Math.max(maxX, n.x + CARD_W);
       maxY = Math.max(maxY, n.y + CARD_H);
@@ -191,36 +324,47 @@ export function OrgChart() {
     setPan({ x: (containerW - chartW) / 2, y: (containerH - chartH) / 2 });
   }, [allNodes, bounds]);
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (e.button !== 0) return;
-    const target = e.target as HTMLElement;
-    if (target.closest("[data-org-card]")) return;
-    setDragging(true);
-    dragStart.current = { x: e.clientX, y: e.clientY, panX: pan.x, panY: pan.y };
-  }, [pan]);
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.button !== 0) return;
+      const target = e.target as HTMLElement;
+      if (target.closest("[data-org-card]")) return;
+      setDragging(true);
+      dragStart.current = { x: e.clientX, y: e.clientY, panX: pan.x, panY: pan.y };
+    },
+    [pan],
+  );
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!dragging) return;
-    const dx = e.clientX - dragStart.current.x;
-    const dy = e.clientY - dragStart.current.y;
-    setPan({ x: dragStart.current.panX + dx, y: dragStart.current.panY + dy });
-  }, [dragging]);
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (!dragging) return;
+      const dx = e.clientX - dragStart.current.x;
+      const dy = e.clientY - dragStart.current.y;
+      setPan({ x: dragStart.current.panX + dx, y: dragStart.current.panY + dy });
+    },
+    [dragging],
+  );
 
-  const handleMouseUp = useCallback(() => { setDragging(false); }, []);
+  const handleMouseUp = useCallback(() => {
+    setDragging(false);
+  }, []);
 
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault();
-    const container = containerRef.current;
-    if (!container) return;
-    const rect = container.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-    const factor = e.deltaY < 0 ? 1.1 : 0.9;
-    const newZoom = Math.min(Math.max(zoom * factor, 0.2), 2);
-    const scale = newZoom / zoom;
-    setPan({ x: mouseX - scale * (mouseX - pan.x), y: mouseY - scale * (mouseY - pan.y) });
-    setZoom(newZoom);
-  }, [zoom, pan]);
+  const handleWheel = useCallback(
+    (e: React.WheelEvent) => {
+      e.preventDefault();
+      const container = containerRef.current;
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+      const factor = e.deltaY < 0 ? 1.1 : 0.9;
+      const newZoom = Math.min(Math.max(zoom * factor, 0.2), 2);
+      const scale = newZoom / zoom;
+      setPan({ x: mouseX - scale * (mouseX - pan.x), y: mouseY - scale * (mouseY - pan.y) });
+      setZoom(newZoom);
+    },
+    [zoom, pan],
+  );
 
   const handleZoomPan = useCallback((newZoom: number, newPan: { x: number; y: number }) => {
     setZoom(newZoom);
@@ -229,10 +373,14 @@ export function OrgChart() {
 
   if (!selectedCompanyId) return <EmptyState icon={Network} message="Select a company to view the org chart." />;
   if (isLoading) return <PageSkeleton variant="org-chart" />;
-  if (orgTree && orgTree.length === 0) return <EmptyState icon={Network} message="No organizational hierarchy defined." />;
+  if (orgTree && orgTree.length === 0)
+    return <EmptyState icon={Network} message="No organizational hierarchy defined." />;
 
   return (
-    <div className="flex flex-col -mx-4 -mt-3 -mb-3" style={{ height: "calc(100vh - 40px)", width: "calc(100% + 2rem)" }}>
+    <div
+      className="flex flex-col -mx-4 -mt-3 -mb-3"
+      style={{ height: "calc(100vh - 40px)", width: "calc(100% + 2rem)" }}
+    >
       <OrgChartToolbar containerRef={containerRef} />
       <div
         ref={containerRef}
@@ -244,12 +392,28 @@ export function OrgChart() {
         onMouseLeave={handleMouseUp}
         onWheel={handleWheel}
       >
-        <OrgChartZoomControls zoom={zoom} pan={pan} bounds={bounds} containerRef={containerRef} onZoomPan={handleZoomPan} />
-        <OrgChartMinimap allNodes={allNodes} edges={edges} bounds={bounds} pan={pan} zoom={zoom} containerRef={containerRef} />
+        <OrgChartZoomControls
+          zoom={zoom}
+          pan={pan}
+          bounds={bounds}
+          containerRef={containerRef}
+          onZoomPan={handleZoomPan}
+        />
+        <OrgChartMinimap
+          allNodes={allNodes}
+          edges={edges}
+          bounds={bounds}
+          pan={pan}
+          zoom={zoom}
+          containerRef={containerRef}
+        />
         <OrgChartSvgLayer pan={pan} zoom={zoom} edges={edges} departmentGroups={departmentGroups} />
 
         {/* Card layer */}
-        <div className="absolute inset-0" style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: "0 0" }}>
+        <div
+          className="absolute inset-0"
+          style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: "0 0" }}
+        >
           {allNodes.map((node) => (
             <OrgChartCard
               key={node.id}

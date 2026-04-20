@@ -152,27 +152,21 @@ export const adminApi = {
   getDashboard: () => api.get<AdminDashboardStats>("/admin/dashboard"),
   getCompanies: () => api.get<AdminCompany[]>("/admin/companies"),
   getCompany: (id: string) => api.get<AdminCompany>(`/admin/companies/${id}`),
-  pauseCompany: (id: string, reason?: string) =>
-    api.post<void>(`/admin/companies/${id}/pause`, { reason }),
-  resumeCompany: (id: string) =>
-    api.post<void>(`/admin/companies/${id}/resume`, {}),
+  pauseCompany: (id: string, reason?: string) => api.post<void>(`/admin/companies/${id}/pause`, { reason }),
+  resumeCompany: (id: string) => api.post<void>(`/admin/companies/${id}/resume`, {}),
   getUsers: () => api.get<AdminUser[]>("/admin/users"),
   getMonitoring: () => api.get<AdminMonitoringMetrics>("/admin/monitoring"),
-  getAuditLog: (limit?: number) =>
-    api.get<AdminAuditEntry[]>(`/admin/audit-log?limit=${limit ?? 100}`),
+  getAuditLog: (limit?: number) => api.get<AdminAuditEntry[]>(`/admin/audit-log?limit=${limit ?? 100}`),
   // Analytics
-  getAnalytics: (days?: number) =>
-    api.get<AdminAnalyticsData>(`/admin/analytics?days=${days ?? 90}`),
+  getAnalytics: (days?: number) => api.get<AdminAnalyticsData>(`/admin/analytics?days=${days ?? 90}`),
   exportAnalytics: () => {
     window.location.href = "/api/admin/analytics/export";
   },
   getCurrentMetrics: () => api.get<AdminCurrentMetrics>("/admin/analytics/current"),
   // Support
   getSupportTickets: () => api.get<SupportTicket[]>("/admin/support/tickets"),
-  getSupportTicket: (id: string) =>
-    api.get<SupportTicket>(`/admin/support/tickets/${id}`),
-  replyToTicket: (id: string, body: string) =>
-    api.post<void>(`/admin/support/tickets/${id}/comments`, { body }),
+  getSupportTicket: (id: string) => api.get<SupportTicket>(`/admin/support/tickets/${id}`),
+  replyToTicket: (id: string, body: string) => api.post<void>(`/admin/support/tickets/${id}/comments`, { body }),
   updateTicketStatus: (id: string, status: SupportTicket["status"]) =>
     api.patch<void>(`/admin/support/tickets/${id}`, { status }),
 };

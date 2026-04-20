@@ -1,4 +1,4 @@
-import type { Goal, Agent } from "@ironworksai/shared";
+import type { Agent, Goal } from "@ironworksai/shared";
 
 export function RaciDisplay({
   goal,

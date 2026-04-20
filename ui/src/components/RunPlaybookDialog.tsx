@@ -1,7 +1,6 @@
-import { useState } from "react";
 import { Play } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 interface RunPlaybookDialogProps {
   open: boolean;
@@ -19,13 +19,7 @@ interface RunPlaybookDialogProps {
   isPending?: boolean;
 }
 
-export function RunPlaybookDialog({
-  open,
-  onOpenChange,
-  playbookName,
-  onRun,
-  isPending,
-}: RunPlaybookDialogProps) {
+export function RunPlaybookDialog({ open, onOpenChange, playbookName, onRun, isPending }: RunPlaybookDialogProps) {
   const [name, setName] = useState("");
   const [repoUrl, setRepoUrl] = useState("");
 
@@ -56,30 +50,22 @@ export function RunPlaybookDialog({
             Run: {playbookName}
           </DialogTitle>
           <DialogDescription>
-            This will create a project, goal, and tasks for each step. Agents will pick up their assigned tasks automatically.
+            This will create a project, goal, and tasks for each step. Agents will pick up their assigned tasks
+            automatically.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           <div>
-            <label className="text-xs font-medium text-muted-foreground">
-              Project Name
-            </label>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={playbookName}
-              className="mt-1"
-            />
+            <label className="text-xs font-medium text-muted-foreground">Project Name</label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={playbookName} className="mt-1" />
             <p className="text-[10px] text-muted-foreground mt-1">
               A project and library folder will be created with this name.
             </p>
           </div>
 
           <div>
-            <label className="text-xs font-medium text-muted-foreground">
-              Repository URL (optional)
-            </label>
+            <label className="text-xs font-medium text-muted-foreground">Repository URL (optional)</label>
             <Input
               value={repoUrl}
               onChange={(e) => setRepoUrl(e.target.value)}

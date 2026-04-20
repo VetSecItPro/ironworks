@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -123,27 +123,21 @@ describe("agent memory routes", () => {
   describe("GET /api/companies/:companyId/agents/:agentId/memory", () => {
     it("returns memory entries for authorized user", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app).get(
-        `/api/companies/${COMPANY_ID}/agents/${AGENT_ID}/memory`,
-      );
+      const res = await request(app).get(`/api/companies/${COMPANY_ID}/agents/${AGENT_ID}/memory`);
 
       expect(res.status).toBe(200);
     });
 
     it("rejects unauthenticated requests with 401", async () => {
       const app = await createApp(noActor());
-      const res = await request(app).get(
-        `/api/companies/${COMPANY_ID}/agents/${AGENT_ID}/memory`,
-      );
+      const res = await request(app).get(`/api/companies/${COMPANY_ID}/agents/${AGENT_ID}/memory`);
       expect(res.status).toBe(401);
     });
 
     it("rejects cross-company access with 403", async () => {
       const otherCompany = randomUUID();
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app).get(
-        `/api/companies/${otherCompany}/agents/${AGENT_ID}/memory`,
-      );
+      const res = await request(app).get(`/api/companies/${otherCompany}/agents/${AGENT_ID}/memory`);
       expect(res.status).toBe(403);
     });
   });
@@ -151,14 +145,12 @@ describe("agent memory routes", () => {
   describe("POST /api/companies/:companyId/agents/:agentId/memory", () => {
     it("creates a memory entry with valid data", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post(`/api/companies/${COMPANY_ID}/agents/${AGENT_ID}/memory`)
-        .send({
-          content: "Learned that deployment requires 2 approvals",
-          memoryType: "semantic",
-          category: "deployment",
-          confidence: 90,
-        });
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/agents/${AGENT_ID}/memory`).send({
+        content: "Learned that deployment requires 2 approvals",
+        memoryType: "semantic",
+        category: "deployment",
+        confidence: 90,
+      });
 
       expect(res.status).toBe(201);
     });
@@ -198,9 +190,7 @@ describe("agent memory routes", () => {
   describe("DELETE /api/companies/:companyId/agents/:agentId/memory/:entryId", () => {
     it("soft-archives a memory entry", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app).delete(
-        `/api/companies/${COMPANY_ID}/agents/${AGENT_ID}/memory/${ENTRY_ID}`,
-      );
+      const res = await request(app).delete(`/api/companies/${COMPANY_ID}/agents/${AGENT_ID}/memory/${ENTRY_ID}`);
 
       expect(res.status).toBe(200);
       expect(res.body.ok).toBe(true);
@@ -210,9 +200,7 @@ describe("agent memory routes", () => {
   describe("POST /api/companies/:companyId/agents/:agentId/memory/:entryId/promote", () => {
     it("promotes memory entry to knowledge page", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app).post(
-        `/api/companies/${COMPANY_ID}/agents/${AGENT_ID}/memory/${ENTRY_ID}/promote`,
-      );
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/agents/${AGENT_ID}/memory/${ENTRY_ID}/promote`);
 
       expect(res.status).toBe(201);
       expect(res.body).toHaveProperty("id");

@@ -1,8 +1,8 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { approvalRoutes } from "../routes/approvals.js";
 import { errorHandler } from "../middleware/index.js";
+import { approvalRoutes } from "../routes/approvals.js";
 
 const mockApprovalService = vi.hoisted(() => ({
   list: vi.fn(),
@@ -51,7 +51,13 @@ vi.mock("../services/index.js", () => ({
   routineService: () => ({}),
   playbookService: () => ({ seedDefaults: vi.fn() }),
   budgetService: () => ({ upsertPolicy: vi.fn() }),
-  userInviteService: () => ({ create: vi.fn(), getByToken: vi.fn(), accept: vi.fn(), listForCompany: vi.fn(), revoke: vi.fn() }),
+  userInviteService: () => ({
+    create: vi.fn(),
+    getByToken: vi.fn(),
+    accept: vi.fn(),
+    listForCompany: vi.fn(),
+    revoke: vi.fn(),
+  }),
   secretService: () => mockSecretService,
 }));
 
@@ -102,9 +108,7 @@ describe("approval routes idempotent retries", () => {
       applied: false,
     });
 
-    const res = await request(createApp())
-      .post("/api/approvals/approval-1/approve")
-      .send({});
+    const res = await request(createApp()).post("/api/approvals/approval-1/approve").send({});
 
     expect(res.status).toBe(200);
     expect(mockIssueApprovalService.listIssuesForApproval).not.toHaveBeenCalled();
@@ -124,9 +128,7 @@ describe("approval routes idempotent retries", () => {
       applied: false,
     });
 
-    const res = await request(createApp())
-      .post("/api/approvals/approval-1/reject")
-      .send({});
+    const res = await request(createApp()).post("/api/approvals/approval-1/reject").send({});
 
     expect(res.status).toBe(200);
     expect(mockLogActivity).not.toHaveBeenCalled();

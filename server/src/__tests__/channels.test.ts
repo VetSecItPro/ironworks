@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -9,9 +9,7 @@ const COMPANY_ID = randomUUID();
 const USER_ID = randomUUID();
 const CHANNEL_ID = randomUUID();
 
-const MOCK_CHANNELS = [
-  { id: CHANNEL_ID, companyId: COMPANY_ID, name: "#company", topic: "General" },
-];
+const MOCK_CHANNELS = [{ id: CHANNEL_ID, companyId: COMPANY_ID, name: "#company", topic: "General" }];
 
 const MOCK_MESSAGES = [
   {
@@ -116,9 +114,7 @@ async function createApp(actor: Record<string, unknown>) {
     select: vi.fn().mockReturnValue({
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockReturnValue({
-          then: vi.fn().mockImplementation((cb: any) =>
-            cb([{ id: CHANNEL_ID, companyId: COMPANY_ID }]),
-          ),
+          then: vi.fn().mockImplementation((cb: any) => cb([{ id: CHANNEL_ID, companyId: COMPANY_ID }])),
         }),
       }),
     }),
@@ -148,9 +144,7 @@ async function createAppWithChannelLookup(actor: Record<string, unknown>, result
     select: vi.fn().mockReturnValue({
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockReturnValue({
-          then: vi.fn().mockImplementation((cb: any) =>
-            cb(result ? [result] : []),
-          ),
+          then: vi.fn().mockImplementation((cb: any) => cb(result ? [result] : [])),
         }),
       }),
     }),
@@ -207,9 +201,7 @@ describe("channel routes", () => {
   describe("GET /api/companies/:companyId/channels/:channelId/messages", () => {
     it("returns messages for a valid channel", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app).get(
-        `/api/companies/${COMPANY_ID}/channels/${CHANNEL_ID}/messages`,
-      );
+      const res = await request(app).get(`/api/companies/${COMPANY_ID}/channels/${CHANNEL_ID}/messages`);
 
       expect(res.status).toBe(200);
       expect(res.body).toHaveLength(1);
@@ -219,9 +211,7 @@ describe("channel routes", () => {
     it("returns 404 for non-existent channel", async () => {
       const app = await createAppWithNoChannel(boardUser(USER_ID, [COMPANY_ID]));
       const fakeChannelId = randomUUID();
-      const res = await request(app).get(
-        `/api/companies/${COMPANY_ID}/channels/${fakeChannelId}/messages`,
-      );
+      const res = await request(app).get(`/api/companies/${COMPANY_ID}/channels/${fakeChannelId}/messages`);
       expect(res.status).toBe(404);
     });
   });
@@ -249,9 +239,7 @@ describe("channel routes", () => {
 
     it("rejects missing body field with 400", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post(`/api/companies/${COMPANY_ID}/channels/${CHANNEL_ID}/messages`)
-        .send({});
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/channels/${CHANNEL_ID}/messages`).send({});
 
       expect(res.status).toBe(400);
       expect(res.body.error).toContain("body is required");

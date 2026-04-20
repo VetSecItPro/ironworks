@@ -1,17 +1,12 @@
+import { ChevronDown, ChevronRight, Folder, FolderOpen } from "lucide-react";
 import { Link } from "@/lib/router";
-import {
-  ChevronDown,
-  ChevronRight,
-  Folder,
-  FolderOpen,
-} from "lucide-react";
 import { cn } from "../../lib/utils";
 import {
-  type SkillTreeNode,
-  SKILL_TREE_BASE_INDENT,
-  SKILL_TREE_STEP_INDENT,
-  SKILL_TREE_ROW_HEIGHT_CLASS,
   fileIcon,
+  SKILL_TREE_BASE_INDENT,
+  SKILL_TREE_ROW_HEIGHT_CLASS,
+  SKILL_TREE_STEP_INDENT,
+  type SkillTreeNode,
   skillRoute,
 } from "./utils";
 

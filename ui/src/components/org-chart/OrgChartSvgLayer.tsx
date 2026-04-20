@@ -1,6 +1,6 @@
 import { DEPARTMENT_LABELS } from "@ironworksai/shared";
 import type { LayoutNode } from "./orgChartLayout";
-import { CARD_W, CARD_H } from "./orgChartLayout";
+import { CARD_H, CARD_W } from "./orgChartLayout";
 
 const departmentSvgColor: Record<string, string> = {
   executive: "rgba(245,158,11,0.04)",
@@ -53,7 +53,10 @@ export function OrgChartSvgLayer({
         {/* Department background groupings */}
         {departmentGroups.map(({ nodes: dNodes, dept }) => {
           const pad = 20;
-          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+          let minX = Infinity,
+            minY = Infinity,
+            maxX = -Infinity,
+            maxY = -Infinity;
           for (const n of dNodes) {
             minX = Math.min(minX, n.x);
             minY = Math.min(minY, n.y);
@@ -129,7 +132,12 @@ export function OrgChartMinimap({
 
   return (
     <div className="absolute bottom-3 left-3 z-10 w-36 h-24 rounded border border-border bg-background/80 backdrop-blur-sm overflow-hidden pointer-events-none">
-      <svg width="100%" height="100%" viewBox={`0 0 ${bounds.width} ${bounds.height}`} preserveAspectRatio="xMidYMid meet">
+      <svg
+        width="100%"
+        height="100%"
+        viewBox={`0 0 ${bounds.width} ${bounds.height}`}
+        preserveAspectRatio="xMidYMid meet"
+      >
         {/* Minimap edges */}
         {edges.map(({ parent, child }) => (
           <line

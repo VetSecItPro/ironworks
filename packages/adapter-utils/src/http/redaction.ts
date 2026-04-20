@@ -18,30 +18,30 @@
  * Matched case-insensitively after normalizing `-` and `_` to empty string.
  */
 export const KNOWN_SECRET_PATHS = [
-  'api_key',
-  'apiKey',
-  'api-key',
-  'access_token',
-  'accessToken',
-  'access-token',
-  'refresh_token',
-  'refreshToken',
-  'refresh-token',
-  'token',
-  'password',
-  'secret',
-  'private_key',
-  'privateKey',
-  'private-key',
-  'authorization',
-  'cookie',
-  'set_cookie',
-  'setCookie',
-  'set-cookie',
+  "api_key",
+  "apiKey",
+  "api-key",
+  "access_token",
+  "accessToken",
+  "access-token",
+  "refresh_token",
+  "refreshToken",
+  "refresh-token",
+  "token",
+  "password",
+  "secret",
+  "private_key",
+  "privateKey",
+  "private-key",
+  "authorization",
+  "cookie",
+  "set_cookie",
+  "setCookie",
+  "set-cookie",
   // HTTP header variants with x- prefix (normalized: x stripped too)
-  'x-api-key',
-  'x_api_key',
-  'xapikey',
+  "x-api-key",
+  "x_api_key",
+  "xapikey",
 ] as const;
 
 export type KnownSecretPath = (typeof KNOWN_SECRET_PATHS)[number];
@@ -52,26 +52,24 @@ export type KnownSecretPath = (typeof KNOWN_SECRET_PATHS)[number];
  * before the generic fallback can double-match.
  */
 export const KNOWN_SECRET_PATTERNS: RegExp[] = [
-  /Bearer\s+[A-Za-z0-9\-_.]+/g,         // Bearer tokens (captures the whole Bearer <token>)
-  /sk-ant-[A-Za-z0-9\-_.]{10,}/g,       // Anthropic API keys
-  /sk-proj-[A-Za-z0-9\-_.]{10,}/g,      // OpenAI project-scoped keys
-  /sk-or-v1-[A-Za-z0-9\-_.]{10,}/g,     // OpenRouter keys
-  /sk-poe-[A-Za-z0-9\-_.]{10,}/g,       // Poe keys
-  /sk-[A-Za-z0-9\-_.]{20,}/g,           // Generic OpenAI / catch-all sk-* (placed AFTER specific)
-  /cfut_[A-Za-z0-9]{40,}/g,             // Cloudflare API tokens
+  /Bearer\s+[A-Za-z0-9\-_.]+/g, // Bearer tokens (captures the whole Bearer <token>)
+  /sk-ant-[A-Za-z0-9\-_.]{10,}/g, // Anthropic API keys
+  /sk-proj-[A-Za-z0-9\-_.]{10,}/g, // OpenAI project-scoped keys
+  /sk-or-v1-[A-Za-z0-9\-_.]{10,}/g, // OpenRouter keys
+  /sk-poe-[A-Za-z0-9\-_.]{10,}/g, // Poe keys
+  /sk-[A-Za-z0-9\-_.]{20,}/g, // Generic OpenAI / catch-all sk-* (placed AFTER specific)
+  /cfut_[A-Za-z0-9]{40,}/g, // Cloudflare API tokens
 ];
 
 // ─── Internal helpers ────────────────────────────────────────────────────────
 
 /** Normalize a key for secret-path matching: lowercase + strip `-` and `_`. */
 function normalizeKey(key: string): string {
-  return key.toLowerCase().replace(/[-_]/g, '');
+  return key.toLowerCase().replace(/[-_]/g, "");
 }
 
 /** Pre-computed normalized forms of KNOWN_SECRET_PATHS for O(1) lookup. */
-const NORMALIZED_SECRET_PATH_SET: ReadonlySet<string> = new Set(
-  KNOWN_SECRET_PATHS.map(normalizeKey),
-);
+const NORMALIZED_SECRET_PATH_SET: ReadonlySet<string> = new Set(KNOWN_SECRET_PATHS.map(normalizeKey));
 
 function isSecretKey(key: string): boolean {
   return NORMALIZED_SECRET_PATH_SET.has(normalizeKey(key));
@@ -92,8 +90,8 @@ function redactString(value: string): string {
     const localRegex = new RegExp(pattern.source, pattern.flags);
     result = result.replace(localRegex, (match) => {
       // Preserve "Bearer " prefix so output reads "Bearer [REDACTED]"
-      if (/^Bearer\s/i.test(match)) return 'Bearer [REDACTED]';
-      return '[REDACTED]';
+      if (/^Bearer\s/i.test(match)) return "Bearer [REDACTED]";
+      return "[REDACTED]";
     });
   }
   return result;
@@ -113,7 +111,7 @@ export function redactHeaders(headers: Record<string, string>): Record<string, s
   for (const [key, value] of Object.entries(headers)) {
     if (isSecretKey(key)) {
       // Key matched a known secret path → redact entire value
-      result[key] = '[REDACTED]';
+      result[key] = "[REDACTED]";
     } else {
       // Key didn't match → still scan the value for secret patterns (e.g. Bearer tokens,
       // sk-ant-* keys accidentally leaked into non-sensitive headers like X-Debug-Info)
@@ -153,17 +151,17 @@ function _redact(value: unknown, seen: WeakSet<object>): unknown {
     const type = typeof value;
 
     // 2. Non-string primitives
-    if (type === 'number' || type === 'boolean' || type === 'bigint' || type === 'symbol') {
+    if (type === "number" || type === "boolean" || type === "bigint" || type === "symbol") {
       return value;
     }
 
     // 3. Strings
-    if (type === 'string') {
+    if (type === "string") {
       return redactString(value as string);
     }
 
     // Everything else is object-like
-    if (type !== 'object' && type !== 'function') {
+    if (type !== "object" && type !== "function") {
       return value;
     }
 
@@ -171,7 +169,7 @@ function _redact(value: unknown, seen: WeakSet<object>): unknown {
 
     // Circular reference guard
     if (seen.has(obj)) {
-      return '[CIRCULAR]';
+      return "[CIRCULAR]";
     }
     seen.add(obj);
 
@@ -198,7 +196,7 @@ function _redact(value: unknown, seen: WeakSet<object>): unknown {
       const record = obj as Record<string, unknown>;
       const result: Record<string, unknown> = {};
       for (const [key, val] of Object.entries(record)) {
-        result[key] = isSecretKey(key) ? '[REDACTED]' : _redact(val, seen);
+        result[key] = isSecretKey(key) ? "[REDACTED]" : _redact(val, seen);
       }
       seen.delete(obj);
       return result;
@@ -206,10 +204,10 @@ function _redact(value: unknown, seen: WeakSet<object>): unknown {
 
     // 7. Non-plain objects (Map, Set, Date, class instances) — fail-safe over-redact
     seen.delete(obj);
-    return '[REDACTED_COMPLEX]';
+    return "[REDACTED_COMPLEX]";
   } catch {
     // 9. Unexpected error — fail-safe
-    return '[REDACTED_UNKNOWN]';
+    return "[REDACTED_UNKNOWN]";
   }
 }
 

@@ -1,16 +1,16 @@
-import { getPricing, type PricingProvider } from './pricing-table.js';
-import type { UsageSummary } from './sse-parser.js';
+import { getPricing, type PricingProvider } from "./pricing-table.js";
+import type { UsageSummary } from "./sse-parser.js";
 
 export interface CostSummary {
   /** Total USD cost for this call. */
   totalUsd: number;
   /** Breakdown per rate class for observability + debugging. */
   breakdown: {
-    inputUsd: number;       // uncached input tokens × inputTokens rate
+    inputUsd: number; // uncached input tokens × inputTokens rate
     cachedInputUsd: number; // cached read × cachedInputTokens rate (0 if no cache discount applies)
     cachedWriteUsd: number; // cache write × cachedWriteTokens rate (0 if N/A)
-    outputUsd: number;      // completion × outputTokens rate
-    reasoningUsd: number;   // reasoning × reasoningTokens rate (0 if N/A)
+    outputUsd: number; // completion × outputTokens rate
+    reasoningUsd: number; // reasoning × reasoningTokens rate (0 if N/A)
   };
   /** Warnings for missing pricing data etc. */
   warnings: string[];
@@ -29,11 +29,7 @@ export interface CostSummary {
  * classes (promptTokens, completionTokens, reasoningTokens, etc.) is more
  * accurate; totalTokens is advisory and may have rounding artifacts.
  */
-export function computeCost(
-  provider: PricingProvider,
-  modelId: string,
-  usage: UsageSummary,
-): CostSummary {
+export function computeCost(provider: PricingProvider, modelId: string, usage: UsageSummary): CostSummary {
   const warnings: string[] = [];
   const breakdown = {
     inputUsd: 0,

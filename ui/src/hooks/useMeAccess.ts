@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { meAccessApi, type MeAccessInfo } from "../api/userInvites";
+import { type MeAccessInfo, meAccessApi } from "../api/userInvites";
 import { queryKeys } from "../lib/queryKeys";
 
 /**

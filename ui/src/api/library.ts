@@ -92,20 +92,16 @@ export const libraryApi = {
     ),
 
   scan: (companyId: string) =>
-    api.post<LibraryScanResponse>(
-      `/companies/${encodeURIComponent(companyId)}/library/scan`,
-      {},
-    ),
+    api.post<LibraryScanResponse>(`/companies/${encodeURIComponent(companyId)}/library/scan`, {}),
 
-  register: (companyId: string, payload: {
-    filePath: string;
-    title?: string;
-    projectId?: string;
-    issueId?: string;
-    changeSummary?: string;
-  }) =>
-    api.post<unknown>(
-      `/companies/${encodeURIComponent(companyId)}/library/register`,
-      payload,
-    ),
+  register: (
+    companyId: string,
+    payload: {
+      filePath: string;
+      title?: string;
+      projectId?: string;
+      issueId?: string;
+      changeSummary?: string;
+    },
+  ) => api.post<unknown>(`/companies/${encodeURIComponent(companyId)}/library/register`, payload),
 };

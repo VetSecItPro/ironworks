@@ -1,8 +1,4 @@
-import type {
-  AdapterEnvironmentCheck,
-  AdapterEnvironmentTestContext,
-  AdapterEnvironmentTestResult,
-} from "../types.js";
+import type { AdapterEnvironmentCheck, AdapterEnvironmentTestContext, AdapterEnvironmentTestResult } from "../types.js";
 import { asString, parseObject } from "../utils.js";
 
 function summarizeStatus(checks: AdapterEnvironmentCheck[]): AdapterEnvironmentTestResult["status"] {
@@ -11,13 +7,11 @@ function summarizeStatus(checks: AdapterEnvironmentCheck[]): AdapterEnvironmentT
   return "pass";
 }
 
-export async function testEnvironment(
-  ctx: AdapterEnvironmentTestContext,
-): Promise<AdapterEnvironmentTestResult> {
+export async function testEnvironment(ctx: AdapterEnvironmentTestContext): Promise<AdapterEnvironmentTestResult> {
   const checks: AdapterEnvironmentCheck[] = [];
   const config = parseObject(ctx.config);
 
-  const envRecord = (config.env && typeof config.env === "object") ? config.env as Record<string, string> : {};
+  const envRecord = config.env && typeof config.env === "object" ? (config.env as Record<string, string>) : {};
   const apiKey = asString(config.apiKey, envRecord.OLLAMA_API_KEY ?? process.env.OLLAMA_API_KEY ?? "");
   const model = asString(config.model, "kimi-k2.5");
 
@@ -45,7 +39,7 @@ export async function testEnvironment(
   // Probe the Ollama Cloud tags endpoint to verify connectivity and auth
   try {
     const res = await fetch("https://ollama.com/api/tags", {
-      headers: { "Authorization": `Bearer ${apiKey}` },
+      headers: { Authorization: `Bearer ${apiKey}` },
       signal: AbortSignal.timeout(5_000),
     });
     if (res.ok) {

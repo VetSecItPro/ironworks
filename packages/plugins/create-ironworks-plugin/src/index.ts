@@ -42,7 +42,9 @@ function packageToManifestId(pluginName: string): string {
 
 /** Build a human-readable display name from package name tokens. */
 function makeDisplayName(pluginName: string): string {
-  const raw = packageToDirName(pluginName).replace(/[._-]+/g, " ").trim();
+  const raw = packageToDirName(pluginName)
+    .replace(/[._-]+/g, " ")
+    .trim();
   return raw
     .split(/\s+/)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
@@ -164,30 +166,30 @@ export function scaffoldPluginProject(options: ScaffoldPluginOptions): string {
       dev: "node ./esbuild.config.mjs --watch",
       "dev:ui": "ironworks-plugin-dev-server --root . --ui-dir dist/ui --port 4177",
       test: "vitest run --config ./vitest.config.ts",
-      typecheck: "tsc --noEmit"
+      typecheck: "tsc --noEmit",
     },
     ironworksPlugin: {
       manifest: "./dist/manifest.js",
       worker: "./dist/worker.js",
-      ui: "./dist/ui/"
+      ui: "./dist/ui/",
     },
     keywords: ["ironworks", "plugin", category],
     author,
     license: "MIT",
     ...(packedSharedTarball
       ? {
-        pnpm: {
-          overrides: {
-            "@ironworksai/shared": `file:${toPosixPath(path.relative(outputDir, packedSharedTarball))}`,
+          pnpm: {
+            overrides: {
+              "@ironworksai/shared": `file:${toPosixPath(path.relative(outputDir, packedSharedTarball))}`,
+            },
           },
-        },
-      }
+        }
       : {}),
     devDependencies: {
       ...(packedSharedTarball
         ? {
-          "@ironworksai/shared": `file:${toPosixPath(path.relative(outputDir, packedSharedTarball))}`,
-        }
+            "@ironworksai/shared": `file:${toPosixPath(path.relative(outputDir, packedSharedTarball))}`,
+          }
         : {}),
       "@ironworksai/plugin-sdk": sdkDependency,
       "@rollup/plugin-node-resolve": "^16.0.1",
@@ -198,11 +200,11 @@ export function scaffoldPluginProject(options: ScaffoldPluginOptions): string {
       rollup: "^4.38.0",
       tslib: "^2.8.1",
       typescript: "^5.7.3",
-      vitest: "^3.0.5"
+      vitest: "^3.0.5",
     },
     peerDependencies: {
-      react: ">=18"
-    }
+      react: ">=18",
+    },
   };
 
   writeFile(path.join(outputDir, "package.json"), `${JSON.stringify(packageJson, null, 2)}\n`);
@@ -220,10 +222,10 @@ export function scaffoldPluginProject(options: ScaffoldPluginOptions): string {
       declarationMap: true,
       sourceMap: true,
       outDir: "dist",
-      rootDir: "."
+      rootDir: ".",
     },
     include: ["src", "tests"],
-    exclude: ["dist", "node_modules"]
+    exclude: ["dist", "node_modules"],
   };
 
   writeFile(path.join(outputDir, "tsconfig.json"), `${JSON.stringify(tsconfig, null, 2)}\n`);
@@ -433,9 +435,11 @@ pnpm dev:ui         # local dev server with hot-reload events
 pnpm test
 \`\`\`
 
-${sdkDependency.startsWith("file:")
-  ? `This scaffold snapshots \`@ironworksai/plugin-sdk\` and \`@ironworksai/shared\` from a local Ironworks checkout at:\n\n\`${toPosixPath(localSdkPath)}\`\n\nThe packed tarballs live in \`.ironworks-sdk/\` for local development. Before publishing this plugin, switch those dependencies to published package versions once they are available on npm.\n\n`
-  : ""}
+${
+  sdkDependency.startsWith("file:")
+    ? `This scaffold snapshots \`@ironworksai/plugin-sdk\` and \`@ironworksai/shared\` from a local Ironworks checkout at:\n\n\`${toPosixPath(localSdkPath)}\`\n\nThe packed tarballs live in \`.ironworks-sdk/\` for local development. Before publishing this plugin, switch those dependencies to published package versions once they are available on npm.\n\n`
+    : ""
+}
 
 ## Install Into Ironworks
 
@@ -468,7 +472,9 @@ function runCli() {
   const pluginName = process.argv[2];
   if (!pluginName) {
     // eslint-disable-next-line no-console
-    console.error("Usage: create-ironworks-plugin <name> [--template default|connector|workspace] [--output <dir>] [--sdk-path <ironworks-sdk-path>]");
+    console.error(
+      "Usage: create-ironworks-plugin <name> [--template default|connector|workspace] [--output <dir>] [--sdk-path <ironworks-sdk-path>]",
+    );
     process.exit(1);
   }
 

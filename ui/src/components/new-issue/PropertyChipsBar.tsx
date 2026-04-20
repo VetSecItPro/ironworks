@@ -1,22 +1,18 @@
-import type { RefObject, ChangeEvent } from "react";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
+  AlertTriangle,
+  ArrowDown,
+  ArrowUp,
+  Calendar,
   CircleDot,
   Minus,
-  ArrowUp,
-  ArrowDown,
-  AlertTriangle,
-  Tag,
-  Calendar,
-  Paperclip,
   MoreHorizontal,
+  Paperclip,
+  Tag,
 } from "lucide-react";
+import type { ChangeEvent, RefObject } from "react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "../../lib/utils";
-import { statuses, priorities, STAGED_FILE_ACCEPT } from "./constants";
+import { priorities, STAGED_FILE_ACCEPT, statuses } from "./constants";
 
 const PRIORITY_ICONS = {
   AlertTriangle,
@@ -75,9 +71,12 @@ export function PropertyChipsBar({
               key={s.value}
               className={cn(
                 "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",
-                s.value === status && "bg-accent"
+                s.value === status && "bg-accent",
               )}
-              onClick={() => { setStatus(s.value); setStatusOpen(false); }}
+              onClick={() => {
+                setStatus(s.value);
+                setStatusOpen(false);
+              }}
             >
               <CircleDot className={cn("h-3 w-3", s.color)} />
               {s.label}
@@ -114,9 +113,12 @@ export function PropertyChipsBar({
                 key={p.value}
                 className={cn(
                   "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",
-                  p.value === priority && "bg-accent"
+                  p.value === priority && "bg-accent",
                 )}
-                onClick={() => { setPriority(p.value); setPriorityOpen(false); }}
+                onClick={() => {
+                  setPriority(p.value);
+                  setPriorityOpen(false);
+                }}
               >
                 <Icon className={cn("h-3 w-3", p.color)} />
                 {p.label}

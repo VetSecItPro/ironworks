@@ -1,54 +1,54 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   BarChart3,
-  Inbox,
-  CircleDot,
-  Target,
-  LayoutDashboard,
   BookOpen,
-  BookText,
   BookTemplate,
+  BookText,
+  Boxes,
+  Check,
+  ChevronDown,
+  CircleDot,
+  Clock,
   Code,
   DollarSign,
+  ExternalLink,
   FileText,
+  GitBranch,
+  Hash,
+  HeartPulse,
   History,
+  Inbox,
+  LayoutDashboard,
+  Network,
+  Package,
+  Plus,
+  Repeat,
   Search,
+  Settings,
   Shield,
   SquarePen,
-  Network,
-  Boxes,
-  Repeat,
-  Settings,
-  Hash,
-  Package,
-  Zap,
-  User,
-  HeartPulse,
-  Clock,
-  GitBranch,
-  ExternalLink,
   Store,
-  ChevronDown,
-  Check,
-  Plus,
+  Target,
+  User,
+  Zap,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { NavLink } from "@/lib/router";
-import { SidebarSection } from "./SidebarSection";
+import { PluginSlotOutlet } from "@/plugins/slots";
+import { channelsApi } from "../api/channels";
+import { heartbeatsApi } from "../api/heartbeats";
+import { sidebarBadgesApi } from "../api/sidebarBadges";
+import { useCompany } from "../context/CompanyContext";
+import { useDialog } from "../context/DialogContext";
+import { useSidebar } from "../context/SidebarContext";
+import { useInboxBadge } from "../hooks/useInboxBadge";
+import { queryKeys } from "../lib/queryKeys";
+import { cn } from "../lib/utils";
+import { SidebarAgents } from "./SidebarAgents";
 import { SidebarNavItem } from "./SidebarNavItem";
 import { SidebarProjects } from "./SidebarProjects";
-import { SidebarAgents } from "./SidebarAgents";
-import { useDialog } from "../context/DialogContext";
-import { useCompany } from "../context/CompanyContext";
-import { useSidebar } from "../context/SidebarContext";
-import { heartbeatsApi } from "../api/heartbeats";
-import { channelsApi } from "../api/channels";
-import { queryKeys } from "../lib/queryKeys";
-import { useInboxBadge } from "../hooks/useInboxBadge";
-import { sidebarBadgesApi } from "../api/sidebarBadges";
-import { Button } from "@/components/ui/button";
-import { PluginSlotOutlet } from "@/plugins/slots";
-import { cn } from "../lib/utils";
+import { SidebarSection } from "./SidebarSection";
 
 const FEATURE_DOT_KEY = "ironworks.visitedSidebarItems";
 
@@ -62,17 +62,25 @@ function useFeatureDots() {
     }
   }, []);
 
-  const markVisited = useCallback((path: string) => {
-    if (visited.has(path)) return;
-    visited.add(path);
-    try {
-      localStorage.setItem(FEATURE_DOT_KEY, JSON.stringify([...visited]));
-    } catch { /* ignore */ }
-  }, [visited]);
+  const markVisited = useCallback(
+    (path: string) => {
+      if (visited.has(path)) return;
+      visited.add(path);
+      try {
+        localStorage.setItem(FEATURE_DOT_KEY, JSON.stringify([...visited]));
+      } catch {
+        /* ignore */
+      }
+    },
+    [visited],
+  );
 
-  const shouldShowDot = useCallback((path: string) => {
-    return !visited.has(path);
-  }, [visited]);
+  const shouldShowDot = useCallback(
+    (path: string) => {
+      return !visited.has(path);
+    },
+    [visited],
+  );
 
   return { markVisited, shouldShowDot };
 }
@@ -94,7 +102,9 @@ export function Sidebar() {
   useEffect(() => {
     const nav = navRef.current;
     if (!nav) return;
-    const handleScroll = () => { savedScrollTop.current = nav.scrollTop; };
+    const handleScroll = () => {
+      savedScrollTop.current = nav.scrollTop;
+    };
     nav.addEventListener("scroll", handleScroll, { passive: true });
     return () => nav.removeEventListener("scroll", handleScroll);
   }, []);
@@ -103,7 +113,9 @@ export function Sidebar() {
   useEffect(() => {
     const nav = navRef.current;
     if (nav && savedScrollTop.current > 0) {
-      requestAnimationFrame(() => { nav.scrollTop = savedScrollTop.current; });
+      requestAnimationFrame(() => {
+        nav.scrollTop = savedScrollTop.current;
+      });
     }
   });
 
@@ -131,10 +143,7 @@ export function Sidebar() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const activeCompanies = useMemo(
-    () => companies.filter((c) => c.status !== "archived"),
-    [companies],
-  );
+  const activeCompanies = useMemo(() => companies.filter((c) => c.status !== "archived"), [companies]);
 
   // Track sidebar navigation clicks to dismiss feature dots
   useEffect(() => {
@@ -198,28 +207,16 @@ export function Sidebar() {
             onClick={() => setCompanySwitcherOpen(!companySwitcherOpen)}
           >
             {selectedCompany?.logoUrl ? (
-              <img
-                src={selectedCompany.logoUrl}
-                alt=""
-                className="w-5 h-5 rounded-sm shrink-0 object-cover"
-              />
+              <img src={selectedCompany.logoUrl} alt="" className="w-5 h-5 rounded-sm shrink-0 object-cover" />
             ) : selectedCompany?.brandColor ? (
-              <div
-                className="w-5 h-5 rounded-sm shrink-0"
-                style={{ backgroundColor: selectedCompany.brandColor }}
-              />
+              <div className="w-5 h-5 rounded-sm shrink-0" style={{ backgroundColor: selectedCompany.brandColor }} />
             ) : null}
             <span className="flex-1 text-sm font-bold text-foreground truncate text-left">
               {selectedCompany?.name ?? "Select company"}
             </span>
             <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
           </button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="text-muted-foreground shrink-0"
-            onClick={openSearch}
-          >
+          <Button variant="ghost" size="icon-sm" className="text-muted-foreground shrink-0" onClick={openSearch}>
             <Search className="h-4 w-4" />
           </Button>
 
@@ -254,9 +251,7 @@ export function Sidebar() {
                     <div className="w-4 h-4 rounded-sm shrink-0 bg-muted" />
                   )}
                   <span className="flex-1 truncate">{company.name}</span>
-                  {company.id === selectedCompanyId && (
-                    <Check className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
-                  )}
+                  {company.id === selectedCompanyId && <Check className="h-3.5 w-3.5 text-indigo-400 shrink-0" />}
                 </button>
               ))}
               <div className="border-t border-border mt-1 pt-1">
@@ -287,7 +282,10 @@ export function Sidebar() {
         </div>
       </div>
 
-      <nav ref={navRef} className="flex-1 min-h-0 overflow-y-auto scrollbar-auto-hide flex flex-col gap-4 pl-3 pr-1.5 py-2">
+      <nav
+        ref={navRef}
+        className="flex-1 min-h-0 overflow-y-auto scrollbar-auto-hide flex flex-col gap-4 pl-3 pr-1.5 py-2"
+      >
         <div className="flex flex-col gap-0.5">
           {matchLabel("War Room") && (
             <SidebarNavItem to="/dashboard" label="War Room" icon={LayoutDashboard} liveCount={liveRunCount} />
@@ -317,9 +315,23 @@ export function Sidebar() {
           {matchLabel("Issues") && <SidebarNavItem to="/issues" label="Issues" icon={CircleDot} data-tour="issues" />}
           {matchLabel("Goals") && <SidebarNavItem to="/goals" label="Goals" icon={Target} data-tour="goals" />}
           {matchLabel("Routines") && <SidebarNavItem to="/routines" label="Routines" icon={Repeat} />}
-          {matchLabel("Playbooks") && <SidebarNavItem to="/playbooks" label="Playbooks" icon={BookTemplate} featureDot={shouldShowDot("/playbooks")} />}
+          {matchLabel("Playbooks") && (
+            <SidebarNavItem
+              to="/playbooks"
+              label="Playbooks"
+              icon={BookTemplate}
+              featureDot={shouldShowDot("/playbooks")}
+            />
+          )}
           {matchLabel("Automation") && <SidebarNavItem to="/automation" label="Automation" icon={Zap} />}
-          {matchLabel("Board Briefing") && <SidebarNavItem to="/board-briefing" label="Board Briefing" icon={FileText} featureDot={shouldShowDot("/board-briefing")} />}
+          {matchLabel("Board Briefing") && (
+            <SidebarNavItem
+              to="/board-briefing"
+              label="Board Briefing"
+              icon={FileText}
+              featureDot={shouldShowDot("/board-briefing")}
+            />
+          )}
           {matchLabel("Deliverables") && (
             <SidebarNavItem
               to="/deliverables"
@@ -336,47 +348,66 @@ export function Sidebar() {
             {channels
               .filter((ch) => matchLabel(ch.name))
               .map((channel) => (
-              <NavLink
-                key={channel.id}
-                to={`/channels/${channel.id}`}
-                onClick={() => { if (isMobile) setSidebarOpen(false); }}
-                className={({ isActive }) =>
-                  cn(
-                    "relative flex items-center gap-2.5 px-3 py-2.5 min-h-[36px] text-[13px] font-medium select-none transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:rounded-md",
-                    isActive
-                      ? "bg-accent text-foreground font-semibold before:absolute before:left-0 before:top-1 before:bottom-1 before:w-[3px] before:rounded-r-full before:bg-primary"
-                      : "text-foreground/80 hover:bg-accent/50 hover:text-foreground",
-                  )
-                }
-              >
-                <span className="relative shrink-0">
-                  <Hash className="h-4 w-4" />
-                  {channel.unreadCount != null && channel.unreadCount > 0 && (
-                    <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-blue-500 shadow-[0_0_0_2px_hsl(var(--background))]" />
-                  )}
-                </span>
-                <span className="flex-1 truncate">{channel.name}</span>
-                {channel.unreadCount != null && channel.unreadCount > 0 && (
-                  <span className="ml-auto rounded-full px-1.5 py-0.5 text-xs leading-none bg-primary text-primary-foreground">
-                    {channel.unreadCount}
+                <NavLink
+                  key={channel.id}
+                  to={`/channels/${channel.id}`}
+                  onClick={() => {
+                    if (isMobile) setSidebarOpen(false);
+                  }}
+                  className={({ isActive }) =>
+                    cn(
+                      "relative flex items-center gap-2.5 px-3 py-2.5 min-h-[36px] text-[13px] font-medium select-none transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:rounded-md",
+                      isActive
+                        ? "bg-accent text-foreground font-semibold before:absolute before:left-0 before:top-1 before:bottom-1 before:w-[3px] before:rounded-r-full before:bg-primary"
+                        : "text-foreground/80 hover:bg-accent/50 hover:text-foreground",
+                    )
+                  }
+                >
+                  <span className="relative shrink-0">
+                    <Hash className="h-4 w-4" />
+                    {channel.unreadCount != null && channel.unreadCount > 0 && (
+                      <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-blue-500 shadow-[0_0_0_2px_hsl(var(--background))]" />
+                    )}
                   </span>
-                )}
-              </NavLink>
-            ))}
+                  <span className="flex-1 truncate">{channel.name}</span>
+                  {channel.unreadCount != null && channel.unreadCount > 0 && (
+                    <span className="ml-auto rounded-full px-1.5 py-0.5 text-xs leading-none bg-primary text-primary-foreground">
+                      {channel.unreadCount}
+                    </span>
+                  )}
+                </NavLink>
+              ))}
           </SidebarSection>
         )}
 
-        {!q && <div data-tour="projects"><SidebarProjects /></div>}
+        {!q && (
+          <div data-tour="projects">
+            <SidebarProjects />
+          </div>
+        )}
 
-        {!q && <div data-tour="agents"><SidebarAgents /></div>}
+        {!q && (
+          <div data-tour="agents">
+            <SidebarAgents />
+          </div>
+        )}
 
         <SidebarSection label="Company">
           {matchLabel("Org Chart") && <SidebarNavItem to="/org" label="Org Chart" icon={Network} />}
           {matchLabel("Skills") && <SidebarNavItem to="/skills" label="Skills" icon={Boxes} />}
           {matchLabel("Library") && <SidebarNavItem to="/library" label="Library" icon={BookOpen} />}
-          {matchLabel("Knowledge Base") && <SidebarNavItem to="/knowledge" label="Knowledge Base" icon={BookText} featureDot={shouldShowDot("/knowledge")} />}
+          {matchLabel("Knowledge Base") && (
+            <SidebarNavItem
+              to="/knowledge"
+              label="Knowledge Base"
+              icon={BookText}
+              featureDot={shouldShowDot("/knowledge")}
+            />
+          )}
           {matchLabel("Costs") && <SidebarNavItem to="/costs" label="Costs" icon={DollarSign} />}
-          {matchLabel("Agent Performance") && <SidebarNavItem to="/performance" label="Agent Performance" icon={BarChart3} />}
+          {matchLabel("Agent Performance") && (
+            <SidebarNavItem to="/performance" label="Agent Performance" icon={BarChart3} />
+          )}
           {matchLabel("Company Activity") && <SidebarNavItem to="/activity" label="Company Activity" icon={History} />}
           {matchLabel("Audit Log") && <SidebarNavItem to="/audit-log" label="Audit Log" icon={Shield} />}
           {matchLabel("Settings") && <SidebarNavItem to="/company/settings" label="Settings" icon={Settings} />}

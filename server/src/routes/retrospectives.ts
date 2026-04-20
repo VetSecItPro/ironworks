@@ -1,7 +1,7 @@
-import { Router } from "express";
 import type { Db } from "@ironworksai/db";
+import { Router } from "express";
 import { generateRetrospective, getLatestRetrospective } from "../services/retrospective.js";
-import { assertCompanyAccess, assertCanWrite } from "./authz.js";
+import { assertCanWrite, assertCompanyAccess } from "./authz.js";
 
 export function retrospectiveRoutes(db: Db) {
   const router = Router();
@@ -10,9 +10,7 @@ export function retrospectiveRoutes(db: Db) {
     const companyId = req.params.companyId as string;
     await assertCanWrite(req, companyId, db);
 
-    const periodDays = typeof req.body?.periodDays === "number"
-      ? Math.min(Math.max(req.body.periodDays, 7), 90)
-      : 14;
+    const periodDays = typeof req.body?.periodDays === "number" ? Math.min(Math.max(req.body.periodDays, 7), 90) : 14;
 
     const result = await generateRetrospective(db, companyId, periodDays);
     res.json(result);

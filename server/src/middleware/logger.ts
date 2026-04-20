@@ -1,5 +1,5 @@
-import path from "node:path";
 import fs from "node:fs";
+import path from "node:path";
 import pino from "pino";
 import { pinoHttp } from "pino-http";
 import { readConfigFile } from "../config-file.js";
@@ -26,23 +26,26 @@ const sharedOpts = {
   singleLine: true,
 };
 
-export const logger = pino({
-  level: "debug",
-  redact: ["req.headers.authorization", "req.headers[\"authorization\"]"],
-}, pino.transport({
-  targets: [
-    {
-      target: "pino-pretty",
-      options: { ...sharedOpts, ignore: "pid,hostname,req,res,responseTime", colorize: true, destination: 1 },
-      level: "info",
-    },
-    {
-      target: "pino-pretty",
-      options: { ...sharedOpts, colorize: false, destination: logFile, mkdir: true },
-      level: "debug",
-    },
-  ],
-}));
+export const logger = pino(
+  {
+    level: "debug",
+    redact: ["req.headers.authorization", 'req.headers["authorization"]'],
+  },
+  pino.transport({
+    targets: [
+      {
+        target: "pino-pretty",
+        options: { ...sharedOpts, ignore: "pid,hostname,req,res,responseTime", colorize: true, destination: 1 },
+        level: "info",
+      },
+      {
+        target: "pino-pretty",
+        options: { ...sharedOpts, colorize: false, destination: logFile, mkdir: true },
+        level: "debug",
+      },
+    ],
+  }),
+);
 
 export const httpLogger = pinoHttp({
   logger,

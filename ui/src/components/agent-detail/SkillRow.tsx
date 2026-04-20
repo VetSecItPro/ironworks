@@ -1,8 +1,8 @@
-import { Link } from "@/lib/router";
-import { MarkdownBody } from "../MarkdownBody";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { AgentSkillEntry } from "@ironworksai/shared";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Link } from "@/lib/router";
 import { cn } from "../../lib/utils";
+import { MarkdownBody } from "../MarkdownBody";
 
 export type SkillRow = {
   id: string;
@@ -45,10 +45,7 @@ export function SkillRowItem({
           <span className="truncate font-medium">{skill.name}</span>
         </div>
         {skill.linkTo ? (
-          <Link
-            to={skill.linkTo}
-            className="shrink-0 text-xs text-muted-foreground no-underline hover:text-foreground"
-          >
+          <Link to={skill.linkTo} className="shrink-0 text-xs text-muted-foreground no-underline hover:text-foreground">
             View
           </Link>
         ) : null}
@@ -58,15 +55,11 @@ export function SkillRowItem({
           {skill.description}
         </MarkdownBody>
       )}
-      {skill.readOnly && skill.originLabel && (
-        <p className="mt-1 text-xs text-muted-foreground">{skill.originLabel}</p>
-      )}
+      {skill.readOnly && skill.originLabel && <p className="mt-1 text-xs text-muted-foreground">{skill.originLabel}</p>}
       {skill.readOnly && skill.locationLabel && (
         <p className="mt-1 text-xs text-muted-foreground">Location: {skill.locationLabel}</p>
       )}
-      {skill.detail && (
-        <p className="mt-1 text-xs text-muted-foreground">{skill.detail}</p>
-      )}
+      {skill.detail && <p className="mt-1 text-xs text-muted-foreground">{skill.detail}</p>}
     </div>
   );
 

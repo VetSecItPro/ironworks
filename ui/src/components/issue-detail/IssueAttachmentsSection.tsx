@@ -1,7 +1,7 @@
-import type { ReactNode, DragEvent } from "react";
-import { cn } from "@/lib/utils";
-import { Trash2 } from "lucide-react";
 import type { IssueAttachment } from "@ironworksai/shared";
+import { Trash2 } from "lucide-react";
+import type { DragEvent, ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 interface IssueAttachmentsSectionProps {
   attachments: IssueAttachment[];
@@ -47,9 +47,7 @@ export function IssueAttachmentsSection({
         {attachmentUploadButton}
       </div>
 
-      {attachmentError && (
-        <p className="text-xs text-destructive">{attachmentError}</p>
-      )}
+      {attachmentError && <p className="text-xs text-destructive">{attachmentError}</p>}
 
       <div className="space-y-2">
         {attachments.map((attachment) => (

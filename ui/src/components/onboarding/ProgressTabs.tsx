@@ -1,11 +1,5 @@
+import { Bot, Building2, Key, ListTodo, Rocket } from "lucide-react";
 import { cn } from "../../lib/utils";
-import {
-  Building2,
-  Bot,
-  Key,
-  ListTodo,
-  Rocket,
-} from "lucide-react";
 import type { Step } from "./types";
 
 interface ProgressTabsProps {
@@ -33,7 +27,7 @@ export function ProgressTabs({ currentStep, onStepClick }: ProgressTabsProps) {
             "flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors cursor-pointer",
             s === currentStep
               ? "border-foreground text-foreground"
-              : "border-transparent text-muted-foreground hover:text-foreground/70 hover:border-border"
+              : "border-transparent text-muted-foreground hover:text-foreground/70 hover:border-border",
           )}
         >
           <Icon className="h-4 w-4" />

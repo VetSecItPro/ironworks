@@ -18,20 +18,14 @@ export interface ErasureResponse {
 
 export const privacyApi = {
   summary: (companyId: string) =>
-    api.get<PrivacySummary>(
-      `/companies/${encodeURIComponent(companyId)}/privacy/summary`,
-    ),
+    api.get<PrivacySummary>(`/companies/${encodeURIComponent(companyId)}/privacy/summary`),
 
   exportData: (companyId: string) =>
     // Returns the download URL — browser handles the download
     `/api/companies/${encodeURIComponent(companyId)}/privacy/data-export`,
 
   requestErasure: (companyId: string) =>
-    api.post<ErasureResponse>(
-      `/companies/${encodeURIComponent(companyId)}/privacy/erasure-request`,
-      { confirm: true },
-    ),
+    api.post<ErasureResponse>(`/companies/${encodeURIComponent(companyId)}/privacy/erasure-request`, { confirm: true }),
 
-  runCleanup: () =>
-    api.post<Record<string, number>>("/privacy/retention/run-cleanup", {}),
+  runCleanup: () => api.post<Record<string, number>>("/privacy/retention/run-cleanup", {}),
 };

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-import { readdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, "..");
@@ -118,10 +118,7 @@ function setVersion(version) {
 
   const cliEntryPath = join(repoRoot, "cli/src/index.ts");
   const cliEntry = readFileSync(cliEntryPath, "utf8");
-  const nextCliEntry = cliEntry.replace(
-    /\.version\("([^"]+)"\)/,
-    `.version("${version}")`,
-  );
+  const nextCliEntry = cliEntry.replace(/\.version\("([^"]+)"\)/, `.version("${version}")`);
 
   if (cliEntry === nextCliEntry) {
     throw new Error("failed to rewrite CLI version string in cli/src/index.ts");

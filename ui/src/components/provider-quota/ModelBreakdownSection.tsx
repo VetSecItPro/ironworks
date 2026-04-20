@@ -1,11 +1,6 @@
 import type { CostByProviderModel } from "@ironworksai/shared";
-import {
-  billingTypeDisplayName,
-  formatCents,
-  formatTokens,
-  providerDisplayName,
-} from "@/lib/utils";
 import { equivalentSpendCents } from "@/lib/equivalent-spend";
+import { billingTypeDisplayName, formatCents, formatTokens, providerDisplayName } from "@/lib/utils";
 
 interface ModelBreakdownSectionProps {
   rows: CostByProviderModel[];
@@ -13,11 +8,7 @@ interface ModelBreakdownSectionProps {
   totalCostCents: number;
 }
 
-export function ModelBreakdownSection({
-  rows,
-  totalTokens,
-  totalCostCents,
-}: ModelBreakdownSectionProps) {
+export function ModelBreakdownSection({ rows, totalTokens, totalCostCents }: ModelBreakdownSectionProps) {
   if (rows.length === 0) return null;
 
   return (
@@ -32,20 +23,19 @@ export function ModelBreakdownSection({
             <div key={`${row.provider}:${row.model}`} className="space-y-1.5">
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <span className="text-xs text-muted-foreground truncate font-mono block">
-                    {row.model}
-                  </span>
+                  <span className="text-xs text-muted-foreground truncate font-mono block">{row.model}</span>
                   <span className="text-[11px] text-muted-foreground truncate block">
                     {providerDisplayName(row.biller)} · {billingTypeDisplayName(row.billingType)}
                   </span>
                 </div>
                 <div className="flex items-center gap-3 shrink-0 tabular-nums text-xs">
-                  <span className="text-muted-foreground">
-                    {formatTokens(rowTokens)} tok
-                  </span>
+                  <span className="text-muted-foreground">{formatTokens(rowTokens)} tok</span>
                   {row.costCents === 0 && rowTokens > 0 ? (
                     <span className="font-medium text-blue-500">
-                      ~{formatCents(equivalentSpendCents(row.model, row.inputTokens, row.cachedInputTokens, row.outputTokens))}
+                      ~
+                      {formatCents(
+                        equivalentSpendCents(row.model, row.inputTokens, row.cachedInputTokens, row.outputTokens),
+                      )}
                     </span>
                   ) : (
                     <span className="font-medium">{formatCents(row.costCents)}</span>

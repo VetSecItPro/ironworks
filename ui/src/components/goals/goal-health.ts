@@ -4,10 +4,7 @@ import type { GoalProgressItem } from "../../api/goalProgress";
 export type GoalHealth = "on_track" | "at_risk" | "off_track" | "no_data";
 
 /** Prefer the backend-computed healthStatus; fall back to local heuristic. */
-export function resolveGoalHealth(
-  goal: Goal,
-  progress?: GoalProgressItem | null,
-): GoalHealth {
+export function resolveGoalHealth(goal: Goal, progress?: GoalProgressItem | null): GoalHealth {
   // Use server-computed healthStatus when present
   if (goal.healthStatus && goal.healthStatus !== "no_data" && goal.healthStatus !== "achieved") {
     return goal.healthStatus as GoalHealth;
@@ -15,10 +12,7 @@ export function resolveGoalHealth(
   return computeGoalHealth(goal, progress);
 }
 
-function computeGoalHealth(
-  goal: Goal,
-  progress?: GoalProgressItem | null,
-): GoalHealth {
+function computeGoalHealth(goal: Goal, progress?: GoalProgressItem | null): GoalHealth {
   if (!progress || progress.totalIssues === 0) return "no_data";
   if (!goal.targetDate) {
     // No deadline - use completion percent heuristics
@@ -51,10 +45,7 @@ function computeGoalHealth(
   return "off_track";
 }
 
-export function forecastCompletion(
-  goal: Goal,
-  progress?: GoalProgressItem | null,
-): string | null {
+export function forecastCompletion(goal: Goal, progress?: GoalProgressItem | null): string | null {
   if (!progress || progress.totalIssues === 0 || progress.completedIssues === 0) return null;
 
   const created = new Date(goal.createdAt);

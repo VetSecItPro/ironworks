@@ -1,5 +1,3 @@
-import { Router, type Request } from "express";
-import { and, eq } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { companyMemberships } from "@ironworksai/db";
 import {
@@ -10,8 +8,11 @@ import {
   updateCompanyBrandingSchema,
   updateCompanySchema,
 } from "@ironworksai/shared";
+import { and, eq } from "drizzle-orm";
+import { type Request, Router } from "express";
 import { forbidden } from "../errors.js";
 import { validate } from "../middleware/validate.js";
+import { seedDefaultChannels } from "../services/channels.js";
 import {
   accessService,
   agentService,
@@ -24,10 +25,9 @@ import {
   seedSystemRoleTemplates,
 } from "../services/index.js";
 import { knowledgeService } from "../services/knowledge.js";
-import { seedDefaultChannels } from "../services/channels.js";
+import { ROLE_DEFAULT_CAPABILITIES } from "../services/role-defaults.js";
 import type { StorageService } from "../storage/types.js";
 import { assertBoard, assertCompanyAccess, assertInstanceAdmin, getActorInfo } from "./authz.js";
-import { ROLE_DEFAULT_CAPABILITIES } from "../services/role-defaults.js";
 
 export function companyRoutes(db: Db, storage?: StorageService) {
   const router = Router();
@@ -81,9 +81,8 @@ export function companyRoutes(db: Db, storage?: StorageService) {
 
   router.get("/stats", async (req, res) => {
     assertBoard(req);
-    const allowed = req.actor.source === "local_implicit" || req.actor.isInstanceAdmin
-      ? null
-      : new Set(req.actor.companyIds ?? []);
+    const allowed =
+      req.actor.source === "local_implicit" || req.actor.isInstanceAdmin ? null : new Set(req.actor.companyIds ?? []);
     const stats = await svc.stats();
     if (!allowed) {
       res.json(stats);
@@ -428,8 +427,7 @@ export function companyRoutes(db: Db, storage?: StorageService) {
     if (req.actor.type === "board") {
       // Board actors: instance admins and local_implicit are always permitted.
       // Regular board users must be an owner or admin of this company.
-      const isPrivilegedBoardActor =
-        req.actor.source === "local_implicit" || req.actor.isInstanceAdmin;
+      const isPrivilegedBoardActor = req.actor.source === "local_implicit" || req.actor.isInstanceAdmin;
 
       if (!isPrivilegedBoardActor) {
         if (!req.actor.userId) {

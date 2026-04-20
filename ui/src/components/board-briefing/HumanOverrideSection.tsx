@@ -1,7 +1,7 @@
-import { cn } from "../../lib/utils";
 import { UserCheck } from "lucide-react";
-import { StatBlock } from "../briefing/BriefingCards";
 import type { HumanOverrideRate } from "../../api/executive";
+import { cn } from "../../lib/utils";
+import { StatBlock } from "../briefing/BriefingCards";
 
 interface HumanOverrideSectionProps {
   humanOverrideData: HumanOverrideRate;
@@ -23,11 +23,16 @@ export function HumanOverrideSection({ humanOverrideData }: HumanOverrideSection
         />
         <div className="rounded-lg bg-muted/30 px-3 py-2.5">
           <p className="text-xs text-muted-foreground">Override Rate</p>
-          <p className={cn(
-            "text-2xl font-bold tabular-nums",
-            humanOverrideData.overrideRate > 20 ? "text-red-400" :
-            humanOverrideData.overrideRate > 10 ? "text-amber-400" : "text-emerald-400",
-          )}>
+          <p
+            className={cn(
+              "text-2xl font-bold tabular-nums",
+              humanOverrideData.overrideRate > 20
+                ? "text-red-400"
+                : humanOverrideData.overrideRate > 10
+                  ? "text-amber-400"
+                  : "text-emerald-400",
+            )}
+          >
             {humanOverrideData.overrideRate}%
           </p>
         </div>

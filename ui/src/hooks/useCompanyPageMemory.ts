@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "@/lib/router";
 import { useCompany } from "../context/CompanyContext";
-import { toCompanyRelativePath } from "../lib/company-routes";
 import {
   getRememberedPathOwnerCompanyId,
   isRememberableCompanyPath,
   sanitizeRememberedPathForCompany,
 } from "../lib/company-page-memory";
+import { toCompanyRelativePath } from "../lib/company-routes";
 
 const STORAGE_KEY = "ironworks.companyPaths";
 
@@ -61,10 +61,7 @@ export function useCompanyPageMemory() {
   useEffect(() => {
     if (!selectedCompanyId) return;
 
-    if (
-      prevCompanyId.current !== null &&
-      selectedCompanyId !== prevCompanyId.current
-    ) {
+    if (prevCompanyId.current !== null && selectedCompanyId !== prevCompanyId.current) {
       if (selectionSource !== "route_sync" && selectedCompany) {
         const paths = getCompanyPaths();
         const targetPath = sanitizeRememberedPathForCompany({

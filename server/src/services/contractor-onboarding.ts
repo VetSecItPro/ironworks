@@ -1,7 +1,6 @@
-import { and, eq, inArray } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { agents, companies, issues, knowledgePages, projects } from "@ironworksai/db";
-import { sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 
 // ── Contractor Onboarding Packet ────────────────────────────────────────────
@@ -127,9 +126,7 @@ export async function buildOnboardingPacket(
       role: agents.role,
     })
     .from(agents)
-    .where(
-      eq(agents.companyId, companyId),
-    )
+    .where(eq(agents.companyId, companyId))
     .then((rows) => rows.find((a) => a.role === "ceo") ?? null);
 
   if (ceoAgent && !teamContacts.some((c) => c.agentId === ceoAgent.id)) {

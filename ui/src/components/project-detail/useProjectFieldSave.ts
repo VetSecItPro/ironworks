@@ -8,7 +8,9 @@ export function useProjectFieldSave(
   lookupCompanyId: string | undefined,
   invalidateProject: () => void,
 ) {
-  const [fieldSaveStates, setFieldSaveStates] = useState<Partial<Record<ProjectConfigFieldKey, ProjectFieldSaveState>>>({});
+  const [fieldSaveStates, setFieldSaveStates] = useState<Partial<Record<ProjectConfigFieldKey, ProjectFieldSaveState>>>(
+    {},
+  );
   const fieldSaveRequestIds = useRef<Partial<Record<ProjectConfigFieldKey, number>>>({});
   const fieldSaveTimers = useRef<Partial<Record<ProjectConfigFieldKey, ReturnType<typeof setTimeout>>>>({});
 
@@ -37,27 +39,33 @@ export function useProjectFieldSave(
     }, delayMs);
   }, []);
 
-  const updateProjectField = useCallback(async (field: ProjectConfigFieldKey, data: Record<string, unknown>) => {
-    const requestId = (fieldSaveRequestIds.current[field] ?? 0) + 1;
-    fieldSaveRequestIds.current[field] = requestId;
-    setFieldState(field, "saving");
-    try {
-      await projectsApi.update(projectLookupRef, data, resolvedCompanyId ?? lookupCompanyId);
-      invalidateProject();
-      if (fieldSaveRequestIds.current[field] !== requestId) return;
-      setFieldState(field, "saved");
-      scheduleFieldReset(field, 1800);
-    } catch (error) {
-      if (fieldSaveRequestIds.current[field] !== requestId) return;
-      setFieldState(field, "error");
-      scheduleFieldReset(field, 3000);
-      throw error;
-    }
-  }, [invalidateProject, lookupCompanyId, projectLookupRef, resolvedCompanyId, scheduleFieldReset, setFieldState]);
+  const updateProjectField = useCallback(
+    async (field: ProjectConfigFieldKey, data: Record<string, unknown>) => {
+      const requestId = (fieldSaveRequestIds.current[field] ?? 0) + 1;
+      fieldSaveRequestIds.current[field] = requestId;
+      setFieldState(field, "saving");
+      try {
+        await projectsApi.update(projectLookupRef, data, resolvedCompanyId ?? lookupCompanyId);
+        invalidateProject();
+        if (fieldSaveRequestIds.current[field] !== requestId) return;
+        setFieldState(field, "saved");
+        scheduleFieldReset(field, 1800);
+      } catch (error) {
+        if (fieldSaveRequestIds.current[field] !== requestId) return;
+        setFieldState(field, "error");
+        scheduleFieldReset(field, 3000);
+        throw error;
+      }
+    },
+    [invalidateProject, lookupCompanyId, projectLookupRef, resolvedCompanyId, scheduleFieldReset, setFieldState],
+  );
 
-  const getFieldSaveState = useCallback((field: ProjectConfigFieldKey): ProjectFieldSaveState => {
-    return fieldSaveStates[field] ?? "idle";
-  }, [fieldSaveStates]);
+  const getFieldSaveState = useCallback(
+    (field: ProjectConfigFieldKey): ProjectFieldSaveState => {
+      return fieldSaveStates[field] ?? "idle";
+    },
+    [fieldSaveStates],
+  );
 
   return { updateProjectField, getFieldSaveState };
 }

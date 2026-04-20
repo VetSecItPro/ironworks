@@ -36,14 +36,12 @@ export interface TelegramTestResult {
 }
 
 export const messagingApi = {
-  listBridges: (companyId: string) =>
-    api.get<MessagingBridgesResponse>(`/companies/${companyId}/messaging/bridges`),
+  listBridges: (companyId: string) => api.get<MessagingBridgesResponse>(`/companies/${companyId}/messaging/bridges`),
 
   configureTelegram: (companyId: string, token: string) =>
     api.post<MessagingBridge>(`/companies/${companyId}/messaging/telegram`, { token }),
 
-  removeTelegram: (companyId: string) =>
-    api.delete<{ ok: true }>(`/companies/${companyId}/messaging/telegram`),
+  removeTelegram: (companyId: string) => api.delete<{ ok: true }>(`/companies/${companyId}/messaging/telegram`),
 
   testTelegram: (companyId: string) =>
     api.post<TelegramTestResult>(`/companies/${companyId}/messaging/telegram/test`, {}),

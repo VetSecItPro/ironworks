@@ -1,8 +1,8 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { agentRoutes } from "../routes/agents.js";
 import { errorHandler } from "../middleware/index.js";
+import { agentRoutes } from "../routes/agents.js";
 
 const agentId = "11111111-1111-4111-8111-111111111111";
 const companyId = "22222222-2222-4222-8222-222222222222";
@@ -126,11 +126,13 @@ function createDbStub() {
     select: vi.fn().mockReturnValue({
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockReturnValue({
-          then: vi.fn().mockResolvedValue([{
-            id: companyId,
-            name: "Ironworks",
-            requireBoardApprovalForNewAgents: false,
-          }]),
+          then: vi.fn().mockResolvedValue([
+            {
+              id: companyId,
+              name: "Ironworks",
+              requireBoardApprovalForNewAgents: false,
+            },
+          ]),
         }),
       }),
     }),
@@ -204,23 +206,15 @@ describe("agent permission routes", () => {
       companyIds: [companyId],
     });
 
-    const res = await request(app)
-      .post(`/api/companies/${companyId}/agents`)
-      .send({
-        name: "Builder",
-        role: "engineer",
-        adapterType: "process",
-        adapterConfig: {},
-      });
+    const res = await request(app).post(`/api/companies/${companyId}/agents`).send({
+      name: "Builder",
+      role: "engineer",
+      adapterType: "process",
+      adapterConfig: {},
+    });
 
     expect(res.status).toBe(201);
-    expect(mockAccessService.ensureMembership).toHaveBeenCalledWith(
-      companyId,
-      "agent",
-      agentId,
-      "member",
-      "active",
-    );
+    expect(mockAccessService.ensureMembership).toHaveBeenCalledWith(companyId, "agent", agentId, "member", "active");
     expect(mockAccessService.setPrincipalPermission).toHaveBeenCalledWith(
       companyId,
       "agent",

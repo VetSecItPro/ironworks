@@ -1,6 +1,6 @@
+import { Eye, EyeOff, Key, Monitor, RotateCcw, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Key, Monitor, RotateCcw, ShieldCheck, Eye, EyeOff } from "lucide-react";
 import { useToast } from "../../context/ToastContext";
 
 const API_KEYS_STORAGE_KEY = "ironworks:api-keys";
@@ -100,9 +100,7 @@ export function SecuritySection({ companyId: _companyId }: { companyId: string }
   function handleRotateKey(keyId: string) {
     const newLastFour = Math.random().toString(36).slice(2, 6);
     const updated = apiKeys.map((k) =>
-      k.id === keyId
-        ? { ...k, lastFour: newLastFour, createdAt: new Date().toISOString() }
-        : k,
+      k.id === keyId ? { ...k, lastFour: newLastFour, createdAt: new Date().toISOString() } : k,
     );
     setApiKeys(updated);
     localStorage.setItem(API_KEYS_STORAGE_KEY, JSON.stringify(updated));
@@ -137,48 +135,29 @@ export function SecuritySection({ companyId: _companyId }: { companyId: string }
           <span className="text-sm font-medium">API Key Management</span>
         </div>
         {apiKeys.length === 0 ? (
-          <p className="text-xs text-muted-foreground">
-            No API keys configured.
-          </p>
+          <p className="text-xs text-muted-foreground">No API keys configured.</p>
         ) : (
           <div className="space-y-2">
             {apiKeys.map((key) => (
-              <div
-                key={key.id}
-                className="flex items-center justify-between rounded-md border border-border px-3 py-2"
-              >
+              <div key={key.id} className="flex items-center justify-between rounded-md border border-border px-3 py-2">
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium">{key.name}</div>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
                     <span className="font-mono">
-                      {revealedKeyId === key.id
-                        ? `sk-...${key.lastFour}`
-                        : `sk-****${key.lastFour}`}
+                      {revealedKeyId === key.id ? `sk-...${key.lastFour}` : `sk-****${key.lastFour}`}
                     </span>
                     <button
                       className="text-muted-foreground hover:text-foreground transition-colors"
-                      onClick={() =>
-                        setRevealedKeyId(
-                          revealedKeyId === key.id ? null : key.id,
-                        )
-                      }
+                      onClick={() => setRevealedKeyId(revealedKeyId === key.id ? null : key.id)}
                     >
-                      {revealedKeyId === key.id ? (
-                        <EyeOff className="h-3 w-3" />
-                      ) : (
-                        <Eye className="h-3 w-3" />
-                      )}
+                      {revealedKeyId === key.id ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                     </button>
                     <span className="text-border">|</span>
                     <span>Created {formatRelative(key.createdAt)}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0 ml-3">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleRotateKey(key.id)}
-                  >
+                  <Button variant="outline" size="sm" onClick={() => handleRotateKey(key.id)}>
                     <RotateCcw className="h-3 w-3 mr-1" />
                     Rotate
                   </Button>
@@ -214,9 +193,7 @@ export function SecuritySection({ companyId: _companyId }: { companyId: string }
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">
-                      {session.device}
-                    </span>
+                    <span className="text-sm font-medium">{session.device}</span>
                     {session.current && (
                       <span className="text-[10px] font-medium bg-green-500/10 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded">
                         Current

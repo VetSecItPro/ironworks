@@ -1,8 +1,8 @@
 import type { RefObject } from "react";
-import { InlineEntitySelector, type InlineEntityOption } from "../InlineEntitySelector";
-import { AgentIcon } from "../AgentIconPicker";
 import { parseAssigneeValue } from "../../lib/assignees";
 import { trackRecentAssignee } from "../../lib/recent-assignees";
+import { AgentIcon } from "../AgentIconPicker";
+import { type InlineEntityOption, InlineEntitySelector } from "../InlineEntitySelector";
 import type { MarkdownEditorRef } from "../MarkdownEditor";
 
 interface Agent {
@@ -104,7 +104,9 @@ export function AssignmentRow({
                 : null;
               return (
                 <>
-                  {assignee ? <AgentIcon icon={assignee.icon} className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : null}
+                  {assignee ? (
+                    <AgentIcon icon={assignee.icon} className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  ) : null}
                   <span className="truncate">{option.label}</span>
                 </>
               );

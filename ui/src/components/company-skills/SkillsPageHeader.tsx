@@ -1,6 +1,6 @@
 import { Plus, RefreshCw } from "lucide-react";
-import { cn } from "../../lib/utils";
 import { Button } from "@/components/ui/button";
+import { cn } from "../../lib/utils";
 
 export function SkillsPageHeader({
   onScan,
@@ -20,12 +20,7 @@ export function SkillsPageHeader({
         </p>
       </div>
       <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onScan}
-          disabled={scanPending}
-        >
+        <Button variant="outline" size="sm" onClick={onScan} disabled={scanPending}>
           <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", scanPending && "animate-spin")} />
           Scan
         </Button>

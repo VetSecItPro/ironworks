@@ -1,5 +1,5 @@
-import { useRef, useCallback, useEffect } from "react";
 import { ListTodo, Plus, X } from "lucide-react";
+import { useCallback, useEffect, useRef } from "react";
 import { TASK_TEMPLATES } from "./constants";
 
 interface StepTaskProps {
@@ -41,17 +41,14 @@ export function StepTask({
         <div>
           <h3 className="font-medium">Give it something to do</h3>
           <p className="text-xs text-muted-foreground">
-            Give your agent a small task to start with - a bug fix,
-            a research question, writing a script.
+            Give your agent a small task to start with - a bug fix, a research question, writing a script.
           </p>
         </div>
       </div>
 
       {/* Task template dropdown */}
       <div>
-        <label className="text-xs text-muted-foreground mb-1 block">
-          Quick start template
-        </label>
+        <label className="text-xs text-muted-foreground mb-1 block">Quick start template</label>
         <select
           className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 text-foreground"
           value=""
@@ -63,17 +60,19 @@ export function StepTask({
             }
           }}
         >
-          <option value="" disabled>Choose a common first task...</option>
+          <option value="" disabled>
+            Choose a common first task...
+          </option>
           {TASK_TEMPLATES.map((tpl) => (
-            <option key={tpl.title} value={tpl.title}>{tpl.label}</option>
+            <option key={tpl.title} value={tpl.title}>
+              {tpl.label}
+            </option>
           ))}
         </select>
       </div>
 
       <div>
-        <label className="text-xs text-muted-foreground mb-1 block">
-          Task title
-        </label>
+        <label className="text-xs text-muted-foreground mb-1 block">Task title</label>
         <input
           className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/70"
           placeholder="e.g. Research competitor pricing"
@@ -83,9 +82,7 @@ export function StepTask({
         />
       </div>
       <div>
-        <label className="text-xs text-muted-foreground mb-1 block">
-          Description (optional)
-        </label>
+        <label className="text-xs text-muted-foreground mb-1 block">Description (optional)</label>
         <textarea
           ref={textareaRef}
           className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/70 resize-none min-h-[120px] max-h-[300px] overflow-y-auto"
@@ -112,13 +109,17 @@ export function StepTask({
             className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/70"
             placeholder="Task title"
             value={extra.title}
-            onChange={(e) => onExtraTasksChange(extraTasks.map((t, i) => i === idx ? { ...t, title: e.target.value } : t))}
+            onChange={(e) =>
+              onExtraTasksChange(extraTasks.map((t, i) => (i === idx ? { ...t, title: e.target.value } : t)))
+            }
           />
           <textarea
             className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/70 resize-none min-h-[60px]"
             placeholder="Description (optional)"
             value={extra.description}
-            onChange={(e) => onExtraTasksChange(extraTasks.map((t, i) => i === idx ? { ...t, description: e.target.value } : t))}
+            onChange={(e) =>
+              onExtraTasksChange(extraTasks.map((t, i) => (i === idx ? { ...t, description: e.target.value } : t)))
+            }
           />
         </div>
       ))}

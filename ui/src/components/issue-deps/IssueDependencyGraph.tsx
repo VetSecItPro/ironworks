@@ -1,6 +1,6 @@
-import { useMemo } from "react";
-import { GitBranch } from "lucide-react";
 import type { Issue } from "@ironworksai/shared";
+import { GitBranch } from "lucide-react";
+import { useMemo } from "react";
 import { computeCriticalPath } from "./critical-path";
 import { DepGraphSvg } from "./DepGraphSvg";
 import { DepListView } from "./DepListView";
@@ -15,13 +15,9 @@ export function IssueDependencyGraph({ issue, allIssues }: IssueDependencyGraphP
     const issueMap = new Map<string, Issue>();
     for (const i of allIssues) issueMap.set(i.id, i);
 
-    const blockerIssues = (issue.dependsOn ?? [])
-      .map((id) => issueMap.get(id))
-      .filter((i): i is Issue => !!i);
+    const blockerIssues = (issue.dependsOn ?? []).map((id) => issueMap.get(id)).filter((i): i is Issue => !!i);
 
-    const blockedIssues = allIssues.filter(
-      (i) => i.id !== issue.id && (i.dependsOn ?? []).includes(issue.id),
-    );
+    const blockedIssues = allIssues.filter((i) => i.id !== issue.id && (i.dependsOn ?? []).includes(issue.id));
 
     const cp = computeCriticalPath(issue, allIssues, blockerIssues, blockedIssues);
 
@@ -39,12 +35,7 @@ export function IssueDependencyGraph({ issue, allIssues }: IssueDependencyGraphP
 
   return (
     <div className="space-y-3">
-      <DepGraphSvg
-        issue={issue}
-        blockers={blockers}
-        blocked={blocked}
-        criticalPath={criticalPath}
-      />
+      <DepGraphSvg issue={issue} blockers={blockers} blocked={blocked} criticalPath={criticalPath} />
 
       <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
         <span className="flex items-center gap-1">
@@ -52,16 +43,15 @@ export function IssueDependencyGraph({ issue, allIssues }: IssueDependencyGraphP
           Critical path
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-0.5 bg-muted-foreground/40 rounded border-dashed" style={{ borderTop: "1px dashed" }} />
+          <span
+            className="inline-block w-3 h-0.5 bg-muted-foreground/40 rounded border-dashed"
+            style={{ borderTop: "1px dashed" }}
+          />
           Dependency link
         </span>
       </div>
 
-      <DepListView
-        blockers={blockers}
-        blocked={blocked}
-        criticalPath={criticalPath}
-      />
+      <DepListView blockers={blockers} blocked={blocked} criticalPath={criticalPath} />
     </div>
   );
 }

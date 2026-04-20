@@ -5,14 +5,14 @@
  * Messages become Issues; CEO agent responses are relayed back to Telegram.
  */
 
-import { and, eq, isNotNull } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { messagingBridges } from "@ironworksai/db";
-import { messagingBridgeService } from "../services/messaging-bridges.js";
-import { issueService } from "../services/issues.js";
-import { agentService } from "../services/agents.js";
-import { secretService } from "../services/secrets.js";
+import { and, eq, isNotNull } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
+import { agentService } from "../services/agents.js";
+import { issueService } from "../services/issues.js";
+import { messagingBridgeService } from "../services/messaging-bridges.js";
+import { secretService } from "../services/secrets.js";
 
 const TELEGRAM_API = "https://api.telegram.org";
 const POLL_INTERVAL_MS = 10_000;
@@ -38,14 +38,15 @@ async function classifyIntent(text: string): Promise<"chat" | "task"> {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model: "ministral-3:3b",
         messages: [
           {
             role: "system",
-            content: "You are a message classifier for a CEO's Telegram bot. Classify the user's message as either TASK or CHAT.\n\nTASK: The user is giving a directive, asking for something to be done, reporting an issue, requesting information, or assigning work.\n\nCHAT: The user is making casual conversation, greeting, acknowledging, expressing emotion, giving status updates about themselves, or saying they're busy/unavailable.\n\nRespond with ONLY the word TASK or CHAT. Nothing else.",
+            content:
+              "You are a message classifier for a CEO's Telegram bot. Classify the user's message as either TASK or CHAT.\n\nTASK: The user is giving a directive, asking for something to be done, reporting an issue, requesting information, or assigning work.\n\nCHAT: The user is making casual conversation, greeting, acknowledging, expressing emotion, giving status updates about themselves, or saying they're busy/unavailable.\n\nRespond with ONLY the word TASK or CHAT. Nothing else.",
           },
           {
             role: "user",
@@ -61,9 +62,12 @@ async function classifyIntent(text: string): Promise<"chat" | "task"> {
       return "task";
     }
 
-    const data = await response.json() as { message?: { content?: string } };
+    const data = (await response.json()) as { message?: { content?: string } };
     const answer = (data.message?.content ?? "").trim().toUpperCase();
-    logger.debug({ intent: answer.includes("CHAT") ? "chat" : "task", text: text.slice(0, 50) }, "[telegram-bridge] Message classified");
+    logger.debug(
+      { intent: answer.includes("CHAT") ? "chat" : "task", text: text.slice(0, 50) },
+      "[telegram-bridge] Message classified",
+    );
 
     if (answer.includes("CHAT")) return "chat";
     return "task"; // Default to task if unclear
@@ -82,14 +86,15 @@ async function generateChatReply(text: string): Promise<string> {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model: "ministral-3:3b",
         messages: [
           {
             role: "system",
-            content: "You are Marcus Cole, CEO of the company. You're chatting with the Boss (company owner) on Telegram. Keep responses brief (1-2 sentences), professional but warm. You're a confident leader who respects the boss's time. Never create tasks or mention issues. Just have a natural conversation.",
+            content:
+              "You are Marcus Cole, CEO of the company. You're chatting with the Boss (company owner) on Telegram. Keep responses brief (1-2 sentences), professional but warm. You're a confident leader who respects the boss's time. Never create tasks or mention issues. Just have a natural conversation.",
           },
           {
             role: "user",
@@ -102,7 +107,7 @@ async function generateChatReply(text: string): Promise<string> {
 
     if (!response.ok) return "Got it, Boss.";
 
-    const data = await response.json() as { message?: { content?: string } };
+    const data = (await response.json()) as { message?: { content?: string } };
     return (data.message?.content ?? "Got it, Boss.").trim().slice(0, 500);
   } catch {
     return "Got it, Boss. Let me know when you need anything.";
@@ -211,11 +216,7 @@ async function addBridgeComment(
   }
 }
 
-async function getIssueComments(
-  db: Db,
-  _companyId: string,
-  issueId: string,
-): Promise<Array<Record<string, unknown>>> {
+async function getIssueComments(db: Db, _companyId: string, issueId: string): Promise<Array<Record<string, unknown>>> {
   const svc = getIssueService(db);
   try {
     const comments = await svc.listComments(issueId, { limit: 50, order: "asc" });
@@ -232,9 +233,7 @@ async function findCeoAgent(db: Db, companyId: string): Promise<string | null> {
   try {
     const agents = await svc.list(companyId);
     const ceo = (agents as Array<{ id: string; role?: string; title?: string }>).find(
-      (a) =>
-        a.role?.toLowerCase() === "ceo" ||
-        a.title?.toLowerCase()?.includes("ceo"),
+      (a) => a.role?.toLowerCase() === "ceo" || a.title?.toLowerCase()?.includes("ceo"),
     );
     return ceo?.id ?? (agents as Array<{ id: string }>)[0]?.id ?? null;
   } catch {
@@ -341,7 +340,7 @@ function startTelegramPollLoop(db: Db, bot: BotInstance): void {
           // Create new issue
           // SEC-INTEG-004: Sanitize Telegram content before creating issues
           const rawSenderName = msg.from?.first_name ?? msg.from?.username ?? "Unknown";
-          const senderName = rawSenderName.replace(/[`*_~\[\]<>]/g, "").slice(0, 50);
+          const senderName = rawSenderName.replace(/[`*_~[\]<>]/g, "").slice(0, 50);
           const safeText = text.slice(0, 4000);
           await sendTelegram(bot.token, chatId, "Creating task for CEO...");
 
@@ -368,12 +367,7 @@ function startTelegramPollLoop(db: Db, bot: BotInstance): void {
           );
         } else {
           // Add comment to existing issue
-          const result = await addBridgeComment(
-            db,
-            bot.companyId,
-            existingIssueId,
-            `[via Telegram]: ${text}`,
-          );
+          const result = await addBridgeComment(db, bot.companyId, existingIssueId, `[via Telegram]: ${text}`);
           if (result.error) {
             await sendTelegram(bot.token, chatId, `Error: ${result.error}`);
           }
@@ -408,9 +402,7 @@ function startResponsePollLoop(db: Db, bot: BotInstance): void {
         const lastSeen = bot.lastSeenComment.get(issueId) ?? 0;
 
         const newComments = comments.filter((c) => {
-          const createdAt = new Date(
-            (c.createdAt as string) ?? "",
-          ).getTime();
+          const createdAt = new Date((c.createdAt as string) ?? "").getTime();
           const isAgent = !!c.authorAgentId;
           const isUser = !!c.authorUserId;
           return createdAt > lastSeen && isAgent && !isUser;
@@ -421,9 +413,7 @@ function startResponsePollLoop(db: Db, bot: BotInstance): void {
           if (body) {
             await sendTelegram(bot.token, chatId, `CEO:\n${body}`);
           }
-          const ts = new Date(
-            (c.createdAt as string) ?? "",
-          ).getTime();
+          const ts = new Date((c.createdAt as string) ?? "").getTime();
           if (ts > lastSeen) bot.lastSeenComment.set(issueId, ts);
         }
       } catch (err) {
@@ -460,11 +450,7 @@ export async function testTelegramToken(token: string): Promise<string> {
 /**
  * Start a Telegram bot instance for a company.
  */
-export async function startTelegramBridge(
-  db: Db,
-  companyId: string,
-  token: string,
-): Promise<void> {
+export async function startTelegramBridge(db: Db, companyId: string, token: string): Promise<void> {
   // Stop existing instance if any
   await stopTelegramBridge(companyId);
 
@@ -498,7 +484,11 @@ export async function startTelegramBridge(
 
   // Send startup notification if we have an owner chat ID
   if (ownerChatId) {
-    const now = new Date().toLocaleString("en-US", { timeZone: "America/Chicago", dateStyle: "short", timeStyle: "short" });
+    const now = new Date().toLocaleString("en-US", {
+      timeZone: "America/Chicago",
+      dateStyle: "short",
+      timeStyle: "short",
+    });
     sendTelegram(token, ownerChatId, `Server is back online. All systems operational. (${now} CT)`).catch((err) => {
       logger.warn({ err, companyId }, "[telegram-bridge] Failed to send startup notification");
     });
@@ -541,25 +531,19 @@ export async function startAllTelegramBridges(db: Db): Promise<void> {
   const allBridges = await db
     .select()
     .from(messagingBridges)
-    .where(
-      and(
-        eq(messagingBridges.platform, "telegram"),
-        isNotNull(messagingBridges.secretId),
-      ),
-    );
+    .where(and(eq(messagingBridges.platform, "telegram"), isNotNull(messagingBridges.secretId)));
 
   for (const bridge of allBridges) {
     if (!bridge.secretId) continue;
     try {
       let token: string | null = null;
       try {
-        token = await secretSvc.resolveSecretValue(
-          bridge.companyId,
-          bridge.secretId,
-          "latest",
-        );
+        token = await secretSvc.resolveSecretValue(bridge.companyId, bridge.secretId, "latest");
       } catch (secretErr) {
-        logger.warn({ secretErr, companyId: bridge.companyId }, "[telegram-bridge] Secret decryption failed, trying TELEGRAM_BOT_TOKEN env");
+        logger.warn(
+          { secretErr, companyId: bridge.companyId },
+          "[telegram-bridge] Secret decryption failed, trying TELEGRAM_BOT_TOKEN env",
+        );
         token = process.env.TELEGRAM_BOT_TOKEN ?? null;
       }
       if (token) {
@@ -567,12 +551,7 @@ export async function startAllTelegramBridges(db: Db): Promise<void> {
       }
     } catch (err) {
       logger.error({ err, companyId: bridge.companyId }, "[telegram-bridge] Failed to start bridge");
-      await bridgeSvc.updateStatus(
-        bridge.companyId,
-        "telegram",
-        "error",
-        (err as Error).message,
-      );
+      await bridgeSvc.updateStatus(bridge.companyId, "telegram", "error", (err as Error).message);
     }
   }
 }

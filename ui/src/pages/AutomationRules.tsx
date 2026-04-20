@@ -1,13 +1,12 @@
-import { useEffect, useState, useCallback } from "react";
-import { useBreadcrumbs } from "@/context/BreadcrumbContext";
-import { useToast } from "@/context/ToastContext";
-import { Button } from "@/components/ui/button";
-import { Zap, Plus } from "lucide-react";
-
-import type { AutomationRule, Trigger, Action } from "@/components/settings/automationTypes";
-import { loadRules, saveRules, generateId } from "@/components/settings/automationTypes";
+import { Plus, Zap } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { AutomationRuleForm } from "@/components/settings/AutomationRuleForm";
 import { AutomationRuleList } from "@/components/settings/AutomationRuleList";
+import type { Action, AutomationRule, Trigger } from "@/components/settings/automationTypes";
+import { generateId, loadRules, saveRules } from "@/components/settings/automationTypes";
+import { Button } from "@/components/ui/button";
+import { useBreadcrumbs } from "@/context/BreadcrumbContext";
+import { useToast } from "@/context/ToastContext";
 
 export function AutomationRules() {
   const { setBreadcrumbs } = useBreadcrumbs();
@@ -103,12 +102,8 @@ export function AutomationRules() {
         <div className="flex items-center gap-2">
           <Zap className="h-5 w-5 text-muted-foreground" />
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">
-              Automation Rules
-            </h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              Define when/then rules to automate common workflows.
-            </p>
+            <h1 className="text-2xl font-bold tracking-tight">Automation Rules</h1>
+            <p className="text-muted-foreground text-sm mt-1">Define when/then rules to automate common workflows.</p>
           </div>
         </div>
         {!showForm && (

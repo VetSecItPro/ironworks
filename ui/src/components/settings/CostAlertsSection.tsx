@@ -1,8 +1,7 @@
-import { useEffect, useState } from "react";
 import { AlertTriangle } from "lucide-react";
+import { useEffect, useState } from "react";
 
-const COST_ALERT_STORAGE_KEY = (companyId: string) =>
-  `ironworks:cost-alerts:${companyId}`;
+const COST_ALERT_STORAGE_KEY = (companyId: string) => `ironworks:cost-alerts:${companyId}`;
 
 interface CostAlertThreshold {
   id: string;
@@ -17,11 +16,7 @@ const DEFAULT_THRESHOLDS: CostAlertThreshold[] = [
   { id: "monthly-500", label: "Monthly spend exceeds $500", thresholdCents: 50000, enabled: false },
 ];
 
-export function CostAlertsSection({
-  companyId,
-}: {
-  companyId: string | null | undefined;
-}) {
+export function CostAlertsSection({ companyId }: { companyId: string | null | undefined }) {
   const [thresholds, setThresholds] = useState<CostAlertThreshold[]>(() => {
     if (!companyId) return DEFAULT_THRESHOLDS;
     try {
@@ -34,23 +29,16 @@ export function CostAlertsSection({
   useEffect(() => {
     if (!companyId) return;
     try {
-      localStorage.setItem(
-        COST_ALERT_STORAGE_KEY(companyId),
-        JSON.stringify(thresholds),
-      );
+      localStorage.setItem(COST_ALERT_STORAGE_KEY(companyId), JSON.stringify(thresholds));
     } catch {}
   }, [companyId, thresholds]);
 
   const toggleThreshold = (id: string) => {
-    setThresholds((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, enabled: !t.enabled } : t)),
-    );
+    setThresholds((prev) => prev.map((t) => (t.id === id ? { ...t, enabled: !t.enabled } : t)));
   };
 
   const updateThreshold = (id: string, cents: number) => {
-    setThresholds((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, thresholdCents: cents } : t)),
-    );
+    setThresholds((prev) => prev.map((t) => (t.id === id ? { ...t, thresholdCents: cents } : t)));
   };
 
   return (
@@ -61,8 +49,7 @@ export function CostAlertsSection({
       </div>
       <div className="rounded-md border border-border px-4 py-4 space-y-4">
         <p className="text-sm text-muted-foreground">
-          Configure spending thresholds that trigger alerts. Stored locally per
-          device.
+          Configure spending thresholds that trigger alerts. Stored locally per device.
         </p>
         {thresholds.map((threshold) => (
           <div
@@ -72,17 +59,13 @@ export function CostAlertsSection({
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium">{threshold.label}</p>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-xs text-muted-foreground">
-                  Threshold:
-                </span>
+                <span className="text-xs text-muted-foreground">Threshold:</span>
                 <input
                   type="number"
                   min={0}
                   step={100}
                   value={threshold.thresholdCents}
-                  onChange={(e) =>
-                    updateThreshold(threshold.id, Number(e.target.value))
-                  }
+                  onChange={(e) => updateThreshold(threshold.id, Number(e.target.value))}
                   className="w-24 rounded-md border border-border bg-background px-2 py-1 text-xs"
                 />
                 <span className="text-xs text-muted-foreground">cents</span>
@@ -96,11 +79,7 @@ export function CostAlertsSection({
               role="switch"
               data-slot="toggle"
               aria-checked={threshold.enabled}
-              aria-label={
-                threshold.enabled
-                  ? `Disable ${threshold.label}`
-                  : `Enable ${threshold.label}`
-              }
+              aria-label={threshold.enabled ? `Disable ${threshold.label}` : `Enable ${threshold.label}`}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                 threshold.enabled ? "bg-foreground" : "bg-muted"
               }`}

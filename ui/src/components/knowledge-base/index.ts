@@ -1,10 +1,10 @@
-export { KBFolderTree } from "./KBFolderTree";
-export { WikiLinkedBody } from "./WikiLinkedBody";
 export { AutoTableOfContents } from "./AutoTableOfContents";
-export { PageAnalytics } from "./PageAnalytics";
 export { FormattingToolbar } from "./FormattingToolbar";
 export { IssueReferenceChips } from "./IssueReferenceChips";
-export { SimpleDiff } from "./SimpleDiff";
+export { KBFolderTree } from "./KBFolderTree";
+export { KBPageContent } from "./KBPageContent";
 export { KBPageHeader, KBPageMetadata } from "./KBPageHeader";
 export { KBRevisionHistory } from "./KBRevisionHistory";
-export { KBPageContent } from "./KBPageContent";
+export { PageAnalytics } from "./PageAnalytics";
+export { SimpleDiff } from "./SimpleDiff";
+export { WikiLinkedBody } from "./WikiLinkedBody";

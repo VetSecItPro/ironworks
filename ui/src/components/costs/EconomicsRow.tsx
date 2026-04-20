@@ -46,21 +46,45 @@ export function EconomicsRow({
               <div className="flex items-end justify-between">
                 <div>
                   <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Cost / Issue</div>
-                  <div className="text-2xl font-semibold tabular-nums mt-1">{formatCents(unitEconomics.current.costPerIssue)}</div>
+                  <div className="text-2xl font-semibold tabular-nums mt-1">
+                    {formatCents(unitEconomics.current.costPerIssue)}
+                  </div>
                 </div>
-                <span className={cn("flex items-center gap-1 text-xs font-medium", unitEconomics.costPerIssueTrend > 0 ? "text-amber-400" : "text-emerald-400")}>
-                  {unitEconomics.costPerIssueTrend > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                  {unitEconomics.costPerIssueTrend > 0 ? "+" : ""}{formatCents(Math.abs(unitEconomics.costPerIssueTrend))} vs prior
+                <span
+                  className={cn(
+                    "flex items-center gap-1 text-xs font-medium",
+                    unitEconomics.costPerIssueTrend > 0 ? "text-amber-400" : "text-emerald-400",
+                  )}
+                >
+                  {unitEconomics.costPerIssueTrend > 0 ? (
+                    <TrendingUp className="h-3 w-3" />
+                  ) : (
+                    <TrendingDown className="h-3 w-3" />
+                  )}
+                  {unitEconomics.costPerIssueTrend > 0 ? "+" : ""}
+                  {formatCents(Math.abs(unitEconomics.costPerIssueTrend))} vs prior
                 </span>
               </div>
               <div className="border-t border-border/50 pt-2 flex items-end justify-between">
                 <div>
                   <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Cost / Active Hour</div>
-                  <div className="text-2xl font-semibold tabular-nums mt-1">{formatCents(unitEconomics.current.costPerActiveHour)}</div>
+                  <div className="text-2xl font-semibold tabular-nums mt-1">
+                    {formatCents(unitEconomics.current.costPerActiveHour)}
+                  </div>
                 </div>
-                <span className={cn("flex items-center gap-1 text-xs font-medium", unitEconomics.costPerHourTrend > 0 ? "text-amber-400" : "text-emerald-400")}>
-                  {unitEconomics.costPerHourTrend > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                  {unitEconomics.costPerHourTrend > 0 ? "+" : ""}{formatCents(Math.abs(unitEconomics.costPerHourTrend))} vs prior
+                <span
+                  className={cn(
+                    "flex items-center gap-1 text-xs font-medium",
+                    unitEconomics.costPerHourTrend > 0 ? "text-amber-400" : "text-emerald-400",
+                  )}
+                >
+                  {unitEconomics.costPerHourTrend > 0 ? (
+                    <TrendingUp className="h-3 w-3" />
+                  ) : (
+                    <TrendingDown className="h-3 w-3" />
+                  )}
+                  {unitEconomics.costPerHourTrend > 0 ? "+" : ""}
+                  {formatCents(Math.abs(unitEconomics.costPerHourTrend))} vs prior
                 </span>
               </div>
               <div className="text-xs text-muted-foreground tabular-nums pt-1 border-t border-border/50">
@@ -86,17 +110,24 @@ export function EconomicsRow({
             <>
               <div>
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Monthly rate</div>
-                <div className="text-2xl font-semibold tabular-nums mt-1">{formatCents(burnRateData.monthlyRateCents)}</div>
+                <div className="text-2xl font-semibold tabular-nums mt-1">
+                  {formatCents(burnRateData.monthlyRateCents)}
+                </div>
                 <div className="text-xs text-muted-foreground">{formatCents(burnRateData.dailyRateCents)}/day</div>
               </div>
               {burnRateData.budgetCents > 0 && (
                 <div className="border-t border-border/50 pt-2">
                   <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Runway</div>
-                  <div className={cn(
-                    "text-2xl font-semibold tabular-nums mt-1",
-                    burnRateData.runwayDays !== null && burnRateData.runwayDays < 7 ? "text-red-400" :
-                    burnRateData.runwayDays !== null && burnRateData.runwayDays < 14 ? "text-amber-400" : "text-emerald-400",
-                  )}>
+                  <div
+                    className={cn(
+                      "text-2xl font-semibold tabular-nums mt-1",
+                      burnRateData.runwayDays !== null && burnRateData.runwayDays < 7
+                        ? "text-red-400"
+                        : burnRateData.runwayDays !== null && burnRateData.runwayDays < 14
+                          ? "text-amber-400"
+                          : "text-emerald-400",
+                    )}
+                  >
                     {burnRateData.runwayDays !== null ? `${burnRateData.runwayDays}d` : "N/A"}
                   </div>
                   <div className="text-xs text-muted-foreground">

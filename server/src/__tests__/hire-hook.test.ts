@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Db } from "@ironworksai/db";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { notifyHireApproved } from "../services/hire-hook.js";
 
 // Mock the registry so we control whether the adapter has onHireApproved and what it does.
@@ -14,7 +14,13 @@ vi.mock("../services/activity-log.js", () => ({
 const { findServerAdapter } = await import("../adapters/registry.js");
 const { logActivity } = await import("../services/activity-log.js");
 
-function mockDbWithAgent(agent: { id: string; companyId: string; name: string; adapterType: string; adapterConfig?: Record<string, unknown> }): Db {
+function mockDbWithAgent(agent: {
+  id: string;
+  companyId: string;
+  name: string;
+  adapterType: string;
+  adapterConfig?: Record<string, unknown>;
+}): Db {
   return {
     select: () => ({
       from: () => ({

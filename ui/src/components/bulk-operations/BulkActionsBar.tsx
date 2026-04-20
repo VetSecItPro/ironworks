@@ -1,10 +1,5 @@
+import { ArrowRight, Tag, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  ArrowRight,
-  Tag,
-  Trash2,
-  X,
-} from "lucide-react";
 import { cn } from "../../lib/utils";
 
 interface BulkActionsBarProps {
@@ -39,9 +34,7 @@ export function BulkActionsBar({
       role="toolbar"
       aria-label={`Bulk actions for ${selectedCount} selected items`}
     >
-      <span className="text-xs font-medium text-muted-foreground">
-        {selectedCount} selected
-      </span>
+      <span className="text-xs font-medium text-muted-foreground">{selectedCount} selected</span>
       <div className="h-4 w-px bg-border" />
 
       {onStatusChange && (
@@ -54,7 +47,9 @@ export function BulkActionsBar({
             e.target.value = "";
           }}
         >
-          <option value="" disabled>Set status...</option>
+          <option value="" disabled>
+            Set status...
+          </option>
           <option value="todo">To Do</option>
           <option value="in_progress">In Progress</option>
           <option value="in_review">In Review</option>
@@ -73,7 +68,9 @@ export function BulkActionsBar({
             e.target.value = "";
           }}
         >
-          <option value="" disabled>Set priority...</option>
+          <option value="" disabled>
+            Set priority...
+          </option>
           <option value="critical">Critical</option>
           <option value="high">High</option>
           <option value="medium">Medium</option>
@@ -96,7 +93,12 @@ export function BulkActionsBar({
       )}
 
       {onDelete && (
-        <Button variant="ghost" size="sm" onClick={onDelete} className="h-7 text-xs gap-1 text-destructive hover:text-destructive">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onDelete}
+          className="h-7 text-xs gap-1 text-destructive hover:text-destructive"
+        >
           <Trash2 className="h-3 w-3" />
           Delete
         </Button>

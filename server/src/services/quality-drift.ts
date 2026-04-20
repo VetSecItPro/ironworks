@@ -1,6 +1,6 @@
-import { and, desc, eq, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { agents, approvals, issueApprovals } from "@ironworksai/db";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 
 // ── Quality Drift Detection ───────────────────────────────────────────────
@@ -27,11 +27,7 @@ export interface AgentDriftEntry {
  * Detect quality drift for a specific agent based on their last 20
  * quality gate approvals.
  */
-export async function detectQualityDrift(
-  db: Db,
-  companyId: string,
-  agentId: string,
-): Promise<DriftResult> {
+export async function detectQualityDrift(db: Db, companyId: string, agentId: string): Promise<DriftResult> {
   // Get the last 20 quality gate approvals linked to issues assigned to this agent
   const rows = await db
     .select({
@@ -87,13 +83,14 @@ export async function detectQualityDrift(
   // Flag as drifting if average < 6 or declining 2+ points
   const isDrifting =
     averageScore < 6 ||
-    (scores.length >= 4 && (() => {
-      const recentHalf = scores.slice(0, Math.floor(scores.length / 2));
-      const olderHalf = scores.slice(Math.floor(scores.length / 2));
-      const recentAvg = recentHalf.reduce((a, b) => a + b, 0) / recentHalf.length;
-      const olderAvg = olderHalf.reduce((a, b) => a + b, 0) / olderHalf.length;
-      return olderAvg - recentAvg >= 2;
-    })());
+    (scores.length >= 4 &&
+      (() => {
+        const recentHalf = scores.slice(0, Math.floor(scores.length / 2));
+        const olderHalf = scores.slice(Math.floor(scores.length / 2));
+        const recentAvg = recentHalf.reduce((a, b) => a + b, 0) / recentHalf.length;
+        const olderAvg = olderHalf.reduce((a, b) => a + b, 0) / olderHalf.length;
+        return olderAvg - recentAvg >= 2;
+      })());
 
   return {
     averageScore: Math.round(averageScore * 100) / 100,
@@ -107,19 +104,11 @@ export async function detectQualityDrift(
  * Run drift detection across all agents in a company.
  * Returns only agents that are flagged as drifting.
  */
-export async function checkAllAgentDrift(
-  db: Db,
-  companyId: string,
-): Promise<AgentDriftEntry[]> {
+export async function checkAllAgentDrift(db: Db, companyId: string): Promise<AgentDriftEntry[]> {
   const allAgents = await db
     .select({ id: agents.id, name: agents.name })
     .from(agents)
-    .where(
-      and(
-        eq(agents.companyId, companyId),
-        sql`${agents.status} != 'terminated'`,
-      ),
-    );
+    .where(and(eq(agents.companyId, companyId), sql`${agents.status} != 'terminated'`));
 
   const driftingAgents: AgentDriftEntry[] = [];
 

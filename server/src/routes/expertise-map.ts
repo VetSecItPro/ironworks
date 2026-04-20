@@ -1,5 +1,5 @@
-import { Router } from "express";
 import type { Db } from "@ironworksai/db";
+import { Router } from "express";
 import { computeExpertiseMap, suggestAssignee } from "../services/expertise-map.js";
 import { assertCompanyAccess } from "./authz.js";
 

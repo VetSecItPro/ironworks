@@ -1,4 +1,3 @@
-import { Router, type Request } from "express";
 import type { Db } from "@ironworksai/db";
 import {
   createProjectSchema,
@@ -7,12 +6,13 @@ import {
   updateProjectSchema,
   updateProjectWorkspaceSchema,
 } from "@ironworksai/shared";
-import { validate } from "../middleware/validate.js";
-import { projectService, logActivity, generateClientUpdate } from "../services/index.js";
+import { type Request, Router } from "express";
 import { conflict } from "../errors.js";
-import { assertCompanyAccess, getActorInfo } from "./authz.js";
-import { ensureLibraryProjectFolderExternal } from "../services/playbook-execution.js";
 import { logger } from "../middleware/logger.js";
+import { validate } from "../middleware/validate.js";
+import { generateClientUpdate, logActivity, projectService } from "../services/index.js";
+import { ensureLibraryProjectFolderExternal } from "../services/playbook-execution.js";
+import { assertCompanyAccess, getActorInfo } from "./authz.js";
 
 export function projectRoutes(db: Db) {
   const router = Router();
@@ -21,9 +21,7 @@ export function projectRoutes(db: Db) {
   async function resolveCompanyIdForProjectReference(req: Request) {
     const companyIdQuery = req.query.companyId;
     const requestedCompanyId =
-      typeof companyIdQuery === "string" && companyIdQuery.trim().length > 0
-        ? companyIdQuery.trim()
-        : null;
+      typeof companyIdQuery === "string" && companyIdQuery.trim().length > 0 ? companyIdQuery.trim() : null;
     if (requestedCompanyId) {
       assertCompanyAccess(req, requestedCompanyId);
       return requestedCompanyId;
@@ -202,47 +200,43 @@ export function projectRoutes(db: Db) {
     res.status(201).json(workspace);
   });
 
-  router.patch(
-    "/projects/:id/workspaces/:workspaceId",
-    validate(updateProjectWorkspaceSchema),
-    async (req, res) => {
-      const id = req.params.id as string;
-      const workspaceId = req.params.workspaceId as string;
-      const existing = await svc.getById(id);
-      if (!existing) {
-        res.status(404).json({ error: "Project not found" });
-        return;
-      }
-      assertCompanyAccess(req, existing.companyId);
-      const workspaceExists = (await svc.listWorkspaces(id)).some((workspace) => workspace.id === workspaceId);
-      if (!workspaceExists) {
-        res.status(404).json({ error: "Project workspace not found" });
-        return;
-      }
-      const workspace = await svc.updateWorkspace(id, workspaceId, req.body);
-      if (!workspace) {
-        res.status(422).json({ error: "Invalid project workspace payload" });
-        return;
-      }
+  router.patch("/projects/:id/workspaces/:workspaceId", validate(updateProjectWorkspaceSchema), async (req, res) => {
+    const id = req.params.id as string;
+    const workspaceId = req.params.workspaceId as string;
+    const existing = await svc.getById(id);
+    if (!existing) {
+      res.status(404).json({ error: "Project not found" });
+      return;
+    }
+    assertCompanyAccess(req, existing.companyId);
+    const workspaceExists = (await svc.listWorkspaces(id)).some((workspace) => workspace.id === workspaceId);
+    if (!workspaceExists) {
+      res.status(404).json({ error: "Project workspace not found" });
+      return;
+    }
+    const workspace = await svc.updateWorkspace(id, workspaceId, req.body);
+    if (!workspace) {
+      res.status(422).json({ error: "Invalid project workspace payload" });
+      return;
+    }
 
-      const actor = getActorInfo(req);
-      await logActivity(db, {
-        companyId: existing.companyId,
-        actorType: actor.actorType,
-        actorId: actor.actorId,
-        agentId: actor.agentId,
-        action: "project.workspace_updated",
-        entityType: "project",
-        entityId: id,
-        details: {
-          workspaceId: workspace.id,
-          changedKeys: Object.keys(req.body).sort(),
-        },
-      });
+    const actor = getActorInfo(req);
+    await logActivity(db, {
+      companyId: existing.companyId,
+      actorType: actor.actorType,
+      actorId: actor.actorId,
+      agentId: actor.agentId,
+      action: "project.workspace_updated",
+      entityType: "project",
+      entityId: id,
+      details: {
+        workspaceId: workspace.id,
+        changedKeys: Object.keys(req.body).sort(),
+      },
+    });
 
-      res.json(workspace);
-    },
-  );
+    res.json(workspace);
+  });
 
   router.delete("/projects/:id/workspaces/:workspaceId", async (req, res) => {
     const id = req.params.id as string;

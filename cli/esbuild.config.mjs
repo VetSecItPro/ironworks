@@ -6,7 +6,7 @@
  */
 
 import { readFileSync } from "node:fs";
-import { resolve, dirname } from "node:path";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -26,9 +26,7 @@ const workspacePaths = [
 
 // Workspace packages that should NOT be bundled — they'll be published
 // to npm and resolved at runtime (e.g. @ironworksai/server uses dynamic import).
-const externalWorkspacePackages = new Set([
-  "@ironworksai/server",
-]);
+const externalWorkspacePackages = new Set(["@ironworksai/server"]);
 
 // Collect all external (non-workspace) npm package names
 const externals = new Set();

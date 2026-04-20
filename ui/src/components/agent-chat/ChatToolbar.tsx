@@ -1,5 +1,5 @@
+import { ChevronRight, FileText, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Search, FileText, X, ChevronRight } from "lucide-react";
 import { CHAT_TEMPLATES } from "./chat-helpers";
 
 interface ChatToolbarProps {
@@ -45,7 +45,10 @@ export function ChatToolbar({
           )}
           <button
             type="button"
-            onClick={() => { setShowSearch(false); setSearchQuery(""); }}
+            onClick={() => {
+              setShowSearch(false);
+              setSearchQuery("");
+            }}
             className="rounded-md p-1 text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="h-4 w-4" />
@@ -53,12 +56,7 @@ export function ChatToolbar({
         </div>
       ) : (
         <>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2 text-xs"
-            onClick={() => setShowSearch(true)}
-          >
+          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setShowSearch(true)}>
             <Search className="h-3.5 w-3.5 mr-1" />
             Search
           </Button>

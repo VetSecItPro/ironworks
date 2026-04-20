@@ -1,9 +1,6 @@
-import { useState } from "react";
 import { Wand2 } from "lucide-react";
-import { api } from "../../api/client";
-import { useCompany } from "../../context/CompanyContext";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +9,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { api } from "../../api/client";
+import { useCompany } from "../../context/CompanyContext";
 import type { StepDraft } from "./playbook-types";
 
 interface AutoModeDialogProps {
@@ -49,10 +49,7 @@ export function AutoModeDialog({ open, onOpenChange, onBack, onGenerated }: Auto
           dependsOn: number[];
           requiresApproval: boolean;
         }>;
-      }>(
-        `/companies/${encodeURIComponent(selectedCompanyId)}/ai/generate-playbook`,
-        { prompt: autoPrompt },
-      );
+      }>(`/companies/${encodeURIComponent(selectedCompanyId)}/ai/generate-playbook`, { prompt: autoPrompt });
       onGenerated({
         name: result.name,
         description: result.description,
@@ -89,7 +86,8 @@ export function AutoModeDialog({ open, onOpenChange, onBack, onGenerated }: Auto
             AI-Assisted Playbook
           </DialogTitle>
           <DialogDescription>
-            Describe what you want the playbook to accomplish. Be specific about the goal, which roles should be involved, and any constraints.
+            Describe what you want the playbook to accomplish. Be specific about the goal, which roles should be
+            involved, and any constraints.
           </DialogDescription>
         </DialogHeader>
 
@@ -101,7 +99,8 @@ export function AutoModeDialog({ open, onOpenChange, onBack, onGenerated }: Auto
             className="min-h-[160px] text-sm"
           />
           <p className="text-[11px] text-muted-foreground mt-2">
-            The AI will generate a complete playbook with steps, role assignments, dependencies, and time estimates. You can edit everything after generation.
+            The AI will generate a complete playbook with steps, role assignments, dependencies, and time estimates. You
+            can edit everything after generation.
           </p>
         </div>
 
@@ -109,10 +108,7 @@ export function AutoModeDialog({ open, onOpenChange, onBack, onGenerated }: Auto
           <Button variant="outline" onClick={onBack}>
             Back
           </Button>
-          <Button
-            onClick={handleGenerate}
-            disabled={!autoPrompt.trim() || autoGenerating}
-          >
+          <Button onClick={handleGenerate} disabled={!autoPrompt.trim() || autoGenerating}>
             {autoGenerating ? (
               <>
                 <Wand2 className="h-3.5 w-3.5 mr-1.5 animate-pulse" />

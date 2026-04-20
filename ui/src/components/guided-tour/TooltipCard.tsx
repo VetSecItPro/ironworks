@@ -1,6 +1,6 @@
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { X, ChevronRight, ChevronLeft } from "lucide-react";
 import { cn } from "../../lib/utils";
 import type { TourStep } from "./tour-data";
 
@@ -14,15 +14,7 @@ interface TooltipCardProps {
   onDismiss: () => void;
 }
 
-export function TooltipCard({
-  step,
-  stepIndex,
-  totalSteps,
-  targetRect,
-  onNext,
-  onPrev,
-  onDismiss,
-}: TooltipCardProps) {
+export function TooltipCard({ step, stepIndex, totalSteps, targetRect, onNext, onPrev, onDismiss }: TooltipCardProps) {
   const isLast = stepIndex === totalSteps - 1;
   const placement = step.placement ?? "bottom";
 
@@ -87,9 +79,7 @@ export function TooltipCard({
         <X className="h-4 w-4" />
       </button>
       <h3 className="text-sm font-semibold pr-6">{step.title}</h3>
-      <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-        {step.description}
-      </p>
+      <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">{step.description}</p>
       <div className="flex items-center justify-between mt-4">
         <span className="text-xs text-muted-foreground">
           {stepIndex + 1} / {totalSteps}

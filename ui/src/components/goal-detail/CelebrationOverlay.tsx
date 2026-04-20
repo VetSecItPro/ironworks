@@ -11,7 +11,7 @@ export function CelebrationOverlay({ show }: { show: boolean }) {
       </div>
       {/* Confetti particles */}
       {Array.from({ length: 12 }).map((_, i) => {
-        const angle = (i * 30) * (Math.PI / 180);
+        const angle = i * 30 * (Math.PI / 180);
         const distance = 80 + Math.random() * 60;
         const colors = ["bg-emerald-500", "bg-blue-500", "bg-amber-500", "bg-violet-500", "bg-rose-500"];
         return (

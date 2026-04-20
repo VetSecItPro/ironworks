@@ -1,52 +1,34 @@
 import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import {
+  closestCorners,
   DndContext,
+  type DragEndEvent,
+  type DragOverEvent,
   DragOverlay,
+  type DragStartEvent,
   PointerSensor,
   useSensor,
   useSensors,
-  closestCorners,
-  type DragStartEvent,
-  type DragEndEvent,
-  type DragOverEvent,
 } from "@dnd-kit/core";
-import { KanbanCard } from "../KanbanCard";
-import { useDialog } from "../../context/DialogContext";
 import type { Issue } from "@ironworksai/shared";
-
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useDialog } from "../../context/DialogContext";
+import { KanbanCard } from "../KanbanCard";
+import { KanbanColumn } from "./KanbanColumn";
+import { BulkOperationsBar, GoalBoardHeader, SwimlaneHeader, SwimlaneToggle } from "./KanbanHelpers";
 import {
   BOARD_STATUSES,
   type BoardStatus,
-  type SwimlaneMode,
-  type Swimlane,
-  type KanbanBoardProps,
-  statusLabel,
   getWipLimits,
+  type KanbanBoardProps,
+  type Swimlane,
+  type SwimlaneMode,
+  statusLabel,
 } from "./types";
-import {
-  BulkOperationsBar,
-  SwimlaneHeader,
-  SwimlaneToggle,
-  GoalBoardHeader,
-} from "./KanbanHelpers";
-import { KanbanColumn } from "./KanbanColumn";
 
 // Re-export for external consumers
 export type { KanbanGoalInfo } from "./types";
 
-export function KanbanBoard({
-  issues,
-  agents,
-  liveIssueIds,
-  onUpdateIssue,
-  goalInfo,
-}: KanbanBoardProps) {
+export function KanbanBoard({ issues, agents, liveIssueIds, onUpdateIssue, goalInfo }: KanbanBoardProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [collapsedColumns, setCollapsedColumns] = useState<Set<string>>(new Set());
@@ -61,26 +43,35 @@ export function KanbanBoard({
     });
   }, []);
 
-  const handleBulkStatus = useCallback((status: string) => {
-    for (const id of selectedIds) {
-      onUpdateIssue(id, { status });
-    }
-    setSelectedIds(new Set());
-  }, [selectedIds, onUpdateIssue]);
+  const handleBulkStatus = useCallback(
+    (status: string) => {
+      for (const id of selectedIds) {
+        onUpdateIssue(id, { status });
+      }
+      setSelectedIds(new Set());
+    },
+    [selectedIds, onUpdateIssue],
+  );
 
-  const handleBulkAssignee = useCallback((assigneeAgentId: string) => {
-    for (const id of selectedIds) {
-      onUpdateIssue(id, { assigneeAgentId });
-    }
-    setSelectedIds(new Set());
-  }, [selectedIds, onUpdateIssue]);
+  const handleBulkAssignee = useCallback(
+    (assigneeAgentId: string) => {
+      for (const id of selectedIds) {
+        onUpdateIssue(id, { assigneeAgentId });
+      }
+      setSelectedIds(new Set());
+    },
+    [selectedIds, onUpdateIssue],
+  );
 
-  const handleBulkPriority = useCallback((priority: string) => {
-    for (const id of selectedIds) {
-      onUpdateIssue(id, { priority });
-    }
-    setSelectedIds(new Set());
-  }, [selectedIds, onUpdateIssue]);
+  const handleBulkPriority = useCallback(
+    (priority: string) => {
+      for (const id of selectedIds) {
+        onUpdateIssue(id, { priority });
+      }
+      setSelectedIds(new Set());
+    },
+    [selectedIds, onUpdateIssue],
+  );
 
   const [swimlaneMode, setSwimlaneMode] = useState<SwimlaneMode>(() => {
     try {
@@ -94,9 +85,7 @@ export function KanbanBoard({
 
   const wipLimits = useMemo(() => getWipLimits(), []);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-  );
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   // Persist swimlane mode
   useEffect(() => {
@@ -181,33 +170,27 @@ export function KanbanBoard({
   }, [issues, swimlaneMode, agents]);
 
   // Group issues by status per swimlane
-  const groupByStatus = useCallback(
-    (laneIssues: Issue[]): Record<string, Issue[]> => {
-      const grouped: Record<string, Issue[]> = {};
-      for (const status of BOARD_STATUSES) {
-        grouped[status] = [];
+  const groupByStatus = useCallback((laneIssues: Issue[]): Record<string, Issue[]> => {
+    const grouped: Record<string, Issue[]> = {};
+    for (const status of BOARD_STATUSES) {
+      grouped[status] = [];
+    }
+    for (const issue of laneIssues) {
+      const col = BOARD_STATUSES.includes(issue.status as BoardStatus)
+        ? issue.status
+        : issue.status === "blocked"
+          ? "backlog"
+          : issue.status === "cancelled"
+            ? "done"
+            : "backlog";
+      if (grouped[col]) {
+        grouped[col].push(issue);
       }
-      for (const issue of laneIssues) {
-        const col = BOARD_STATUSES.includes(issue.status as BoardStatus)
-          ? issue.status
-          : issue.status === "blocked"
-            ? "backlog"
-            : issue.status === "cancelled"
-              ? "done"
-              : "backlog";
-        if (grouped[col]) {
-          grouped[col].push(issue);
-        }
-      }
-      return grouped;
-    },
-    [],
-  );
+    }
+    return grouped;
+  }, []);
 
-  const activeIssue = useMemo(
-    () => (activeId ? issues.find((i) => i.id === activeId) : null),
-    [activeId, issues],
-  );
+  const activeIssue = useMemo(() => (activeId ? issues.find((i) => i.id === activeId) : null), [activeId, issues]);
 
   function handleDragStart(event: DragStartEvent) {
     setActiveId(event.active.id as string);
@@ -287,9 +270,7 @@ export function KanbanBoard({
         return;
       }
 
-      const cards = boardRef.current.querySelectorAll<HTMLElement>(
-        "[data-kanban-card]",
-      );
+      const cards = boardRef.current.querySelectorAll<HTMLElement>("[data-kanban-card]");
       if (cards.length === 0) return;
 
       const currentIndex = Array.from(cards).findIndex(
@@ -415,9 +396,7 @@ export function KanbanBoard({
         })}
 
         <DragOverlay dropAnimation={{ duration: 200, easing: "ease" }}>
-          {activeIssue ? (
-            <KanbanCard issue={activeIssue} agents={agents} isOverlay />
-          ) : null}
+          {activeIssue ? <KanbanCard issue={activeIssue} agents={agents} isOverlay /> : null}
         </DragOverlay>
       </DndContext>
     </div>

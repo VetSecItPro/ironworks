@@ -83,9 +83,7 @@ export function UsageMeter({
       </div>
       <div className="h-2 bg-muted rounded-full overflow-hidden">
         <div
-          className={`h-full rounded-full transition-all ${
-            isHigh ? "bg-amber-500" : "bg-primary"
-          }`}
+          className={`h-full rounded-full transition-all ${isHigh ? "bg-amber-500" : "bg-primary"}`}
           style={{ width: isUnlimited ? "0%" : `${clampedPercent}%` }}
         />
       </div>
@@ -129,14 +127,10 @@ export function UsageProjection({
       <div>
         <span className="font-medium">{label}:</span>{" "}
         <span className={urgency}>
-          At current usage (~{growthPerMonth.toFixed(unit ? 1 : 0)}{unit ? ` ${unit}` : ""}/mo), you will reach your limit by{" "}
-          <strong>{formattedDate}</strong>.
+          At current usage (~{growthPerMonth.toFixed(unit ? 1 : 0)}
+          {unit ? ` ${unit}` : ""}/mo), you will reach your limit by <strong>{formattedDate}</strong>.
         </span>
-        {monthsUntilLimit <= 2 && (
-          <span className="text-xs text-muted-foreground ml-1">
-            Consider upgrading soon.
-          </span>
-        )}
+        {monthsUntilLimit <= 2 && <span className="text-xs text-muted-foreground ml-1">Consider upgrading soon.</span>}
       </div>
     </div>
   );

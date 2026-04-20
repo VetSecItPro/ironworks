@@ -22,12 +22,7 @@ export function PaymentMethodCard({ onManage, isManaging }: PaymentMethodCardPro
           <div className="text-xs text-muted-foreground">Expires 12/2027</div>
         </div>
         <div className="ml-auto">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onManage}
-            disabled={isManaging}
-          >
+          <Button variant="outline" size="sm" onClick={onManage} disabled={isManaging}>
             Update
           </Button>
         </div>

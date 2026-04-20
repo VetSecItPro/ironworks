@@ -1,14 +1,9 @@
-import { Router } from "express";
 import type { Db } from "@ironworksai/db";
-import {
-  billingService,
-  verifyPolarWebhookSignature,
-  PLAN_DEFINITIONS,
-  type PlanTier,
-} from "../services/billing.js";
-import { assertCompanyAccess } from "./authz.js";
+import { Router } from "express";
 import { badRequest } from "../errors.js";
 import { logger } from "../middleware/logger.js";
+import { billingService, PLAN_DEFINITIONS, type PlanTier, verifyPolarWebhookSignature } from "../services/billing.js";
+import { assertCompanyAccess } from "./authz.js";
 
 const VALID_TIERS: PlanTier[] = ["starter", "growth", "business"];
 
@@ -61,12 +56,7 @@ export function billingRoutes(db: Db) {
       }
     }
 
-    const url = await svc.createCheckoutSession(
-      companyId,
-      planTier as PlanTier,
-      successUrl,
-      cancelUrl,
-    );
+    const url = await svc.createCheckoutSession(companyId, planTier as PlanTier, successUrl, cancelUrl);
     res.json({ url });
   });
 
@@ -99,14 +89,11 @@ export function polarWebhookRoute(db: Db) {
     // Standard Webhooks / Svix uses three headers for signature verification.
     // Accept both the canonical "webhook-*" names and the legacy "svix-*" aliases.
     const webhookId =
-      (req.headers["webhook-id"] as string | undefined) ??
-      (req.headers["svix-id"] as string | undefined);
+      (req.headers["webhook-id"] as string | undefined) ?? (req.headers["svix-id"] as string | undefined);
     const webhookTimestamp =
-      (req.headers["webhook-timestamp"] as string | undefined) ??
-      (req.headers["svix-timestamp"] as string | undefined);
+      (req.headers["webhook-timestamp"] as string | undefined) ?? (req.headers["svix-timestamp"] as string | undefined);
     const webhookSignature =
-      (req.headers["webhook-signature"] as string | undefined) ??
-      (req.headers["svix-signature"] as string | undefined);
+      (req.headers["webhook-signature"] as string | undefined) ?? (req.headers["svix-signature"] as string | undefined);
 
     if (!webhookId || !webhookTimestamp || !webhookSignature) {
       res.status(400).json({

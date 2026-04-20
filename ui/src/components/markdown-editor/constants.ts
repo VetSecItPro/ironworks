@@ -1,7 +1,4 @@
-import {
-  CodeMirrorEditor,
-  type CodeBlockEditorDescriptor,
-} from "@mdxeditor/editor";
+import { type CodeBlockEditorDescriptor, CodeMirrorEditor } from "@mdxeditor/editor";
 
 export const CODE_BLOCK_LANGUAGES: Record<string, string> = {
   txt: "Text",

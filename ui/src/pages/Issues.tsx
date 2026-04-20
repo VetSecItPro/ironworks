@@ -1,23 +1,23 @@
-import { useEffect, useMemo, useCallback } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { CircleDot, Download, Plus } from "lucide-react";
+import { useCallback, useEffect, useMemo } from "react";
+import { Button } from "@/components/ui/button";
 import { useLocation, useSearchParams } from "@/lib/router";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { usePageTitle } from "../hooks/usePageTitle";
-import { issuesApi } from "../api/issues";
 import { agentsApi } from "../api/agents";
-import { projectsApi } from "../api/projects";
 import { goalsApi } from "../api/goals";
-import { routinesApi } from "../api/routines";
 import { heartbeatsApi } from "../api/heartbeats";
-import { useCompany } from "../context/CompanyContext";
-import { useDialog } from "../context/DialogContext";
-import { useBreadcrumbs } from "../context/BreadcrumbContext";
-import { queryKeys } from "../lib/queryKeys";
-import { createIssueDetailLocationState } from "../lib/issueDetailBreadcrumb";
+import { issuesApi } from "../api/issues";
+import { projectsApi } from "../api/projects";
+import { routinesApi } from "../api/routines";
 import { EmptyState } from "../components/EmptyState";
 import { IssuesList } from "../components/IssuesList";
-import { Button } from "@/components/ui/button";
-import { CircleDot, Download, Plus } from "lucide-react";
+import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { useCompany } from "../context/CompanyContext";
+import { useDialog } from "../context/DialogContext";
+import { usePageTitle } from "../hooks/usePageTitle";
 import { exportToCSV } from "../lib/exportCSV";
+import { createIssueDetailLocationState } from "../lib/issueDetailBreadcrumb";
+import { queryKeys } from "../lib/queryKeys";
 
 export function Issues() {
   usePageTitle("Missions");
@@ -86,11 +86,7 @@ export function Issues() {
   }, [liveRuns]);
 
   const issueLinkState = useMemo(
-    () =>
-      createIssueDetailLocationState(
-        "Missions",
-        `${location.pathname}${location.search}${location.hash}`,
-      ),
+    () => createIssueDetailLocationState("Missions", `${location.pathname}${location.search}${location.hash}`),
     [location.pathname, location.search, location.hash],
   );
 
@@ -98,15 +94,18 @@ export function Issues() {
     setBreadcrumbs([{ label: "Missions" }]);
   }, [setBreadcrumbs]);
 
-  const { data: issues, isLoading, error } = useQuery({
+  const {
+    data: issues,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: [...queryKeys.issues.list(selectedCompanyId!), "participant-agent", participantAgentId ?? "__all__"],
     queryFn: () => issuesApi.list(selectedCompanyId!, { participantAgentId }),
     enabled: !!selectedCompanyId,
   });
 
   const updateIssue = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
-      issuesApi.update(id, data),
+    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) => issuesApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.issues.list(selectedCompanyId!) });
     },
@@ -126,9 +125,7 @@ export function Issues() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-lg font-semibold tracking-tight">Missions</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Track and manage tasks across your AI workforce.
-          </p>
+          <p className="text-sm text-muted-foreground mt-0.5">Track and manage tasks across your AI workforce.</p>
           {totalIssues > 0 && (
             <p className="text-xs text-muted-foreground mt-0.5 tabular-nums">
               {activeIssues} active · {doneIssues} done · {totalIssues} total

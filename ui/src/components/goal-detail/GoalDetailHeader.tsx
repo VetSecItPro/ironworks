@@ -1,14 +1,14 @@
-import { Button } from "@/components/ui/button";
+import type { Goal } from "@ironworksai/shared";
 import { AlertTriangle, CopyPlus, PanelRightClose, PanelRightOpen } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { cn } from "../../lib/utils";
 import { InlineEditor } from "../InlineEditor";
 import { StatusBadge } from "../StatusBadge";
 import { GoalHealthBadge } from "./GoalHealthBadge";
-import { SmartQualityIndicator } from "./SmartQualityIndicator";
+import type { GoalRiskAssessmentResult } from "./GoalRiskAssessment";
 import { riskColors } from "./GoalRiskAssessment";
 import type { SmartCriteria } from "./SmartQualityIndicator";
-import type { GoalRiskAssessmentResult } from "./GoalRiskAssessment";
-import type { Goal } from "@ironworksai/shared";
+import { SmartQualityIndicator } from "./SmartQualityIndicator";
 
 interface GoalDetailHeaderProps {
   goal: Goal;
@@ -42,19 +42,11 @@ export function GoalDetailHeader({
       {/* Header badges and actions */}
       <div className="space-y-3">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs uppercase text-muted-foreground">
-            {goal.level}
-          </span>
+          <span className="text-xs uppercase text-muted-foreground">{goal.level}</span>
           <StatusBadge status={goal.status} />
           <GoalHealthBadge status={goal.healthStatus} />
           {smartCriteria && <SmartQualityIndicator criteria={smartCriteria} />}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onClone}
-            disabled={cloneIsPending}
-            className="ml-auto"
-          >
+          <Button variant="outline" size="sm" onClick={onClone} disabled={cloneIsPending} className="ml-auto">
             <CopyPlus className="h-3.5 w-3.5 mr-1" />
             {cloneIsPending ? "Cloning..." : "Clone Goal"}
           </Button>
@@ -67,12 +59,7 @@ export function GoalDetailHeader({
           </button>
         </div>
 
-        <InlineEditor
-          value={goal.title}
-          onSave={onUpdateTitle}
-          as="h2"
-          className="text-xl font-bold"
-        />
+        <InlineEditor value={goal.title} onSave={onUpdateTitle} as="h2" className="text-xl font-bold" />
 
         <InlineEditor
           value={goal.description ?? ""}

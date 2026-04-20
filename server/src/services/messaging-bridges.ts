@@ -1,7 +1,7 @@
-import { and, eq } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { messagingBridges } from "@ironworksai/db";
-import { notFound, conflict } from "../errors.js";
+import { and, eq } from "drizzle-orm";
+import { conflict, notFound } from "../errors.js";
 
 export type MessagingPlatform = "telegram" | "email" | "slack" | "discord";
 export type BridgeStatus = "connected" | "disconnected" | "error";
@@ -23,26 +23,15 @@ const COMING_SOON_PLATFORMS: MessagingPlatform[] = ["slack", "discord"];
 
 export function messagingBridgeService(db: Db) {
   async function list(companyId: string): Promise<MessagingBridge[]> {
-    const rows = await db
-      .select()
-      .from(messagingBridges)
-      .where(eq(messagingBridges.companyId, companyId));
+    const rows = await db.select().from(messagingBridges).where(eq(messagingBridges.companyId, companyId));
     return rows as MessagingBridge[];
   }
 
-  async function getByPlatform(
-    companyId: string,
-    platform: MessagingPlatform,
-  ): Promise<MessagingBridge | null> {
+  async function getByPlatform(companyId: string, platform: MessagingPlatform): Promise<MessagingBridge | null> {
     const rows = await db
       .select()
       .from(messagingBridges)
-      .where(
-        and(
-          eq(messagingBridges.companyId, companyId),
-          eq(messagingBridges.platform, platform),
-        ),
-      );
+      .where(and(eq(messagingBridges.companyId, companyId), eq(messagingBridges.platform, platform)));
     return (rows[0] as MessagingBridge) ?? null;
   }
 
@@ -97,9 +86,7 @@ export function messagingBridgeService(db: Db) {
   async function remove(companyId: string, platform: MessagingPlatform): Promise<void> {
     const existing = await getByPlatform(companyId, platform);
     if (!existing) throw notFound(`No ${platform} bridge configured`);
-    await db
-      .delete(messagingBridges)
-      .where(eq(messagingBridges.id, existing.id));
+    await db.delete(messagingBridges).where(eq(messagingBridges.id, existing.id));
   }
 
   async function updateStatus(

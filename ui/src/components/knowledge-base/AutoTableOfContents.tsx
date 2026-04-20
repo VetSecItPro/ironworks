@@ -10,7 +10,10 @@ export function AutoTableOfContents({ body }: { body: string }) {
       if (match) {
         const level = match[1].length;
         const text = match[2].replace(/[*_`]/g, "").trim();
-        const id = text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+        const id = text
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, "");
         result.push({ level, text, id });
       }
     }

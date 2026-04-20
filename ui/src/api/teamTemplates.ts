@@ -30,6 +30,5 @@ export const teamTemplatesApi = {
 
   listRoles: () => api.get<RoleSummary[]>("/team-templates/roles"),
 
-  getRole: (key: string) =>
-    api.get<RoleTemplateDetail>(`/team-templates/roles/${encodeURIComponent(key)}`),
+  getRole: (key: string) => api.get<RoleTemplateDetail>(`/team-templates/roles/${encodeURIComponent(key)}`),
 };

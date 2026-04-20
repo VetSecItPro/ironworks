@@ -1,12 +1,12 @@
-import { Button } from "@/components/ui/button";
-import { Check } from "lucide-react";
 import {
   AGENT_ROLE_LABELS,
-  DEPARTMENT_LABELS,
   type AgentRole,
-  type Department,
   type ContractEndCondition,
+  DEPARTMENT_LABELS,
+  type Department,
 } from "@ironworksai/shared";
+import { Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 type EmploymentType = "full_time" | "contractor";
 
@@ -37,11 +37,22 @@ interface HireStepReviewProps {
 }
 
 export function HireStepReview({
-  name, employmentType, role, department, reportsTo,
-  projectId, endCondition, endDate, budgetAmount,
-  agents, projects,
-  isPending, isCreating, error,
-  onSubmitForApproval, onHireNow,
+  name,
+  employmentType,
+  role,
+  department,
+  reportsTo,
+  projectId,
+  endCondition,
+  endDate,
+  budgetAmount,
+  agents,
+  projects,
+  isPending,
+  isCreating,
+  error,
+  onSubmitForApproval,
+  onHireNow,
 }: HireStepReviewProps) {
   return (
     <div className="space-y-4">
@@ -103,9 +114,7 @@ export function HireStepReview({
         </Button>
       </div>
 
-      {error && (
-        <p className="text-xs text-destructive text-center">{error.message ?? "An error occurred"}</p>
-      )}
+      {error && <p className="text-xs text-destructive text-center">{error.message ?? "An error occurred"}</p>}
     </div>
   );
 }

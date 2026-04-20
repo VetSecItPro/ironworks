@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { randomUUID } from "node:crypto";
 
 /**
  * UUID v4 regex for cheap validity checks. Intentionally lax — we accept any
@@ -35,16 +35,14 @@ export function getOrCreateRequestId(context?: RequestIdContext): string {
  * (HTTP allows repeated headers of the same name); we take the first value
  * when an array is encountered. Returns undefined if neither header is present.
  */
-export function extractRequestId(
-  headers: Record<string, string | string[] | undefined>,
-): string | undefined {
+export function extractRequestId(headers: Record<string, string | string[] | undefined>): string | undefined {
   const normalized: Record<string, string> = {};
   for (const [k, v] of Object.entries(headers)) {
     if (v === undefined) continue;
     const value = Array.isArray(v) ? v[0] : v;
     if (value !== undefined) normalized[k.toLowerCase()] = value;
   }
-  return normalized['x-request-id'] ?? normalized['request-id'];
+  return normalized["x-request-id"] ?? normalized["request-id"];
 }
 
 // Barrel compat

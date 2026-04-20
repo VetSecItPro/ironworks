@@ -1,29 +1,33 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
-import { useLocation } from "react-router-dom";
 import type { Agent } from "@ironworksai/shared";
-import { Button } from "@/components/ui/button";
 import { CornerDownRight, Paperclip, X } from "lucide-react";
-import { InlineEntitySelector, type InlineEntityOption } from "../InlineEntitySelector";
-import { MarkdownEditor, type MarkdownEditorRef, type MentionOption } from "../MarkdownEditor";
+import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import { AgentIcon } from "../AgentIconPicker";
-import type { CommentWithRunMeta, LinkedRunItem, CommentReassignment } from "./comment-thread-utils";
-import {
-  useCommentReactions,
-  loadDraft,
-  saveDraft,
-  clearDraft,
-  parseReassignment,
-  DRAFT_DEBOUNCE_MS,
-} from "./comment-thread-utils";
+import { type InlineEntityOption, InlineEntitySelector } from "../InlineEntitySelector";
+import { MarkdownEditor, type MarkdownEditorRef, type MentionOption } from "../MarkdownEditor";
 import { TimelineList } from "./CommentCards";
-import type { TimelineItem } from "./comment-thread-utils";
+import type { CommentReassignment, CommentWithRunMeta, LinkedRunItem, TimelineItem } from "./comment-thread-utils";
+import {
+  clearDraft,
+  DRAFT_DEBOUNCE_MS,
+  loadDraft,
+  parseReassignment,
+  saveDraft,
+  useCommentReactions,
+} from "./comment-thread-utils";
 
 interface CommentThreadProps {
   comments: CommentWithRunMeta[];
   linkedRuns?: LinkedRunItem[];
   companyId?: string | null;
   projectId?: string | null;
-  onAdd: (body: string, reopen?: boolean, reassignment?: CommentReassignment, replyToId?: string | null) => Promise<void>;
+  onAdd: (
+    body: string,
+    reopen?: boolean,
+    reassignment?: CommentReassignment,
+    replyToId?: string | null,
+  ) => Promise<void>;
   issueStatus?: string;
   agentMap?: Map<string, Agent>;
   imageUploadHandler?: (file: File) => Promise<string>;
@@ -201,7 +205,7 @@ export function CommentThread({
         const url = await imageUploadHandler(file);
         const safeName = file.name.replace(/[[\]]/g, "\\$&");
         const markdown = `![${safeName}](${url})`;
-        setBody((prev) => prev ? `${prev}\n\n${markdown}` : markdown);
+        setBody((prev) => (prev ? `${prev}\n\n${markdown}` : markdown));
       } else if (onAttachImage) {
         await onAttachImage(file);
       }
@@ -234,7 +238,7 @@ export function CommentThread({
       if (imageUploadHandler) {
         const url = await imageUploadHandler(pastedImage.file);
         const markdown = `![pasted image](${url})`;
-        setBody((prev) => prev ? `${prev}\n\n${markdown}` : markdown);
+        setBody((prev) => (prev ? `${prev}\n\n${markdown}` : markdown));
       } else if (onAttachImage) {
         await onAttachImage(pastedImage.file);
       }
@@ -282,13 +286,12 @@ export function CommentThread({
             <span className="text-muted-foreground">
               Replying to{" "}
               <span className="font-medium text-foreground">
-                {replyToComment.authorAgentId
-                  ? (agentMap?.get(replyToComment.authorAgentId)?.name ?? "Agent")
-                  : "You"}
+                {replyToComment.authorAgentId ? (agentMap?.get(replyToComment.authorAgentId)?.name ?? "Agent") : "You"}
               </span>
             </span>
             <span className="flex-1 truncate text-muted-foreground">
-              {replyToComment.body.slice(0, 80)}{replyToComment.body.length > 80 ? "..." : ""}
+              {replyToComment.body.slice(0, 80)}
+              {replyToComment.body.length > 80 ? "..." : ""}
             </span>
             <button
               type="button"
@@ -316,7 +319,9 @@ export function CommentThread({
             <img src={pastedImage.preview} alt="Pasted" className="h-16 w-16 object-cover rounded" />
             <div className="flex-1 text-xs text-muted-foreground">
               <p>Image pasted from clipboard</p>
-              <p className="text-[10px]">{pastedImage.file.name} ({(pastedImage.file.size / 1024).toFixed(1)} KB)</p>
+              <p className="text-[10px]">
+                {pastedImage.file.name} ({(pastedImage.file.size / 1024).toFixed(1)} KB)
+              </p>
             </div>
             <Button variant="outline" size="sm" onClick={handlePastedImageAttach} disabled={attaching}>
               {attaching ? "Uploading..." : "Attach"}

@@ -1,11 +1,12 @@
 // Re-export everything from the decomposed module
+
+export type { JsonSchemaFormProps, JsonSchemaNode } from "./json-schema-form";
 export {
-  JsonSchemaForm,
-  resolveType,
-  labelFromKey,
   getDefaultForSchema,
+  getDefaultValues,
+  JsonSchemaForm,
+  labelFromKey,
+  resolveType,
   validateField,
   validateJsonSchemaForm,
-  getDefaultValues,
 } from "./json-schema-form";
-export type { JsonSchemaNode, JsonSchemaFormProps } from "./json-schema-form";

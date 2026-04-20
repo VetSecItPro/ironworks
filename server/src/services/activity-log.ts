@@ -1,15 +1,15 @@
-import { randomUUID, createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import type { Db } from "@ironworksai/db";
 import { activityLog } from "@ironworksai/db";
-import { and, desc, eq, gte } from "drizzle-orm";
-import { PLUGIN_EVENT_TYPES, type PluginEventType } from "@ironworksai/shared";
 import type { PluginEvent } from "@ironworksai/plugin-sdk";
-import { publishLiveEvent } from "./live-events.js";
+import { PLUGIN_EVENT_TYPES, type PluginEventType } from "@ironworksai/shared";
+import { and, desc, eq, gte } from "drizzle-orm";
 import { redactCurrentUserValue } from "../log-redaction.js";
-import { sanitizeRecord } from "../redaction.js";
 import { logger } from "../middleware/logger.js";
-import type { PluginEventBus } from "./plugin-event-bus.js";
+import { sanitizeRecord } from "../redaction.js";
 import { instanceSettingsService } from "./instance-settings.js";
+import { publishLiveEvent } from "./live-events.js";
+import type { PluginEventBus } from "./plugin-event-bus.js";
 
 const PLUGIN_EVENT_SET: ReadonlySet<string> = new Set(PLUGIN_EVENT_TYPES);
 
@@ -65,9 +65,7 @@ function computeEntryHash(
   timestamp: string,
   previousHash: string,
 ): string {
-  return createHash("sha256")
-    .update(`${id}|${action}|${entityId}|${timestamp}|${previousHash}`)
-    .digest("hex");
+  return createHash("sha256").update(`${id}|${action}|${entityId}|${timestamp}|${previousHash}`).digest("hex");
 }
 
 /**
@@ -132,24 +130,19 @@ export async function logActivity(db: Db, input: LogActivityInput) {
   // Fix 5: On the first logActivity call per company (after a server restart),
   // seed the in-memory chain from the last persisted hash rather than "genesis".
   if (!_lastHashByCompany.has(input.companyId)) {
-    const lastEntry = await db.select({ details: activityLog.details })
+    const lastEntry = await db
+      .select({ details: activityLog.details })
       .from(activityLog)
       .where(eq(activityLog.companyId, input.companyId))
       .orderBy(desc(activityLog.createdAt))
       .limit(1)
-      .then(rows => rows[0]);
-    const lastHash = (lastEntry?.details as Record<string, unknown> | null)?.integrityHash as string ?? "genesis";
+      .then((rows) => rows[0]);
+    const lastHash = ((lastEntry?.details as Record<string, unknown> | null)?.integrityHash as string) ?? "genesis";
     _lastHashByCompany.set(input.companyId, lastHash);
   }
 
   const previousHash = _lastHashByCompany.get(input.companyId) ?? "genesis";
-  const integrityHash = computeEntryHash(
-    entryId,
-    input.action,
-    input.entityId,
-    now.toISOString(),
-    previousHash,
-  );
+  const integrityHash = computeEntryHash(entryId, input.action, input.entityId, now.toISOString(), previousHash);
   _lastHashByCompany.set(input.companyId, integrityHash);
 
   const detailsWithHash: Record<string, unknown> = {
@@ -202,10 +195,13 @@ export async function logActivity(db: Db, input: LogActivityInput) {
         runId: input.runId ?? null,
       },
     };
-    void _pluginEventBus.emit(event).then(({ errors }) => {
-      for (const { pluginId, error } of errors) {
-        logger.warn({ pluginId, eventType: event.eventType, err: error }, "plugin event handler failed");
-      }
-    }).catch(() => {});
+    void _pluginEventBus
+      .emit(event)
+      .then(({ errors }) => {
+        for (const { pluginId, error } of errors) {
+          logger.warn({ pluginId, eventType: event.eventType, err: error }, "plugin event handler failed");
+        }
+      })
+      .catch(() => {});
   }
 }

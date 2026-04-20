@@ -1,7 +1,7 @@
 import type { UIAdapterModule } from "../types";
-import { parseProcessStdoutLine } from "./parse-stdout";
-import { ProcessConfigFields } from "./config-fields";
 import { buildProcessConfig } from "./build-config";
+import { ProcessConfigFields } from "./config-fields";
+import { parseProcessStdoutLine } from "./parse-stdout";
 
 export const processUIAdapter: UIAdapterModule = {
   type: "process",

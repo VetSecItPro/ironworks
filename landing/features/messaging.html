@@ -32,8 +32,8 @@
   <link rel="stylesheet" href="/design-system.css">
   <style>
     .card-glow:hover { box-shadow: 0 0 40px rgba(244, 63, 94, 0.08); }
-    .bubble-out { background: #1d4ed8; border-radius: 18px 18px 4px 18px; padding: 10px 14px; max-width: 80%; margin-left: auto; }
-    .bubble-in { background: #1e1e1e; border: 1px solid #282828; border-radius: 18px 18px 18px 4px; padding: 10px 14px; max-width: 80%; }
+        .bubble-out { background: #1d4ed8; border-radius: 18px 18px 4px 18px; padding: 10px 14px; max-width: 80%; margin-left: auto; }
+        .bubble-in { background: #1e1e1e; border: 1px solid #282828; border-radius: 18px 18px 18px 4px; padding: 10px 14px; max-width: 80%; }
   </style>
 
   <script type="application/ld+json">
@@ -431,6 +431,6 @@
     </div>
   </footer>
 
-  <script>(function(){var t=document.getElementById("nav-toggle"),n=document.getElementById("mobile-nav");if(t&&n){t.addEventListener("click",function(){var open=n.classList.toggle("hidden");t.setAttribute("aria-expanded",open?"false":"true");});}})();</script>
+  <script>(()=> {var t=document.getElementById("nav-toggle"),n=document.getElementById("mobile-nav");if(t&&n){t.addEventListener("click",()=> {var open=n.classList.toggle("hidden");t.setAttribute("aria-expanded",open?"false":"true");});}})();</script>
 </body>
 </html>

@@ -10,11 +10,7 @@ export function ChartSkeleton({ height = 200 }: { height?: number }) {
       </div>
       <div className="flex items-end gap-1 h-[calc(100%-3rem)]">
         {Array.from({ length: 8 }).map((_, i) => (
-          <Skeleton
-            key={i}
-            className="flex-1 rounded-t"
-            style={{ height: `${30 + Math.random() * 60}%` }}
-          />
+          <Skeleton key={i} className="flex-1 rounded-t" style={{ height: `${30 + Math.random() * 60}%` }} />
         ))}
       </div>
     </div>

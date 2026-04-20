@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { vi, describe, it, expect, beforeEach } from "vitest";
 import type { Mock } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ---- mock declarations must come before the module under test is imported ----
 
@@ -85,11 +85,7 @@ function makeMockDb(selectSetups: SelectSetup = []) {
 }
 
 // Convenience: build the middleware with given mode and optional resolveSession
-function makeMiddleware(
-  deploymentMode: string,
-  resolveSession?: () => Promise<any>,
-  db?: any,
-) {
+function makeMiddleware(deploymentMode: string, resolveSession?: () => Promise<any>, db?: any) {
   const database = db ?? makeMockDb();
   return actorMiddleware(database, { deploymentMode: deploymentMode as any, resolveSession });
 }
@@ -229,10 +225,7 @@ describe("actorMiddleware", () => {
     });
 
     it("propagates run-id when session resolves", async () => {
-      const db = makeMockDb([
-        { rows: [] },
-        { rows: [{ companyId: "co-x" }] },
-      ]);
+      const db = makeMockDb([{ rows: [] }, { rows: [{ companyId: "co-x" }] }]);
 
       const resolveSession = vi.fn().mockResolvedValue({ user: { id: "uid" } });
       const mw = makeMiddleware("authenticated", resolveSession, db);
@@ -362,7 +355,7 @@ describe("actorMiddleware", () => {
 
       const selectSetups: SelectSetup = [
         { rows: agentKeyRow ? [agentKeyRow] : [] }, // agentApiKeys select
-        { rows: agentRow ? [agentRow] : [] },        // agents select
+        { rows: agentRow ? [agentRow] : [] }, // agents select
       ];
 
       return makeMockDb(selectSetups);
@@ -443,7 +436,13 @@ describe("actorMiddleware", () => {
 
     it("actor stays 'none' when agent record not found", async () => {
       const token = "missing-agent-token";
-      const keyRow = { id: "ak-m", agentId: "agent-missing", companyId: "co-m", keyHash: sha256(token), revokedAt: null };
+      const keyRow = {
+        id: "ak-m",
+        agentId: "agent-missing",
+        companyId: "co-m",
+        keyHash: sha256(token),
+        revokedAt: null,
+      };
 
       const db = setupAgentKeyTest(keyRow, null); // no agent row
       const mw = makeMiddleware("unauthenticated", undefined, db);

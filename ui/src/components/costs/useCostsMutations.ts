@@ -1,5 +1,5 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { BudgetPolicySummary } from "@ironworksai/shared";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { budgetsApi } from "../../api/budgets";
 import { costsApi } from "../../api/costs";
 import { queryKeys } from "../../lib/queryKeys";
@@ -10,11 +10,7 @@ interface UseCostsMutationsParams {
   onFinanceEventSuccess: () => void;
 }
 
-export function useCostsMutations({
-  selectedCompanyId,
-  companyId,
-  onFinanceEventSuccess,
-}: UseCostsMutationsParams) {
+export function useCostsMutations({ selectedCompanyId, companyId, onFinanceEventSuccess }: UseCostsMutationsParams) {
   const queryClient = useQueryClient();
 
   const invalidateBudgetViews = () => {
@@ -26,13 +22,24 @@ export function useCostsMutations({
   };
 
   const policyMutation = useMutation({
-    mutationFn: (input: { scopeType: BudgetPolicySummary["scopeType"]; scopeId: string; amount: number; windowKind: BudgetPolicySummary["windowKind"] }) =>
-      budgetsApi.upsertPolicy(companyId, { scopeType: input.scopeType, scopeId: input.scopeId, amount: input.amount, windowKind: input.windowKind }),
+    mutationFn: (input: {
+      scopeType: BudgetPolicySummary["scopeType"];
+      scopeId: string;
+      amount: number;
+      windowKind: BudgetPolicySummary["windowKind"];
+    }) =>
+      budgetsApi.upsertPolicy(companyId, {
+        scopeType: input.scopeType,
+        scopeId: input.scopeId,
+        amount: input.amount,
+        windowKind: input.windowKind,
+      }),
     onSuccess: invalidateBudgetViews,
   });
 
   const financeEventMutation = useMutation({
-    mutationFn: (event: Parameters<typeof costsApi.createFinanceEvent>[1]) => costsApi.createFinanceEvent(companyId, event),
+    mutationFn: (event: Parameters<typeof costsApi.createFinanceEvent>[1]) =>
+      costsApi.createFinanceEvent(companyId, event),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.financeSummary(companyId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.financeByBiller(companyId) });

@@ -1,11 +1,8 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { listIronworksSkillEntries, removeMaintainerOnlySkillSymlinks } from "@ironworksai/adapter-utils/server-utils";
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  listIronworksSkillEntries,
-  removeMaintainerOnlySkillSymlinks,
-} from "@ironworksai/adapter-utils/server-utils";
 
 async function makeTempDir(prefix: string): Promise<string> {
   return fs.mkdtemp(path.join(os.tmpdir(), prefix));

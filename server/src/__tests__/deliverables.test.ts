@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -65,7 +65,7 @@ vi.mock("../middleware/logger.js", () => ({
 
 // Mock assertCanWrite to avoid DB calls for membership checks
 vi.mock("../routes/authz.js", async (importOriginal) => {
-  const original = await importOriginal() as any;
+  const original = (await importOriginal()) as any;
   return {
     ...original,
     assertCanWrite: vi.fn().mockResolvedValue(undefined),
@@ -145,13 +145,15 @@ describe("deliverable routes", () => {
 
   describe("PATCH /api/companies/:companyId/deliverables/:id", () => {
     it("updates deliverable status for authorized user", async () => {
-      mockSelectRows.mockResolvedValue([{
-        id: DELIVERABLE_ID,
-        companyId: COMPANY_ID,
-        deliverableStatus: "draft",
-        documentType: "weekly-report",
-        title: "Test Report",
-      }]);
+      mockSelectRows.mockResolvedValue([
+        {
+          id: DELIVERABLE_ID,
+          companyId: COMPANY_ID,
+          deliverableStatus: "draft",
+          documentType: "weekly-report",
+          title: "Test Report",
+        },
+      ]);
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
       const res = await request(app)
         .patch(`/api/companies/${COMPANY_ID}/deliverables/${DELIVERABLE_ID}`)
@@ -180,9 +182,7 @@ describe("deliverable routes", () => {
 
     it("rejects missing deliverableStatus with 400", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .patch(`/api/companies/${COMPANY_ID}/deliverables/${DELIVERABLE_ID}`)
-        .send({});
+      const res = await request(app).patch(`/api/companies/${COMPANY_ID}/deliverables/${DELIVERABLE_ID}`).send({});
 
       expect(res.status).toBe(400);
     });
@@ -198,13 +198,15 @@ describe("deliverable routes", () => {
     });
 
     it("logs activity after status update", async () => {
-      mockSelectRows.mockResolvedValue([{
-        id: DELIVERABLE_ID,
-        companyId: COMPANY_ID,
-        deliverableStatus: "draft",
-        documentType: "weekly-report",
-        title: "Test Report",
-      }]);
+      mockSelectRows.mockResolvedValue([
+        {
+          id: DELIVERABLE_ID,
+          companyId: COMPANY_ID,
+          deliverableStatus: "draft",
+          documentType: "weekly-report",
+          title: "Test Report",
+        },
+      ]);
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
       await request(app)
         .patch(`/api/companies/${COMPANY_ID}/deliverables/${DELIVERABLE_ID}`)

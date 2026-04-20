@@ -1,27 +1,27 @@
-import type { QueryClient } from "@tanstack/react-query";
-import type { AdapterEnvironmentTestResult } from "@ironworksai/shared";
-import { companiesApi } from "../../api/companies";
-import { goalsApi } from "../../api/goals";
-import { agentsApi } from "../../api/agents";
-import { teamTemplatesApi } from "../../api/teamTemplates";
-import { issuesApi } from "../../api/issues";
-import { secretsApi } from "../../api/secrets";
-import { projectsApi } from "../../api/projects";
-import { queryKeys } from "../../lib/queryKeys";
-import { getUIAdapter } from "../../adapters";
-import { defaultCreateValues } from "../agent-config-defaults";
-import { parseOnboardingGoalInput } from "../../lib/onboarding-goal";
-import {
-  buildOnboardingIssuePayload,
-  buildOnboardingProjectPayload,
-  selectDefaultCompanyGoalId,
-} from "../../lib/onboarding-launch";
 import {
   DEFAULT_CODEX_LOCAL_BYPASS_APPROVALS_AND_SANDBOX,
   DEFAULT_CODEX_LOCAL_MODEL,
 } from "@ironworksai/adapter-codex-local";
 import { DEFAULT_CURSOR_LOCAL_MODEL } from "@ironworksai/adapter-cursor-local";
 import { DEFAULT_GEMINI_LOCAL_MODEL } from "@ironworksai/adapter-gemini-local";
+import type { AdapterEnvironmentTestResult } from "@ironworksai/shared";
+import type { QueryClient } from "@tanstack/react-query";
+import { getUIAdapter } from "../../adapters";
+import { agentsApi } from "../../api/agents";
+import { companiesApi } from "../../api/companies";
+import { goalsApi } from "../../api/goals";
+import { issuesApi } from "../../api/issues";
+import { projectsApi } from "../../api/projects";
+import { secretsApi } from "../../api/secrets";
+import { teamTemplatesApi } from "../../api/teamTemplates";
+import { parseOnboardingGoalInput } from "../../lib/onboarding-goal";
+import {
+  buildOnboardingIssuePayload,
+  buildOnboardingProjectPayload,
+  selectDefaultCompanyGoalId,
+} from "../../lib/onboarding-launch";
+import { queryKeys } from "../../lib/queryKeys";
+import { defaultCreateValues } from "../agent-config-defaults";
 import { LLM_PROVIDERS } from "./constants";
 import type { AdapterType, RosterItem, Step } from "./types";
 
@@ -60,19 +60,27 @@ export function buildAdapterConfig(
     ...defaultCreateValues,
     adapterType,
     model:
-      adapterType === "codex_local" ? model || DEFAULT_CODEX_LOCAL_MODEL
-      : adapterType === "gemini_local" ? model || DEFAULT_GEMINI_LOCAL_MODEL
-      : adapterType === "cursor" ? model || DEFAULT_CURSOR_LOCAL_MODEL
-      : model,
-    command, args, url,
+      adapterType === "codex_local"
+        ? model || DEFAULT_CODEX_LOCAL_MODEL
+        : adapterType === "gemini_local"
+          ? model || DEFAULT_GEMINI_LOCAL_MODEL
+          : adapterType === "cursor"
+            ? model || DEFAULT_CURSOR_LOCAL_MODEL
+            : model,
+    command,
+    args,
+    url,
     dangerouslySkipPermissions: adapterType === "claude_local" || adapterType === "opencode_local",
-    dangerouslyBypassSandbox: adapterType === "codex_local"
-      ? DEFAULT_CODEX_LOCAL_BYPASS_APPROVALS_AND_SANDBOX
-      : defaultCreateValues.dangerouslyBypassSandbox,
+    dangerouslyBypassSandbox:
+      adapterType === "codex_local"
+        ? DEFAULT_CODEX_LOCAL_BYPASS_APPROVALS_AND_SANDBOX
+        : defaultCreateValues.dangerouslyBypassSandbox,
   });
   if (adapterType === "claude_local" && forceUnsetAnthropicApiKey) {
-    const env = typeof config.env === "object" && config.env !== null && !Array.isArray(config.env)
-      ? { ...(config.env as Record<string, unknown>) } : {};
+    const env =
+      typeof config.env === "object" && config.env !== null && !Array.isArray(config.env)
+        ? { ...(config.env as Record<string, unknown>) }
+        : {};
     env.ANTHROPIC_API_KEY = { type: "plain", value: "" };
     config.env = env;
   }
@@ -103,11 +111,7 @@ export async function runAdapterEnvironmentTest(
   }
 }
 
-export async function handleStep1Next(
-  deps: WizardHandlerDeps,
-  companyName: string,
-  companyGoal: string,
-) {
+export async function handleStep1Next(deps: WizardHandlerDeps, companyName: string, companyGoal: string) {
   deps.setLoading(true);
   deps.setError(null);
   try {
@@ -183,14 +187,25 @@ export async function handleStep2Next(
   try {
     if (adapterType === "opencode_local") {
       const selectedModelId = model.trim();
-      if (!selectedModelId) { deps.setError("OpenCode requires an explicit model in provider/model format."); return; }
-      if (adapterModelsError) { deps.setError(adapterModelsError.message || "Failed to load OpenCode models."); return; }
-      if (adapterModelsLoading || adapterModelsFetching) { deps.setError("OpenCode models are still loading. Please wait and try again."); return; }
+      if (!selectedModelId) {
+        deps.setError("OpenCode requires an explicit model in provider/model format.");
+        return;
+      }
+      if (adapterModelsError) {
+        deps.setError(adapterModelsError.message || "Failed to load OpenCode models.");
+        return;
+      }
+      if (adapterModelsLoading || adapterModelsFetching) {
+        deps.setError("OpenCode models are still loading. Please wait and try again.");
+        return;
+      }
       const discovered = adapterModels ?? [];
       if (!discovered.some((e) => e.id === selectedModelId)) {
-        deps.setError(discovered.length === 0
-          ? "No OpenCode models discovered. Run `opencode models` and authenticate providers."
-          : `Configured OpenCode model is unavailable: ${selectedModelId}`);
+        deps.setError(
+          discovered.length === 0
+            ? "No OpenCode models discovered. Run `opencode models` and authenticate providers."
+            : `Configured OpenCode model is unavailable: ${selectedModelId}`,
+        );
         return;
       }
     }
@@ -203,7 +218,9 @@ export async function handleStep2Next(
       role: "ceo",
       adapterType,
       adapterConfig,
-      runtimeConfig: { heartbeat: { enabled: true, intervalSec: 3600, wakeOnDemand: true, cooldownSec: 10, maxConcurrentRuns: 1 } },
+      runtimeConfig: {
+        heartbeat: { enabled: true, intervalSec: 3600, wakeOnDemand: true, cooldownSec: 10, maxConcurrentRuns: 1 },
+      },
     });
     deps.setCreatedAgentId(agent.id);
     deps.queryClient.invalidateQueries({ queryKey: queryKeys.agents.list(createdCompanyId) });
@@ -231,20 +248,34 @@ export async function handlePackDeploy(
     const uniqueKeys = [...new Set(rosterItems.map((r) => r.templateKey))];
     const details = await Promise.all(uniqueKeys.map((key) => teamTemplatesApi.getRole(key)));
     for (const detail of details) templateDetails.set(detail.key, { soul: detail.soul, agents: detail.agents });
-  } catch { /* Continue without templates */ }
+  } catch {
+    /* Continue without templates */
+  }
   try {
-    const sorted = [...rosterItems].sort((a, b) => { if (!a.reportsTo) return -1; if (!b.reportsTo) return 1; return 0; });
+    const sorted = [...rosterItems].sort((a, b) => {
+      if (!a.reportsTo) return -1;
+      if (!b.reportsTo) return 1;
+      return 0;
+    });
     const agentPayloads = sorted.map((item) => {
       const template = templateDetails.get(item.templateKey);
       return {
-        templateKey: item.templateKey, name: item.name.trim() || item.title,
-        role: item.role, title: item.title ?? null, reportsTo: item.reportsTo ?? null,
-        suggestedAdapter: item.suggestedAdapter ?? null, skills: item.skills,
+        templateKey: item.templateKey,
+        name: item.name.trim() || item.title,
+        role: item.role,
+        title: item.title ?? null,
+        reportsTo: item.reportsTo ?? null,
+        suggestedAdapter: item.suggestedAdapter ?? null,
+        skills: item.skills,
         agentsMd: template?.agents ?? null,
       };
     });
     deps.setPackProgress({ done: 0, total: sorted.length });
-    const result = await agentsApi.deployTeamPack(createdCompanyId, { agents: agentPayloads, adapterType, adapterConfig });
+    const result = await agentsApi.deployTeamPack(createdCompanyId, {
+      agents: agentPayloads,
+      adapterType,
+      adapterConfig,
+    });
     deps.setPackProgress({ done: sorted.length, total: sorted.length });
     if (result.agents.length > 0) deps.setCreatedAgentId(result.agents[0].id);
     deps.queryClient.invalidateQueries({ queryKey: queryKeys.agents.list(createdCompanyId) });
@@ -270,8 +301,10 @@ export async function handleUnsetAnthropicApiKey(
   deps.setAdapterEnvError(null);
   deps.setForceUnsetAnthropicApiKey(true);
   const configWithUnset = { ...adapterConfig };
-  const env = typeof configWithUnset.env === "object" && configWithUnset.env !== null && !Array.isArray(configWithUnset.env)
-    ? { ...(configWithUnset.env as Record<string, unknown>) } : {};
+  const env =
+    typeof configWithUnset.env === "object" && configWithUnset.env !== null && !Array.isArray(configWithUnset.env)
+      ? { ...(configWithUnset.env as Record<string, unknown>) }
+      : {};
   env.ANTHROPIC_API_KEY = { type: "plain", value: "" };
   configWithUnset.env = env;
   try {
@@ -281,7 +314,9 @@ export async function handleUnsetAnthropicApiKey(
     }
     const result = await runAdapterEnvironmentTest(deps, createdCompanyId, adapterType, configWithUnset);
     if (result?.status === "fail") {
-      deps.setError("Retried with ANTHROPIC_API_KEY unset in adapter config, but the environment test is still failing.");
+      deps.setError(
+        "Retried with ANTHROPIC_API_KEY unset in adapter config, but the environment test is still failing.",
+      );
     }
   } catch (err) {
     deps.setError(err instanceof Error ? err.message : "Failed to unset ANTHROPIC_API_KEY and retry.");
@@ -324,20 +359,34 @@ export async function handleLaunch(
     }
     let issueRef = createdIssueRef;
     if (!issueRef) {
-      const issue = await issuesApi.create(createdCompanyId, buildOnboardingIssuePayload({
-        title: taskTitle, description: taskDescription,
-        assigneeAgentId: createdAgentId, projectId, goalId,
-      }));
+      const issue = await issuesApi.create(
+        createdCompanyId,
+        buildOnboardingIssuePayload({
+          title: taskTitle,
+          description: taskDescription,
+          assigneeAgentId: createdAgentId,
+          projectId,
+          goalId,
+        }),
+      );
       issueRef = issue.identifier ?? issue.id;
       deps.setCreatedIssueRef(issueRef);
       for (const extra of extraTasks) {
         if (!extra.title.trim()) continue;
         try {
-          await issuesApi.create(createdCompanyId, buildOnboardingIssuePayload({
-            title: extra.title, description: extra.description,
-            assigneeAgentId: createdAgentId, projectId, goalId,
-          }));
-        } catch { /* Non-blocking */ }
+          await issuesApi.create(
+            createdCompanyId,
+            buildOnboardingIssuePayload({
+              title: extra.title,
+              description: extra.description,
+              assigneeAgentId: createdAgentId,
+              projectId,
+              goalId,
+            }),
+          );
+        } catch {
+          /* Non-blocking */
+        }
       }
       deps.queryClient.invalidateQueries({ queryKey: queryKeys.issues.list(createdCompanyId) });
     }

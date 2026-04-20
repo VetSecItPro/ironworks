@@ -1,12 +1,7 @@
-import type {
-  Agent,
-  AdapterEnvironmentTestResult,
-  CompanySecret,
-  EnvBinding,
-} from "@ironworksai/shared";
-import type { AdapterModel } from "../../api/agents";
 import type { CreateConfigValues } from "@ironworksai/adapter-utils";
+import type { AdapterEnvironmentTestResult, Agent, CompanySecret, EnvBinding } from "@ironworksai/shared";
 import type { UseMutationResult } from "@tanstack/react-query";
+import type { AdapterModel } from "../../api/agents";
 
 /* ---- Edit mode overlay (dirty tracking) ---- */
 
@@ -51,9 +46,7 @@ export function parseCommaArgs(value: string): string[] {
 
 export function formatArgList(value: unknown): string {
   if (Array.isArray(value)) {
-    return value
-      .filter((item): item is string => typeof item === "string")
-      .join(", ");
+    return value.filter((item): item is string => typeof item === "string").join(", ");
   }
   return typeof value === "string" ? value : "";
 }
@@ -100,4 +93,4 @@ export interface SectionCommonProps {
   mark: MarkFn;
 }
 
-export type { Agent, AdapterEnvironmentTestResult, CompanySecret, EnvBinding, AdapterModel, CreateConfigValues };
+export type { AdapterEnvironmentTestResult, AdapterModel, Agent, CompanySecret, CreateConfigValues, EnvBinding };

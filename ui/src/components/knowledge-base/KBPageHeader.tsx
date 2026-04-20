@@ -1,26 +1,8 @@
-import type { KnowledgePage } from "../../api/knowledge";
+import { ChevronLeft, Edit3, Globe, History, Lock, Save, ShieldCheck, Trash2, User, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { KnowledgePage } from "../../api/knowledge";
 import { timeAgo } from "../../lib/timeAgo";
-import {
-  ChevronLeft,
-  Edit3,
-  Globe,
-  History,
-  Lock,
-  Save,
-  ShieldCheck,
-  Trash2,
-  User,
-  Users,
-  X,
-} from "lucide-react";
 
 export function KBPageHeader({
   selectedPage,
@@ -69,26 +51,25 @@ export function KBPageHeader({
         {editing ? (
           <>
             <Button size="sm" className="h-7 text-xs" disabled={isSaving} onClick={onSave}>
-              <Save className="h-3 w-3 mr-1" />{isSaving ? "Saving..." : "Save"}
+              <Save className="h-3 w-3 mr-1" />
+              {isSaving ? "Saving..." : "Save"}
             </Button>
             <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={onCancelEdit}>
-              <X className="h-3 w-3 mr-1" />Cancel
+              <X className="h-3 w-3 mr-1" />
+              Cancel
             </Button>
           </>
         ) : (
           <>
             <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={onStartEditing}>
-              <Edit3 className="h-3 w-3 mr-1" />Edit
+              <Edit3 className="h-3 w-3 mr-1" />
+              Edit
             </Button>
             <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={onToggleHistory}>
-              <History className="h-3 w-3 mr-1" />History
+              <History className="h-3 w-3 mr-1" />
+              History
             </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 text-xs text-destructive"
-              onClick={onDelete}
-            >
+            <Button size="sm" variant="ghost" className="h-7 text-xs text-destructive" onClick={onDelete}>
               <Trash2 className="h-3 w-3" />
             </Button>
           </>
@@ -112,10 +93,7 @@ export function KBPageMetadata({
       <span>Updated {timeAgo(selectedPage.updatedAt)}</span>
       <span>·</span>
       {/* Visibility dropdown */}
-      <Select
-        value={selectedPage.visibility}
-        onValueChange={onVisibilityChange}
-      >
+      <Select value={selectedPage.visibility} onValueChange={onVisibilityChange}>
         <SelectTrigger className="h-5 w-auto min-w-0 text-[10px] border-0 bg-transparent p-0 gap-1 shadow-none hover:bg-accent/50 rounded px-1.5">
           <span className="inline-flex items-center gap-1">
             {selectedPage.visibility === "company" && <Globe className="h-2.5 w-2.5" />}
@@ -127,17 +105,20 @@ export function KBPageMetadata({
         <SelectContent>
           <SelectItem value="company">
             <span className="inline-flex items-center gap-1.5">
-              <Globe className="h-3 w-3" />Everyone
+              <Globe className="h-3 w-3" />
+              Everyone
             </span>
           </SelectItem>
           <SelectItem value="private">
             <span className="inline-flex items-center gap-1.5">
-              <Lock className="h-3 w-3" />Admins only
+              <Lock className="h-3 w-3" />
+              Admins only
             </span>
           </SelectItem>
           <SelectItem value="project">
             <span className="inline-flex items-center gap-1.5">
-              <ShieldCheck className="h-3 w-3" />Specific agents
+              <ShieldCheck className="h-3 w-3" />
+              Specific agents
             </span>
           </SelectItem>
         </SelectContent>
@@ -146,7 +127,8 @@ export function KBPageMetadata({
         <>
           <span>·</span>
           <span className="inline-flex items-center gap-0.5 text-blue-400">
-            <Users className="h-2.5 w-2.5" />{selectedPage.department}
+            <Users className="h-2.5 w-2.5" />
+            {selectedPage.department}
           </span>
         </>
       )}
@@ -154,7 +136,8 @@ export function KBPageMetadata({
         <>
           <span>·</span>
           <span className="inline-flex items-center gap-0.5 text-purple-400">
-            <User className="h-2.5 w-2.5" />Agent-scoped
+            <User className="h-2.5 w-2.5" />
+            Agent-scoped
           </span>
         </>
       )}

@@ -1,20 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useBreadcrumbs } from "@/context/BreadcrumbContext";
-import { useToast } from "@/context/ToastContext";
-import { bugReportsApi, type BugReport } from "@/api/bugReports";
-import { cn } from "@/lib/utils";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bug, ChevronDown, ChevronRight, RefreshCw, Search } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { type BugReport, bugReportsApi } from "@/api/bugReports";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { useBreadcrumbs } from "@/context/BreadcrumbContext";
+import { useToast } from "@/context/ToastContext";
+import { cn } from "@/lib/utils";
 
 /* -- Badge helpers -- */
 
@@ -23,9 +17,7 @@ function TypeBadge({ type }: { type: BugReport["type"] }) {
     <span
       className={cn(
         "inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide",
-        type === "bug"
-          ? "bg-red-500/15 text-red-400"
-          : "bg-blue-500/15 text-blue-400",
+        type === "bug" ? "bg-red-500/15 text-red-400" : "bg-blue-500/15 text-blue-400",
       )}
     >
       {type === "bug" ? "Bug" : "Feature"}
@@ -44,7 +36,12 @@ function SeverityBadge({ severity }: { severity: BugReport["severity"] }) {
           ? "bg-amber-500/15 text-amber-400"
           : "bg-slate-500/15 text-slate-400";
   return (
-    <span className={cn("inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide", cls)}>
+    <span
+      className={cn(
+        "inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide",
+        cls,
+      )}
+    >
       {severity}
     </span>
   );
@@ -66,7 +63,12 @@ function StatusBadge({ status }: { status: BugReport["status"] }) {
     closed: "Closed",
   };
   return (
-    <span className={cn("inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide", cls)}>
+    <span
+      className={cn(
+        "inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide",
+        cls,
+      )}
+    >
       {labels[status] ?? status}
     </span>
   );
@@ -81,8 +83,7 @@ function ReportRow({ report }: { report: BugReport }) {
   const queryClient = useQueryClient();
 
   const statusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: BugReport["status"] }) =>
-      bugReportsApi.update(id, { status }),
+    mutationFn: ({ id, status }: { id: string; status: BugReport["status"] }) => bugReportsApi.update(id, { status }),
     onSuccess: () => {
       pushToast({ title: "Status updated", tone: "success" });
       queryClient.invalidateQueries({ queryKey: ["admin", "bug-reports"] });
@@ -93,8 +94,7 @@ function ReportRow({ report }: { report: BugReport }) {
   });
 
   const notesMutation = useMutation({
-    mutationFn: ({ id, notes }: { id: string; notes: string }) =>
-      bugReportsApi.update(id, { adminNotes: notes }),
+    mutationFn: ({ id, notes }: { id: string; notes: string }) => bugReportsApi.update(id, { adminNotes: notes }),
     onSuccess: () => {
       pushToast({ title: "Notes saved", tone: "success" });
       queryClient.invalidateQueries({ queryKey: ["admin", "bug-reports"] });
@@ -111,14 +111,22 @@ function ReportRow({ report }: { report: BugReport }) {
         onClick={() => setExpanded((v) => !v)}
       >
         <td className="px-3 py-3 w-6">
-          {expanded
-            ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-            : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />}
+          {expanded ? (
+            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+          )}
         </td>
         <td className="px-3 py-3 text-sm font-medium truncate max-w-[250px]">{report.title}</td>
-        <td className="px-3 py-3"><TypeBadge type={report.type} /></td>
-        <td className="px-3 py-3"><SeverityBadge severity={report.severity} /></td>
-        <td className="px-3 py-3"><StatusBadge status={report.status} /></td>
+        <td className="px-3 py-3">
+          <TypeBadge type={report.type} />
+        </td>
+        <td className="px-3 py-3">
+          <SeverityBadge severity={report.severity} />
+        </td>
+        <td className="px-3 py-3">
+          <StatusBadge status={report.status} />
+        </td>
         <td className="px-3 py-3 text-xs text-muted-foreground">{report.reporterEmail ?? "Unknown"}</td>
         <td className="px-3 py-3 text-xs text-muted-foreground whitespace-nowrap">
           {new Date(report.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
@@ -179,10 +187,7 @@ function ReportRow({ report }: { report: BugReport }) {
                       statusMutation.mutate({ id: report.id, status: val as BugReport["status"] });
                     }}
                   >
-                    <SelectTrigger
-                      className="w-[160px] text-xs"
-                      onClick={(e) => e.stopPropagation()}
-                    >
+                    <SelectTrigger className="w-[160px] text-xs" onClick={(e) => e.stopPropagation()}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent onClick={(e) => e.stopPropagation()}>
@@ -198,7 +203,14 @@ function ReportRow({ report }: { report: BugReport }) {
               {/* Resolved date */}
               {report.resolvedAt && (
                 <p className="text-xs text-muted-foreground">
-                  Resolved: {new Date(report.resolvedAt).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  Resolved:{" "}
+                  {new Date(report.resolvedAt).toLocaleString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
                 </p>
               )}
             </div>
@@ -218,13 +230,14 @@ export default function AdminBugReports() {
   const [statusFilter, setStatusFilter] = useState<"all" | "open" | "in_progress" | "resolved" | "closed">("all");
 
   useEffect(() => {
-    setBreadcrumbs([
-      { label: "IronWorks Admin" },
-      { label: "Bug Reports" },
-    ]);
+    setBreadcrumbs([{ label: "IronWorks Admin" }, { label: "Bug Reports" }]);
   }, [setBreadcrumbs]);
 
-  const { data: reports = [], isLoading, refetch } = useQuery({
+  const {
+    data: reports = [],
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ["admin", "bug-reports"],
     queryFn: () => bugReportsApi.list(),
     staleTime: 30_000,

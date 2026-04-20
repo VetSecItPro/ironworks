@@ -1,22 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  AlertTriangle,
-  BarChart3,
-  Play,
-  Plus,
-  FlaskConical,
-  Variable,
-  X,
-} from "lucide-react";
-import { playbooksApi, type PlaybookWithSteps } from "../../api/playbooks";
+import { AlertTriangle, BarChart3, FlaskConical, Play, Plus, Variable, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { type PlaybookWithSteps, playbooksApi } from "../../api/playbooks";
 import { queryKeys } from "../../lib/queryKeys";
 import { cn } from "../../lib/utils";
 import { MarkdownBody } from "../MarkdownBody";
 import { PageSkeleton } from "../PageSkeleton";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { CATEGORY_COLORS } from "./PlaybookCard";
 import { StepTimeline } from "./StepTimeline";
 
@@ -44,7 +36,9 @@ export function loadStepConditions(): Record<string, StepCondition> {
   try {
     const raw = localStorage.getItem(STEP_CONDITIONS_KEY);
     if (raw) return JSON.parse(raw) as Record<string, StepCondition>;
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return {};
 }
 
@@ -68,7 +62,9 @@ export function loadPlaybookParams(playbookId: string): PlaybookParam[] {
       const all = JSON.parse(raw) as Record<string, PlaybookParam[]>;
       return all[playbookId] ?? [];
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return [];
 }
 
@@ -128,7 +124,9 @@ function ParametersEditor({ playbookId }: { playbookId: string }) {
       </div>
 
       {params.length === 0 && !showAdd && (
-        <p className="text-xs text-muted-foreground">No parameters defined. Add variables that get filled in at runtime.</p>
+        <p className="text-xs text-muted-foreground">
+          No parameters defined. Add variables that get filled in at runtime.
+        </p>
       )}
 
       {params.map((p) => (
@@ -136,10 +134,12 @@ function ParametersEditor({ playbookId }: { playbookId: string }) {
           <Variable className="h-3 w-3 text-muted-foreground shrink-0" />
           <span className="font-medium">{p.name}</span>
           <span className="text-[10px] px-1.5 py-0.5 bg-muted rounded">{p.type}</span>
-          {p.defaultValue && (
-            <span className="text-muted-foreground">default: {p.defaultValue}</span>
-          )}
-          <button onClick={() => removeParam(p.id)} className="ml-auto text-muted-foreground hover:text-destructive" aria-label="Remove parameter">
+          {p.defaultValue && <span className="text-muted-foreground">default: {p.defaultValue}</span>}
+          <button
+            onClick={() => removeParam(p.id)}
+            className="ml-auto text-muted-foreground hover:text-destructive"
+            aria-label="Remove parameter"
+          >
             <X className="h-3 w-3" />
           </button>
         </div>
@@ -148,17 +148,36 @@ function ParametersEditor({ playbookId }: { playbookId: string }) {
       {showAdd && (
         <div className="mt-2 p-2 rounded-md bg-muted/30 border border-border space-y-2">
           <div className="flex items-center gap-2">
-            <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Name" className="h-7 text-xs flex-1" autoFocus />
-            <select value={newType} onChange={(e) => setNewType(e.target.value as PlaybookParam["type"])} className="h-7 text-xs bg-background border border-border rounded px-2">
+            <Input
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="Name"
+              className="h-7 text-xs flex-1"
+              autoFocus
+            />
+            <select
+              value={newType}
+              onChange={(e) => setNewType(e.target.value as PlaybookParam["type"])}
+              className="h-7 text-xs bg-background border border-border rounded px-2"
+            >
               <option value="text">Text</option>
               <option value="number">Number</option>
               <option value="boolean">Boolean</option>
             </select>
-            <Input value={newDefault} onChange={(e) => setNewDefault(e.target.value)} placeholder="Default" className="h-7 text-xs w-24" />
+            <Input
+              value={newDefault}
+              onChange={(e) => setNewDefault(e.target.value)}
+              placeholder="Default"
+              className="h-7 text-xs w-24"
+            />
           </div>
           <div className="flex gap-1 justify-end">
-            <Button size="sm" variant="ghost" onClick={() => setShowAdd(false)}>Cancel</Button>
-            <Button size="sm" onClick={addParam} disabled={!newName.trim()}>Add</Button>
+            <Button size="sm" variant="ghost" onClick={() => setShowAdd(false)}>
+              Cancel
+            </Button>
+            <Button size="sm" onClick={addParam} disabled={!newName.trim()}>
+              Add
+            </Button>
           </div>
         </div>
       )}
@@ -217,11 +236,16 @@ function PlaybookAnalyticsCard({ playbook }: { playbook: PlaybookWithSteps }) {
         </div>
         <div className="rounded-md bg-background border border-border px-3 py-2">
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Success Rate</p>
-          <p className={cn(
-            "text-lg font-bold tabular-nums",
-            successRate !== null && successRate >= 90 ? "text-emerald-500" :
-            successRate !== null && successRate >= 70 ? "text-amber-500" : "text-red-500",
-          )}>
+          <p
+            className={cn(
+              "text-lg font-bold tabular-nums",
+              successRate !== null && successRate >= 90
+                ? "text-emerald-500"
+                : successRate !== null && successRate >= 70
+                  ? "text-amber-500"
+                  : "text-red-500",
+            )}
+          >
             {successRate !== null ? `${successRate}%` : "-"}
           </p>
         </div>
@@ -233,7 +257,9 @@ function PlaybookAnalyticsCard({ playbook }: { playbook: PlaybookWithSteps }) {
 
       {commonFailures.length > 0 && (
         <div>
-          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Common Failure Points</p>
+          <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">
+            Common Failure Points
+          </p>
           <div className="space-y-1">
             {commonFailures.map((f: { step: string; count: number }) => (
               <div key={f.step} className="flex items-center justify-between text-xs">
@@ -289,9 +315,7 @@ export function PlaybookDetailPanel({
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
             <h2 className="text-lg font-semibold">{data.name}</h2>
-            {data.description && (
-              <p className="text-sm text-muted-foreground mt-1">{data.description}</p>
-            )}
+            {data.description && <p className="text-sm text-muted-foreground mt-1">{data.description}</p>}
           </div>
           <div className="flex items-center gap-2">
             <Button size="sm" variant="outline" onClick={onDryRun}>

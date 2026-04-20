@@ -1,9 +1,9 @@
-import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { messagingApi, type MessagingBridge } from "../api/messaging";
+import { Check, Gamepad2, Hash, Loader2, Mail, MessageCircle, RefreshCw, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { type MessagingBridge, messagingApi } from "../api/messaging";
 import { Field, HintIcon } from "./agent-config-primitives";
-import { Check, Loader2, Trash2, RefreshCw, Mail, MessageCircle, Hash, Gamepad2 } from "lucide-react";
 
 interface MessagingSetupProps {
   companyId: string;
@@ -36,39 +36,21 @@ export function MessagingSetup({ companyId }: MessagingSetupProps) {
         </div>
       )}
 
-      {bridgesQuery.isError && (
-        <div className="text-sm text-destructive">
-          Failed to load messaging configuration.
-        </div>
-      )}
+      {bridgesQuery.isError && <div className="text-sm text-destructive">Failed to load messaging configuration.</div>}
 
       {data && (
         <div className="space-y-3">
           {/* Email */}
-          <EmailBridgeCard
-            address={data.email.address}
-            status={data.email.status}
-            note={data.email.note}
-          />
+          <EmailBridgeCard address={data.email.address} status={data.email.status} note={data.email.note} />
 
           {/* Telegram */}
-          <TelegramBridgeCard
-            companyId={companyId}
-            bridge={telegramBridge}
-            queryKey={queryKey}
-          />
+          <TelegramBridgeCard companyId={companyId} bridge={telegramBridge} queryKey={queryKey} />
 
           {/* Slack - Planned */}
-          <PlannedPlatformCard
-            platform="Slack"
-            icon={<Hash className="h-4 w-4 text-muted-foreground" />}
-          />
+          <PlannedPlatformCard platform="Slack" icon={<Hash className="h-4 w-4 text-muted-foreground" />} />
 
           {/* Discord - Planned */}
-          <PlannedPlatformCard
-            platform="Discord"
-            icon={<Gamepad2 className="h-4 w-4 text-muted-foreground" />}
-          />
+          <PlannedPlatformCard platform="Discord" icon={<Gamepad2 className="h-4 w-4 text-muted-foreground" />} />
         </div>
       )}
     </div>
@@ -77,15 +59,7 @@ export function MessagingSetup({ companyId }: MessagingSetupProps) {
 
 // ── Email Card ──
 
-function EmailBridgeCard({
-  address,
-  status,
-  note,
-}: {
-  address: string | null;
-  status: string;
-  note: string;
-}) {
+function EmailBridgeCard({ address, status, note }: { address: string | null; status: string; note: string }) {
   return (
     <div className="rounded-md border border-border px-4 py-3 space-y-2">
       <div className="flex items-center justify-between">
@@ -98,9 +72,7 @@ function EmailBridgeCard({
       {address && (
         <div className="space-y-1">
           <div className="text-xs text-muted-foreground">Inbound email address:</div>
-          <code className="block text-xs bg-muted/50 rounded px-2 py-1.5 font-mono select-all">
-            {address}
-          </code>
+          <code className="block text-xs bg-muted/50 rounded px-2 py-1.5 font-mono select-all">{address}</code>
         </div>
       )}
       <p className="text-xs text-muted-foreground">{note}</p>
@@ -161,11 +133,7 @@ function TelegramBridgeCard({
           <StatusBadge
             status={bridge.status}
             label={
-              isConnected
-                ? `Connected${botUsername ? ` (@${botUsername})` : ""}`
-                : isError
-                  ? "Error"
-                  : "Disconnected"
+              isConnected ? `Connected${botUsername ? ` (@${botUsername})` : ""}` : isError ? "Error" : "Disconnected"
             }
           />
         ) : (
@@ -182,12 +150,7 @@ function TelegramBridgeCard({
             </div>
           )}
           <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => testMutation.mutate()}
-              disabled={testMutation.isPending}
-            >
+            <Button size="sm" variant="outline" onClick={() => testMutation.mutate()} disabled={testMutation.isPending}>
               {testMutation.isPending ? (
                 <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
               ) : (
@@ -221,15 +184,9 @@ function TelegramBridgeCard({
       {/* Error state */}
       {bridge && isError && (
         <div className="space-y-2">
-          <p className="text-xs text-destructive">
-            {bridge.lastError ?? "Connection error. Try reconfiguring."}
-          </p>
+          <p className="text-xs text-destructive">{bridge.lastError ?? "Connection error. Try reconfiguring."}</p>
           <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowTokenInput(true)}
-            >
+            <Button size="sm" variant="outline" onClick={() => setShowTokenInput(true)}>
               Reconfigure
             </Button>
             <Button
@@ -249,10 +206,7 @@ function TelegramBridgeCard({
       {/* Not configured or reconfigure state */}
       {(!bridge || showTokenInput) && (
         <div className="space-y-2">
-          <Field
-            label="Bot Token"
-            hint="Get a token from @BotFather on Telegram. Send /newbot and follow the prompts."
-          >
+          <Field label="Bot Token" hint="Get a token from @BotFather on Telegram. Send /newbot and follow the prompts.">
             <input
               className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm font-mono outline-none"
               type="password"
@@ -292,9 +246,7 @@ function TelegramBridgeCard({
           </div>
           {configureMutation.isError && (
             <p className="text-xs text-destructive">
-              {configureMutation.error instanceof Error
-                ? configureMutation.error.message
-                : "Failed to connect"}
+              {configureMutation.error instanceof Error ? configureMutation.error.message : "Failed to connect"}
             </p>
           )}
         </div>
@@ -302,9 +254,7 @@ function TelegramBridgeCard({
 
       {removeMutation.isError && (
         <p className="text-xs text-destructive">
-          {removeMutation.error instanceof Error
-            ? removeMutation.error.message
-            : "Failed to disconnect"}
+          {removeMutation.error instanceof Error ? removeMutation.error.message : "Failed to disconnect"}
         </p>
       )}
     </div>
@@ -313,13 +263,7 @@ function TelegramBridgeCard({
 
 // ── Planned Platform Card ──
 
-function PlannedPlatformCard({
-  platform,
-  icon,
-}: {
-  platform: string;
-  icon: React.ReactNode;
-}) {
+function PlannedPlatformCard({ platform, icon }: { platform: string; icon: React.ReactNode }) {
   return (
     <div className="rounded-md border border-border px-4 py-3 opacity-60">
       <div className="flex items-center justify-between">
@@ -327,9 +271,7 @@ function PlannedPlatformCard({
           {icon}
           <span className="text-sm font-medium">{platform}</span>
         </div>
-        <span className="text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">
-          Planned
-        </span>
+        <span className="text-xs text-muted-foreground bg-muted rounded-full px-2 py-0.5">Planned</span>
       </div>
     </div>
   );
@@ -354,9 +296,7 @@ function StatusBadge({ status, label }: { status: string; label: string }) {
       {(status === "connected" || status === "auto_configured") && (
         <span className="inline-block h-1.5 w-1.5 rounded-full bg-green-500" />
       )}
-      {status === "error" && (
-        <span className="inline-block h-1.5 w-1.5 rounded-full bg-destructive" />
-      )}
+      {status === "error" && <span className="inline-block h-1.5 w-1.5 rounded-full bg-destructive" />}
       {label}
     </span>
   );

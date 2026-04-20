@@ -3,17 +3,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { libraryApi } from "../../api/library";
 import { queryKeys } from "../../lib/queryKeys";
 import { MarkdownBody } from "../MarkdownBody";
-import { FileMetaBar } from "./FileMetaBar";
 import { EventHistory, UsageAnalyticsPanel } from "./FileHistory";
+import { FileMetaBar } from "./FileMetaBar";
 import { formatBytes, formatDate, isMarkdown } from "./libraryHelpers";
 
-export function FileViewer({
-  companyId,
-  filePath,
-}: {
-  companyId: string;
-  filePath: string;
-}) {
+export function FileViewer({ companyId, filePath }: { companyId: string; filePath: string }) {
   const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.library.file(companyId, filePath),
     queryFn: () => libraryApi.file(companyId, filePath),
@@ -21,11 +15,7 @@ export function FileViewer({
   });
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-        Loading file...
-      </div>
-    );
+    return <div className="flex items-center justify-center h-full text-sm text-muted-foreground">Loading file...</div>;
   }
 
   if (error) {
@@ -57,21 +47,12 @@ export function FileViewer({
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-muted/20 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-sm font-medium truncate">{name}</span>
-          <span className="text-xs text-muted-foreground shrink-0">
-            {formatBytes(data.size)}
-          </span>
+          <span className="text-xs text-muted-foreground shrink-0">{formatBytes(data.size)}</span>
         </div>
-        <span className="text-xs text-muted-foreground shrink-0">
-          {formatDate(data.modifiedAt)}
-        </span>
+        <span className="text-xs text-muted-foreground shrink-0">{formatDate(data.modifiedAt)}</span>
       </div>
 
-      {data.meta && (
-        <FileMetaBar
-          meta={data.meta}
-          contributors={data.contributors ?? []}
-        />
-      )}
+      {data.meta && <FileMetaBar meta={data.meta} contributors={data.contributors ?? []} />}
 
       <ScrollArea className="flex-1 min-h-0">
         {isMarkdown(name) ? (
@@ -86,15 +67,10 @@ export function FileViewer({
       </ScrollArea>
 
       {data.events && data.contributors && (
-        <UsageAnalyticsPanel
-          events={data.events}
-          contributors={data.contributors ?? []}
-        />
+        <UsageAnalyticsPanel events={data.events} contributors={data.contributors ?? []} />
       )}
 
-      {data.events && data.events.length > 0 && (
-        <EventHistory events={data.events} />
-      )}
+      {data.events && data.events.length > 0 && <EventHistory events={data.events} />}
     </div>
   );
 }

@@ -1,13 +1,13 @@
-import { useState } from "react";
+import type { HeartbeatRun, JoinRequest } from "@ironworksai/shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { approvalsApi } from "../../api/approvals";
+import { useState } from "react";
+import type { NavigateFunction } from "react-router-dom";
 import { accessApi } from "../../api/access";
-import { issuesApi } from "../../api/issues";
 import { agentsApi } from "../../api/agents";
+import { approvalsApi } from "../../api/approvals";
+import { issuesApi } from "../../api/issues";
 import { queryKeys } from "../../lib/queryKeys";
 import { syncReadStateToServer } from "./inboxHelpers";
-import type { NavigateFunction } from "react-router-dom";
-import type { JoinRequest, HeartbeatRun } from "@ironworksai/shared";
 
 interface UseInboxMutationsParams {
   selectedCompanyId: string | null;
@@ -15,11 +15,7 @@ interface UseInboxMutationsParams {
   markItemRead: (key: string) => void;
 }
 
-export function useInboxMutations({
-  selectedCompanyId,
-  navigate,
-  markItemRead,
-}: UseInboxMutationsParams) {
+export function useInboxMutations({ selectedCompanyId, navigate, markItemRead }: UseInboxMutationsParams) {
   const queryClient = useQueryClient();
   const [actionError, setActionError] = useState<string | null>(null);
   const [retryingRunIds, setRetryingRunIds] = useState<Set<string>>(new Set());
@@ -61,8 +57,7 @@ export function useInboxMutations({
   });
 
   const approveJoinMutation = useMutation({
-    mutationFn: (joinRequest: JoinRequest) =>
-      accessApi.approveJoinRequest(selectedCompanyId!, joinRequest.id),
+    mutationFn: (joinRequest: JoinRequest) => accessApi.approveJoinRequest(selectedCompanyId!, joinRequest.id),
     onSuccess: () => {
       setActionError(null);
       queryClient.invalidateQueries({ queryKey: queryKeys.access.joinRequests(selectedCompanyId!) });
@@ -76,8 +71,7 @@ export function useInboxMutations({
   });
 
   const rejectJoinMutation = useMutation({
-    mutationFn: (joinRequest: JoinRequest) =>
-      accessApi.rejectJoinRequest(selectedCompanyId!, joinRequest.id),
+    mutationFn: (joinRequest: JoinRequest) => accessApi.rejectJoinRequest(selectedCompanyId!, joinRequest.id),
     onSuccess: () => {
       setActionError(null);
       queryClient.invalidateQueries({ queryKey: queryKeys.access.joinRequests(selectedCompanyId!) });

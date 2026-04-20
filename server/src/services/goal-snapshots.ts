@@ -1,17 +1,13 @@
-import { eq, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import { goals, goalSnapshots, issues, costEvents } from "@ironworksai/db";
+import { costEvents, goalSnapshots, goals, issues } from "@ironworksai/db";
+import { eq, sql } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 
 /**
  * Capture a point-in-time snapshot for a single goal.
  */
 export async function snapshotGoal(db: Db, goalId: string): Promise<void> {
-  const [goal] = await db
-    .select()
-    .from(goals)
-    .where(eq(goals.id, goalId))
-    .limit(1);
+  const [goal] = await db.select().from(goals).where(eq(goals.id, goalId)).limit(1);
 
   if (!goal) return;
 
@@ -59,10 +55,7 @@ export async function snapshotGoal(db: Db, goalId: string): Promise<void> {
  * Capture snapshots for all active goals in a company.
  */
 export async function snapshotAllGoals(db: Db, companyId: string): Promise<void> {
-  const companyGoals = await db
-    .select({ id: goals.id })
-    .from(goals)
-    .where(eq(goals.companyId, companyId));
+  const companyGoals = await db.select({ id: goals.id }).from(goals).where(eq(goals.companyId, companyId));
 
   for (const goal of companyGoals) {
     try {
@@ -77,9 +70,7 @@ export async function snapshotAllGoals(db: Db, companyId: string): Promise<void>
  * Nightly batch: snapshot all goals across all companies.
  */
 export async function snapshotAllCompanyGoals(db: Db): Promise<void> {
-  const allCompanies = await db
-    .selectDistinct({ companyId: goals.companyId })
-    .from(goals);
+  const allCompanies = await db.selectDistinct({ companyId: goals.companyId }).from(goals);
 
   for (const row of allCompanies) {
     try {

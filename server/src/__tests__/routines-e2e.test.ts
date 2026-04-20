@@ -1,12 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { eq } from "drizzle-orm";
-import express from "express";
-import request from "supertest";
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import {
   activityLog,
-  agentWakeupRequests,
   agents,
+  agentWakeupRequests,
   companies,
   companyMemberships,
   createDb,
@@ -20,12 +16,13 @@ import {
   routines,
   routineTriggers,
 } from "@ironworksai/db";
-import {
-  getEmbeddedPostgresTestSupport,
-  startEmbeddedPostgresTestDatabase,
-} from "./helpers/embedded-postgres.js";
+import { eq } from "drizzle-orm";
+import express from "express";
+import request from "supertest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { errorHandler } from "../middleware/index.js";
 import { accessService } from "../services/access.js";
+import { getEmbeddedPostgresTestSupport, startEmbeddedPostgresTestDatabase } from "./helpers/embedded-postgres.js";
 
 vi.mock("../services/index.js", async () => {
   const actual = await vi.importActual<typeof import("../services/index.js")>("../services/index.js");
@@ -163,12 +160,7 @@ describeEmbeddedPostgres("routine routes end-to-end", () => {
 
     const access = accessService(db);
     const membership = await access.ensureMembership(companyId, "user", userId, "owner", "active");
-    await access.setMemberPermissions(
-      companyId,
-      membership.id,
-      [{ permissionKey: "tasks:assign" }],
-      userId,
-    );
+    await access.setMemberPermissions(companyId, membership.id, [{ permissionKey: "tasks:assign" }], userId);
 
     return { companyId, agentId, projectId, userId };
   }
@@ -183,17 +175,15 @@ describeEmbeddedPostgres("routine routes end-to-end", () => {
       companyIds: [companyId],
     });
 
-    const createRes = await request(app)
-      .post(`/api/companies/${companyId}/routines`)
-      .send({
-        projectId,
-        title: "Daily standup prep",
-        description: "Summarize blockers and open PRs",
-        assigneeAgentId: agentId,
-        priority: "high",
-        concurrencyPolicy: "coalesce_if_active",
-        catchUpPolicy: "skip_missed",
-      });
+    const createRes = await request(app).post(`/api/companies/${companyId}/routines`).send({
+      projectId,
+      title: "Daily standup prep",
+      description: "Summarize blockers and open PRs",
+      assigneeAgentId: agentId,
+      priority: "high",
+      concurrencyPolicy: "coalesce_if_active",
+      catchUpPolicy: "skip_missed",
+    });
 
     expect(createRes.status).toBe(201);
     expect(createRes.body.title).toBe("Daily standup prep");
@@ -201,14 +191,12 @@ describeEmbeddedPostgres("routine routes end-to-end", () => {
 
     const routineId = createRes.body.id as string;
 
-    const triggerRes = await request(app)
-      .post(`/api/routines/${routineId}/triggers`)
-      .send({
-        kind: "schedule",
-        label: "Weekday morning",
-        cronExpression: "0 10 * * 1-5",
-        timezone: "UTC",
-      });
+    const triggerRes = await request(app).post(`/api/routines/${routineId}/triggers`).send({
+      kind: "schedule",
+      label: "Weekday morning",
+      cronExpression: "0 10 * * 1-5",
+      timezone: "UTC",
+    });
 
     expect(triggerRes.status).toBe(201);
     expect(triggerRes.body.trigger.kind).toBe("schedule");
@@ -265,11 +253,7 @@ describeEmbeddedPostgres("routine routes end-to-end", () => {
       .where(eq(activityLog.companyId, companyId));
 
     expect(actions.map((entry) => entry.action)).toEqual(
-      expect.arrayContaining([
-        "routine.created",
-        "routine.trigger_created",
-        "routine.run_triggered",
-      ]),
+      expect.arrayContaining(["routine.created", "routine.trigger_created", "routine.run_triggered"]),
     );
   });
 });

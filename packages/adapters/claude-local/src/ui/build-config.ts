@@ -41,9 +41,7 @@ function parseEnvBindings(bindings: unknown): Record<string, unknown> {
       env[key] = {
         type: "secret_ref",
         secretId: rec.secretId,
-        ...(typeof rec.version === "number" || rec.version === "latest"
-          ? { version: rec.version }
-          : {}),
+        ...(typeof rec.version === "number" || rec.version === "latest" ? { version: rec.version } : {}),
       };
     }
   }
@@ -76,7 +74,7 @@ export function buildClaudeLocalConfig(v: CreateConfigValues): Record<string, un
   const env = parseEnvBindings(v.envBindings);
   const legacy = parseEnvVars(v.envVars);
   for (const [key, value] of Object.entries(legacy)) {
-    if (!Object.prototype.hasOwnProperty.call(env, key)) {
+    if (!Object.hasOwn(env, key)) {
       env[key] = { type: "plain", value };
     }
   }

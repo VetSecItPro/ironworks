@@ -1,5 +1,5 @@
-import { Component, type ErrorInfo, type ReactNode } from "react";
 import { AlertTriangle, RotateCcw } from "lucide-react";
+import { Component, type ErrorInfo, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 
 interface Props {
@@ -48,9 +48,7 @@ export class WidgetErrorBoundary extends Component<Props, State> {
           <div>
             <p className="text-sm font-medium">Something went wrong</p>
             {this.props.label && (
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Failed to load {this.props.label}
-              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">Failed to load {this.props.label}</p>
             )}
             {this.state.error?.message && (
               <p className="text-xs text-muted-foreground mt-1 font-mono max-w-sm truncate">

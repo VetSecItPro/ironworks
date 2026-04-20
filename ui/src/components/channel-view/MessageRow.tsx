@@ -1,26 +1,26 @@
-import { useState } from "react";
-import { Link } from "@/lib/router";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Crown,
-  Pin,
-  PinOff,
+  Brain,
+  CheckCircle2,
   ChevronDown,
   ChevronRight,
-  Brain,
-  GitPullRequest,
-  Users,
-  MessageSquare,
   CircleDot,
-  CheckCircle2,
+  Crown,
+  GitPullRequest,
+  MessageSquare,
+  Pin,
+  PinOff,
   ShieldAlert,
+  Users,
 } from "lucide-react";
+import { useState } from "react";
+import { Link } from "@/lib/router";
 import type { ChannelMessage } from "../../api/channels";
 import { channelsApi } from "../../api/channels";
 import { queryKeys } from "../../lib/queryKeys";
+import { getRoleLevel } from "../../lib/role-icons";
 import { cn } from "../../lib/utils";
 import { AgentIcon } from "../AgentIconPicker";
-import { getRoleLevel } from "../../lib/role-icons";
 
 /* ------------------------------------------------------------------ */
 /*  Role badge                                                         */
@@ -85,11 +85,7 @@ function MessageTypeBadge({ type }: { type: string }) {
   if (!type || type === "message") return null;
   const cls = MESSAGE_TYPE_STYLES[type] ?? "bg-muted text-muted-foreground";
   const label = type.replace(/_/g, " ");
-  return (
-    <span className={cn("text-[10px] font-medium px-1.5 py-0.5 rounded-full leading-none", cls)}>
-      {label}
-    </span>
-  );
+  return <span className={cn("text-[10px] font-medium px-1.5 py-0.5 rounded-full leading-none", cls)}>{label}</span>;
 }
 
 /* ------------------------------------------------------------------ */
@@ -129,7 +125,15 @@ function ReasoningBlock({ reasoning }: { reasoning: string }) {
 /*  Quorum Indicator                                                   */
 /* ------------------------------------------------------------------ */
 
-function QuorumIndicator({ companyId, channelId, messageId }: { companyId: string; channelId: string; messageId: string }) {
+function QuorumIndicator({
+  companyId,
+  channelId,
+  messageId,
+}: {
+  companyId: string;
+  channelId: string;
+  messageId: string;
+}) {
   const { data } = useQuery({
     queryKey: queryKeys.channels.quorum(companyId, channelId, messageId),
     queryFn: () => channelsApi.quorum(companyId, channelId, messageId),
@@ -139,12 +143,14 @@ function QuorumIndicator({ companyId, channelId, messageId }: { companyId: strin
   if (!data || data.required.length === 0) return null;
 
   return (
-    <div className={cn(
-      "flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full shrink-0 mt-0.5",
-      data.quorumReached
-        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-        : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-    )}>
+    <div
+      className={cn(
+        "flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full shrink-0 mt-0.5",
+        data.quorumReached
+          ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+          : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+      )}
+    >
       <Users className="h-2.5 w-2.5" />
       {data.responded.length}/{data.required.length}
     </div>
@@ -193,7 +199,10 @@ function renderBodyWithEmbeds(
       );
     } else {
       parts.push(
-        <span key={`${issueId}-${match.index}`} className="inline-flex items-center gap-1 mx-0.5 px-1.5 py-0.5 text-[11px] font-mono border border-border rounded-md bg-muted/20">
+        <span
+          key={`${issueId}-${match.index}`}
+          className="inline-flex items-center gap-1 mx-0.5 px-1.5 py-0.5 text-[11px] font-mono border border-border rounded-md bg-muted/20"
+        >
           {issueId}
         </span>,
       );
@@ -225,21 +234,31 @@ export interface MessageRowProps {
   channelId?: string;
 }
 
-export function MessageRow({ msg, agentMap, issueMap, replyMap, onPin, onUnpin, isPinned, onCreateIssue, onReply, threadReplies, companyId, channelId }: MessageRowProps) {
+export function MessageRow({
+  msg,
+  agentMap,
+  issueMap,
+  replyMap,
+  onPin,
+  onUnpin,
+  isPinned,
+  onCreateIssue,
+  onReply,
+  threadReplies,
+  companyId,
+  channelId,
+}: MessageRowProps) {
   const isHumanUser = Boolean(msg.authorUserId);
   const isBoard = !msg.authorAgentId && !msg.authorUserId;
   const isHumanOrBoard = isHumanUser || isBoard;
   const agent = msg.authorAgentId ? agentMap.get(msg.authorAgentId) : null;
   const authorUserName = (msg as unknown as Record<string, unknown>).authorUserName as string | null | undefined;
-  const authorName = isHumanOrBoard
-    ? (authorUserName ?? "Board")
-    : agent?.name ?? "Agent";
+  const authorName = isHumanOrBoard ? (authorUserName ?? "Board") : (agent?.name ?? "Agent");
   const replyTo = msg.replyToId ? replyMap.get(msg.replyToId) : null;
   const linkedIssue = msg.linkedIssueId ? issueMap.get(msg.linkedIssueId) : null;
 
-  const borderClass = msg.messageType && msg.messageType !== "message"
-    ? MESSAGE_TYPE_BORDER[msg.messageType] ?? ""
-    : "";
+  const borderClass =
+    msg.messageType && msg.messageType !== "message" ? (MESSAGE_TYPE_BORDER[msg.messageType] ?? "") : "";
 
   return (
     <div
@@ -272,7 +291,7 @@ export function MessageRow({ msg, agentMap, issueMap, replyMap, onPin, onUnpin, 
         )}
         {(onPin || onUnpin) && (
           <button
-            onClick={() => isPinned ? onUnpin?.(msg.id) : onPin?.(msg.id)}
+            onClick={() => (isPinned ? onUnpin?.(msg.id) : onPin?.(msg.id))}
             className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
             title={isPinned ? "Unpin message" : "Pin message"}
           >
@@ -315,9 +334,7 @@ export function MessageRow({ msg, agentMap, issueMap, replyMap, onPin, onUnpin, 
           >
             {authorName}
           </span>
-          {!isBoard && agent && (
-            <RoleBadge role={agent.role} employmentType={agent.employmentType} />
-          )}
+          {!isBoard && agent && <RoleBadge role={agent.role} employmentType={agent.employmentType} />}
           {isBoard && (
             <span className="text-[10px] font-medium px-1 py-0 rounded-full leading-tight bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-300 dark:border-amber-700 shrink-0">
               BOARD
@@ -326,9 +343,7 @@ export function MessageRow({ msg, agentMap, issueMap, replyMap, onPin, onUnpin, 
           {msg.messageType === "decision" && companyId && channelId && (
             <QuorumIndicator companyId={companyId} channelId={channelId} messageId={msg.id} />
           )}
-          <span className="ml-auto text-[11px] text-muted-foreground shrink-0">
-            {formatTime(msg.createdAt)}
-          </span>
+          <span className="ml-auto text-[11px] text-muted-foreground shrink-0">{formatTime(msg.createdAt)}</span>
         </div>
 
         {msg.messageType && msg.messageType !== "message" && (
@@ -368,7 +383,10 @@ export function MessageRow({ msg, agentMap, issueMap, replyMap, onPin, onUnpin, 
             {threadReplies.map((reply) => {
               const replyAgent = reply.authorAgentId ? agentMap.get(reply.authorAgentId) : null;
               const replyIsHuman = Boolean(reply.authorUserId) || (!reply.authorAgentId && !reply.authorUserId);
-              const replyUserName = (reply as unknown as Record<string, unknown>).authorUserName as string | null | undefined;
+              const replyUserName = (reply as unknown as Record<string, unknown>).authorUserName as
+                | string
+                | null
+                | undefined;
               const replyAuthor = replyIsHuman ? (replyUserName ?? "Board") : (replyAgent?.name ?? "Agent");
               return (
                 <div key={reply.id} className="flex items-start gap-2 py-1">

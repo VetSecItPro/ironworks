@@ -1,33 +1,21 @@
-import { useMemo, useRef, useState, type ChangeEvent } from "react";
+import { AlertTriangle, ArrowRight, CheckSquare, FileUp, Square, Upload, X } from "lucide-react";
+import { type ChangeEvent, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  ArrowRight,
-  AlertTriangle,
-  CheckSquare,
-  FileUp,
-  Square,
-  Upload,
-  X,
-} from "lucide-react";
 import { cn } from "../../lib/utils";
-import {
-  type ColumnMapping,
-  parseCsv,
-  detectDuplicates,
-  EMPTY_MAPPING,
-  FIELD_KEYS,
-} from "./csv-helpers";
+import { type ColumnMapping, detectDuplicates, EMPTY_MAPPING, FIELD_KEYS, parseCsv } from "./csv-helpers";
 
 interface CsvImportDialogProps {
   open: boolean;
   onClose: () => void;
-  onImport: (issues: Array<{
-    title: string;
-    description?: string;
-    status?: string;
-    priority?: string;
-    labels?: string[];
-  }>) => void;
+  onImport: (
+    issues: Array<{
+      title: string;
+      description?: string;
+      status?: string;
+      priority?: string;
+      labels?: string[];
+    }>,
+  ) => void;
   existingTitles?: string[];
 }
 
@@ -79,9 +67,13 @@ export function CsvImportDialog({ open, onClose, onImport, existingTitles = [] }
           description: mapping.description !== null ? row[mapping.description] : undefined,
           status: mapping.status !== null ? row[mapping.status] : undefined,
           priority: mapping.priority !== null ? row[mapping.priority] : undefined,
-          labels: mapping.labels !== null
-            ? row[mapping.labels]?.split(/[,;]/).map((l) => l.trim()).filter(Boolean)
-            : undefined,
+          labels:
+            mapping.labels !== null
+              ? row[mapping.labels]
+                  ?.split(/[,;]/)
+                  .map((l) => l.trim())
+                  .filter(Boolean)
+              : undefined,
         };
       })
       .filter((issue) => issue.title.trim().length > 0);
@@ -126,7 +118,12 @@ export function CsvImportDialog({ open, onClose, onImport, existingTitles = [] }
             <Upload className="h-5 w-5 text-muted-foreground" />
             <h2 className="text-lg font-semibold">Import Missions from CSV</h2>
           </div>
-          <button type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground" aria-label="Close import">
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-muted-foreground hover:text-foreground"
+            aria-label="Close import"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -135,10 +132,15 @@ export function CsvImportDialog({ open, onClose, onImport, existingTitles = [] }
           {step === "upload" && (
             <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed border-border rounded-lg">
               <FileUp className="h-10 w-10 text-muted-foreground mb-3" />
-              <p className="text-sm text-muted-foreground mb-4">
-                Upload a CSV file with your issues
-              </p>
-              <input ref={fileRef} type="file" accept=".csv" onChange={handleFile} className="hidden" aria-label="Choose CSV file" />
+              <p className="text-sm text-muted-foreground mb-4">Upload a CSV file with your issues</p>
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".csv"
+                onChange={handleFile}
+                className="hidden"
+                aria-label="Choose CSV file"
+              />
               <Button onClick={() => fileRef.current?.click()}>
                 <Upload className="h-4 w-4 mr-2" />
                 Choose CSV File
@@ -159,15 +161,19 @@ export function CsvImportDialog({ open, onClose, onImport, existingTitles = [] }
                       <label className="text-xs text-muted-foreground w-32 shrink-0">{label}</label>
                       <select
                         value={mapping[key] ?? "__unmapped__"}
-                        onChange={(e) => setMapping((prev) => ({
-                          ...prev,
-                          [key]: e.target.value === "__unmapped__" ? null : Number(e.target.value),
-                        }))}
+                        onChange={(e) =>
+                          setMapping((prev) => ({
+                            ...prev,
+                            [key]: e.target.value === "__unmapped__" ? null : Number(e.target.value),
+                          }))
+                        }
                         className="flex-1 rounded-md border border-border bg-background px-2 py-1.5 text-sm"
                       >
                         <option value="__unmapped__">-- Skip --</option>
                         {csvData.headers.map((h, i) => (
-                          <option key={i} value={i}>{h}</option>
+                          <option key={i} value={i}>
+                            {h}
+                          </option>
                         ))}
                       </select>
                     </div>
@@ -175,10 +181,7 @@ export function CsvImportDialog({ open, onClose, onImport, existingTitles = [] }
                 </div>
               </div>
 
-              <Button
-                onClick={() => setStep("preview")}
-                disabled={mapping.title === null}
-              >
+              <Button onClick={() => setStep("preview")} disabled={mapping.title === null}>
                 Preview Import
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
@@ -211,7 +214,9 @@ export function CsvImportDialog({ open, onClose, onImport, existingTitles = [] }
                       <th className="px-3 py-2 text-left w-8">
                         <button
                           type="button"
-                          aria-label={selectedRows.size === csvData.rows.length ? "Deselect all rows" : "Select all rows"}
+                          aria-label={
+                            selectedRows.size === csvData.rows.length ? "Deselect all rows" : "Select all rows"
+                          }
                           onClick={() => {
                             if (selectedRows.size === csvData.rows.length) {
                               setSelectedRows(new Set());
@@ -243,21 +248,21 @@ export function CsvImportDialog({ open, onClose, onImport, existingTitles = [] }
                       return (
                         <tr
                           key={i}
-                          className={cn(
-                            "hover:bg-accent/30",
-                            isDupe && "bg-amber-500/5",
-                            isExisting && "bg-red-500/5",
-                          )}
+                          className={cn("hover:bg-accent/30", isDupe && "bg-amber-500/5", isExisting && "bg-red-500/5")}
                         >
                           <td className="px-3 py-2">
-                            <button type="button" aria-label={selectedRows.has(i) ? `Deselect row ${i + 1}` : `Select row ${i + 1}`} onClick={() => {
-                              setSelectedRows((prev) => {
-                                const next = new Set(prev);
-                                if (next.has(i)) next.delete(i);
-                                else next.add(i);
-                                return next;
-                              });
-                            }}>
+                            <button
+                              type="button"
+                              aria-label={selectedRows.has(i) ? `Deselect row ${i + 1}` : `Select row ${i + 1}`}
+                              onClick={() => {
+                                setSelectedRows((prev) => {
+                                  const next = new Set(prev);
+                                  if (next.has(i)) next.delete(i);
+                                  else next.add(i);
+                                  return next;
+                                });
+                              }}
+                            >
                               {selectedRows.has(i) ? (
                                 <CheckSquare className="h-3.5 w-3.5 text-primary" />
                               ) : (

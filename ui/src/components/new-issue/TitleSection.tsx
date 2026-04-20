@@ -1,8 +1,5 @@
+import { AlertTriangle, Wand2 } from "lucide-react";
 import type { RefObject } from "react";
-import {
-  Wand2,
-  AlertTriangle,
-} from "lucide-react";
 import type { MarkdownEditorRef } from "../MarkdownEditor";
 import type { SimilarIssue } from "./constants";
 
@@ -51,12 +48,7 @@ export function TitleSection({
         }}
         readOnly={isPending}
         onKeyDown={(e) => {
-          if (
-            e.key === "Enter" &&
-            !e.metaKey &&
-            !e.ctrlKey &&
-            !e.nativeEvent.isComposing
-          ) {
+          if (e.key === "Enter" && !e.metaKey && !e.ctrlKey && !e.nativeEvent.isComposing) {
             e.preventDefault();
             descriptionEditorRef.current?.focus();
           }

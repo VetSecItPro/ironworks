@@ -1,14 +1,18 @@
-import { pgTable, uuid, text, timestamp, jsonb, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { index, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { agents } from "./agents.js";
 import { companies } from "./companies.js";
 import { invites } from "./invites.js";
-import { agents } from "./agents.js";
 
 export const joinRequests = pgTable(
   "join_requests",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    inviteId: uuid("invite_id").notNull().references(() => invites.id),
-    companyId: uuid("company_id").notNull().references(() => companies.id),
+    inviteId: uuid("invite_id")
+      .notNull()
+      .references(() => invites.id),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id),
     requestType: text("request_type").notNull(),
     status: text("status").notNull().default("pending_approval"),
     requestIp: text("request_ip").notNull(),

@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { HintIcon } from "../agent-config-primitives";
 
 interface InvitesSectionProps {
@@ -23,21 +23,15 @@ export function InvitesSection({
 }: InvitesSectionProps) {
   return (
     <div id="invites" className="space-y-4 scroll-mt-6">
-      <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-        Invites
-      </h2>
+      <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Invites</h2>
       <div className="space-y-3 rounded-md border border-border px-4 py-4">
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-muted-foreground">
-            Generate an OpenClaw agent invite snippet.
-          </span>
+          <span className="text-xs text-muted-foreground">Generate an OpenClaw agent invite snippet.</span>
           <HintIcon text="Creates a short-lived OpenClaw agent invite and renders a copy-ready prompt." />
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button size="sm" onClick={onGenerate} disabled={isGenerating}>
-            {isGenerating
-              ? "Generating..."
-              : "Generate OpenClaw Invite Prompt"}
+            {isGenerating ? "Generating..." : "Generate OpenClaw Invite Prompt"}
           </Button>
         </div>
         {inviteError && (
@@ -48,9 +42,7 @@ export function InvitesSection({
         {inviteSnippet && (
           <div className="rounded-md border border-border bg-muted/30 p-2">
             <div className="flex items-center justify-between gap-2">
-              <div className="text-xs text-muted-foreground">
-                OpenClaw Invite Prompt
-              </div>
+              <div className="text-xs text-muted-foreground">OpenClaw Invite Prompt</div>
               {snippetCopied && (
                 <span
                   key={snippetCopyDelightId}

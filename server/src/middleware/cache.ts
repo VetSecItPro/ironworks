@@ -1,14 +1,11 @@
 import { createHash } from "node:crypto";
-import type { Request, Response, NextFunction } from "express";
+import type { NextFunction, Request, Response } from "express";
 
 /**
  * Cache-Control header middleware.
  * Sets Cache-Control on GET responses matching the given route patterns.
  */
-export function cacheControl(
-  maxAge: number,
-  scope: "public" | "private" = "private",
-) {
+export function cacheControl(maxAge: number, scope: "public" | "private" = "private") {
   return (_req: Request, res: Response, next: NextFunction) => {
     res.set("Cache-Control", `${scope}, max-age=${maxAge}`);
     next();
@@ -25,9 +22,7 @@ export function etag() {
     const originalJson = res.json.bind(res);
     res.json = (body: unknown) => {
       if (req.method === "GET") {
-        const hash = createHash("md5")
-          .update(JSON.stringify(body))
-          .digest("hex");
+        const hash = createHash("md5").update(JSON.stringify(body)).digest("hex");
         const etagValue = `"${hash}"`;
         res.set("ETag", etagValue);
         if (req.headers["if-none-match"] === etagValue) {

@@ -1,8 +1,8 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { agentRoutes } from "../routes/agents.js";
 import { errorHandler } from "../middleware/index.js";
+import { agentRoutes } from "../routes/agents.js";
 
 const mockAgentService = vi.hoisted(() => ({
   getById: vi.fn(),
@@ -122,16 +122,18 @@ describe("agent instructions bundle routes", () => {
       warnings: [],
       legacyPromptTemplateActive: false,
       legacyBootstrapPromptTemplateActive: false,
-      files: [{
-        path: "AGENTS.md",
-        size: 12,
-        language: "markdown",
-        markdown: true,
-        isEntryFile: true,
-        editable: true,
-        deprecated: false,
-        virtual: false,
-      }],
+      files: [
+        {
+          path: "AGENTS.md",
+          size: 12,
+          language: "markdown",
+          markdown: true,
+          isEntryFile: true,
+          editable: true,
+          deprecated: false,
+          virtual: false,
+        },
+      ],
     });
     mockAgentInstructionsService.readFile.mockResolvedValue({
       path: "AGENTS.md",
@@ -167,8 +169,9 @@ describe("agent instructions bundle routes", () => {
   });
 
   it("returns bundle metadata", async () => {
-    const res = await request(createApp())
-      .get("/api/agents/11111111-1111-4111-8111-111111111111/instructions-bundle?companyId=company-1");
+    const res = await request(createApp()).get(
+      "/api/agents/11111111-1111-4111-8111-111111111111/instructions-bundle?companyId=company-1",
+    );
 
     expect(res.status, JSON.stringify(res.body)).toBe(200);
     expect(res.body).toMatchObject({

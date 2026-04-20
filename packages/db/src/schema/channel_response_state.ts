@@ -1,4 +1,4 @@
-import { pgTable, uuid, integer, timestamp, index, unique } from "drizzle-orm/pg-core";
+import { index, integer, pgTable, timestamp, unique, uuid } from "drizzle-orm/pg-core";
 import { agentChannels } from "./agent_channels.js";
 
 export const channelResponseState = pgTable(

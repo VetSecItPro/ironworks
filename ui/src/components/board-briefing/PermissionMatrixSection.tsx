@@ -1,4 +1,4 @@
-import { Lock, Check } from "lucide-react";
+import { Check, Lock } from "lucide-react";
 import type { PermissionMatrixData } from "../../api/executive";
 
 interface PermissionMatrixSectionProps {

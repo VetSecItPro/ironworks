@@ -1,6 +1,6 @@
 import { Download, FileText } from "lucide-react";
 import { formatDate } from "../../lib/utils";
-import { MOCK_INVOICES, InvoiceStatusBadge } from "./billingHelpers";
+import { InvoiceStatusBadge, MOCK_INVOICES } from "./billingHelpers";
 
 export function InvoiceHistory() {
   return (
@@ -26,10 +26,15 @@ export function InvoiceHistory() {
                 <td className="px-4 py-2.5 font-mono text-xs">{inv.id}</td>
                 <td className="px-4 py-2.5 text-muted-foreground">{formatDate(inv.date)}</td>
                 <td className="px-4 py-2.5 font-medium">${(inv.amount / 100).toFixed(2)}</td>
-                <td className="px-4 py-2.5"><InvoiceStatusBadge status={inv.status} /></td>
+                <td className="px-4 py-2.5">
+                  <InvoiceStatusBadge status={inv.status} />
+                </td>
                 <td className="px-4 py-2.5 text-right">
                   {inv.status === "paid" && (
-                    <button className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors" aria-label={`Download invoice ${inv.id} as PDF`}>
+                    <button
+                      className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      aria-label={`Download invoice ${inv.id} as PDF`}
+                    >
                       <Download className="h-3 w-3" />
                       PDF
                     </button>

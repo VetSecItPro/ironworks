@@ -33,7 +33,13 @@ vi.mock("../services/index.js", () => ({
   routineService: () => ({}),
   playbookService: () => ({ seedDefaults: vi.fn() }),
   budgetService: () => ({ upsertPolicy: vi.fn() }),
-  userInviteService: () => ({ create: vi.fn(), getByToken: vi.fn(), accept: vi.fn(), listForCompany: vi.fn(), revoke: vi.fn() }),
+  userInviteService: () => ({
+    create: vi.fn(),
+    getByToken: vi.fn(),
+    accept: vi.fn(),
+    listForCompany: vi.fn(),
+    revoke: vi.fn(),
+  }),
 }));
 
 function createApp(actor: any) {
@@ -130,9 +136,7 @@ describe("instance settings routes", () => {
     expect(getRes.status).toBe(200);
     expect(getRes.body).toEqual({ censorUsernameInLogs: false });
 
-    const patchRes = await request(app)
-      .patch("/api/instance/settings/general")
-      .send({ censorUsernameInLogs: true });
+    const patchRes = await request(app).patch("/api/instance/settings/general").send({ censorUsernameInLogs: true });
 
     expect(patchRes.status).toBe(200);
     expect(mockInstanceSettingsService.updateGeneral).toHaveBeenCalledWith({
@@ -164,9 +168,7 @@ describe("instance settings routes", () => {
       source: "agent_key",
     });
 
-    const res = await request(app)
-      .patch("/api/instance/settings/general")
-      .send({ censorUsernameInLogs: true });
+    const res = await request(app).patch("/api/instance/settings/general").send({ censorUsernameInLogs: true });
 
     expect(res.status).toBe(403);
     expect(mockInstanceSettingsService.updateGeneral).not.toHaveBeenCalled();

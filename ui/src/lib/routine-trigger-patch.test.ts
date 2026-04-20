@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import type { RoutineTrigger } from "@ironworksai/shared";
+import { describe, expect, it } from "vitest";
 import { buildRoutineTriggerPatch } from "./routine-trigger-patch";
 
 function makeScheduleTrigger(overrides: Partial<RoutineTrigger> = {}): RoutineTrigger {

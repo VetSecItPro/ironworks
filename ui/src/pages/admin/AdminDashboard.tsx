@@ -1,10 +1,4 @@
-import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@/lib/router";
-import { useBreadcrumbs } from "@/context/BreadcrumbContext";
-import { MetricCard } from "@/components/MetricCard";
-import { adminApi } from "@/api/admin";
-import { cn, formatCents } from "@/lib/utils";
 import {
   Activity,
   AlertTriangle,
@@ -17,7 +11,13 @@ import {
   Users,
   Zap,
 } from "lucide-react";
+import { useEffect } from "react";
+import { adminApi } from "@/api/admin";
+import { MetricCard } from "@/components/MetricCard";
 import { Button } from "@/components/ui/button";
+import { useBreadcrumbs } from "@/context/BreadcrumbContext";
+import { Link } from "@/lib/router";
+import { cn, formatCents } from "@/lib/utils";
 
 function SeverityDot({ severity }: { severity: "warning" | "error" | "info" }) {
   return (
@@ -75,8 +75,7 @@ function AlertBanner({
 
 function ErrorRateBadge({ rate }: { rate: number }) {
   const pct = Math.round(rate * 100);
-  const color =
-    pct < 5 ? "text-emerald-400" : pct < 15 ? "text-amber-400" : "text-red-400";
+  const color = pct < 5 ? "text-emerald-400" : pct < 15 ? "text-amber-400" : "text-red-400";
   return <span className={cn("font-semibold tabular-nums", color)}>{pct}%</span>;
 }
 
@@ -99,24 +98,19 @@ export default function AdminDashboard() {
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold">Admin Dashboard</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Platform-wide health &amp; metrics
-          </p>
+          <p className="text-sm text-muted-foreground mt-0.5">Platform-wide health &amp; metrics</p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={isFetching}
-          className="gap-1.5"
-        >
+        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching} className="gap-1.5">
           <RefreshCw className={cn("h-3.5 w-3.5", isFetching && "animate-spin")} />
           Refresh
         </Button>
       </div>
 
       {error && (
-        <div role="alert" className="rounded-lg border border-red-500/20 bg-red-500/[0.06] px-4 py-3 text-sm text-red-400">
+        <div
+          role="alert"
+          className="rounded-lg border border-red-500/20 bg-red-500/[0.06] px-4 py-3 text-sm text-red-400"
+        >
           Failed to load dashboard: {error instanceof Error ? error.message : "Unknown error"}
         </div>
       )}
@@ -146,27 +140,13 @@ export default function AdminDashboard() {
                 />
               </div>
               <div className="rounded-xl border border-border">
-                <MetricCard
-                  icon={Zap}
-                  value={data.totalAgents}
-                  label="Total Agents"
-                  to="/manage/companies"
-                />
+                <MetricCard icon={Zap} value={data.totalAgents} label="Total Agents" to="/manage/companies" />
               </div>
               <div className="rounded-xl border border-border">
-                <MetricCard
-                  icon={Users}
-                  value={data.totalUsers}
-                  label="Total Users"
-                  to="/manage/users"
-                />
+                <MetricCard icon={Users} value={data.totalUsers} label="Total Users" to="/manage/users" />
               </div>
               <div className="rounded-xl border border-border">
-                <MetricCard
-                  icon={DollarSign}
-                  value={formatCents(data.mrrCents)}
-                  label="Monthly Recurring Revenue"
-                />
+                <MetricCard icon={DollarSign} value={formatCents(data.mrrCents)} label="Monthly Recurring Revenue" />
               </div>
             </div>
           </div>
@@ -194,18 +174,10 @@ export default function AdminDashboard() {
                 />
               </div>
               <div className="rounded-xl border border-border">
-                <MetricCard
-                  icon={Activity}
-                  value={data.runsToday}
-                  label="Runs Today"
-                />
+                <MetricCard icon={Activity} value={data.runsToday} label="Runs Today" />
               </div>
               <div className="rounded-xl border border-border">
-                <MetricCard
-                  icon={DollarSign}
-                  value={formatCents(data.totalSpendTodayCents)}
-                  label="Spend Today"
-                />
+                <MetricCard icon={DollarSign} value={formatCents(data.totalSpendTodayCents)} label="Spend Today" />
               </div>
               <div className="rounded-xl border border-border px-4 py-4 sm:px-5 sm:py-5">
                 <div className="flex items-start justify-between gap-3">
@@ -213,9 +185,7 @@ export default function AdminDashboard() {
                     <p className="text-2xl sm:text-3xl font-semibold tracking-tight">
                       <ErrorRateBadge rate={data.errorRate24h} />
                     </p>
-                    <p className="text-xs sm:text-sm font-medium text-muted-foreground mt-1">
-                      Error Rate (24h)
-                    </p>
+                    <p className="text-xs sm:text-sm font-medium text-muted-foreground mt-1">Error Rate (24h)</p>
                     <div className="text-sm text-muted-foreground/70 mt-1.5 hidden sm:block">
                       &lt;5% green · 5-15% yellow · &gt;15% red
                     </div>
@@ -240,20 +210,13 @@ export default function AdminDashboard() {
               ) : (
                 <div className="space-y-2">
                   {data.topCompaniesBySpend.map((c) => (
-                    <div
-                      key={c.companyId}
-                      className="flex items-center justify-between gap-2 text-sm"
-                    >
+                    <div key={c.companyId} className="flex items-center justify-between gap-2 text-sm">
                       <div className="flex items-center gap-2 min-w-0">
                         <Building2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                         <span className="truncate">{c.companyName}</span>
-                        <span className="text-xs text-muted-foreground shrink-0">
-                          {c.agentCount} agents
-                        </span>
+                        <span className="text-xs text-muted-foreground shrink-0">{c.agentCount} agents</span>
                       </div>
-                      <span className="font-medium tabular-nums shrink-0">
-                        {formatCents(c.spendCents)}
-                      </span>
+                      <span className="font-medium tabular-nums shrink-0">{formatCents(c.spendCents)}</span>
                     </div>
                   ))}
                 </div>
@@ -262,18 +225,13 @@ export default function AdminDashboard() {
 
             {/* Recent signups */}
             <div className="rounded-xl border border-border p-4 space-y-3">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Recent Signups
-              </h3>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Recent Signups</h3>
               {data.recentSignups.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No recent signups.</p>
               ) : (
                 <div className="divide-y divide-border -mx-4">
                   {data.recentSignups.slice(0, 10).map((s) => (
-                    <div
-                      key={s.id}
-                      className="flex items-center justify-between gap-2 px-4 py-2 text-sm"
-                    >
+                    <div key={s.id} className="flex items-center justify-between gap-2 px-4 py-2 text-sm">
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="font-medium truncate">{s.name}</span>
                         <span className="text-[10px] font-medium rounded px-1.5 py-0.5 bg-muted text-muted-foreground shrink-0">

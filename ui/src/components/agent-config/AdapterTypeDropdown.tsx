@@ -1,15 +1,18 @@
 import { AGENT_ADAPTER_TYPES } from "@ironworksai/shared";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { ChevronDown } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "../../lib/utils";
 import { adapterLabels } from "../agent-config-primitives";
 import { OpenCodeLogoIcon } from "../OpenCodeLogoIcon";
 
-const ENABLED_ADAPTER_TYPES = new Set(["claude_local", "codex_local", "gemini_local", "opencode_local", "pi_local", "cursor"]);
+const ENABLED_ADAPTER_TYPES = new Set([
+  "claude_local",
+  "codex_local",
+  "gemini_local",
+  "opencode_local",
+  "pi_local",
+  "cursor",
+]);
 
 /** Display list includes all real adapter types; disabled entries are not yet available. */
 const ADAPTER_DISPLAY_LIST: { value: string; label: string; disabled: boolean }[] = [
@@ -20,13 +23,7 @@ const ADAPTER_DISPLAY_LIST: { value: string; label: string; disabled: boolean }[
   })),
 ];
 
-export function AdapterTypeDropdown({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (type: string) => void;
-}) {
+export function AdapterTypeDropdown({ value, onChange }: { value: string; onChange: (type: string) => void }) {
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -45,9 +42,7 @@ export function AdapterTypeDropdown({
             disabled={item.disabled}
             className={cn(
               "flex items-center justify-between w-full px-2 py-1.5 text-sm rounded",
-              item.disabled
-                ? "opacity-40 cursor-not-allowed"
-                : "hover:bg-accent/50",
+              item.disabled ? "opacity-40 cursor-not-allowed" : "hover:bg-accent/50",
               item.value === value && !item.disabled && "bg-accent",
             )}
             onClick={() => {
@@ -58,9 +53,7 @@ export function AdapterTypeDropdown({
               {item.value === "opencode_local" ? <OpenCodeLogoIcon className="h-3.5 w-3.5" /> : null}
               <span>{item.label}</span>
             </span>
-            {item.disabled && (
-              <span className="text-[10px] text-muted-foreground">Not yet available</span>
-            )}
+            {item.disabled && <span className="text-[10px] text-muted-foreground">Not yet available</span>}
           </button>
         ))}
       </PopoverContent>

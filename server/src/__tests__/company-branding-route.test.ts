@@ -1,8 +1,8 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { companyRoutes } from "../routes/companies.js";
 import { errorHandler } from "../middleware/index.js";
+import { companyRoutes } from "../routes/companies.js";
 
 const mockCompanyService = vi.hoisted(() => ({
   list: vi.fn(),
@@ -137,12 +137,10 @@ describe("PATCH /api/companies/:companyId/branding", () => {
       runId: "run-1",
     });
 
-    const res = await request(app)
-      .patch("/api/companies/company-1/branding")
-      .send({
-        logoAssetId: "11111111-1111-4111-8111-111111111111",
-        brandColor: "#123456",
-      });
+    const res = await request(app).patch("/api/companies/company-1/branding").send({
+      logoAssetId: "11111111-1111-4111-8111-111111111111",
+      brandColor: "#123456",
+    });
 
     expect(res.status).toBe(200);
     expect(res.body.logoAssetId).toBe(company.logoAssetId);
@@ -197,12 +195,10 @@ describe("PATCH /api/companies/:companyId/branding", () => {
       source: "local_implicit",
     });
 
-    const res = await request(app)
-      .patch("/api/companies/company-1/branding")
-      .send({
-        logoAssetId: "11111111-1111-4111-8111-111111111111",
-        status: "archived",
-      });
+    const res = await request(app).patch("/api/companies/company-1/branding").send({
+      logoAssetId: "11111111-1111-4111-8111-111111111111",
+      status: "archived",
+    });
 
     expect(res.status).toBe(400);
     expect(res.body.error).toBe("Validation error");

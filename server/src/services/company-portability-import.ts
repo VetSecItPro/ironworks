@@ -1,78 +1,78 @@
 import path from "node:path";
+import {
+  readIronworksSkillSyncPreference,
+  writeIronworksSkillSyncPreference,
+} from "@ironworksai/adapter-utils/server-utils";
 import type {
   CompanyPortabilityImport,
   CompanyPortabilityImportResult,
   CompanyPortabilityInclude,
-  CompanyPortabilityPreview,
-  CompanyPortabilityPreviewResult,
-  CompanyPortabilityPreviewAgentPlan,
-  CompanyPortabilityManifest,
   CompanyPortabilityIssueManifestEntry,
+  CompanyPortabilityManifest,
+  CompanyPortabilityPreview,
+  CompanyPortabilityPreviewAgentPlan,
+  CompanyPortabilityPreviewResult,
   CompanyPortabilitySkillManifestEntry,
 } from "@ironworksai/shared";
 import {
+  deriveProjectUrlKey,
   ISSUE_PRIORITIES,
   ISSUE_STATUSES,
+  normalizeAgentUrlKey,
   PROJECT_STATUSES,
   ROUTINE_CATCH_UP_POLICIES,
   ROUTINE_CONCURRENCY_POLICIES,
   ROUTINE_STATUSES,
   ROUTINE_TRIGGER_KINDS,
   ROUTINE_TRIGGER_SIGNING_MODES,
-  deriveProjectUrlKey,
-  normalizeAgentUrlKey,
 } from "@ironworksai/shared";
-import {
-  readIronworksSkillSyncPreference,
-  writeIronworksSkillSyncPreference,
-} from "@ironworksai/adapter-utils/server-utils";
 import { notFound, unprocessable } from "../errors.js";
-import { routineService } from "./routines.js";
+import { resolveSource } from "./company-portability-export.js";
 import {
-  type CompanyPortabilityServiceDeps,
-  type ResolvedSource,
-  type ImportPlanInternal,
-  type ImportMode,
-  type ImportBehaviorOptions,
-  asString,
+  applySelectedFilesToSource,
   asBoolean,
   asInteger,
-  isPlainRecord,
-  normalizeSkillSlug,
-  normalizeSkillKey,
-  stripEmptyValues,
-  buildMarkdown,
+  asString,
   buildManifestFromPackageFiles,
+  buildMarkdown,
+  COMPANY_LOGO_CONTENT_TYPE_EXTENSIONS,
+  type CompanyPortabilityServiceDeps,
+  DEFAULT_COLLISION_STRATEGY,
+  dedupeEnvInputs,
+  disableImportedTimerHeartbeat,
+  ensureMarkdownPath,
+  type ImportBehaviorOptions,
+  type ImportMode,
+  type ImportPlanInternal,
+  importPortableProjectExecutionWorkspacePolicy,
+  inferContentTypeFromPath,
+  isAbsoluteCommand,
+  isPlainRecord,
+  isPortableBinaryFile,
   normalizeFileMap,
-  normalizePortablePath,
   normalizeInclude,
+  normalizePortableConfig,
+  normalizePortablePath,
   normalizePortableSidebarOrder,
-  uniqueSlug,
+  normalizeSkillKey,
+  normalizeSkillSlug,
+  parseFrontmatterMarkdown,
+  pickTextFiles,
+  portableFileToBuffer,
+  type ResolvedSource,
+  readIncludeEntries,
+  readPortableTextFile,
+  resolveImportMode,
+  resolvePortableRoutineDefinition,
+  resolveSkillConflictStrategy,
+  stripEmptyValues,
+  stripPortableProjectExecutionWorkspaceRefs,
+  toSafeSlug,
   uniqueNameBySlug,
   uniqueProjectName,
-  toSafeSlug,
-  readPortableTextFile,
-  ensureMarkdownPath,
-  parseFrontmatterMarkdown,
-  applySelectedFilesToSource,
-  resolvePortableRoutineDefinition,
-  disableImportedTimerHeartbeat,
-  importPortableProjectExecutionWorkspacePolicy,
-  stripPortableProjectExecutionWorkspaceRefs,
-  DEFAULT_COLLISION_STRATEGY,
-  resolveImportMode,
-  resolveSkillConflictStrategy,
-  isPortableBinaryFile,
-  portableFileToBuffer,
-  inferContentTypeFromPath,
-  COMPANY_LOGO_CONTENT_TYPE_EXTENSIONS,
-  pickTextFiles,
-  normalizePortableConfig,
-  isAbsoluteCommand,
-  dedupeEnvInputs,
-  readIncludeEntries,
+  uniqueSlug,
 } from "./company-portability-shared.js";
-import { resolveSource } from "./company-portability-export.js";
+import { routineService } from "./routines.js";
 
 async function buildPreview(
   deps: CompanyPortabilityServiceDeps,
@@ -102,16 +102,12 @@ async function buildPreview(
   }
 
   const selectedSlugs = include.agents
-    ? (
-        input.agents && input.agents !== "all"
-          ? Array.from(new Set(input.agents))
-          : manifest.agents.map((agent) => agent.slug)
-      )
+    ? input.agents && input.agents !== "all"
+      ? Array.from(new Set(input.agents))
+      : manifest.agents.map((agent) => agent.slug)
     : [];
 
-  const selectedAgents = include.agents
-    ? manifest.agents.filter((agent) => selectedSlugs.includes(agent.slug))
-    : [];
+  const selectedAgents = include.agents ? manifest.agents.filter((agent) => selectedSlugs.includes(agent.slug)) : [];
   const selectedMissing = selectedSlugs.filter((slug) => !manifest.agents.some((agent) => agent.slug === slug));
   for (const missing of selectedMissing) {
     errors.push(`Selected agent slug not found in manifest: ${missing}`);
@@ -143,7 +139,9 @@ async function buildPreview(
     for (const skillRef of agent.skills) {
       const slugMatches = availableSkillSlugs.get(skillRef) ?? [];
       if (!availableSkillKeys.has(skillRef) && slugMatches.length !== 1) {
-        warnings.push(`Agent ${agent.slug} references skill ${skillRef}, but that skill is not present in the package.`);
+        warnings.push(
+          `Agent ${agent.slug} references skill ${skillRef}, but that skill is not present in the package.`,
+        );
       }
     }
   }
@@ -175,9 +173,11 @@ async function buildPreview(
         warnings.push(`Task markdown ${issue.path} does not declare kind: task in frontmatter.`);
       }
       if (issue.projectWorkspaceKey) {
-        const project = issue.projectSlug ? projectBySlug.get(issue.projectSlug) ?? null : null;
+        const project = issue.projectSlug ? (projectBySlug.get(issue.projectSlug) ?? null) : null;
         if (!project) {
-          warnings.push(`Task ${issue.slug} references workspace key ${issue.projectWorkspaceKey}, but its project is not present in the package.`);
+          warnings.push(
+            `Task ${issue.slug} references workspace key ${issue.projectWorkspaceKey}, but its project is not present in the package.`,
+          );
         } else if (!project.workspaces.some((workspace) => workspace.key === issue.projectWorkspaceKey)) {
           warnings.push(`Task ${issue.slug} references missing project workspace key ${issue.projectWorkspaceKey}.`);
         }
@@ -199,7 +199,9 @@ async function buildPreview(
 
   for (const envInput of manifest.envInputs) {
     if (envInput.portability === "system_dependent") {
-      warnings.push(`Environment input ${envInput.key}${envInput.agentSlug ? ` for ${envInput.agentSlug}` : ""} is system-dependent and may need manual adjustment after import.`);
+      warnings.push(
+        `Environment input ${envInput.key}${envInput.agentSlug ? ` for ${envInput.agentSlug}` : ""} is system-dependent and may need manual adjustment after import.`,
+      );
     }
   }
 
@@ -243,7 +245,9 @@ async function buildPreview(
       const skillSlug = normalizeSkillSlug(skill.slug) ?? skill.slug;
       if (existingSkillKeys.has(skill.key) || existingSkillSlugs.has(skillSlug)) {
         if (mode === "agent_safe") {
-          warnings.push(`Existing skill "${skill.slug}" matched during safe import and will ${collisionStrategy === "skip" ? "be skipped" : "be renamed"} instead of overwritten.`);
+          warnings.push(
+            `Existing skill "${skill.slug}" matched during safe import and will ${collisionStrategy === "skip" ? "be skipped" : "be renamed"} instead of overwritten.`,
+          );
         } else if (collisionStrategy === "replace") {
           warnings.push(`Existing skill "${skill.slug}" (${skill.key}) will be overwritten by import.`);
         }
@@ -396,11 +400,8 @@ async function buildPreview(
     collisionStrategy,
     selectedAgentSlugs: selectedAgents.map((agent) => agent.slug),
     plan: {
-      companyAction: input.target.mode === "new_company"
-        ? "create"
-        : include.company && mode === "board_full"
-          ? "update"
-          : "none",
+      companyAction:
+        input.target.mode === "new_company" ? "create" : include.company && mode === "board_full" ? "update" : "none",
       agentPlans,
       projectPlans,
       issuePlans,
@@ -442,12 +443,10 @@ export async function importBundle(
     throw unprocessable(`Import preview has errors: ${plan.preview.errors.join("; ")}`);
   }
   if (
-    mode === "agent_safe"
-    && (
-      plan.preview.plan.companyAction === "update"
-      || plan.preview.plan.agentPlans.some((entry) => entry.action === "update")
-      || plan.preview.plan.projectPlans.some((entry) => entry.action === "update")
-    )
+    mode === "agent_safe" &&
+    (plan.preview.plan.companyAction === "update" ||
+      plan.preview.plan.agentPlans.some((entry) => entry.action === "update") ||
+      plan.preview.plan.projectPlans.some((entry) => entry.action === "update"))
   ) {
     throw unprocessable("Safe import routes only allow create or skip actions.");
   }
@@ -466,7 +465,9 @@ export async function importBundle(
     if (mode === "agent_safe" && options?.sourceCompanyId) {
       const sourceMemberships = await deps.access.listActiveUserMemberships(options.sourceCompanyId);
       if (sourceMemberships.length === 0) {
-        throw unprocessable("Safe new-company import requires at least one active user membership on the source company.");
+        throw unprocessable(
+          "Safe new-company import requires at least one active user membership on the source company.",
+        );
       }
     }
     const companyName =
@@ -548,7 +549,9 @@ export async function importBundle(
             });
             targetCompany = updated ?? targetCompany;
           } catch (err) {
-            warnings.push(`Failed to import company logo ${logoPath}: ${err instanceof Error ? err.message : String(err)}`);
+            warnings.push(
+              `Failed to import company logo ${logoPath}: ${err instanceof Error ? err.message : String(err)}`,
+            );
           }
         }
       }
@@ -571,19 +574,24 @@ export async function importBundle(
     existingProjectSlugToId.set(existing.urlKey, existing.id);
   }
 
-  const importedSkills = include.skills || include.agents
-    ? await deps.companySkills.importPackageFiles(targetCompany.id, pickTextFiles(plan.source.files), {
-        onConflict: resolveSkillConflictStrategy(mode, plan.collisionStrategy),
-      })
-    : [];
+  const importedSkills =
+    include.skills || include.agents
+      ? await deps.companySkills.importPackageFiles(targetCompany.id, pickTextFiles(plan.source.files), {
+          onConflict: resolveSkillConflictStrategy(mode, plan.collisionStrategy),
+        })
+      : [];
   const desiredSkillRefMap = new Map<string, string>();
   for (const importedSkill of importedSkills) {
     desiredSkillRefMap.set(importedSkill.originalKey, importedSkill.skill.key);
     desiredSkillRefMap.set(importedSkill.originalSlug, importedSkill.skill.key);
     if (importedSkill.action === "skipped") {
-      warnings.push(`Skipped skill ${importedSkill.originalSlug}; existing skill ${importedSkill.skill.slug} was kept.`);
+      warnings.push(
+        `Skipped skill ${importedSkill.originalSlug}; existing skill ${importedSkill.skill.slug} was kept.`,
+      );
     } else if (importedSkill.originalKey !== importedSkill.skill.key) {
-      warnings.push(`Imported skill ${importedSkill.originalSlug} as ${importedSkill.skill.slug} to avoid overwriting an existing skill.`);
+      warnings.push(
+        `Imported skill ${importedSkill.originalSlug} as ${importedSkill.skill.slug} to avoid overwriting an existing skill.`,
+      );
     }
   }
 
@@ -606,9 +614,11 @@ export async function importBundle(
       const bundleFiles = Object.fromEntries(
         Object.entries(plan.source.files)
           .filter(([filePath]) => filePath.startsWith(bundlePrefix))
-          .flatMap(([filePath, content]) => typeof content === "string"
-            ? [[normalizePortablePath(filePath.slice(bundlePrefix.length)), content] as const]
-            : []),
+          .flatMap(([filePath, content]) =>
+            typeof content === "string"
+              ? [[normalizePortablePath(filePath.slice(bundlePrefix.length)), content] as const]
+              : [],
+          ),
       );
       const markdownRaw = bundleFiles["AGENTS.md"] ?? readPortableTextFile(plan.source.files, manifestAgent.path);
       const entryRelativePath = normalizePortablePath(manifestAgent.path).startsWith(bundlePrefix)
@@ -621,7 +631,8 @@ export async function importBundle(
           bundleFiles["AGENTS.md"] = importedInstructionsBody;
         }
       }
-      const fallbackPromptTemplate = asString((manifestAgent.adapterConfig as Record<string, unknown>).promptTemplate) || "";
+      const fallbackPromptTemplate =
+        asString((manifestAgent.adapterConfig as Record<string, unknown>).promptTemplate) || "";
       if (!markdownRaw && fallbackPromptTemplate) {
         bundleFiles["AGENTS.md"] = fallbackPromptTemplate;
       }
@@ -634,13 +645,12 @@ export async function importBundle(
       const effectiveAdapterType = adapterOverride?.adapterType ?? manifestAgent.adapterType;
       const baseAdapterConfig = adapterOverride?.adapterConfig
         ? { ...adapterOverride.adapterConfig }
-        : { ...manifestAgent.adapterConfig } as Record<string, unknown>;
+        : ({ ...manifestAgent.adapterConfig } as Record<string, unknown>);
 
-      const desiredSkills = (manifestAgent.skills ?? []).map((skillRef) => desiredSkillRefMap.get(skillRef) ?? skillRef);
-      const adapterConfigWithSkills = writeIronworksSkillSyncPreference(
-        baseAdapterConfig,
-        desiredSkills,
+      const desiredSkills = (manifestAgent.skills ?? []).map(
+        (skillRef) => desiredSkillRefMap.get(skillRef) ?? skillRef,
       );
+      const adapterConfigWithSkills = writeIronworksSkillSyncPreference(baseAdapterConfig, desiredSkills);
       delete adapterConfigWithSkills.promptTemplate;
       delete adapterConfigWithSkills.bootstrapPromptTemplate; // deprecated
       delete adapterConfigWithSkills.instructionsFilePath;
@@ -680,9 +690,11 @@ export async function importBundle(
             clearLegacyPromptTemplate: true,
             replaceExisting: true,
           });
-          updated = await deps.agents.update(updated.id, { adapterConfig: materialized.adapterConfig }) ?? updated;
+          updated = (await deps.agents.update(updated.id, { adapterConfig: materialized.adapterConfig })) ?? updated;
         } catch (err) {
-          warnings.push(`Failed to materialize instructions bundle for ${manifestAgent.slug}: ${err instanceof Error ? err.message : String(err)}`);
+          warnings.push(
+            `Failed to materialize instructions bundle for ${manifestAgent.slug}: ${err instanceof Error ? err.message : String(err)}`,
+          );
         }
         importedSlugToAgentId.set(planAgent.slug, updated.id);
         existingSlugToAgentId.set(normalizeAgentUrlKey(updated.name) ?? updated.id, updated.id);
@@ -711,9 +723,11 @@ export async function importBundle(
           clearLegacyPromptTemplate: true,
           replaceExisting: true,
         });
-        created = await deps.agents.update(created.id, { adapterConfig: materialized.adapterConfig }) ?? created;
+        created = (await deps.agents.update(created.id, { adapterConfig: materialized.adapterConfig })) ?? created;
       } catch (err) {
-        warnings.push(`Failed to materialize instructions bundle for ${manifestAgent.slug}: ${err instanceof Error ? err.message : String(err)}`);
+        warnings.push(
+          `Failed to materialize instructions bundle for ${manifestAgent.slug}: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
       importedSlugToAgentId.set(planAgent.slug, created.id);
       existingSlugToAgentId.set(normalizeAgentUrlKey(created.name) ?? created.id, created.id);
@@ -758,9 +772,9 @@ export async function importBundle(
       }
 
       const projectLeadAgentId = manifestProject.leadAgentSlug
-        ? importedSlugToAgentId.get(manifestProject.leadAgentSlug)
-          ?? existingSlugToAgentId.get(manifestProject.leadAgentSlug)
-          ?? null
+        ? (importedSlugToAgentId.get(manifestProject.leadAgentSlug) ??
+          existingSlugToAgentId.get(manifestProject.leadAgentSlug) ??
+          null)
         : null;
       const projectWorkspaceIdByKey = new Map<string, string>();
       const projectPatch = {
@@ -769,9 +783,10 @@ export async function importBundle(
         leadAgentId: projectLeadAgentId,
         targetDate: manifestProject.targetDate,
         color: manifestProject.color,
-        status: manifestProject.status && (PROJECT_STATUSES as readonly string[]).includes(manifestProject.status)
-          ? manifestProject.status as typeof PROJECT_STATUSES[number]
-          : "backlog",
+        status:
+          manifestProject.status && (PROJECT_STATUSES as readonly string[]).includes(manifestProject.status)
+            ? (manifestProject.status as (typeof PROJECT_STATUSES)[number])
+            : "backlog",
         executionWorkspacePolicy: stripPortableProjectExecutionWorkspaceRefs(manifestProject.executionWorkspacePolicy),
       };
 
@@ -857,29 +872,38 @@ export async function importBundle(
       const parsed = markdownRaw ? parseFrontmatterMarkdown(markdownRaw) : null;
       const description = parsed?.body || manifestIssue.description || null;
       const assigneeAgentId = manifestIssue.assigneeAgentSlug
-        ? importedSlugToAgentId.get(manifestIssue.assigneeAgentSlug)
-          ?? existingSlugToAgentId.get(manifestIssue.assigneeAgentSlug)
-          ?? null
+        ? (importedSlugToAgentId.get(manifestIssue.assigneeAgentSlug) ??
+          existingSlugToAgentId.get(manifestIssue.assigneeAgentSlug) ??
+          null)
         : null;
       const projectId = manifestIssue.projectSlug
-        ? importedSlugToProjectId.get(manifestIssue.projectSlug)
-          ?? existingProjectSlugToId.get(manifestIssue.projectSlug)
-          ?? null
+        ? (importedSlugToProjectId.get(manifestIssue.projectSlug) ??
+          existingProjectSlugToId.get(manifestIssue.projectSlug) ??
+          null)
         : null;
-      const projectWorkspaceId = manifestIssue.projectSlug && manifestIssue.projectWorkspaceKey
-        ? importedProjectWorkspaceIdByProjectSlug.get(manifestIssue.projectSlug)?.get(manifestIssue.projectWorkspaceKey) ?? null
-        : null;
+      const projectWorkspaceId =
+        manifestIssue.projectSlug && manifestIssue.projectWorkspaceKey
+          ? (importedProjectWorkspaceIdByProjectSlug
+              .get(manifestIssue.projectSlug)
+              ?.get(manifestIssue.projectWorkspaceKey) ?? null)
+          : null;
       if (manifestIssue.projectWorkspaceKey && !projectWorkspaceId) {
-        warnings.push(`Task ${manifestIssue.slug} references workspace key ${manifestIssue.projectWorkspaceKey}, but that workspace was not imported.`);
+        warnings.push(
+          `Task ${manifestIssue.slug} references workspace key ${manifestIssue.projectWorkspaceKey}, but that workspace was not imported.`,
+        );
       }
       if (manifestIssue.recurring) {
         const isDraftRoutine = manifestIssue.status === "draft";
         if ((!projectId || !assigneeAgentId) && !isDraftRoutine) {
-          throw unprocessable(`Recurring task ${manifestIssue.slug} is missing the project or assignee required to create a routine.`);
+          throw unprocessable(
+            `Recurring task ${manifestIssue.slug} is missing the project or assignee required to create a routine.`,
+          );
         }
         const resolvedRoutine = resolvePortableRoutineDefinition(manifestIssue, parsed?.frontmatter.schedule);
         if (resolvedRoutine.errors.length > 0) {
-          throw unprocessable(`Recurring task ${manifestIssue.slug} could not be imported as a routine: ${resolvedRoutine.errors.join("; ")}`);
+          throw unprocessable(
+            `Recurring task ${manifestIssue.slug} could not be imported as a routine: ${resolvedRoutine.errors.join("; ")}`,
+          );
         }
         warnings.push(...resolvedRoutine.warnings);
         const routineDefinition = resolvedRoutine.routine ?? {
@@ -887,69 +911,90 @@ export async function importBundle(
           catchUpPolicy: null,
           triggers: [],
         };
-        const createdRoutine = await routines.create(targetCompany.id, {
-          projectId,
-          goalId: null,
-          parentIssueId: null,
-          title: manifestIssue.title,
-          description,
-          assigneeAgentId,
-          priority: manifestIssue.priority && (ISSUE_PRIORITIES as readonly string[]).includes(manifestIssue.priority)
-            ? manifestIssue.priority as typeof ISSUE_PRIORITIES[number]
-            : "medium",
-          status: manifestIssue.status && (ROUTINE_STATUSES as readonly string[]).includes(manifestIssue.status)
-            ? manifestIssue.status as typeof ROUTINE_STATUSES[number]
-            : "active",
-          concurrencyPolicy:
-            routineDefinition.concurrencyPolicy && (ROUTINE_CONCURRENCY_POLICIES as readonly string[]).includes(routineDefinition.concurrencyPolicy)
-              ? routineDefinition.concurrencyPolicy as typeof ROUTINE_CONCURRENCY_POLICIES[number]
-              : "coalesce_if_active",
-          catchUpPolicy:
-            routineDefinition.catchUpPolicy && (ROUTINE_CATCH_UP_POLICIES as readonly string[]).includes(routineDefinition.catchUpPolicy)
-              ? routineDefinition.catchUpPolicy as typeof ROUTINE_CATCH_UP_POLICIES[number]
-              : "skip_missed",
-        }, {
-          agentId: null,
-          userId: actorUserId ?? null,
-        });
+        const createdRoutine = await routines.create(
+          targetCompany.id,
+          {
+            projectId,
+            goalId: null,
+            parentIssueId: null,
+            title: manifestIssue.title,
+            description,
+            assigneeAgentId,
+            priority:
+              manifestIssue.priority && (ISSUE_PRIORITIES as readonly string[]).includes(manifestIssue.priority)
+                ? (manifestIssue.priority as (typeof ISSUE_PRIORITIES)[number])
+                : "medium",
+            status:
+              manifestIssue.status && (ROUTINE_STATUSES as readonly string[]).includes(manifestIssue.status)
+                ? (manifestIssue.status as (typeof ROUTINE_STATUSES)[number])
+                : "active",
+            concurrencyPolicy:
+              routineDefinition.concurrencyPolicy &&
+              (ROUTINE_CONCURRENCY_POLICIES as readonly string[]).includes(routineDefinition.concurrencyPolicy)
+                ? (routineDefinition.concurrencyPolicy as (typeof ROUTINE_CONCURRENCY_POLICIES)[number])
+                : "coalesce_if_active",
+            catchUpPolicy:
+              routineDefinition.catchUpPolicy &&
+              (ROUTINE_CATCH_UP_POLICIES as readonly string[]).includes(routineDefinition.catchUpPolicy)
+                ? (routineDefinition.catchUpPolicy as (typeof ROUTINE_CATCH_UP_POLICIES)[number])
+                : "skip_missed",
+          },
+          {
+            agentId: null,
+            userId: actorUserId ?? null,
+          },
+        );
         for (const trigger of routineDefinition.triggers) {
           if (trigger.kind === "schedule") {
-            await routines.createTrigger(createdRoutine.id, {
-              kind: "schedule",
-              label: trigger.label,
-              enabled: trigger.enabled,
-              cronExpression: trigger.cronExpression!,
-              timezone: trigger.timezone!,
-            }, {
-              agentId: null,
-              userId: actorUserId ?? null,
-            });
+            await routines.createTrigger(
+              createdRoutine.id,
+              {
+                kind: "schedule",
+                label: trigger.label,
+                enabled: trigger.enabled,
+                cronExpression: trigger.cronExpression!,
+                timezone: trigger.timezone!,
+              },
+              {
+                agentId: null,
+                userId: actorUserId ?? null,
+              },
+            );
             continue;
           }
           if (trigger.kind === "webhook") {
-            await routines.createTrigger(createdRoutine.id, {
-              kind: "webhook",
-              label: trigger.label,
-              enabled: trigger.enabled,
-              signingMode:
-                trigger.signingMode && (ROUTINE_TRIGGER_SIGNING_MODES as readonly string[]).includes(trigger.signingMode)
-                  ? trigger.signingMode as typeof ROUTINE_TRIGGER_SIGNING_MODES[number]
-                  : "bearer",
-              replayWindowSec: trigger.replayWindowSec ?? 300,
-            }, {
-              agentId: null,
-              userId: actorUserId ?? null,
-            });
+            await routines.createTrigger(
+              createdRoutine.id,
+              {
+                kind: "webhook",
+                label: trigger.label,
+                enabled: trigger.enabled,
+                signingMode:
+                  trigger.signingMode &&
+                  (ROUTINE_TRIGGER_SIGNING_MODES as readonly string[]).includes(trigger.signingMode)
+                    ? (trigger.signingMode as (typeof ROUTINE_TRIGGER_SIGNING_MODES)[number])
+                    : "bearer",
+                replayWindowSec: trigger.replayWindowSec ?? 300,
+              },
+              {
+                agentId: null,
+                userId: actorUserId ?? null,
+              },
+            );
             continue;
           }
-          await routines.createTrigger(createdRoutine.id, {
-            kind: "api",
-            label: trigger.label,
-            enabled: trigger.enabled,
-          }, {
-            agentId: null,
-            userId: actorUserId ?? null,
-          });
+          await routines.createTrigger(
+            createdRoutine.id,
+            {
+              kind: "api",
+              label: trigger.label,
+              enabled: trigger.enabled,
+            },
+            {
+              agentId: null,
+              userId: actorUserId ?? null,
+            },
+          );
         }
         continue;
       }
@@ -959,12 +1004,14 @@ export async function importBundle(
         title: manifestIssue.title,
         description,
         assigneeAgentId,
-        status: manifestIssue.status && (ISSUE_STATUSES as readonly string[]).includes(manifestIssue.status)
-          ? manifestIssue.status as typeof ISSUE_STATUSES[number]
-          : "backlog",
-        priority: manifestIssue.priority && (ISSUE_PRIORITIES as readonly string[]).includes(manifestIssue.priority)
-          ? manifestIssue.priority as typeof ISSUE_PRIORITIES[number]
-          : "medium",
+        status:
+          manifestIssue.status && (ISSUE_STATUSES as readonly string[]).includes(manifestIssue.status)
+            ? (manifestIssue.status as (typeof ISSUE_STATUSES)[number])
+            : "backlog",
+        priority:
+          manifestIssue.priority && (ISSUE_PRIORITIES as readonly string[]).includes(manifestIssue.priority)
+            ? (manifestIssue.priority as (typeof ISSUE_PRIORITIES)[number])
+            : "medium",
         billingCode: manifestIssue.billingCode,
         assigneeAdapterOverrides: manifestIssue.assigneeAdapterOverrides,
         executionWorkspaceSettings: manifestIssue.executionWorkspaceSettings,

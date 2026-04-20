@@ -1,6 +1,6 @@
-import { CreditCard, AlertTriangle } from "lucide-react";
-import { StatusBadge, formatBillingDate } from "./billingHelpers";
+import { AlertTriangle, CreditCard } from "lucide-react";
 import type { SubscriptionResponse } from "@/api/billing";
+import { formatBillingDate, StatusBadge } from "./billingHelpers";
 
 interface CurrentPlanCardProps {
   subscription: SubscriptionResponse["subscription"];
@@ -42,8 +42,8 @@ export function CurrentPlanCard({ subscription, plan }: CurrentPlanCardProps) {
         <div className="flex items-center gap-2 text-amber-600 bg-amber-50 dark:bg-amber-950/30 rounded px-3 py-2 text-sm">
           <AlertTriangle className="h-4 w-4 shrink-0" />
           <span>
-            Your subscription will be cancelled at the end of the current billing period
-            ({formatBillingDate(subscription.currentPeriodEnd)}).
+            Your subscription will be cancelled at the end of the current billing period (
+            {formatBillingDate(subscription.currentPeriodEnd)}).
           </span>
         </div>
       )}

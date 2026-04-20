@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useBreadcrumbs } from "@/context/BreadcrumbContext";
-import { adminApi, type AdminAnalyticsData, type AdminCurrentMetrics } from "@/api/admin";
-import { cn, formatCents } from "@/lib/utils";
 import { BarChart2, Download, RefreshCw, TrendingDown, TrendingUp } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { type AdminAnalyticsData, type AdminCurrentMetrics, adminApi } from "@/api/admin";
 import { Button } from "@/components/ui/button";
+import { useBreadcrumbs } from "@/context/BreadcrumbContext";
+import { cn, formatCents } from "@/lib/utils";
 
 /* ── Period selector ──────────────────────────────────────────── */
 type Period = "30d" | "90d" | "12m" | "all";
@@ -71,20 +71,30 @@ function LineChart({
   const yTicks = 4;
 
   return (
-    <svg
-      viewBox={`0 0 ${CHART_W} ${CHART_H}`}
-      className="w-full"
-      style={{ height: CHART_H }}
-      aria-hidden="true"
-    >
+    <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} className="w-full" style={{ height: CHART_H }} aria-hidden="true">
       {/* Grid lines */}
       {Array.from({ length: yTicks + 1 }, (_, i) => {
         const y = PAD.top + (INNER_H / yTicks) * i;
         const val = max - ((max - min) / yTicks) * i;
         return (
           <g key={i}>
-            <line x1={PAD.left} y1={y} x2={CHART_W - PAD.right} y2={y} stroke="currentColor" strokeOpacity={0.08} strokeWidth={1} />
-            <text x={PAD.left - 4} y={y + 4} textAnchor="end" fontSize={10} className="fill-muted-foreground" fontFamily="var(--font-sans)">
+            <line
+              x1={PAD.left}
+              y1={y}
+              x2={CHART_W - PAD.right}
+              y2={y}
+              stroke="currentColor"
+              strokeOpacity={0.08}
+              strokeWidth={1}
+            />
+            <text
+              x={PAD.left - 4}
+              y={y + 4}
+              textAnchor="end"
+              fontSize={10}
+              className="fill-muted-foreground"
+              fontFamily="var(--font-sans)"
+            >
               {fmtAxisLabel(val, unit)}
             </text>
           </g>
@@ -95,7 +105,15 @@ function LineChart({
         const step = Math.max(1, Math.floor(data.length / 6));
         if (i % step !== 0 && i !== data.length - 1) return null;
         return (
-          <text key={i} x={scaleX(i, data.length)} y={CHART_H - 4} textAnchor="middle" fontSize={10} className="fill-muted-foreground" fontFamily="var(--font-sans)">
+          <text
+            key={i}
+            x={scaleX(i, data.length)}
+            y={CHART_H - 4}
+            textAnchor="middle"
+            fontSize={10}
+            className="fill-muted-foreground"
+            fontFamily="var(--font-sans)"
+          >
             {d.label}
           </text>
         );
@@ -103,7 +121,14 @@ function LineChart({
       {/* Area fill */}
       <polygon points={fillPoints} fill={color} fillOpacity={0.07} />
       {/* Line */}
-      <polyline points={points} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+      <polyline
+        points={points}
+        fill="none"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
       {/* Data points */}
       {data.map((d, i) => (
         <circle key={i} cx={scaleX(i, data.length)} cy={scaleY(d.value, min, max)} r={3} fill={color} />
@@ -128,19 +153,29 @@ function BarChart({
   const yTicks = 4;
 
   return (
-    <svg
-      viewBox={`0 0 ${CHART_W} ${CHART_H}`}
-      className="w-full"
-      style={{ height: CHART_H }}
-      aria-hidden="true"
-    >
+    <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} className="w-full" style={{ height: CHART_H }} aria-hidden="true">
       {Array.from({ length: yTicks + 1 }, (_, i) => {
         const y = PAD.top + (INNER_H / yTicks) * i;
         const val = max - (max / yTicks) * i;
         return (
           <g key={i}>
-            <line x1={PAD.left} y1={y} x2={CHART_W - PAD.right} y2={y} stroke="currentColor" strokeOpacity={0.08} strokeWidth={1} />
-            <text x={PAD.left - 4} y={y + 4} textAnchor="end" fontSize={10} className="fill-muted-foreground" fontFamily="var(--font-sans)">
+            <line
+              x1={PAD.left}
+              y1={y}
+              x2={CHART_W - PAD.right}
+              y2={y}
+              stroke="currentColor"
+              strokeOpacity={0.08}
+              strokeWidth={1}
+            />
+            <text
+              x={PAD.left - 4}
+              y={y + 4}
+              textAnchor="end"
+              fontSize={10}
+              className="fill-muted-foreground"
+              fontFamily="var(--font-sans)"
+            >
               {fmtAxisLabel(val, unit)}
             </text>
           </g>
@@ -156,7 +191,14 @@ function BarChart({
           <g key={i}>
             <rect x={x} y={y} width={barW} height={barH} fill={color} fillOpacity={0.75} rx={2} />
             {showLabel && (
-              <text x={scaleX(i, data.length)} y={CHART_H - 4} textAnchor="middle" fontSize={10} className="fill-muted-foreground" fontFamily="var(--font-sans)">
+              <text
+                x={scaleX(i, data.length)}
+                y={CHART_H - 4}
+                textAnchor="middle"
+                fontSize={10}
+                className="fill-muted-foreground"
+                fontFamily="var(--font-sans)"
+              >
                 {d.label}
               </text>
             )}
@@ -169,9 +211,7 @@ function BarChart({
 
 function EmptyChart() {
   return (
-    <div className="flex items-center justify-center h-[140px] text-xs text-muted-foreground">
-      No data available
-    </div>
+    <div className="flex items-center justify-center h-[140px] text-xs text-muted-foreground">No data available</div>
   );
 }
 
@@ -197,10 +237,8 @@ function SummaryCard({
   sub?: string;
   trend?: "up" | "down" | "flat";
 }) {
-  const TrendIcon =
-    trend === "up" ? TrendingUp : trend === "down" ? TrendingDown : null;
-  const trendColor =
-    trend === "up" ? "text-emerald-400" : trend === "down" ? "text-red-400" : "text-muted-foreground";
+  const TrendIcon = trend === "up" ? TrendingUp : trend === "down" ? TrendingDown : null;
+  const trendColor = trend === "up" ? "text-emerald-400" : trend === "down" ? "text-red-400" : "text-muted-foreground";
   return (
     <div className="rounded-lg border border-border bg-card p-4 flex flex-col gap-1">
       <span className="text-xs text-muted-foreground">{label}</span>
@@ -220,10 +258,7 @@ export default function AdminAnalytics() {
   const selectedDays = PERIODS.find((p) => p.value === period)?.days;
 
   useEffect(() => {
-    setBreadcrumbs([
-      { label: "IronWorks Admin" },
-      { label: "Analytics" },
-    ]);
+    setBreadcrumbs([{ label: "IronWorks Admin" }, { label: "Analytics" }]);
   }, [setBreadcrumbs]);
 
   const analyticsQuery = useQuery({
@@ -275,12 +310,7 @@ export default function AdminAnalytics() {
               </button>
             ))}
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5 text-xs"
-            onClick={() => adminApi.exportAnalytics()}
-          >
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => adminApi.exportAnalytics()}>
             <Download className="h-3.5 w-3.5" />
             Export CSV
           </Button>
@@ -304,8 +334,20 @@ export default function AdminAnalytics() {
         <SummaryCard
           label="Current MRR"
           value={current ? formatCents(current.mrrCents) : "—"}
-          sub={current?.mrrGrowthPct !== undefined ? `${current.mrrGrowthPct >= 0 ? "+" : ""}${current.mrrGrowthPct.toFixed(1)}% MoM` : undefined}
-          trend={current?.mrrGrowthPct !== undefined ? (current.mrrGrowthPct > 0 ? "up" : current.mrrGrowthPct < 0 ? "down" : "flat") : undefined}
+          sub={
+            current?.mrrGrowthPct !== undefined
+              ? `${current.mrrGrowthPct >= 0 ? "+" : ""}${current.mrrGrowthPct.toFixed(1)}% MoM`
+              : undefined
+          }
+          trend={
+            current?.mrrGrowthPct !== undefined
+              ? current.mrrGrowthPct > 0
+                ? "up"
+                : current.mrrGrowthPct < 0
+                  ? "down"
+                  : "flat"
+              : undefined
+          }
         />
         <SummaryCard
           label="Growth Rate"

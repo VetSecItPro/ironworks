@@ -19,13 +19,11 @@
  */
 
 import type { Db } from "@ironworksai/db";
-import { secretService } from "../services/secrets.js";
 import { logger } from "../middleware/logger.js";
 import type { LlmAuthMethod } from "../services/billing.js";
+import { secretService } from "../services/secrets.js";
 
-export type AnthropicAuth =
-  | { type: "api_key"; value: string }
-  | { type: "oauth_token"; value: string };
+export type AnthropicAuth = { type: "api_key"; value: string } | { type: "oauth_token"; value: string };
 
 /** Well-known secret names companies use to store their Anthropic credentials. */
 const SECRET_NAME_API_KEY = "ANTHROPIC_API_KEY";

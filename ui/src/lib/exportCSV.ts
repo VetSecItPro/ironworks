@@ -27,9 +27,7 @@ export function exportToCSV(
   };
 
   const header = cols.map((c) => escape(c.label)).join(",");
-  const rows = data.map((row) =>
-    cols.map((c) => escape(row[c.key])).join(","),
-  );
+  const rows = data.map((row) => cols.map((c) => escape(row[c.key])).join(","));
 
   const csv = [header, ...rows].join("\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });

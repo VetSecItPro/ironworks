@@ -1,12 +1,8 @@
-import { useState, useMemo } from "react";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { ChevronDown } from "lucide-react";
-import { cn } from "../../lib/utils";
+import { useMemo, useState } from "react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { extractModelName, extractProviderId } from "../../lib/model-utils";
+import { cn } from "../../lib/utils";
 import { Field, help } from "../agent-config-primitives";
 import type { AdapterModel } from "./types";
 
@@ -36,11 +32,7 @@ export function ModelDropdown({
       if (!modelSearch.trim()) return true;
       const q = modelSearch.toLowerCase();
       const provider = extractProviderId(m.id) ?? "";
-      return (
-        m.id.toLowerCase().includes(q) ||
-        m.label.toLowerCase().includes(q) ||
-        provider.toLowerCase().includes(q)
-      );
+      return m.id.toLowerCase().includes(q) || m.label.toLowerCase().includes(q) || provider.toLowerCase().includes(q);
     });
   }, [models, modelSearch]);
   const groupedModels = useMemo(() => {

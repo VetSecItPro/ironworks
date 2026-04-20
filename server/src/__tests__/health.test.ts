@@ -1,6 +1,6 @@
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Service mocks ───────────────────────────────────────────────────────────
 
@@ -43,9 +43,7 @@ async function createApp(db?: any, opts?: any) {
 // ── Helper ──────────────────────────────────────────────────────────────────
 
 function createFakeDbForHealth(adminCount: number) {
-  const then = vi.fn().mockImplementation((cb: any) =>
-    Promise.resolve(cb([{ count: adminCount }])),
-  );
+  const then = vi.fn().mockImplementation((cb: any) => Promise.resolve(cb([{ count: adminCount }])));
   const where = vi.fn().mockReturnValue({ then });
   const from = vi.fn().mockReturnValue({ where, then });
   const selectObj = vi.fn().mockReturnValue({ from });

@@ -1,21 +1,21 @@
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
-import path from "node:path";
 import fs from "node:fs/promises";
+import path from "node:path";
 import type { Db } from "@ironworksai/db";
 import {
-  playbooks,
-  playbookSteps,
-  playbookRuns,
-  playbookRunSteps,
+  agents,
+  companySkills,
   goals,
   issues,
-  agents,
+  libraryFileEvents,
+  libraryFiles,
+  playbookRunSteps,
+  playbookRuns,
+  playbookSteps,
+  playbooks,
   projects,
   projectWorkspaces,
-  libraryFiles,
-  libraryFileEvents,
-  companySkills,
 } from "@ironworksai/db";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { resolveIronworksInstanceRoot } from "../home-paths.js";
 
 export function playbookExecutionService(db: Db) {
@@ -38,11 +38,7 @@ export function playbookExecutionService(db: Db) {
       projectId?: string | null;
     }) {
       // 1. Load playbook + steps
-      const [playbook] = await db
-        .select()
-        .from(playbooks)
-        .where(eq(playbooks.id, input.playbookId))
-        .limit(1);
+      const [playbook] = await db.select().from(playbooks).where(eq(playbooks.id, input.playbookId)).limit(1);
 
       if (!playbook || playbook.companyId !== input.companyId) {
         throw new Error("Playbook not found");
@@ -98,9 +94,13 @@ export function playbookExecutionService(db: Db) {
           if (agentRow && agentRow.budgetMonthlyCents > 0) {
             const utilization = agentRow.spentMonthlyCents / agentRow.budgetMonthlyCents;
             if (utilization >= 0.95) {
-              warnings.push(`${step.assigneeRole} is at ${Math.round(utilization * 100)}% budget — step ${step.stepOrder} may fail`);
+              warnings.push(
+                `${step.assigneeRole} is at ${Math.round(utilization * 100)}% budget — step ${step.stepOrder} may fail`,
+              );
             } else if (utilization >= 0.8) {
-              warnings.push(`${step.assigneeRole} is at ${Math.round(utilization * 100)}% budget — monitor step ${step.stepOrder}`);
+              warnings.push(
+                `${step.assigneeRole} is at ${Math.round(utilization * 100)}% budget — monitor step ${step.stepOrder}`,
+              );
             }
           }
         }
@@ -129,7 +129,7 @@ export function playbookExecutionService(db: Db) {
             companyId: input.companyId,
             projectId: project.id,
             name: input.repoUrl
-              ? input.repoUrl.split("/").pop()?.replace(".git", "") ?? "workspace"
+              ? (input.repoUrl.split("/").pop()?.replace(".git", "") ?? "workspace")
               : path.basename(input.cwd ?? "workspace"),
             sourceType: input.repoUrl ? "git_repo" : "local_path",
             repoUrl: input.repoUrl ?? null,
@@ -157,10 +157,7 @@ export function playbookExecutionService(db: Db) {
       // 5a. Link goal to project
       try {
         // projects have a goalId field for the primary goal
-        await db
-          .update(projects)
-          .set({ goalId: goal.id, updatedAt: new Date() })
-          .where(eq(projects.id, projectId));
+        await db.update(projects).set({ goalId: goal.id, updatedAt: new Date() }).where(eq(projects.id, projectId));
       } catch {
         // goalId column may not exist in older schemas, ignore
       }
@@ -237,11 +234,7 @@ export function playbookExecutionService(db: Db) {
      * Call this whenever an issue status changes to "done".
      */
     async onIssueCompleted(issueId: string) {
-      const [runStep] = await db
-        .select()
-        .from(playbookRunSteps)
-        .where(eq(playbookRunSteps.issueId, issueId))
-        .limit(1);
+      const [runStep] = await db.select().from(playbookRunSteps).where(eq(playbookRunSteps.issueId, issueId)).limit(1);
 
       if (!runStep) return null;
 
@@ -259,9 +252,7 @@ export function playbookExecutionService(db: Db) {
         .orderBy(asc(playbookRunSteps.stepOrder));
 
       // Find which steps can now be unblocked
-      const completedOrders = new Set(
-        allSteps.filter((s) => s.status === "completed").map((s) => s.stepOrder),
-      );
+      const completedOrders = new Set(allSteps.filter((s) => s.status === "completed").map((s) => s.stepOrder));
       completedOrders.add(runStep.stepOrder);
 
       const unblockedStepIds: string[] = [];
@@ -291,9 +282,7 @@ export function playbookExecutionService(db: Db) {
       }
 
       // Update run progress
-      const completedCount = allSteps.filter(
-        (s) => s.status === "completed" || s.id === runStep.id,
-      ).length;
+      const completedCount = allSteps.filter((s) => s.status === "completed" || s.id === runStep.id).length;
       const runComplete = completedCount >= allSteps.length;
 
       await db
@@ -307,16 +296,9 @@ export function playbookExecutionService(db: Db) {
 
       // If run is complete, mark goal as achieved
       if (runComplete) {
-        const [theRun] = await db
-          .select()
-          .from(playbookRuns)
-          .where(eq(playbookRuns.id, runStep.runId))
-          .limit(1);
+        const [theRun] = await db.select().from(playbookRuns).where(eq(playbookRuns.id, runStep.runId)).limit(1);
         if (theRun?.goalId) {
-          await db
-            .update(goals)
-            .set({ status: "achieved", updatedAt: new Date() })
-            .where(eq(goals.id, theRun.goalId));
+          await db.update(goals).set({ status: "achieved", updatedAt: new Date() }).where(eq(goals.id, theRun.goalId));
         }
       }
 
@@ -326,20 +308,34 @@ export function playbookExecutionService(db: Db) {
         scanAndRegisterLibraryFiles(theRun2.companyId, issueId, db).catch(() => {});
       }
 
-      return { unblocked: unblockedIssueIds.length, runComplete, completedSteps: completedCount, totalSteps: allSteps.length };
+      return {
+        unblocked: unblockedIssueIds.length,
+        runComplete,
+        completedSteps: completedCount,
+        totalSteps: allSteps.length,
+      };
     },
 
     async getRunWithSteps(runId: string) {
       const [run] = await db.select().from(playbookRuns).where(eq(playbookRuns.id, runId)).limit(1);
       if (!run) return null;
-      const steps = await db.select().from(playbookRunSteps).where(eq(playbookRunSteps.runId, runId)).orderBy(asc(playbookRunSteps.stepOrder));
+      const steps = await db
+        .select()
+        .from(playbookRunSteps)
+        .where(eq(playbookRunSteps.runId, runId))
+        .orderBy(asc(playbookRunSteps.stepOrder));
       return { ...run, steps };
     },
 
     async listRuns(companyId: string, playbookId?: string) {
       const conditions = [eq(playbookRuns.companyId, companyId)];
       if (playbookId) conditions.push(eq(playbookRuns.playbookId, playbookId));
-      return db.select().from(playbookRuns).where(and(...conditions)).orderBy(sql`${playbookRuns.startedAt} DESC`).limit(50);
+      return db
+        .select()
+        .from(playbookRuns)
+        .where(and(...conditions))
+        .orderBy(sql`${playbookRuns.startedAt} DESC`)
+        .limit(50);
     },
   };
 }
@@ -429,7 +425,11 @@ async function scanAndRegisterLibraryFiles(companyId: string, issueId: string, d
   async function walk(dir: string, relBase: string, depth: number) {
     if (depth > MAX_DEPTH) return;
     let dirents;
-    try { dirents = await fs.readdir(dir, { withFileTypes: true }); } catch { return; }
+    try {
+      dirents = await fs.readdir(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
 
     for (const dirent of dirents) {
       if (dirent.name.startsWith(".")) continue;
@@ -459,18 +459,23 @@ async function scanAndRegisterLibraryFiles(companyId: string, issueId: string, d
                 const content = await fs.readFile(fullPath, "utf-8");
                 const h = /^#\s+(.+)$/m.exec(content);
                 if (h) title = h[1].trim();
-              } catch { /* skip */ }
+              } catch {
+                /* skip */
+              }
             }
 
-            const [file] = await db.insert(libraryFiles).values({
-              companyId,
-              filePath,
-              title,
-              fileType: ext ?? null,
-              sizeBytes: stat.size,
-              visibility: "project",
-              projectId: issue.projectId,
-            }).returning();
+            const [file] = await db
+              .insert(libraryFiles)
+              .values({
+                companyId,
+                filePath,
+                title,
+                fileType: ext ?? null,
+                sizeBytes: stat.size,
+                visibility: "project",
+                projectId: issue.projectId,
+              })
+              .returning();
 
             // Record the event linked to the issue
             await db.insert(libraryFileEvents).values({
@@ -482,7 +487,7 @@ async function scanAndRegisterLibraryFiles(companyId: string, issueId: string, d
               changeSummary: `Created during: ${issue.title}`,
             });
           }
-        } catch { continue; }
+        } catch {}
       }
     }
   }
@@ -491,11 +496,13 @@ async function scanAndRegisterLibraryFiles(companyId: string, issueId: string, d
 }
 
 function slugify(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 64) || "unnamed";
+  return (
+    name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 64) || "unnamed"
+  );
 }
 
 function resolveAgent(

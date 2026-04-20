@@ -1,6 +1,6 @@
+import { DollarSign, TrendingDown, TrendingUp, Users } from "lucide-react";
 import { Link } from "../../lib/router";
 import { cn, formatCents } from "../../lib/utils";
-import { Users, DollarSign, TrendingUp, TrendingDown } from "lucide-react";
 
 interface HeadcountCostCardsProps {
   headcount: { fte: number; contractor: number } | undefined;
@@ -66,16 +66,10 @@ export function HeadcountCostCards({
               </div>
               <div className="flex justify-between">
                 <span>Trend</span>
-                <span className={cn(
-                  "flex items-center gap-1",
-                  spendTrend > 0 ? "text-amber-400" : "text-emerald-400",
-                )}>
-                  {spendTrend > 0 ? (
-                    <TrendingUp className="h-3.5 w-3.5" />
-                  ) : (
-                    <TrendingDown className="h-3.5 w-3.5" />
-                  )}
-                  {spendTrend > 0 ? "+" : ""}{formatCents(Math.abs(spendTrend))}
+                <span className={cn("flex items-center gap-1", spendTrend > 0 ? "text-amber-400" : "text-emerald-400")}>
+                  {spendTrend > 0 ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
+                  {spendTrend > 0 ? "+" : ""}
+                  {formatCents(Math.abs(spendTrend))}
                 </span>
               </div>
               <div className="flex justify-between">

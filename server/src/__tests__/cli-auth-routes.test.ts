@@ -48,7 +48,13 @@ vi.mock("../services/index.js", () => ({
   routineService: () => ({}),
   playbookService: () => ({ seedDefaults: vi.fn() }),
   budgetService: () => ({ upsertPolicy: vi.fn() }),
-  userInviteService: () => ({ create: vi.fn(), getByToken: vi.fn(), accept: vi.fn(), listForCompany: vi.fn(), revoke: vi.fn() }),
+  userInviteService: () => ({
+    create: vi.fn(),
+    getByToken: vi.fn(),
+    accept: vi.fn(),
+    listForCompany: vi.fn(),
+    revoke: vi.fn(),
+  }),
   notifyHireApproved: vi.fn(),
   deduplicateAgentName: vi.fn((name: string) => name),
 }));
@@ -73,7 +79,7 @@ function createApp(actor: any) {
       );
       app.use(errorHandler);
       return app;
-    })
+    }),
   );
 }
 
@@ -93,13 +99,11 @@ describe("cli auth routes", () => {
     });
 
     const app = await createApp({ type: "none", source: "none" });
-    const res = await request(app)
-      .post("/api/cli-auth/challenges")
-      .send({
-        command: "ironworksai company import",
-        clientName: "ironworksai cli",
-        requestedAccess: "board",
-      });
+    const res = await request(app).post("/api/cli-auth/challenges").send({
+      command: "ironworksai company import",
+      clientName: "ironworksai cli",
+      requestedAccess: "board",
+    });
 
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject({

@@ -1,10 +1,10 @@
 import * as p from "@clack/prompts";
-import type { DatabaseConfig } from "../config/schema.js";
 import {
   resolveDefaultBackupDir,
   resolveDefaultEmbeddedPostgresDir,
   resolveIronworksInstanceId,
 } from "../config/home.js";
+import type { DatabaseConfig } from "../config/schema.js";
 
 export async function promptDatabase(current?: DatabaseConfig): Promise<DatabaseConfig> {
   const instanceId = resolveIronworksInstanceId();

@@ -237,20 +237,16 @@ export function BoardBriefingSkeleton() {
 /*  Mobile Responsive Wrapper                                          */
 /* ------------------------------------------------------------------ */
 
-export function MobileResponsiveContainer({
-  children,
-  className,
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
+export function MobileResponsiveContainer({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn(
-      "min-w-[375px]",
-      // At 375px, remove side paddings and adjust layouts
-      "max-[375px]:px-2 max-[375px]:text-sm",
-      className,
-    )}>
+    <div
+      className={cn(
+        "min-w-[375px]",
+        // At 375px, remove side paddings and adjust layouts
+        "max-[375px]:px-2 max-[375px]:text-sm",
+        className,
+      )}
+    >
       {children}
     </div>
   );

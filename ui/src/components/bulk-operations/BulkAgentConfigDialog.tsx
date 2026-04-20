@@ -1,7 +1,7 @@
+import { Settings2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Settings2 } from "lucide-react";
 
 interface BulkAgentConfigProps {
   open: boolean;
@@ -37,13 +37,15 @@ export function BulkAgentConfigDialog({ open, onClose, selectedAgentIds, onApply
           <h2 className="text-lg font-semibold">Bulk Agent Configuration</h2>
         </div>
         <p className="text-xs text-muted-foreground mb-4">
-          Apply settings to {selectedAgentIds.length} selected agent{selectedAgentIds.length !== 1 ? "s" : ""}.
-          Only filled fields will be updated.
+          Apply settings to {selectedAgentIds.length} selected agent{selectedAgentIds.length !== 1 ? "s" : ""}. Only
+          filled fields will be updated.
         </p>
 
         <div className="space-y-3">
           <div>
-            <label htmlFor="bulk-agent-model" className="text-xs font-medium text-muted-foreground">Model</label>
+            <label htmlFor="bulk-agent-model" className="text-xs font-medium text-muted-foreground">
+              Model
+            </label>
             <Input
               id="bulk-agent-model"
               value={model}
@@ -53,7 +55,9 @@ export function BulkAgentConfigDialog({ open, onClose, selectedAgentIds, onApply
             />
           </div>
           <div>
-            <label htmlFor="bulk-agent-max-tokens" className="text-xs font-medium text-muted-foreground">Max Tokens</label>
+            <label htmlFor="bulk-agent-max-tokens" className="text-xs font-medium text-muted-foreground">
+              Max Tokens
+            </label>
             <Input
               id="bulk-agent-max-tokens"
               type="number"
@@ -64,7 +68,9 @@ export function BulkAgentConfigDialog({ open, onClose, selectedAgentIds, onApply
             />
           </div>
           <div>
-            <label htmlFor="bulk-agent-auto-approval" className="text-xs font-medium text-muted-foreground">Auto-approval</label>
+            <label htmlFor="bulk-agent-auto-approval" className="text-xs font-medium text-muted-foreground">
+              Auto-approval
+            </label>
             <select
               id="bulk-agent-auto-approval"
               value={autoApproval}
@@ -79,7 +85,9 @@ export function BulkAgentConfigDialog({ open, onClose, selectedAgentIds, onApply
         </div>
 
         <div className="flex justify-end gap-2 mt-6">
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
           <Button onClick={handleApply}>
             Apply to {selectedAgentIds.length} agent{selectedAgentIds.length !== 1 ? "s" : ""}
           </Button>

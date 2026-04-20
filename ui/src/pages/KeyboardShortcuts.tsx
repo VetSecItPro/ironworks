@@ -55,9 +55,7 @@ export function KeyboardShortcuts() {
       <div className="space-y-8">
         {Object.entries(grouped).map(([scope, entries]) => (
           <div key={scope}>
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">
-              {scope}
-            </h2>
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">{scope}</h2>
             <div className="rounded-lg border border-border divide-y divide-border">
               {entries.map((entry, idx) => (
                 <div key={idx} className="flex items-center justify-between px-4 py-3">
@@ -65,10 +63,12 @@ export function KeyboardShortcuts() {
                   <div className="flex items-center gap-1">
                     {entry.keys.map((key, ki) =>
                       key === "then" ? (
-                        <span key={ki} className="text-xs text-muted-foreground mx-0.5">then</span>
+                        <span key={ki} className="text-xs text-muted-foreground mx-0.5">
+                          then
+                        </span>
                       ) : (
                         <Kbd key={ki}>{key}</Kbd>
-                      )
+                      ),
                     )}
                   </div>
                 </div>

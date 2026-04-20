@@ -1,2 +1,2 @@
 export { IssueProperties } from "./IssueProperties";
-export { PropertyRow, PropertyPicker } from "./PropertyLayout";
+export { PropertyPicker, PropertyRow } from "./PropertyLayout";

@@ -13,9 +13,10 @@
  *
  * @see PLUGIN_SPEC.md §27.2 — Local Development Workflow
  */
-import chokidar, { type FSWatcher } from "chokidar";
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
+import chokidar, { type FSWatcher } from "chokidar";
 import { logger } from "../middleware/logger.js";
 import type { PluginLifecycleManager } from "./plugin-lifecycle.js";
 
@@ -33,9 +34,7 @@ export interface PluginDevWatcher {
   close(): void;
 }
 
-export type ResolvePluginPackagePath = (
-  pluginId: string,
-) => Promise<string | null | undefined>;
+export type ResolvePluginPackagePath = (pluginId: string) => Promise<string | null | undefined>;
 
 export interface PluginDevWatcherFsDeps {
   existsSync?: typeof existsSync;
@@ -171,10 +170,7 @@ export function createPluginDevWatcher(
 
     const absPath = path.resolve(packagePath);
     if (!fileExists(absPath)) {
-      log.warn(
-        { pluginId, packagePath: absPath },
-        "plugin-dev-watcher: package path does not exist, skipping watch",
-      );
+      log.warn({ pluginId, packagePath: absPath }, "plugin-dev-watcher: package path does not exist, skipping watch");
       return;
     }
 

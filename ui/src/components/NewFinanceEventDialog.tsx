@@ -1,8 +1,6 @@
-import { useState } from "react";
 import { Plus } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +9,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "../lib/utils";
 
 const EVENT_KINDS = [
@@ -38,21 +38,14 @@ interface NewFinanceEventDialogProps {
   isPending?: boolean;
 }
 
-export function NewFinanceEventDialog({
-  open,
-  onOpenChange,
-  onSubmit,
-  isPending,
-}: NewFinanceEventDialogProps) {
+export function NewFinanceEventDialog({ open, onOpenChange, onSubmit, isPending }: NewFinanceEventDialogProps) {
   const [eventKind, setEventKind] = useState("top_up");
   const [direction, setDirection] = useState<"debit" | "credit">("credit");
   const [biller, setBiller] = useState("");
   const [provider, setProvider] = useState("");
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
-  const [occurredAt, setOccurredAt] = useState(
-    new Date().toISOString().split("T")[0],
-  );
+  const [occurredAt, setOccurredAt] = useState(new Date().toISOString().split("T")[0]);
 
   function reset() {
     setEventKind("top_up");
@@ -91,9 +84,7 @@ export function NewFinanceEventDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>New Finance Event</DialogTitle>
-          <DialogDescription>
-            Record a payment, charge, credit, or adjustment to the finance ledger.
-          </DialogDescription>
+          <DialogDescription>Record a payment, charge, credit, or adjustment to the finance ledger.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
@@ -180,12 +171,7 @@ export function NewFinanceEventDialog({
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground">Date</label>
-              <Input
-                type="date"
-                value={occurredAt}
-                onChange={(e) => setOccurredAt(e.target.value)}
-                className="mt-1"
-              />
+              <Input type="date" value={occurredAt} onChange={(e) => setOccurredAt(e.target.value)} className="mt-1" />
             </div>
           </div>
 
@@ -205,10 +191,7 @@ export function NewFinanceEventDialog({
           <Button variant="outline" onClick={() => handleClose(false)}>
             Cancel
           </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={!amount || !biller.trim() || isPending}
-          >
+          <Button onClick={handleSubmit} disabled={!amount || !biller.trim() || isPending}>
             {isPending ? "Recording..." : "Record Event"}
           </Button>
         </DialogFooter>

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -199,9 +199,7 @@ describe("knowledge routes", () => {
   describe("PATCH /api/knowledge/:pageId", () => {
     it("updates a knowledge page", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .patch(`/api/knowledge/${PAGE_ID}`)
-        .send({ title: "Updated Title" });
+      const res = await request(app).patch(`/api/knowledge/${PAGE_ID}`).send({ title: "Updated Title" });
 
       expect(res.status).toBe(200);
       expect(mockKnowledgeService.update).toHaveBeenCalled();
@@ -210,9 +208,7 @@ describe("knowledge routes", () => {
     it("rejects editing immutable HR documents with 403", async () => {
       mockKnowledgeService.getById.mockResolvedValue(MOCK_HR_PAGE);
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .patch(`/api/knowledge/${MOCK_HR_PAGE.id}`)
-        .send({ title: "Hacked" });
+      const res = await request(app).patch(`/api/knowledge/${MOCK_HR_PAGE.id}`).send({ title: "Hacked" });
       expect(res.status).toBe(403);
       expect(res.body.error).toContain("HR documents are immutable");
     });

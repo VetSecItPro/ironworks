@@ -1,4 +1,4 @@
-import { HttpAdapterCircuitOpenError, HttpAdapterError } from './errors.js';
+import { HttpAdapterCircuitOpenError, HttpAdapterError } from "./errors.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -30,7 +30,7 @@ export interface CircuitBreakerOptions {
 export interface CircuitBreaker {
   run<T>(key: string, fn: () => Promise<T>): Promise<T>;
   /** Inspect current state for a key. Mainly for tests / diagnostics. */
-  getState(key: string): 'closed' | 'open' | 'half_open';
+  getState(key: string): "closed" | "open" | "half_open";
   /** Force-reset a key's state. For manual ops recovery. */
   reset(key: string): void;
 }
@@ -40,7 +40,7 @@ export interface CircuitBreaker {
 // ---------------------------------------------------------------------------
 
 interface KeyState {
-  state: 'closed' | 'open' | 'half_open';
+  state: "closed" | "open" | "half_open";
   consecutiveFailures: number;
   /** Timestamp when the circuit was last opened; null while closed. */
   openedAtMs: number | null;
@@ -108,7 +108,7 @@ export function createCircuitBreaker(options: CircuitBreakerOptions = {}): Circu
       return s;
     }
 
-    s = { state: 'closed', consecutiveFailures: 0, openedAtMs: null, probe: null };
+    s = { state: "closed", consecutiveFailures: 0, openedAtMs: null, probe: null };
 
     // Evict before inserting if we are at the cap
     if (states.size >= maxKeys) {
@@ -116,7 +116,7 @@ export function createCircuitBreaker(options: CircuitBreakerOptions = {}): Circu
       // Safely evictable = closed state + no accumulated failures.
       // Open/half-open entries are skipped to preserve active protection.
       for (const [candidateKey, candidate] of states) {
-        if (candidate.state === 'closed' && candidate.consecutiveFailures === 0) {
+        if (candidate.state === "closed" && candidate.consecutiveFailures === 0) {
           states.delete(candidateKey);
           break;
         }
@@ -133,7 +133,7 @@ export function createCircuitBreaker(options: CircuitBreakerOptions = {}): Circu
   async function run<T>(key: string, fn: () => Promise<T>): Promise<T> {
     const s = getOrInit(key);
 
-    if (s.state === 'open') {
+    if (s.state === "open") {
       const reopenAtMs = (s.openedAtMs ?? 0) + cooldownMs;
       if (Date.now() < reopenAtMs) {
         // Still within cooldown — fail-fast without calling the provider
@@ -146,34 +146,35 @@ export function createCircuitBreaker(options: CircuitBreakerOptions = {}): Circu
       // Cooldown elapsed. The first caller to arrive wins the probe; any concurrent
       // caller that finds probe !== null fails fast — see JSDoc on `run`.
       if (s.probe !== null) {
-        throw new HttpAdapterCircuitOpenError(
-          `Circuit open for key "${key}" (probe already in flight).`,
-          { reopenAtMs },
-        );
+        throw new HttpAdapterCircuitOpenError(`Circuit open for key "${key}" (probe already in flight).`, {
+          reopenAtMs,
+        });
       }
 
       // We are the probe owner. Transition and set the lock before any await.
-      s.state = 'half_open';
+      s.state = "half_open";
       let probeResolve!: () => void;
-      s.probe = new Promise<void>((r) => { probeResolve = r; });
+      s.probe = new Promise<void>((r) => {
+        probeResolve = r;
+      });
 
       try {
         const result = await fn();
         // Probe succeeded — provider is healthy again
-        s.state = 'closed';
+        s.state = "closed";
         s.consecutiveFailures = 0;
         s.openedAtMs = null;
         return result;
       } catch (err) {
         if (shouldTrip(err)) {
           // Provider still unhealthy — restart the cooldown clock
-          s.state = 'open';
+          s.state = "open";
           s.openedAtMs = Date.now();
         } else {
           // Non-tripping error during probe: the probe slot is consumed but the
           // circuit should not stay stuck in half_open. Reset to closed so
           // subsequent calls proceed normally.
-          s.state = 'closed';
+          s.state = "closed";
           s.consecutiveFailures = 0;
         }
         throw err;
@@ -183,14 +184,11 @@ export function createCircuitBreaker(options: CircuitBreakerOptions = {}): Circu
       }
     }
 
-    if (s.state === 'half_open') {
+    if (s.state === "half_open") {
       // This branch is only reachable if state was externally set to half_open
       // (e.g. via a future administrative API). Treat as open to be defensive.
       const reopenAtMs = (s.openedAtMs ?? 0) + cooldownMs;
-      throw new HttpAdapterCircuitOpenError(
-        `Circuit open for key "${key}" (probe in flight).`,
-        { reopenAtMs },
-      );
+      throw new HttpAdapterCircuitOpenError(`Circuit open for key "${key}" (probe in flight).`, { reopenAtMs });
     }
 
     // Closed state — normal execution path
@@ -204,7 +202,7 @@ export function createCircuitBreaker(options: CircuitBreakerOptions = {}): Circu
         s.consecutiveFailures++;
         if (s.consecutiveFailures >= failureThreshold) {
           // Threshold crossed — open the circuit
-          s.state = 'open';
+          s.state = "open";
           s.openedAtMs = Date.now();
         }
       }
@@ -212,8 +210,8 @@ export function createCircuitBreaker(options: CircuitBreakerOptions = {}): Circu
     }
   }
 
-  function getState(key: string): 'closed' | 'open' | 'half_open' {
-    return states.get(key)?.state ?? 'closed';
+  function getState(key: string): "closed" | "open" | "half_open" {
+    return states.get(key)?.state ?? "closed";
   }
 
   function reset(key: string): void {

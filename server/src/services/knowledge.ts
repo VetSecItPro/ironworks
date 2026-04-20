@@ -1,6 +1,6 @@
-import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import { knowledgePages, knowledgePageRevisions } from "@ironworksai/db";
+import { knowledgePageRevisions, knowledgePages } from "@ironworksai/db";
+import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { notFound } from "../errors.js";
 import { getKnowledgeSeeds } from "./knowledge-seeds.js";
 
@@ -46,12 +46,13 @@ export function invalidateKBSummaryCache(pageId: string): void {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function slugify(title: string): string {
-  return title
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    || "page";
+  return (
+    title
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "page"
+  );
 }
 
 async function ensureUniqueSlug(db: Db, companyId: string, baseSlug: string, excludeId?: string): Promise<string> {
@@ -60,7 +61,11 @@ async function ensureUniqueSlug(db: Db, companyId: string, baseSlug: string, exc
   while (true) {
     const conditions = [eq(knowledgePages.companyId, companyId), eq(knowledgePages.slug, slug)];
     if (excludeId) conditions.push(sql`${knowledgePages.id} != ${excludeId}`);
-    const [existing] = await db.select({ id: knowledgePages.id }).from(knowledgePages).where(and(...conditions)).limit(1);
+    const [existing] = await db
+      .select({ id: knowledgePages.id })
+      .from(knowledgePages)
+      .where(and(...conditions))
+      .limit(1);
     if (!existing) return slug;
     slug = `${baseSlug}-${suffix++}`;
   }
@@ -87,7 +92,10 @@ export interface KnowledgePageUpdateInput {
 
 export function knowledgeService(db: Db) {
   return {
-    async list(companyId: string, opts?: { search?: string; visibility?: string; department?: string; agentId?: string }) {
+    async list(
+      companyId: string,
+      opts?: { search?: string; visibility?: string; department?: string; agentId?: string },
+    ) {
       const conditions = [eq(knowledgePages.companyId, companyId)];
       if (opts?.visibility && opts.visibility !== "all") {
         conditions.push(eq(knowledgePages.visibility, opts.visibility));
@@ -178,7 +186,9 @@ export function knowledgeService(db: Db) {
       const nextRevision = existing.revisionNumber + 1;
       const nextTitle = input.title?.trim() ?? existing.title;
       const nextBody = input.body ?? existing.body;
-      const nextSlug = input.title ? await ensureUniqueSlug(db, existing.companyId, slugify(nextTitle), id) : existing.slug;
+      const nextSlug = input.title
+        ? await ensureUniqueSlug(db, existing.companyId, slugify(nextTitle), id)
+        : existing.slug;
 
       const [updated] = await db
         .update(knowledgePages)
@@ -232,10 +242,7 @@ export function knowledgeService(db: Db) {
         .select()
         .from(knowledgePageRevisions)
         .where(
-          and(
-            eq(knowledgePageRevisions.pageId, pageId),
-            eq(knowledgePageRevisions.revisionNumber, revisionNumber),
-          ),
+          and(eq(knowledgePageRevisions.pageId, pageId), eq(knowledgePageRevisions.revisionNumber, revisionNumber)),
         )
         .limit(1);
       return rev ?? null;
@@ -244,11 +251,15 @@ export function knowledgeService(db: Db) {
     async revertToRevision(pageId: string, revisionNumber: number, actor: { agentId?: string; userId?: string }) {
       const revision = await this.getRevision(pageId, revisionNumber);
       if (!revision) throw notFound("Revision not found");
-      return this.update(pageId, {
-        title: revision.title,
-        body: revision.body,
-        changeSummary: `Reverted to revision #${revisionNumber}`,
-      }, actor);
+      return this.update(
+        pageId,
+        {
+          title: revision.title,
+          body: revision.body,
+          changeSummary: `Reverted to revision #${revisionNumber}`,
+        },
+        actor,
+      );
     },
 
     /** Seed default KB pages for a new company (idempotent). */
@@ -259,7 +270,6 @@ export function knowledgeService(db: Db) {
         .where(and(eq(knowledgePages.companyId, companyId), eq(knowledgePages.isSeeded, "true")))
         .limit(1);
       if (existing) return { seeded: false, count: 0 };
-
 
       const { seeds, sopTemplates } = getKnowledgeSeeds();
       let count = 0;

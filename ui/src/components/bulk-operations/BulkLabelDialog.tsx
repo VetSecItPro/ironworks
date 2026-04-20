@@ -1,7 +1,7 @@
+import { Plus, Tag } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tag, Plus } from "lucide-react";
 import { cn } from "../../lib/utils";
 
 interface BulkLabelDialogProps {
@@ -74,7 +74,9 @@ export function BulkLabelDialog({ open, onClose, selectedCount, availableLabels,
             placeholder="New label..."
             aria-label="New label name"
             className="h-8 text-xs"
-            onKeyDown={(e) => { if (e.key === "Enter") addCustomLabel(); }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") addCustomLabel();
+            }}
           />
           <Button variant="ghost" size="sm" onClick={addCustomLabel} className="h-8 text-xs shrink-0">
             <Plus className="h-3 w-3 mr-1" />
@@ -83,8 +85,16 @@ export function BulkLabelDialog({ open, onClose, selectedCount, availableLabels,
         </div>
 
         <div className="flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button onClick={() => { onApply([...selectedLabels]); onClose(); }} disabled={selectedLabels.size === 0}>
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              onApply([...selectedLabels]);
+              onClose();
+            }}
+            disabled={selectedLabels.size === 0}
+          >
             Apply {selectedLabels.size} label{selectedLabels.size !== 1 ? "s" : ""}
           </Button>
         </div>

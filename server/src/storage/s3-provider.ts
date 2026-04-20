@@ -1,13 +1,13 @@
+import { Readable } from "node:stream";
 import {
-  S3Client,
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
   PutObjectCommand,
+  S3Client,
 } from "@aws-sdk/client-s3";
-import { Readable } from "node:stream";
-import type { StorageProvider, GetObjectResult, HeadObjectResult } from "./types.js";
 import { notFound, unprocessable } from "../errors.js";
+import type { GetObjectResult, HeadObjectResult, StorageProvider } from "./types.js";
 
 interface S3ProviderConfig {
   bucket: string;
@@ -19,10 +19,7 @@ interface S3ProviderConfig {
 
 function normalizePrefix(prefix: string | undefined): string {
   if (!prefix) return "";
-  return prefix
-    .trim()
-    .replace(/^\/+/, "")
-    .replace(/\/+$/, "");
+  return prefix.trim().replace(/^\/+/, "").replace(/\/+$/, "");
 }
 
 function buildKey(prefix: string, objectKey: string): string {
@@ -42,13 +39,15 @@ async function toReadableStream(body: unknown): Promise<Readable> {
   if (typeof candidate.transformToWebStream === "function") {
     const webStream = candidate.transformToWebStream();
     const reader = webStream.getReader();
-    return Readable.from((async function* () {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        if (value) yield value;
-      }
-    })());
+    return Readable.from(
+      (async function* () {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          if (value) yield value;
+        }
+      })(),
+    );
   }
 
   if (typeof candidate.arrayBuffer === "function") {

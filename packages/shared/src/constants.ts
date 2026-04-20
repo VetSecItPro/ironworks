@@ -133,15 +133,7 @@ export const AGENT_ICON_NAMES = [
 ] as const;
 export type AgentIconName = (typeof AGENT_ICON_NAMES)[number];
 
-export const ISSUE_STATUSES = [
-  "backlog",
-  "todo",
-  "in_progress",
-  "in_review",
-  "done",
-  "blocked",
-  "cancelled",
-] as const;
+export const ISSUE_STATUSES = ["backlog", "todo", "in_progress", "in_review", "done", "blocked", "cancelled"] as const;
 export type IssueStatus = (typeof ISSUE_STATUSES)[number];
 
 export const ISSUE_PRIORITIES = ["critical", "high", "medium", "low"] as const;
@@ -156,13 +148,7 @@ export type GoalLevel = (typeof GOAL_LEVELS)[number];
 export const GOAL_STATUSES = ["planned", "active", "achieved", "cancelled"] as const;
 export type GoalStatus = (typeof GOAL_STATUSES)[number];
 
-export const PROJECT_STATUSES = [
-  "backlog",
-  "planned",
-  "in_progress",
-  "completed",
-  "cancelled",
-] as const;
+export const PROJECT_STATUSES = ["backlog", "planned", "in_progress", "completed", "cancelled"] as const;
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 
 export const ROUTINE_STATUSES = ["draft", "active", "paused", "archived"] as const;
@@ -187,7 +173,7 @@ export const ROUTINE_RUN_STATUSES = [
   "issue_created",
   "completed",
   "failed",
- ] as const;
+] as const;
 export type RoutineRunStatus = (typeof ROUTINE_RUN_STATUSES)[number];
 
 export const ROUTINE_RUN_SOURCES = ["schedule", "manual", "api", "webhook"] as const;
@@ -230,24 +216,18 @@ export const PROJECT_COLORS = [
   "#3b82f6", // blue
 ] as const;
 
-export const APPROVAL_TYPES = ["hire_agent", "approve_ceo_strategy", "budget_override_required", "quality_gate"] as const;
+export const APPROVAL_TYPES = [
+  "hire_agent",
+  "approve_ceo_strategy",
+  "budget_override_required",
+  "quality_gate",
+] as const;
 export type ApprovalType = (typeof APPROVAL_TYPES)[number];
 
-export const APPROVAL_STATUSES = [
-  "pending",
-  "revision_requested",
-  "approved",
-  "rejected",
-  "cancelled",
-] as const;
+export const APPROVAL_STATUSES = ["pending", "revision_requested", "approved", "rejected", "cancelled"] as const;
 export type ApprovalStatus = (typeof APPROVAL_STATUSES)[number];
 
-export const SECRET_PROVIDERS = [
-  "local_encrypted",
-  "aws_secrets_manager",
-  "gcp_secret_manager",
-  "vault",
-] as const;
+export const SECRET_PROVIDERS = ["local_encrypted", "aws_secrets_manager", "gcp_secret_manager", "vault"] as const;
 export type SecretProvider = (typeof SECRET_PROVIDERS)[number];
 
 export const STORAGE_PROVIDERS = ["local_disk", "s3"] as const;
@@ -314,18 +294,10 @@ export type BudgetThresholdType = (typeof BUDGET_THRESHOLD_TYPES)[number];
 export const BUDGET_INCIDENT_STATUSES = ["open", "resolved", "dismissed"] as const;
 export type BudgetIncidentStatus = (typeof BUDGET_INCIDENT_STATUSES)[number];
 
-export const BUDGET_INCIDENT_RESOLUTION_ACTIONS = [
-  "keep_paused",
-  "raise_budget_and_resume",
-] as const;
+export const BUDGET_INCIDENT_RESOLUTION_ACTIONS = ["keep_paused", "raise_budget_and_resume"] as const;
 export type BudgetIncidentResolutionAction = (typeof BUDGET_INCIDENT_RESOLUTION_ACTIONS)[number];
 
-export const HEARTBEAT_INVOCATION_SOURCES = [
-  "timer",
-  "assignment",
-  "on_demand",
-  "automation",
-] as const;
+export const HEARTBEAT_INVOCATION_SOURCES = ["timer", "assignment", "on_demand", "automation"] as const;
 export type HeartbeatInvocationSource = (typeof HEARTBEAT_INVOCATION_SOURCES)[number];
 
 export const WAKEUP_TRIGGER_DETAILS = ["manual", "ping", "callback", "system"] as const;
@@ -343,14 +315,7 @@ export const WAKEUP_REQUEST_STATUSES = [
 ] as const;
 export type WakeupRequestStatus = (typeof WAKEUP_REQUEST_STATUSES)[number];
 
-export const HEARTBEAT_RUN_STATUSES = [
-  "queued",
-  "running",
-  "succeeded",
-  "failed",
-  "cancelled",
-  "timed_out",
-] as const;
+export const HEARTBEAT_RUN_STATUSES = ["queued", "running", "succeeded", "failed", "cancelled", "timed_out"] as const;
 export type HeartbeatRunStatus = (typeof HEARTBEAT_RUN_STATUSES)[number];
 
 export const LIVE_EVENT_TYPES = [
@@ -411,7 +376,18 @@ export type MembershipRole = (typeof MEMBERSHIP_ROLES)[number];
  */
 export const ROLE_PERMISSIONS: Record<MembershipRole, readonly PermissionKey[]> = {
   owner: PERMISSION_KEYS,
-  admin: ["agents:create", "agents:hire:full_time", "agents:hire:contractor", "agents:hire:approve", "agents:hire:bypass_approval", "users:invite", "users:manage_permissions", "tasks:assign", "tasks:assign_scope", "joins:approve"],
+  admin: [
+    "agents:create",
+    "agents:hire:full_time",
+    "agents:hire:contractor",
+    "agents:hire:approve",
+    "agents:hire:bypass_approval",
+    "users:invite",
+    "users:manage_permissions",
+    "tasks:assign",
+    "tasks:assign_scope",
+    "joins:approve",
+  ],
   member: ["agents:create", "agents:hire:contractor", "tasks:assign"],
   viewer: [],
 } as const;
@@ -459,14 +435,7 @@ export const PLUGIN_API_VERSION = 1 as const;
  * @see {@link PluginStatus} — inferred union type
  * @see PLUGIN_SPEC.md §21.3 `plugins.status`
  */
-export const PLUGIN_STATUSES = [
-  "installed",
-  "ready",
-  "disabled",
-  "error",
-  "upgrade_pending",
-  "uninstalled",
-] as const;
+export const PLUGIN_STATUSES = ["installed", "ready", "disabled", "error", "upgrade_pending", "uninstalled"] as const;
 export type PluginStatus = (typeof PLUGIN_STATUSES)[number];
 
 /**
@@ -475,12 +444,7 @@ export type PluginStatus = (typeof PLUGIN_STATUSES)[number];
  *
  * @see PLUGIN_SPEC.md §6.2
  */
-export const PLUGIN_CATEGORIES = [
-  "connector",
-  "workspace",
-  "automation",
-  "ui",
-] as const;
+export const PLUGIN_CATEGORIES = ["connector", "workspace", "automation", "ui"] as const;
 export type PluginCategory = (typeof PLUGIN_CATEGORIES)[number];
 
 /**
@@ -591,8 +555,7 @@ export const PLUGIN_RESERVED_COMPANY_ROUTE_SEGMENTS = [
   "design-guide",
   "tests",
 ] as const;
-export type PluginReservedCompanyRouteSegment =
-  (typeof PLUGIN_RESERVED_COMPANY_ROUTE_SEGMENTS)[number];
+export type PluginReservedCompanyRouteSegment = (typeof PLUGIN_RESERVED_COMPANY_ROUTE_SEGMENTS)[number];
 
 /**
  * Launcher placement zones describe where a plugin-owned launcher can appear
@@ -634,13 +597,7 @@ export type PluginLauncherAction = (typeof PLUGIN_LAUNCHER_ACTIONS)[number];
  * Optional size hints the host can use when rendering plugin-owned launcher
  * destinations such as overlays, drawers, or full page handoffs.
  */
-export const PLUGIN_LAUNCHER_BOUNDS = [
-  "inline",
-  "compact",
-  "default",
-  "wide",
-  "full",
-] as const;
+export const PLUGIN_LAUNCHER_BOUNDS = ["inline", "compact", "default", "wide", "full"] as const;
 export type PluginLauncherBounds = (typeof PLUGIN_LAUNCHER_BOUNDS)[number];
 
 /**
@@ -654,22 +611,14 @@ export const PLUGIN_LAUNCHER_RENDER_ENVIRONMENTS = [
   "external",
   "iframe",
 ] as const;
-export type PluginLauncherRenderEnvironment =
-  (typeof PLUGIN_LAUNCHER_RENDER_ENVIRONMENTS)[number];
+export type PluginLauncherRenderEnvironment = (typeof PLUGIN_LAUNCHER_RENDER_ENVIRONMENTS)[number];
 
 /**
  * Entity types that a `detailTab` UI slot can attach to.
  *
  * @see PLUGIN_SPEC.md §19.3 — Detail Tabs
  */
-export const PLUGIN_UI_SLOT_ENTITY_TYPES = [
-  "project",
-  "issue",
-  "agent",
-  "goal",
-  "run",
-  "comment",
-] as const;
+export const PLUGIN_UI_SLOT_ENTITY_TYPES = ["project", "issue", "agent", "goal", "run", "comment"] as const;
 export type PluginUiSlotEntityType = (typeof PLUGIN_UI_SLOT_ENTITY_TYPES)[number];
 
 /**
@@ -691,38 +640,19 @@ export const PLUGIN_STATE_SCOPE_KINDS = [
 export type PluginStateScopeKind = (typeof PLUGIN_STATE_SCOPE_KINDS)[number];
 
 /** Statuses for a plugin's scheduled job definition. */
-export const PLUGIN_JOB_STATUSES = [
-  "active",
-  "paused",
-  "failed",
-] as const;
+export const PLUGIN_JOB_STATUSES = ["active", "paused", "failed"] as const;
 export type PluginJobStatus = (typeof PLUGIN_JOB_STATUSES)[number];
 
 /** Statuses for individual job run executions. */
-export const PLUGIN_JOB_RUN_STATUSES = [
-  "pending",
-  "queued",
-  "running",
-  "succeeded",
-  "failed",
-  "cancelled",
-] as const;
+export const PLUGIN_JOB_RUN_STATUSES = ["pending", "queued", "running", "succeeded", "failed", "cancelled"] as const;
 export type PluginJobRunStatus = (typeof PLUGIN_JOB_RUN_STATUSES)[number];
 
 /** What triggered a particular job run. */
-export const PLUGIN_JOB_RUN_TRIGGERS = [
-  "schedule",
-  "manual",
-  "retry",
-] as const;
+export const PLUGIN_JOB_RUN_TRIGGERS = ["schedule", "manual", "retry"] as const;
 export type PluginJobRunTrigger = (typeof PLUGIN_JOB_RUN_TRIGGERS)[number];
 
 /** Statuses for inbound webhook deliveries. */
-export const PLUGIN_WEBHOOK_DELIVERY_STATUSES = [
-  "pending",
-  "success",
-  "failed",
-] as const;
+export const PLUGIN_WEBHOOK_DELIVERY_STATUSES = ["pending", "success", "failed"] as const;
 export type PluginWebhookDeliveryStatus = (typeof PLUGIN_WEBHOOK_DELIVERY_STATUSES)[number];
 
 /**
@@ -782,12 +712,7 @@ export const EMPLOYMENT_TYPE_LABELS: Record<EmploymentType, string> = {
   contractor: "Contractor",
 };
 
-export const CONTRACT_END_CONDITIONS = [
-  "date",
-  "project_complete",
-  "budget_exhausted",
-  "manual",
-] as const;
+export const CONTRACT_END_CONDITIONS = ["date", "project_complete", "budget_exhausted", "manual"] as const;
 export type ContractEndCondition = (typeof CONTRACT_END_CONDITIONS)[number];
 
 export const TERMINATION_REASONS = [
@@ -917,14 +842,7 @@ export type RiskLevel = (typeof RISK_LEVELS)[number];
 
 // ── Well-Known Issue Labels ────────────────────────────────────────────────
 
-export const WELL_KNOWN_LABELS = [
-  "tech_debt",
-  "bug",
-  "feature",
-  "security",
-  "performance",
-  "documentation",
-] as const;
+export const WELL_KNOWN_LABELS = ["tech_debt", "bug", "feature", "security", "performance", "documentation"] as const;
 export type WellKnownLabel = (typeof WELL_KNOWN_LABELS)[number];
 
 // ── Cost Circuit Breaker ───────────────────────────────────────────────────
@@ -939,11 +857,11 @@ export const COST_CIRCUIT_BREAKER_MULTIPLIER = 3;
 // should never be cut short by output caps.
 
 export const DEFAULT_OUTPUT_TOKEN_LIMITS = {
-  heartbeat_status: 1024,    // Timer wake, just checking in
-  simple_response: 4096,     // Replying to a comment
-  code_generation: 16384,    // Writing code, creating files
-  analysis_report: 32768,    // Reports, research, documents (10+ pages OK)
-  uncapped: 65536,           // No classification match - generous default
+  heartbeat_status: 1024, // Timer wake, just checking in
+  simple_response: 4096, // Replying to a comment
+  code_generation: 16384, // Writing code, creating files
+  analysis_report: 32768, // Reports, research, documents (10+ pages OK)
+  uncapped: 65536, // No classification match - generous default
 } as const;
 
 export type OutputTokenCategory = keyof typeof DEFAULT_OUTPUT_TOKEN_LIMITS;
@@ -993,9 +911,9 @@ export const AGENT_LIFECYCLE_LABELS: Record<AgentLifecycleStage, string> = {
 // -1 means unlimited / custom budget applies.
 
 export const BUDGET_GATES = {
-  sandbox: 1000,    // $10/day in cents
-  pilot: 10000,     // $100/day in cents
-  production: -1,   // custom/unlimited
+  sandbox: 1000, // $10/day in cents
+  pilot: 10000, // $100/day in cents
+  production: -1, // custom/unlimited
 } as const;
 
 export type BudgetGateStage = keyof typeof BUDGET_GATES;
@@ -1018,22 +936,16 @@ export const CRITICAL_TASK_LABELS = [
 ] as const;
 
 /** Issue labels that trigger important importance (cascade mode). */
-export const IMPORTANT_TASK_LABELS = [
-  "report",
-  "analysis",
-  "review",
-  "proposal",
-  "budget",
-] as const;
+export const IMPORTANT_TASK_LABELS = ["report", "analysis", "review", "proposal", "budget"] as const;
 
 // ── Deadline Urgency ──────────────────────────────────────────────────────────
 // Minutes thresholds for classifying how urgent an upcoming deadline is.
 
 export const DEADLINE_URGENCY = {
   overdue: 0,
-  urgent: 24 * 60,      // 24 hours in minutes
-  soon: 72 * 60,        // 3 days in minutes
-  upcoming: 168 * 60,   // 1 week in minutes
+  urgent: 24 * 60, // 24 hours in minutes
+  soon: 72 * 60, // 3 days in minutes
+  upcoming: 168 * 60, // 1 week in minutes
 } as const;
 
 export type DeadlineUrgency = keyof typeof DEADLINE_URGENCY;
@@ -1054,12 +966,19 @@ export const DELIVERABLE_DOCUMENT_TYPES = [
 
 export type DeliverableDocumentType = (typeof DELIVERABLE_DOCUMENT_TYPES)[number];
 
-export const DELIVERABLE_STATUSES = ["draft", "review", "approved", "delivered", "revision_requested", "rejected"] as const;
+export const DELIVERABLE_STATUSES = [
+  "draft",
+  "review",
+  "approved",
+  "delivered",
+  "revision_requested",
+  "rejected",
+] as const;
 export type DeliverableStatus = (typeof DELIVERABLE_STATUSES)[number];
 
 /** Western fallback models for council/cascade strategies. */
 export const WESTERN_COUNCIL_MODELS = {
-  heavy: "devstral-2:cloud",        // Mistral 123B - best Western model
-  medium: "nemotron-3-super:cloud",  // NVIDIA 120B MoE
-  light: "gemma4:31b-cloud",         // Google 31B
+  heavy: "devstral-2:cloud", // Mistral 123B - best Western model
+  medium: "nemotron-3-super:cloud", // NVIDIA 120B MoE
+  light: "gemma4:31b-cloud", // Google 31B
 } as const;

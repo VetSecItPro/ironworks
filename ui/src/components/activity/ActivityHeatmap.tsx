@@ -1,6 +1,6 @@
+import type { ActivityEvent } from "@ironworksai/shared";
 import { Calendar } from "lucide-react";
 import { cn } from "../../lib/utils";
-import type { ActivityEvent } from "@ironworksai/shared";
 
 function cellColor(count: number, maxCount: number): string {
   if (count === 0) return "bg-muted/40";

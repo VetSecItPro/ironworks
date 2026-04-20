@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { Edit2 } from "lucide-react";
-import { knowledgeApi, type KnowledgePage } from "../../api/knowledge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { type KnowledgePage, knowledgeApi } from "../../api/knowledge";
 import { MarkdownBody } from "../MarkdownBody";
 import { AutoBadge, DocTypeBadge } from "./LibraryBadges";
 
@@ -23,9 +23,7 @@ export function KnowledgePageViewer({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-        Loading document...
-      </div>
+      <div className="flex items-center justify-center h-full text-sm text-muted-foreground">Loading document...</div>
     );
   }
 
@@ -58,12 +56,7 @@ export function KnowledgePageViewer({
             })}
           </span>
           {onEdit && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() => onEdit(data)}
-            >
+            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => onEdit(data)}>
               <Edit2 className="h-3 w-3 mr-1" />
               Edit
             </Button>

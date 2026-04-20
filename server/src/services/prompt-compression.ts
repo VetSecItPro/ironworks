@@ -180,15 +180,14 @@ export function compressPrompt(
 
   // 5. Structural whitespace cleanup
   out = out.replace(TRAILING_WHITESPACE_RE, ""); // trailing whitespace per line
-  out = out.replace(INLINE_SPACES_RE, " ");       // extra inline spaces
+  out = out.replace(INLINE_SPACES_RE, " "); // extra inline spaces
   out = out.replace(EXCESS_BLANK_LINES_RE, "\n\n"); // collapse 3+ blank lines to 1 blank line
 
   // 6. Trim leading/trailing whitespace of the entire string
   out = out.trim();
 
   const compressedBytes = Buffer.byteLength(out, "utf8");
-  const reductionRatio =
-    originalBytes > 0 ? (originalBytes - compressedBytes) / originalBytes : 0;
+  const reductionRatio = originalBytes > 0 ? (originalBytes - compressedBytes) / originalBytes : 0;
 
   return {
     compressed: out,

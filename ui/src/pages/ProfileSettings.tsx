@@ -1,16 +1,16 @@
+import { AlertTriangle, Bell, Check, Globe, Keyboard, Layers, Lock, Palette, User } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link } from "@/lib/router";
+import { Button } from "@/components/ui/button";
 import { useBreadcrumbs } from "@/context/BreadcrumbContext";
 import { useToast } from "@/context/ToastContext";
-import { Button } from "@/components/ui/button";
-import { User, Lock, Globe, Check, AlertTriangle, Bell, Layers, Palette, Keyboard } from "lucide-react";
+import { Link } from "@/lib/router";
 import {
   AccentColorPicker,
   CompactModeToggle,
-  WidgetLayoutEditor,
   loadWidgetLayout,
   saveWidgetLayout,
   type WidgetConfig,
+  WidgetLayoutEditor,
 } from "../components/PersonalPreferences";
 import { PowerModeToggle } from "../components/ProgressiveDisclosure";
 import { SampleDataToggle } from "../components/SampleDataToggle";
@@ -85,10 +85,7 @@ export function ProfileSettings() {
   const [passwordSaved, setPasswordSaved] = useState(false);
 
   useEffect(() => {
-    setBreadcrumbs([
-      { label: "Settings", href: "/company/settings" },
-      { label: "Profile" },
-    ]);
+    setBreadcrumbs([{ label: "Settings", href: "/company/settings" }, { label: "Profile" }]);
   }, [setBreadcrumbs]);
 
   useEffect(() => {
@@ -131,24 +128,17 @@ export function ProfileSettings() {
 
   const profileDirty = (() => {
     const saved = loadProfile();
-    return (
-      displayName !== saved.displayName || timezone !== saved.timezone
-    );
+    return displayName !== saved.displayName || timezone !== saved.timezone;
   })();
 
-  const nameError =
-    displayName.length > 0 && displayName.trim().length === 0
-      ? "Name cannot be blank"
-      : null;
+  const nameError = displayName.length > 0 && displayName.trim().length === 0 ? "Name cannot be blank" : null;
 
   return (
     <div className="p-6 max-w-2xl space-y-8">
       {/* Header */}
       <div className="flex items-center gap-2">
         <User className="h-5 w-5 text-muted-foreground" />
-        <h1 className="text-2xl font-bold tracking-tight">
-          Account & Profile
-        </h1>
+        <h1 className="text-2xl font-bold tracking-tight">Account & Profile</h1>
       </div>
 
       {/* Quick links */}
@@ -174,17 +164,13 @@ export function ProfileSettings() {
             <label className="text-sm font-medium">Display name</label>
             <input
               className={`w-full rounded-md border bg-transparent px-2.5 py-1.5 text-sm outline-none ${
-                nameError
-                  ? "border-destructive focus:border-destructive"
-                  : "border-border focus:border-primary"
+                nameError ? "border-destructive focus:border-destructive" : "border-border focus:border-primary"
               }`}
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder="Your name"
             />
-            {nameError && (
-              <p className="text-xs text-destructive">{nameError}</p>
-            )}
+            {nameError && <p className="text-xs text-destructive">{nameError}</p>}
           </div>
 
           {/* Email (read-only) */}
@@ -196,9 +182,7 @@ export function ProfileSettings() {
               readOnly
               tabIndex={-1}
             />
-            <p className="text-xs text-muted-foreground">
-              Email cannot be changed here. Contact your administrator.
-            </p>
+            <p className="text-xs text-muted-foreground">Email cannot be changed here. Contact your administrator.</p>
           </div>
 
           {/* Timezone */}
@@ -222,11 +206,7 @@ export function ProfileSettings() {
         </div>
 
         <div className="flex items-center gap-2 pt-1">
-          <Button
-            size="sm"
-            onClick={handleSaveProfile}
-            disabled={!displayName.trim() || !!nameError || !profileDirty}
-          >
+          <Button size="sm" onClick={handleSaveProfile} disabled={!displayName.trim() || !!nameError || !profileDirty}>
             Save Profile
           </Button>
           {profileSaved && (
@@ -275,10 +255,7 @@ export function ProfileSettings() {
             {newPassword && validatePassword(newPassword).length > 0 && (
               <div className="space-y-0.5 mt-1">
                 {validatePassword(newPassword).map((issue) => (
-                  <p
-                    key={issue}
-                    className="text-[11px] text-amber-600 dark:text-amber-400"
-                  >
+                  <p key={issue} className="text-[11px] text-amber-600 dark:text-amber-400">
                     - {issue}
                   </p>
                 ))}
@@ -301,9 +278,7 @@ export function ProfileSettings() {
               autoComplete="new-password"
             />
             {confirmPassword && confirmPassword !== newPassword && (
-              <p className="text-xs text-destructive">
-                Passwords do not match
-              </p>
+              <p className="text-xs text-destructive">Passwords do not match</p>
             )}
           </div>
         </div>
@@ -368,9 +343,7 @@ export function ProfileSettings() {
           <Keyboard className="h-4 w-4 text-muted-foreground" />
           <div className="flex-1">
             <div className="text-sm font-medium">Keyboard Shortcuts</div>
-            <div className="text-xs text-muted-foreground">
-              View and customize all keyboard shortcuts
-            </div>
+            <div className="text-xs text-muted-foreground">View and customize all keyboard shortcuts</div>
           </div>
           <Button variant="outline" size="sm" asChild>
             <Link to="/keyboard-shortcuts">View Shortcuts</Link>

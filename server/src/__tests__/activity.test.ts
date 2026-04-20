@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -142,42 +142,34 @@ describe("activity routes", () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
       await request(app).get(`/api/companies/${COMPANY_ID}/activity?agentId=${AGENT_ID}`);
 
-      expect(mockActivityService.list).toHaveBeenCalledWith(
-        expect.objectContaining({ agentId: AGENT_ID }),
-      );
+      expect(mockActivityService.list).toHaveBeenCalledWith(expect.objectContaining({ agentId: AGENT_ID }));
     });
 
     it("passes entityType filter to service", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
       await request(app).get(`/api/companies/${COMPANY_ID}/activity?entityType=issue`);
 
-      expect(mockActivityService.list).toHaveBeenCalledWith(
-        expect.objectContaining({ entityType: "issue" }),
-      );
+      expect(mockActivityService.list).toHaveBeenCalledWith(expect.objectContaining({ entityType: "issue" }));
     });
 
     it("clamps limit to valid range", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
       await request(app).get(`/api/companies/${COMPANY_ID}/activity?limit=9999`);
 
-      expect(mockActivityService.list).toHaveBeenCalledWith(
-        expect.objectContaining({ limit: 500 }),
-      );
+      expect(mockActivityService.list).toHaveBeenCalledWith(expect.objectContaining({ limit: 500 }));
     });
   });
 
   describe("POST /api/companies/:companyId/activity", () => {
     it("creates activity event for board user", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post(`/api/companies/${COMPANY_ID}/activity`)
-        .send({
-          actorType: "system",
-          actorId: "test",
-          action: "test.action",
-          entityType: "test",
-          entityId: randomUUID(),
-        });
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/activity`).send({
+        actorType: "system",
+        actorId: "test",
+        action: "test.action",
+        entityType: "test",
+        entityId: randomUUID(),
+      });
 
       expect(res.status).toBe(201);
       expect(mockActivityService.create).toHaveBeenCalled();

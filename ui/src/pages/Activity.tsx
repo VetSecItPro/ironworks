@@ -1,32 +1,25 @@
-import { useEffect, useMemo, useState } from "react";
+import type { ActivityEvent, Agent } from "@ironworksai/shared";
 import { useQuery } from "@tanstack/react-query";
-import { usePageTitle } from "../hooks/usePageTitle";
+import { Download, History } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { activityApi } from "../api/activity";
 import { agentsApi } from "../api/agents";
+import { goalsApi } from "../api/goals";
 import { issuesApi } from "../api/issues";
 import { projectsApi } from "../api/projects";
-import { goalsApi } from "../api/goals";
-import { useCompany } from "../context/CompanyContext";
-import { useBreadcrumbs } from "../context/BreadcrumbContext";
-import { queryKeys } from "../lib/queryKeys";
-import { EmptyState } from "../components/EmptyState";
-import { PageSkeleton } from "../components/PageSkeleton";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Download, History } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { exportToCSV } from "../lib/exportCSV";
-import type { Agent, ActivityEvent } from "@ironworksai/shared";
-import type { AggregatedGroup } from "../types/dashboard";
-
 import { ActivityHeatmap } from "../components/activity/ActivityHeatmap";
 import { ActivityTimeline } from "../components/activity/ActivityTimeline";
-import { getTimeGroup, aggregateEvents, isAggregated } from "../components/activity/activityHelpers";
+import { aggregateEvents, getTimeGroup, isAggregated } from "../components/activity/activityHelpers";
+import { EmptyState } from "../components/EmptyState";
+import { PageSkeleton } from "../components/PageSkeleton";
+import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { useCompany } from "../context/CompanyContext";
+import { usePageTitle } from "../hooks/usePageTitle";
+import { exportToCSV } from "../lib/exportCSV";
+import { queryKeys } from "../lib/queryKeys";
+import type { AggregatedGroup } from "../types/dashboard";
 
 export function Activity() {
   usePageTitle("Activity");
@@ -113,9 +106,7 @@ export function Activity() {
     const aggregated = aggregateEvents(filtered, agentMap);
     const groups = new Map<string, (ActivityEvent | AggregatedGroup)[]>();
     for (const item of aggregated) {
-      const date = isAggregated(item)
-        ? new Date(item.latestEvent.createdAt)
-        : new Date(item.createdAt);
+      const date = isAggregated(item) ? new Date(item.latestEvent.createdAt) : new Date(item.createdAt);
       const group = getTimeGroup(date);
       const existing = groups.get(group) ?? [];
       existing.push(item);
@@ -124,9 +115,7 @@ export function Activity() {
     return groups;
   }, [filtered, agentMap]);
 
-  const entityTypes = data
-    ? [...new Set(data.map((e) => e.entityType))].sort()
-    : [];
+  const entityTypes = data ? [...new Set(data.map((e) => e.entityType))].sort() : [];
 
   const totalEvents = filtered?.length ?? 0;
 
@@ -143,9 +132,7 @@ export function Activity() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Activity</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Audit trail of every action across your company.
-          </p>
+          <p className="text-sm text-muted-foreground mt-0.5">Audit trail of every action across your company.</p>
           {totalEvents > 0 && (
             <p className="text-xs text-muted-foreground mt-0.5">
               {totalEvents} event{totalEvents !== 1 ? "s" : ""}
@@ -203,7 +190,9 @@ export function Activity() {
               <SelectContent>
                 <SelectItem value="all">All agents</SelectItem>
                 {agents.map((a) => (
-                  <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                  <SelectItem key={a.id} value={a.id}>
+                    {a.name}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -229,9 +218,7 @@ export function Activity() {
 
       {error && <p className="text-sm text-destructive">{error.message}</p>}
 
-      {totalEvents === 0 && (
-        <EmptyState icon={History} message="No activity yet." />
-      )}
+      {totalEvents === 0 && <EmptyState icon={History} message="No activity yet." />}
 
       {groupedItems && groupedItems.size > 0 && (
         <ActivityTimeline

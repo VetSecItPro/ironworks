@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -218,9 +218,7 @@ describe("company routes", () => {
   describe("POST /api/companies", () => {
     it("creates a company for instance admin", async () => {
       const app = await createApp(instanceAdmin(USER_ID));
-      const res = await request(app)
-        .post("/api/companies")
-        .send({ name: "Acme Corp" });
+      const res = await request(app).post("/api/companies").send({ name: "Acme Corp" });
 
       expect(res.status).toBe(201);
       expect(res.body).toMatchObject({ name: "Acme Corp" });
@@ -229,9 +227,7 @@ describe("company routes", () => {
 
     it("rejects non-admin board user with 403", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post("/api/companies")
-        .send({ name: "New Corp" });
+      const res = await request(app).post("/api/companies").send({ name: "New Corp" });
       expect(res.status).toBe(403);
     });
   });

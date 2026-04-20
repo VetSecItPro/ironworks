@@ -1,12 +1,6 @@
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const concurrencyPolicies = ["coalesce_if_active", "always_enqueue", "skip_if_active"];
 const catchUpPolicies = ["skip_missed", "enqueue_missed_with_cap"];
@@ -51,7 +45,11 @@ export function AdvancedDeliverySettings({
     <Collapsible open={open} onOpenChange={onOpenChange}>
       <CollapsibleTrigger className="flex w-full items-center justify-between text-left">
         <span className="text-sm font-medium">Advanced delivery settings</span>
-        {open ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+        {open ? (
+          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+        ) : (
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        )}
       </CollapsibleTrigger>
       <CollapsibleContent className="pt-3">
         <div className="grid gap-4 md:grid-cols-2">
@@ -63,7 +61,9 @@ export function AdvancedDeliverySettings({
               </SelectTrigger>
               <SelectContent>
                 {concurrencyPolicies.map((value) => (
-                  <SelectItem key={value} value={value}>{value.replaceAll("_", " ")}</SelectItem>
+                  <SelectItem key={value} value={value}>
+                    {value.replaceAll("_", " ")}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -77,7 +77,9 @@ export function AdvancedDeliverySettings({
               </SelectTrigger>
               <SelectContent>
                 {catchUpPolicies.map((value) => (
-                  <SelectItem key={value} value={value}>{value.replaceAll("_", " ")}</SelectItem>
+                  <SelectItem key={value} value={value}>
+                    {value.replaceAll("_", " ")}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -97,7 +99,9 @@ export function AdvancedDeliverySettings({
                 {allRoutines
                   .filter((r) => r.id !== currentRoutineId)
                   .map((r) => (
-                    <SelectItem key={r.id} value={r.id}>{r.title}</SelectItem>
+                    <SelectItem key={r.id} value={r.id}>
+                      {r.title}
+                    </SelectItem>
                   ))}
               </SelectContent>
             </Select>

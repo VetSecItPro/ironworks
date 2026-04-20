@@ -1,10 +1,10 @@
-import { Router } from "express";
-import { desc, eq, and } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { goalCheckIns, goals } from "@ironworksai/db";
-import { assertCompanyAccess, assertCanWrite, getActorInfo } from "./authz.js";
+import { and, desc, eq } from "drizzle-orm";
+import { Router } from "express";
 import { logActivity } from "../services/activity-log.js";
 import { computeGoalHealth } from "../services/goal-health.js";
+import { assertCanWrite, assertCompanyAccess, getActorInfo } from "./authz.js";
 
 export function goalCheckInRoutes(db: Db) {
   const router = Router();
@@ -58,10 +58,7 @@ export function goalCheckInRoutes(db: Db) {
 
     // Update goal confidence if provided
     if (confidence !== undefined) {
-      await db
-        .update(goals)
-        .set({ confidence, updatedAt: new Date() })
-        .where(eq(goals.id, goalId));
+      await db.update(goals).set({ confidence, updatedAt: new Date() }).where(eq(goals.id, goalId));
     }
 
     // Recompute health after check-in

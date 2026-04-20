@@ -1,10 +1,10 @@
 // @vitest-environment node
 
-import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it } from "vitest";
 import type { TranscriptEntry } from "../../adapters";
 import { ThemeProvider } from "../../context/ThemeContext";
-import { RunTranscriptView, normalizeTranscript } from "./RunTranscriptView";
+import { normalizeTranscript, RunTranscriptView } from "./RunTranscriptView";
 
 describe("RunTranscriptView", () => {
   it("keeps running command stdout inside the command fold instead of a standalone stdout block", () => {
@@ -63,7 +63,7 @@ describe("RunTranscriptView", () => {
       {
         kind: "stderr",
         ts: "2026-03-12T00:00:00.000Z",
-        text: "[ironworks] Skipping saved session resume for task \"PAP-485\" because wake reason is issue_assigned.",
+        text: '[ironworks] Skipping saved session resume for task "PAP-485" because wake reason is issue_assigned.',
       },
       {
         kind: "assistant",

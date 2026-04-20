@@ -1,6 +1,6 @@
 import { createPortal } from "react-dom";
-import { AgentIcon } from "../AgentIconPicker";
 import { cn } from "../../lib/utils";
+import { AgentIcon } from "../AgentIconPicker";
 import type { MentionOption } from "./types";
 
 interface MentionDropdownProps {
@@ -46,16 +46,11 @@ export function MentionDropdown({
               style={{ backgroundColor: option.projectColor ?? "#64748b" }}
             />
           ) : (
-            <AgentIcon
-              icon={option.agentIcon}
-              className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
-            />
+            <AgentIcon icon={option.agentIcon} className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           )}
           <span>{option.name}</span>
           {option.kind === "project" && option.projectId && (
-            <span className="ml-auto text-[10px] uppercase tracking-wide text-muted-foreground">
-              Project
-            </span>
+            <span className="ml-auto text-[10px] uppercase tracking-wide text-muted-foreground">Project</span>
           )}
         </button>
       ))}
