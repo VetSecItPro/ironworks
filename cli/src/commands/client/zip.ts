@@ -14,7 +14,14 @@ export const binaryContentTypeByExtension: Record<string, string> = {
 };
 
 function normalizeArchivePath(pathValue: string) {
-  return pathValue.replace(/\\/g, "/").split("/").filter(Boolean).join("/");
+  // GHSA-6cpc-mj5c-m9rq — strip path-traversal segments so malicious archive entries
+  // cannot escape the extraction root via `..` or `.` segments. `filter(Boolean)` drops
+  // empty segments; the explicit parent/dot filter blocks traversal.
+  return pathValue
+    .replace(/\\/g, "/")
+    .split("/")
+    .filter((seg) => Boolean(seg) && seg !== ".." && seg !== ".")
+    .join("/");
 }
 
 function readUint16(source: Uint8Array, offset: number) {

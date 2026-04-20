@@ -187,7 +187,14 @@ function resolveImportInclude(input: string | undefined): CompanyPortabilityIncl
 }
 
 function normalizePortablePath(filePath: string): string {
-  return filePath.replace(/\\/g, "/");
+  // GHSA-6cpc-mj5c-m9rq — strip path-traversal segments (`..`, `.`) and absolute-path
+  // prefixes from portability archive entries. A malicious server response returning
+  // `../../.bashrc` would otherwise escape the export root when resolved via path.join().
+  return filePath
+    .replace(/\\/g, "/")
+    .split("/")
+    .filter((seg) => seg !== ".." && seg !== "." && seg !== "")
+    .join("/");
 }
 
 function shouldIncludePortableFile(filePath: string): boolean {
