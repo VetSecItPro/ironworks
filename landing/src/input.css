@@ -3,9 +3,9 @@
 @source "../**/*.html";
 
 @theme {
-  --font-family-sans: 'Geist', system-ui, -apple-system, sans-serif;
-  --font-family-mono: 'Geist Mono', 'JetBrains Mono', monospace;
-  --font-family-display: 'Cabinet Grotesk', 'Geist', system-ui, sans-serif;
+  --font-family-sans: "Geist", system-ui, -apple-system, sans-serif;
+  --font-family-mono: "Geist Mono", "JetBrains Mono", monospace;
+  --font-family-display: "Cabinet Grotesk", "Geist", system-ui, sans-serif;
 
   --color-surface-0: #0a0a0a;
   --color-surface-1: #141414;

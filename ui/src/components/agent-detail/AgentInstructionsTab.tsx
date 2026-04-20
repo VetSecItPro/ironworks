@@ -665,8 +665,8 @@ export function PromptsTab({
         {/* Draggable separator. resize splitter; aria-valuenow not applicable for a non-slider resize handle */}
         {!isMobile && (
           // biome-ignore lint/a11y/useSemanticElements: resize splitter uses role="separator" on div; <hr> doesn't support onMouseDown
-          // biome-ignore lint/a11y/useAriaPropsForRole: aria-valuenow is required by spec but not meaningful for a resize splitter handle
           <div
+            // biome-ignore lint/a11y/useAriaPropsForRole: aria-valuenow is required by spec but not meaningful for a resize splitter handle
             role="separator"
             aria-orientation="vertical"
             aria-label="Resize panels"

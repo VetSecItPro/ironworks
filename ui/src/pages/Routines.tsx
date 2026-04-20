@@ -212,7 +212,9 @@ export function Routines() {
         onSubmit={() => createRoutine.mutate()}
         assigneeOptions={assigneeOptions}
         projectOptions={projectOptions}
+        // biome-ignore lint/suspicious/noExplicitAny: full Agent/Project objects structurally satisfy the narrow {id,name,icon?} Map-value shape the child expects
         agentById={agentById as any}
+        // biome-ignore lint/suspicious/noExplicitAny: full Agent/Project objects structurally satisfy the narrow {id,name,icon?} Map-value shape the child expects
         projectById={projectById as any}
         onTrackAssignee={trackRecentAssignee}
         descriptionEditorRef={descriptionEditorRef}
@@ -242,7 +244,9 @@ export function Routines() {
 
       {routineViewMode === "calendar" && (routines ?? []).length > 0 && (
         <ScheduleCalendarView
+          // biome-ignore lint/suspicious/noExplicitAny: routines server payload has a wider shape than the view's RoutineSummary; widening subset passes structurally
           routines={(routines ?? []) as any}
+          // biome-ignore lint/suspicious/noExplicitAny: full Agent objects structurally satisfy the narrow {id,name,icon?} Map-value shape the child expects
           agentById={agentById as any}
           onRoutineClick={(id) => navigate(`/routines/${id}`)}
         />
@@ -259,11 +263,14 @@ export function Routines() {
         ) : (
           <div className={cn("", routineViewMode === "calendar" && "hidden")}>
             <RoutineListTable
+              // biome-ignore lint/suspicious/noExplicitAny: routines server payload has a wider shape than the table's RoutineSummary; widening subset passes structurally
               routines={(routines ?? []) as any}
               routineSearch={routineSearch}
               statusFilter={statusFilter}
               agentFilter={agentFilter}
+              // biome-ignore lint/suspicious/noExplicitAny: full Agent/Project objects structurally satisfy the narrow {id,name,icon?} Map-value shape the child expects
               agentById={agentById as any}
+              // biome-ignore lint/suspicious/noExplicitAny: full Agent/Project objects structurally satisfy the narrow {id,name,icon?} Map-value shape the child expects
               projectById={projectById as any}
               runningRoutineId={runningRoutineId}
               statusMutationRoutineId={statusMutationRoutineId}

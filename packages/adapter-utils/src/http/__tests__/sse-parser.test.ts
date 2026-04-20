@@ -1,4 +1,3 @@
-// biome-ignore lint/suspicious/noExplicitAny: accessing discriminated union NormalizedStreamEvent member without narrowing in test assertion
 import { describe, expect, it } from "vitest";
 import { type NormalizedStreamEvent, parseSseStream, type SseEvent } from "../sse-parser.js";
 

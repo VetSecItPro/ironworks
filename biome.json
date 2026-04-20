@@ -14,7 +14,8 @@
       "!**/.next",
       "!**/coverage",
       "!pnpm-lock.yaml",
-      "!landing/**/*.html"
+      "!landing/**/*.html",
+      "!server/src/email-templates/**/*.html"
     ]
   },
   "formatter": {
@@ -51,6 +52,11 @@
     "formatter": {
       "quoteStyle": "double",
       "semicolons": "always"
+    }
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
     }
   },
   "assist": {

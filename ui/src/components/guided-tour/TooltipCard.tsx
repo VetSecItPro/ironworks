@@ -98,8 +98,8 @@ export function TooltipCard({ step, stepIndex, totalSteps, targetRect, onNext, o
       </div>
       <div className="flex items-center justify-center gap-1 mt-3">
         {Array.from({ length: totalSteps }).map((_, i) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: tour step indicators are purely positional; position in fixed step sequence is the identity
           <div
+            // biome-ignore lint/suspicious/noArrayIndexKey: tour step indicators are purely positional; position in fixed step sequence is the identity
             key={i}
             className={cn(
               "h-1.5 rounded-full transition-all duration-200",

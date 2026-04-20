@@ -67,7 +67,7 @@ export interface Transport {
 }
 
 /** Internal options accepted by createTransport — reserved for future pool tuning. */
-export type TransportOptions = {};
+export type TransportOptions = Record<string, never>;
 
 // ---------------------------------------------------------------------------
 // Internal helpers

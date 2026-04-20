@@ -1,4 +1,4 @@
-import type { CostByBiller, CostByProviderModel } from "@ironworksai/shared";
+import type { BillingType, CostByBiller, CostByProviderModel } from "@ironworksai/shared";
 import { memo, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { billingTypeDisplayName, formatCents, formatTokens, providerDisplayName } from "@/lib/utils";
@@ -98,7 +98,7 @@ export const BillerSpendCard = memo(function BillerSpendCard({
               <div className="space-y-1.5">
                 {billingTypeBreakdown.map(([billingType, costCents]) => (
                   <div key={billingType} className="flex items-center justify-between gap-2 text-xs">
-                    <span className="text-muted-foreground">{billingTypeDisplayName(billingType as any)}</span>
+                    <span className="text-muted-foreground">{billingTypeDisplayName(billingType as BillingType)}</span>
                     <span className="font-medium tabular-nums">{formatCents(costCents)}</span>
                   </div>
                 ))}

@@ -218,8 +218,8 @@ export function TranscriptCommandGroup({
       >
         <div className={cn("flex shrink-0 items-center", subtitle && "mt-0.5")}>
           {block.items.slice(0, Math.min(block.items.length, 3)).map((_, index) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: tool-call avatar stack shows up to 3 anonymous icons; position is the identity
             <span
+              // biome-ignore lint/suspicious/noArrayIndexKey: tool-call avatar stack shows up to 3 anonymous icons; position is the identity
               key={index}
               className={cn(
                 "inline-flex h-6 w-6 items-center justify-center rounded-full border shadow-sm",

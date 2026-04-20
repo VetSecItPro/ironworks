@@ -40,8 +40,8 @@ export function ActivityHeatmap({ events }: { events: ActivityEvent[] }) {
           // biome-ignore lint/suspicious/noArrayIndexKey: grid cells are position-indexed; week/day position is the identity
           <div key={wi} className="flex flex-col gap-[3px]">
             {week.map((count, di) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: grid cells are position-indexed; week/day position is the identity
               <div
+                // biome-ignore lint/suspicious/noArrayIndexKey: grid cells are position-indexed; week/day position is the identity
                 key={di}
                 className={cn("aspect-square w-full min-w-[8px] rounded-[3px]", cellColor(count, maxCount))}
                 title={`${count} events`}

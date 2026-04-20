@@ -54,8 +54,8 @@ export function SimpleDiff({ oldText, newText }: { oldText: string; newText: str
   return (
     <div className="font-mono text-[11px] leading-5 overflow-x-auto max-h-64 overflow-y-auto rounded border border-border">
       {diff.map((line, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: diff lines have no identity beyond their position; same line text can appear multiple times on both sides
         <div
+          // biome-ignore lint/suspicious/noArrayIndexKey: diff lines have no identity beyond their position; same line text can appear multiple times on both sides
           key={i}
           className={cn(
             "px-3 py-0.5 whitespace-pre-wrap",

@@ -281,8 +281,8 @@ export function Layout() {
                 {isInstanceSettingsRoute ? <InstanceSidebar /> : <Sidebar />}
                 {/* Resize drag zone - right edge of sidebar. resize splitter; aria-valuenow not applicable for a non-slider resize handle */}
                 {/* biome-ignore lint/a11y/useSemanticElements: resize splitter uses role="separator" on a div; <hr> doesn't support onMouseDown */}
-                {/* biome-ignore lint/a11y/useAriaPropsForRole: aria-valuenow is required by spec but not meaningful for a resize splitter handle */}
                 <div
+                  // biome-ignore lint/a11y/useAriaPropsForRole: aria-valuenow is required by spec but not meaningful for a resize splitter handle
                   role="separator"
                   aria-orientation="vertical"
                   aria-label="Resize sidebar"

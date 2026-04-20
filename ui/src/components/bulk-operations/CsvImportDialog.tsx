@@ -264,8 +264,8 @@ export function CsvImportDialog({ open, onClose, onImport, existingTitles = [] }
                       const isDupe = duplicateRows.has(i);
                       const isExisting = existingDupes.has(i);
                       return (
-                        // biome-ignore lint/suspicious/noArrayIndexKey: CSV rows have no identity; row position in the parsed file is the only meaningful key
                         <tr
+                          // biome-ignore lint/suspicious/noArrayIndexKey: CSV rows have no identity; row position in the parsed file is the only meaningful key
                           key={i}
                           className={cn("hover:bg-accent/30", isDupe && "bg-amber-500/5", isExisting && "bg-red-500/5")}
                         >

@@ -55,7 +55,6 @@ function stripAnsi(text: string): string {
 function cleanTerminalText(text: string): string {
   // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional NUL byte removal from terminal output
   const step1 = stripAnsi(stripBackspaces(text)).replace(/\u0000/g, "");
-  // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional CR normalization in terminal output
   return step1.replace(/\r/g, "\n");
 }
 

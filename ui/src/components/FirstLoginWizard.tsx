@@ -190,8 +190,8 @@ export function FirstLoginWizard({ open, onComplete }: FirstLoginWizardProps) {
         {/* Progress bar */}
         <div className="flex items-center gap-1 mb-6">
           {steps.map((_, i) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: wizard step indicators are purely positional; position in the fixed steps array is the identity
             <div
+              // biome-ignore lint/suspicious/noArrayIndexKey: wizard step indicators are purely positional; position in the fixed steps array is the identity
               key={i}
               className={cn(
                 "h-1 flex-1 rounded-full transition-colors duration-300",

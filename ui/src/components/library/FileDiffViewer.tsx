@@ -69,8 +69,8 @@ export function FileDiffViewer({
               Previous
             </div>
             {oldLines.map((line, i) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: diff lines have no identity beyond position; same text can appear on multiple lines
               <div
+                // biome-ignore lint/suspicious/noArrayIndexKey: diff lines have no identity beyond position; same text can appear on multiple lines
                 key={i}
                 className={cn(
                   "px-3 py-0.5 whitespace-pre-wrap",
@@ -87,8 +87,8 @@ export function FileDiffViewer({
               Current
             </div>
             {newLines.map((line, i) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: diff lines have no identity beyond position; same text can appear on multiple lines
               <div
+                // biome-ignore lint/suspicious/noArrayIndexKey: diff lines have no identity beyond position; same text can appear on multiple lines
                 key={i}
                 className={cn(
                   "px-3 py-0.5 whitespace-pre-wrap",
