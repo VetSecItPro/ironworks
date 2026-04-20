@@ -135,6 +135,9 @@ importers:
       '@ironworksai/adapter-utils':
         specifier: workspace:*
         version: link:../../adapter-utils
+      picocolors:
+        specifier: ^1.1.1
+        version: 1.1.1
     devDependencies:
       '@types/node':
         specifier: ^24.12.2
@@ -215,6 +218,9 @@ importers:
       '@ironworksai/adapter-utils':
         specifier: workspace:*
         version: link:../../adapter-utils
+      picocolors:
+        specifier: ^1.1.1
+        version: 1.1.1
     devDependencies:
       '@types/node':
         specifier: ^24.12.2
@@ -269,6 +275,9 @@ importers:
       '@ironworksai/adapter-utils':
         specifier: workspace:*
         version: link:../../adapter-utils
+      picocolors:
+        specifier: ^1.1.1
+        version: 1.1.1
     devDependencies:
       '@types/node':
         specifier: ^24.12.2
@@ -301,6 +310,9 @@ importers:
       '@ironworksai/adapter-utils':
         specifier: workspace:*
         version: link:../../adapter-utils
+      picocolors:
+        specifier: ^1.1.1
+        version: 1.1.1
     devDependencies:
       '@types/node':
         specifier: ^24.12.2
@@ -532,6 +544,9 @@ importers:
       '@aws-sdk/client-s3':
         specifier: ^3.1032.0
         version: 3.1032.0
+      '@ironworksai/adapter-anthropic-api':
+        specifier: workspace:*
+        version: link:../packages/adapters/anthropic-api
       '@ironworksai/adapter-claude-local':
         specifier: workspace:*
         version: link:../packages/adapters/claude-local
@@ -544,15 +559,24 @@ importers:
       '@ironworksai/adapter-gemini-local':
         specifier: workspace:*
         version: link:../packages/adapters/gemini-local
+      '@ironworksai/adapter-openai-api':
+        specifier: workspace:*
+        version: link:../packages/adapters/openai-api
       '@ironworksai/adapter-openclaw-gateway':
         specifier: workspace:*
         version: link:../packages/adapters/openclaw-gateway
       '@ironworksai/adapter-opencode-local':
         specifier: workspace:*
         version: link:../packages/adapters/opencode-local
+      '@ironworksai/adapter-openrouter-api':
+        specifier: workspace:*
+        version: link:../packages/adapters/openrouter-api
       '@ironworksai/adapter-pi-local':
         specifier: workspace:*
         version: link:../packages/adapters/pi-local
+      '@ironworksai/adapter-poe-api':
+        specifier: workspace:*
+        version: link:../packages/adapters/poe-api
       '@ironworksai/adapter-utils':
         specifier: workspace:*
         version: link:../packages/adapter-utils
