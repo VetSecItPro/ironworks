@@ -13,6 +13,7 @@ export interface ErrorContext {
 }
 
 function attachErrorContext(req: Request, res: Response, payload: ErrorContext["error"], rawError?: Error) {
+  // biome-ignore lint/suspicious/noExplicitAny: attaching custom props to Express Response not in its type definitions
   (res as any).__errorContext = {
     error: payload,
     method: req.method,
@@ -22,6 +23,7 @@ function attachErrorContext(req: Request, res: Response, payload: ErrorContext["
     reqQuery: req.query,
   } satisfies ErrorContext;
   if (rawError) {
+    // biome-ignore lint/suspicious/noExplicitAny: attaching custom props to Express Response not in its type definitions
     (res as any).err = rawError;
   }
 }

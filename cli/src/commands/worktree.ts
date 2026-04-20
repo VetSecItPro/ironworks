@@ -274,6 +274,7 @@ function buildS3ObjectKey(prefix: string, objectKey: string): string {
   return prefix ? `${prefix}/${objectKey}` : objectKey;
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: dynamic import via new Function returns unknown module shape; typed at call site
 const dynamicImport = new Function("specifier", "return import(specifier);") as (specifier: string) => Promise<any>;
 
 function createConfiguredStorageFromIronworksConfig(config: IronworksConfig): ConfiguredStorage {
@@ -294,6 +295,7 @@ function createConfiguredStorageFromIronworksConfig(config: IronworksConfig): Co
   }
 
   const prefix = normalizeS3Prefix(config.storage.s3.prefix);
+  // biome-ignore lint/suspicious/noExplicitAny: AWS SDK S3Client is dynamically imported; shape typed at call site
   let s3ClientPromise: Promise<any> | null = null;
   async function getS3Client() {
     if (!s3ClientPromise) {

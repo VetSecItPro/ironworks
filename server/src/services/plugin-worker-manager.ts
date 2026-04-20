@@ -401,6 +401,7 @@ export function createPluginWorkerHandle(pluginId: string, options: WorkerStartO
     if (!childProcess?.stdin?.writable) {
       throw new Error(`Worker process for plugin "${pluginId}" is not writable`);
     }
+    // biome-ignore lint/suspicious/noExplicitAny: serializeMessage expects a specific RPC shape; caller already ensures message is valid
     const serialized = serializeMessage(message as any);
     childProcess.stdin.write(serialized);
   }

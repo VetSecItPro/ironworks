@@ -498,6 +498,7 @@ export function buildHostServices(
 
     state: {
       async get(params) {
+        // biome-ignore lint/suspicious/noExplicitAny: plugin-sdk scopeKind enum is a subset of the internal state store enum
         return stateStore.get(pluginId, params.scopeKind as any, params.stateKey, {
           scopeId: params.scopeId,
           namespace: params.namespace,
@@ -505,6 +506,7 @@ export function buildHostServices(
       },
       async set(params) {
         await stateStore.set(pluginId, {
+          // biome-ignore lint/suspicious/noExplicitAny: plugin-sdk scopeKind enum is a subset of the internal state store enum
           scopeKind: params.scopeKind as any,
           scopeId: params.scopeId,
           namespace: params.namespace,
@@ -513,6 +515,7 @@ export function buildHostServices(
         });
       },
       async delete(params) {
+        // biome-ignore lint/suspicious/noExplicitAny: plugin-sdk scopeKind enum is a subset of the internal state store enum
         await stateStore.delete(pluginId, params.scopeKind as any, params.stateKey, {
           scopeId: params.scopeId,
           namespace: params.namespace,
@@ -522,9 +525,11 @@ export function buildHostServices(
 
     entities: {
       async upsert(params) {
+        // biome-ignore lint/suspicious/noExplicitAny: plugin-sdk UpsertEntityParams doesn't directly match internal registry shape
         return registry.upsertEntity(pluginId, params as any) as any;
       },
       async list(params) {
+        // biome-ignore lint/suspicious/noExplicitAny: plugin-sdk ListEntitiesParams doesn't directly match internal registry shape
         return registry.listEntities(pluginId, params as any) as any;
       },
     },
@@ -543,8 +548,10 @@ export function buildHostServices(
           }
         };
         if (params.filter) {
+          // biome-ignore lint/suspicious/noExplicitAny: event bus subscribe overloads don't accept typed pattern string + filter together
           scopedBus.subscribe(params.eventPattern as any, params.filter as any, handler);
         } else {
+          // biome-ignore lint/suspicious/noExplicitAny: event bus subscribe overloads don't accept typed pattern string alone
           scopedBus.subscribe(params.eventPattern as any, handler);
         }
       },
@@ -737,6 +744,7 @@ export function buildHostServices(
       async list(params) {
         const companyId = ensureCompanyId(params.companyId);
         await ensurePluginAvailableForCompany(companyId);
+        // biome-ignore lint/suspicious/noExplicitAny: plugin-sdk issue list params is a superset; internal service accepts subset
         return applyWindow((await issues.list(companyId, params as any)) as Issue[], params);
       },
       async get(params) {
@@ -748,12 +756,14 @@ export function buildHostServices(
       async create(params) {
         const companyId = ensureCompanyId(params.companyId);
         await ensurePluginAvailableForCompany(companyId);
+        // biome-ignore lint/suspicious/noExplicitAny: plugin-sdk CreateIssueParams has optional fields not yet in internal service
         return (await issues.create(companyId, params as any)) as Issue;
       },
       async update(params) {
         const companyId = ensureCompanyId(params.companyId);
         await ensurePluginAvailableForCompany(companyId);
         requireInCompany("Issue", await issues.getById(params.issueId), companyId);
+        // biome-ignore lint/suspicious/noExplicitAny: plugin-sdk patch shape differs from internal update signature
         return (await issues.update(params.issueId, params.patch as any)) as Issue;
       },
       async listComments(params) {
@@ -776,6 +786,7 @@ export function buildHostServices(
         await ensurePluginAvailableForCompany(companyId);
         requireInCompany("Issue", await issues.getById(params.issueId), companyId);
         const rows = await documents.listIssueDocuments(params.issueId);
+        // biome-ignore lint/suspicious/noExplicitAny: internal document row type differs from plugin-sdk IssueDocument interface
         return rows as any;
       },
       async get(params) {
@@ -783,6 +794,7 @@ export function buildHostServices(
         await ensurePluginAvailableForCompany(companyId);
         requireInCompany("Issue", await issues.getById(params.issueId), companyId);
         const doc = await documents.getIssueDocumentByKey(params.issueId, params.key);
+        // biome-ignore lint/suspicious/noExplicitAny: internal document row type differs from plugin-sdk IssueDocument interface
         return (doc ?? null) as any;
       },
       async upsert(params) {
@@ -797,6 +809,7 @@ export function buildHostServices(
           format: params.format ?? "markdown",
           changeSummary: params.changeSummary ?? null,
         });
+        // biome-ignore lint/suspicious/noExplicitAny: internal document row type differs from plugin-sdk IssueDocument interface
         return result.document as any;
       },
       async delete(params) {
@@ -877,7 +890,9 @@ export function buildHostServices(
         return (await goals.create(companyId, {
           title: params.title,
           description: params.description,
+          // biome-ignore lint/suspicious/noExplicitAny: plugin-sdk GoalLevel/GoalStatus are string unions; internal service uses DB enum
           level: params.level as any,
+          // biome-ignore lint/suspicious/noExplicitAny: plugin-sdk GoalLevel/GoalStatus are string unions; internal service uses DB enum
           status: params.status as any,
           parentId: params.parentId,
           ownerAgentId: params.ownerAgentId,
@@ -887,6 +902,7 @@ export function buildHostServices(
         const companyId = ensureCompanyId(params.companyId);
         await ensurePluginAvailableForCompany(companyId);
         requireInCompany("Goal", await goals.getById(params.goalId), companyId);
+        // biome-ignore lint/suspicious/noExplicitAny: plugin-sdk patch shape differs from internal goal update signature
         return (await goals.update(params.goalId, params.patch as any)) as Goal;
       },
     },

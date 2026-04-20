@@ -108,6 +108,7 @@ export function channelRoutes(db: Db) {
 
     const actor = getActorInfo(req);
 
+    // biome-ignore lint/suspicious/noExplicitAny: Drizzle DB type does not unify across schema-scoped overloads
     const heartbeat = heartbeatService(db as any);
     const message = await postMessage(db, {
       channelId,
@@ -120,6 +121,7 @@ export function channelRoutes(db: Db) {
       linkedIssueId: typeof body.linkedIssueId === "string" ? body.linkedIssueId : undefined,
       replyToId: typeof body.replyToId === "string" ? body.replyToId : undefined,
       reasoning: typeof body.reasoning === "string" ? body.reasoning : undefined,
+      // biome-ignore lint/suspicious/noExplicitAny: wakeOpts type differs between plugin-sdk and heartbeat service signatures
       enqueueWakeup: (agentId, wakeOpts) => heartbeat.wakeup(agentId, wakeOpts as any),
     });
 

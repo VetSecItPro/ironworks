@@ -460,6 +460,7 @@ export async function startServer(): Promise<StartedServer> {
   let resolveSession: ((req: ExpressRequest) => Promise<BetterAuthSessionResult | null>) | undefined;
   let resolveSessionFromHeaders: ((headers: Headers) => Promise<BetterAuthSessionResult | null>) | undefined;
   if (config.deploymentMode === "local_trusted") {
+    // biome-ignore lint/suspicious/noExplicitAny: Db type doesn't unify across all service function overloads
     await ensureLocalTrustedBoardPrincipal(db as any);
   }
   if (config.deploymentMode === "authenticated") {
@@ -492,10 +493,12 @@ export async function startServer(): Promise<StartedServer> {
       },
       "Authenticated mode auth origin configuration",
     );
+    // biome-ignore lint/suspicious/noExplicitAny: Db type doesn't unify across all service function overloads
     const auth = createBetterAuthInstance(db as any, config, effectiveTrustedOrigins);
     betterAuthHandler = createBetterAuthHandler(auth);
     resolveSession = (req) => resolveBetterAuthSession(auth, req);
     resolveSessionFromHeaders = (headers) => resolveBetterAuthSessionFromHeaders(auth, headers);
+    // biome-ignore lint/suspicious/noExplicitAny: Db type doesn't unify across all service function overloads
     await initializeBoardClaimChallenge(db as any, { deploymentMode: config.deploymentMode });
     authReady = true;
   }
@@ -516,6 +519,7 @@ export async function startServer(): Promise<StartedServer> {
   });
   const uiMode = config.uiDevMiddleware ? "vite-dev" : config.serveUi ? "static" : "none";
   const storageService = createStorageServiceFromConfig(config);
+  // biome-ignore lint/suspicious/noExplicitAny: Db type doesn't unify across all service function overloads
   const app = await createApp(db as any, {
     uiMode,
     serverPort: listenPort,
@@ -544,11 +548,13 @@ export async function startServer(): Promise<StartedServer> {
   process.env.IRONWORKS_LISTEN_PORT = String(listenPort);
   process.env.IRONWORKS_API_URL = `http://${runtimeApiHost}:${listenPort}`;
 
+  // biome-ignore lint/suspicious/noExplicitAny: Db type doesn't unify across all service function overloads
   setupLiveEventsWebSocketServer(server, db as any, {
     deploymentMode: config.deploymentMode,
     resolveSessionFromHeaders,
   });
 
+  // biome-ignore lint/suspicious/noExplicitAny: Db type doesn't unify across all service function overloads
   void reconcilePersistedRuntimeServicesOnStartup(db as any)
     .then((result) => {
       if (result.reconciled > 0) {
@@ -566,7 +572,9 @@ export async function startServer(): Promise<StartedServer> {
     const serverStartedAt = Date.now();
     const DEPLOY_GRACE_MS = 3 * 60 * 1000;
 
+    // biome-ignore lint/suspicious/noExplicitAny: Db type doesn't unify across all service function overloads
     const heartbeat = heartbeatService(db as any);
+    // biome-ignore lint/suspicious/noExplicitAny: Db type doesn't unify across all service function overloads
     const routines = routineService(db as any);
 
     // Reap orphaned running runs at startup while in-memory execution state is empty,
@@ -628,6 +636,7 @@ export async function startServer(): Promise<StartedServer> {
   // Start all configured messaging bridges (Telegram, etc.)
   try {
     const { startAllTelegramBridges } = await import("./bridges/telegram.js");
+    // biome-ignore lint/suspicious/noExplicitAny: Db type doesn't unify across all service function overloads
     await startAllTelegramBridges(db as any);
   } catch (err) {
     logger.error({ err }, "Failed to start Telegram bridges");
@@ -647,6 +656,7 @@ export async function startServer(): Promise<StartedServer> {
       backupInFlight = true;
       try {
         // Read retention policy from instance settings on each tick so UI changes take effect immediately
+        // biome-ignore lint/suspicious/noExplicitAny: Db type doesn't unify across all service function overloads
         const settings = instanceSettingsService(db as any);
         const general = await settings.getGeneral();
         const retentionPolicy = general.backupRetention ?? config.databaseBackupRetentionPolicy ?? undefined;
