@@ -197,7 +197,7 @@ export function Goals() {
               key={goal.id}
               goal={goal}
               progress={progressMap.get(goal.id)}
-              children={childrenMap.get(goal.id)}
+              subGoals={childrenMap.get(goal.id)}
             />
           ))}
         </div>

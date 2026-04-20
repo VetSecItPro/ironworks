@@ -239,6 +239,7 @@ describe("createObserver (http sink)", () => {
     );
     expect(warningFired).toBe(true);
     // Resolve pending to not leak
+    // biome-ignore lint/suspicious/useIterableCallbackReturn: forEach side-effect, no return needed
     pending.forEach((r) => r(new Response("ok", { status: 200 })));
     await observer.flush();
     stderrWrite.mockRestore();

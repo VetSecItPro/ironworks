@@ -11,11 +11,11 @@ import { ProgressBar } from "./ProgressBar";
 export function GoalCard({
   goal,
   progress,
-  children,
+  subGoals,
 }: {
   goal: Goal;
   progress?: GoalProgressItem | null;
-  children?: Goal[];
+  subGoals?: Goal[];
 }) {
   const totalIssues = progress?.totalIssues ?? 0;
   const completed = progress?.completedIssues ?? 0;
@@ -108,9 +108,9 @@ export function GoalCard({
       )}
 
       {/* Sub-goals indicator */}
-      {children && children.length > 0 && (
+      {subGoals && subGoals.length > 0 && (
         <div className="mt-2 pt-2 border-t border-border/50 text-[11px] text-muted-foreground">
-          {children.length} sub-goal{children.length !== 1 ? "s" : ""}
+          {subGoals.length} sub-goal{subGoals.length !== 1 ? "s" : ""}
         </div>
       )}
     </Link>

@@ -16,7 +16,7 @@ export function exportToCSV(
 
   const cols = columns ?? Object.keys(data[0]).map((k) => ({ key: k, label: k }));
 
-  const escape = (val: unknown): string => {
+  const escapeCSVValue = (val: unknown): string => {
     if (val === null || val === undefined) return "";
     const str = String(val);
     // Wrap in quotes if the value contains commas, quotes, or newlines
@@ -26,8 +26,8 @@ export function exportToCSV(
     return str;
   };
 
-  const header = cols.map((c) => escape(c.label)).join(",");
-  const rows = data.map((row) => cols.map((c) => escape(row[c.key])).join(","));
+  const header = cols.map((c) => escapeCSVValue(c.label)).join(",");
+  const rows = data.map((row) => cols.map((c) => escapeCSVValue(row[c.key])).join(","));
 
   const csv = [header, ...rows].join("\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });

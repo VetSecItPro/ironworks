@@ -130,8 +130,10 @@ export function KBFolderTree({
     setCheckedIds((prev) => {
       const next = new Set(prev);
       if (allChecked) {
+        // biome-ignore lint/suspicious/useIterableCallbackReturn: forEach side-effect, no return needed
         ids.forEach((id) => next.delete(id));
       } else {
+        // biome-ignore lint/suspicious/useIterableCallbackReturn: forEach side-effect, no return needed
         ids.forEach((id) => next.add(id));
       }
       return next;

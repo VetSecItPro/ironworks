@@ -78,6 +78,7 @@ function MermaidDiagramBlock({ source, darkMode }: { source: string; darkMode: b
   return (
     <div className="ironworks-mermaid">
       {svg ? (
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: SVG from Mermaid with securityLevel:"strict" + script/event-handler stripping (see SEC-XSS-001 above)
         <div dangerouslySetInnerHTML={{ __html: svg }} />
       ) : (
         <>

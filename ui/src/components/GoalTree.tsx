@@ -13,16 +13,16 @@ interface GoalTreeProps {
 
 interface GoalNodeProps {
   goal: Goal;
-  children: Goal[];
+  childGoals: Goal[];
   allGoals: Goal[];
   depth: number;
   goalLink?: (goal: Goal) => string;
   onSelect?: (goal: Goal) => void;
 }
 
-function GoalNode({ goal, children, allGoals, depth, goalLink, onSelect }: GoalNodeProps) {
+function GoalNode({ goal, childGoals, allGoals, depth, goalLink, onSelect }: GoalNodeProps) {
   const [expanded, setExpanded] = useState(true);
-  const hasChildren = children.length > 0;
+  const hasChildren = childGoals.length > 0;
   const link = goalLink?.(goal);
 
   const inner = (
@@ -66,11 +66,11 @@ function GoalNode({ goal, children, allGoals, depth, goalLink, onSelect }: GoalN
       )}
       {hasChildren && expanded && (
         <div>
-          {children.map((child) => (
+          {childGoals.map((child) => (
             <GoalNode
               key={child.id}
               goal={child}
-              children={allGoals.filter((g) => g.parentId === child.id)}
+              childGoals={allGoals.filter((g) => g.parentId === child.id)}
               allGoals={allGoals}
               depth={depth + 1}
               goalLink={goalLink}
@@ -97,7 +97,7 @@ export function GoalTree({ goals, goalLink, onSelect }: GoalTreeProps) {
         <GoalNode
           key={goal.id}
           goal={goal}
-          children={goals.filter((g) => g.parentId === goal.id)}
+          childGoals={goals.filter((g) => g.parentId === goal.id)}
           allGoals={goals}
           depth={0}
           goalLink={goalLink}

@@ -1044,6 +1044,7 @@ a.ironworks-project-mention-chip {
   [data-slot="breadcrumb-bar"],
   [data-slot="mobile-bottom-nav"],
   [data-slot="toast-viewport"],
+  /* biome-ignore lint/correctness/noUnknownPseudoClass: Tailwind responsive prefix escaped for print media query */
   .print\\:hidden {
     display: none;
   }
@@ -1136,10 +1137,12 @@ a.ironworks-project-mention-chip {
 @media (max-width: 768px) {
   /* Sidebar collapses (handled by SidebarContext / Layout isMobile) */
   /* Content goes full width */
+  /* biome-ignore lint/correctness/noUnknownPseudoClass: Tailwind responsive prefix escaped for mobile media query */
   .md\\:grid-cols-2 {
     grid-template-columns: 1fr;
   }
 
+  /* biome-ignore lint/correctness/noUnknownPseudoClass: Tailwind responsive prefix escaped for mobile media query */
   .md\\:grid-cols-3 {
     grid-template-columns: 1fr;
   }
