@@ -35,6 +35,8 @@ export { companySecretVersions } from "./company_secret_versions.js";
 export { companySecrets } from "./company_secrets.js";
 export { companySkills } from "./company_skills.js";
 export { costEvents } from "./cost_events.js";
+export { costRollupDaily } from "./cost_rollup_daily.js";
+export type { CostRollupDaily, NewCostRollupDaily } from "./cost_rollup_daily.js";
 export { documentRevisions } from "./document_revisions.js";
 export { documents } from "./documents.js";
 export { executionWorkspaces } from "./execution_workspaces.js";

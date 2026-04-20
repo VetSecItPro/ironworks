@@ -813,6 +813,31 @@ export async function startServer(): Promise<StartedServer> {
     logger.info("Ollama model health checker armed (daily)");
   }
 
+  // ── Nightly cost rollup (UTC midnight, with initial run shortly after startup) ──
+  {
+    const { runCostRollup } = await import("./services/cost-rollup.js");
+    const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+    // Run once shortly after startup to backfill any missed days, then daily.
+    // The job is idempotent so running it again on the same day is harmless.
+    setTimeout(
+      () => {
+        void runCostRollup(db).catch((err) => {
+          logger.error({ err }, "[cost-rollup] startup backfill failed");
+        });
+        setInterval(() => {
+          void runCostRollup(db).catch((err) => {
+            logger.error({ err }, "[cost-rollup] nightly run failed");
+          });
+        }, ONE_DAY_MS);
+      },
+      // 5 minutes after startup — enough time for the DB to be fully ready
+      5 * 60 * 1000,
+    );
+
+    logger.info("Cost rollup scheduler armed (nightly, UTC)");
+  }
+
   await new Promise<void>((resolveListen, rejectListen) => {
     const onError = (err: Error) => {
       server.off("error", onError);
