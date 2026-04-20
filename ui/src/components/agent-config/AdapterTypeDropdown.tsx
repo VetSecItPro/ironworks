@@ -12,6 +12,11 @@ const ENABLED_ADAPTER_TYPES = new Set([
   "opencode_local",
   "pi_local",
   "cursor",
+  // HTTP adapters enabled in Phase G
+  "poe_api",
+  "anthropic_api",
+  "openai_api",
+  "openrouter_api",
 ]);
 
 /** Display list includes all real adapter types; disabled entries are not yet available. */

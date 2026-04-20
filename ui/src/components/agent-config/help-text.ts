@@ -59,6 +59,11 @@ export const adapterLabels: Record<string, string> = {
   cursor: "Cursor (local)",
   process: "Process",
   http: "HTTP",
+  // HTTP adapter family (Phase G)
+  poe_api: "Poe API",
+  anthropic_api: "Anthropic API",
+  openai_api: "OpenAI API",
+  openrouter_api: "OpenRouter API",
 };
 
 export const roleLabels = AGENT_ROLE_LABELS as Record<string, string>;

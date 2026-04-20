@@ -3,12 +3,26 @@ import { FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "../../lib/utils";
 import { DraftInput, Field, help } from "../agent-config-primitives";
+import { AdapterPicker } from "../AdapterPicker";
 import { HelpBeacon } from "../HelpBeacon";
 import { MarkdownEditor } from "../MarkdownEditor";
 import { ChoosePathButton } from "../PathInstructionsModal";
 import { AdapterEnvironmentResult } from "./AdapterEnvironmentResult";
 import { AdapterTypeDropdown } from "./AdapterTypeDropdown";
 import type { AdapterEnvironmentTestResult, CreateConfigValues, SectionCommonProps } from "./types";
+import type { HttpAdapterProviderType } from "../../types/providers";
+
+/** Map from HTTP adapter type strings to the provider type used by AdapterPicker. */
+const HTTP_ADAPTER_TYPE_TO_PROVIDER: Record<string, HttpAdapterProviderType> = {
+  poe_api: "poe",
+  anthropic_api: "anthropic",
+  openai_api: "openai",
+  openrouter_api: "openrouter",
+};
+
+function isHttpAdapterType(adapterType: string): boolean {
+  return adapterType in HTTP_ADAPTER_TYPE_TO_PROVIDER;
+}
 
 interface AdapterSectionProps extends SectionCommonProps {
   adapterType: string;
@@ -83,6 +97,20 @@ export function AdapterSection({
             </div>
             <AdapterTypeDropdown value={adapterType} onChange={onAdapterTypeChange} />
           </div>
+        )}
+
+        {/* HTTP adapter picker cards — shown when current adapter type is an HTTP provider */}
+        {showAdapterTypeField && isHttpAdapterType(adapterType) && (
+          <AdapterPicker
+            selected={HTTP_ADAPTER_TYPE_TO_PROVIDER[adapterType]}
+            onSelect={(provider) => {
+              // Map provider back to adapter type string and delegate to the existing handler
+              const adapterTypeForProvider = Object.entries(HTTP_ADAPTER_TYPE_TO_PROVIDER).find(
+                ([, p]) => p === provider,
+              )?.[0];
+              if (adapterTypeForProvider) onAdapterTypeChange(adapterTypeForProvider);
+            }}
+          />
         )}
 
         {testEnvironment.error && (
