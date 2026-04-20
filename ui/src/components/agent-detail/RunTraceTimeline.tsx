@@ -176,6 +176,7 @@ function TimelineEvent({ event }: { event: HeartbeatRunEvent }) {
 
   return (
     <div className={cn("border-l-2 pl-3 py-1.5 group", borderColor, isError && "bg-red-500/5")}>
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: role and onClick are both conditional on hasPayload; when false the element is purely presentational */}
       <div
         className={cn("flex items-center gap-2 text-xs", hasPayload && "cursor-pointer")}
         role={hasPayload ? "button" : undefined}

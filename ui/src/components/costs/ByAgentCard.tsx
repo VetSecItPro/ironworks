@@ -44,6 +44,7 @@ export function ByAgentCard({
             const hasBreakdown = modelRows.length > 0;
             return (
               <div key={row.agentId} className="border border-border px-4 py-3">
+                {/* biome-ignore lint/a11y/noStaticElementInteractions: role and onClick are both conditional on hasBreakdown; when false the element is purely presentational */}
                 <div
                   className={cn(
                     "flex items-start justify-between gap-3",

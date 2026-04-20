@@ -10,6 +10,7 @@ export function ChartTypeSwitcher({ active, onChange }: { active: ChartType; onC
   ];
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: role="group" is correct ARIA pattern for a button toolbar; <fieldset> is for form controls only
     <div
       className="flex items-center gap-0.5 rounded-md border border-border p-0.5"
       role="group"

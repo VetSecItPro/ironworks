@@ -36,13 +36,14 @@ export function BulkLabelDialog({ open, onClose, selectedCount, availableLabels,
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50" role="button" tabIndex={0} aria-label="Close dialog" onClick={onClose} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') { e.preventDefault(); onClose(); } }}>
+    <button type="button" className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50" aria-label="Close dialog" onClick={onClose} onKeyDown={(e) => { if (e.key === 'Escape') { e.preventDefault(); onClose(); } }}>
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Apply Labels"
         className="w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 mb-4">
           <Tag className="h-5 w-5 text-muted-foreground" />
@@ -102,6 +103,6 @@ export function BulkLabelDialog({ open, onClose, selectedCount, availableLabels,
           </Button>
         </div>
       </div>
-    </div>
+    </button>
   );
 }

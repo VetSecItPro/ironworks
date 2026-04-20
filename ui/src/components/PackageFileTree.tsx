@@ -264,10 +264,9 @@ export function PackageFileTree({
         const checked = effectiveCheckedFiles.has(node.path);
         const extraClassName = fileRowClassName?.(node, checked);
         return (
-          <div
+          <button
+            type="button"
             key={node.path}
-            role="button"
-            tabIndex={0}
             className={cn(
               "flex w-full items-center gap-1 pr-3 text-left text-sm text-muted-foreground hover:bg-accent/30 hover:text-foreground cursor-pointer",
               TREE_ROW_HEIGHT_CLASS,
@@ -301,7 +300,7 @@ export function PackageFileTree({
               <span className="truncate">{node.name}</span>
             </button>
             {renderFileExtra?.(node, checked)}
-          </div>
+          </button>
         );
       })}
     </div>

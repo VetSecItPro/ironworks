@@ -200,6 +200,7 @@ export function TranscriptCommandGroup({
 
   return (
     <div className={cn(showExpandedErrorState && "rounded-xl border border-red-500/20 bg-red-500/[0.04] p-3")}>
+      {/* biome-ignore lint/a11y/useSemanticElements: outer row contains a nested <button> for the expand icon — using <button> here would create invalid nested buttons; role="button" + tabIndex is the accessible alternative */}
       <div
         role="button"
         tabIndex={0}

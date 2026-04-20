@@ -68,6 +68,7 @@ export function PerformanceHeader({ range, setRange, showDeptAgg, setShowDeptAgg
           <Download className="h-3.5 w-3.5" />
           Export CSV
         </button>
+        {/* biome-ignore lint/a11y/useSemanticElements: role="group" on a div toolbar is correct ARIA pattern; <fieldset> is for form controls only */}
         <div
           className="flex items-center gap-1 border border-border rounded-md overflow-hidden"
           role="group"

@@ -49,6 +49,7 @@ export function BriefingHeader({ dateStr, companyName, period, onPeriodChange }:
             <Download className="h-3.5 w-3.5" />
             Export PDF
           </button>
+          {/* biome-ignore lint/a11y/useSemanticElements: role="group" on a div toolbar is correct ARIA pattern; <fieldset> is for form controls only */}
           <div
             className="flex items-center gap-1 border border-border rounded-md overflow-hidden shrink-0 print:hidden"
             role="group"

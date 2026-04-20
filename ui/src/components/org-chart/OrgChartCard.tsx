@@ -77,12 +77,11 @@ export function OrgChartCard({
   const isContractor = empType === "contractor";
 
   return (
-    <div
+    <button
+      type="button"
       data-org-card
-      role="button"
-      tabIndex={0}
       className={cn(
-        "absolute bg-card rounded-xl shadow-sm shadow-black/5 hover:shadow-lg hover:border-foreground/20 transition-all duration-200 cursor-pointer select-none border-l-[3px]",
+        "absolute bg-card rounded-xl shadow-sm shadow-black/5 hover:shadow-lg hover:border-foreground/20 transition-all duration-200 cursor-pointer select-none border-l-[3px] text-left",
         isContractor ? "border border-dashed border-amber-400/50" : "border border-border",
         dept && departmentBorderColor[dept] ? departmentBorderColor[dept] : "border-l-border",
       )}
@@ -235,6 +234,6 @@ export function OrgChartCard({
           </div>
         </div>
       )}
-    </div>
+    </button>
   );
 }

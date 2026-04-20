@@ -198,11 +198,10 @@ export function Hiring() {
                   <p className="text-xs text-muted-foreground/70 py-2 text-center">No requests</p>
                 ) : (
                   pipeline[stage].map((req) => (
-                    <div
+                    <button
+                      type="button"
                       key={req.id}
-                      role="button"
-                      tabIndex={0}
-                      className="bg-card rounded-md border border-border/50 px-2.5 py-2 cursor-pointer hover:border-foreground/20 transition-colors"
+                      className="w-full text-left bg-card rounded-md border border-border/50 px-2.5 py-2 cursor-pointer hover:border-foreground/20 transition-colors"
                       onClick={() => setExpandedId(expandedId === req.id ? null : req.id)}
                       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedId(expandedId === req.id ? null : req.id); } }}
                     >
@@ -218,7 +217,7 @@ export function Hiring() {
                           </>
                         )}
                       </div>
-                    </div>
+                    </button>
                   ))
                 )}
               </div>

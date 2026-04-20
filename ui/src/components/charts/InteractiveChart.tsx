@@ -216,6 +216,7 @@ export function InteractiveChart({
         {chartType === "bar" ? (
           visibleData.map((d, i) => (
             <g key={i}>
+              {/* biome-ignore lint/a11y/useSemanticElements: SVG rect cannot be replaced with a native <button>; role="button" is required for keyboard-accessible SVG chart elements */}
               <rect
                 role="button"
                 aria-label={`Data point: ${d.label} ${d.value}`}
@@ -248,6 +249,7 @@ export function InteractiveChart({
           <>
             <path d={linePath} fill="none" stroke="var(--primary)" strokeWidth={2} strokeLinejoin="round" />
             {visibleData.map((d, i) => (
+              // biome-ignore lint/a11y/useSemanticElements: SVG circle cannot be replaced with a native <button>; role="button" is required for keyboard-accessible SVG chart elements
               <circle
                 key={i}
                 role="button"

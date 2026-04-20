@@ -97,10 +97,9 @@ export function Companies() {
               : 0;
 
           return (
-            <div
+            <button
               key={company.id}
-              role="button"
-              tabIndex={0}
+              type="button"
               onClick={() => setSelectedCompanyId(company.id)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
@@ -108,7 +107,7 @@ export function Companies() {
                   setSelectedCompanyId(company.id);
                 }
               }}
-              className={`group text-left bg-card border rounded-lg p-5 transition-colors cursor-pointer ${
+              className={`group w-full text-left bg-card border rounded-lg p-5 transition-colors cursor-pointer ${
                 selected ? "border-primary ring-1 ring-primary" : "border-border hover:border-muted-foreground/30"
               }`}
             >
@@ -116,6 +115,7 @@ export function Companies() {
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   {isEditing ? (
+                    // biome-ignore lint/a11y/noStaticElementInteractions: stopPropagation container prevents edit input clicks from bubbling to parent button
                     <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                       <Input
                         value={editName}
@@ -174,6 +174,7 @@ export function Companies() {
                 </div>
 
                 {/* Three-dot menu */}
+                {/* biome-ignore lint/a11y/noStaticElementInteractions: stopPropagation container prevents dropdown clicks from bubbling to parent button */}
                 <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -237,6 +238,7 @@ export function Companies() {
 
               {/* Delete confirmation */}
               {isConfirmingDelete && (
+                // biome-ignore lint/a11y/noStaticElementInteractions: stopPropagation container prevents delete confirmation clicks from bubbling to parent button
                 <div
                   className="mt-4 flex items-center justify-between bg-destructive/5 border border-destructive/20 rounded-md px-4 py-3"
                   onClick={(e) => e.stopPropagation()}
@@ -265,7 +267,7 @@ export function Companies() {
                   </div>
                 </div>
               )}
-            </div>
+            </button>
           );
         })}
       </div>

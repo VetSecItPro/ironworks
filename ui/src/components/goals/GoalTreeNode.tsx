@@ -54,6 +54,7 @@ export function GoalTreeNode({
 
   return (
     <div className={cn("border border-border rounded-lg", depth > 0 && "ml-6 mt-2")}>
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: role and onClick are both conditional on hasChildren; when false the element is purely presentational */}
       <div
         className={cn(
           "flex items-center gap-2 p-3 rounded-t-lg",

@@ -41,8 +41,8 @@ export function DescriptionSection({
   const stagedDocuments = stagedFiles.filter((file) => file.kind === "document");
   const stagedAttachments = stagedFiles.filter((file) => file.kind === "attachment");
 
-  // biome-ignore lint/a11y/noStaticElementInteractions: description drop zone handles drag events for file attachments, not click interaction
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: description drop zone handles drag events for file attachments, not click interaction
     <div
       className={cn("px-4 pb-2 overflow-y-auto min-h-0 border-t border-border/60 pt-3", expanded ? "flex-1" : "")}
       onDragEnter={handleFileDragEnter}

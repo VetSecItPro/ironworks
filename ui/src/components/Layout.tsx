@@ -279,11 +279,10 @@ export function Layout() {
                 style={sidebarOpen ? { width: sidebarWidth } : undefined}
               >
                 {isInstanceSettingsRoute ? <InstanceSidebar /> : <Sidebar />}
-                {/* Resize drag zone - right edge of sidebar */}
-                <div
-                  role="separator"
-                  aria-label="Resize sidebar"
-                  tabIndex={0}
+                {/* Resize drag zone - right edge of sidebar. resize splitter; aria-valuenow not applicable for a non-slider resize handle */}
+                {/* biome-ignore lint/a11y/useSemanticElements: resize splitter uses role="separator" on a div; <hr> doesn't support onMouseDown */}
+                {/* biome-ignore lint/a11y/useAriaPropsForRole: aria-valuenow is required by spec but not meaningful for a resize splitter handle */}
+                <div role="separator" aria-orientation="vertical" aria-label="Resize sidebar" tabIndex={0}
                   className="absolute top-0 right-0 w-2 h-full cursor-col-resize z-30 hover:bg-blue-500/30 active:bg-blue-500/50 transition-colors border-r border-border/50 hover:border-blue-500/50"
                   onMouseDown={(e) => {
                     e.preventDefault();

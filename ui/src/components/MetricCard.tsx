@@ -79,10 +79,9 @@ export const MetricCard = memo(function MetricCard({
 
   if (onClick) {
     return (
-      <div
-        className="h-full"
-        role="button"
-        tabIndex={0}
+      <button
+        type="button"
+        className="h-full w-full text-left"
         onClick={onClick}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
@@ -92,7 +91,7 @@ export const MetricCard = memo(function MetricCard({
         }}
       >
         {inner}
-      </div>
+      </button>
     );
   }
 

@@ -83,8 +83,8 @@ export function WidgetLayoutEditor({ widgets, onChange }: WidgetLayoutEditorProp
       </div>
       <div className="space-y-1">
         {widgets.map((widget, index) => (
+          // biome-ignore lint/a11y/noStaticElementInteractions: draggable widget row handles drag events for reordering, not click interaction
           <div
-            // biome-ignore lint/a11y/noStaticElementInteractions: draggable widget row handles drag events for reordering, not click interaction
             key={widget.id}
             draggable
             onDragStart={() => setDragIndex(index)}

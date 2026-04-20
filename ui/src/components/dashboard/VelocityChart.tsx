@@ -47,8 +47,8 @@ export function VelocityChart({
           const showLabel = i === 0 || i === weeks.length - 1 || i % 3 === 0;
           const isHovered = hoveredIdx === i;
 
-          // biome-ignore lint/a11y/noStaticElementInteractions: SVG chart group - keyboard navigation not applicable for chart column click
           return (
+            // biome-ignore lint/a11y/noStaticElementInteractions: SVG <g> with conditional role; when onWeekClick is undefined the group is purely presentational
             <g
               key={w.weekStart}
               role={onWeekClick ? "button" : undefined}

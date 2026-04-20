@@ -576,9 +576,8 @@ export function IssuesList({
                         issueLinkState={issueLinkState}
                         desktopLeadingSpacer
                         mobileLeading={
-                          <span
-                            role="button"
-                            tabIndex={0}
+                          <button
+                            type="button"
                             className="flex items-center gap-1.5"
                             onClick={(e) => {
                               e.preventDefault();
@@ -597,13 +596,12 @@ export function IssuesList({
                               status={issue.status}
                               onChange={(s) => handleStatusChange(issue.id, s, document.activeElement as HTMLElement)}
                             />
-                          </span>
+                          </button>
                         }
                         desktopMetaLeading={
                           <>
-                            <span
-                              role="button"
-                              tabIndex={0}
+                            <button
+                              type="button"
                               className="hidden shrink-0 items-center gap-1.5 sm:inline-flex"
                               onClick={(e) => {
                                 e.preventDefault();
@@ -620,7 +618,7 @@ export function IssuesList({
                                 status={issue.status}
                                 onChange={(s) => handleStatusChange(issue.id, s, document.activeElement as HTMLElement)}
                               />
-                            </span>
+                            </button>
                             <span className="shrink-0 font-mono text-xs text-muted-foreground">
                               {issue.identifier ?? issue.id.slice(0, 8)}
                             </span>
@@ -640,9 +638,8 @@ export function IssuesList({
                         mobileMeta={timeAgo(issue.updatedAt)}
                         desktopTrailing={
                           <>
-                            <span
-                              role="button"
-                              tabIndex={0}
+                            <button
+                              type="button"
                               className="hidden items-center md:flex inline-edit-cell rounded px-1 py-0.5 cursor-pointer"
                               onDoubleClick={(e) => {
                                 e.preventDefault();
@@ -664,7 +661,7 @@ export function IssuesList({
                                     : undefined
                                 }
                               />
-                            </span>
+                            </button>
                             {issue.goalId && goalName(issue.goalId) && (
                               <span className="hidden items-center md:flex">
                                 <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
