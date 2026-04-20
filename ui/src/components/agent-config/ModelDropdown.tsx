@@ -84,7 +84,6 @@ export function ModelDropdown({
             placeholder="Search models..."
             value={modelSearch}
             onChange={(e) => setModelSearch(e.target.value)}
-            autoFocus
           />
           <div className="max-h-[240px] overflow-y-auto">
             {allowDefault && (

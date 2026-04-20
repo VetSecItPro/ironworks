@@ -40,7 +40,7 @@ describe("redactHeaders", () => {
     });
     expect(redacted["Content-Type"]).toBe("application/json");
     expect(redacted["User-Agent"]).toBe("ironworks/1.0");
-    expect(redacted["Accept"]).toBe("text/event-stream");
+    expect(redacted.Accept).toBe("text/event-stream");
   });
 
   it("does not mutate the input object", () => {

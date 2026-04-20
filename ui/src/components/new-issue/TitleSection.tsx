@@ -65,7 +65,6 @@ export function TitleSection({
             }
           }
         }}
-        autoFocus
       />
 
       {/* Smart priority suggestion */}

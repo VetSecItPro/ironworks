@@ -12,7 +12,6 @@ import {
   createContext,
   createElement,
   type ErrorInfo,
-  type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
   useCallback,
@@ -212,7 +211,6 @@ function launcherShellBoundsStyle(bounds: PluginLauncherBounds | null): CSSPrope
       return { width: "calc(100vw - 2rem)", height: "calc(100vh - 2rem)" };
     case "inline":
       return { width: "min(24rem, calc(100vw - 2rem))" };
-    case "default":
     default:
       return { width: "min(40rem, calc(100vw - 2rem))" };
   }

@@ -1,7 +1,6 @@
 import { ArrowRight, Check } from "lucide-react";
 import { cn } from "../../lib/utils";
 import type { ConflictItem } from "./ImportHelpers";
-import { ACTION_COLORS } from "./ImportHelpers";
 
 export function ConflictResolutionList({
   conflicts,

@@ -1,4 +1,4 @@
-import { type LinkAttributes, LinkNode, type SerializedLinkNode } from "@lexical/link";
+import { LinkNode, type SerializedLinkNode } from "@lexical/link";
 
 const CUSTOM_MENTION_URL_RE = /^(agent|project):\/\//;
 
@@ -25,10 +25,6 @@ export class MentionAwareLinkNode extends LinkNode {
       target: serializedNode.target ?? null,
       title: serializedNode.title ?? null,
     });
-  }
-
-  constructor(url?: string, attributes?: LinkAttributes, key?: string) {
-    super(url, attributes, key);
   }
 
   sanitizeUrl(url: string): string {

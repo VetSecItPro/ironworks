@@ -36,7 +36,7 @@
 import type { Db } from "@ironworksai/db";
 import { companySecrets, companySecretVersions, pluginConfig } from "@ironworksai/db";
 import type { SecretProvider } from "@ironworksai/shared";
-import { and, desc, eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getSecretProvider } from "../secrets/provider-registry.js";
 import { pluginRegistryService } from "./plugin-registry.js";
 

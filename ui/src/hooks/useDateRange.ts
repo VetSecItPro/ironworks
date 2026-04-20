@@ -91,8 +91,8 @@ export function useDateRange(): UseDateRangeResult {
     if (preset !== "custom") return computeRange(preset);
     // treat custom date strings as local-date boundaries so the full day is included
     // regardless of the user's timezone. "from" starts at local midnight, "to" at 23:59:59.999.
-    const fromDate = customFrom ? new Date(customFrom + "T00:00:00") : null;
-    const toDate = customTo ? new Date(customTo + "T23:59:59.999") : null;
+    const fromDate = customFrom ? new Date(`${customFrom}T00:00:00`) : null;
+    const toDate = customTo ? new Date(`${customTo}T23:59:59.999`) : null;
     return {
       from: fromDate ? fromDate.toISOString() : "",
       to: toDate ? toDate.toISOString() : "",

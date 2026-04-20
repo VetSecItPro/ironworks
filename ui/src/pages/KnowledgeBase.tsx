@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { type KnowledgePage, knowledgeApi } from "../api/knowledge";
+import { knowledgeApi } from "../api/knowledge";
 import { EmptyState } from "../components/EmptyState";
 import {
   FormattingToolbar,

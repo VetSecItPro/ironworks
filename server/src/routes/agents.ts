@@ -24,8 +24,6 @@ import {
 import {
   type AgentSkillSnapshot,
   agentSkillSyncSchema,
-  CONTRACT_END_CONDITIONS,
-  type ContractEndCondition,
   createAgentHireSchema,
   createAgentKeySchema,
   createAgentSchema,
@@ -1446,7 +1444,7 @@ export function agentRoutes(db: Db) {
       .then((rows) => rows[0] ?? null);
 
     const tier = subRow?.planTier ?? "starter";
-    const limits = PLAN_AGENT_LIMITS[tier] ?? PLAN_AGENT_LIMITS["starter"]!;
+    const limits = PLAN_AGENT_LIMITS[tier] ?? PLAN_AGENT_LIMITS.starter!;
 
     // Only run headcount query if there's actually a limit to enforce
     const fteLimit = limits.fte;
@@ -2994,7 +2992,7 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
     }
 
     const actor = getActorInfo(req);
-    const entry = await logActivity(db, {
+    const _entry = await logActivity(db, {
       companyId,
       actorType: "agent",
       actorId: fromAgentId,
@@ -3041,7 +3039,7 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
       .then((rows) => rows[0] ?? null);
 
     const tier = subRow?.planTier ?? "starter";
-    const limits = PLAN_AGENT_LIMITS[tier] ?? PLAN_AGENT_LIMITS["starter"]!;
+    const limits = PLAN_AGENT_LIMITS[tier] ?? PLAN_AGENT_LIMITS.starter!;
 
     res.json({
       fte: Number(counts?.fte ?? 0),
@@ -3249,7 +3247,7 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
     await assertCanWrite(req, agentRow.companyId, db);
 
     const versionNumber = parseInt(version, 10);
-    if (isNaN(versionNumber) || versionNumber < 1) {
+    if (Number.isNaN(versionNumber) || versionNumber < 1) {
       res.status(422).json({ error: "Invalid version number" });
       return;
     }

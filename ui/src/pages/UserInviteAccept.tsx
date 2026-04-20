@@ -107,7 +107,6 @@ export function UserInviteAcceptPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               autoComplete="name"
-              autoFocus
             />
           </div>
 

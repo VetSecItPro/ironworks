@@ -8,14 +8,9 @@ import {
   Check,
   ChevronDown,
   CircleDot,
-  Clock,
-  Code,
   DollarSign,
-  ExternalLink,
   FileText,
-  GitBranch,
   Hash,
-  HeartPulse,
   History,
   Inbox,
   LayoutDashboard,
@@ -26,8 +21,6 @@ import {
   Search,
   Settings,
   Shield,
-  SquarePen,
-  Store,
   Target,
   User,
   Zap,
@@ -180,7 +173,7 @@ export function Sidebar() {
   });
 
   // Total unread channel messages
-  const totalChannelUnread = useMemo(() => {
+  const _totalChannelUnread = useMemo(() => {
     return (channels ?? []).reduce((sum, ch) => sum + (ch.unreadCount ?? 0), 0);
   }, [channels]);
 

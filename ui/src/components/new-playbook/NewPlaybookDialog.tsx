@@ -45,7 +45,7 @@ export function NewPlaybookDialog({ open, onOpenChange, onSubmit, isPending }: N
         dependsOn: s.dependsOn
           .split(",")
           .map((d) => parseInt(d.trim(), 10))
-          .filter((n) => !isNaN(n)),
+          .filter((n) => !Number.isNaN(n)),
         estimatedMinutes: s.estimatedMinutes ? parseInt(s.estimatedMinutes, 10) || undefined : undefined,
         requiresApproval: s.requiresApproval,
       }));

@@ -213,7 +213,7 @@ export function GettingStartedChecklist({
       <div className="divide-y divide-border">
         {CHECKLIST_ITEMS.map((item) => {
           const isComplete = state[item.key];
-          const Icon = item.icon;
+          const _Icon = item.icon;
           return (
             <div key={item.key} className="flex items-center gap-3 px-4 py-3">
               <button

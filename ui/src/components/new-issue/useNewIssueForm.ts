@@ -1,8 +1,7 @@
-import { type ChangeEvent, type DragEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type ChangeEvent, type DragEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useCompany } from "../../context/CompanyContext";
 import { useDialog } from "../../context/DialogContext";
-import { assigneeValueFromSelection, parseAssigneeValue } from "../../lib/assignees";
-import { trackRecentAssignee } from "../../lib/recent-assignees";
+import { assigneeValueFromSelection } from "../../lib/assignees";
 import type { MarkdownEditorRef } from "../MarkdownEditor";
 import {
   buildAssigneeAdapterOverrides,
@@ -181,7 +180,7 @@ export function useNewIssueForm() {
       setExecutionWorkspaceMode(defaultExecutionWorkspaceModeForProject(defaultProject));
       setSelectedExecutionWorkspaceId("");
       executionWorkspaceDefaultProjectId.current = defaultProjectId || null;
-    } else if (draft && draft.title.trim()) {
+    } else if (draft?.title.trim()) {
       const restoredProjectId = newIssueDefaults.projectId ?? draft.projectId;
       const restoredProject = orderedProjects.find((project) => project.id === restoredProjectId);
       setTitle(draft.title);

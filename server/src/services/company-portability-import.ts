@@ -1,14 +1,9 @@
 import path from "node:path";
-import {
-  readIronworksSkillSyncPreference,
-  writeIronworksSkillSyncPreference,
-} from "@ironworksai/adapter-utils/server-utils";
+import { writeIronworksSkillSyncPreference } from "@ironworksai/adapter-utils/server-utils";
 import type {
   CompanyPortabilityImport,
   CompanyPortabilityImportResult,
   CompanyPortabilityInclude,
-  CompanyPortabilityIssueManifestEntry,
-  CompanyPortabilityManifest,
   CompanyPortabilityPreview,
   CompanyPortabilityPreviewAgentPlan,
   CompanyPortabilityPreviewResult,
@@ -23,54 +18,36 @@ import {
   ROUTINE_CATCH_UP_POLICIES,
   ROUTINE_CONCURRENCY_POLICIES,
   ROUTINE_STATUSES,
-  ROUTINE_TRIGGER_KINDS,
   ROUTINE_TRIGGER_SIGNING_MODES,
 } from "@ironworksai/shared";
 import { notFound, unprocessable } from "../errors.js";
 import { resolveSource } from "./company-portability-export.js";
 import {
   applySelectedFilesToSource,
-  asBoolean,
-  asInteger,
   asString,
-  buildManifestFromPackageFiles,
-  buildMarkdown,
   COMPANY_LOGO_CONTENT_TYPE_EXTENSIONS,
   type CompanyPortabilityServiceDeps,
   DEFAULT_COLLISION_STRATEGY,
-  dedupeEnvInputs,
   disableImportedTimerHeartbeat,
   ensureMarkdownPath,
   type ImportBehaviorOptions,
-  type ImportMode,
   type ImportPlanInternal,
   importPortableProjectExecutionWorkspacePolicy,
   inferContentTypeFromPath,
-  isAbsoluteCommand,
-  isPlainRecord,
   isPortableBinaryFile,
-  normalizeFileMap,
   normalizeInclude,
-  normalizePortableConfig,
   normalizePortablePath,
-  normalizePortableSidebarOrder,
-  normalizeSkillKey,
   normalizeSkillSlug,
   parseFrontmatterMarkdown,
   pickTextFiles,
   portableFileToBuffer,
-  type ResolvedSource,
-  readIncludeEntries,
   readPortableTextFile,
   resolveImportMode,
   resolvePortableRoutineDefinition,
   resolveSkillConflictStrategy,
-  stripEmptyValues,
   stripPortableProjectExecutionWorkspaceRefs,
-  toSafeSlug,
   uniqueNameBySlug,
   uniqueProjectName,
-  uniqueSlug,
 } from "./company-portability-shared.js";
 import { routineService } from "./routines.js";
 

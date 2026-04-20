@@ -171,7 +171,7 @@ export async function lookupPlaybook(db: Db, opts: LookupOptions): Promise<Looku
   const filters = [eq(knowledgeChunks.companyId, companyId)];
   if (department) filters.push(eq(knowledgeChunks.department, department));
   if (documentType) filters.push(eq(knowledgeChunks.documentType, documentType));
-  if (ownerRole) filters.push(sql`${knowledgeChunks.ownerRole} ILIKE ${"%" + ownerRole + "%"}`);
+  if (ownerRole) filters.push(sql`${knowledgeChunks.ownerRole} ILIKE ${`%${ownerRole}%`}`);
 
   // ===========================================================================
   // Hybrid retrieval: BM25/FTS first over top-50, then vector rerank over hits.

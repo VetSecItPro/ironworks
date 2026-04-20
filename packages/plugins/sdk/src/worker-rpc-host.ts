@@ -51,7 +51,6 @@ import type {
   GetDataParams,
   InitializeParams,
   InitializeResult,
-  JsonRpcId,
   JsonRpcRequest,
   JsonRpcResponse,
   OnEventParams,
@@ -72,7 +71,6 @@ import {
   isJsonRpcResponse,
   isJsonRpcSuccessResponse,
   JSONRPC_ERROR_CODES,
-  JSONRPC_VERSION,
   JsonRpcCallError,
   JsonRpcParseError,
   PLUGIN_RPC_ERROR_CODES,
@@ -195,7 +193,7 @@ export function runWorker(
   plugin: IronworksPlugin,
   moduleUrl: string,
   options?: RunWorkerOptions,
-): WorkerRpcHost | void {
+): WorkerRpcHost | undefined {
   if (options?.stdin != null && options?.stdout != null) {
     return startWorkerRpcHost({
       plugin,
@@ -245,7 +243,7 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
   let running = true;
   let initialized = false;
   let manifest: IronworksPluginManifestV1 | null = null;
-  let currentConfig: Record<string, unknown> = {};
+  let _currentConfig: Record<string, unknown> = {};
 
   // Plugin handler registrations (populated during setup())
   const eventHandlers: EventRegistration[] = [];
@@ -905,7 +903,7 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
     }
 
     manifest = params.manifest;
-    currentConfig = params.config;
+    _currentConfig = params.config;
 
     // Call the plugin's setup function
     await plugin.definition.setup(ctx);
@@ -957,7 +955,7 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
   }
 
   async function handleConfigChanged(params: ConfigChangedParams): Promise<void> {
-    currentConfig = params.config;
+    _currentConfig = params.config;
 
     if (plugin.definition.onConfigChanged) {
       await plugin.definition.onConfigChanged(params.config);

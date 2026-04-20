@@ -1,6 +1,6 @@
 import type { Db } from "@ironworksai/db";
 import { agentMemoryEntries } from "@ironworksai/db";
-import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 
 // ── Agent Learning System ─────────────────────────────────────────────────
 //

@@ -81,7 +81,7 @@ function formatMinutes(minutes: number): string {
 
 function parseTimeInput(value: string): number {
   const num = parseInt(value, 10);
-  return isNaN(num) || num < 1 ? 1 : num;
+  return Number.isNaN(num) || num < 1 ? 1 : num;
 }
 
 function generateMockBreaches(): SLABreach[] {

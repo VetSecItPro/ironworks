@@ -100,7 +100,7 @@ export const ROLE_DEFAULT_CAPABILITIES: Record<string, RoleCapabilities> = {
 };
 
 export function getDefaultCapabilitiesForRole(role: string): RoleCapabilities {
-  return ROLE_DEFAULT_CAPABILITIES[role] ?? ROLE_DEFAULT_CAPABILITIES["default"]!;
+  return ROLE_DEFAULT_CAPABILITIES[role] ?? ROLE_DEFAULT_CAPABILITIES.default!;
 }
 
 // ---------------------------------------------------------------------------
@@ -122,5 +122,5 @@ export const ROLE_DEFAULT_HIRING_PERMISSIONS: Record<string, readonly string[]> 
 };
 
 export function getDefaultHiringPermissionsForRole(role: string): readonly string[] {
-  return ROLE_DEFAULT_HIRING_PERMISSIONS[role] ?? ROLE_DEFAULT_HIRING_PERMISSIONS["default"]!;
+  return ROLE_DEFAULT_HIRING_PERMISSIONS[role] ?? ROLE_DEFAULT_HIRING_PERMISSIONS.default!;
 }

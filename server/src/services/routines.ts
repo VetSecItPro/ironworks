@@ -24,7 +24,7 @@ import type {
   UpdateRoutine,
   UpdateRoutineTrigger,
 } from "@ironworksai/shared";
-import { and, asc, desc, eq, inArray, isNotNull, isNull, lte, ne, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, isNull, lte, sql } from "drizzle-orm";
 import { conflict, forbidden, notFound, unauthorized, unprocessable } from "../errors.js";
 import { logger } from "../middleware/logger.js";
 import { logActivity } from "./activity-log.js";
@@ -37,7 +37,7 @@ import { secretService } from "./secrets.js";
 
 const OPEN_ISSUE_STATUSES = ["backlog", "todo", "in_progress", "in_review", "blocked"];
 const LIVE_HEARTBEAT_RUN_STATUSES = ["queued", "running"];
-const TERMINAL_ISSUE_STATUSES = new Set(["done", "cancelled"]);
+const _TERMINAL_ISSUE_STATUSES = new Set(["done", "cancelled"]);
 const MAX_CATCH_UP_RUNS = 25;
 const WEEKDAY_INDEX: Record<string, number> = {
   Sun: 0,
@@ -160,7 +160,7 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
       .then((rows) => rows[0] ?? null);
   }
 
-  async function assertRoutineAccess(companyId: string, routineId: string) {
+  async function _assertRoutineAccess(companyId: string, routineId: string) {
     const routine = await getRoutineById(routineId);
     if (!routine) throw notFound("Routine not found");
     if (routine.companyId !== companyId) throw forbidden("Routine must belong to same company");
@@ -560,7 +560,7 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
       if (input.routine.playbookId) {
         try {
           const playbookExec = playbookExecutionService(txDb);
-          const pbResult = await playbookExec.runPlaybook({
+          const _pbResult = await playbookExec.runPlaybook({
             companyId: input.routine.companyId,
             playbookId: input.routine.playbookId,
             triggeredBy: `routine:${input.routine.id}`,

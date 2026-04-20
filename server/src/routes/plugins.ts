@@ -812,7 +812,7 @@ export function pluginRoutes(
 
     // Validate request body
     const body = req.body as PluginBridgeDataRequest | undefined;
-    if (!body || !body.key || typeof body.key !== "string") {
+    if (!body?.key || typeof body.key !== "string") {
       res.status(400).json({ error: '"key" is required and must be a string' });
       return;
     }
@@ -891,7 +891,7 @@ export function pluginRoutes(
 
     // Validate request body
     const body = req.body as PluginBridgeActionRequest | undefined;
-    if (!body || !body.key || typeof body.key !== "string") {
+    if (!body?.key || typeof body.key !== "string") {
       res.status(400).json({ error: '"key" is required and must be a string' });
       return;
     }
@@ -1402,7 +1402,7 @@ export function pluginRoutes(
     }
     if (since) {
       const sinceDate = new Date(since);
-      if (!isNaN(sinceDate.getTime())) {
+      if (!Number.isNaN(sinceDate.getTime())) {
         conditions.push(gte(pluginLogs.createdAt, sinceDate));
       }
     }
@@ -1756,7 +1756,7 @@ export function pluginRoutes(
     }
 
     const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 25;
-    if (isNaN(limit) || limit < 1 || limit > 500) {
+    if (Number.isNaN(limit) || limit < 1 || limit > 500) {
       res.status(400).json({ error: "limit must be a number between 1 and 500" });
       return;
     }

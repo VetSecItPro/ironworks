@@ -34,7 +34,6 @@ export function StepCompany({ companyName, companyGoal, onCompanyNameChange, onC
           placeholder="e.g., Acme Corp"
           value={companyName}
           onChange={(e) => onCompanyNameChange(e.target.value)}
-          autoFocus
         />
         {companyName.trim().length > 0 && (
           <p className="mt-1.5 text-xs text-muted-foreground">

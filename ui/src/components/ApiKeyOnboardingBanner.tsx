@@ -26,7 +26,7 @@ const PROVIDERS: { key: ProviderKey; label: string; placeholder: string }[] = [
   { key: "OLLAMA_BASE_URL", label: "Ollama (self-hosted)", placeholder: "http://localhost:11434" },
 ];
 
-function maskKey(key: string): string {
+function _maskKey(key: string): string {
   if (key.length < 12) return "****";
   return `${key.slice(0, 7)}...${key.slice(-4)}`;
 }

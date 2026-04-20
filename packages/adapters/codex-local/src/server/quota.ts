@@ -439,7 +439,7 @@ class CodexRpcClient {
     timeoutMs = 6_000,
   ): Promise<Record<string, unknown>> {
     const id = this.nextId++;
-    const payload = JSON.stringify({ id, method, params }) + "\n";
+    const payload = `${JSON.stringify({ id, method, params })}\n`;
     return new Promise<Record<string, unknown>>((resolve, reject) => {
       const timer = setTimeout(() => {
         this.pending.delete(id);
@@ -451,7 +451,7 @@ class CodexRpcClient {
   }
 
   private notify(method: string, params: Record<string, unknown> = {}) {
-    this.proc.stdin.write(JSON.stringify({ method, params }) + "\n");
+    this.proc.stdin.write(`${JSON.stringify({ method, params })}\n`);
   }
 
   async initialize() {

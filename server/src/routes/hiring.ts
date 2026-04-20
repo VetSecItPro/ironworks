@@ -227,7 +227,7 @@ export function hiringRoutes(db: Db) {
       .then((rows) => rows[0] ?? null);
 
     const tier = subRow?.planTier ?? "starter";
-    const limits = PLAN_AGENT_LIMITS[tier] ?? PLAN_AGENT_LIMITS["starter"]!;
+    const limits = PLAN_AGENT_LIMITS[tier] ?? PLAN_AGENT_LIMITS.starter!;
     const empType = existing.employmentType as EmploymentType;
 
     const [counts] = await db

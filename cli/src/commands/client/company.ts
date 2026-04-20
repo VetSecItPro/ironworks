@@ -136,7 +136,7 @@ function parseInclude(
   input: string | undefined,
   fallback: CompanyPortabilityInclude = DEFAULT_EXPORT_INCLUDE,
 ): CompanyPortabilityInclude {
-  if (!input || !input.trim()) return { ...fallback };
+  if (!input?.trim()) return { ...fallback };
   const values = input
     .split(",")
     .map((part) => part.trim().toLowerCase())
@@ -155,7 +155,7 @@ function parseInclude(
 }
 
 function parseAgents(input: string | undefined): "all" | string[] {
-  if (!input || !input.trim()) return "all";
+  if (!input?.trim()) return "all";
   const normalized = input.trim().toLowerCase();
   if (normalized === "all") return "all";
   const values = input
@@ -167,7 +167,7 @@ function parseAgents(input: string | undefined): "all" | string[] {
 }
 
 function parseCsvValues(input: string | undefined): string[] {
-  if (!input || !input.trim()) return [];
+  if (!input?.trim()) return [];
   return Array.from(
     new Set(
       input

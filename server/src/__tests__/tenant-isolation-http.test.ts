@@ -249,7 +249,7 @@ const mockFinanceService = vi.hoisted(() => ({
 }));
 
 const mockActivityService = vi.hoisted(() => ({
-  list: vi.fn().mockImplementation((filters: any) => []),
+  list: vi.fn().mockImplementation((_filters: any) => []),
   create: vi.fn(),
   forIssue: vi.fn().mockResolvedValue([]),
   runsForIssue: vi.fn().mockResolvedValue([]),
@@ -280,7 +280,7 @@ const mockCompanyService = vi.hoisted(() => ({
 }));
 
 const mockCompanySkillService = vi.hoisted(() => ({
-  list: vi.fn().mockImplementation((companyId: string) => []),
+  list: vi.fn().mockImplementation((_companyId: string) => []),
   getById: vi.fn(),
   create: vi.fn(),
   update: vi.fn(),
@@ -923,11 +923,11 @@ describe("Tenant Isolation — HTTP-level cross-company access", () => {
     });
 
     it("Instance admin CAN list Company A issues", async () => {
-      const res = await request(appAdmin).get(`/api/companies/${COMPANY_A_ID}/issues`).expect(200);
+      const _res = await request(appAdmin).get(`/api/companies/${COMPANY_A_ID}/issues`).expect(200);
     });
 
     it("Instance admin CAN list Company B goals", async () => {
-      const res = await request(appAdmin).get(`/api/companies/${COMPANY_B_ID}/goals`).expect(200);
+      const _res = await request(appAdmin).get(`/api/companies/${COMPANY_B_ID}/goals`).expect(200);
     });
   });
 

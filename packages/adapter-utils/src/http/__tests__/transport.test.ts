@@ -4,12 +4,11 @@ import {
   HttpAdapterAuthError,
   HttpAdapterClientError,
   HttpAdapterConfigError,
-  HttpAdapterNetworkError,
   HttpAdapterRateLimitError,
   HttpAdapterServerError,
   HttpAdapterTimeoutError,
 } from "../errors.js";
-import { createTransport, sendJson, sendJsonStream, type TransportOptions } from "../transport.js";
+import { createTransport, sendJson, sendJsonStream } from "../transport.js";
 
 const origDispatcher = getGlobalDispatcher();
 let mockAgent: MockAgent;

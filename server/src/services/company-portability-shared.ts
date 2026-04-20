@@ -1,58 +1,40 @@
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { promises as fs } from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
-import {
-  readIronworksSkillSyncPreference,
-  writeIronworksSkillSyncPreference,
-} from "@ironworksai/adapter-utils/server-utils";
 import type { Db } from "@ironworksai/db";
 import type {
   CompanyPortabilityAgentManifestEntry,
   CompanyPortabilityCollisionStrategy,
   CompanyPortabilityEnvInput,
-  CompanyPortabilityExport,
   CompanyPortabilityExportPreviewResult,
-  CompanyPortabilityExportResult,
   CompanyPortabilityFileEntry,
-  CompanyPortabilityImport,
-  CompanyPortabilityImportResult,
   CompanyPortabilityInclude,
   CompanyPortabilityIssueManifestEntry,
   CompanyPortabilityIssueRoutineManifestEntry,
   CompanyPortabilityIssueRoutineTriggerManifestEntry,
   CompanyPortabilityManifest,
-  CompanyPortabilityPreview,
-  CompanyPortabilityPreviewAgentPlan,
   CompanyPortabilityPreviewResult,
-  CompanyPortabilityProjectManifestEntry,
   CompanyPortabilityProjectWorkspaceManifestEntry,
   CompanyPortabilitySidebarOrder,
-  CompanyPortabilitySkillManifestEntry,
   CompanySkill,
 } from "@ironworksai/shared";
 import {
   deriveProjectUrlKey,
-  ISSUE_PRIORITIES,
-  ISSUE_STATUSES,
   normalizeAgentUrlKey,
-  PROJECT_STATUSES,
   ROUTINE_CATCH_UP_POLICIES,
   ROUTINE_CONCURRENCY_POLICIES,
-  ROUTINE_STATUSES,
   ROUTINE_TRIGGER_KINDS,
   ROUTINE_TRIGGER_SIGNING_MODES,
 } from "@ironworksai/shared";
-import { notFound, unprocessable } from "../errors.js";
-import { type OrgNode, renderOrgChartPng } from "../routes/org-chart-svg.js";
+import { unprocessable } from "../errors.js";
+import { type OrgNode } from "../routes/org-chart-svg.js";
 import type { StorageService } from "../storage/types.js";
 import { accessService } from "./access.js";
 import { agentInstructionsService } from "./agent-instructions.js";
 import { agentService } from "./agents.js";
 import { assetService } from "./assets.js";
 import { companyService } from "./companies.js";
-import { generateReadme } from "./company-export-readme.js";
 import { companySkillService } from "./company-skills.js";
 import { validateCron } from "./cron.js";
 import { issueService } from "./issues.js";
@@ -92,7 +74,7 @@ export function buildOrgTreeFromManifest(agents: CompanyPortabilityManifest["age
   };
   // Find roots: agents whose reportsToSlug is null or points to a non-existent slug
   const roots = agents.filter((a) => !a.reportsToSlug || !bySlug.has(a.reportsToSlug));
-  const rootSlugs = new Set(roots.map((r) => r.slug));
+  const _rootSlugs = new Set(roots.map((r) => r.slug));
   // Start from null parent, but also include orphans
   const tree = build(null);
   for (const root of roots) {
@@ -594,7 +576,7 @@ export function normalizeRoutineExtension(value: unknown): CompanyPortabilityIss
   return stripEmptyValues(routine) ? routine : null;
 }
 
-function buildRoutineManifestFromLiveRoutine(routine: RoutineLike): CompanyPortabilityIssueRoutineManifestEntry {
+function _buildRoutineManifestFromLiveRoutine(routine: RoutineLike): CompanyPortabilityIssueRoutineManifestEntry {
   return {
     concurrencyPolicy: routine.concurrencyPolicy,
     catchUpPolicy: routine.catchUpPolicy,
@@ -2137,7 +2119,7 @@ export function parseYamlFile(raw: string): Record<string, unknown> {
 export function buildYamlFile(value: Record<string, unknown>, opts?: { preserveEmptyStrings?: boolean }) {
   const cleaned = stripEmptyValues(value, opts);
   if (!isPlainRecord(cleaned)) return "{}\n";
-  return renderYamlBlock(cleaned, 0).join("\n") + "\n";
+  return `${renderYamlBlock(cleaned, 0).join("\n")}\n`;
 }
 
 export function parseFrontmatterMarkdown(raw: string): MarkdownDoc {
@@ -2309,7 +2291,7 @@ export function buildManifestFromPackageFiles(
   const ironworksTasks = isPlainRecord(ironworksExtension.tasks) ? ironworksExtension.tasks : {};
   const ironworksRoutines = isPlainRecord(ironworksExtension.routines) ? ironworksExtension.routines : {};
   const companyName = asString(companyFrontmatter.name) ?? opts?.sourceLabel?.companyName ?? "Imported Company";
-  const companySlug = asString(companyFrontmatter.slug) ?? normalizeAgentUrlKey(companyName) ?? "company";
+  const _companySlug = asString(companyFrontmatter.slug) ?? normalizeAgentUrlKey(companyName) ?? "company";
 
   const includeEntries = readIncludeEntries(companyFrontmatter);
   const referencedAgentPaths = includeEntries

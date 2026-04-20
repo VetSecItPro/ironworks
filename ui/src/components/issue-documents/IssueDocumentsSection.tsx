@@ -1,4 +1,4 @@
-import type { Issue, IssueDocument } from "@ironworksai/shared";
+import type { Issue } from "@ironworksai/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FileText, Plus, X } from "lucide-react";
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -9,7 +9,7 @@ import { ApiError } from "../../api/client";
 import { issuesApi } from "../../api/issues";
 import { useAutosaveIndicator } from "../../hooks/useAutosaveIndicator";
 import { queryKeys } from "../../lib/queryKeys";
-import { cn, relativeTime } from "../../lib/utils";
+import { cn } from "../../lib/utils";
 import { MarkdownBody } from "../MarkdownBody";
 import { MarkdownEditor, type MentionOption } from "../MarkdownEditor";
 import { DocumentCard } from "./DocumentCard";

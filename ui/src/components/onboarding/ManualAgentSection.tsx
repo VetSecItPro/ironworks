@@ -2,7 +2,7 @@ import { DEFAULT_CODEX_LOCAL_MODEL } from "@ironworksai/adapter-codex-local";
 import { DEFAULT_CURSOR_LOCAL_MODEL } from "@ironworksai/adapter-cursor-local";
 import { DEFAULT_GEMINI_LOCAL_MODEL } from "@ironworksai/adapter-gemini-local";
 import type { AdapterEnvironmentTestResult } from "@ironworksai/shared";
-import { Bot, Check, ChevronDown, Code, Gem, MousePointer2, Terminal, Wand2, X } from "lucide-react";
+import { Bot, Check, ChevronDown, Code, Gem, MousePointer2, Terminal, Wand2 } from "lucide-react";
 import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -106,7 +106,6 @@ export function ManualAgentSection({
           placeholder="CEO"
           value={agentName}
           onChange={(e) => onAgentNameChange(e.target.value)}
-          autoFocus
         />
       </div>
 
@@ -255,7 +254,6 @@ export function ManualAgentSection({
                   placeholder="Search models..."
                   value={modelSearch}
                   onChange={(e) => onModelSearchChange(e.target.value)}
-                  autoFocus
                 />
                 {adapterType !== "opencode_local" && (
                   <button

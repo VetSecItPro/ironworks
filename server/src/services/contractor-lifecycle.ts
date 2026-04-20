@@ -1,7 +1,7 @@
 import type { Db } from "@ironworksai/db";
 import { agentMemoryEntries, agents, issues } from "@ironworksai/db";
 import type { TerminationReason } from "@ironworksai/shared";
-import { and, eq, isNull, lte, ne, sql } from "drizzle-orm";
+import { and, eq, isNull, ne, sql } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 import { logActivity } from "./activity-log.js";
 import { archiveAgentWorkspace } from "./agent-workspace.js";

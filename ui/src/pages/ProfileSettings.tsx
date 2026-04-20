@@ -1,4 +1,4 @@
-import { AlertTriangle, Bell, Check, Globe, Keyboard, Layers, Lock, Palette, User } from "lucide-react";
+import { AlertTriangle, Bell, Check, Globe, Keyboard, Lock, Palette, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useBreadcrumbs } from "@/context/BreadcrumbContext";

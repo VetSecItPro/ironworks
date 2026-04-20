@@ -414,7 +414,7 @@ export function companyRoutes(db: Db, storage?: StorageService) {
     }
 
     // Only known capability names are accepted
-    const knownCapabilities = new Set(Object.keys(ROLE_DEFAULT_CAPABILITIES["default"]!));
+    const knownCapabilities = new Set(Object.keys(ROLE_DEFAULT_CAPABILITIES.default!));
     knownCapabilities.add("canCreateAgents"); // legacy
     if (!knownCapabilities.has(capability)) {
       res.status(422).json({ error: `Unknown capability: ${capability}` });

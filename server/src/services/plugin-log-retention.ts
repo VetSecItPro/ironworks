@@ -1,6 +1,6 @@
 import type { Db } from "@ironworksai/db";
 import { pluginLogs } from "@ironworksai/db";
-import { lt, sql } from "drizzle-orm";
+import { lt } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 
 /** Default retention period: 7 days. */

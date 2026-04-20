@@ -1,5 +1,5 @@
 import type { Request } from "express";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { assertCompanyAccess } from "../routes/authz.ts";
 
 function makeRequest(overrides: Partial<Request["actor"]> = {}): Request {

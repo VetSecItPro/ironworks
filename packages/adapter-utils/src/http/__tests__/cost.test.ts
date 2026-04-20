@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type CostSummary, computeCost } from "../cost.js";
+import { computeCost } from "../cost.js";
 
 describe("computeCost — Anthropic with caching", () => {
   it("Claude Opus 4.7: 1k input, 500 output", () => {

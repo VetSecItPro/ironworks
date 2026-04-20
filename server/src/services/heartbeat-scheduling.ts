@@ -22,7 +22,6 @@ import type { AdapterSessionCodec } from "../adapters/index.js";
 import { getServerAdapter, runningProcesses } from "../adapters/index.js";
 import { asBoolean, asNumber, parseObject } from "../adapters/utils.js";
 import { conflict, notFound } from "../errors.js";
-import { resolveDefaultAgentWorkspaceDir } from "../home-paths.js";
 import { logger } from "../middleware/logger.js";
 import { logActivity } from "./activity-log.js";
 import type { BudgetEnforcementScope } from "./budgets.js";
@@ -31,23 +30,16 @@ import {
   buildExplicitResumeSessionOverride,
   DEFERRED_WAKE_CONTEXT_KEY,
   DETACHED_PROCESS_ERROR_CODE,
-  deriveCommentId,
   deriveTaskKey,
-  deriveTaskKeyWithHeartbeatFallback,
   enrichWakeContextSnapshot,
-  HEARTBEAT_MAX_CONCURRENT_RUNS_DEFAULT,
-  HEARTBEAT_MAX_CONCURRENT_RUNS_MAX,
   isProcessAlive,
   isSameTaskScope,
   isTrackedLocalChildProcessAdapter,
-  MANAGED_WORKSPACE_GIT_CLONE_TIMEOUT_MS,
   mergeCoalescedContextSnapshot,
   normalizeAgentNameKey,
   normalizeMaxConcurrentRuns,
   normalizeSessionParams,
   readNonEmptyString,
-  readRawUsageTotals,
-  SESSIONED_LOCAL_ADAPTERS,
   startLocksByAgent,
   truncateDisplayId,
   type WakeupOptions,

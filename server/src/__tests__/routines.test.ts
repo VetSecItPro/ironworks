@@ -85,7 +85,7 @@ vi.mock("../middleware/logger.js", () => ({
 }));
 
 vi.mock("../middleware/validate.js", () => ({
-  validate: () => (req: any, _res: any, next: any) => next(),
+  validate: () => (_req: any, _res: any, next: any) => next(),
 }));
 
 // ── App builder ─────────────────────────────────────────────────────────────

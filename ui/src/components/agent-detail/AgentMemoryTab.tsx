@@ -1,4 +1,4 @@
-import { MEMORY_TYPE_LABELS, MEMORY_TYPES, type MemoryType } from "@ironworksai/shared";
+import { MEMORY_TYPE_LABELS, MEMORY_TYPES } from "@ironworksai/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Brain, ChevronDown, ChevronRight, Plus, X } from "lucide-react";
 import { useState } from "react";

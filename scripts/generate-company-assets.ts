@@ -1,5 +1,4 @@
 #!/usr/bin/env npx tsx
-import type { CompanyPortabilityManifest } from "@ironworksai/shared";
 /**
  * Generate org chart images and READMEs for agent company packages.
  *
@@ -12,8 +11,9 @@ import type { CompanyPortabilityManifest } from "@ironworksai/shared";
  *
  * Processes each subdirectory that contains a COMPANY.md file.
  */
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import type { CompanyPortabilityManifest } from "@ironworksai/shared";
 import { type OrgChartOverlay, type OrgNode, renderOrgChartPng } from "../server/src/routes/org-chart-svg.js";
 import { generateReadme } from "../server/src/services/company-export-readme.js";
 

@@ -141,7 +141,7 @@ function resolveWorktreeRuntimeContext(
 
 function writeConfigFile(configPath: string, config: IronworksConfig): void {
   fs.mkdirSync(path.dirname(configPath), { recursive: true });
-  fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n", { mode: 0o600 });
+  fs.writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`, { mode: 0o600 });
 }
 
 function resolveRepoManagedWorktreesRoot(worktreeRoot: string): string | null {

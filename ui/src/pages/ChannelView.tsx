@@ -291,37 +291,35 @@ export function ChannelView() {
                   : "No messages yet. Start the conversation."}
               </div>
             ) : (
-              <>
-                {filteredMessages.map((msg, idx) => (
-                  <div key={msg.id}>
-                    {/* New messages divider */}
-                    {newMessageDividerIndex !== null && idx === newMessageDividerIndex && (
-                      <div className="flex items-center gap-3 px-4 py-1.5">
-                        <div className="flex-1 h-px bg-red-400/50" />
-                        <span className="text-[11px] font-medium text-red-500 shrink-0">New messages</span>
-                        <div className="flex-1 h-px bg-red-400/50" />
-                      </div>
-                    )}
-                    <MessageRow
-                      msg={msg}
-                      agentMap={agentMap}
-                      issueMap={issueMap}
-                      replyMap={replyMap}
-                      isPinned={pinnedMessages.some((p) => p.id === msg.id)}
-                      onPin={(id) => pinMutation.mutate(id)}
-                      onUnpin={(id) => unpinMutation.mutate(id)}
-                      onCreateIssue={(id) => createIssueMutation.mutate(id)}
-                      onReply={(id) => {
-                        setReplyToId(id);
-                        textareaRef.current?.focus();
-                      }}
-                      threadReplies={threadMap.get(msg.id)}
-                      companyId={selectedCompanyId!}
-                      channelId={channelId!}
-                    />
-                  </div>
-                ))}
-              </>
+              filteredMessages.map((msg, idx) => (
+                <div key={msg.id}>
+                  {/* New messages divider */}
+                  {newMessageDividerIndex !== null && idx === newMessageDividerIndex && (
+                    <div className="flex items-center gap-3 px-4 py-1.5">
+                      <div className="flex-1 h-px bg-red-400/50" />
+                      <span className="text-[11px] font-medium text-red-500 shrink-0">New messages</span>
+                      <div className="flex-1 h-px bg-red-400/50" />
+                    </div>
+                  )}
+                  <MessageRow
+                    msg={msg}
+                    agentMap={agentMap}
+                    issueMap={issueMap}
+                    replyMap={replyMap}
+                    isPinned={pinnedMessages.some((p) => p.id === msg.id)}
+                    onPin={(id) => pinMutation.mutate(id)}
+                    onUnpin={(id) => unpinMutation.mutate(id)}
+                    onCreateIssue={(id) => createIssueMutation.mutate(id)}
+                    onReply={(id) => {
+                      setReplyToId(id);
+                      textareaRef.current?.focus();
+                    }}
+                    threadReplies={threadMap.get(msg.id)}
+                    companyId={selectedCompanyId!}
+                    channelId={channelId!}
+                  />
+                </div>
+              ))
             )}
             <div ref={bottomRef} />
           </>

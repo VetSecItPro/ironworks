@@ -516,7 +516,7 @@ export function createTestHarness(options: TestHarnessOptions): TestHarness {
         agents.set(agentId, updated);
         return updated;
       },
-      async invoke(agentId, companyId, opts) {
+      async invoke(agentId, companyId, _opts) {
         requireCapability(manifest, capabilitySet, "agents.invoke");
         const cid = requireCompanyId(companyId);
         const agent = agents.get(agentId);
@@ -527,7 +527,7 @@ export function createTestHarness(options: TestHarnessOptions): TestHarness {
         return { runId: randomUUID() };
       },
       sessions: {
-        async create(agentId, companyId, opts) {
+        async create(agentId, companyId, _opts) {
           requireCapability(manifest, capabilitySet, "agent.sessions.create");
           const cid = requireCompanyId(companyId);
           const agent = agents.get(agentId);

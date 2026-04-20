@@ -1,6 +1,6 @@
 import type { Issue, Project } from "@ironworksai/shared";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { cn, formatCents } from "../../lib/utils";
+import { cn } from "../../lib/utils";
 import { Identity } from "../Identity";
 import type { AgentPerfRow } from "./ratingUtils";
 

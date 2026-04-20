@@ -1,4 +1,4 @@
-import type { Agent, AgentSkillEntry } from "@ironworksai/shared";
+import type { Agent } from "@ironworksai/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";

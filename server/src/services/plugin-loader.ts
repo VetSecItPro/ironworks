@@ -543,9 +543,9 @@ async function readPackageJson(dir: string): Promise<Record<string, unknown> | n
  * @see PLUGIN_SPEC.md §10 — Package Contract
  */
 function resolveManifestPath(packageRoot: string, pkgJson: Record<string, unknown>): string | null {
-  const ironworksPlugin = pkgJson["ironworksPlugin"];
+  const ironworksPlugin = pkgJson.ironworksPlugin;
   if (ironworksPlugin !== null && typeof ironworksPlugin === "object" && !Array.isArray(ironworksPlugin)) {
-    const manifestRelPath = (ironworksPlugin as Record<string, unknown>)["manifest"];
+    const manifestRelPath = (ironworksPlugin as Record<string, unknown>).manifest;
     if (typeof manifestRelPath === "string") {
       // NOTE: the resolved path is returned as-is even if the file does not yet
       // exist on disk (e.g. the package has not been built).  Callers MUST guard
@@ -795,7 +795,7 @@ export function pluginLoader(
       }
       resolvedPackagePath = absLocalPath;
       const pkgJson = await readPackageJson(absLocalPath);
-      resolvedPackageName = typeof pkgJson?.["name"] === "string" ? pkgJson["name"] : path.basename(absLocalPath);
+      resolvedPackageName = typeof pkgJson?.name === "string" ? pkgJson.name : path.basename(absLocalPath);
 
       log.info(
         { localPath: absLocalPath, packageName: resolvedPackageName },
@@ -904,7 +904,7 @@ export function pluginLoader(
       // Dynamic import works for both .js (ESM) and .cjs (CJS) manifests
       const mod = (await import(manifestPath)) as Record<string, unknown>;
       // The manifest may be the default export or the module itself
-      raw = mod["default"] ?? mod;
+      raw = mod.default ?? mod;
     } catch (err) {
       throw new Error(`Failed to load manifest module at ${manifestPath}: ${String(err)}`);
     }
@@ -920,8 +920,8 @@ export function pluginLoader(
     const pkgJson = await readPackageJson(packagePath);
     if (!pkgJson) return null;
 
-    const packageName = typeof pkgJson["name"] === "string" ? pkgJson["name"] : "";
-    const version = typeof pkgJson["version"] === "string" ? pkgJson["version"] : "0.0.0";
+    const packageName = typeof pkgJson.name === "string" ? pkgJson.name : "";
+    const version = typeof pkgJson.version === "string" ? pkgJson.version : "0.0.0";
 
     // Determine if this is a plugin package at all
     const hasIronworksPlugin = "ironworksPlugin" in pkgJson;
@@ -1079,7 +1079,7 @@ export function pluginLoader(
           if (plugin) discovered.push(plugin);
         } catch (err) {
           const pkgJson = await readPackageJson(entryPath);
-          const packageName = typeof pkgJson?.["name"] === "string" ? pkgJson["name"] : entry;
+          const packageName = typeof pkgJson?.name === "string" ? pkgJson.name : entry;
           errors.push({ packagePath: entryPath, packageName, error: String(err) });
         }
       }
@@ -1172,7 +1172,7 @@ export function pluginLoader(
             if (plugin) discovered.push(plugin);
           } catch (err) {
             const pkgJson = await readPackageJson(entryPath);
-            const packageName = typeof pkgJson?.["name"] === "string" ? pkgJson["name"] : entry;
+            const packageName = typeof pkgJson?.name === "string" ? pkgJson.name : entry;
             errors.push({ packagePath: entryPath, packageName, error: String(err) });
           }
         }
@@ -1195,7 +1195,7 @@ export function pluginLoader(
       if (!pkgJson) return null;
 
       const hasIronworksPlugin = "ironworksPlugin" in pkgJson;
-      const packageName = typeof pkgJson["name"] === "string" ? pkgJson["name"] : "";
+      const packageName = typeof pkgJson.name === "string" ? pkgJson.name : "";
       const nameMatchesConvention = isPluginPackageName(packageName);
 
       if (!hasIronworksPlugin && !nameMatchesConvention) {
@@ -1510,7 +1510,7 @@ export function pluginLoader(
 
       if (plugin.status !== "ready") {
         throw new Error(
-          `Cannot load plugin in status '${plugin.status}'. ` + `Plugin must be in 'installed' or 'ready' status.`,
+          `Cannot load plugin in status '${plugin.status}'. Plugin must be in 'installed' or 'ready' status.`,
         );
       }
 

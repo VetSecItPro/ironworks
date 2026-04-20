@@ -8,7 +8,7 @@
 
 import type { Db } from "@ironworksai/db";
 import { workflowMaturity } from "@ironworksai/db";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 
 export type MaturityLevel = "crawl" | "walk" | "run";

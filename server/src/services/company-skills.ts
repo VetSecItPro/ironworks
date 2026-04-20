@@ -1391,7 +1391,7 @@ function deriveSkillSourceInfo(skill: CompanySkill): {
     const projectName = asString(metadata.projectName);
     const workspaceName = asString(metadata.workspaceName);
     const isProjectScan = metadata.sourceKind === "project_scan";
-    if (localSkillDir && localSkillDir.startsWith(managedRoot)) {
+    if (localSkillDir?.startsWith(managedRoot)) {
       return {
         editable: true,
         editableReason: null,

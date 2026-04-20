@@ -1,6 +1,6 @@
 import { AGENT_ROLE_LABELS, type Agent, DEPARTMENT_LABELS } from "@ironworksai/shared";
 import { useQuery } from "@tanstack/react-query";
-import { Briefcase, CheckCircle2, Clock, UserPlus, Users } from "lucide-react";
+import { Briefcase, CheckCircle2, UserPlus, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { agentsApi } from "../api/agents";

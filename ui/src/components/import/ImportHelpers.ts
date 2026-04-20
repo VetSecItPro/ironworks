@@ -1,4 +1,4 @@
-import type { CompanyPortabilityFileEntry, CompanyPortabilityPreviewResult } from "@ironworksai/shared";
+import type { CompanyPortabilityPreviewResult } from "@ironworksai/shared";
 
 export const ACTION_COLORS: Record<string, string> = {
   create: "text-emerald-500 border-emerald-500/30",

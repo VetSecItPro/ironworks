@@ -159,7 +159,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     for (const msg of nonSystem) {
       if (totalChars() <= PROMPT_CHAR_BUDGET) break;
       const excess = totalChars() - PROMPT_CHAR_BUDGET;
-      msg.content = msg.content.slice(0, Math.max(0, msg.content.length - excess)) + "\n[content truncated for size]";
+      msg.content = `${msg.content.slice(0, Math.max(0, msg.content.length - excess))}\n[content truncated for size]`;
     }
   }
 

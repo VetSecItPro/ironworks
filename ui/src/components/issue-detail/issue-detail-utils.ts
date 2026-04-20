@@ -1,5 +1,3 @@
-import type { ActivityEvent } from "@ironworksai/shared";
-
 export type CommentReassignment = {
   assigneeAgentId: string | null;
   assigneeUserId: string | null;
@@ -50,7 +48,7 @@ export function usageNumber(usage: Record<string, unknown> | null, ...keys: stri
 
 export function truncate(text: string, max: number): string {
   if (text.length <= max) return text;
-  return text.slice(0, max - 1) + "\u2026";
+  return `${text.slice(0, max - 1)}\u2026`;
 }
 
 export function isMarkdownFile(file: File) {

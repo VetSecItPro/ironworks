@@ -1,6 +1,6 @@
 import type { Db } from "@ironworksai/db";
 import { agents } from "@ironworksai/db";
-import { and, eq, inArray, ne } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { Router } from "express";
 import { logActivity } from "../services/activity-log.js";
 import { getMemoryHealth } from "../services/agent-memory.js";

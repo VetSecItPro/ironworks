@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getPricing, hasPricing, type ModelPricing, PRICING_TABLE, type PricingProvider } from "../pricing-table.js";
+import { getPricing, hasPricing, PRICING_TABLE, type PricingProvider } from "../pricing-table.js";
 
 describe("PRICING_TABLE structure", () => {
   it("has entries for all four providers", () => {
@@ -10,7 +10,7 @@ describe("PRICING_TABLE structure", () => {
   });
 
   it("each provider entry is a Record of modelId → ModelPricing", () => {
-    for (const [provider, models] of Object.entries(PRICING_TABLE)) {
+    for (const [_provider, models] of Object.entries(PRICING_TABLE)) {
       expect(typeof models).toBe("object");
       for (const [modelId, pricing] of Object.entries(models)) {
         expect(typeof modelId).toBe("string");
@@ -55,7 +55,7 @@ describe("PRICING_TABLE structure", () => {
   });
 
   it("includes o4 and o4-mini for openai with reasoning-token awareness", () => {
-    const o4 = PRICING_TABLE.openai["o4"];
+    const o4 = PRICING_TABLE.openai.o4;
     const o4mini = PRICING_TABLE.openai["o4-mini"];
     expect(o4).toBeDefined();
     expect(o4mini).toBeDefined();

@@ -1,6 +1,5 @@
 import type { Project } from "@ironworksai/shared";
 import { ExternalLink, Github, Trash2 } from "lucide-react";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "../../lib/utils";

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { type CircuitBreakerOptions, createCircuitBreaker } from "../circuit-breaker.js";
+import { createCircuitBreaker } from "../circuit-breaker.js";
 import { HttpAdapterCircuitOpenError, HttpAdapterServerError } from "../errors.js";
 
 describe("circuit breaker", () => {

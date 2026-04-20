@@ -338,5 +338,5 @@ export function TypingIndicator({ agentName, visible }: TypingIndicatorProps) {
 
 export function formatQuoteReply(text: string): string {
   const lines = text.split("\n").map((line) => `> ${line}`);
-  return lines.join("\n") + "\n\n";
+  return `${lines.join("\n")}\n\n`;
 }

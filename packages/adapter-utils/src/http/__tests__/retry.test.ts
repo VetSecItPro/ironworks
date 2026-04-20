@@ -8,7 +8,7 @@ import {
   HttpAdapterStreamBreak,
   HttpAdapterTimeoutError,
 } from "../errors.js";
-import { DEFAULT_RETRY_POLICY, type RetryContext, type RetryPolicy, runWithRetry } from "../retry.js";
+import { DEFAULT_RETRY_POLICY, type RetryContext, runWithRetry } from "../retry.js";
 
 describe("runWithRetry — happy path", () => {
   it("returns the function result on first success", async () => {

@@ -3,7 +3,6 @@ import { ArrowLeft, Clock } from "lucide-react";
 import { Link } from "@/lib/router";
 import { useSidebar } from "../../context/SidebarContext";
 import { cn, formatTokens, relativeTime } from "../../lib/utils";
-import { StatusBadge } from "../StatusBadge";
 import { RunDetail } from "./AgentRunTranscript";
 import { runMetrics, runStatusIcons, sourceLabels } from "./agent-detail-utils";
 

@@ -1,6 +1,6 @@
 import type { Db } from "@ironworksai/db";
 import { playbookSteps, playbooks } from "@ironworksai/db";
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 
 export interface CreatePlaybookInput {
   companyId: string;

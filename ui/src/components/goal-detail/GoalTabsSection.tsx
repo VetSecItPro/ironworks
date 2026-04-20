@@ -1,6 +1,5 @@
 import type { ActivityEvent, Agent, Goal, GoalCheckIn, Issue, Project } from "@ironworksai/shared";
 import { History, Plus, Target, Trash2 } from "lucide-react";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

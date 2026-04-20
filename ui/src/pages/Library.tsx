@@ -155,7 +155,7 @@ export function Library() {
       const next = new Set(prev);
       if (next.has(dirPath)) {
         for (const p of next) {
-          if (p === dirPath || p.startsWith(dirPath + "/")) next.delete(p);
+          if (p === dirPath || p.startsWith(`${dirPath}/`)) next.delete(p);
         }
       } else {
         next.add(dirPath);

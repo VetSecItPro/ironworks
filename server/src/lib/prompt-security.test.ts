@@ -38,7 +38,7 @@ describe("sanitizeForPrompt", () => {
     const text = "a".repeat(50);
     const result = sanitizeForPrompt(text, 50);
     expect(result).not.toContain("[content truncated]");
-    expect(result).toBe("<user_content>\n" + text + "\n</user_content>");
+    expect(result).toBe(`<user_content>\n${text}\n</user_content>`);
   });
 
   it("does not add truncation notice when text is shorter than maxLength", () => {
@@ -185,7 +185,7 @@ describe("sanitizeForPrompt", () => {
   it("truncation notice appears between content and closing tag", () => {
     const text = "b".repeat(20);
     const result = sanitizeForPrompt(text, 10);
-    expect(result).toBe("<user_content>\n" + "b".repeat(10) + "\n[content truncated]\n</user_content>");
+    expect(result).toBe(`<user_content>\n${"b".repeat(10)}\n[content truncated]\n</user_content>`);
   });
 });
 
@@ -218,7 +218,7 @@ describe("redactSecrets", () => {
   });
 
   it("redacts OpenAI-style sk- keys with long suffix", () => {
-    const key = "sk-" + "A".repeat(48);
+    const key = `sk-${"A".repeat(48)}`;
     const text = `Using key: ${key}`;
     const result = redactSecrets(text);
     expect(result).not.toContain(key);
@@ -239,7 +239,7 @@ describe("redactSecrets", () => {
   // the current SECRET_PATTERNS. These tests document that actual behavior.
 
   it("does NOT redact Stripe sk_live_ keys (uses underscore, not hyphen — known gap)", () => {
-    const stripeKey = "sk_live_" + "a".repeat(40);
+    const stripeKey = `sk_live_${"a".repeat(40)}`;
     const text = `stripe key: ${stripeKey}`;
     const result = redactSecrets(text);
     // sk_live_ uses underscore, not hyphen; not matched by current pattern
@@ -247,7 +247,7 @@ describe("redactSecrets", () => {
   });
 
   it("does NOT redact Stripe sk_test_ keys (uses underscore, not hyphen — known gap)", () => {
-    const stripeKey = "sk_test_" + "a".repeat(40);
+    const stripeKey = `sk_test_${"a".repeat(40)}`;
     const text = `stripe test key: ${stripeKey}`;
     const result = redactSecrets(text);
     expect(result).toContain(stripeKey);
@@ -269,14 +269,14 @@ describe("redactSecrets", () => {
   // No GitHub-specific pattern exists in SECRET_PATTERNS.
 
   it("does NOT redact GitHub ghp_ tokens (no GitHub pattern — known gap)", () => {
-    const ghToken = "ghp_" + "a".repeat(36);
+    const ghToken = `ghp_${"a".repeat(36)}`;
     const text = `github token: ${ghToken}`;
     const result = redactSecrets(text);
     expect(result).toContain(ghToken);
   });
 
   it("does NOT redact GitHub github_pat_ tokens (no GitHub pattern — known gap)", () => {
-    const ghToken = "github_pat_" + "a".repeat(50);
+    const ghToken = `github_pat_${"a".repeat(50)}`;
     const text = `github PAT: ${ghToken}`;
     const result = redactSecrets(text);
     expect(result).toContain(ghToken);
@@ -350,8 +350,8 @@ describe("redactSecrets", () => {
   // --- Multiple secrets in one string ---
 
   it("redacts multiple sk- API keys in one string", () => {
-    const key1 = "sk-" + "a".repeat(20);
-    const key2 = "sk-" + "b".repeat(30);
+    const key1 = `sk-${"a".repeat(20)}`;
+    const key2 = `sk-${"b".repeat(30)}`;
     const text = `first: ${key1}, second: ${key2}`;
     const result = redactSecrets(text);
     expect(result).not.toContain(key1);
@@ -362,7 +362,7 @@ describe("redactSecrets", () => {
   });
 
   it("redacts an sk- key and a postgres password in the same string", () => {
-    const apiKey = "sk-" + "x".repeat(25);
+    const apiKey = `sk-${"x".repeat(25)}`;
     const connStr = "postgres://user:topsecret@host/db";
     const text = `key=${apiKey} conn=${connStr}`;
     const result = redactSecrets(text);
@@ -373,7 +373,7 @@ describe("redactSecrets", () => {
 
   it("redacts a PEM block alongside an sk- key", () => {
     const pem = "-----BEGIN PRIVATE KEY-----\nABCD1234\n-----END PRIVATE KEY-----";
-    const apiKey = "sk-" + "z".repeat(20);
+    const apiKey = `sk-${"z".repeat(20)}`;
     const text = `key: ${apiKey}\ncert:\n${pem}`;
     const result = redactSecrets(text);
     expect(result).not.toContain(apiKey);

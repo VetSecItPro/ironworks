@@ -300,7 +300,7 @@ describe("realizeExecutionWorkspace", () => {
     await fs.mkdir(sharedConfigDir, { recursive: true });
     await fs.writeFile(
       sharedConfigPath,
-      JSON.stringify(
+      `${JSON.stringify(
         {
           $meta: {
             version: 1,
@@ -356,7 +356,7 @@ describe("realizeExecutionWorkspace", () => {
         },
         null,
         2,
-      ) + "\n",
+      )}\n`,
       "utf8",
     );
     await fs.writeFile(

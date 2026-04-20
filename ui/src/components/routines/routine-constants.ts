@@ -1,5 +1,3 @@
-import { AlertTriangle } from "lucide-react";
-
 export const concurrencyPolicies = ["coalesce_if_active", "always_enqueue", "skip_if_active"];
 export const catchUpPolicies = ["skip_missed", "enqueue_missed_with_cap"];
 export const concurrencyPolicyDescriptions: Record<string, string> = {

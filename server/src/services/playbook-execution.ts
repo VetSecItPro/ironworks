@@ -536,7 +536,7 @@ function buildIssueDescription(
   let desc = "";
 
   if (step.instructions) {
-    desc += step.instructions + "\n\n";
+    desc += `${step.instructions}\n\n`;
   }
 
   const deps = (step.dependsOn as number[]) ?? [];

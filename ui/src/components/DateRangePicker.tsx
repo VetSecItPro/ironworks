@@ -104,7 +104,7 @@ export function DateRangePicker({ value, onChange, className, placeholder = "Dat
     if (!customFrom || !customTo) return;
     const from = new Date(customFrom);
     const to = new Date(customTo);
-    if (isNaN(from.getTime()) || isNaN(to.getTime())) return;
+    if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) return;
     setActivePreset("custom");
     onChange({ from: startOfDay(from), to: endOfDay(to) });
     setOpen(false);

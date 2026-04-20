@@ -7,7 +7,6 @@ import { CookieSettingsLink } from "../components/CookieConsent";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { useCompany } from "../context/CompanyContext";
 import { useToast } from "../context/ToastContext";
-import { cn } from "../lib/utils";
 
 export function PrivacySettings() {
   const { selectedCompanyId } = useCompany();

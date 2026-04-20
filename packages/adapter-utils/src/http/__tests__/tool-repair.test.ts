@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ToolInvocation } from "../tool-normalize.js";
-import { attemptToolRepair, type RepairOutcome, type RepairPrompter } from "../tool-repair.js";
+import { attemptToolRepair, type RepairPrompter } from "../tool-repair.js";
 
 const schema = {
   type: "object",

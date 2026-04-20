@@ -707,7 +707,7 @@ export function createPluginWorkerHandle(pluginId: string, options: WorkerStartO
   }
 
   function rejectAllPending(error: Error): void {
-    for (const [id, pending] of pendingRequests) {
+    for (const [_id, pending] of pendingRequests) {
       clearTimeout(pending.timer);
       pending.resolve(
         createErrorResponse(pending.id, PLUGIN_RPC_ERROR_CODES.WORKER_UNAVAILABLE, error.message) as JsonRpcResponse,
@@ -785,7 +785,7 @@ export function createPluginWorkerHandle(pluginId: string, options: WorkerStartO
       const result = (await callInternal("initialize", initParams, INITIALIZE_TIMEOUT_MS)) as
         | { ok?: boolean; supportedMethods?: string[] }
         | undefined;
-      if (!result || !result.ok) {
+      if (!result?.ok) {
         throw new Error("Worker initialize returned ok=false");
       }
       supportedMethods = result.supportedMethods ?? [];

@@ -8,7 +8,7 @@
 
 import type { Db } from "@ironworksai/db";
 import { agentMemoryEntries, approvals, issues } from "@ironworksai/db";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 import { validateConfidenceTags } from "./confidence-tags.js";
 import { recordCompletion } from "./workflow-maturity.js";

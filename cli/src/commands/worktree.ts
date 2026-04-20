@@ -1121,8 +1121,6 @@ export async function worktreeMakeCommand(nameArg: string, opts: WorktreeMakeOpt
       name,
       sourceConfigPathOverride: sourceConfigPath,
     });
-  } catch (error) {
-    throw error;
   } finally {
     process.chdir(originalCwd);
   }

@@ -243,7 +243,7 @@ async function findCeoAgent(db: Db, companyId: string): Promise<string | null> {
 
 // ── Resolve the bot token from a secret ──
 
-async function resolveToken(db: Db, companyId: string, secretId: string): Promise<string | null> {
+async function _resolveToken(db: Db, companyId: string, secretId: string): Promise<string | null> {
   const svc = secretService(db);
   try {
     const value = await svc.resolveSecretValue(companyId, secretId, "latest");

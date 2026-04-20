@@ -25,7 +25,7 @@ export function StepTask({
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = el.scrollHeight + "px";
+    el.style.height = `${el.scrollHeight}px`;
   }, []);
 
   useEffect(() => {
@@ -78,7 +78,6 @@ export function StepTask({
           placeholder="e.g. Research competitor pricing"
           value={taskTitle}
           onChange={(e) => onTaskTitleChange(e.target.value)}
-          autoFocus
         />
       </div>
       <div>

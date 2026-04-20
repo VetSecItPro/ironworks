@@ -1,6 +1,6 @@
 import type { Db } from "@ironworksai/db";
 import { agents, companies, issues } from "@ironworksai/db";
-import { and, eq, gte, ne, sql } from "drizzle-orm";
+import { and, eq, gte, ne } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 import { logActivity } from "./activity-log.js";
 

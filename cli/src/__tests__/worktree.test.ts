@@ -354,7 +354,7 @@ describe("worktree helpers", () => {
       fs.mkdirSync(siblingInstanceRoot, { recursive: true });
       fs.writeFileSync(
         path.join(siblingInstanceRoot, "config.json"),
-        JSON.stringify(
+        `${JSON.stringify(
           {
             ...buildSourceConfig(),
             database: {
@@ -402,7 +402,7 @@ describe("worktree helpers", () => {
           },
           null,
           2,
-        ) + "\n",
+        )}\n`,
       );
 
       process.chdir(repoRoot);

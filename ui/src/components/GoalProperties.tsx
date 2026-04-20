@@ -1,4 +1,4 @@
-import type { Goal, GoalCadence, GoalHealthStatus } from "@ironworksai/shared";
+import type { Goal, GoalHealthStatus } from "@ironworksai/shared";
 import { GOAL_LEVELS, GOAL_STATUSES } from "@ironworksai/shared";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useRef, useState } from "react";
@@ -105,7 +105,6 @@ function AgentPickerButton({
           placeholder="Search agents..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          autoFocus
         />
         <div className="max-h-48 overflow-y-auto overscroll-contain">
           <Button

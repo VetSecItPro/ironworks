@@ -6,7 +6,7 @@ import {
   channelDeliberations,
   channelMessages,
 } from "@ironworksai/db";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 
 // ── Deliberation Protocol ─────────────────────────────────────────────────

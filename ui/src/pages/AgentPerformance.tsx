@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { BarChart3 } from "lucide-react";
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { agentMemoryApi } from "../api/agentMemory";
 import { agentsApi } from "../api/agents";

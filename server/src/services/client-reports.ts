@@ -1,5 +1,5 @@
 import type { Db } from "@ironworksai/db";
-import { goals, issues, knowledgePages, projects } from "@ironworksai/db";
+import { goals, issues, projects } from "@ironworksai/db";
 import { and, desc, eq, gte, sql } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 

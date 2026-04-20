@@ -34,7 +34,7 @@ export function KanbanBoard({ issues, agents, liveIssueIds, onUpdateIssue, goalI
   const [collapsedColumns, setCollapsedColumns] = useState<Set<string>>(new Set());
   const [collapsedLanes, setCollapsedLanes] = useState<Set<string>>(new Set());
 
-  const toggleSelect = useCallback((id: string) => {
+  const _toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);

@@ -52,7 +52,6 @@ export function TooltipCard({ step, stepIndex, totalSteps, targetRect, onNext, o
           transform: "translateX(-50%)",
           maxWidth: cardWidth,
         } as React.CSSProperties;
-      case "bottom":
       default:
         return {
           top: targetRect.bottom + gap,

@@ -7,7 +7,7 @@ import {
   channelMessages,
   issues,
 } from "@ironworksai/db";
-import { and, desc, eq, gt, gte, inArray, lt, or, sql } from "drizzle-orm";
+import { and, desc, eq, gt, gte, inArray, lt, sql } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 import { recordAgentResponse, recordHumanMessage, selectRespondingAgents } from "./channel-router.js";
 
@@ -696,7 +696,7 @@ export async function getPinnedMessages(db: Db, channelId: string): Promise<Mess
     .where(eq(agentChannels.id, channelId))
     .then((rows) => rows[0] ?? null);
 
-  if (!channel || !channel.pinnedMessageIds || channel.pinnedMessageIds.length === 0) {
+  if (!channel?.pinnedMessageIds || channel.pinnedMessageIds.length === 0) {
     return [];
   }
 

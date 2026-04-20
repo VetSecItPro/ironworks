@@ -93,7 +93,7 @@ export async function resolveVisibleOwnerAgentIds(
   db: Db,
   actorType: "board" | "agent",
   actorAgentId: string | null,
-  companyId: string,
+  _companyId: string,
 ): Promise<{
   seeAll: boolean;
   visibleOwnerAgentIds: string[];

@@ -201,7 +201,7 @@ export function WorkspaceOperationsSection({
                   {metadata.created ? "Created by this run" : "Reused existing workspace"}
                 </div>
               )}
-              {operation.stderrExcerpt && operation.stderrExcerpt.trim() && (
+              {operation.stderrExcerpt?.trim() && (
                 <div>
                   <div className="mb-1 text-xs text-red-700 dark:text-red-300">stderr excerpt</div>
                   <pre className="rounded-md bg-red-50 p-2 text-xs whitespace-pre-wrap break-all text-red-800 dark:bg-neutral-950 dark:text-red-100">
@@ -209,7 +209,7 @@ export function WorkspaceOperationsSection({
                   </pre>
                 </div>
               )}
-              {operation.stdoutExcerpt && operation.stdoutExcerpt.trim() && (
+              {operation.stdoutExcerpt?.trim() && (
                 <div>
                   <div className="mb-1 text-xs text-muted-foreground">stdout excerpt</div>
                   <pre className="rounded-md bg-neutral-100 p-2 text-xs whitespace-pre-wrap break-all dark:bg-neutral-950">

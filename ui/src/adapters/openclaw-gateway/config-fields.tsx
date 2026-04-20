@@ -34,7 +34,7 @@ function SecretField({
           onCommit={onCommit}
           immediate
           type={visible ? "text" : "password"}
-          className={inputClass + " pl-8"}
+          className={`${inputClass} pl-8`}
           placeholder={placeholder}
         />
       </div>

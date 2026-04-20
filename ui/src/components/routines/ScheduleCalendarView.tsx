@@ -1,5 +1,3 @@
-import { cn } from "../../lib/utils";
-
 export function ScheduleCalendarView({
   routines,
   agentById,
@@ -28,7 +26,7 @@ export function ScheduleCalendarView({
       if (!trigger.enabled || !trigger.schedule) continue;
       const parts = trigger.schedule.trim().split(/\s+/);
       if (parts.length !== 5) continue;
-      const [min, hr, , , dow] = parts;
+      const [_min, hr, , , dow] = parts;
       const hourNum = hr === "*" ? 0 : parseInt(hr, 10);
       const agent = routine.assigneeAgentId ? agentById.get(routine.assigneeAgentId) : null;
 

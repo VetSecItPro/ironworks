@@ -9,7 +9,7 @@ const COMPANY_ID = randomUUID();
 const USER_ID = randomUUID();
 const AGENT_ID = randomUUID();
 const ISSUE_ID = randomUUID();
-const RUN_ID = randomUUID();
+const _RUN_ID = randomUUID();
 
 const MOCK_ACTIVITY = {
   id: randomUUID(),

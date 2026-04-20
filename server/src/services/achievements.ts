@@ -1,5 +1,5 @@
 import type { Db } from "@ironworksai/db";
-import { agentMemoryEntries, agents, costEvents, issues, projects } from "@ironworksai/db";
+import { agentMemoryEntries, agents, costEvents, issues } from "@ironworksai/db";
 import { and, eq, gte, isNull, ne, sql } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 

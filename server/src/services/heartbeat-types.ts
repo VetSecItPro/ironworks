@@ -297,33 +297,33 @@ export function enrichWakeContextSnapshot(input: {
   payload: Record<string, unknown> | null;
 }) {
   const { contextSnapshot, reason, source, triggerDetail, payload } = input;
-  const issueIdFromPayload = readNonEmptyString(payload?.["issueId"]);
-  const commentIdFromPayload = readNonEmptyString(payload?.["commentId"]);
+  const issueIdFromPayload = readNonEmptyString(payload?.issueId);
+  const commentIdFromPayload = readNonEmptyString(payload?.commentId);
   const taskKey = deriveTaskKey(contextSnapshot, payload);
   const wakeCommentId = deriveCommentId(contextSnapshot, payload);
 
-  if (!readNonEmptyString(contextSnapshot["wakeReason"]) && reason) {
+  if (!readNonEmptyString(contextSnapshot.wakeReason) && reason) {
     contextSnapshot.wakeReason = reason;
   }
-  if (!readNonEmptyString(contextSnapshot["issueId"]) && issueIdFromPayload) {
+  if (!readNonEmptyString(contextSnapshot.issueId) && issueIdFromPayload) {
     contextSnapshot.issueId = issueIdFromPayload;
   }
-  if (!readNonEmptyString(contextSnapshot["taskId"]) && issueIdFromPayload) {
+  if (!readNonEmptyString(contextSnapshot.taskId) && issueIdFromPayload) {
     contextSnapshot.taskId = issueIdFromPayload;
   }
-  if (!readNonEmptyString(contextSnapshot["taskKey"]) && taskKey) {
+  if (!readNonEmptyString(contextSnapshot.taskKey) && taskKey) {
     contextSnapshot.taskKey = taskKey;
   }
-  if (!readNonEmptyString(contextSnapshot["commentId"]) && commentIdFromPayload) {
+  if (!readNonEmptyString(contextSnapshot.commentId) && commentIdFromPayload) {
     contextSnapshot.commentId = commentIdFromPayload;
   }
-  if (!readNonEmptyString(contextSnapshot["wakeCommentId"]) && wakeCommentId) {
+  if (!readNonEmptyString(contextSnapshot.wakeCommentId) && wakeCommentId) {
     contextSnapshot.wakeCommentId = wakeCommentId;
   }
-  if (!readNonEmptyString(contextSnapshot["wakeSource"]) && source) {
+  if (!readNonEmptyString(contextSnapshot.wakeSource) && source) {
     contextSnapshot.wakeSource = source;
   }
-  if (!readNonEmptyString(contextSnapshot["wakeTriggerDetail"]) && triggerDetail) {
+  if (!readNonEmptyString(contextSnapshot.wakeTriggerDetail) && triggerDetail) {
     contextSnapshot.wakeTriggerDetail = triggerDetail;
   }
 
@@ -515,7 +515,7 @@ export function compressToolOutput(toolName: string, output: string): string {
   }
 
   if (compressed.length > MAX_TOOL_OUTPUT_CHARS) {
-    compressed = compressed.slice(0, MAX_TOOL_OUTPUT_CHARS) + " [truncated]";
+    compressed = `${compressed.slice(0, MAX_TOOL_OUTPUT_CHARS)} [truncated]`;
   }
 
   return compressed;

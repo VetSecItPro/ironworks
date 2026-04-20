@@ -7,7 +7,6 @@ import { pickTextColorForPillBg } from "@/lib/color-contrast";
 import { Link } from "@/lib/router";
 import { cn } from "../lib/utils";
 import { Identity } from "./Identity";
-import { PriorityIcon } from "./PriorityIcon";
 
 /* ── Priority dot colors ── */
 
@@ -95,7 +94,6 @@ export const KanbanCard = memo(function KanbanCard({ issue, agents, isLive, isOv
       {...attributes}
       {...listeners}
       data-kanban-card={issue.id}
-      tabIndex={0}
       className={cn(
         "bg-card rounded-lg border border-border p-3 shadow-sm transition-all cursor-grab active:cursor-grabbing border-l-2 focus:outline-2 focus:outline-primary/50 focus:outline-offset-1",
         priorityBorder[issue.priority] ?? "border-l-gray-400",

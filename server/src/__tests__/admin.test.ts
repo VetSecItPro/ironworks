@@ -20,19 +20,19 @@ const MOCK_COMPANY = {
 
 // ── DB mock ─────────────────────────────────────────────────────────────────
 
-const mockSelect = vi.hoisted(() => vi.fn());
-const mockFrom = vi.hoisted(() => vi.fn());
-const mockWhere = vi.hoisted(() => vi.fn());
-const mockOrderBy = vi.hoisted(() => vi.fn());
-const mockLimit = vi.hoisted(() => vi.fn());
-const mockGroupBy = vi.hoisted(() => vi.fn());
-const mockLeftJoin = vi.hoisted(() => vi.fn());
-const mockInnerJoin = vi.hoisted(() => vi.fn());
-const mockUpdate = vi.hoisted(() => vi.fn());
-const mockSet = vi.hoisted(() => vi.fn());
-const mockReturning = vi.hoisted(() => vi.fn());
-const mockExecute = vi.hoisted(() => vi.fn());
-const mockThen = vi.hoisted(() => vi.fn());
+const _mockSelect = vi.hoisted(() => vi.fn());
+const _mockFrom = vi.hoisted(() => vi.fn());
+const _mockWhere = vi.hoisted(() => vi.fn());
+const _mockOrderBy = vi.hoisted(() => vi.fn());
+const _mockLimit = vi.hoisted(() => vi.fn());
+const _mockGroupBy = vi.hoisted(() => vi.fn());
+const _mockLeftJoin = vi.hoisted(() => vi.fn());
+const _mockInnerJoin = vi.hoisted(() => vi.fn());
+const _mockUpdate = vi.hoisted(() => vi.fn());
+const _mockSet = vi.hoisted(() => vi.fn());
+const _mockReturning = vi.hoisted(() => vi.fn());
+const _mockExecute = vi.hoisted(() => vi.fn());
+const _mockThen = vi.hoisted(() => vi.fn());
 
 function buildChainableQuery(defaultResult: unknown = []) {
   const chain: Record<string, any> = {};
@@ -104,12 +104,12 @@ async function createApp(actor: Record<string, unknown>) {
   const dbProxy = new Proxy(fakeDb, {
     get(target, prop) {
       if (prop === "select")
-        return (...args: any[]) => {
+        return (..._args: any[]) => {
           const chain = buildChainableQuery([{ count: 0 }]);
           return chain;
         };
       if (prop === "update")
-        return (...args: any[]) => {
+        return (..._args: any[]) => {
           const chain = buildChainableQuery([MOCK_COMPANY]);
           return chain;
         };

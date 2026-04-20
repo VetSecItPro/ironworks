@@ -1,5 +1,5 @@
 import type { Agent, Issue } from "@ironworksai/shared";
-import { AlertTriangle, BarChart3, TrendingUp, Users } from "lucide-react";
+import { AlertTriangle, TrendingUp, Users } from "lucide-react";
 import { useMemo } from "react";
 import { cn } from "../lib/utils";
 

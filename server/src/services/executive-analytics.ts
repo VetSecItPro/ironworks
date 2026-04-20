@@ -1577,8 +1577,8 @@ export async function channelAnalytics(db: Db, channelId: string, periodDays = 3
     }
   }
 
-  const decisionsCount = messagesByType["decision"] ?? 0;
-  const escalationsCount = messagesByType["escalation"] ?? 0;
+  const decisionsCount = messagesByType.decision ?? 0;
+  const escalationsCount = messagesByType.escalation ?? 0;
   const avgMessagesPerDay = periodDays > 0 ? Math.round((totalMessages / periodDays) * 100) / 100 : 0;
 
   // Resolve agent names for top contributors (top 5)

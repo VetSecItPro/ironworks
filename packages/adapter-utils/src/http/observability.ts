@@ -203,7 +203,7 @@ export function createObserver(options: ObserverOptions = {}): Observer {
       const redacted = redactSecrets(event as unknown as Record<string, unknown>);
 
       // safeStringify handles circular refs in context without throwing.
-      const line = safeStringify(redacted as unknown as AdapterCallEvent) + "\n";
+      const line = `${safeStringify(redacted as unknown as AdapterCallEvent)}\n`;
 
       if (sink === "stdout") {
         process.stdout.write(line);

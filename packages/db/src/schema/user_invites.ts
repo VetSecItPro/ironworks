@@ -1,4 +1,4 @@
-import { boolean, index, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { index, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { companies } from "./companies.js";
 
 export const userInvites = pgTable(

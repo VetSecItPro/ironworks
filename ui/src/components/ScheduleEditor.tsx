@@ -1,4 +1,3 @@
-import { ChevronDown, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,7 +49,7 @@ function parseCronToPreset(cron: string): {
 } {
   const defaults = { hour: "10", minute: "0", dayOfWeek: "1", dayOfMonth: "1" };
 
-  if (!cron || !cron.trim()) {
+  if (!cron?.trim()) {
     return { preset: "every_day", ...defaults };
   }
 

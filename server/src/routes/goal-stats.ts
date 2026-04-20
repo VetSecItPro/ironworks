@@ -1,6 +1,6 @@
 import type { Db } from "@ironworksai/db";
 import { agents, goals, issues, projects } from "@ironworksai/db";
-import { and, eq, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { Router } from "express";
 import { getVelocityData } from "../services/velocity.js";
 import { assertCompanyAccess } from "./authz.js";

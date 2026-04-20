@@ -112,7 +112,7 @@ export async function selectRespondingAgents(
   }));
 }
 
-async function checkChannelRateLimit(db: Db, channelId: string, companyId: string): Promise<boolean> {
+async function checkChannelRateLimit(db: Db, channelId: string, _companyId: string): Promise<boolean> {
   const TEN_MINUTES_MS = 10 * 60 * 1000;
   const MAX_RESPONSES = 3;
 

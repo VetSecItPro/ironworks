@@ -56,7 +56,7 @@ export function PluginSettings() {
 
   // Fetch existing config for the plugin
   const configSchema = plugin?.manifestJson?.instanceConfigSchema as JsonSchemaNode | undefined;
-  const hasConfigSchema = configSchema && configSchema.properties && Object.keys(configSchema.properties).length > 0;
+  const hasConfigSchema = configSchema?.properties && Object.keys(configSchema.properties).length > 0;
 
   const { data: configData, isLoading: configLoading } = useQuery({
     queryKey: queryKeys.plugins.config(pluginId!),

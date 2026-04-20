@@ -320,7 +320,6 @@ export function Layout() {
               isMobile && "sticky top-0 z-20",
               focusMode && !isMobile && "hidden",
             )}
-            role="banner"
           >
             <div className="flex items-center">
               <div className="flex-1 min-w-0">

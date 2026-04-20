@@ -37,7 +37,7 @@
  */
 import { EventEmitter } from "node:events";
 import type { Db } from "@ironworksai/db";
-import type { IronworksPluginManifestV1, PluginRecord, PluginStatus } from "@ironworksai/shared";
+import type { PluginRecord, PluginStatus } from "@ironworksai/shared";
 import { badRequest, notFound } from "../errors.js";
 import { logger } from "../middleware/logger.js";
 import { type PluginLoader, pluginLoader } from "./plugin-loader.js";
@@ -488,7 +488,7 @@ export function pluginLifecycleManager(
       // Only allow disabling from ready state
       if (plugin.status !== "ready") {
         throw badRequest(
-          `Cannot disable plugin in status '${plugin.status}'. ` + `Plugin must be in 'ready' status to be disabled.`,
+          `Cannot disable plugin in status '${plugin.status}'. Plugin must be in 'ready' status to be disabled.`,
         );
       }
 
@@ -524,7 +524,7 @@ export function pluginLifecycleManager(
           return deleted as PluginRecord | null;
         }
         throw badRequest(
-          `Plugin ${plugin.pluginKey} is already uninstalled. ` + `Use removeData=true to permanently delete it.`,
+          `Plugin ${plugin.pluginKey} is already uninstalled. Use removeData=true to permanently delete it.`,
         );
       }
 
@@ -685,7 +685,7 @@ export function pluginLifecycleManager(
       const plugin = await requirePlugin(pluginId);
       if (plugin.status !== "ready") {
         throw badRequest(
-          `Cannot start worker for plugin in status '${plugin.status}'. ` + `Plugin must be in 'ready' status.`,
+          `Cannot start worker for plugin in status '${plugin.status}'. Plugin must be in 'ready' status.`,
         );
       }
 
@@ -717,7 +717,7 @@ export function pluginLifecycleManager(
       const plugin = await requirePlugin(pluginId);
       if (plugin.status !== "ready") {
         throw badRequest(
-          `Cannot restart worker for plugin in status '${plugin.status}'. ` + `Plugin must be in 'ready' status.`,
+          `Cannot restart worker for plugin in status '${plugin.status}'. Plugin must be in 'ready' status.`,
         );
       }
 

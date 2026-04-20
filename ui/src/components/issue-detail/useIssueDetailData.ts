@@ -18,14 +18,7 @@ import { queryKeys } from "@/lib/queryKeys";
 import { visibleRunCostUsd } from "@/lib/utils";
 import { usePluginSlots } from "@/plugins/slots";
 import type { CommentReassignment, IssueCostSummary } from "./issue-detail-utils";
-import {
-  asRecord,
-  fileBaseName,
-  isMarkdownFile,
-  slugifyDocumentKey,
-  titleizeFilename,
-  usageNumber,
-} from "./issue-detail-utils";
+import { asRecord, fileBaseName, slugifyDocumentKey, titleizeFilename, usageNumber } from "./issue-detail-utils";
 
 export function useIssueDetailData(issueId: string | undefined) {
   const { selectedCompanyId } = useCompany();
@@ -218,7 +211,7 @@ export function useIssueDetailData(issueId: string | undefined) {
     for (const evt of activity ?? []) {
       if (evt.action !== "issue.comment_added" || !evt.runId) continue;
       const details = evt.details ?? {};
-      const commentId = typeof details["commentId"] === "string" ? details["commentId"] : null;
+      const commentId = typeof details.commentId === "string" ? details.commentId : null;
       if (!commentId || runMetaByCommentId.has(commentId)) continue;
       runMetaByCommentId.set(commentId, {
         runId: evt.runId,

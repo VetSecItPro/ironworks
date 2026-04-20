@@ -2,7 +2,7 @@ import type { AgentDetail as AgentDetailRecord, AgentRuntimeState, HeartbeatRun 
 import { AUTONOMY_LEVELS, type AutonomyLevel, DEPARTMENT_LABELS, TERMINATION_REASONS } from "@ironworksai/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, CheckCircle2, Circle, Clock } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/lib/router";
 import { agentsApi } from "../../api/agents";

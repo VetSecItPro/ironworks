@@ -7,9 +7,7 @@ import {
   costEvents,
   goalKeyResults,
   goals,
-  heartbeatRuns,
   issues,
-  knowledgePages,
   projects,
 } from "@ironworksai/db";
 import { and, desc, eq, gte, isNotNull, lt, ne, sql } from "drizzle-orm";
@@ -632,7 +630,7 @@ export async function generateHRWeeklyReport(db: Db, companyId: string): Promise
 
   // Onboarding status: agents hired in last 30 days still active
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const recentHires = activeAgents.filter((a) => a.status !== "terminated" && a.employmentType === "full_time");
+  const _recentHires = activeAgents.filter((a) => a.status !== "terminated" && a.employmentType === "full_time");
   const onboardingAgents = await db
     .select({
       name: agents.name,

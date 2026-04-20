@@ -57,7 +57,7 @@ import {
   workspaceOperations,
   workspaceRuntimeServices,
 } from "@ironworksai/db";
-import { and, eq, inArray, lt, sql } from "drizzle-orm";
+import { and, eq, lt, sql } from "drizzle-orm";
 import { Router } from "express";
 import { badRequest } from "../errors.js";
 import { logger } from "../middleware/logger.js";
@@ -654,7 +654,7 @@ export function startRetentionScheduler(db: Db): NodeJS.Timeout {
   const HOURLY_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 
   // Run once on startup (delayed 60s to avoid slowing boot)
-  const initialTimeout = setTimeout(() => {
+  const _initialTimeout = setTimeout(() => {
     runRetentionCleanup(db).catch((err) => logger.error({ err }, "initial retention cleanup failed"));
     captureAnalyticsSnapshot(db).catch((err) => logger.error({ err }, "initial analytics snapshot failed"));
     checkContractorLifecycles(db).catch((err) => logger.error({ err }, "initial contractor lifecycle check failed"));

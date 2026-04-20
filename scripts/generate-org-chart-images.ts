@@ -1,4 +1,6 @@
 #!/usr/bin/env npx tsx
+import * as fs from "node:fs";
+import * as path from "node:path";
 /**
  * Standalone org chart image generator.
  *
@@ -11,8 +13,6 @@
  * Output: tmp/org-chart-images/<style>-<size>.png
  */
 import { chromium } from "@playwright/test";
-import * as fs from "fs";
-import * as path from "path";
 
 // ── Org data (same as index.html) ──────────────────────────────
 

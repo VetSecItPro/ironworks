@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 
 // ---------------------------------------------------------------------------
 // ARIA Live Region for screen reader announcements

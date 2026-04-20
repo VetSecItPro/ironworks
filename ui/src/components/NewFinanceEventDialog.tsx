@@ -1,4 +1,3 @@
-import { Plus } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -74,7 +73,7 @@ export function NewFinanceEventDialog({ open, onOpenChange, onSubmit, isPending 
       amountCents: Math.round(amountNum * 100),
       currency: "USD",
       description: description.trim(),
-      occurredAt: new Date(occurredAt + "T12:00:00Z").toISOString(),
+      occurredAt: new Date(`${occurredAt}T12:00:00Z`).toISOString(),
     });
     reset();
   }

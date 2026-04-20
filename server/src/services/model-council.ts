@@ -58,7 +58,7 @@ export const ROLE_COUNCIL_DEFAULTS: Record<string, Partial<CouncilConfig>> = {
 // Task Importance Classification
 // ---------------------------------------------------------------------------
 
-const C_SUITE_ROLES = new Set(["ceo", "cto", "cfo", "cmo", "coo", "ciso"]);
+const _C_SUITE_ROLES = new Set(["ceo", "cto", "cfo", "cmo", "coo", "ciso"]);
 
 /**
  * Classify task importance from issue context.
@@ -86,8 +86,8 @@ export function classifyTaskImportance(context: {
   } = context;
   const lowerLabels = labels.map((l) => l.toLowerCase());
   const lowerTitle = issueTitle.toLowerCase();
-  const normalizedRole = agentRole.toLowerCase().replace(/[\s_-]+/g, "");
-  const normalizedAssigner = assignedByRole.toLowerCase().replace(/[\s_-]+/g, "");
+  const _normalizedRole = agentRole.toLowerCase().replace(/[\s_-]+/g, "");
+  const _normalizedAssigner = assignedByRole.toLowerCase().replace(/[\s_-]+/g, "");
 
   // Classification is based on TASK CONTENT, not who assigned it.
   // The CEO delegates everything - that alone doesn't make tasks important.
@@ -184,7 +184,6 @@ export function resolveModelStrategy(
     }
     case "cascade":
       return { strategy: "cascade", models: [primary, fallback] };
-    case "single":
     default:
       return { strategy: "single", models: [primary] };
   }

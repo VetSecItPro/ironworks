@@ -2,12 +2,12 @@ import { closestCenter, DndContext, type DragEndEvent, PointerSensor, useSensor,
 import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Company } from "@ironworksai/shared";
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
 import { Hammer, Plus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useLocation, useNavigate } from "@/lib/router";
-import { billingApi, type PlanTier } from "../api/billing";
+import { type PlanTier } from "../api/billing";
 import { heartbeatsApi } from "../api/heartbeats";
 import { sidebarBadgesApi } from "../api/sidebarBadges";
 import { useCompany } from "../context/CompanyContext";

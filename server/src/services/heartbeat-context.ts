@@ -27,7 +27,6 @@ import { logger } from "../middleware/logger.js";
 import {
   agentCognitiveLoad,
   channelHealth,
-  ensureProjectChannel,
   findAgentDepartmentChannel,
   findCompanyChannel,
   generateOnboardingReplay,
@@ -544,7 +543,7 @@ export async function injectBatchedTasks(
 // ── Web research ───────────────────────────────────────────────────────────
 
 export async function injectWebResearch(
-  db: Db,
+  _db: Db,
   context: Record<string, unknown>,
   agentId: string,
   issueContext: { description?: string } | null,
@@ -773,7 +772,7 @@ export async function injectPlaybookGuidance(
     if (issueTitle) {
       query = issueTitle;
       if (issueDescription) {
-        query += ". " + issueDescription.slice(0, 500);
+        query += `. ${issueDescription.slice(0, 500)}`;
       }
     } else {
       // Fall back to latest comment if present
@@ -811,7 +810,7 @@ export async function injectPlaybookGuidance(
     lines.push("");
 
     for (const chunk of chunks) {
-      const body = chunk.body.length > 1200 ? chunk.body.slice(0, 1200) + "..." : chunk.body;
+      const body = chunk.body.length > 1200 ? `${chunk.body.slice(0, 1200)}...` : chunk.body;
       lines.push(`### ${chunk.headingPath}`);
       lines.push("");
       lines.push(body);

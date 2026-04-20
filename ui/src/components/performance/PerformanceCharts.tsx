@@ -167,7 +167,7 @@ export function VelocityChart({ data }: { data: VelocityWeek[] }) {
         const x = VEL_PAD.left + i * (barW + barGap);
         const barH = maxVal > 0 ? (d.issuesCompleted / maxVal) * VEL_INNER_H : 0;
         const y = VEL_PAD.top + VEL_INNER_H - barH;
-        const labelDate = new Date(d.weekStart + "T12:00:00");
+        const labelDate = new Date(`${d.weekStart}T12:00:00`);
         const label = `${labelDate.getMonth() + 1}/${labelDate.getDate()}`;
 
         return (

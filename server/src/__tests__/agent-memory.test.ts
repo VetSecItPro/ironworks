@@ -82,10 +82,10 @@ async function createApp(actor: Record<string, unknown>, dbOverrides?: Record<st
   });
 
   // Build a fake DB
-  const selectChain = buildChainableQuery([{ id: AGENT_ID }]);
-  const insertChain = buildChainableQuery([MOCK_MEMORY_ENTRY]);
-  const updateChain = buildChainableQuery([MOCK_MEMORY_ENTRY]);
-  const listChain = buildChainableQuery([MOCK_MEMORY_ENTRY]);
+  const _selectChain = buildChainableQuery([{ id: AGENT_ID }]);
+  const _insertChain = buildChainableQuery([MOCK_MEMORY_ENTRY]);
+  const _updateChain = buildChainableQuery([MOCK_MEMORY_ENTRY]);
+  const _listChain = buildChainableQuery([MOCK_MEMORY_ENTRY]);
 
   const fakeDb = {
     select: vi.fn().mockImplementation(() => {

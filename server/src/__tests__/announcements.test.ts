@@ -135,7 +135,7 @@ describe("announcement routes", () => {
   describe("POST /api/companies/:companyId/announcements", () => {
     it("creates an announcement with valid data", async () => {
       // Need to mock select for slug uniqueness check to return empty (no conflict)
-      const selectChain = buildChainableQuery([]);
+      const _selectChain = buildChainableQuery([]);
       const insertChain = buildChainableQuery([MOCK_ANNOUNCEMENT]);
       let selectCallCount = 0;
 

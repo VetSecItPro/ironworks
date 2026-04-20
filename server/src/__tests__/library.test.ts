@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const COMPANY_ID = randomUUID();
 const USER_ID = randomUUID();
 
-const MOCK_FILE_META = {
+const _MOCK_FILE_META = {
   id: randomUUID(),
   companyId: COMPANY_ID,
   filePath: "shared/reports/test-report.md",

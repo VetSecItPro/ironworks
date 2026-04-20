@@ -89,7 +89,7 @@ export async function buildOnboardingPacket(
       kbPageSummaries.push({
         slug: page.slug,
         title: page.title,
-        excerpt: page.body.length > 500 ? page.body.slice(0, 500) + "..." : page.body,
+        excerpt: page.body.length > 500 ? `${page.body.slice(0, 500)}...` : page.body,
       });
     }
   }

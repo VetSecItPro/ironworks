@@ -49,7 +49,6 @@ export function QuickLinksWidget() {
             placeholder="Label"
             value={newLabel}
             onChange={(e) => setNewLabel(e.target.value)}
-            autoFocus
           />
           <input
             className="flex-1 border border-border rounded px-2 py-1 text-xs bg-transparent"

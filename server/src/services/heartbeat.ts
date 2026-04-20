@@ -24,20 +24,19 @@ import {
   projectWorkspaces,
 } from "@ironworksai/db";
 import type { OutputTokenCategory } from "@ironworksai/shared";
-import { DEFAULT_OUTPUT_TOKEN_LIMITS, DEFAULT_SKILL_ALLOWLIST, WESTERN_COUNCIL_MODELS } from "@ironworksai/shared";
-import { and, asc, desc, eq, gt, gte, inArray, isNotNull, notInArray, sql } from "drizzle-orm";
+import { DEFAULT_OUTPUT_TOKEN_LIMITS, WESTERN_COUNCIL_MODELS } from "@ironworksai/shared";
+import { and, asc, desc, eq, gt, gte, inArray, sql } from "drizzle-orm";
 import type { AdapterExecutionResult, AdapterInvocationMeta } from "../adapters/index.js";
-import { getServerAdapter, runningProcesses } from "../adapters/index.js";
-import { asBoolean, asNumber, parseObject } from "../adapters/utils.js";
+import { getServerAdapter } from "../adapters/index.js";
+import { parseObject } from "../adapters/utils.js";
 import { createLocalAgentJwt } from "../agent-auth-jwt.js";
-import { conflict, notFound } from "../errors.js";
+import { notFound } from "../errors.js";
 import { resolveDefaultAgentWorkspaceDir, resolveManagedProjectWorkspaceDir } from "../home-paths.js";
 import { redactCurrentUserText, redactCurrentUserValue } from "../log-redaction.js";
 import { logger } from "../middleware/logger.js";
 import { logActivity } from "./activity-log.js";
 import { type BudgetEnforcementScope, budgetService } from "./budgets.js";
 import { companySkillService } from "./company-skills.js";
-import { costService } from "./costs.js";
 import {
   buildExecutionWorkspaceAdapterConfig,
   gateProjectExecutionWorkspacePolicy,
@@ -100,40 +99,20 @@ import {
 } from "./heartbeat-scheduling.js";
 import {
   appendExcerpt,
-  buildExplicitResumeSessionOverride,
   COMPLETION_MARKERS,
-  type ContextTier,
-  classifyContextTier,
-  classifyTaskType,
-  compressToolOutput,
-  DEFERRED_WAKE_CONTEXT_KEY,
   DETACHED_PROCESS_ERROR_CODE,
-  deriveCommentId,
   deriveNormalizedUsageDelta,
   deriveTaskKey,
   deriveTaskKeyWithHeartbeatFallback,
   describeSessionResetReason,
-  enrichWakeContextSnapshot,
   formatCount,
   formatRuntimeWorkspaceWarningLog,
-  HEARTBEAT_MAX_CONCURRENT_RUNS_DEFAULT,
-  HEARTBEAT_MAX_CONCURRENT_RUNS_MAX,
-  HEARTBEAT_TASK_KEY,
-  isProcessAlive,
-  isSameTaskScope,
-  isTrackedLocalChildProcessAdapter,
   MANAGED_WORKSPACE_GIT_CLONE_TIMEOUT_MS,
   MAX_LIVE_LOG_CHUNK_BYTES,
-  MAX_TOOL_OUTPUT_CHARS,
-  mergeCoalescedContextSnapshot,
   normalizeAgentNameKey,
-  normalizeBilledCostCents,
   normalizeLedgerBillingType,
-  normalizeMaxConcurrentRuns,
   normalizeSessionParams,
   normalizeUsageTotals,
-  type ParsedIssueAssigneeAdapterOverrides,
-  PROMPT_TEMPLATES,
   type ProjectWorkspaceCandidate,
   parseIssueAssigneeAdapterOverrides,
   REPO_ONLY_CWD_SENTINEL,
@@ -141,11 +120,8 @@ import {
   readRawUsageTotals,
   resolveLedgerBiller,
   resolveNextSessionState,
-  SESSIONED_LOCAL_ADAPTERS,
   type SessionCompactionDecision,
   shouldResetTaskSessionForWake,
-  startLocksByAgent,
-  type TaskTemplateType,
   truncateDisplayId,
   type UsageTotals,
   type WakeupOptions,
@@ -159,7 +135,6 @@ import {
   classifyTaskImportance,
   executeCascade,
   executeCouncil,
-  executeSingle,
   ROLE_COUNCIL_DEFAULTS,
   resolveModelStrategy,
 } from "./model-council.js";
@@ -319,7 +294,7 @@ export function prioritizeProjectWorkspaceCandidatesForRun<T extends ProjectWork
   return [rows[preferredIndex]!, ...rows.slice(0, preferredIndex), ...rows.slice(preferredIndex + 1)];
 }
 
-async function resolveLedgerScopeForRun(db: Db, companyId: string, run: typeof heartbeatRuns.$inferSelect) {
+async function _resolveLedgerScopeForRun(db: Db, companyId: string, run: typeof heartbeatRuns.$inferSelect) {
   const context = parseObject(run.contextSnapshot);
   const contextIssueId = readNonEmptyString(context.issueId);
   const contextProjectId = readNonEmptyString(context.projectId);
@@ -431,7 +406,7 @@ export {
   shouldResetTaskSessionForWake,
 } from "./heartbeat-types.js";
 
-function runTaskKey(run: typeof heartbeatRuns.$inferSelect) {
+function _runTaskKey(run: typeof heartbeatRuns.$inferSelect) {
   return deriveTaskKey(run.contextSnapshot as Record<string, unknown> | null, null);
 }
 
@@ -1332,7 +1307,7 @@ export function heartbeatService(db: Db) {
     // Check before writing status so we can override nextStatus to "paused".
     const schedulerSettings = await getSchedulerSettings(db).catch(() => null);
     const consecutiveFailureLimit = schedulerSettings?.consecutiveFailureLimit ?? 5;
-    const costAnomalyMultiplier = schedulerSettings?.costAnomalyMultiplier ?? 5;
+    const _costAnomalyMultiplier = schedulerSettings?.costAnomalyMultiplier ?? 5;
 
     let shouldAutoPause = false;
     if (outcome === "failed" && nextStatus === "error") {

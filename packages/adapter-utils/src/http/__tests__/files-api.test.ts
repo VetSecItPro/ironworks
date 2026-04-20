@@ -1,10 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   ALLOWED_MIME_TYPES,
-  type AttachmentBlockOptions,
   buildAttachmentBlock,
   DEFAULT_MAX_FILE_BYTES,
-  type FilePayload,
   type FileRef,
   validateFilePayload,
 } from "../files-api.js";
@@ -150,7 +148,7 @@ describe("validateFilePayload — security hardening", () => {
 
   it("caps filename length at 255 chars", () => {
     const r = validateFilePayload({
-      filename: "a".repeat(256) + ".png",
+      filename: `${"a".repeat(256)}.png`,
       mimeType: "image/png",
       bytes: new Uint8Array(100),
     });
@@ -160,7 +158,7 @@ describe("validateFilePayload — security hardening", () => {
 
   it("accepts filename exactly 255 chars", () => {
     const r = validateFilePayload({
-      filename: "a".repeat(251) + ".png",
+      filename: `${"a".repeat(251)}.png`,
       mimeType: "image/png",
       bytes: new Uint8Array(100),
     });

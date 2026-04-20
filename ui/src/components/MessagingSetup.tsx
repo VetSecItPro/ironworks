@@ -3,14 +3,14 @@ import { Check, Gamepad2, Hash, Loader2, Mail, MessageCircle, RefreshCw, Trash2 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { type MessagingBridge, messagingApi } from "../api/messaging";
-import { Field, HintIcon } from "./agent-config-primitives";
+import { Field } from "./agent-config-primitives";
 
 interface MessagingSetupProps {
   companyId: string;
 }
 
 export function MessagingSetup({ companyId }: MessagingSetupProps) {
-  const queryClient = useQueryClient();
+  const _queryClient = useQueryClient();
   const queryKey = ["messaging", "bridges", companyId];
 
   const bridgesQuery = useQuery({

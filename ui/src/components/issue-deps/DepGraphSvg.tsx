@@ -46,7 +46,7 @@ export function DepGraphSvg({ issue, blockers, blocked, criticalPath }: DepGraph
                 {b.identifier ?? b.id.slice(0, 8)}
               </text>
               <text x={x + 10} y={y + 28} className="fill-foreground text-[10px]">
-                {b.title.length > 18 ? b.title.slice(0, 17) + "\u2026" : b.title}
+                {b.title.length > 18 ? `${b.title.slice(0, 17)}\u2026` : b.title}
               </text>
               <line
                 x1={x + 160}
@@ -85,7 +85,7 @@ export function DepGraphSvg({ issue, blockers, blocked, criticalPath }: DepGraph
                 {issue.identifier ?? issue.id.slice(0, 8)}
               </text>
               <text x={centerX + 10} y={centerY + 28} className="fill-foreground text-[10px]" fontWeight="bold">
-                {issue.title.length > 18 ? issue.title.slice(0, 17) + "\u2026" : issue.title}
+                {issue.title.length > 18 ? `${issue.title.slice(0, 17)}\u2026` : issue.title}
               </text>
             </g>
           );
@@ -111,7 +111,7 @@ export function DepGraphSvg({ issue, blockers, blocked, criticalPath }: DepGraph
                 {b.identifier ?? b.id.slice(0, 8)}
               </text>
               <text x={x + 10} y={y + 28} className="fill-foreground text-[10px]">
-                {b.title.length > 18 ? b.title.slice(0, 17) + "\u2026" : b.title}
+                {b.title.length > 18 ? `${b.title.slice(0, 17)}\u2026` : b.title}
               </text>
               <line
                 x1={450}

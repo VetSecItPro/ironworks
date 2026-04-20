@@ -146,7 +146,7 @@ function generateFromTemplate(prompt: string, availableRoles: string[]): Generat
 
   // Extract a name from the first sentence
   const firstSentence = prompt.split(/[.!?\n]/)[0]?.trim() ?? "Custom Playbook";
-  const name = firstSentence.length > 60 ? firstSentence.slice(0, 57) + "..." : firstSentence;
+  const name = firstSentence.length > 60 ? `${firstSentence.slice(0, 57)}...` : firstSentence;
 
   // Determine roles to use
   const ceo = availableRoles.includes("ceo") ? "ceo" : (availableRoles[0] ?? "ceo");

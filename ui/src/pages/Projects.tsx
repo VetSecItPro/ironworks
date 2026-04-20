@@ -12,7 +12,7 @@ import { useCompany } from "../context/CompanyContext";
 import { useDialog } from "../context/DialogContext";
 import { usePageTitle } from "../hooks/usePageTitle";
 import { queryKeys } from "../lib/queryKeys";
-import { cn, formatDate, projectUrl } from "../lib/utils";
+import { formatDate, projectUrl } from "../lib/utils";
 
 export function Projects() {
   usePageTitle("Projects");

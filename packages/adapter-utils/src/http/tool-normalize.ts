@@ -107,30 +107,30 @@ export function fromProviderToolCall(call: unknown, format: ProviderToolFormat):
 
   if (format === "openai") {
     // Validate required OpenAI fields
-    if (typeof raw["id"] !== "string" || raw["id"] === "") {
+    if (typeof raw.id !== "string" || raw.id === "") {
       throw new Error("invalid tool call: missing id");
     }
-    if (raw["type"] !== "function") {
+    if (raw.type !== "function") {
       throw new Error('invalid tool call: type must be "function"');
     }
 
-    const fn = raw["function"];
+    const fn = raw.function;
     if (fn === null || typeof fn !== "object") {
       throw new Error("invalid tool call: missing function object");
     }
     const fnObj = fn as Record<string, unknown>;
 
-    if (typeof fnObj["name"] !== "string" || fnObj["name"] === "") {
+    if (typeof fnObj.name !== "string" || fnObj.name === "") {
       throw new Error("invalid tool call: missing function.name");
     }
-    if (typeof fnObj["arguments"] !== "string") {
+    if (typeof fnObj.arguments !== "string") {
       throw new Error("invalid tool call: function.arguments must be a string");
     }
 
     // Parse the JSON string — empty string is intentionally rejected here
     // so malformed streamed chunks surface immediately rather than silently
     // producing empty args
-    const argsString = fnObj["arguments"] as string;
+    const argsString = fnObj.arguments as string;
     let args: unknown;
     try {
       args = JSON.parse(argsString);
@@ -143,32 +143,32 @@ export function fromProviderToolCall(call: unknown, format: ProviderToolFormat):
     }
 
     return {
-      toolCallId: raw["id"] as string,
-      toolName: fnObj["name"] as string,
+      toolCallId: raw.id as string,
+      toolName: fnObj.name as string,
       args: args as Record<string, unknown>,
     };
   }
 
   // Anthropic format
-  if (raw["type"] !== "tool_use") {
+  if (raw.type !== "tool_use") {
     throw new Error('invalid tool call: type must be "tool_use"');
   }
-  if (typeof raw["id"] !== "string" || raw["id"] === "") {
+  if (typeof raw.id !== "string" || raw.id === "") {
     throw new Error("invalid tool call: missing id");
   }
-  if (typeof raw["name"] !== "string" || raw["name"] === "") {
+  if (typeof raw.name !== "string" || raw.name === "") {
     throw new Error("invalid tool call: missing name");
   }
 
-  const input = raw["input"];
+  const input = raw.input;
   // Anthropic sends args as a pre-parsed object; null signals a malformed response
   if (input === null || typeof input !== "object" || Array.isArray(input)) {
     throw new Error("invalid tool call: input must be a non-null object");
   }
 
   return {
-    toolCallId: raw["id"] as string,
-    toolName: raw["name"] as string,
+    toolCallId: raw.id as string,
+    toolName: raw.name as string,
     args: input as Record<string, unknown>,
   };
 }
@@ -205,7 +205,7 @@ export function toProviderToolResult(result: ToolResult, format: ProviderToolFor
     content: result.content,
   };
   if (result.isError) {
-    block["is_error"] = true;
+    block.is_error = true;
   }
   return block;
 }

@@ -7,7 +7,7 @@ import { formatDateTime } from "../../lib/utils";
 import { Identity } from "../Identity";
 import { MarkdownBody } from "../MarkdownBody";
 import { StatusBadge } from "../StatusBadge";
-import type { CommentWithRunMeta, LinkedRunItem, ReactionMap, TimelineItem } from "./comment-thread-utils";
+import type { CommentWithRunMeta, ReactionMap, TimelineItem } from "./comment-thread-utils";
 import { CopyMarkdownButton, ReactionBar } from "./comment-thread-utils";
 
 // ---------------------------------------------------------------------------

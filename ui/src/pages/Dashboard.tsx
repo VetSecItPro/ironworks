@@ -2,7 +2,6 @@ import type { Agent, LiveEvent } from "@ironworksai/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bot, CircleDot, DollarSign, PauseCircle, ShieldCheck, Swords, UserPlus, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "@/lib/router";
 import { PluginSlotOutlet } from "@/plugins/slots";
 import { activityApi } from "../api/activity";

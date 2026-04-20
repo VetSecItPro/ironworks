@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { RefreshCw, Search, Shield, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { type AdminUser, adminApi } from "@/api/admin";
+import { adminApi } from "@/api/admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useBreadcrumbs } from "@/context/BreadcrumbContext";

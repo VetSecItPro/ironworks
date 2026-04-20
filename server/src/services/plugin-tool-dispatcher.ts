@@ -23,7 +23,7 @@
  */
 
 import type { Db } from "@ironworksai/db";
-import type { ToolResult, ToolRunContext } from "@ironworksai/plugin-sdk";
+import type { ToolRunContext } from "@ironworksai/plugin-sdk";
 import type { IronworksPluginManifestV1, PluginRecord } from "@ironworksai/shared";
 import { logger } from "../middleware/logger.js";
 import type { PluginLifecycleManager } from "./plugin-lifecycle.js";

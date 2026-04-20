@@ -471,7 +471,7 @@ export async function createHandoffIssue(
     .where(eq(agents.id, opts.fromAgentId))
     .limit(1);
 
-  const [toAgent] = await db.select({ name: agents.name }).from(agents).where(eq(agents.id, opts.toAgentId)).limit(1);
+  const [_toAgent] = await db.select({ name: agents.name }).from(agents).where(eq(agents.id, opts.toAgentId)).limit(1);
 
   // Resolve source issue
   const [sourceIssue] = await db

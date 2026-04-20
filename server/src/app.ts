@@ -1,10 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
-import { pipeline } from "node:stream";
 import { fileURLToPath } from "node:url";
 import { createBrotliCompress, createDeflate, createGzip } from "node:zlib";
 import type { Db } from "@ironworksai/db";
-import { createHostClientHandlers } from "@ironworksai/plugin-sdk";
 import type { DeploymentExposure, DeploymentMode } from "@ironworksai/shared";
 import express, { type Request as ExpressRequest, Router } from "express";
 import type { BetterAuthSessionResult } from "./auth/better-auth.js";
@@ -12,7 +10,6 @@ import { actorMiddleware } from "./middleware/auth.js";
 import { boardMutationGuard } from "./middleware/board-mutation-guard.js";
 import { cacheControl, etag } from "./middleware/cache.js";
 import { errorHandler, httpLogger } from "./middleware/index.js";
-import { logger } from "./middleware/logger.js";
 import { privateHostnameGuard, resolvePrivateHostnameAllowSet } from "./middleware/private-hostname-guard.js";
 import { enforcePlaybookRunLimit, enforceProjectLimit, enforceStorageLimit } from "./middleware/tier-limits.js";
 import { accessRoutes } from "./routes/access.js";
@@ -61,19 +58,8 @@ import { sseRoutes } from "./routes/sse.js";
 import { supportPublicRoutes } from "./routes/support.js";
 import { teamTemplateRoutes } from "./routes/team-templates.js";
 import { setPluginEventBus } from "./services/activity-log.js";
-import { createPluginDevWatcher } from "./services/plugin-dev-watcher.js";
 import { createPluginEventBus } from "./services/plugin-event-bus.js";
-import { createPluginHostServiceCleanup } from "./services/plugin-host-service-cleanup.js";
-import { buildHostServices, flushPluginLogBuffer } from "./services/plugin-host-services.js";
-import { createPluginJobCoordinator } from "./services/plugin-job-coordinator.js";
-// Plugin system disabled
-// import { DEFAULT_LOCAL_PLUGIN_DIR, pluginLoader } from "./services/plugin-loader.js";
-// import { createPluginWorkerManager } from "./services/plugin-worker-manager.js";
-import { createPluginJobScheduler } from "./services/plugin-job-scheduler.js";
-import { pluginJobStore } from "./services/plugin-job-store.js";
-import { pluginLifecycleManager } from "./services/plugin-lifecycle.js";
 import { pluginRegistryService } from "./services/plugin-registry.js";
-import { createPluginToolDispatcher } from "./services/plugin-tool-dispatcher.js";
 import type { StorageService } from "./storage/types.js";
 // Plugin system disabled — not needed for V1 productization
 // import { pluginRoutes } from "./routes/plugins.js";
@@ -184,7 +170,7 @@ export async function createApp(
     const acceptEncoding = req.headers["accept-encoding"] ?? "";
     // Skip compression for Server-Sent Events and tiny responses
     const origEnd = res.end.bind(res);
-    const origWrite = res.write.bind(res);
+    const _origWrite = res.write.bind(res);
     // Only compress JSON API responses (not static files — express.static handles those)
     if (req.path.startsWith("/api") && typeof acceptEncoding === "string") {
       const originalJson = res.json.bind(res);
@@ -356,7 +342,7 @@ export async function createApp(
   // The plugin system adds complexity without customer value at this stage.
   // Re-enable when extension marketplace is needed (100+ clients).
   // Original code preserved in git history.
-  const pluginRegistry = pluginRegistryService(db);
+  const _pluginRegistry = pluginRegistryService(db);
   const eventBus = createPluginEventBus();
   setPluginEventBus(eventBus);
   api.use(

@@ -182,7 +182,6 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
         placeholder="Search projects..."
         value={projectSearch}
         onChange={(e) => setProjectSearch(e.target.value)}
-        autoFocus={!inline}
       />
       <div className="max-h-48 overflow-y-auto overscroll-contain">
         <button

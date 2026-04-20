@@ -1,6 +1,6 @@
 import type { Db } from "@ironworksai/db";
 import { agents, issueLabels, issues, labels } from "@ironworksai/db";
-import { and, desc, eq, gte, ne, sql } from "drizzle-orm";
+import { and, eq, gte, ne, sql } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 
 export interface AgentSkillEntry {
@@ -74,7 +74,7 @@ export async function computeExpertiseMap(db: Db, companyId: string): Promise<Ex
     .orderBy(sql`count(*) desc`);
 
   // Build per-agent expertise profiles
-  const agentMap = new Map(companyAgents.map((a) => [a.id, a]));
+  const _agentMap = new Map(companyAgents.map((a) => [a.id, a]));
   const agentSkillsMap = new Map<string, AgentSkillEntry[]>();
 
   for (const row of statsRows) {

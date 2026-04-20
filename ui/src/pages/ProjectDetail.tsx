@@ -1,7 +1,7 @@
 import { type BudgetPolicySummary, isUuidLike } from "@ironworksai/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CopyPlus } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { Tabs } from "@/components/ui/tabs";
 import { Navigate, useLocation, useNavigate, useParams } from "@/lib/router";
 import { PluginLauncherOutlet } from "@/plugins/launchers";
@@ -13,7 +13,7 @@ import { BudgetPolicyCard } from "../components/BudgetPolicyCard";
 import { InlineEditor } from "../components/InlineEditor";
 import { PageSkeleton } from "../components/PageSkeleton";
 import { PageTabBar } from "../components/PageTabBar";
-import { type ProjectConfigFieldKey, ProjectProperties } from "../components/ProjectProperties";
+import { ProjectProperties } from "../components/ProjectProperties";
 import {
   ColorPicker,
   OverviewContent,

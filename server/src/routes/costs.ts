@@ -99,8 +99,8 @@ export function costRoutes(db: Db) {
     const toRaw = query.to as string | undefined;
     const from = fromRaw ? new Date(fromRaw) : undefined;
     const to = toRaw ? new Date(toRaw) : undefined;
-    if (from && isNaN(from.getTime())) throw badRequest("invalid 'from' date");
-    if (to && isNaN(to.getTime())) throw badRequest("invalid 'to' date");
+    if (from && Number.isNaN(from.getTime())) throw badRequest("invalid 'from' date");
+    if (to && Number.isNaN(to.getTime())) throw badRequest("invalid 'to' date");
     return from || to ? { from, to } : undefined;
   }
 
@@ -336,11 +336,11 @@ export function costRoutes(db: Db) {
     const range = parseDateRange(req.query);
 
     const projectCosts = await costs.byProject(companyId, range);
-    const agentModelCosts = await costs.byAgentModel(companyId, range);
+    const _agentModelCosts = await costs.byAgentModel(companyId, range);
 
     // Enrich project costs with equivalent spend and agent breakdown
     const enriched = (projectCosts as Array<Record<string, unknown>>).map((project) => {
-      const projectId = project.projectId as string;
+      const _projectId = project.projectId as string;
 
       // Calculate equivalent spend for this project's tokens
       const equivalentCents = calculateTotalEquivalentSpend([
@@ -377,8 +377,8 @@ export function costRoutes(db: Db) {
       return;
     }
 
-    const projectCosts = await costs.byProject(companyId, range);
-    const byAgent = await costs.byAgent(companyId, range);
+    const _projectCosts = await costs.byProject(companyId, range);
+    const _byAgent = await costs.byAgent(companyId, range);
     const byAgentModel = await costs.byAgentModel(companyId, range);
 
     // Build CSV

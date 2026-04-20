@@ -19,7 +19,7 @@ const MOCK_SUBSCRIPTION = {
   currentPeriodEnd: null,
 };
 
-const MOCK_PLAN = {
+const _MOCK_PLAN = {
   name: "Starter",
   priceMonthly: 0,
   agentLimit: 5,

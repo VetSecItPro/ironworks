@@ -202,18 +202,18 @@ export function useLiveRunTranscripts({ runs, companyId, maxChunksPerRun = 200 }
 
         if (event.companyId !== companyId) return;
         const payload = event.payload ?? {};
-        const runId = readString(payload["runId"]);
+        const runId = readString(payload.runId);
         if (!runId || !activeRunIds.has(runId)) return;
         if (!runById.has(runId)) return;
 
         if (event.type === "heartbeat.run.log") {
-          const chunk = readString(payload["chunk"]);
+          const chunk = readString(payload.chunk);
           if (!chunk) return;
-          const ts = readString(payload["ts"]) ?? event.createdAt;
+          const ts = readString(payload.ts) ?? event.createdAt;
           const stream =
-            readString(payload["stream"]) === "stderr"
+            readString(payload.stream) === "stderr"
               ? "stderr"
-              : readString(payload["stream"]) === "system"
+              : readString(payload.stream) === "system"
                 ? "system"
                 : "stdout";
           appendChunks(runId, [
@@ -228,9 +228,9 @@ export function useLiveRunTranscripts({ runs, companyId, maxChunksPerRun = 200 }
         }
 
         if (event.type === "heartbeat.run.event") {
-          const seq = typeof payload["seq"] === "number" ? payload["seq"] : null;
-          const eventType = readString(payload["eventType"]) ?? "event";
-          const messageText = readString(payload["message"]) ?? eventType;
+          const seq = typeof payload.seq === "number" ? payload.seq : null;
+          const eventType = readString(payload.eventType) ?? "event";
+          const messageText = readString(payload.message) ?? eventType;
           appendChunks(runId, [
             {
               ts: event.createdAt,
@@ -243,13 +243,13 @@ export function useLiveRunTranscripts({ runs, companyId, maxChunksPerRun = 200 }
         }
 
         if (event.type === "heartbeat.run.status") {
-          const status = readString(payload["status"]) ?? "updated";
+          const status = readString(payload.status) ?? "updated";
           appendChunks(runId, [
             {
               ts: event.createdAt,
               stream: isTerminalStatus(status) && status !== "succeeded" ? "stderr" : "system",
               chunk: `run ${status}`,
-              dedupeKey: `socket:status:${runId}:${status}:${readString(payload["finishedAt"]) ?? ""}`,
+              dedupeKey: `socket:status:${runId}:${status}:${readString(payload.finishedAt) ?? ""}`,
             },
           ]);
         }

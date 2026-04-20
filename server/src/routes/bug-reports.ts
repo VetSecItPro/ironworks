@@ -1,6 +1,6 @@
 import type { Db } from "@ironworksai/db";
 import { authUsers, bugReports } from "@ironworksai/db";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { Router } from "express";
 import { badRequest, notFound } from "../errors.js";
 import { assertBoard, assertInstanceAdmin } from "./authz.js";
@@ -24,7 +24,7 @@ export function bugReportRoutes(db: Db) {
       severity?: string;
     };
 
-    if (!title || !title.trim()) {
+    if (!title?.trim()) {
       throw badRequest("Title is required");
     }
 

@@ -1,6 +1,6 @@
 import type { Db } from "@ironworksai/db";
 import { agentMemoryEntries } from "@ironworksai/db";
-import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, lt, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, isNotNull, isNull, lt, lte, sql } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 
 // Re-export AgentMemoryEntry type for callers (without embedding - optional pgvector column)
@@ -180,7 +180,7 @@ async function summarizeWithLLM(entries: Array<{ content: string }>, category: s
   if (!apiKey || entries.length < 2) {
     // Fallback: simple concatenation
     const joined = entries.map((e) => e.content).join(" | ");
-    return joined.length > 2000 ? joined.slice(0, 2000) + "..." : joined;
+    return joined.length > 2000 ? `${joined.slice(0, 2000)}...` : joined;
   }
 
   const contents = entries.map((e, i) => `${i + 1}. ${e.content}`).join("\n");
@@ -202,7 +202,7 @@ async function summarizeWithLLM(entries: Array<{ content: string }>, category: s
     if (!res.ok) {
       logger.debug({ status: res.status }, "memory consolidation LLM call failed, falling back to concatenation");
       const joined = entries.map((e) => e.content).join(" | ");
-      return joined.length > 2000 ? joined.slice(0, 2000) + "..." : joined;
+      return joined.length > 2000 ? `${joined.slice(0, 2000)}...` : joined;
     }
 
     const data = (await res.json()) as { message?: { content?: string } };
@@ -214,7 +214,7 @@ async function summarizeWithLLM(entries: Array<{ content: string }>, category: s
 
   // Fallback
   const joined = entries.map((e) => e.content).join(" | ");
-  return joined.length > 2000 ? joined.slice(0, 2000) + "..." : joined;
+  return joined.length > 2000 ? `${joined.slice(0, 2000)}...` : joined;
 }
 
 /**

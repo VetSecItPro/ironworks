@@ -51,7 +51,7 @@ function toSearchResult(item: SearxngResultItem): SearchResult | null {
  * @returns Array of SearchResult objects, empty if search fails.
  */
 export async function webSearch(query: string, maxResults: number = DEFAULT_MAX_RESULTS): Promise<SearchResult[]> {
-  if (!query || !query.trim()) return [];
+  if (!query?.trim()) return [];
 
   const url = new URL("/search", SEARXNG_URL);
   url.searchParams.set("q", query.trim());

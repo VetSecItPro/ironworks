@@ -5,7 +5,7 @@ import { Router } from "express";
 import { logger } from "../middleware/logger.js";
 import { getAgentLessons } from "../services/agent-learning.js";
 import { checkAllAgentDrift, detectQualityDrift } from "../services/quality-drift.js";
-import { assertCompanyAccess, getActorInfo } from "./authz.js";
+import { assertCompanyAccess } from "./authz.js";
 
 // ── Nolan Integration Points (REQ-12) ─────────────────────────────────────
 //

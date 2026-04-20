@@ -14,7 +14,7 @@
  * @see PLUGIN_SPEC.md §29.2 — SDK Versioning
  */
 
-import type { PluginBridgeErrorCode, PluginLauncherBounds, PluginLauncherRenderEnvironment } from "@ironworksai/shared";
+import type { PluginBridgeErrorCode } from "@ironworksai/shared";
 import type {
   PluginLauncherRenderContextSnapshot,
   PluginModalBoundsRequest,

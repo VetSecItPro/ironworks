@@ -1,6 +1,5 @@
 import path from "node:path";
 import { readIronworksSkillSyncPreference } from "@ironworksai/adapter-utils/server-utils";
-import type { Db } from "@ironworksai/db";
 import type {
   CompanyPortabilityExport,
   CompanyPortabilityExportPreviewResult,
@@ -12,11 +11,9 @@ import type {
 import { deriveProjectUrlKey, normalizeAgentUrlKey } from "@ironworksai/shared";
 import { notFound, unprocessable } from "../errors.js";
 import { renderOrgChartPng } from "../routes/org-chart-svg.js";
-import type { StorageService } from "../storage/types.js";
 import { generateReadme } from "./company-export-readme.js";
 import {
   ADAPTER_DEFAULT_RULES_BY_TYPE,
-  applySelectedFilesToSource,
   asString,
   bufferToPortableBinaryFile,
   buildEnvInputMap,
@@ -27,12 +24,10 @@ import {
   buildReferencedSkillMarkdown,
   buildSkillExportDirMap,
   buildYamlFile,
-  COMPANY_LOGO_CONTENT_TYPE_EXTENSIONS,
   COMPANY_LOGO_FILE_NAME,
   type CompanyPortabilityServiceDeps,
   classifyPortableFileKind,
   dedupeEnvInputs,
-  deriveManifestSkillKey,
   exportPortableProjectExecutionWorkspacePolicy,
   extractPortableEnvInputs,
   fetchBinary,
@@ -43,7 +38,6 @@ import {
   inferContentTypeFromPath,
   isAbsoluteCommand,
   isPlainRecord,
-  isPortableBinaryFile,
   normalizeFileMap,
   normalizeInclude,
   normalizePortableConfig,
@@ -53,7 +47,6 @@ import {
   normalizeSkillSlug,
   parseFrontmatterMarkdown,
   parseGitHubSourceUrl,
-  pickTextFiles,
   pruneDefaultLikeValue,
   type ResolvedSource,
   type RoutineLike,
@@ -72,7 +65,7 @@ import {
 import { routineService } from "./routines.js";
 
 export async function resolveSource(
-  deps: CompanyPortabilityServiceDeps,
+  _deps: CompanyPortabilityServiceDeps,
   source: CompanyPortabilityPreview["source"],
 ): Promise<ResolvedSource> {
   if (source.type === "inline") {

@@ -565,7 +565,7 @@ export function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType
               {redactPathText(run.error, censorUsernameInLogs)}
             </div>
           )}
-          {run.stderrExcerpt && run.stderrExcerpt.trim() && (
+          {run.stderrExcerpt?.trim() && (
             <div>
               <div className="text-xs text-red-700 dark:text-red-300 mb-1">stderr excerpt</div>
               <pre className="bg-red-50 dark:bg-neutral-950 rounded-md p-2 text-xs overflow-x-auto whitespace-pre-wrap text-red-800 dark:text-red-100">
@@ -581,7 +581,7 @@ export function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType
               </pre>
             </div>
           )}
-          {run.stdoutExcerpt && run.stdoutExcerpt.trim() && !run.resultJson && (
+          {run.stdoutExcerpt?.trim() && !run.resultJson && (
             <div>
               <div className="text-xs text-red-700 dark:text-red-300 mb-1">stdout excerpt</div>
               <pre className="bg-red-50 dark:bg-neutral-950 rounded-md p-2 text-xs overflow-x-auto whitespace-pre-wrap text-red-800 dark:text-red-100">

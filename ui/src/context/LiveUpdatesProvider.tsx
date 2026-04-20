@@ -43,7 +43,7 @@ function resolveAgentName(queryClient: QueryClient, companyId: string, agentId: 
 
 function truncate(text: string, max: number): string {
   if (text.length <= max) return text;
-  return text.slice(0, max - 1) + "\u2026";
+  return `${text.slice(0, max - 1)}\u2026`;
 }
 
 function resolveActorLabel(

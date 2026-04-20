@@ -6,16 +6,7 @@ import { request as httpsRequest } from "node:https";
 import { isIP } from "node:net";
 import type { Db } from "@ironworksai/db";
 import { agentTaskSessions as agentTaskSessionsTable, pluginLogs } from "@ironworksai/db";
-import type {
-  Agent,
-  Company,
-  Goal,
-  HostServices,
-  Issue,
-  IssueComment,
-  PluginWorkspace,
-  Project,
-} from "@ironworksai/plugin-sdk";
+import type { Agent, Company, Goal, HostServices, Issue, IssueComment, Project } from "@ironworksai/plugin-sdk";
 import { and, desc, eq, like } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 import { activityService } from "./activity.js";
@@ -60,7 +51,7 @@ function isPrivateIP(ip: string): boolean {
 
   // Unwrap IPv4-mapped IPv6 addresses (::ffff:x.x.x.x) and re-check as IPv4
   const v4MappedMatch = lower.match(/^::ffff:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);
-  if (v4MappedMatch && v4MappedMatch[1]) return isPrivateIP(v4MappedMatch[1]);
+  if (v4MappedMatch?.[1]) return isPrivateIP(v4MappedMatch[1]);
 
   // IPv4 patterns
   if (ip.startsWith("10.")) return true;
@@ -320,7 +311,7 @@ const PINO_RESERVED_KEYS = new Set(["level", "time", "pid", "hostname", "msg", "
 /** Truncate a string to `max` characters, appending a marker if truncated. */
 function truncStr(s: string, max: number): string {
   if (s.length <= max) return s;
-  return s.slice(0, max) + "...[truncated]";
+  return `${s.slice(0, max)}...[truncated]`;
 }
 
 /** Sanitise a plugin-supplied meta object: enforce size limit and strip reserved keys. */
@@ -440,9 +431,9 @@ export function buildHostServices(
   const issues = issueService(db);
   const documents = documentService(db);
   const goals = goalService(db);
-  const activity = activityService(db);
-  const costs = costService(db);
-  const assets = assetService(db);
+  const _activity = activityService(db);
+  const _costs = costService(db);
+  const _assets = assetService(db);
   const scopedBus = eventBus.forPlugin(pluginKey);
 
   // Track active session event subscriptions for cleanup

@@ -1226,7 +1226,7 @@ async function stopRuntimeService(serviceId: string) {
   record.status = "stopped";
   record.lastUsedAt = new Date().toISOString();
   record.stoppedAt = new Date().toISOString();
-  if (record.child && record.child.pid) {
+  if (record.child?.pid) {
     terminateChildProcess(record.child);
   }
   runtimeServicesById.delete(serviceId);

@@ -2,7 +2,6 @@ import os from "node:os";
 import path from "node:path";
 // Pure utility functions — import directly from adapter source
 import {
-  claudeConfigDir,
   fetchClaudeQuota,
   fetchWithTimeout,
   parseClaudeCliUsageText,
@@ -10,7 +9,6 @@ import {
   toPercent,
 } from "@ironworksai/adapter-claude-local/server";
 import {
-  codexHomeDir,
   fetchCodexQuota,
   mapCodexRpcQuota,
   readCodexAuthInfo,

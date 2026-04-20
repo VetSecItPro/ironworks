@@ -1057,7 +1057,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
 
   const templateMessage = nonEmpty(payloadTemplate.message) ?? nonEmpty(payloadTemplate.text);
   const message = templateMessage ? appendWakeText(templateMessage, wakeText) : wakeText;
-  const ironworksPayload = buildStandardIronworksPayload(ctx, wakePayload, ironworksEnv, payloadTemplate);
+  const _ironworksPayload = buildStandardIronworksPayload(ctx, wakePayload, ironworksEnv, payloadTemplate);
 
   const agentParams: Record<string, unknown> = {
     ...payloadTemplate,

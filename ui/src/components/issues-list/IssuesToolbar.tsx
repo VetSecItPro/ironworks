@@ -7,15 +7,7 @@ import { PriorityIcon } from "../PriorityIcon";
 import { StatusIcon } from "../StatusIcon";
 import { IssuesSearchInput } from "./IssuesSearchInput";
 import type { Agent, IssueViewState, ProjectOption } from "./types";
-import {
-  arraysEqual,
-  countActiveFilters,
-  priorityOrder,
-  quickFilterPresets,
-  statusLabel,
-  statusOrder,
-  toggleInArray,
-} from "./types";
+import { arraysEqual, priorityOrder, quickFilterPresets, statusLabel, statusOrder, toggleInArray } from "./types";
 
 interface IssuesToolbarProps {
   viewState: IssueViewState;
@@ -399,7 +391,6 @@ export function IssuesToolbar({
                   placeholder="Search assignees..."
                   value={bulkAssigneeSearch}
                   onChange={(e) => onSetBulkAssigneeSearch(e.target.value)}
-                  autoFocus
                 />
                 <div className="max-h-48 overflow-y-auto overscroll-contain">
                   <button

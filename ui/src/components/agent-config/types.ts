@@ -1,6 +1,5 @@
 import type { CreateConfigValues } from "@ironworksai/adapter-utils";
 import type { AdapterEnvironmentTestResult, Agent, CompanySecret, EnvBinding } from "@ironworksai/shared";
-import type { UseMutationResult } from "@tanstack/react-query";
 import type { AdapterModel } from "../../api/agents";
 
 /* ---- Edit mode overlay (dirty tracking) ---- */

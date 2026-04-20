@@ -8,67 +8,67 @@
   <title>Weekly Digest</title>
   <style>
     body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f5; color: #18181b; }
-            .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
-            .card { background-color: #ffffff; border-radius: 8px; border: 1px solid #e4e4e7; padding: 32px; }
-            .logo { text-align: center; margin-bottom: 24px; }
-            .logo-placeholder { display: inline-block; width: 48px; height: 48px; background-color: #18181b; border-radius: 8px; line-height: 48px; color: #ffffff; font-weight: 700; font-size: 20px; text-align: center; }
-            h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px 0; text-align: center; }
-            .date-range { font-size: 13px; color: #71717a; text-align: center; margin: 0 0 24px 0; }
-            .divider { border: none; border-top: 1px solid #e4e4e7; margin: 24px 0; }
-            .section-title { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #71717a; margin: 0 0 12px 0; }
+                .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
+                .card { background-color: #ffffff; border-radius: 8px; border: 1px solid #e4e4e7; padding: 32px; }
+                .logo { text-align: center; margin-bottom: 24px; }
+                .logo-placeholder { display: inline-block; width: 48px; height: 48px; background-color: #18181b; border-radius: 8px; line-height: 48px; color: #ffffff; font-weight: 700; font-size: 20px; text-align: center; }
+                h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px 0; text-align: center; }
+                .date-range { font-size: 13px; color: #71717a; text-align: center; margin: 0 0 24px 0; }
+                .divider { border: none; border-top: 1px solid #e4e4e7; margin: 24px 0; }
+                .section-title { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #71717a; margin: 0 0 12px 0; }
 
-            /* Metric cards */
-            .metrics { display: flex; gap: 12px; margin: 0 0 8px 0; }
-            .metric-card { flex: 1; background-color: #f4f4f5; border-radius: 6px; padding: 14px; text-align: center; }
-            .metric-value { font-size: 24px; font-weight: 700; margin: 0; }
-            .metric-label { font-size: 11px; color: #71717a; text-transform: uppercase; letter-spacing: 0.05em; margin: 4px 0 0 0; }
-            .metric-delta { font-size: 11px; margin: 2px 0 0 0; }
-            .metric-up { color: #16a34a; }
-            .metric-down { color: #dc2626; }
-            .metric-flat { color: #71717a; }
+                /* Metric cards */
+                .metrics { display: flex; gap: 12px; margin: 0 0 8px 0; }
+                .metric-card { flex: 1; background-color: #f4f4f5; border-radius: 6px; padding: 14px; text-align: center; }
+                .metric-value { font-size: 24px; font-weight: 700; margin: 0; }
+                .metric-label { font-size: 11px; color: #71717a; text-transform: uppercase; letter-spacing: 0.05em; margin: 4px 0 0 0; }
+                .metric-delta { font-size: 11px; margin: 2px 0 0 0; }
+                .metric-up { color: #16a34a; }
+                .metric-down { color: #dc2626; }
+                .metric-flat { color: #71717a; }
 
-            /* Events */
-            .event-list { list-style: none; padding: 0; margin: 0; }
-            .event-list li { padding: 10px 0; border-bottom: 1px solid #f4f4f5; font-size: 14px; display: flex; align-items: flex-start; gap: 8px; }
-            .event-list li:last-child { border-bottom: none; }
-            .event-dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
-            .event-dot-green { background-color: #16a34a; }
-            .event-dot-blue { background-color: #2563eb; }
-            .event-dot-amber { background-color: #d97706; }
-            .event-dot-red { background-color: #dc2626; }
-            .event-text { color: #3f3f46; }
-            .event-time { font-size: 12px; color: #a1a1aa; display: block; margin-top: 2px; }
+                /* Events */
+                .event-list { list-style: none; padding: 0; margin: 0; }
+                .event-list li { padding: 10px 0; border-bottom: 1px solid #f4f4f5; font-size: 14px; display: flex; align-items: flex-start; gap: 8px; }
+                .event-list li:last-child { border-bottom: none; }
+                .event-dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
+                .event-dot-green { background-color: #16a34a; }
+                .event-dot-blue { background-color: #2563eb; }
+                .event-dot-amber { background-color: #d97706; }
+                .event-dot-red { background-color: #dc2626; }
+                .event-text { color: #3f3f46; }
+                .event-time { font-size: 12px; color: #a1a1aa; display: block; margin-top: 2px; }
 
-            /* Action items */
-            .action-list { list-style: none; padding: 0; margin: 0; }
-            .action-list li { padding: 8px 12px; border: 1px solid #e4e4e7; border-radius: 6px; font-size: 13px; margin-bottom: 8px; }
-            .action-list li:last-child { margin-bottom: 0; }
-            .action-list a { color: #2563eb; text-decoration: none; font-weight: 500; }
-            .action-list a:hover { text-decoration: underline; }
+                /* Action items */
+                .action-list { list-style: none; padding: 0; margin: 0; }
+                .action-list li { padding: 8px 12px; border: 1px solid #e4e4e7; border-radius: 6px; font-size: 13px; margin-bottom: 8px; }
+                .action-list li:last-child { margin-bottom: 0; }
+                .action-list a { color: #2563eb; text-decoration: none; font-weight: 500; }
+                .action-list a:hover { text-decoration: underline; }
 
-            .cta { display: block; text-align: center; background-color: #18181b; color: #ffffff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px; margin: 24px 0 0 0; }
-            .footer { text-align: center; font-size: 12px; color: #a1a1aa; margin-top: 24px; }
-            .footer a { color: #71717a; }
+                .cta { display: block; text-align: center; background-color: #18181b; color: #ffffff; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px; margin: 24px 0 0 0; }
+                .footer { text-align: center; font-size: 12px; color: #a1a1aa; margin-top: 24px; }
+                .footer a { color: #71717a; }
 
-            @media (prefers-color-scheme: dark) {
-              body { background-color: #18181b; color: #fafafa; }
-              .card { background-color: #27272a; border-color: #3f3f46; }
-              .divider { border-top-color: #3f3f46; }
-              .metric-card { background-color: #3f3f46; }
-              .event-list li { border-bottom-color: #3f3f46; }
-              .event-text { color: #d4d4d8; }
-              .action-list li { border-color: #3f3f46; }
-              .action-list a { color: #60a5fa; }
-              .cta { background-color: #fafafa; color: #18181b; }
-              .date-range { color: #a1a1aa; }
-              .section-title { color: #a1a1aa; }
-            }
+                @media (prefers-color-scheme: dark) {
+                  body { background-color: #18181b; color: #fafafa; }
+                  .card { background-color: #27272a; border-color: #3f3f46; }
+                  .divider { border-top-color: #3f3f46; }
+                  .metric-card { background-color: #3f3f46; }
+                  .event-list li { border-bottom-color: #3f3f46; }
+                  .event-text { color: #d4d4d8; }
+                  .action-list li { border-color: #3f3f46; }
+                  .action-list a { color: #60a5fa; }
+                  .cta { background-color: #fafafa; color: #18181b; }
+                  .date-range { color: #a1a1aa; }
+                  .section-title { color: #a1a1aa; }
+                }
 
-            /* Responsive fallback for email clients that don't support flexbox */
-            @media only screen and (max-width: 480px) {
-              .metrics { display: block !important; }
-              .metric-card { display: block !important; margin-bottom: 8px; }
-            }
+                /* Responsive fallback for email clients that don't support flexbox */
+                @media only screen and (max-width: 480px) {
+                  .metrics { display: block; }
+                  .metric-card { display: block; margin-bottom: 8px; }
+                }
   </style>
 </head>
 <body>

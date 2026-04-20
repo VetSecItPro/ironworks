@@ -1,4 +1,3 @@
-import type { ActivityEvent } from "@ironworksai/shared";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Download, Filter, Search, Shield } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -47,7 +46,7 @@ const ADMIN_ACTIONS = new Set([
   "escalate",
 ]);
 
-function isAdminAction(action: string): boolean {
+function _isAdminAction(action: string): boolean {
   // Match exact or prefix-based admin actions
   for (const a of ADMIN_ACTIONS) {
     if (action === a || action.startsWith(`${a}_`) || action.endsWith(`_${a}`)) return true;

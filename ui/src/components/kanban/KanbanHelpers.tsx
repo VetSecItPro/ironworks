@@ -1,10 +1,9 @@
 import type { Issue } from "@ironworksai/shared";
 import { ChevronDown, ChevronRight, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "../../lib/utils";
 import type { Agent, KanbanGoalInfo, SwimlaneMode } from "./types";
-import { HEALTH_BADGE_COLORS, statusLabel } from "./types";
+import { HEALTH_BADGE_COLORS } from "./types";
 
 /* ---- Column Health Indicator ---- */
 

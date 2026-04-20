@@ -162,7 +162,7 @@ async function importServerEntry(): Promise<StartedServer> {
           `${formatError(err)}`,
       );
     }
-    throw new Error(`Ironworks server failed to start.\n` + `${formatError(err)}`);
+    throw new Error(`Ironworks server failed to start.\n${formatError(err)}`);
   }
 }
 

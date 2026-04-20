@@ -143,7 +143,7 @@ function parseMailgunPayload(body: Record<string, unknown>): ParsedInboundEmail 
   const htmlBody = (body["body-html"] as string) ?? (body["stripped-html"] as string) ?? undefined;
   const messageId = (body["Message-Id"] as string) ?? (body["message-id"] as string) ?? undefined;
   const inReplyTo = (body["In-Reply-To"] as string) ?? (body["in-reply-to"] as string) ?? undefined;
-  const references = (body["References"] as string) ?? (body["references"] as string) ?? undefined;
+  const references = (body.References as string) ?? (body.references as string) ?? undefined;
 
   if (!from || !to) return null;
 

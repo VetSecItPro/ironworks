@@ -39,7 +39,6 @@ export function LabelsPickerContent({
         placeholder="Search labels..."
         value={labelSearch}
         onChange={(e) => setLabelSearch(e.target.value)}
-        autoFocus={!inline}
       />
       <div className="max-h-44 overflow-y-auto overscroll-contain space-y-0.5">
         {labels

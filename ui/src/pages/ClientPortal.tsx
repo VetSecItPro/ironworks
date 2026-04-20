@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { Building2, CheckCircle2, Circle, Clock, ExternalLink, Flag, Milestone, Target } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Building2, CheckCircle2, Circle, Clock, Flag, Milestone, Target } from "lucide-react";
+import { useEffect, useMemo } from "react";
 import { goalProgressApi } from "../api/goalProgress";
 import { issuesApi } from "../api/issues";
 import { EmptyState } from "../components/EmptyState";

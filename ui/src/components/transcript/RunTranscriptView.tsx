@@ -11,7 +11,7 @@ import {
   TranscriptToolCard,
 } from "./TranscriptBlocks";
 import type { TranscriptDensity, TranscriptMode } from "./transcript-utils";
-import { formatRawEntry, formatToolPayload, normalizeTranscript } from "./transcript-utils";
+import { formatRawEntry, normalizeTranscript } from "./transcript-utils";
 
 // Re-export types so existing consumers keep working
 export type { TranscriptDensity, TranscriptMode };

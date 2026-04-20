@@ -34,7 +34,7 @@ function createFakeDb() {
   const returning = vi.fn().mockImplementation(() => mockUpdateRows());
   const whereUpdate = vi.fn().mockReturnValue({ returning });
   const set = vi.fn().mockReturnValue({ where: whereUpdate });
-  const updateFrom = vi.fn().mockReturnValue({ set });
+  const _updateFrom = vi.fn().mockReturnValue({ set });
 
   const limit = vi.fn().mockImplementation(() => mockSelectRows());
   const whereSelectChained = vi.fn().mockReturnValue({ limit });

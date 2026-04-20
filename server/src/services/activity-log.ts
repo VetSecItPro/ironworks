@@ -3,7 +3,7 @@ import type { Db } from "@ironworksai/db";
 import { activityLog } from "@ironworksai/db";
 import type { PluginEvent } from "@ironworksai/plugin-sdk";
 import { PLUGIN_EVENT_TYPES, type PluginEventType } from "@ironworksai/shared";
-import { and, desc, eq, gte } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { redactCurrentUserValue } from "../log-redaction.js";
 import { logger } from "../middleware/logger.js";
 import { sanitizeRecord } from "../redaction.js";

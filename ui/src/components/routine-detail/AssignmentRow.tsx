@@ -1,4 +1,4 @@
-import type { ReactNode, RefObject } from "react";
+import type { RefObject } from "react";
 import { AgentIcon } from "../AgentIconPicker";
 import { type InlineEntityOption, InlineEntitySelector } from "../InlineEntitySelector";
 

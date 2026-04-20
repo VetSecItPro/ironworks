@@ -5,7 +5,6 @@ import { MarkdownBody } from "../MarkdownBody";
 import type { TranscriptBlock, TranscriptDensity } from "./transcript-utils";
 import {
   formatToolPayload,
-  isCommandTool,
   parseStructuredToolResult,
   summarizeToolInput,
   summarizeToolResult,

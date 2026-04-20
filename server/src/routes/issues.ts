@@ -206,7 +206,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
   }
 
   // Resolve issue identifiers (e.g. "PAP-39") to UUIDs for all /issues/:id routes
-  router.param("id", async (req, res, next, rawId) => {
+  router.param("id", async (req, _res, next, rawId) => {
     try {
       req.params.id = await normalizeIssueIdentifier(rawId);
       next();
@@ -216,7 +216,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
   });
 
   // Resolve issue identifiers (e.g. "PAP-39") to UUIDs for company-scoped attachment routes.
-  router.param("issueId", async (req, res, next, rawId) => {
+  router.param("issueId", async (req, _res, next, rawId) => {
     try {
       req.params.issueId = await normalizeIssueIdentifier(rawId);
       next();
@@ -1589,8 +1589,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       if ((!runToInterrupt || runToInterrupt.status !== "running") && currentIssue.assigneeAgentId) {
         const activeRun = await heartbeat.getActiveRunForAgent(currentIssue.assigneeAgentId);
         const activeIssueId =
-          activeRun &&
-          activeRun.contextSnapshot &&
+          activeRun?.contextSnapshot &&
           typeof activeRun.contextSnapshot === "object" &&
           typeof (activeRun.contextSnapshot as Record<string, unknown>).issueId === "string"
             ? ((activeRun.contextSnapshot as Record<string, unknown>).issueId as string)
@@ -1973,7 +1972,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
     assertCompanyAccess(req, issue.companyId);
 
     const sinceDate = since ? new Date(since) : null;
-    if ((since && !sinceDate) || (sinceDate && isNaN(sinceDate.getTime()))) {
+    if ((since && !sinceDate) || (sinceDate && Number.isNaN(sinceDate.getTime()))) {
       res.status(400).json({ error: "Invalid since timestamp" });
       return;
     }

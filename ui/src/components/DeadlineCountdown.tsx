@@ -16,7 +16,7 @@ export function DeadlineCountdown({ targetDate, status, className }: DeadlineCou
   const info = useMemo(() => {
     if (!targetDate) return null;
     const target = typeof targetDate === "string" ? new Date(targetDate) : targetDate;
-    if (isNaN(target.getTime())) return null;
+    if (Number.isNaN(target.getTime())) return null;
 
     // If the issue is completed or cancelled, don't show countdown
     if (status === "done" || status === "cancelled") return null;

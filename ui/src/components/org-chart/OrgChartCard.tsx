@@ -2,7 +2,7 @@ import { AGENT_ROLE_LABELS, type Agent, DEPARTMENT_LABELS } from "@ironworksai/s
 import { Users } from "lucide-react";
 import type { AgentExpertiseProfile } from "../../api/expertiseMap";
 import { getAgentRingClass, getRoleLevel } from "../../lib/role-icons";
-import { agentUrl, cn, relativeTime } from "../../lib/utils";
+import { cn, relativeTime } from "../../lib/utils";
 import { AgentIcon } from "../AgentIconPicker";
 import type { LayoutNode } from "./orgChartLayout";
 import { CARD_H, CARD_W } from "./orgChartLayout";

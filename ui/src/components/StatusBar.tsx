@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Bug, Moon, Settings, Sun } from "lucide-react";
+import { Bug, Moon, Sun } from "lucide-react";
 import { memo } from "react";
 import { Link } from "@/lib/router";
 import { dashboardApi } from "../api/dashboard";

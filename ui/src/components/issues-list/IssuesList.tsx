@@ -764,7 +764,6 @@ export function IssuesList({
                                   placeholder="Search assignees..."
                                   value={assigneeSearch}
                                   onChange={(e) => setAssigneeSearch(e.target.value)}
-                                  autoFocus
                                 />
                                 <div className="max-h-48 overflow-y-auto overscroll-contain">
                                   <button

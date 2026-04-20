@@ -1,4 +1,4 @@
-import { createReadStream, createWriteStream, existsSync, mkdirSync, statSync } from "node:fs";
+import { createReadStream, createWriteStream, mkdirSync, statSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { basename, resolve } from "node:path";
 import { Readable } from "node:stream";

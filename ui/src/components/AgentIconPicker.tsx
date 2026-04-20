@@ -1,5 +1,4 @@
 import { AGENT_ICON_NAMES, type AgentIconName } from "@ironworksai/shared";
-import { type LucideIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
