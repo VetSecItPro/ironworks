@@ -81,6 +81,10 @@ const NotificationSettings = lazy(() =>
   import("./pages/NotificationSettings").then((m) => ({ default: m.NotificationSettings })),
 );
 const BillingSettingsPage = lazy(() => import("./pages/BillingSettings").then((m) => ({ default: m.BillingSettings })));
+// Settings > Providers — API key management for HTTP adapter providers
+const SettingsProviders = lazy(() =>
+  import("./pages/Settings/Providers").then((m) => ({ default: m.ProvidersPage })),
+);
 // Admin panel — lazy loaded, instance admin only
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
@@ -297,6 +301,14 @@ function boardRoutes() {
         element={
           <LazyPage>
             <BillingSettingsPage />
+          </LazyPage>
+        }
+      />
+      <Route
+        path="settings/providers"
+        element={
+          <LazyPage>
+            <SettingsProviders />
           </LazyPage>
         }
       />
