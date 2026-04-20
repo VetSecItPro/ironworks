@@ -143,65 +143,65 @@
 
   <script>
     // Pre-select type from URL param
-        (() => {
-          const params = new URLSearchParams(window.location.search);
-          const t = params.get('type');
-          if (t === 'feature') {
-            const radios = document.querySelectorAll('input[name="type"]');
-            radios.forEach((r) => {
-              r.checked = r.value === 'feature';
+            (() => {
+              const params = new URLSearchParams(window.location.search);
+              const t = params.get('type');
+              if (t === 'feature') {
+                const radios = document.querySelectorAll('input[name="type"]');
+                radios.forEach((r) => {
+                  r.checked = r.value === 'feature';
+                });
+              }
+            })();
+
+            const form = document.getElementById('feedback-form');
+            const successMsg = document.getElementById('success-msg');
+            const errorMsg = document.getElementById('error-msg');
+            const submitBtn = document.getElementById('submit-btn');
+
+            form.addEventListener('submit', async (e) => {
+              e.preventDefault();
+              errorMsg.classList.add('hidden');
+
+              const formData = new FormData(form);
+              const type = formData.get('type') || 'bug';
+              const name = (formData.get('name') || '').toString().trim();
+              const email = (formData.get('email') || '').toString().trim();
+              const subject = (formData.get('subject') || '').toString().trim();
+              const description = (formData.get('description') || '').toString().trim();
+
+              if (!email || !subject || !description) return;
+
+              submitBtn.disabled = true;
+              submitBtn.textContent = 'Submitting...';
+
+              try {
+                const res = await fetch('https://app.ironworksapp.ai/api/support/tickets', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    type,
+                    subject,
+                    body: description,
+                    name: name || undefined,
+                    email,
+                  }),
+                });
+
+                if (!res.ok) {
+                  const payload = await res.json().catch(() => null);
+                  throw new Error((payload && payload.error) || 'Submission failed');
+                }
+
+                form.classList.add('hidden');
+                successMsg.classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              } catch (err) {
+                errorMsg.classList.remove('hidden');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Feedback';
+              }
             });
-          }
-        })();
-
-        const form = document.getElementById('feedback-form');
-        const successMsg = document.getElementById('success-msg');
-        const errorMsg = document.getElementById('error-msg');
-        const submitBtn = document.getElementById('submit-btn');
-
-        form.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          errorMsg.classList.add('hidden');
-
-          const formData = new FormData(form);
-          const type = formData.get('type') || 'bug';
-          const name = (formData.get('name') || '').toString().trim();
-          const email = (formData.get('email') || '').toString().trim();
-          const subject = (formData.get('subject') || '').toString().trim();
-          const description = (formData.get('description') || '').toString().trim();
-
-          if (!email || !subject || !description) return;
-
-          submitBtn.disabled = true;
-          submitBtn.textContent = 'Submitting...';
-
-          try {
-            const res = await fetch('https://app.ironworksapp.ai/api/support/tickets', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                type,
-                subject,
-                body: description,
-                name: name || undefined,
-                email,
-              }),
-            });
-
-            if (!res.ok) {
-              const payload = await res.json().catch(() => null);
-              throw new Error((payload && payload.error) || 'Submission failed');
-            }
-
-            form.classList.add('hidden');
-            successMsg.classList.remove('hidden');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          } catch (err) {
-            errorMsg.classList.remove('hidden');
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Submit Feedback';
-          }
-        });
   </script>
 </body>
 </html>

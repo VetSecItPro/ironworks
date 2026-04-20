@@ -15,10 +15,7 @@
  * // Explicit delete (env var absent during the block):
  * await withEnv({ IRONWORKS_HOME: undefined }, async () => { ... });
  */
-export async function withEnv<T>(
-  vars: Record<string, string | undefined>,
-  fn: () => Promise<T> | T,
-): Promise<T> {
+export async function withEnv<T>(vars: Record<string, string | undefined>, fn: () => Promise<T> | T): Promise<T> {
   const originals: Record<string, string | undefined> = {};
   for (const key of Object.keys(vars)) {
     originals[key] = process.env[key];

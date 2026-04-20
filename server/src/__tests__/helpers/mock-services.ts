@@ -19,9 +19,7 @@ import { vi } from "vitest";
  * Keep in sync with `server/src/services/index.ts` runtime exports. Type-only
  * exports are intentionally omitted — types don't exist at runtime.
  */
-export function makeFullServicesMock(
-  overrides: Record<string, unknown> = {},
-): Record<string, unknown> {
+export function makeFullServicesMock(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     // ─── Service factories (called with db, return methods) ────────────────
     accessService: vi.fn(() => ({})),

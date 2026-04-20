@@ -17,9 +17,7 @@ import { vi } from "vitest";
  *              `() => rows` to regenerate per call — useful for tests that
  *              need different data across multiple awaits on the same chain.
  */
-export function makeChainableDb<T = unknown>(
-  rows: T[] | (() => T[]) = [],
-): Record<string, ReturnType<typeof vi.fn>> {
+export function makeChainableDb<T = unknown>(rows: T[] | (() => T[]) = []): Record<string, ReturnType<typeof vi.fn>> {
   const chain: Record<string, ReturnType<typeof vi.fn>> = {};
   // Standard drizzle fluent methods
   for (const method of [
