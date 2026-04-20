@@ -44,17 +44,19 @@ function stripBackspaces(text: string): string {
 }
 
 function stripAnsi(text: string): string {
-  // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional ANSI CSI escape sequence stripping
-  return text
-    .replace(/\u001B\][^\u0007]*(?:\u0007|\u001B\\)/g, "")
-    .replace(/\u001B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])/g, "");
+  // OSC sequences: ESC ] ... BEL or ESC\
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional ANSI OSC sequence stripping
+  const step1 = text.replace(/\u001B\][^\u0007]*(?:\u0007|\u001B\\)/g, "");
+  // CSI sequences: ESC [ ... final-byte
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional ANSI CSI sequence stripping
+  return step1.replace(/\u001B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])/g, "");
 }
 
 function cleanTerminalText(text: string): string {
-  // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional NUL byte and CR stripping from terminal output
-  return stripAnsi(stripBackspaces(text))
-    .replace(/\u0000/g, "")
-    .replace(/\r/g, "\n");
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional NUL byte removal from terminal output
+  const step1 = stripAnsi(stripBackspaces(text)).replace(/\u0000/g, "");
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional CR normalization in terminal output
+  return step1.replace(/\r/g, "\n");
 }
 
 function normalizeForLabelSearch(text: string): string {
