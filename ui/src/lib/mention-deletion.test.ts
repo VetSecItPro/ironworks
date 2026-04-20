@@ -1,14 +1,14 @@
-import { describe, expect, it } from "vitest";
-import { $createLinkNode, LinkNode } from "@lexical/link";
 import { buildAgentMentionHref } from "@ironworksai/shared";
+import { $createLinkNode, LinkNode } from "@lexical/link";
 import {
-  createEditor,
   $createParagraphNode,
   $createTextNode,
   $getRoot,
   $getSelection,
   $isRangeSelection,
+  createEditor,
 } from "lexical";
+import { describe, expect, it } from "vitest";
 import { deleteSelectedMentionChip } from "./mention-deletion";
 
 function createTestEditor() {

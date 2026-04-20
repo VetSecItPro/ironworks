@@ -44,15 +44,18 @@ function stripBackspaces(text: string): string {
 }
 
 function stripAnsi(text: string): string {
-  return text
-    .replace(/\u001B\][^\u0007]*(?:\u0007|\u001B\\)/g, "")
-    .replace(/\u001B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])/g, "");
+  // OSC sequences: ESC ] ... BEL or ESC\
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional ANSI OSC sequence stripping
+  const step1 = text.replace(/\u001B\][^\u0007]*(?:\u0007|\u001B\\)/g, "");
+  // CSI sequences: ESC [ ... final-byte
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional ANSI CSI sequence stripping
+  return step1.replace(/\u001B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])/g, "");
 }
 
 function cleanTerminalText(text: string): string {
-  return stripAnsi(stripBackspaces(text))
-    .replace(/\u0000/g, "")
-    .replace(/\r/g, "\n");
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional NUL byte removal from terminal output
+  const step1 = stripAnsi(stripBackspaces(text)).replace(/\u0000/g, "");
+  return step1.replace(/\r/g, "\n");
 }
 
 function normalizeForLabelSearch(text: string): string {
@@ -67,11 +70,7 @@ function trimToLatestUsagePanel(text: string): string | null {
   const tailLower = tail.toLowerCase();
   if (!tailLower.includes("usage")) return null;
   if (!tailLower.includes("current session") && !tailLower.includes("loading usage")) return null;
-  const stopMarkers = [
-    "status dialog dismissed",
-    "checking for updates",
-    "press ctrl-c again to exit",
-  ];
+  const stopMarkers = ["status dialog dismissed", "checking for updates", "press ctrl-c again to exit"];
   let stopIndex = -1;
   for (const marker of stopMarkers) {
     const markerIndex = tailLower.indexOf(marker);
@@ -100,9 +99,9 @@ async function readClaudeTokenFromFile(credPath: string): Promise<string | null>
   }
   if (typeof parsed !== "object" || parsed === null) return null;
   const obj = parsed as Record<string, unknown>;
-  const oauth = obj["claudeAiOauth"];
+  const oauth = obj.claudeAiOauth;
   if (typeof oauth !== "object" || oauth === null) return null;
-  const token = (oauth as Record<string, unknown>)["accessToken"];
+  const token = (oauth as Record<string, unknown>).accessToken;
   return typeof token === "string" && token.length > 0 ? token : null;
 }
 
@@ -259,14 +258,8 @@ export async function fetchClaudeQuota(token: string): Promise<QuotaWindow[]> {
       label: "Extra usage",
       usedPercent: body.extra_usage.is_enabled === false ? null : toPercent(body.extra_usage.utilization),
       resetsAt: null,
-      valueLabel:
-        body.extra_usage.is_enabled === false
-          ? "Not enabled"
-          : formatExtraUsageLabel(body.extra_usage),
-      detail:
-        body.extra_usage.is_enabled === false
-          ? "Extra usage not enabled"
-          : "Monthly extra usage pool",
+      valueLabel: body.extra_usage.is_enabled === false ? "Not enabled" : formatExtraUsageLabel(body.extra_usage),
+      detail: body.extra_usage.is_enabled === false ? "Extra usage not enabled" : "Monthly extra usage pool",
     });
   }
   return windows;
@@ -274,28 +267,32 @@ export async function fetchClaudeQuota(token: string): Promise<QuotaWindow[]> {
 
 function usageOutputLooksRelevant(text: string): boolean {
   const normalized = normalizeForLabelSearch(text);
-  return normalized.includes("currentsession")
-    || normalized.includes("currentweek")
-    || normalized.includes("loadingusage")
-    || normalized.includes("failedtoloadusagedata")
-    || normalized.includes("tokenexpired")
-    || normalized.includes("authenticationerror")
-    || normalized.includes("ratelimited");
+  return (
+    normalized.includes("currentsession") ||
+    normalized.includes("currentweek") ||
+    normalized.includes("loadingusage") ||
+    normalized.includes("failedtoloadusagedata") ||
+    normalized.includes("tokenexpired") ||
+    normalized.includes("authenticationerror") ||
+    normalized.includes("ratelimited")
+  );
 }
 
 function usageOutputLooksComplete(text: string): boolean {
   const normalized = normalizeForLabelSearch(text);
   if (
-    normalized.includes("failedtoloadusagedata")
-    || normalized.includes("tokenexpired")
-    || normalized.includes("authenticationerror")
-    || normalized.includes("ratelimited")
+    normalized.includes("failedtoloadusagedata") ||
+    normalized.includes("tokenexpired") ||
+    normalized.includes("authenticationerror") ||
+    normalized.includes("ratelimited")
   ) {
     return true;
   }
-  return normalized.includes("currentsession")
-    && (normalized.includes("currentweek") || normalized.includes("extrausage"))
-    && /[0-9]{1,3}(?:\.[0-9]+)?%/i.test(text);
+  return (
+    normalized.includes("currentsession") &&
+    (normalized.includes("currentweek") || normalized.includes("extrausage")) &&
+    /[0-9]{1,3}(?:\.[0-9]+)?%/i.test(text)
+  );
 }
 
 function extractUsageError(text: string): string | null {
@@ -331,13 +328,15 @@ function percentFromLine(line: string): number | null {
 
 function isQuotaLabel(line: string): boolean {
   const normalized = normalizeForLabelSearch(line);
-  return normalized === "currentsession"
-    || normalized === "currentweekallmodels"
-    || normalized === "currentweeksonnetonly"
-    || normalized === "currentweeksonnet"
-    || normalized === "currentweekopusonly"
-    || normalized === "currentweekopus"
-    || normalized === "extrausage";
+  return (
+    normalized === "currentsession" ||
+    normalized === "currentweekallmodels" ||
+    normalized === "currentweeksonnetonly" ||
+    normalized === "currentweeksonnet" ||
+    normalized === "currentweekopusonly" ||
+    normalized === "currentweekopus" ||
+    normalized === "extrausage"
+  );
 }
 
 function canonicalQuotaLabel(line: string): string {
@@ -428,7 +427,7 @@ function quoteForShell(value: string): string {
 
 function buildClaudeCliShellProbeCommand(): string {
   const feed = "(sleep 2; printf '/usage\\r'; sleep 6; printf '\\033'; sleep 1; printf '\\003')";
-  const claudeCommand = "claude --tools \"\"";
+  const claudeCommand = 'claude --tools ""';
   if (process.platform === "darwin") {
     return `${feed} | script -q /dev/null ${claudeCommand}`;
   }
@@ -504,8 +503,7 @@ export async function getQuotaWindows(): Promise<ProviderQuotaResult> {
       provider: "anthropic",
       ok: false,
       error:
-        errors[0]
-        ?? "ANTHROPIC_API_KEY is set and no local Claude subscription session is available for quota polling",
+        errors[0] ?? "ANTHROPIC_API_KEY is set and no local Claude subscription session is available for quota polling",
       windows: [],
     };
   }

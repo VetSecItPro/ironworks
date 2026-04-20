@@ -1,35 +1,36 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { Agent, CompanySecret } from "@ironworksai/shared";
-import type { AdapterModel } from "../api/agents";
-import { agentsApi } from "../api/agents";
-import { secretsApi } from "../api/secrets";
-import { assetsApi } from "../api/assets";
 import {
   DEFAULT_CODEX_LOCAL_BYPASS_APPROVALS_AND_SANDBOX,
   DEFAULT_CODEX_LOCAL_MODEL,
 } from "@ironworksai/adapter-codex-local";
 import { DEFAULT_CURSOR_LOCAL_MODEL } from "@ironworksai/adapter-cursor-local";
 import { DEFAULT_GEMINI_LOCAL_MODEL } from "@ironworksai/adapter-gemini-local";
+import type { Agent, CompanySecret } from "@ironworksai/shared";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { cn } from "../lib/utils";
-import { queryKeys } from "../lib/queryKeys";
-import { useCompany } from "../context/CompanyContext";
-import { defaultCreateValues } from "./agent-config-defaults";
 import { getUIAdapter } from "../adapters";
+import type { AdapterModel } from "../api/agents";
+import { agentsApi } from "../api/agents";
+import { assetsApi } from "../api/assets";
+import { secretsApi } from "../api/secrets";
+import { useCompany } from "../context/CompanyContext";
 import { shouldShowLegacyWorkingDirectoryField } from "../lib/legacy-agent-config";
+import { queryKeys } from "../lib/queryKeys";
+import { cn } from "../lib/utils";
 import {
-  IdentitySection,
   AdapterSection,
+  emptyOverlay,
+  IdentitySection,
+  isOverlayDirty,
+  type Overlay,
   PermissionsSection,
   RunPolicySection,
-  type Overlay,
-  emptyOverlay,
-  isOverlayDirty,
 } from "./agent-config";
+import { defaultCreateValues } from "./agent-config-defaults";
 
 // Re-exported so existing imports from this file keep working.
 export type { CreateConfigValues } from "@ironworksai/adapter-utils";
+
 import type { CreateConfigValues } from "@ironworksai/adapter-utils";
 
 type AgentConfigFormProps = {
@@ -168,7 +169,15 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
       props.onSaveActionChange?.(handleSave);
       props.onCancelActionChange?.(handleCancel);
     }
-  }, [isCreate, isDirty, props.onDirtyChange, props.onSaveActionChange, props.onCancelActionChange, handleSave, handleCancel]);
+  }, [
+    isCreate,
+    isDirty,
+    props.onDirtyChange,
+    props.onSaveActionChange,
+    props.onCancelActionChange,
+    handleSave,
+    handleCancel,
+  ]);
 
   useEffect(() => {
     if (isCreate) return;
@@ -184,9 +193,7 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
   const runtimeConfig = !isCreate ? ((props.agent.runtimeConfig ?? {}) as Record<string, unknown>) : {};
   const heartbeat = !isCreate ? ((runtimeConfig.heartbeat ?? {}) as Record<string, unknown>) : {};
 
-  const adapterType = isCreate
-    ? props.values.adapterType
-    : overlay.adapterType ?? props.agent.adapterType;
+  const adapterType = isCreate ? props.values.adapterType : (overlay.adapterType ?? props.agent.adapterType);
   const isLocal =
     adapterType === "claude_local" ||
     adapterType === "codex_local" ||
@@ -198,10 +205,7 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
     isLocal && shouldShowLegacyWorkingDirectoryField({ isCreate, adapterConfig: config });
   const uiAdapter = useMemo(() => getUIAdapter(adapterType), [adapterType]);
 
-  const {
-    data: fetchedModels,
-    error: fetchedModelsError,
-  } = useQuery({
+  const { data: fetchedModels, error: fetchedModelsError } = useQuery({
     queryKey: selectedCompanyId
       ? queryKeys.agents.adapterModels(selectedCompanyId, adapterType)
       : ["agents", "none", "adapter-models", adapterType],
@@ -234,9 +238,7 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
   const [thinkingEffortOpen, setThinkingEffortOpen] = useState(false);
 
   const val = isCreate ? props.values : null;
-  const set = isCreate
-    ? (patch: Partial<CreateConfigValues>) => props.onChange(patch)
-    : null;
+  const set = isCreate ? (patch: Partial<CreateConfigValues>) => props.onChange(patch) : null;
 
   function buildAdapterConfigForTest(): Record<string, unknown> {
     if (isCreate) {
@@ -257,38 +259,60 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
     },
   });
 
-  const currentModelId = isCreate
-    ? val!.model
-    : eff("adapterConfig", "model", String(config.model ?? ""));
+  const currentModelId = isCreate ? val!.model : eff("adapterConfig", "model", String(config.model ?? ""));
 
-  const handleAdapterTypeChange = useCallback((t: string) => {
-    const defaultModel = t === "codex_local" ? DEFAULT_CODEX_LOCAL_MODEL
-      : t === "gemini_local" ? DEFAULT_GEMINI_LOCAL_MODEL
-      : t === "cursor" ? DEFAULT_CURSOR_LOCAL_MODEL : "";
-    const codexExtras = t === "codex_local"
-      ? { dangerouslyBypassSandbox: DEFAULT_CODEX_LOCAL_BYPASS_APPROVALS_AND_SANDBOX } : {};
-    if (isCreate) {
-      const { adapterType: _at, ...defaults } = defaultCreateValues;
-      set!({ ...defaults, adapterType: t, model: defaultModel, ...codexExtras });
-    } else {
-      const codexOverlay = t === "codex_local"
-        ? { dangerouslyBypassApprovalsAndSandbox: DEFAULT_CODEX_LOCAL_BYPASS_APPROVALS_AND_SANDBOX } : {};
-      setOverlay((prev) => ({
-        ...prev, adapterType: t,
-        adapterConfig: { model: defaultModel, effort: "", modelReasoningEffort: "", variant: "", mode: "", ...codexOverlay },
-      }));
-    }
-  }, [isCreate, set]);
+  const handleAdapterTypeChange = useCallback(
+    (t: string) => {
+      const defaultModel =
+        t === "codex_local"
+          ? DEFAULT_CODEX_LOCAL_MODEL
+          : t === "gemini_local"
+            ? DEFAULT_GEMINI_LOCAL_MODEL
+            : t === "cursor"
+              ? DEFAULT_CURSOR_LOCAL_MODEL
+              : "";
+      const codexExtras =
+        t === "codex_local" ? { dangerouslyBypassSandbox: DEFAULT_CODEX_LOCAL_BYPASS_APPROVALS_AND_SANDBOX } : {};
+      if (isCreate) {
+        const { adapterType: _at, ...defaults } = defaultCreateValues;
+        set!({ ...defaults, adapterType: t, model: defaultModel, ...codexExtras });
+      } else {
+        const codexOverlay =
+          t === "codex_local"
+            ? { dangerouslyBypassApprovalsAndSandbox: DEFAULT_CODEX_LOCAL_BYPASS_APPROVALS_AND_SANDBOX }
+            : {};
+        setOverlay((prev) => ({
+          ...prev,
+          adapterType: t,
+          adapterConfig: {
+            model: defaultModel,
+            effort: "",
+            modelReasoningEffort: "",
+            variant: "",
+            mode: "",
+            ...codexOverlay,
+          },
+        }));
+      }
+    },
+    [isCreate, set],
+  );
 
   /** Helper to upload markdown images and return the content path */
-  const handleUploadMarkdownImage = useCallback(async (file: File, namespace: string): Promise<string> => {
-    const asset = await uploadMarkdownImage.mutateAsync({ file, namespace });
-    return asset.contentPath;
-  }, [uploadMarkdownImage]);
+  const handleUploadMarkdownImage = useCallback(
+    async (file: File, namespace: string): Promise<string> => {
+      const asset = await uploadMarkdownImage.mutateAsync({ file, namespace });
+      return asset.contentPath;
+    },
+    [uploadMarkdownImage],
+  );
 
-  const handleCreateSecret = useCallback(async (name: string, value: string): Promise<CompanySecret> => {
-    return createSecret.mutateAsync({ name, value });
-  }, [createSecret]);
+  const handleCreateSecret = useCallback(
+    async (name: string, value: string): Promise<CompanySecret> => {
+      return createSecret.mutateAsync({ name, value });
+    },
+    [createSecret],
+  );
 
   return (
     <div className={cn("relative", cards && "space-y-6")}>
@@ -297,11 +321,7 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
         <div className="sticky top-0 z-10 flex items-center justify-end px-4 py-2 bg-background/90 backdrop-blur-sm border-b border-primary/20">
           <div className="flex items-center gap-3">
             <span className="text-xs text-muted-foreground">Unsaved changes</span>
-            <Button
-              size="sm"
-              onClick={handleSave}
-              disabled={!isCreate && props.isSaving}
-            >
+            <Button size="sm" onClick={handleSave} disabled={!isCreate && props.isSaving}>
               {!isCreate && props.isSaving ? "Saving..." : "Save"}
             </Button>
           </div>

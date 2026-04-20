@@ -9,9 +9,9 @@
  * @see PLUGIN_SPEC.md §10 — Plugin Manifest
  * @see packages/shared/src/validators/plugin.ts — Zod schema definition
  */
-import { pluginManifestV1Schema } from "@ironworksai/shared";
+
 import type { IronworksPluginManifestV1 } from "@ironworksai/shared";
-import { PLUGIN_API_VERSION } from "@ironworksai/shared";
+import { PLUGIN_API_VERSION, pluginManifestV1Schema } from "@ironworksai/shared";
 import { badRequest } from "../errors.js";
 
 // ---------------------------------------------------------------------------
@@ -134,9 +134,7 @@ export function pluginManifestValidator(): PluginManifestValidator {
       }));
 
       const errors = details
-        .map(({ path, message }) =>
-          path.length > 0 ? `${path.join(".")}: ${message}` : message,
-        )
+        .map(({ path, message }) => (path.length > 0 ? `${path.join(".")}: ${message}` : message))
         .join("; ");
 
       return {

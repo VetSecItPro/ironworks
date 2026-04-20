@@ -1,5 +1,5 @@
-import { cn } from "../../lib/utils";
 import type { Goal } from "@ironworksai/shared";
+import { cn } from "../../lib/utils";
 
 export interface SmartCriteria {
   specific: boolean;

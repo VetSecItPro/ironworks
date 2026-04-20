@@ -1,6 +1,11 @@
-import { Router } from "express";
 import type { Db } from "@ironworksai/db";
-import { ROLE_TEMPLATES, TEAM_PACKS, getTeamPackRoles, type RoleTemplate } from "../onboarding-assets/role-templates.js";
+import { Router } from "express";
+import {
+  getTeamPackRoles,
+  ROLE_TEMPLATES,
+  type RoleTemplate,
+  TEAM_PACKS,
+} from "../onboarding-assets/role-templates.js";
 
 /**
  * Public API for team templates and role templates.

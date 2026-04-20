@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { execute } from "@ironworksai/adapter-codex-local/server";
+import { describe, expect, it } from "vitest";
 
 async function writeFakeCodexCommand(commandPath: string): Promise<void> {
   const script = `#!/usr/bin/env node
@@ -48,14 +48,7 @@ describe("codex execute", () => {
     const capturePath = path.join(root, "capture.json");
     const sharedCodexHome = path.join(root, "shared-codex-home");
     const ironworksHome = path.join(root, "ironworks-home");
-    const managedCodexHome = path.join(
-      ironworksHome,
-      "instances",
-      "default",
-      "companies",
-      "company-1",
-      "codex-home",
-    );
+    const managedCodexHome = path.join(ironworksHome, "instances", "default", "companies", "company-1", "codex-home");
     await fs.mkdir(workspace, { recursive: true });
     await fs.mkdir(sharedCodexHome, { recursive: true });
     await fs.writeFile(path.join(sharedCodexHome, "auth.json"), '{"token":"shared"}\n', "utf8");

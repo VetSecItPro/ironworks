@@ -1,14 +1,14 @@
+import type { Issue } from "@ironworksai/shared";
+import { useQuery } from "@tanstack/react-query";
+import { ExternalLink } from "lucide-react";
 import { useMemo } from "react";
 import { Link } from "@/lib/router";
-import { useQuery } from "@tanstack/react-query";
-import type { Issue } from "@ironworksai/shared";
+import type { TranscriptEntry } from "../adapters";
 import { heartbeatsApi, type LiveRunForIssue } from "../api/heartbeats";
 import { issuesApi } from "../api/issues";
 import { projectsApi } from "../api/projects";
-import type { TranscriptEntry } from "../adapters";
 import { queryKeys } from "../lib/queryKeys";
 import { cn, relativeTime } from "../lib/utils";
-import { ExternalLink } from "lucide-react";
 import { Identity } from "./Identity";
 import { RunTranscriptView } from "./transcript/RunTranscriptView";
 import { useLiveRunTranscripts } from "./transcript/useLiveRunTranscripts";
@@ -66,9 +66,7 @@ export function ActiveAgentsPanel({ companyId }: ActiveAgentsPanelProps) {
 
   return (
     <div>
-      <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-        Agents
-      </h3>
+      <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Agents</h3>
       {runs.length === 0 ? (
         <div className="rounded-xl border border-border p-4">
           <p className="text-sm text-muted-foreground">No recent agent runs.</p>
@@ -111,12 +109,12 @@ function AgentRunCard({
   isActive: boolean;
 }) {
   return (
-    <div className={cn(
-      "flex h-[320px] flex-col overflow-hidden rounded-xl border",
-      isActive
-        ? "border-cyan-500/15 bg-cyan-500/[0.02] shadow-sm"
-        : "border-border bg-background/70 shadow-none",
-    )}>
+    <div
+      className={cn(
+        "flex h-[320px] flex-col overflow-hidden rounded-xl border",
+        isActive ? "border-cyan-500/15 bg-cyan-500/[0.02] shadow-sm" : "border-border bg-background/70 shadow-none",
+      )}
+    >
       <div className="border-b border-border/60 px-3 py-3">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
@@ -132,7 +130,13 @@ function AgentRunCard({
               <Identity name={run.agentName} size="sm" className="[&>span:last-child]:!text-[11px]" />
             </div>
             <div className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
-              <span>{isActive ? "Live now" : run.finishedAt ? `Finished ${relativeTime(run.finishedAt)}` : `Started ${relativeTime(run.createdAt)}`}</span>
+              <span>
+                {isActive
+                  ? "Live now"
+                  : run.finishedAt
+                    ? `Finished ${relativeTime(run.finishedAt)}`
+                    : `Started ${relativeTime(run.createdAt)}`}
+              </span>
               {project && (
                 <span
                   className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium truncate max-w-[120px]"
@@ -167,7 +171,11 @@ function AgentRunCard({
                 "line-clamp-2 hover:underline",
                 isActive ? "text-cyan-700 dark:text-cyan-300" : "text-muted-foreground hover:text-foreground",
               )}
-              title={issue?.title ? `${issue?.identifier ?? run.issueId.slice(0, 8)} - ${issue.title}` : issue?.identifier ?? run.issueId.slice(0, 8)}
+              title={
+                issue?.title
+                  ? `${issue?.identifier ?? run.issueId.slice(0, 8)} - ${issue.title}`
+                  : (issue?.identifier ?? run.issueId.slice(0, 8))
+              }
             >
               {issue?.identifier ?? run.issueId.slice(0, 8)}
               {issue?.title ? ` - ${issue.title}` : ""}
@@ -184,7 +192,13 @@ function AgentRunCard({
           streaming={isActive}
           collapseStdout
           thinkingClassName="!text-[10px] !leading-4"
-          emptyMessage={hasOutput ? "Waiting for transcript parsing..." : isActive ? "Waiting for output..." : "No transcript captured."}
+          emptyMessage={
+            hasOutput
+              ? "Waiting for transcript parsing..."
+              : isActive
+                ? "Waiting for output..."
+                : "No transcript captured."
+          }
         />
       </div>
     </div>

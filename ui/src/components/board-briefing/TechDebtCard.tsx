@@ -1,6 +1,6 @@
-import { cn } from "../../lib/utils";
-import { Wrench, TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingDown, TrendingUp, Wrench } from "lucide-react";
 import type { TechDebt } from "../../api/executive";
+import { cn } from "../../lib/utils";
 
 interface TechDebtCardProps {
   techDebtData: TechDebt | undefined;
@@ -16,11 +16,16 @@ export function TechDebtCard({ techDebtData }: TechDebtCardProps) {
       {techDebtData ? (
         <div className="space-y-2">
           <div className="flex items-baseline gap-2">
-            <span className={cn(
-              "text-3xl font-bold tabular-nums",
-              techDebtData.openCount > 10 ? "text-red-400" :
-              techDebtData.openCount > 5 ? "text-amber-400" : "text-foreground",
-            )}>
+            <span
+              className={cn(
+                "text-3xl font-bold tabular-nums",
+                techDebtData.openCount > 10
+                  ? "text-red-400"
+                  : techDebtData.openCount > 5
+                    ? "text-amber-400"
+                    : "text-foreground",
+              )}
+            >
               {techDebtData.openCount}
             </span>
             <span className="text-sm text-muted-foreground">open items</span>
@@ -32,16 +37,23 @@ export function TechDebtCard({ techDebtData }: TechDebtCardProps) {
             </div>
             <div className="flex justify-between">
               <span>Trend</span>
-              <span className={cn(
-                "flex items-center gap-1 font-medium",
-                techDebtData.trend > 0 ? "text-amber-400" : techDebtData.trend < 0 ? "text-emerald-400" : "text-foreground",
-              )}>
+              <span
+                className={cn(
+                  "flex items-center gap-1 font-medium",
+                  techDebtData.trend > 0
+                    ? "text-amber-400"
+                    : techDebtData.trend < 0
+                      ? "text-emerald-400"
+                      : "text-foreground",
+                )}
+              >
                 {techDebtData.trend > 0 ? (
                   <TrendingUp className="h-3 w-3" />
                 ) : techDebtData.trend < 0 ? (
                   <TrendingDown className="h-3 w-3" />
                 ) : null}
-                {techDebtData.trend > 0 ? "+" : ""}{techDebtData.trend}
+                {techDebtData.trend > 0 ? "+" : ""}
+                {techDebtData.trend}
               </span>
             </div>
           </div>

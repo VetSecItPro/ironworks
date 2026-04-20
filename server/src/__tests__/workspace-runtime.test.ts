@@ -4,19 +4,19 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
+import type { WorkspaceOperation } from "@ironworksai/shared";
 import { afterEach, describe, expect, it } from "vitest";
+import { resolveIronworksConfigPath } from "../paths.ts";
+import type { WorkspaceOperationRecorder } from "../services/workspace-operations.ts";
 import {
   cleanupExecutionWorkspaceArtifacts,
   ensureRuntimeServicesForRun,
   normalizeAdapterManagedRuntimeServices,
+  type RealizedExecutionWorkspace,
   realizeExecutionWorkspace,
   releaseRuntimeServicesForRun,
   stopRuntimeServicesForExecutionWorkspace,
-  type RealizedExecutionWorkspace,
 } from "../services/workspace-runtime.ts";
-import { resolveIronworksConfigPath } from "../paths.ts";
-import type { WorkspaceOperation } from "@ironworksai/shared";
-import type { WorkspaceOperationRecorder } from "../services/workspace-operations.ts";
 
 const execFileAsync = promisify(execFile);
 const leasedRunIds = new Set<string>();
@@ -250,9 +250,7 @@ describe("realizeExecutionWorkspace", () => {
     await expect(fs.readFile(path.join(workspace.cwd, ".ironworks-provision-base"), "utf8")).resolves.toBe(
       `${repoRoot}\n`,
     );
-    await expect(fs.readFile(path.join(workspace.cwd, ".ironworks-provision-created"), "utf8")).resolves.toBe(
-      "true\n",
-    );
+    await expect(fs.readFile(path.join(workspace.cwd, ".ironworks-provision-created"), "utf8")).resolves.toBe("true\n");
 
     const reused = await realizeExecutionWorkspace({
       base: {
@@ -302,7 +300,7 @@ describe("realizeExecutionWorkspace", () => {
     await fs.mkdir(sharedConfigDir, { recursive: true });
     await fs.writeFile(
       sharedConfigPath,
-      JSON.stringify(
+      `${JSON.stringify(
         {
           $meta: {
             version: 1,
@@ -358,10 +356,14 @@ describe("realizeExecutionWorkspace", () => {
         },
         null,
         2,
-      ) + "\n",
+      )}\n`,
       "utf8",
     );
-    await fs.writeFile(sharedEnvPath, 'DATABASE_URL="postgres://worktree:test@db.example.com:6543/ironworks"\n', "utf8");
+    await fs.writeFile(
+      sharedEnvPath,
+      'DATABASE_URL="postgres://worktree:test@db.example.com:6543/ironworks"\n',
+      "utf8",
+    );
 
     await fs.mkdir(path.join(repoRoot, "scripts"), { recursive: true });
     await fs.copyFile(
@@ -406,11 +408,7 @@ describe("realizeExecutionWorkspace", () => {
       const configContents = JSON.parse(await fs.readFile(configPath, "utf8"));
       const configStats = await fs.lstat(configPath);
       const expectedInstanceId = "pap-885-show-worktree-banner";
-      const expectedInstanceRoot = path.join(
-        isolatedWorktreeHome,
-        "instances",
-        expectedInstanceId,
-      );
+      const expectedInstanceRoot = path.join(isolatedWorktreeHome, "instances", expectedInstanceId);
 
       expect(configStats.isSymbolicLink()).toBe(false);
       expect(configContents.database.embeddedPostgresDataDir).toBe(path.join(expectedInstanceRoot, "db"));
@@ -424,9 +422,7 @@ describe("realizeExecutionWorkspace", () => {
       expect(envContents).toContain(`IRONWORKS_INSTANCE_ID=${JSON.stringify(expectedInstanceId)}`);
       expect(envContents).toContain(`IRONWORKS_CONFIG=${JSON.stringify(configPath)}`);
       expect(envContents).toContain("IRONWORKS_IN_WORKTREE=true");
-      expect(envContents).toContain(
-        `IRONWORKS_WORKTREE_NAME=${JSON.stringify("PAP-885-show-worktree-banner")}`,
-      );
+      expect(envContents).toContain(`IRONWORKS_WORKTREE_NAME=${JSON.stringify("PAP-885-show-worktree-banner")}`);
 
       process.chdir(workspace.cwd);
       expect(resolveIronworksConfigPath()).toBe(configPath);
@@ -442,11 +438,7 @@ describe("realizeExecutionWorkspace", () => {
     await fs.mkdir(path.join(repoRoot, "scripts"), { recursive: true });
     await fs.writeFile(
       path.join(repoRoot, "scripts", "provision.sh"),
-      [
-        "#!/usr/bin/env bash",
-        "set -euo pipefail",
-        "printf 'provisioned\\n'",
-      ].join("\n"),
+      ["#!/usr/bin/env bash", "set -euo pipefail", "printf 'provisioned\\n'"].join("\n"),
       "utf8",
     );
     await runGit(repoRoot, ["add", "scripts/provision.sh"]);
@@ -481,10 +473,7 @@ describe("realizeExecutionWorkspace", () => {
       recorder,
     });
 
-    expect(operations.map((operation) => operation.phase)).toEqual([
-      "worktree_prepare",
-      "workspace_provision",
-    ]);
+    expect(operations.map((operation) => operation.phase)).toEqual(["worktree_prepare", "workspace_provision"]);
     expect(operations[0]?.command).toContain("git worktree add");
     expect(operations[0]?.metadata).toMatchObject({
       branchName: "PAP-540-record-workspace-operations",
@@ -590,7 +579,7 @@ describe("realizeExecutionWorkspace", () => {
     expect(workspace.strategy).toBe("git_worktree");
     expect(workspace.created).toBe(true);
     // The worktree should have been created successfully (baseRef resolved to "master")
-    const worktreeOp = operations.find(op => op.phase === "worktree_prepare" && op.metadata?.created);
+    const worktreeOp = operations.find((op) => op.phase === "worktree_prepare" && op.metadata?.created);
     expect(worktreeOp).toBeDefined();
     expect(worktreeOp!.metadata!.baseRef).toBe("master");
   });
@@ -647,7 +636,7 @@ describe("realizeExecutionWorkspace", () => {
 
     expect(workspace.strategy).toBe("git_worktree");
     expect(workspace.created).toBe(true);
-    const worktreeOp = operations.find(op => op.phase === "worktree_prepare" && op.metadata?.created);
+    const worktreeOp = operations.find((op) => op.phase === "worktree_prepare" && op.metadata?.created);
     expect(worktreeOp).toBeDefined();
     expect(worktreeOp!.metadata!.baseRef).toBe("master");
   });

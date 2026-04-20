@@ -1,18 +1,10 @@
-import type { SVGProps } from "react";
 import type {
   CompanySkillFileInventoryEntry,
   CompanySkillProjectScanResult,
   CompanySkillSourceBadge,
 } from "@ironworksai/shared";
-import {
-  Boxes,
-  FileCode2,
-  FileText,
-  Folder,
-  Github,
-  Link2,
-  Paperclip,
-} from "lucide-react";
+import { Boxes, FileCode2, FileText, Folder, Github, Link2, Paperclip } from "lucide-react";
+import type { SVGProps } from "react";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -120,8 +112,7 @@ export function buildTree(entries: CompanySkillFileInventoryEntry[]) {
 
 export function sourceMeta(sourceBadge: CompanySkillSourceBadge, sourceLabel: string | null) {
   const normalizedLabel = sourceLabel?.toLowerCase() ?? "";
-  const isSkillsShManaged =
-    normalizedLabel.includes("skills.sh") || normalizedLabel.includes("vercel-labs/skills");
+  const isSkillsShManaged = normalizedLabel.includes("skills.sh") || normalizedLabel.includes("vercel-labs/skills");
 
   switch (sourceBadge) {
     case "skills_sh":
@@ -163,7 +154,10 @@ export function fileIcon(kind: CompanySkillFileInventoryEntry["kind"]) {
 }
 
 export function encodeSkillFilePath(filePath: string) {
-  return filePath.split("/").map((segment) => encodeURIComponent(segment)).join("/");
+  return filePath
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
 }
 
 export function decodeSkillFilePath(filePath: string | undefined) {

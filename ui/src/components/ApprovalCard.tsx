@@ -1,11 +1,11 @@
+import type { Agent, Approval } from "@ironworksai/shared";
+import { CheckCircle2, Clock, XCircle } from "lucide-react";
 import { memo } from "react";
-import { CheckCircle2, XCircle, Clock } from "lucide-react";
-import { Link } from "@/lib/router";
 import { Button } from "@/components/ui/button";
-import { Identity } from "./Identity";
-import { approvalLabel, typeIcon, defaultTypeIcon, ApprovalPayloadRenderer } from "./ApprovalPayload";
+import { Link } from "@/lib/router";
 import { timeAgo } from "../lib/timeAgo";
-import type { Approval, Agent } from "@ironworksai/shared";
+import { ApprovalPayloadRenderer, approvalLabel, defaultTypeIcon, typeIcon } from "./ApprovalPayload";
+import { Identity } from "./Identity";
 
 function statusIcon(status: string) {
   if (status === "approved") return <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />;
@@ -81,12 +81,7 @@ export const ApprovalCard = memo(function ApprovalCard({
           >
             Approve
           </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={onReject}
-            disabled={isPending}
-          >
+          <Button variant="destructive" size="sm" onClick={onReject} disabled={isPending}>
             Reject
           </Button>
         </div>

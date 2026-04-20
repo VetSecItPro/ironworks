@@ -1,6 +1,6 @@
 import * as p from "@clack/prompts";
-import type { AuthConfig, ServerConfig } from "../config/schema.js";
 import { parseHostnameCsv } from "../config/hostnames.js";
+import type { AuthConfig, ServerConfig } from "../config/schema.js";
 
 export async function promptServer(opts?: {
   currentServer?: Partial<ServerConfig>;
@@ -78,7 +78,7 @@ export async function promptServer(opts?: {
     placeholder: "3100",
     validate: (val) => {
       const n = Number(val);
-      if (isNaN(n) || n < 1 || n > 65535 || !Number.isInteger(n)) {
+      if (Number.isNaN(n) || n < 1 || n > 65535 || !Number.isInteger(n)) {
         return "Must be an integer between 1 and 65535";
       }
     },

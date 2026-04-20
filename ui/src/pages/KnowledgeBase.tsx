@@ -1,13 +1,7 @@
-import { useEffect, useState, useMemo, useRef } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { knowledgeApi, type KnowledgePage } from "../api/knowledge";
-import { useCompany } from "../context/CompanyContext";
-import { useBreadcrumbs } from "../context/BreadcrumbContext";
-import { queryKeys } from "../lib/queryKeys";
-import { EmptyState } from "../components/EmptyState";
-import { PageSkeleton } from "../components/PageSkeleton";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { BookOpen, Plus, Search } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -16,23 +10,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { cn } from "../lib/utils";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { knowledgeApi } from "../api/knowledge";
+import { EmptyState } from "../components/EmptyState";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { BookOpen, Plus, Search } from "lucide-react";
-import {
-  KBFolderTree,
   FormattingToolbar,
+  KBFolderTree,
+  KBPageContent,
   KBPageHeader,
   KBPageMetadata,
   KBRevisionHistory,
-  KBPageContent,
 } from "../components/knowledge-base";
+import { PageSkeleton } from "../components/PageSkeleton";
+import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { useCompany } from "../context/CompanyContext";
+import { queryKeys } from "../lib/queryKeys";
+import { cn } from "../lib/utils";
 
 /* ── Main component ── */
 
@@ -62,7 +56,11 @@ export function KnowledgeBase() {
 
   /* ── Queries ── */
 
-  const { data: pages, isLoading, error: pagesError } = useQuery({
+  const {
+    data: pages,
+    isLoading,
+    error: pagesError,
+  } = useQuery({
     queryKey: [...queryKeys.knowledge.list(selectedCompanyId!), departmentFilter],
     queryFn: () => knowledgeApi.list(selectedCompanyId!, undefined, departmentFilter),
     enabled: !!selectedCompanyId,
@@ -93,7 +91,9 @@ export function KnowledgeBase() {
   }, [pages, search]);
   const departments = useMemo(() => {
     const depts = new Set<string>();
-    for (const p of pages ?? []) { if (p.department) depts.add(p.department); }
+    for (const p of pages ?? []) {
+      if (p.department) depts.add(p.department);
+    }
     return [...depts].sort();
   }, [pages]);
   const existingFolders = useMemo(() => {
@@ -106,16 +106,28 @@ export function KnowledgeBase() {
     return [...folderSet].sort();
   }, [pages]);
   const ACRONYM_FOLDERS: Record<string, string> = { hr: "HR", sla: "SLA", api: "API", it: "IT", qa: "QA" };
-  const folderDisplayName = (name: string) => ACRONYM_FOLDERS[name.toLowerCase()] ?? name.charAt(0).toUpperCase() + name.slice(1).replace(/-/g, " ");
+  const folderDisplayName = (name: string) =>
+    ACRONYM_FOLDERS[name.toLowerCase()] ?? name.charAt(0).toUpperCase() + name.slice(1).replace(/-/g, " ");
   const suggestedPages = useMemo(() => {
     if (!selectedPage || !pages || pages.length < 2) return [];
-    const words = new Set(selectedPage.title.toLowerCase().split(/\s+/).filter((w) => w.length > 3));
+    const words = new Set(
+      selectedPage.title
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((w) => w.length > 3),
+    );
     if (words.size === 0) return [];
     return (pages ?? [])
       .filter((p) => p.id !== selectedPage.id)
       .map((p) => {
-        const overlap = p.title.toLowerCase().split(/\s+/).filter((w) => words.has(w)).length;
-        const bodyOverlap = p.body.toLowerCase().split(/\s+/).filter((w) => w.length > 3 && words.has(w)).length;
+        const overlap = p.title
+          .toLowerCase()
+          .split(/\s+/)
+          .filter((w) => words.has(w)).length;
+        const bodyOverlap = p.body
+          .toLowerCase()
+          .split(/\s+/)
+          .filter((w) => w.length > 3 && words.has(w)).length;
         return { page: p, score: overlap * 3 + Math.min(bodyOverlap, 3) };
       })
       .filter((s) => s.score > 0)
@@ -130,7 +142,7 @@ export function KnowledgeBase() {
       knowledgeApi.create(selectedCompanyId!, {
         title: newTitle.trim(),
         department: newDepartment || undefined,
-        folder: (newFolder && newFolder !== "__root__") ? newFolder : undefined,
+        folder: newFolder && newFolder !== "__root__" ? newFolder : undefined,
       }),
     onSuccess: (page) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.knowledge.list(selectedCompanyId!) });
@@ -168,8 +180,7 @@ export function KnowledgeBase() {
     },
   });
   const updateVisibility = useMutation({
-    mutationFn: (visibility: string) =>
-      knowledgeApi.update(selectedPageId!, { visibility }),
+    mutationFn: (visibility: string) => knowledgeApi.update(selectedPageId!, { visibility }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.knowledge.list(selectedCompanyId!) });
     },
@@ -204,20 +215,29 @@ export function KnowledgeBase() {
   return (
     <div className="flex h-full gap-0 -m-4 md:-m-6">
       {/* Left panel - page list */}
-      <div className={cn(
-        "flex flex-col border-r border-border bg-background shrink-0 transition-[width]",
-        selectedPageId ? "w-0 md:w-72 overflow-hidden" : "w-full md:w-72",
-      )}>
+      <div
+        className={cn(
+          "flex flex-col border-r border-border bg-background shrink-0 transition-[width]",
+          selectedPageId ? "w-0 md:w-72 overflow-hidden" : "w-full md:w-72",
+        )}
+      >
         <div className="p-3 border-b border-border space-y-2">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold">Knowledge Base</h2>
             <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setCreating(true)}>
-              <Plus className="h-3 w-3 mr-1" />New Page
+              <Plus className="h-3 w-3 mr-1" />
+              New Page
             </Button>
           </div>
           <div className="relative">
             <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search..." aria-label="Search knowledge base" className="pl-7 text-xs h-8" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search..."
+              aria-label="Search knowledge base"
+              className="pl-7 text-xs h-8"
+            />
           </div>
           {departments.length > 0 && (
             <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
@@ -227,7 +247,9 @@ export function KnowledgeBase() {
               <SelectContent>
                 <SelectItem value="all">All departments</SelectItem>
                 {departments.map((d) => (
-                  <SelectItem key={d} value={d}>{d}</SelectItem>
+                  <SelectItem key={d} value={d}>
+                    {d}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -242,7 +264,10 @@ export function KnowledgeBase() {
               placeholder="Page title..."
               className="text-xs h-8"
               autoFocus
-              onKeyDown={(e) => { if (e.key === "Enter" && newTitle.trim()) createPage.mutate(); if (e.key === "Escape") setCreating(false); }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && newTitle.trim()) createPage.mutate();
+                if (e.key === "Escape") setCreating(false);
+              }}
             />
             <Select value={newFolder} onValueChange={setNewFolder}>
               <SelectTrigger className="h-8 text-xs">
@@ -251,24 +276,41 @@ export function KnowledgeBase() {
               <SelectContent>
                 <SelectItem value="__root__">Root (no folder)</SelectItem>
                 {existingFolders.map((f) => (
-                  <SelectItem key={f} value={f}>{folderDisplayName(f)}</SelectItem>
+                  <SelectItem key={f} value={f}>
+                    {folderDisplayName(f)}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <div className="flex items-center gap-1">
-              <Button size="sm" className="h-7 text-xs" disabled={!newTitle.trim() || createPage.isPending} onClick={() => createPage.mutate()}>
+              <Button
+                size="sm"
+                className="h-7 text-xs"
+                disabled={!newTitle.trim() || createPage.isPending}
+                onClick={() => createPage.mutate()}
+              >
                 {createPage.isPending ? "Creating..." : "Create"}
               </Button>
-              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => { setCreating(false); setNewTitle(""); setNewDepartment(""); setNewFolder(""); }}>Cancel</Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs"
+                onClick={() => {
+                  setCreating(false);
+                  setNewTitle("");
+                  setNewDepartment("");
+                  setNewFolder("");
+                }}
+              >
+                Cancel
+              </Button>
             </div>
           </div>
         )}
 
         <div className="flex-1 overflow-y-auto">
           {pagesError && (
-            <div className="p-4 text-xs text-destructive text-center">
-              Failed to load pages. Please try again.
-            </div>
+            <div className="p-4 text-xs text-destructive text-center">Failed to load pages. Please try again.</div>
           )}
           {!pagesError && filteredPages.length === 0 ? (
             <div className="p-4 text-xs text-muted-foreground text-center">
@@ -278,7 +320,11 @@ export function KnowledgeBase() {
             <KBFolderTree
               pages={filteredPages}
               selectedPageId={selectedPageId}
-              onSelectPage={(id) => { setSelectedPageId(id); setEditing(false); setShowHistory(false); }}
+              onSelectPage={(id) => {
+                setSelectedPageId(id);
+                setEditing(false);
+                setShowHistory(false);
+              }}
               onBulkDelete={async (ids) => {
                 for (const id of ids) {
                   await knowledgeApi.remove(id).catch((err: unknown) => {
@@ -319,10 +365,7 @@ export function KnowledgeBase() {
               showHistory={showHistory}
             />
 
-            <KBPageMetadata
-              selectedPage={selectedPage}
-              onVisibilityChange={(v) => updateVisibility.mutate(v)}
-            />
+            <KBPageMetadata selectedPage={selectedPage} onVisibilityChange={(v) => updateVisibility.mutate(v)} />
 
             {/* Content area */}
             <div className="flex-1 overflow-y-auto">
@@ -338,11 +381,7 @@ export function KnowledgeBase() {
                 />
               ) : editing ? (
                 <div className="flex flex-col h-full">
-                  <FormattingToolbar
-                    textareaRef={editBodyRef}
-                    value={editBody}
-                    onChange={setEditBody}
-                  />
+                  <FormattingToolbar textareaRef={editBodyRef} value={editBody} onChange={setEditBody} />
                   <textarea
                     ref={editBodyRef}
                     className="w-full flex-1 p-4 text-sm bg-transparent outline-none resize-none font-mono"

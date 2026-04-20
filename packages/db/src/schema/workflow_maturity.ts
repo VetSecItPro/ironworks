@@ -1,11 +1,13 @@
-import { pgTable, uuid, text, integer, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { integer, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { companies } from "./companies.js";
 
 export const workflowMaturity = pgTable(
   "workflow_maturity",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    companyId: uuid("company_id").notNull().references(() => companies.id),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id),
     workflowType: text("workflow_type").notNull(),
     maturityLevel: text("maturity_level").notNull().default("crawl"),
     totalCompleted: integer("total_completed").notNull().default(0),
@@ -17,9 +19,6 @@ export const workflowMaturity = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
-    companyWorkflowIdx: uniqueIndex("workflow_maturity_company_workflow_idx").on(
-      table.companyId,
-      table.workflowType,
-    ),
+    companyWorkflowIdx: uniqueIndex("workflow_maturity_company_workflow_idx").on(table.companyId, table.workflowType),
   }),
 );

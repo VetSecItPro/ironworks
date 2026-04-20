@@ -1,49 +1,51 @@
+import { useQuery } from "@tanstack/react-query";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { FeedbackModal } from "./FeedbackModal";
+import { Outlet, useLocation, useNavigate, useParams } from "@/lib/router";
+import { BreadcrumbBar } from "./BreadcrumbBar";
 import { BugReportModal } from "./BugReportModal";
 import { ChangelogModal, ChangelogTrigger } from "./ChangelogModal";
-import { StatusBar } from "./StatusBar";
-import { useQuery } from "@tanstack/react-query";
-import { Outlet, useLocation, useNavigate, useParams } from "@/lib/router";
-import { CompanyRail } from "./CompanyRail";
-import { Sidebar } from "./Sidebar";
-import { InstanceSidebar } from "./InstanceSidebar";
-import { BreadcrumbBar } from "./BreadcrumbBar";
-import { PropertiesPanel } from "./PropertiesPanel";
 import { CommandPalette } from "./CommandPalette";
+import { CompanyRail } from "./CompanyRail";
+import { FeedbackModal } from "./FeedbackModal";
+import { InstanceSidebar } from "./InstanceSidebar";
+import { PropertiesPanel } from "./PropertiesPanel";
+import { Sidebar } from "./Sidebar";
+import { StatusBar } from "./StatusBar";
+
 const NewIssueDialog = lazy(() => import("./NewIssueDialog").then((m) => ({ default: m.NewIssueDialog })));
 const NewProjectDialog = lazy(() => import("./NewProjectDialog").then((m) => ({ default: m.NewProjectDialog })));
 const NewGoalDialog = lazy(() => import("./NewGoalDialog").then((m) => ({ default: m.NewGoalDialog })));
-import { NewAgentDialog } from "./NewAgentDialog";
-import { HireAgentDialog } from "./HireAgentDialog";
-import { ToastViewport } from "./ToastViewport";
-import { MobileBottomNav } from "./MobileBottomNav";
-import { WorktreeBanner } from "./WorktreeBanner";
-import { DevRestartBanner } from "./DevRestartBanner";
-import { AskAIHeaderButton, AskAIPanel } from "./AskAIButton";
-import { NotificationCenter, NotificationBell, useNotifications } from "./NotificationCenter";
-import { SampleDataBanner } from "./SampleDataToggle";
-import { GuidedTour, useGuidedTour } from "./GuidedTour";
-import { WelcomeScreen, hasSeenWelcome } from "./WelcomeScreen";
-import { useChordNavigation } from "../hooks/useKeyboardPowerUser";
-import { useDialog } from "../context/DialogContext";
-import { useToast } from "../context/ToastContext";
-import { usePanel } from "../context/PanelContext";
-import { useCompany } from "../context/CompanyContext";
-import { useSidebar } from "../context/SidebarContext";
-import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
-import { useCompanyPageMemory } from "../hooks/useCompanyPageMemory";
-import { usePrefetch } from "../hooks/usePrefetch";
-import { healthApi } from "../api/health";
+
 import { registerRateLimitToast } from "../api/client";
+import { healthApi } from "../api/health";
+import { useCompany } from "../context/CompanyContext";
+import { useDialog } from "../context/DialogContext";
+import { usePanel } from "../context/PanelContext";
+import { useSidebar } from "../context/SidebarContext";
+import { useToast } from "../context/ToastContext";
+import { useCompanyPageMemory } from "../hooks/useCompanyPageMemory";
+import { useChordNavigation } from "../hooks/useKeyboardPowerUser";
+import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
+import { useMeAccess } from "../hooks/useMeAccess";
+import { usePrefetch } from "../hooks/usePrefetch";
 import { shouldSyncCompanySelectionFromRoute } from "../lib/company-selection";
 import { DEFAULT_INSTANCE_SETTINGS_PATH, normalizeRememberedInstanceSettingsPath } from "../lib/instance-settings";
 import { queryKeys } from "../lib/queryKeys";
 import { cn } from "../lib/utils";
 import { NotFoundPage } from "../pages/NotFound";
-import { useMeAccess } from "../hooks/useMeAccess";
-import { useMobileSwipe } from "./layout/useMobileSwipe";
+import { AskAIHeaderButton, AskAIPanel } from "./AskAIButton";
+import { DevRestartBanner } from "./DevRestartBanner";
+import { GuidedTour, useGuidedTour } from "./GuidedTour";
+import { HireAgentDialog } from "./HireAgentDialog";
 import { useMobileNavVisibility } from "./layout/useMobileNavVisibility";
+import { useMobileSwipe } from "./layout/useMobileSwipe";
+import { MobileBottomNav } from "./MobileBottomNav";
+import { NewAgentDialog } from "./NewAgentDialog";
+import { NotificationBell, NotificationCenter, useNotifications } from "./NotificationCenter";
+import { SampleDataBanner } from "./SampleDataToggle";
+import { ToastViewport } from "./ToastViewport";
+import { hasSeenWelcome, WelcomeScreen } from "./WelcomeScreen";
+import { WorktreeBanner } from "./WorktreeBanner";
 
 const INSTANCE_SETTINGS_MEMORY_KEY = "ironworks.lastInstanceSettingsPath";
 
@@ -83,7 +85,9 @@ export function Layout() {
   const { isInstanceAdmin } = useMeAccess();
   const isInstanceSettingsRoute = location.pathname.startsWith("/instance/");
   const onboardingTriggered = useRef(false);
-  const [instanceSettingsTarget, setInstanceSettingsTarget] = useState<string>(() => readRememberedInstanceSettingsPath());
+  const [instanceSettingsTarget, setInstanceSettingsTarget] = useState<string>(() =>
+    readRememberedInstanceSettingsPath(),
+  );
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [bugReportOpen, setBugReportOpen] = useState(false);
   const [changelogOpen, setChangelogOpen] = useState(false);
@@ -125,9 +129,10 @@ export function Layout() {
     if (!companyPrefix || companiesLoading || companies.length === 0) return;
 
     if (!matchedCompany) {
-      const fallback = (selectedCompanyId ? companies.find((company) => company.id === selectedCompanyId) : null)
-        ?? companies[0]
-        ?? null;
+      const fallback =
+        (selectedCompanyId ? companies.find((company) => company.id === selectedCompanyId) : null) ??
+        companies[0] ??
+        null;
       if (fallback && selectedCompanyId !== fallback.id) {
         setSelectedCompanyId(fallback.id, { source: "route_sync" });
       }
@@ -196,9 +201,7 @@ export function Layout() {
   useEffect(() => {
     if (!location.pathname.startsWith("/instance/settings/")) return;
 
-    const nextPath = normalizeRememberedInstanceSettingsPath(
-      `${location.pathname}${location.search}${location.hash}`,
-    );
+    const nextPath = normalizeRememberedInstanceSettingsPath(`${location.pathname}${location.search}${location.hash}`);
     setInstanceSettingsTarget(nextPath);
 
     try {
@@ -210,9 +213,13 @@ export function Layout() {
 
   // Welcome screen for first-time users (only if no company exists)
   if (showWelcome && companies.length === 0) {
-    return <WelcomeScreen onComplete={() => {
-      setShowWelcome(false);
-    }} />;
+    return (
+      <WelcomeScreen
+        onComplete={() => {
+          setShowWelcome(false);
+        }}
+      />
+    );
   }
 
   return (
@@ -248,7 +255,7 @@ export function Layout() {
             aria-label="Main navigation"
             className={cn(
               "fixed inset-y-0 left-0 z-50 flex flex-col overflow-hidden pt-[env(safe-area-inset-top)] transition-transform duration-100 ease-out",
-              sidebarOpen ? "translate-x-0" : "-translate-x-full"
+              sidebarOpen ? "translate-x-0" : "-translate-x-full",
             )}
           >
             <div className="flex flex-1 min-h-0 overflow-hidden">
@@ -260,23 +267,26 @@ export function Layout() {
           <nav
             aria-label="Main navigation"
             data-tour="sidebar"
-            className={cn(
-              "flex h-full flex-col shrink-0 transition-all duration-200",
-              focusMode && "hidden",
-            )}
+            className={cn("flex h-full flex-col shrink-0 transition-all duration-200", focusMode && "hidden")}
           >
             <div className="flex flex-1 min-h-0">
               <CompanyRail />
               <div
                 className={cn(
                   "overflow-hidden transition-[width] duration-100 ease-out relative",
-                  !sidebarOpen && "w-0"
+                  !sidebarOpen && "w-0",
                 )}
                 style={sidebarOpen ? { width: sidebarWidth } : undefined}
               >
                 {isInstanceSettingsRoute ? <InstanceSidebar /> : <Sidebar />}
-                {/* Resize drag zone - right edge of sidebar */}
+                {/* Resize drag zone - right edge of sidebar. resize splitter; aria-valuenow not applicable for a non-slider resize handle */}
+                {/* biome-ignore lint/a11y/useSemanticElements: resize splitter uses role="separator" on a div; <hr> doesn't support onMouseDown */}
                 <div
+                  // biome-ignore lint/a11y/useAriaPropsForRole: aria-valuenow is required by spec but not meaningful for a resize splitter handle
+                  role="separator"
+                  aria-orientation="vertical"
+                  aria-label="Resize sidebar"
+                  tabIndex={0}
                   className="absolute top-0 right-0 w-2 h-full cursor-col-resize z-30 hover:bg-blue-500/30 active:bg-blue-500/50 transition-colors border-r border-border/50 hover:border-blue-500/50"
                   onMouseDown={(e) => {
                     e.preventDefault();
@@ -316,7 +326,6 @@ export function Layout() {
               isMobile && "sticky top-0 z-20",
               focusMode && !isMobile && "hidden",
             )}
-            role="banner"
           >
             <div className="flex items-center">
               <div className="flex-1 min-w-0">
@@ -325,10 +334,7 @@ export function Layout() {
               <div className="flex items-center gap-1 pr-4 shrink-0 relative">
                 <AskAIHeaderButton onClick={() => setAskAIOpen((v) => !v)} />
                 <AskAIPanel open={askAIOpen} onClose={() => setAskAIOpen(false)} />
-                <NotificationBell
-                  unreadCount={notifs.unreadCount}
-                  onClick={() => setNotifCenterOpen(true)}
-                />
+                <NotificationBell unreadCount={notifs.unreadCount} onClick={() => setNotifCenterOpen(true)} />
               </div>
             </div>
           </header>
@@ -363,9 +369,15 @@ export function Layout() {
       </div>
       {isMobile && <MobileBottomNav visible={mobileNavVisible} />}
       <CommandPalette />
-      <Suspense fallback={null}><NewIssueDialog /></Suspense>
-      <Suspense fallback={null}><NewProjectDialog /></Suspense>
-      <Suspense fallback={null}><NewGoalDialog /></Suspense>
+      <Suspense fallback={null}>
+        <NewIssueDialog />
+      </Suspense>
+      <Suspense fallback={null}>
+        <NewProjectDialog />
+      </Suspense>
+      <Suspense fallback={null}>
+        <NewGoalDialog />
+      </Suspense>
       <NewAgentDialog />
       <HireAgentDialog />
       <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />

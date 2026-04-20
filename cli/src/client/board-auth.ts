@@ -2,8 +2,8 @@ import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import pc from "picocolors";
-import { buildCliCommandLabel } from "./command-label.js";
 import { resolveDefaultCliAuthPath } from "../config/home.js";
+import { buildCliCommandLabel } from "./command-label.js";
 
 type RequestedAccess = "board" | "instance_admin_required";
 
@@ -233,14 +233,11 @@ export async function loginBoardCli(params: {
     );
 
     if (status.status === "approved") {
-      const me = await requestJson<{ userId: string; user?: { id: string } | null }>(
-        `${apiBase}/api/cli-auth/me`,
-        {
-          headers: {
-            authorization: `Bearer ${challenge.boardApiToken}`,
-          },
+      const me = await requestJson<{ userId: string; user?: { id: string } | null }>(`${apiBase}/api/cli-auth/me`, {
+        headers: {
+          authorization: `Bearer ${challenge.boardApiToken}`,
         },
-      );
+      });
       setStoredBoardCredential({
         apiBase,
         token: challenge.boardApiToken,
@@ -267,10 +264,7 @@ export async function loginBoardCli(params: {
   throw new Error("CLI auth challenge expired before approval.");
 }
 
-export async function revokeStoredBoardCredential(params: {
-  apiBase: string;
-  token: string;
-}): Promise<void> {
+export async function revokeStoredBoardCredential(params: { apiBase: string; token: string }): Promise<void> {
   const apiBase = normalizeApiBase(params.apiBase);
   await requestJson<{ revoked: boolean }>(`${apiBase}/api/cli-auth/revoke-current`, {
     method: "POST",

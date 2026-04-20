@@ -22,8 +22,7 @@ export function SubscriptionQuotaSection({
   const isClaudeQuotaPanel = provider === "anthropic";
   const isCodexQuotaPanel = provider === "openai" && quotaSource?.startsWith("codex-");
   const supportsSubscriptionQuota = provider === "anthropic" || provider === "openai";
-  const showSection =
-    supportsSubscriptionQuota && (quotaLoading || quotaWindows.length > 0 || quotaError != null);
+  const showSection = supportsSubscriptionQuota && (quotaLoading || quotaWindows.length > 0 || quotaError != null);
 
   if (!showSection) return null;
 
@@ -32,9 +31,7 @@ export function SubscriptionQuotaSection({
       <div className="border-t border-border" />
       <div className="space-y-2">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-            Subscription quota
-          </p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Subscription quota</p>
           {quotaSource && !isClaudeQuotaPanel && !isCodexQuotaPanel ? (
             <span className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
               {quotaSourceDisplayName(quotaSource)}
@@ -49,11 +46,7 @@ export function SubscriptionQuotaSection({
           <CodexSubscriptionPanel windows={quotaWindows} source={quotaSource} error={quotaError} />
         ) : (
           <>
-            {quotaError ? (
-              <p className="text-xs text-destructive">
-                {quotaError}
-              </p>
-            ) : null}
+            {quotaError ? <p className="text-xs text-destructive">{quotaError}</p> : null}
             <div className="space-y-2.5">
               {quotaWindows.map((qw) => {
                 const fillColor =
@@ -84,9 +77,7 @@ export function SubscriptionQuotaSection({
                       </div>
                     )}
                     {qw.detail ? (
-                      <p className="text-xs text-muted-foreground">
-                        {qw.detail}
-                      </p>
+                      <p className="text-xs text-muted-foreground">{qw.detail}</p>
                     ) : qw.resetsAt ? (
                       <p className="text-xs text-muted-foreground">
                         resets {new Date(qw.resetsAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}

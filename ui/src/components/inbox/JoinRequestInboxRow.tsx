@@ -1,12 +1,12 @@
+import type { JoinRequest } from "@ironworksai/shared";
+import { UserPlus, X } from "lucide-react";
 import { memo } from "react";
 import { Button } from "@/components/ui/button";
-import { UserPlus, X } from "lucide-react";
 import { timeAgo } from "../../lib/timeAgo";
 import { cn } from "../../lib/utils";
-import { SnoozeButton } from "./SnoozeButton";
 import { getSeverityBorderClass } from "./inboxHelpers";
 import type { NonIssueUnreadState } from "./inboxTypes";
-import type { JoinRequest } from "@ironworksai/shared";
+import { SnoozeButton } from "./SnoozeButton";
 
 export const JoinRequestInboxRow = memo(function JoinRequestInboxRow({
   joinRequest,
@@ -41,11 +41,13 @@ export const JoinRequestInboxRow = memo(function JoinRequestInboxRow({
   const showUnreadDot = unreadState === "visible" || unreadState === "fading";
 
   return (
-    <div className={cn(
-      "group border-b border-border px-2 py-2.5 last:border-b-0 sm:px-1 sm:pr-3 sm:py-2",
-      getSeverityBorderClass({ kind: "join_request" }),
-      className,
-    )}>
+    <div
+      className={cn(
+        "group border-b border-border px-2 py-2.5 last:border-b-0 sm:px-1 sm:pr-3 sm:py-2",
+        getSeverityBorderClass({ kind: "join_request" }),
+        className,
+      )}
+    >
       <div className="flex items-start gap-2 sm:items-center">
         {showUnreadSlot ? (
           <span className="hidden sm:inline-flex h-4 w-4 shrink-0 items-center justify-center self-center">
@@ -56,10 +58,12 @@ export const JoinRequestInboxRow = memo(function JoinRequestInboxRow({
                 className="inline-flex h-4 w-4 items-center justify-center rounded-full transition-colors hover:bg-blue-500/20"
                 aria-label="Mark as read"
               >
-                <span className={cn(
-                  "block h-2 w-2 rounded-full bg-blue-600 transition-opacity duration-300 dark:bg-blue-400",
-                  unreadState === "fading" ? "opacity-0" : "opacity-100",
-                )} />
+                <span
+                  className={cn(
+                    "block h-2 w-2 rounded-full bg-blue-600 transition-opacity duration-300 dark:bg-blue-400",
+                    unreadState === "fading" ? "opacity-0" : "opacity-100",
+                  )}
+                />
               </button>
             ) : onArchive ? (
               <button
@@ -83,11 +87,11 @@ export const JoinRequestInboxRow = memo(function JoinRequestInboxRow({
             <UserPlus className="h-4 w-4 text-muted-foreground" />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="line-clamp-2 text-sm font-medium sm:truncate sm:line-clamp-none">
-              {label}
-            </span>
+            <span className="line-clamp-2 text-sm font-medium sm:truncate sm:line-clamp-none">{label}</span>
             <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-              <span>requested {timeAgo(joinRequest.createdAt)} from IP {joinRequest.requestIp}</span>
+              <span>
+                requested {timeAgo(joinRequest.createdAt)} from IP {joinRequest.requestIp}
+              </span>
               {joinRequest.adapterType && <span>adapter: {joinRequest.adapterType}</span>}
             </span>
           </span>
@@ -101,18 +105,10 @@ export const JoinRequestInboxRow = memo(function JoinRequestInboxRow({
           >
             Approve
           </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            className="h-8 px-3"
-            onClick={onReject}
-            disabled={isPending}
-          >
+          <Button variant="destructive" size="sm" className="h-8 px-3" onClick={onReject} disabled={isPending}>
             Reject
           </Button>
-          {onSnooze && snoozeKey && (
-            <SnoozeButton itemKey={snoozeKey} onSnooze={onSnooze} />
-          )}
+          {onSnooze && snoozeKey && <SnoozeButton itemKey={snoozeKey} onSnooze={onSnooze} />}
         </div>
       </div>
       <div className="mt-3 flex gap-2 sm:hidden">
@@ -124,13 +120,7 @@ export const JoinRequestInboxRow = memo(function JoinRequestInboxRow({
         >
           Approve
         </Button>
-        <Button
-          variant="destructive"
-          size="sm"
-          className="h-8 px-3"
-          onClick={onReject}
-          disabled={isPending}
-        >
+        <Button variant="destructive" size="sm" className="h-8 px-3" onClick={onReject} disabled={isPending}>
           Reject
         </Button>
       </div>

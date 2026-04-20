@@ -1,9 +1,9 @@
-export { HeaderBar } from "./HeaderBar";
-export { TitleSection } from "./TitleSection";
-export { AssignmentRow } from "./AssignmentRow";
-export { ExecutionWorkspaceSection } from "./ExecutionWorkspaceSection";
 export { AssigneeOptionsSection } from "./AssigneeOptionsSection";
+export { AssignmentRow } from "./AssignmentRow";
 export { DescriptionSection } from "./DescriptionSection";
-export { PropertyChipsBar } from "./PropertyChipsBar";
+export { ExecutionWorkspaceSection } from "./ExecutionWorkspaceSection";
 export { FooterBar } from "./FooterBar";
+export { HeaderBar } from "./HeaderBar";
+export { PropertyChipsBar } from "./PropertyChipsBar";
+export { TitleSection } from "./TitleSection";
 export { useNewIssueForm } from "./useNewIssueForm";

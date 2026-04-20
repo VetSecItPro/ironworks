@@ -1,7 +1,7 @@
-import { NavLink } from "@/lib/router";
-import { cn } from "../lib/utils";
-import { useSidebar } from "../context/SidebarContext";
 import type { LucideIcon } from "lucide-react";
+import { NavLink } from "@/lib/router";
+import { useSidebar } from "../context/SidebarContext";
+import { cn } from "../lib/utils";
 
 interface SidebarNavItemProps {
   to: string;
@@ -41,7 +41,9 @@ export function SidebarNavItem({
       to={to}
       end={end}
       data-tour={dataTour}
-      onClick={() => { if (isMobile) setSidebarOpen(false); }}
+      onClick={() => {
+        if (isMobile) setSidebarOpen(false);
+      }}
       className={({ isActive }) =>
         cn(
           "relative flex items-center gap-2.5 px-3 py-2.5 min-h-[36px] text-[13px] font-medium select-none transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:rounded-md",
@@ -84,9 +86,7 @@ export function SidebarNavItem({
         <span
           className={cn(
             "ml-auto rounded-full px-1.5 py-0.5 text-xs leading-none",
-            badgeTone === "danger"
-              ? "bg-red-600/90 text-red-50"
-              : "bg-primary text-primary-foreground",
+            badgeTone === "danger" ? "bg-red-600/90 text-red-50" : "bg-primary text-primary-foreground",
           )}
         >
           {badge}

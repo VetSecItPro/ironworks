@@ -1,7 +1,5 @@
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +8,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "../../lib/utils";
 import type { StepDraft } from "./playbook-types";
 import { CATEGORIES, emptyStep } from "./playbook-types";
@@ -52,9 +52,7 @@ export function ManualModeDialog({
   }
 
   function updateStep(idx: number, field: keyof StepDraft, value: string | boolean) {
-    setSteps((prev) =>
-      prev.map((s, i) => (i === idx ? { ...s, [field]: value } : s)),
-    );
+    setSteps((prev) => prev.map((s, i) => (i === idx ? { ...s, [field]: value } : s)));
   }
 
   return (
@@ -62,16 +60,17 @@ export function ManualModeDialog({
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create Playbook</DialogTitle>
-          <DialogDescription>
-            Define your multi-agent workflow step by step.
-          </DialogDescription>
+          <DialogDescription>Define your multi-agent workflow step by step.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
-              <label className="text-xs font-medium text-muted-foreground">Name</label>
+              <label htmlFor="playbook-name" className="text-xs font-medium text-muted-foreground">
+                Name
+              </label>
               <Input
+                id="playbook-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. New Client Onboarding"
@@ -79,8 +78,11 @@ export function ManualModeDialog({
               />
             </div>
             <div className="col-span-2">
-              <label className="text-xs font-medium text-muted-foreground">Description</label>
+              <label htmlFor="playbook-description" className="text-xs font-medium text-muted-foreground">
+                Description
+              </label>
               <Input
+                id="playbook-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="One-liner explaining what this playbook does"
@@ -88,10 +90,11 @@ export function ManualModeDialog({
               />
             </div>
             <div className="col-span-2">
-              <label className="text-xs font-medium text-muted-foreground">Category</label>
+              <span className="text-xs font-medium text-muted-foreground">Category</span>
               <div className="flex flex-wrap gap-1.5 mt-1">
                 {CATEGORIES.map((cat) => (
                   <button
+                    type="button"
                     key={cat.value}
                     onClick={() => setCategory(cat.value)}
                     className={cn(
@@ -110,7 +113,7 @@ export function ManualModeDialog({
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-medium text-muted-foreground">Steps</label>
+              <span className="text-xs font-medium text-muted-foreground">Steps</span>
               <Button variant="ghost" size="xs" onClick={addStep}>
                 <Plus className="h-3 w-3 mr-1" />
                 Add Step
@@ -119,6 +122,7 @@ export function ManualModeDialog({
 
             <div className="space-y-3">
               {steps.map((step, idx) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: editable playbook steps have no stable id; step.title is mutable during editing
                 <div key={idx} className="border border-border rounded-lg p-3 space-y-2">
                   <div className="flex items-center gap-2">
                     <span className="flex items-center justify-center h-5 w-5 rounded-full bg-accent text-[11px] font-medium shrink-0">
@@ -149,8 +153,11 @@ export function ManualModeDialog({
                   />
                   <div className="grid grid-cols-3 gap-2">
                     <div>
-                      <label className="text-[10px] text-muted-foreground">Assignee Role</label>
+                      <label htmlFor={`step-${idx}-assignee-role`} className="text-[10px] text-muted-foreground">
+                        Assignee Role
+                      </label>
                       <Input
+                        id={`step-${idx}-assignee-role`}
                         value={step.assigneeRole}
                         onChange={(e) => updateStep(idx, "assigneeRole", e.target.value)}
                         placeholder="e.g. cto"
@@ -158,8 +165,11 @@ export function ManualModeDialog({
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-muted-foreground">Depends on steps</label>
+                      <label htmlFor={`step-${idx}-depends-on`} className="text-[10px] text-muted-foreground">
+                        Depends on steps
+                      </label>
                       <Input
+                        id={`step-${idx}-depends-on`}
                         value={step.dependsOn}
                         onChange={(e) => updateStep(idx, "dependsOn", e.target.value)}
                         placeholder="e.g. 1, 2"
@@ -167,8 +177,11 @@ export function ManualModeDialog({
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-muted-foreground">Est. minutes</label>
+                      <label htmlFor={`step-${idx}-est-minutes`} className="text-[10px] text-muted-foreground">
+                        Est. minutes
+                      </label>
                       <Input
+                        id={`step-${idx}-est-minutes`}
                         value={step.estimatedMinutes}
                         onChange={(e) => updateStep(idx, "estimatedMinutes", e.target.value)}
                         placeholder="30"

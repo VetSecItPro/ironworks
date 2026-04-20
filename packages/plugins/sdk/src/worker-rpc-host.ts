@@ -39,58 +39,55 @@ import { createInterface, type Interface as ReadlineInterface } from "node:readl
 import { fileURLToPath } from "node:url";
 
 import type { IronworksPluginManifestV1 } from "@ironworksai/shared";
-
-import type { IronworksPlugin } from "./define-plugin.js";
 import type {
-  PluginHealthDiagnostics,
+  IronworksPlugin,
   PluginConfigValidationResult,
+  PluginHealthDiagnostics,
   PluginWebhookInput,
 } from "./define-plugin.js";
 import type {
+  ConfigChangedParams,
+  ExecuteToolParams,
+  GetDataParams,
+  InitializeParams,
+  InitializeResult,
+  JsonRpcRequest,
+  JsonRpcResponse,
+  OnEventParams,
+  PerformActionParams,
+  RunJobParams,
+  ValidateConfigParams,
+  WorkerToHostMethodName,
+  WorkerToHostMethods,
+} from "./protocol.js";
+import {
+  createErrorResponse,
+  createNotification,
+  createRequest,
+  createSuccessResponse,
+  isJsonRpcErrorResponse,
+  isJsonRpcNotification,
+  isJsonRpcRequest,
+  isJsonRpcResponse,
+  isJsonRpcSuccessResponse,
+  JSONRPC_ERROR_CODES,
+  JsonRpcCallError,
+  JsonRpcParseError,
+  PLUGIN_RPC_ERROR_CODES,
+  parseMessage,
+  serializeMessage,
+} from "./protocol.js";
+import type {
+  AgentSessionEvent,
+  EventFilter,
   PluginContext,
   PluginEvent,
   PluginJobContext,
   PluginLauncherRegistration,
   ScopeKey,
-  ToolRunContext,
   ToolResult,
-  EventFilter,
-  AgentSessionEvent,
+  ToolRunContext,
 } from "./types.js";
-import type {
-  JsonRpcId,
-  JsonRpcRequest,
-  JsonRpcResponse,
-  InitializeParams,
-  InitializeResult,
-  ConfigChangedParams,
-  ValidateConfigParams,
-  OnEventParams,
-  RunJobParams,
-  GetDataParams,
-  PerformActionParams,
-  ExecuteToolParams,
-  WorkerToHostMethodName,
-  WorkerToHostMethods,
-} from "./protocol.js";
-import {
-  JSONRPC_VERSION,
-  JSONRPC_ERROR_CODES,
-  PLUGIN_RPC_ERROR_CODES,
-  createRequest,
-  createSuccessResponse,
-  createErrorResponse,
-  createNotification,
-  parseMessage,
-  serializeMessage,
-  isJsonRpcRequest,
-  isJsonRpcResponse,
-  isJsonRpcNotification,
-  isJsonRpcSuccessResponse,
-  isJsonRpcErrorResponse,
-  JsonRpcParseError,
-  JsonRpcCallError,
-} from "./protocol.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -196,11 +193,8 @@ export function runWorker(
   plugin: IronworksPlugin,
   moduleUrl: string,
   options?: RunWorkerOptions,
-): WorkerRpcHost | void {
-  if (
-    options?.stdin != null &&
-    options?.stdout != null
-  ) {
+): WorkerRpcHost | undefined {
+  if (options?.stdin != null && options?.stdout != null) {
     return startWorkerRpcHost({
       plugin,
       stdin: options.stdin,
@@ -249,7 +243,7 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
   let running = true;
   let initialized = false;
   let manifest: IronworksPluginManifestV1 | null = null;
-  let currentConfig: Record<string, unknown> = {};
+  let _currentConfig: Record<string, unknown> = {};
 
   // Plugin handler registrations (populated during setup())
   const eventHandlers: EventRegistration[] = [];
@@ -257,19 +251,28 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
   const launcherRegistrations = new Map<string, PluginLauncherRegistration>();
   const dataHandlers = new Map<string, (params: Record<string, unknown>) => Promise<unknown>>();
   const actionHandlers = new Map<string, (params: Record<string, unknown>) => Promise<unknown>>();
-  const toolHandlers = new Map<string, {
-    declaration: Pick<import("@ironworksai/shared").PluginToolDeclaration, "displayName" | "description" | "parametersSchema">;
-    fn: (params: unknown, runCtx: ToolRunContext) => Promise<ToolResult>;
-  }>();
+  const toolHandlers = new Map<
+    string,
+    {
+      declaration: Pick<
+        import("@ironworksai/shared").PluginToolDeclaration,
+        "displayName" | "description" | "parametersSchema"
+      >;
+      fn: (params: unknown, runCtx: ToolRunContext) => Promise<ToolResult>;
+    }
+  >();
 
   // Agent session event callbacks (populated by sendMessage, cleared by close)
   const sessionEventCallbacks = new Map<string, (event: AgentSessionEvent) => void>();
 
   // Pending outbound (worker→host) requests
-  const pendingRequests = new Map<string | number, {
-    resolve: (response: JsonRpcResponse) => void;
-    timer: ReturnType<typeof setTimeout>;
-  }>();
+  const pendingRequests = new Map<
+    string | number,
+    {
+      resolve: (response: JsonRpcResponse) => void;
+      timer: ReturnType<typeof setTimeout>;
+    }
+  >();
   let nextOutboundId = 1;
   const MAX_OUTBOUND_ID = Number.MAX_SAFE_INTEGER - 1;
 
@@ -279,6 +282,7 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
 
   function sendMessage(message: unknown): void {
     if (!running) return;
+    // biome-ignore lint/suspicious/noExplicitAny: serializeMessage expects a specific RPC shape; sendMessage callers ensure valid shape
     const serialized = serializeMessage(message as any);
     stdoutStream.write(serialized);
   }
@@ -387,12 +391,14 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
           }
           eventHandlers.push(registration);
           // Register subscription on the host so events are forwarded to this worker
-          void callHost("events.subscribe", { eventPattern: name, filter: registration.filter ?? null }).catch((err) => {
-            notifyHost("log", {
-              level: "warn",
-              message: `Failed to subscribe to event "${name}" on host: ${err instanceof Error ? err.message : String(err)}`,
-            });
-          });
+          void callHost("events.subscribe", { eventPattern: name, filter: registration.filter ?? null }).catch(
+            (err) => {
+              notifyHost("log", {
+                level: "warn",
+                message: `Failed to subscribe to event "${name}" on host: ${err instanceof Error ? err.message : String(err)}`,
+              });
+            },
+          );
           return () => {
             const idx = eventHandlers.indexOf(registration);
             if (idx !== -1) eventHandlers.splice(idx, 1);
@@ -425,7 +431,9 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
               // Normalize headers to a plain object
               if (init.headers instanceof Headers) {
                 const obj: Record<string, string> = {};
-                init.headers.forEach((v, k) => { obj[k] = v; });
+                init.headers.forEach((v, k) => {
+                  obj[k] = v;
+                });
                 serializedInit.headers = obj;
               } else if (Array.isArray(init.headers)) {
                 const obj: Record<string, string> = {};
@@ -436,9 +444,7 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
               }
             }
             if (init.body !== undefined && init.body !== null) {
-              serializedInit.body = typeof init.body === "string"
-                ? init.body
-                : String(init.body);
+              serializedInit.body = typeof init.body === "string" ? init.body : String(init.body);
             }
           }
 
@@ -680,11 +686,15 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
             return callHost("agents.sessions.list", { agentId, companyId });
           },
 
-          async sendMessage(sessionId: string, companyId: string, opts: {
-            prompt: string;
-            reason?: string;
-            onEvent?: (event: AgentSessionEvent) => void;
-          }) {
+          async sendMessage(
+            sessionId: string,
+            companyId: string,
+            opts: {
+              prompt: string;
+              reason?: string;
+              onEvent?: (event: AgentSessionEvent) => void;
+            },
+          ) {
             if (opts.onEvent) {
               sessionEventCallbacks.set(sessionId, opts.onEvent);
             }
@@ -779,7 +789,10 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
       tools: {
         register(
           name: string,
-          declaration: Pick<import("@ironworksai/shared").PluginToolDeclaration, "displayName" | "description" | "parametersSchema">,
+          declaration: Pick<
+            import("@ironworksai/shared").PluginToolDeclaration,
+            "displayName" | "description" | "parametersSchema"
+          >,
           fn: (params: unknown, runCtx: ToolRunContext) => Promise<ToolResult>,
         ): void {
           toolHandlers.set(name, { declaration, fn });
@@ -832,9 +845,8 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
       // METHOD_NOT_FOUND, METHOD_NOT_IMPLEMENTED) — fall back to
       // WORKER_ERROR for untyped exceptions.
       const errorCode =
-        typeof (err as any)?.code === "number"
-          ? (err as any).code
-          : PLUGIN_RPC_ERROR_CODES.WORKER_ERROR;
+        // biome-ignore lint/suspicious/noExplicitAny: err is unknown from catch; accessing .code requires any cast
+        typeof (err as any)?.code === "number" ? (err as any).code : PLUGIN_RPC_ERROR_CODES.WORKER_ERROR;
 
       sendMessage(createErrorResponse(id, errorCode, errorMessage));
     }
@@ -879,10 +891,7 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
         return handleExecuteTool(params as ExecuteToolParams);
 
       default:
-        throw Object.assign(
-          new Error(`Unknown method: ${method}`),
-          { code: JSONRPC_ERROR_CODES.METHOD_NOT_FOUND },
-        );
+        throw Object.assign(new Error(`Unknown method: ${method}`), { code: JSONRPC_ERROR_CODES.METHOD_NOT_FOUND });
     }
   }
 
@@ -896,7 +905,7 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
     }
 
     manifest = params.manifest;
-    currentConfig = params.config;
+    _currentConfig = params.config;
 
     // Call the plugin's setup function
     await plugin.definition.setup(ctx);
@@ -938,20 +947,17 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
     });
   }
 
-  async function handleValidateConfig(
-    params: ValidateConfigParams,
-  ): Promise<PluginConfigValidationResult> {
+  async function handleValidateConfig(params: ValidateConfigParams): Promise<PluginConfigValidationResult> {
     if (!plugin.definition.onValidateConfig) {
-      throw Object.assign(
-        new Error("validateConfig is not implemented by this plugin"),
-        { code: PLUGIN_RPC_ERROR_CODES.METHOD_NOT_IMPLEMENTED },
-      );
+      throw Object.assign(new Error("validateConfig is not implemented by this plugin"), {
+        code: PLUGIN_RPC_ERROR_CODES.METHOD_NOT_IMPLEMENTED,
+      });
     }
     return plugin.definition.onValidateConfig(params.config);
   }
 
   async function handleConfigChanged(params: ConfigChangedParams): Promise<void> {
-    currentConfig = params.config;
+    _currentConfig = params.config;
 
     if (plugin.definition.onConfigChanged) {
       await plugin.definition.onConfigChanged(params.config);
@@ -964,12 +970,9 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
     for (const registration of eventHandlers) {
       // Check event type match
       const exactMatch = registration.name === event.eventType;
-      const wildcardPluginAll =
-        registration.name === "plugin.*" &&
-        event.eventType.startsWith("plugin.");
+      const wildcardPluginAll = registration.name === "plugin.*" && event.eventType.startsWith("plugin.");
       const wildcardPluginOne =
-        registration.name.endsWith(".*") &&
-        event.eventType.startsWith(registration.name.slice(0, -1));
+        registration.name.endsWith(".*") && event.eventType.startsWith(registration.name.slice(0, -1));
 
       if (!exactMatch && !wildcardPluginAll && !wildcardPluginOne) continue;
 
@@ -1002,10 +1005,9 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
 
   async function handleWebhook(params: PluginWebhookInput): Promise<void> {
     if (!plugin.definition.onWebhook) {
-      throw Object.assign(
-        new Error("handleWebhook is not implemented by this plugin"),
-        { code: PLUGIN_RPC_ERROR_CODES.METHOD_NOT_IMPLEMENTED },
-      );
+      throw Object.assign(new Error("handleWebhook is not implemented by this plugin"), {
+        code: PLUGIN_RPC_ERROR_CODES.METHOD_NOT_IMPLEMENTED,
+      });
     }
     await plugin.definition.onWebhook(params);
   }
@@ -1055,16 +1057,12 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
     }
 
     if (filter.projectId !== undefined) {
-      const projectId = event.entityType === "project"
-        ? event.entityId
-        : String(payload?.projectId ?? "");
+      const projectId = event.entityType === "project" ? event.entityId : String(payload?.projectId ?? "");
       if (projectId !== filter.projectId) return false;
     }
 
     if (filter.agentId !== undefined) {
-      const agentId = event.entityType === "agent"
-        ? event.entityId
-        : String(payload?.agentId ?? "");
+      const agentId = event.entityType === "agent" ? event.entityId : String(payload?.agentId ?? "");
       if (agentId !== filter.agentId) return false;
     }
 
@@ -1100,13 +1098,7 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
     } catch (err) {
       if (err instanceof JsonRpcParseError) {
         // Send parse error response
-        sendMessage(
-          createErrorResponse(
-            null,
-            JSONRPC_ERROR_CODES.PARSE_ERROR,
-            `Parse error: ${err.message}`,
-          ),
-        );
+        sendMessage(createErrorResponse(null, JSONRPC_ERROR_CODES.PARSE_ERROR, `Parse error: ${err.message}`));
       }
       return;
     }
@@ -1119,6 +1111,7 @@ export function startWorkerRpcHost(options: WorkerRpcHostOptions): WorkerRpcHost
       handleHostRequest(message as JsonRpcRequest).catch((err) => {
         // Unhandled error in the async handler — send error response
         const errorMessage = err instanceof Error ? err.message : String(err);
+        // biome-ignore lint/suspicious/noExplicitAny: err is unknown from rejected promise; accessing .code requires any cast
         const errorCode = (err as any)?.code ?? PLUGIN_RPC_ERROR_CODES.WORKER_ERROR;
         try {
           sendMessage(

@@ -1,5 +1,5 @@
-import { SlidersHorizontal } from "lucide-react";
 import { AUTONOMY_LEVELS, type AutonomyLevel } from "@ironworksai/shared";
+import { SlidersHorizontal } from "lucide-react";
 import { HelpBeacon } from "../HelpBeacon";
 
 interface AutonomySectionProps {
@@ -7,10 +7,7 @@ interface AutonomySectionProps {
   onAutonomyChange: (level: AutonomyLevel) => void;
 }
 
-export function AutonomySection({
-  defaultAutonomy,
-  onAutonomyChange,
-}: AutonomySectionProps) {
+export function AutonomySection({ defaultAutonomy, onAutonomyChange }: AutonomySectionProps) {
   return (
     <div id="autonomy" className="space-y-4 scroll-mt-6">
       <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
@@ -20,8 +17,7 @@ export function AutonomySection({
       </div>
       <div className="rounded-md border border-border px-4 py-4 space-y-3">
         <p className="text-sm text-muted-foreground">
-          Set the default level of human oversight applied to new agents in
-          this company.
+          Set the default level of human oversight applied to new agents in this company.
         </p>
         <div className="space-y-2">
           {AUTONOMY_LEVELS.map((level) => (
@@ -48,9 +44,7 @@ export function AutonomySection({
                   </span>
                   <span className="text-sm font-medium">{level.label}</span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {level.description}
-                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">{level.description}</p>
               </div>
             </label>
           ))}

@@ -1,12 +1,12 @@
-import { useCallback, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "../lib/queryKeys";
-import { dashboardApi } from "../api/dashboard";
+import { useCallback, useEffect } from "react";
 import { agentsApi } from "../api/agents";
+import { dashboardApi } from "../api/dashboard";
+import { goalsApi } from "../api/goals";
 import { issuesApi } from "../api/issues";
 import { projectsApi } from "../api/projects";
-import { goalsApi } from "../api/goals";
 import { routinesApi } from "../api/routines";
+import { queryKeys } from "../lib/queryKeys";
 
 /**
  * Prefetch critical data so that navigating between top-level pages feels

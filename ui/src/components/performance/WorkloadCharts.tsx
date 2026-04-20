@@ -1,31 +1,19 @@
-import type { AgentPerfRow } from "./ratingUtils";
 import type { Issue } from "@ironworksai/shared";
+import type { AgentPerfRow } from "./ratingUtils";
 
 /* ── Workload Distribution ── */
 
-export function WorkloadDistribution({
-  rows,
-  issues,
-}: {
-  rows: AgentPerfRow[];
-  issues: Issue[];
-}) {
+export function WorkloadDistribution({ rows, issues }: { rows: AgentPerfRow[]; issues: Issue[] }) {
   const maxActive = Math.max(
     ...rows.map(
-      (r) =>
-        r.tasksInProgress +
-        issues.filter(
-          (i) => i.assigneeAgentId === r.agentId && i.status === "todo",
-        ).length,
+      (r) => r.tasksInProgress + issues.filter((i) => i.assigneeAgentId === r.agentId && i.status === "todo").length,
     ),
     1,
   );
 
   const enriched = rows
     .map((r) => {
-      const todo = issues.filter(
-        (i) => i.assigneeAgentId === r.agentId && i.status === "todo",
-      ).length;
+      const todo = issues.filter((i) => i.assigneeAgentId === r.agentId && i.status === "todo").length;
       const active = r.tasksInProgress + todo;
       return { ...r, todo, active };
     })
@@ -33,9 +21,7 @@ export function WorkloadDistribution({
 
   return (
     <div className="rounded-xl border border-border p-4 space-y-3">
-      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        Workload Distribution
-      </h4>
+      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Workload Distribution</h4>
       <p className="text-sm text-muted-foreground">
         Active tasks per agent - identify overloaded or idle team members.
       </p>
@@ -79,36 +65,19 @@ export function WorkloadDistribution({
 
 /* ── Agent Pipeline ── */
 
-export function AgentPipeline({
-  rows,
-  issues,
-}: {
-  rows: AgentPerfRow[];
-  issues: Issue[];
-}) {
+export function AgentPipeline({ rows, issues }: { rows: AgentPerfRow[]; issues: Issue[] }) {
   return (
     <div className="rounded-xl border border-border p-4 space-y-3">
-      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        Agent Pipeline
-      </h4>
-      <p className="text-sm text-muted-foreground">
-        Task funnel per agent - from backlog to done.
-      </p>
+      <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Agent Pipeline</h4>
+      <p className="text-sm text-muted-foreground">Task funnel per agent - from backlog to done.</p>
       <div className="space-y-2">
         {rows
           .filter((r) => r.tasksDone > 0 || r.tasksInProgress > 0)
           .map((r) => {
-            const backlog = issues.filter(
-              (i) => i.assigneeAgentId === r.agentId && i.status === "backlog",
-            ).length;
-            const todo = issues.filter(
-              (i) => i.assigneeAgentId === r.agentId && i.status === "todo",
-            ).length;
+            const backlog = issues.filter((i) => i.assigneeAgentId === r.agentId && i.status === "backlog").length;
+            const todo = issues.filter((i) => i.assigneeAgentId === r.agentId && i.status === "todo").length;
             const inProgress = r.tasksInProgress;
-            const inReview = issues.filter(
-              (i) =>
-                i.assigneeAgentId === r.agentId && i.status === "in_review",
-            ).length;
+            const inReview = issues.filter((i) => i.assigneeAgentId === r.agentId && i.status === "in_review").length;
             const done = r.tasksDone;
             const total = backlog + todo + inProgress + inReview + done;
             if (total === 0) return null;
@@ -120,35 +89,14 @@ export function AgentPipeline({
                   <span className="text-muted-foreground">{total} total</span>
                 </div>
                 <div className="flex h-2.5 rounded-full overflow-hidden bg-muted">
-                  {done > 0 && (
-                    <div
-                      className="bg-emerald-500"
-                      style={{ width: `${(done / total) * 100}%` }}
-                    />
-                  )}
-                  {inReview > 0 && (
-                    <div
-                      className="bg-violet-500"
-                      style={{ width: `${(inReview / total) * 100}%` }}
-                    />
-                  )}
+                  {done > 0 && <div className="bg-emerald-500" style={{ width: `${(done / total) * 100}%` }} />}
+                  {inReview > 0 && <div className="bg-violet-500" style={{ width: `${(inReview / total) * 100}%` }} />}
                   {inProgress > 0 && (
-                    <div
-                      className="bg-blue-500"
-                      style={{ width: `${(inProgress / total) * 100}%` }}
-                    />
+                    <div className="bg-blue-500" style={{ width: `${(inProgress / total) * 100}%` }} />
                   )}
-                  {todo > 0 && (
-                    <div
-                      className="bg-amber-500"
-                      style={{ width: `${(todo / total) * 100}%` }}
-                    />
-                  )}
+                  {todo > 0 && <div className="bg-amber-500" style={{ width: `${(todo / total) * 100}%` }} />}
                   {backlog > 0 && (
-                    <div
-                      className="bg-muted-foreground/30"
-                      style={{ width: `${(backlog / total) * 100}%` }}
-                    />
+                    <div className="bg-muted-foreground/30" style={{ width: `${(backlog / total) * 100}%` }} />
                   )}
                 </div>
               </div>

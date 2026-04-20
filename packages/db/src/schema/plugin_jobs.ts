@@ -1,15 +1,6 @@
-import {
-  pgTable,
-  uuid,
-  text,
-  integer,
-  timestamp,
-  jsonb,
-  index,
-  uniqueIndex,
-} from "drizzle-orm/pg-core";
+import type { PluginJobRunStatus, PluginJobRunTrigger, PluginJobStatus } from "@ironworksai/shared";
+import { index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { plugins } from "./plugins.js";
-import type { PluginJobStatus, PluginJobRunStatus, PluginJobRunTrigger } from "@ironworksai/shared";
 
 /**
  * `plugin_jobs` table — registration and runtime configuration for

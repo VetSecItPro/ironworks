@@ -55,35 +55,19 @@ export function AuditTrailSection() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/30">
-              <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs">
-                Section
-              </th>
-              <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs">
-                Field
-              </th>
-              <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs">
-                Changed By
-              </th>
-              <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs">
-                Date
-              </th>
-              <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs">
-                Change
-              </th>
+              <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs">Section</th>
+              <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs">Field</th>
+              <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs">Changed By</th>
+              <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs">Date</th>
+              <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs">Change</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {MOCK_AUDIT_TRAIL.map((entry, i) => (
-              <tr key={i} className="hover:bg-muted/20 transition-colors">
-                <td className="px-4 py-2.5 text-xs capitalize">
-                  {entry.section.replace(/-/g, " ")}
-                </td>
-                <td className="px-4 py-2.5 text-xs font-medium">
-                  {entry.field}
-                </td>
-                <td className="px-4 py-2.5 text-xs text-muted-foreground">
-                  {entry.changedBy}
-                </td>
+            {MOCK_AUDIT_TRAIL.map((entry) => (
+              <tr key={`${entry.changedAt}-${entry.field}`} className="hover:bg-muted/20 transition-colors">
+                <td className="px-4 py-2.5 text-xs capitalize">{entry.section.replace(/-/g, " ")}</td>
+                <td className="px-4 py-2.5 text-xs font-medium">{entry.field}</td>
+                <td className="px-4 py-2.5 text-xs text-muted-foreground">{entry.changedBy}</td>
                 <td className="px-4 py-2.5 text-xs text-muted-foreground">
                   {new Date(entry.changedAt).toLocaleDateString("en-US", {
                     month: "short",
@@ -92,14 +76,8 @@ export function AuditTrailSection() {
                   })}
                 </td>
                 <td className="px-4 py-2.5 text-xs">
-                  {entry.oldValue && (
-                    <span className="text-red-400 line-through mr-1">
-                      {entry.oldValue}
-                    </span>
-                  )}
-                  {entry.newValue && (
-                    <span className="text-emerald-400">{entry.newValue}</span>
-                  )}
+                  {entry.oldValue && <span className="text-red-400 line-through mr-1">{entry.oldValue}</span>}
+                  {entry.newValue && <span className="text-emerald-400">{entry.newValue}</span>}
                 </td>
               </tr>
             ))}
@@ -107,8 +85,7 @@ export function AuditTrailSection() {
         </table>
       </div>
       <p className="text-xs text-muted-foreground">
-        Shows the last 50 configuration changes. Full audit log available in
-        the admin panel.
+        Shows the last 50 configuration changes. Full audit log available in the admin panel.
       </p>
     </div>
   );

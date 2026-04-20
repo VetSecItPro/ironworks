@@ -1,17 +1,14 @@
-import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { cn } from "../lib/utils";
 import {
-  HeaderBar,
-  TitleSection,
-  AssignmentRow,
-  ExecutionWorkspaceSection,
   AssigneeOptionsSection,
+  AssignmentRow,
   DescriptionSection,
-  PropertyChipsBar,
+  ExecutionWorkspaceSection,
   FooterBar,
+  HeaderBar,
+  PropertyChipsBar,
+  TitleSection,
 } from "./new-issue";
 import { useNewIssueForm } from "./new-issue/useNewIssueForm";
 
@@ -37,14 +34,17 @@ export function NewIssueDialog() {
         aria-describedby={undefined}
         className={cn(
           "p-0 gap-0 flex flex-col max-h-[calc(100dvh-2rem)]",
-          form.expanded ? "sm:max-w-2xl h-[calc(100dvh-2rem)]" : "sm:max-w-lg"
+          form.expanded ? "sm:max-w-2xl h-[calc(100dvh-2rem)]" : "sm:max-w-lg",
         )}
         onKeyDown={handleKeyDown}
         onEscapeKeyDown={(event) => {
           if (form.createIssue.isPending) event.preventDefault();
         }}
         onPointerDownOutside={(event) => {
-          if (form.createIssue.isPending) { event.preventDefault(); return; }
+          if (form.createIssue.isPending) {
+            event.preventDefault();
+            return;
+          }
           const target = event.detail.originalEvent.target as HTMLElement | null;
           if (target?.closest("[data-radix-popper-content-wrapper]")) event.preventDefault();
         }}

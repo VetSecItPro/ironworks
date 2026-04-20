@@ -1,18 +1,16 @@
-import { describe, expect, it, vi } from "vitest";
 import express from "express";
 import request from "supertest";
+import { describe, expect, it, vi } from "vitest";
 import { boardMutationGuard } from "../middleware/board-mutation-guard.js";
 
-function createApp(
-  actorType: "board" | "agent",
-  boardSource: "session" | "local_implicit" | "board_key" = "session",
-) {
+function createApp(actorType: "board" | "agent", boardSource: "session" | "local_implicit" | "board_key" = "session") {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
-    req.actor = actorType === "board"
-      ? { type: "board", userId: "board", source: boardSource }
-      : { type: "agent", agentId: "agent-1" };
+    req.actor =
+      actorType === "board"
+        ? { type: "board", userId: "board", source: boardSource }
+        : { type: "agent", agentId: "agent-1" };
     next();
   });
   app.use(boardMutationGuard());
@@ -38,10 +36,12 @@ describe("boardMutationGuard", () => {
       method: "POST",
       actor: { type: "board", userId: "board", source: "session" },
       header: () => undefined,
+      // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
     } as any;
     const res = {
       status: vi.fn().mockReturnThis(),
       json: vi.fn(),
+      // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
     } as any;
     const next = vi.fn();
 
@@ -68,10 +68,7 @@ describe("boardMutationGuard", () => {
 
   it("allows board mutations from trusted origin", async () => {
     const app = createApp("board");
-    const res = await request(app)
-      .post("/mutate")
-      .set("Origin", "http://localhost:3100")
-      .send({ ok: true });
+    const res = await request(app).post("/mutate").set("Origin", "http://localhost:3100").send({ ok: true });
     expect(res.status).toBe(204);
   });
 
@@ -90,10 +87,12 @@ describe("boardMutationGuard", () => {
       method: "POST",
       actor: { type: "agent", agentId: "agent-1" },
       header: () => undefined,
+      // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
     } as any;
     const res = {
       status: vi.fn().mockReturnThis(),
       json: vi.fn(),
+      // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
     } as any;
     const next = vi.fn();
 

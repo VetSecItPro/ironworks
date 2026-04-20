@@ -1,7 +1,7 @@
+import { Plus, Tag } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tag, Plus } from "lucide-react";
 import { cn } from "../../lib/utils";
 
 interface BulkLabelDialogProps {
@@ -36,10 +36,25 @@ export function BulkLabelDialog({ open, onClose, selectedCount, availableLabels,
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50" onClick={onClose}>
+    <button
+      type="button"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50"
+      aria-label="Close dialog"
+      onClick={onClose}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          onClose();
+        }
+      }}
+    >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Apply Labels"
         className="w-full max-w-sm rounded-xl border border-border bg-card p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 mb-4">
           <Tag className="h-5 w-5 text-muted-foreground" />
@@ -74,7 +89,9 @@ export function BulkLabelDialog({ open, onClose, selectedCount, availableLabels,
             placeholder="New label..."
             aria-label="New label name"
             className="h-8 text-xs"
-            onKeyDown={(e) => { if (e.key === "Enter") addCustomLabel(); }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") addCustomLabel();
+            }}
           />
           <Button variant="ghost" size="sm" onClick={addCustomLabel} className="h-8 text-xs shrink-0">
             <Plus className="h-3 w-3 mr-1" />
@@ -83,12 +100,20 @@ export function BulkLabelDialog({ open, onClose, selectedCount, availableLabels,
         </div>
 
         <div className="flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button onClick={() => { onApply([...selectedLabels]); onClose(); }} disabled={selectedLabels.size === 0}>
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              onApply([...selectedLabels]);
+              onClose();
+            }}
+            disabled={selectedLabels.size === 0}
+          >
             Apply {selectedLabels.size} label{selectedLabels.size !== 1 ? "s" : ""}
           </Button>
         </div>
       </div>
-    </div>
+    </button>
   );
 }

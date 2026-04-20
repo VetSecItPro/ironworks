@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { makeChainableDb } from "./helpers/drizzle-mock.js";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -39,25 +40,6 @@ vi.mock("../middleware/logger.js", () => ({
   logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn(), debug: vi.fn() },
 }));
 
-// ── Fake db for war-room queries ────────────────────────────────────────────
-
-function createFakeDb() {
-  // Chainable that's also awaitable (resolves to []).
-  const chainable: any = {};
-  chainable.select = vi.fn().mockReturnValue(chainable);
-  chainable.from = vi.fn().mockReturnValue(chainable);
-  chainable.leftJoin = vi.fn().mockReturnValue(chainable);
-  chainable.where = vi.fn().mockReturnValue(chainable);
-  chainable.groupBy = vi.fn().mockReturnValue(chainable);
-  chainable.orderBy = vi.fn().mockReturnValue(chainable);
-  chainable.limit = vi.fn().mockReturnValue(chainable);
-  chainable.then = vi.fn().mockImplementation((resolve: any) => resolve([]));
-  // Make db itself callable as select()
-  const db = vi.fn().mockReturnValue(chainable);
-  Object.assign(db, chainable);
-  return db;
-}
-
 // ── App builder ─────────────────────────────────────────────────────────────
 
 async function createApp(actor: Record<string, unknown>) {
@@ -67,10 +49,12 @@ async function createApp(actor: Record<string, unknown>) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });
-  const fakeDb = createFakeDb();
+  const fakeDb = makeChainableDb([]);
+  // biome-ignore lint/suspicious/noExplicitAny: mock Drizzle DB or storage object for unit tests; real type requires full schema-aware Drizzle instance
   app.use("/api", dashboardRoutes(fakeDb as any));
   app.use(errorHandler);
   return app;

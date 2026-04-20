@@ -1,20 +1,20 @@
 import { useMemo } from "react";
 import type { TranscriptEntry } from "../../adapters";
 import { cn } from "../../lib/utils";
-import type { TranscriptMode, TranscriptDensity } from "./transcript-utils";
-import { normalizeTranscript, formatRawEntry, formatToolPayload } from "./transcript-utils";
 import {
+  TranscriptActivityRow,
+  TranscriptCommandGroup,
+  TranscriptEventRow,
   TranscriptMessageBlock,
+  TranscriptStdoutRow,
   TranscriptThinkingBlock,
   TranscriptToolCard,
-  TranscriptCommandGroup,
-  TranscriptStdoutRow,
-  TranscriptActivityRow,
-  TranscriptEventRow,
 } from "./TranscriptBlocks";
+import type { TranscriptDensity, TranscriptMode } from "./transcript-utils";
+import { formatRawEntry, normalizeTranscript } from "./transcript-utils";
 
 // Re-export types so existing consumers keep working
-export type { TranscriptMode, TranscriptDensity };
+export type { TranscriptDensity, TranscriptMode };
 export { normalizeTranscript };
 
 interface RunTranscriptViewProps {
@@ -29,30 +29,14 @@ interface RunTranscriptViewProps {
   thinkingClassName?: string;
 }
 
-function RawTranscriptView({
-  entries,
-  density,
-}: {
-  entries: TranscriptEntry[];
-  density: TranscriptDensity;
-}) {
+function RawTranscriptView({ entries, density }: { entries: TranscriptEntry[]; density: TranscriptDensity }) {
   const compact = density === "compact";
   return (
     <div className={cn("font-mono", compact ? "space-y-1 text-[11px]" : "space-y-1.5 text-xs")}>
-      {entries.map((entry, idx) => (
-        <div
-          key={`${entry.kind}-${entry.ts}-${idx}`}
-          className={cn(
-            "grid gap-x-3",
-            "grid-cols-[auto_1fr]",
-          )}
-        >
-          <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-            {entry.kind}
-          </span>
-          <pre className="min-w-0 whitespace-pre-wrap break-words text-foreground/80">
-            {formatRawEntry(entry)}
-          </pre>
+      {entries.map((entry) => (
+        <div key={`${entry.kind}-${entry.ts}`} className={cn("grid gap-x-3", "grid-cols-[auto_1fr]")}>
+          <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{entry.kind}</span>
+          <pre className="min-w-0 whitespace-pre-wrap break-words text-foreground/80">{formatRawEntry(entry)}</pre>
         </div>
       ))}
     </div>
@@ -76,7 +60,12 @@ export function RunTranscriptView({
 
   if (entries.length === 0) {
     return (
-      <div className={cn("rounded-2xl border border-dashed border-border/70 bg-background/40 p-4 text-sm text-muted-foreground", className)}>
+      <div
+        className={cn(
+          "rounded-2xl border border-dashed border-border/70 bg-background/40 p-4 text-sm text-muted-foreground",
+          className,
+        )}
+      >
         {emptyMessage}
       </div>
     );
@@ -94,8 +83,10 @@ export function RunTranscriptView({
     <div className={cn("space-y-3", className)}>
       {visibleBlocks.map((block, index) => (
         <div
-          key={`${block.type}-${block.ts}-${index}`}
-          className={cn(index === visibleBlocks.length - 1 && streaming && "animate-in fade-in slide-in-from-bottom-1 duration-300")}
+          key={`${block.type}-${block.ts}`}
+          className={cn(
+            index === visibleBlocks.length - 1 && streaming && "animate-in fade-in slide-in-from-bottom-1 duration-300",
+          )}
         >
           {block.type === "message" && <TranscriptMessageBlock block={block} density={density} />}
           {block.type === "thinking" && (

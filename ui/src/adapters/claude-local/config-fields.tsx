@@ -1,13 +1,7 @@
-import type { AdapterConfigFieldsProps } from "../types";
-import {
-  Field,
-  ToggleField,
-  DraftInput,
-  DraftNumberInput,
-  help,
-} from "../../components/agent-config-primitives";
+import { DraftInput, DraftNumberInput, Field, help, ToggleField } from "../../components/agent-config-primitives";
 import { ChoosePathButton } from "../../components/PathInstructionsModal";
 import { LocalWorkspaceRuntimeFields } from "../local-workspace-runtime-fields";
+import type { AdapterConfigFieldsProps } from "../types";
 
 const inputClass =
   "w-full rounded-md border border-border px-2.5 py-1.5 bg-transparent outline-none text-sm font-mono placeholder:text-muted-foreground/40";
@@ -35,12 +29,8 @@ export function ClaudeLocalConfigFields({
             <DraftInput
               value={
                 isCreate
-                  ? values!.instructionsFilePath ?? ""
-                  : eff(
-                      "adapterConfig",
-                      "instructionsFilePath",
-                      String(config.instructionsFilePath ?? ""),
-                    )
+                  ? (values!.instructionsFilePath ?? "")
+                  : eff("adapterConfig", "instructionsFilePath", String(config.instructionsFilePath ?? ""))
               }
               onCommit={(v) =>
                 isCreate
@@ -70,29 +60,14 @@ export function ClaudeLocalConfigFields({
   );
 }
 
-export function ClaudeLocalAdvancedFields({
-  isCreate,
-  values,
-  set,
-  config,
-  eff,
-  mark,
-}: AdapterConfigFieldsProps) {
+export function ClaudeLocalAdvancedFields({ isCreate, values, set, config, eff, mark }: AdapterConfigFieldsProps) {
   return (
     <>
       <ToggleField
         label="Enable Chrome"
         hint={help.chrome}
-        checked={
-          isCreate
-            ? values!.chrome
-            : eff("adapterConfig", "chrome", config.chrome === true)
-        }
-        onChange={(v) =>
-          isCreate
-            ? set!({ chrome: v })
-            : mark("adapterConfig", "chrome", v)
-        }
+        checked={isCreate ? values!.chrome : eff("adapterConfig", "chrome", config.chrome === true)}
+        onChange={(v) => (isCreate ? set!({ chrome: v }) : mark("adapterConfig", "chrome", v))}
       />
       <ToggleField
         label="Skip permissions"
@@ -100,16 +75,10 @@ export function ClaudeLocalAdvancedFields({
         checked={
           isCreate
             ? values!.dangerouslySkipPermissions
-            : eff(
-                "adapterConfig",
-                "dangerouslySkipPermissions",
-                config.dangerouslySkipPermissions !== false,
-              )
+            : eff("adapterConfig", "dangerouslySkipPermissions", config.dangerouslySkipPermissions !== false)
         }
         onChange={(v) =>
-          isCreate
-            ? set!({ dangerouslySkipPermissions: v })
-            : mark("adapterConfig", "dangerouslySkipPermissions", v)
+          isCreate ? set!({ dangerouslySkipPermissions: v }) : mark("adapterConfig", "dangerouslySkipPermissions", v)
         }
       />
       <Field label="Max turns per run" hint={help.maxTurnsPerRun}>
@@ -123,11 +92,7 @@ export function ClaudeLocalAdvancedFields({
           />
         ) : (
           <DraftNumberInput
-            value={eff(
-              "adapterConfig",
-              "maxTurnsPerRun",
-              Number(config.maxTurnsPerRun ?? 300),
-            )}
+            value={eff("adapterConfig", "maxTurnsPerRun", Number(config.maxTurnsPerRun ?? 300))}
             onCommit={(v) => mark("adapterConfig", "maxTurnsPerRun", v || 300)}
             immediate
             className={inputClass}

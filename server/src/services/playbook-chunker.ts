@@ -93,11 +93,11 @@ export interface PlaybookFrontmatter {
 }
 
 export interface PlaybookChunk {
-  anchor: string;       // "#tldr", "#core-principles", "#cost-attribution-model"
-  heading: string;      // "TL;DR"
-  headingPath: string;  // "CFO Playbook > TL;DR"
-  body: string;         // markdown body of this H2 section (excluding the heading line)
-  tokenCount: number;   // rough token estimate (chars / 4)
+  anchor: string; // "#tldr", "#core-principles", "#cost-attribution-model"
+  heading: string; // "TL;DR"
+  headingPath: string; // "CFO Playbook > TL;DR"
+  body: string; // markdown body of this H2 section (excluding the heading line)
+  tokenCount: number; // rough token estimate (chars / 4)
   orderNum: number;
 }
 

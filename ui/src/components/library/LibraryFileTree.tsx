@@ -1,18 +1,7 @@
-import {
-  ChevronDown,
-  ChevronRight,
-  EyeOff,
-  Folder,
-  FolderOpen,
-  Lock,
-} from "lucide-react";
+import { ChevronDown, ChevronRight, EyeOff, Folder, FolderOpen, Lock } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { LibraryEntry } from "../../api/library";
 import { cn } from "../../lib/utils";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { fileIcon } from "./libraryHelpers";
 
 interface TreeNodeProps {
@@ -43,9 +32,8 @@ export function TreeNode({
   return (
     <div>
       <button
-        onClick={() =>
-          isDir ? onToggleDir(entry.path) : onSelectFile(entry.path)
-        }
+        type="button"
+        onClick={() => (isDir ? onToggleDir(entry.path) : onSelectFile(entry.path))}
         className={cn(
           "flex items-center gap-1.5 w-full text-left px-2 py-1.5 text-[13px] hover:bg-accent/50 transition-colors group",
           isSelected && "bg-accent text-accent-foreground font-medium",
@@ -61,12 +49,7 @@ export function TreeNode({
         ) : (
           <span className="w-3.5 shrink-0" />
         )}
-        <Icon
-          className={cn(
-            "h-4 w-4 shrink-0",
-            isDir ? "text-blue-500" : "text-muted-foreground",
-          )}
-        />
+        <Icon className={cn("h-4 w-4 shrink-0", isDir ? "text-blue-500" : "text-muted-foreground")} />
         <span className="truncate flex-1">{entry.name}</span>
         {entry.meta?.visibility && entry.meta.visibility !== "company" && (
           <Tooltip delayDuration={300}>

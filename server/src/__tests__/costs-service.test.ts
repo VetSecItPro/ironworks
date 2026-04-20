@@ -1,8 +1,8 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { costRoutes } from "../routes/costs.js";
 import { errorHandler } from "../middleware/index.js";
+import { costRoutes } from "../routes/costs.js";
 
 function makeDb(overrides: Record<string, unknown> = {}) {
   const selectChain = {
@@ -13,6 +13,7 @@ function makeDb(overrides: Record<string, unknown> = {}) {
     groupBy: vi.fn().mockReturnThis(),
     orderBy: vi.fn().mockReturnThis(),
     limit: vi.fn().mockReturnThis(),
+    // biome-ignore lint/suspicious/noThenProperty: test mock drizzle thenable contract
     then: vi.fn().mockResolvedValue([]),
   };
 
@@ -55,7 +56,9 @@ const mockCostService = vi.hoisted(() => ({
 }));
 const mockFinanceService = vi.hoisted(() => ({
   createEvent: vi.fn(),
-  summary: vi.fn().mockResolvedValue({ debitCents: 0, creditCents: 0, netCents: 0, estimatedDebitCents: 0, eventCount: 0 }),
+  summary: vi
+    .fn()
+    .mockResolvedValue({ debitCents: 0, creditCents: 0, netCents: 0, estimatedDebitCents: 0, eventCount: 0 }),
   byBiller: vi.fn().mockResolvedValue([]),
   byKind: vi.fn().mockResolvedValue([]),
   list: vi.fn().mockResolvedValue([]),
@@ -73,28 +76,19 @@ const mockBudgetService = vi.hoisted(() => ({
   resolveIncident: vi.fn(),
 }));
 
-vi.mock("../services/index.js", () => ({
-  budgetService: () => mockBudgetService,
-  costService: () => mockCostService,
-  financeService: () => mockFinanceService,
-  companyService: () => mockCompanyService,
-  agentService: () => mockAgentService,
-  heartbeatService: () => mockHeartbeatService,
-  logActivity: mockLogActivity,
-  companyPortabilityService: () => ({}),
-  instanceSettingsService: () => ({}),
-  companySkillService: () => ({}),
-  workProductService: () => ({}),
-  workspaceOperationService: () => ({}),
-  executionWorkspaceService: () => ({}),
-  issueApprovalService: () => ({}),
-  secretService: () => ({}),
-  sidebarBadgeService: () => ({}),
-  dashboardService: () => ({}),
-  goalService: () => ({}),
-  routineService: () => ({}),
-  playbookService: () => ({ seedDefaults: vi.fn() }),
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    budgetService: () => mockBudgetService,
+    costService: () => mockCostService,
+    financeService: () => mockFinanceService,
+    companyService: () => mockCompanyService,
+    agentService: () => mockAgentService,
+    heartbeatService: () => mockHeartbeatService,
+    logActivity: mockLogActivity,
+    playbookService: () => ({ seedDefaults: vi.fn() }),
+  });
+});
 
 vi.mock("../services/quota-windows.js", () => ({
   fetchAllQuotaWindows: mockFetchAllQuotaWindows,
@@ -107,11 +101,13 @@ function createApp() {
     req.actor = { type: "board", userId: "board-user", source: "local_implicit" };
     next();
   });
+  // biome-ignore lint/suspicious/noExplicitAny: test-only type cast to satisfy service/function signature in unit test context
   app.use("/api", costRoutes(makeDb() as any));
   app.use(errorHandler);
   return app;
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
 function createAppWithActor(actor: any) {
   const app = express();
   app.use(express.json());
@@ -119,6 +115,7 @@ function createAppWithActor(actor: any) {
     req.actor = actor;
     next();
   });
+  // biome-ignore lint/suspicious/noExplicitAny: test-only type cast to satisfy service/function signature in unit test context
   app.use("/api", costRoutes(makeDb() as any));
   app.use(errorHandler);
   return app;
@@ -153,18 +150,14 @@ describe("cost routes", () => {
 
   it("returns 400 for an invalid 'from' date string", async () => {
     const app = createApp();
-    const res = await request(app)
-      .get("/api/companies/company-1/costs/summary")
-      .query({ from: "not-a-date" });
+    const res = await request(app).get("/api/companies/company-1/costs/summary").query({ from: "not-a-date" });
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/invalid 'from' date/i);
   });
 
   it("returns 400 for an invalid 'to' date string", async () => {
     const app = createApp();
-    const res = await request(app)
-      .get("/api/companies/company-1/costs/summary")
-      .query({ to: "banana" });
+    const res = await request(app).get("/api/companies/company-1/costs/summary").query({ to: "banana" });
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/invalid 'to' date/i);
   });
@@ -180,18 +173,14 @@ describe("cost routes", () => {
 
   it("returns 400 for invalid finance event list limits", async () => {
     const app = createApp();
-    const res = await request(app)
-      .get("/api/companies/company-1/costs/finance-events")
-      .query({ limit: "0" });
+    const res = await request(app).get("/api/companies/company-1/costs/finance-events").query({ limit: "0" });
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/invalid 'limit'/i);
   });
 
   it("accepts valid finance event list limits", async () => {
     const app = createApp();
-    const res = await request(app)
-      .get("/api/companies/company-1/costs/finance-events")
-      .query({ limit: "25" });
+    const res = await request(app).get("/api/companies/company-1/costs/finance-events").query({ limit: "25" });
     expect(res.status).toBe(200);
     expect(mockFinanceService.list).toHaveBeenCalledWith("company-1", undefined, 25);
   });
@@ -205,9 +194,7 @@ describe("cost routes", () => {
       companyIds: ["company-2"],
     });
 
-    const res = await request(app)
-      .patch("/api/companies/company-1/budgets")
-      .send({ budgetMonthlyCents: 2500 });
+    const res = await request(app).patch("/api/companies/company-1/budgets").send({ budgetMonthlyCents: 2500 });
 
     expect(res.status).toBe(403);
     expect(mockCompanyService.update).not.toHaveBeenCalled();
@@ -229,9 +216,7 @@ describe("cost routes", () => {
       companyIds: ["company-2"],
     });
 
-    const res = await request(app)
-      .patch("/api/agents/agent-1/budgets")
-      .send({ budgetMonthlyCents: 2500 });
+    const res = await request(app).patch("/api/agents/agent-1/budgets").send({ budgetMonthlyCents: 2500 });
 
     expect(res.status).toBe(403);
     expect(mockAgentService.update).not.toHaveBeenCalled();

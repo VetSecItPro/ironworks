@@ -1,17 +1,9 @@
+import { AlertTriangle, CheckCircle2, Clock, Save, Shield, TrendingUp, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useBreadcrumbs } from "../context/BreadcrumbContext";
-import { useToast } from "../context/ToastContext";
-import {
-  Clock,
-  Shield,
-  AlertTriangle,
-  CheckCircle2,
-  XCircle,
-  TrendingUp,
-  Save,
-} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { useToast } from "../context/ToastContext";
 import { cn } from "../lib/utils";
 
 /* ------------------------------------------------------------------ */
@@ -67,7 +59,9 @@ function loadPolicies(): SLAPolicies {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw) as SLAPolicies;
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return { ...DEFAULT_POLICIES };
 }
 
@@ -87,7 +81,7 @@ function formatMinutes(minutes: number): string {
 
 function parseTimeInput(value: string): number {
   const num = parseInt(value, 10);
-  return isNaN(num) || num < 1 ? 1 : num;
+  return Number.isNaN(num) || num < 1 ? 1 : num;
 }
 
 function generateMockBreaches(): SLABreach[] {
@@ -151,12 +145,10 @@ function PolicyRow({
 
   return (
     <div className="grid grid-cols-[120px_1fr_1fr] gap-4 items-center py-3 border-b border-border last:border-0">
-      <span className={cn("text-sm font-medium", PRIORITY_COLORS[priority])}>
-        {PRIORITY_LABELS[priority]}
-      </span>
+      <span className={cn("text-sm font-medium", PRIORITY_COLORS[priority])}>{PRIORITY_LABELS[priority]}</span>
 
       <div>
-        <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Response</label>
+        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Response</span>
         <div className="flex items-center gap-1 mt-0.5">
           <Input
             value={responseH}
@@ -177,14 +169,12 @@ function PolicyRow({
             max={59}
           />
           <span className="text-xs text-muted-foreground">m</span>
-          <span className="text-[10px] text-muted-foreground ml-1">
-            ({formatMinutes(policy.responseTimeMinutes)})
-          </span>
+          <span className="text-[10px] text-muted-foreground ml-1">({formatMinutes(policy.responseTimeMinutes)})</span>
         </div>
       </div>
 
       <div>
-        <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Resolution</label>
+        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Resolution</span>
         <div className="flex items-center gap-1 mt-0.5">
           <Input
             value={resolutionH}
@@ -278,12 +268,16 @@ export function SLASettings() {
             <TrendingUp className="h-4 w-4" />
             <span className="text-xs font-medium uppercase tracking-wider">Compliance Rate</span>
           </div>
-          <p className={cn(
-            "text-3xl font-bold",
-            complianceRate >= 95 ? "text-green-600 dark:text-green-400" :
-            complianceRate >= 80 ? "text-yellow-600 dark:text-yellow-400" :
-            "text-red-600 dark:text-red-400",
-          )}>
+          <p
+            className={cn(
+              "text-3xl font-bold",
+              complianceRate >= 95
+                ? "text-green-600 dark:text-green-400"
+                : complianceRate >= 80
+                  ? "text-yellow-600 dark:text-yellow-400"
+                  : "text-red-600 dark:text-red-400",
+            )}
+          >
             {complianceRate}%
           </p>
           <p className="text-xs text-muted-foreground mt-1">This period</p>
@@ -303,10 +297,12 @@ export function SLASettings() {
             <AlertTriangle className="h-4 w-4" />
             <span className="text-xs font-medium uppercase tracking-wider">Breaches</span>
           </div>
-          <p className={cn(
-            "text-3xl font-bold",
-            breachedCount === 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400",
-          )}>
+          <p
+            className={cn(
+              "text-3xl font-bold",
+              breachedCount === 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400",
+            )}
+          >
             {breachedCount}
           </p>
           <p className="text-xs text-muted-foreground mt-1">This period</p>
@@ -327,12 +323,7 @@ export function SLASettings() {
         </div>
 
         {(["critical", "high", "medium", "low"] as Priority[]).map((p) => (
-          <PolicyRow
-            key={p}
-            priority={p}
-            policy={policies[p]}
-            onChange={(updated) => handlePolicyChange(p, updated)}
-          />
+          <PolicyRow key={p} priority={p} policy={policies[p]} onChange={(updated) => handlePolicyChange(p, updated)} />
         ))}
       </div>
 
@@ -351,12 +342,14 @@ export function SLASettings() {
                 </span>
                 <span className="text-xs font-mono text-muted-foreground">{b.issueIdentifier}</span>
                 <span className="text-sm flex-1 truncate">{b.issueTitle}</span>
-                <span className={cn(
-                  "text-[10px] px-1.5 py-0.5 rounded-full font-medium",
-                  b.breachType === "response"
-                    ? "bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300"
-                    : "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300",
-                )}>
+                <span
+                  className={cn(
+                    "text-[10px] px-1.5 py-0.5 rounded-full font-medium",
+                    b.breachType === "response"
+                      ? "bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300"
+                      : "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300",
+                  )}
+                >
                   {b.breachType} SLA
                 </span>
               </div>

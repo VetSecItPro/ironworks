@@ -1,7 +1,7 @@
 import * as p from "@clack/prompts";
 import type { SecretProvider } from "@ironworksai/shared";
-import type { SecretsConfig } from "../config/schema.js";
 import { resolveDefaultSecretsKeyFilePath, resolveIronworksInstanceId } from "../config/home.js";
+import type { SecretsConfig } from "../config/schema.js";
 
 function defaultKeyFilePath(): string {
   return resolveDefaultSecretsKeyFilePath(resolveIronworksInstanceId());

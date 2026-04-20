@@ -1,37 +1,35 @@
-import { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import type { HeartbeatRun, HeartbeatRunEvent, LiveEvent } from "@ironworksai/shared";
 import { useQuery } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { buildTranscript, getUIAdapter } from "../../adapters";
+import { ApiError } from "../../api/client";
 import { heartbeatsApi } from "../../api/heartbeats";
 import { instanceSettingsApi } from "../../api/instanceSettings";
-import { ApiError } from "../../api/client";
 import { queryKeys } from "../../lib/queryKeys";
-import { RunTranscriptView, type TranscriptMode } from "../transcript/RunTranscriptView";
-import { WorkspaceOperationsSection } from "./WorkspaceOperations";
 import { cn } from "../../lib/utils";
-import { getUIAdapter, buildTranscript } from "../../adapters";
-import { Button } from "@/components/ui/button";
-import type {
-  HeartbeatRun,
-  HeartbeatRunEvent,
-  LiveEvent,
-} from "@ironworksai/shared";
+import { RunTranscriptView, type TranscriptMode } from "../transcript/RunTranscriptView";
 import {
-  asRecord,
   asNonEmptyString,
+  asRecord,
+  findScrollContainer,
+  formatEnvForDisplay,
+  LIVE_SCROLL_BOTTOM_TOLERANCE_PX,
+  readScrollMetrics,
   redactPathText,
   redactPathValue,
-  formatEnvForDisplay,
-  findScrollContainer,
-  readScrollMetrics,
-  scrollToContainerBottom,
-  LIVE_SCROLL_BOTTOM_TOLERANCE_PX,
   type ScrollContainer,
+  scrollToContainerBottom,
 } from "./agent-detail-utils";
+import { WorkspaceOperationsSection } from "./WorkspaceOperations";
 
 /* ---- Log Viewer ---- */
 
 export function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType: string }) {
   const [events, setEvents] = useState<HeartbeatRunEvent[]>([]);
-  const [logLines, setLogLines] = useState<Array<{ ts: string; stream: "stdout" | "stderr" | "system"; chunk: string }>>([]);
+  const [logLines, setLogLines] = useState<
+    Array<{ ts: string; stream: "stdout" | "stderr" | "system"; chunk: string }>
+  >([]);
   const [loading, setLoading] = useState(true);
   const [logLoading, setLogLoading] = useState(!!run.logRef);
   const [logError, setLogError] = useState<string | null>(null);
@@ -74,8 +72,7 @@ export function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType
       if (!trimmed) continue;
       try {
         const raw = JSON.parse(trimmed) as { ts?: unknown; stream?: unknown; chunk?: unknown };
-        const stream =
-          raw.stream === "stderr" || raw.stream === "system" ? raw.stream : "stdout";
+        const stream = raw.stream === "stderr" || raw.stream === "system" ? raw.stream : "stdout";
         const chunk = typeof raw.chunk === "string" ? raw.chunk : "";
         const ts = typeof raw.ts === "string" ? raw.ts : new Date().toISOString();
         if (!chunk) continue;
@@ -332,15 +329,9 @@ export function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType
         if (seq === null || !Number.isFinite(seq)) return;
 
         const streamRaw = asNonEmptyString(payload.stream);
-        const stream =
-          streamRaw === "stdout" || streamRaw === "stderr" || streamRaw === "system"
-            ? streamRaw
-            : null;
+        const stream = streamRaw === "stdout" || streamRaw === "stderr" || streamRaw === "system" ? streamRaw : null;
         const levelRaw = asNonEmptyString(payload.level);
-        const level =
-          levelRaw === "info" || levelRaw === "warn" || levelRaw === "error"
-            ? levelRaw
-            : null;
+        const level = levelRaw === "info" || levelRaw === "warn" || levelRaw === "error" ? levelRaw : null;
 
         const liveEvent: HeartbeatRunEvent = {
           id: seq,
@@ -389,10 +380,11 @@ export function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType
     };
   }, [isLive, run.companyId, run.id, run.agentId]);
 
-  const censorUsernameInLogs = useQuery({
-    queryKey: queryKeys.instance.generalSettings,
-    queryFn: () => instanceSettingsApi.getGeneral(),
-  }).data?.censorUsernameInLogs === true;
+  const censorUsernameInLogs =
+    useQuery({
+      queryKey: queryKeys.instance.generalSettings,
+      queryFn: () => instanceSettingsApi.getGeneral(),
+    }).data?.censorUsernameInLogs === true;
 
   const adapterInvokePayload = useMemo(() => {
     const evt = events.find((e) => e.eventType === "adapter.invoke");
@@ -431,18 +423,21 @@ export function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType
 
   return (
     <div className="space-y-3">
-      <WorkspaceOperationsSection
-        operations={workspaceOperations}
-        censorUsernameInLogs={censorUsernameInLogs}
-      />
+      <WorkspaceOperationsSection operations={workspaceOperations} censorUsernameInLogs={censorUsernameInLogs} />
       {adapterInvokePayload && (
         <div className="rounded-lg border border-border bg-background/60 p-3 space-y-2">
           <div className="text-xs font-medium text-muted-foreground">Invocation</div>
           {typeof adapterInvokePayload.adapterType === "string" && (
-            <div className="text-xs"><span className="text-muted-foreground">Adapter: </span>{adapterInvokePayload.adapterType}</div>
+            <div className="text-xs">
+              <span className="text-muted-foreground">Adapter: </span>
+              {adapterInvokePayload.adapterType}
+            </div>
           )}
           {typeof adapterInvokePayload.cwd === "string" && (
-            <div className="text-xs break-all"><span className="text-muted-foreground">Working dir: </span><span className="font-mono">{adapterInvokePayload.cwd}</span></div>
+            <div className="text-xs break-all">
+              <span className="text-muted-foreground">Working dir: </span>
+              <span className="font-mono">{adapterInvokePayload.cwd}</span>
+            </div>
           )}
           {typeof adapterInvokePayload.command === "string" && (
             <div className="text-xs break-all">
@@ -463,8 +458,8 @@ export function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType
               <ul className="list-disc pl-5 space-y-1">
                 {adapterInvokePayload.commandNotes
                   .filter((value): value is string => typeof value === "string" && value.trim().length > 0)
-                  .map((note, idx) => (
-                    <li key={`${idx}-${note}`} className="text-xs break-all font-mono">
+                  .map((note) => (
+                    <li key={note} className="text-xs break-all font-mono">
                       {note}
                     </li>
                   ))}
@@ -501,9 +496,7 @@ export function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType
       )}
 
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-muted-foreground">
-          Transcript ({transcript.length})
-        </span>
+        <span className="text-xs font-medium text-muted-foreground">Transcript ({transcript.length})</span>
         <div className="flex items-center gap-2">
           <div className="inline-flex rounded-lg border border-border/70 bg-background/70 p-0.5">
             {(["nice", "raw"] as const).map((mode) => (
@@ -572,7 +565,7 @@ export function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType
               {redactPathText(run.error, censorUsernameInLogs)}
             </div>
           )}
-          {run.stderrExcerpt && run.stderrExcerpt.trim() && (
+          {run.stderrExcerpt?.trim() && (
             <div>
               <div className="text-xs text-red-700 dark:text-red-300 mb-1">stderr excerpt</div>
               <pre className="bg-red-50 dark:bg-neutral-950 rounded-md p-2 text-xs overflow-x-auto whitespace-pre-wrap text-red-800 dark:text-red-100">
@@ -588,7 +581,7 @@ export function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType
               </pre>
             </div>
           )}
-          {run.stdoutExcerpt && run.stdoutExcerpt.trim() && !run.resultJson && (
+          {run.stdoutExcerpt?.trim() && !run.resultJson && (
             <div>
               <div className="text-xs text-red-700 dark:text-red-300 mb-1">stdout excerpt</div>
               <pre className="bg-red-50 dark:bg-neutral-950 rounded-md p-2 text-xs overflow-x-auto whitespace-pre-wrap text-red-800 dark:text-red-100">
@@ -604,17 +597,23 @@ export function LogViewer({ run, adapterType }: { run: HeartbeatRun; adapterType
           <div className="mb-2 text-xs font-medium text-muted-foreground">Events ({events.length})</div>
           <div className="bg-neutral-100 dark:bg-neutral-950 rounded-lg p-3 font-mono text-xs space-y-0.5">
             {events.map((evt) => {
-              const color = evt.color
-                ?? (evt.level ? levelColors[evt.level] : null)
-                ?? (evt.stream ? streamColors[evt.stream] : null)
-                ?? "text-foreground";
+              const color =
+                evt.color ??
+                (evt.level ? levelColors[evt.level] : null) ??
+                (evt.stream ? streamColors[evt.stream] : null) ??
+                "text-foreground";
 
               return (
                 <div key={evt.id} className="flex gap-2">
                   <span className="text-neutral-400 dark:text-neutral-600 shrink-0 select-none w-16">
                     {new Date(evt.createdAt).toLocaleTimeString("en-US", { hour12: false })}
                   </span>
-                  <span className={cn("shrink-0 w-14", evt.stream ? (streamColors[evt.stream] ?? "text-neutral-500") : "text-neutral-500")}>
+                  <span
+                    className={cn(
+                      "shrink-0 w-14",
+                      evt.stream ? (streamColors[evt.stream] ?? "text-neutral-500") : "text-neutral-500",
+                    )}
+                  >
                     {evt.stream ? `[${evt.stream}]` : ""}
                   </span>
                   <span className={cn("break-all", color)}>

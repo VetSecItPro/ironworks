@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect } from "react";
 import { X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "../../lib/utils";
-import { inputClass } from "./types";
 import type { CompanySecret, EnvBinding } from "./types";
+import { inputClass } from "./types";
 
 export function EnvVarEditor({
   value,
@@ -176,12 +176,9 @@ export function EnvVarEditor({
   return (
     <div className="space-y-1.5">
       {rows.map((row, i) => {
-        const isTrailing =
-          i === rows.length - 1 &&
-          !row.key &&
-          !row.plainValue &&
-          !row.secretId;
+        const isTrailing = i === rows.length - 1 && !row.key && !row.plainValue && !row.secretId;
         return (
+          // biome-ignore lint/suspicious/noArrayIndexKey: editable env-var rows have no stable id; row.key is mutable and can be empty during editing
           <div key={i} className="flex items-center gap-1.5">
             <input
               className={cn(inputClass, "flex-[2]")}

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -41,18 +41,28 @@ function createFakeDb() {
   // select chain
   const selectLimit = vi.fn().mockImplementation(() => mockDbRows());
   const selectOrderBy = vi.fn().mockReturnValue({ limit: selectLimit });
-  const selectWhere = vi.fn().mockReturnValue({ orderBy: selectOrderBy, limit: selectLimit, then: vi.fn().mockImplementation((cb: any) => mockDbRows().then(cb)) });
+  const selectWhere = vi.fn().mockReturnValue({
+    orderBy: selectOrderBy,
+    limit: selectLimit,
+    // biome-ignore lint/suspicious/noThenProperty: test mock drizzle thenable contract
+    // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
+    then: vi.fn().mockImplementation((cb: any) => mockDbRows().then(cb)),
+  });
   const selectFrom = vi.fn().mockReturnValue({ where: selectWhere });
   const selectObj = vi.fn().mockReturnValue({ from: selectFrom });
 
   // insert chain
+  // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
   const insertThen = vi.fn().mockImplementation((cb: any) => mockInsertRow().then(cb));
+  // biome-ignore lint/suspicious/noThenProperty: test mock drizzle thenable contract
   const insertReturning = vi.fn().mockReturnValue({ then: insertThen });
   const insertValues = vi.fn().mockReturnValue({ returning: insertReturning });
   const insertInto = vi.fn().mockReturnValue({ values: insertValues });
 
   // update chain
+  // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
   const updateThen = vi.fn().mockImplementation((cb: any) => mockUpdateRow().then(cb));
+  // biome-ignore lint/suspicious/noThenProperty: test mock drizzle thenable contract
   const updateReturning = vi.fn().mockReturnValue({ then: updateThen });
   const updateWhere = vi.fn().mockReturnValue({ returning: updateReturning });
   const updateSet = vi.fn().mockReturnValue({ where: updateWhere });
@@ -63,6 +73,7 @@ function createFakeDb() {
     insert: insertInto,
     update: updateFrom,
     transaction: vi.fn(),
+    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
 }
 
@@ -71,14 +82,14 @@ function createFakeDb() {
 const mockLogActivity = vi.hoisted(() => vi.fn());
 const mockApprovalCreate = vi.hoisted(() => vi.fn());
 
-vi.mock("../services/index.js", () => ({
-  logActivity: mockLogActivity,
-  approvalService: () => ({ create: mockApprovalCreate }),
-  createAgentWorkspace: vi.fn(),
-  createHiringRecord: vi.fn(),
-  createEmploymentHistoryEntry: vi.fn(),
-  buildOnboardingPacket: vi.fn().mockResolvedValue({}),
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    logActivity: mockLogActivity,
+    approvalService: () => ({ create: mockApprovalCreate }),
+    buildOnboardingPacket: vi.fn().mockResolvedValue({}),
+  });
+});
 
 vi.mock("../services/activity-log.js", () => ({
   logActivity: mockLogActivity,
@@ -96,7 +107,8 @@ vi.mock("../middleware/logger.js", () => ({
 
 // Mock assertCanWrite to avoid DB calls
 vi.mock("../routes/authz.js", async (importOriginal) => {
-  const original = await importOriginal() as any;
+  // biome-ignore lint/suspicious/noExplicitAny: test-only type cast to satisfy service/function signature in unit test context
+  const original = (await importOriginal()) as any;
   return {
     ...original,
     assertCanWrite: vi.fn().mockResolvedValue(undefined),
@@ -105,6 +117,7 @@ vi.mock("../routes/authz.js", async (importOriginal) => {
 
 // ── App builder ─────────────────────────────────────────────────────────────
 
+// biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
 async function createApp(actor: Record<string, unknown>, fakeDb?: any) {
   const { hiringRoutes } = await import("../routes/hiring.js");
   const { errorHandler } = await import("../middleware/error-handler.js");
@@ -112,6 +125,7 @@ async function createApp(actor: Record<string, unknown>, fakeDb?: any) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });
@@ -191,23 +205,19 @@ describe("hiring routes", () => {
 
     it("rejects missing title with 400", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post(`/api/companies/${COMPANY_ID}/hiring-requests`)
-        .send({ role: "engineer" });
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/hiring-requests`).send({ role: "engineer" });
 
       expect(res.status).toBe(400);
     });
 
     it("accepts optional fields like department and justification", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post(`/api/companies/${COMPANY_ID}/hiring-requests`)
-        .send({
-          role: "engineer",
-          title: "SE",
-          department: "Platform",
-          justification: "Scaling needs",
-        });
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/hiring-requests`).send({
+        role: "engineer",
+        title: "SE",
+        department: "Platform",
+        justification: "Scaling needs",
+      });
 
       expect(res.status).toBe(201);
     });

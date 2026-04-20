@@ -1,7 +1,7 @@
 import type { CostByBiller, CostByProviderModel } from "@ironworksai/shared";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { PageTabBar } from "../PageTabBar";
 import { BillerSpendCard } from "../BillerSpendCard";
+import { PageTabBar } from "../PageTabBar";
 
 export function BillersTabContent({
   showCustomPrompt,

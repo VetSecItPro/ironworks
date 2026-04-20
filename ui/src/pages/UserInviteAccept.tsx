@@ -1,10 +1,10 @@
-import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useParams, useNavigate, Link } from "@/lib/router";
+import { Hammer } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Link, useNavigate, useParams } from "@/lib/router";
 import { userInvitesApi } from "../api/userInvites";
 import { queryKeys } from "../lib/queryKeys";
-import { Button } from "@/components/ui/button";
-import { Hammer } from "lucide-react";
 
 export function UserInviteAcceptPage() {
   const { token } = useParams<{ token: string }>();
@@ -38,11 +38,7 @@ export function UserInviteAcceptPage() {
   });
 
   if (!token) {
-    return (
-      <div className="mx-auto max-w-xl py-10 text-sm text-destructive">
-        Invalid invite link.
-      </div>
-    );
+    return <div className="mx-auto max-w-xl py-10 text-sm text-destructive">Invalid invite link.</div>;
   }
 
   if (inviteQuery.isLoading) {
@@ -58,20 +54,14 @@ export function UserInviteAcceptPage() {
       <div className="mx-auto max-w-xl py-10">
         <div className="rounded-lg border border-border bg-card p-6">
           <h1 className="text-lg font-semibold">Invite not available</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            This invite may be expired, revoked, or already used.
-          </p>
+          <p className="mt-2 text-sm text-muted-foreground">This invite may be expired, revoked, or already used.</p>
         </div>
       </div>
     );
   }
 
   const invite = inviteQuery.data;
-  const canSubmit =
-    name.trim().length > 0 &&
-    password.length >= 8 &&
-    tosAccepted &&
-    !acceptMutation.isPending;
+  const canSubmit = name.trim().length > 0 && password.length >= 8 && tosAccepted && !acceptMutation.isPending;
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-background">
@@ -83,9 +73,8 @@ export function UserInviteAcceptPage() {
 
         <h1 className="text-xl font-semibold">Accept your invitation</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          You have been invited to join as a{" "}
-          <span className="font-medium text-foreground">{invite.role}</span>.
-          Set up your account to get started.
+          You have been invited to join as a <span className="font-medium text-foreground">{invite.role}</span>. Set up
+          your account to get started.
         </p>
 
         <form
@@ -96,10 +85,7 @@ export function UserInviteAcceptPage() {
           }}
         >
           <div>
-            <label
-              htmlFor="invite-email"
-              className="text-xs text-muted-foreground mb-1 block"
-            >
+            <label htmlFor="invite-email" className="text-xs text-muted-foreground mb-1 block">
               Email
             </label>
             <input
@@ -112,10 +98,7 @@ export function UserInviteAcceptPage() {
           </div>
 
           <div>
-            <label
-              htmlFor="invite-name"
-              className="text-xs text-muted-foreground mb-1 block"
-            >
+            <label htmlFor="invite-name" className="text-xs text-muted-foreground mb-1 block">
               Name
             </label>
             <input
@@ -124,15 +107,11 @@ export function UserInviteAcceptPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               autoComplete="name"
-              autoFocus
             />
           </div>
 
           <div>
-            <label
-              htmlFor="invite-password"
-              className="text-xs text-muted-foreground mb-1 block"
-            >
+            <label htmlFor="invite-password" className="text-xs text-muted-foreground mb-1 block">
               Password (min 8 characters)
             </label>
             <input
@@ -154,21 +133,11 @@ export function UserInviteAcceptPage() {
             />
             <span className="text-xs text-muted-foreground">
               I agree to the{" "}
-              <a
-                href="/terms"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline text-foreground"
-              >
+              <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline text-foreground">
                 Terms of Service
               </a>{" "}
               and{" "}
-              <a
-                href="/aup"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline text-foreground"
-              >
+              <a href="/aup" target="_blank" rel="noopener noreferrer" className="underline text-foreground">
                 Acceptable Use Policy
               </a>
             </span>
@@ -176,21 +145,14 @@ export function UserInviteAcceptPage() {
 
           {error && <p className="text-xs text-destructive">{error}</p>}
 
-          <Button
-            type="submit"
-            disabled={!canSubmit}
-            className={`w-full ${!canSubmit ? "opacity-50" : ""}`}
-          >
+          <Button type="submit" disabled={!canSubmit} className={`w-full ${!canSubmit ? "opacity-50" : ""}`}>
             {acceptMutation.isPending ? "Creating account..." : "Accept & Create Account"}
           </Button>
         </form>
 
         <div className="mt-5 text-sm text-muted-foreground">
           Already have an account?{" "}
-          <Link
-            to="/auth"
-            className="font-medium text-foreground underline underline-offset-2"
-          >
+          <Link to="/auth" className="font-medium text-foreground underline underline-offset-2">
             Sign in
           </Link>
         </div>

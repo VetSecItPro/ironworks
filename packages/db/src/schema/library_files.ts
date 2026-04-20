@@ -1,13 +1,15 @@
-import { pgTable, uuid, text, integer, timestamp, index, uniqueIndex } from "drizzle-orm/pg-core";
-import { companies } from "./companies.js";
+import { index, integer, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { agents } from "./agents.js";
+import { companies } from "./companies.js";
 import { projects } from "./projects.js";
 
 export const libraryFiles = pgTable(
   "library_files",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    companyId: uuid("company_id").notNull().references(() => companies.id),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id),
     /** Relative path within the library root (unique per company). */
     filePath: text("file_path").notNull(),
     /** Display title (derived from filename or first heading). */

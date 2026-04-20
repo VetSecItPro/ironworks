@@ -1,21 +1,21 @@
-import { CheckCircle2, Circle, Clock, Loader2, ShieldAlert } from "lucide-react";
 import type { Goal } from "@ironworksai/shared";
+import { CheckCircle2, Circle, Clock, Loader2, ShieldAlert } from "lucide-react";
+import { Link } from "@/lib/router";
 import type { GoalProgressItem } from "../../api/goalProgress";
 import { cn } from "../../lib/utils";
 import { StatusBadge } from "../StatusBadge";
-import { Link } from "@/lib/router";
+import { forecastCompletion, resolveGoalHealth } from "./goal-health";
+import { ConfidenceIndicator, HealthBadge } from "./HealthBadge";
 import { ProgressBar } from "./ProgressBar";
-import { HealthBadge, ConfidenceIndicator } from "./HealthBadge";
-import { resolveGoalHealth, forecastCompletion } from "./goal-health";
 
 export function GoalCard({
   goal,
   progress,
-  children,
+  subGoals,
 }: {
   goal: Goal;
   progress?: GoalProgressItem | null;
-  children?: Goal[];
+  subGoals?: Goal[];
 }) {
   const totalIssues = progress?.totalIssues ?? 0;
   const completed = progress?.completedIssues ?? 0;
@@ -38,19 +38,19 @@ export function GoalCard({
             <StatusBadge status={goal.status} />
             <ConfidenceIndicator confidence={goal.confidence} />
             {goal.targetDate && (
-              <span className={cn(
-                "text-[10px] px-1.5 py-0.5 rounded-full shrink-0",
-                new Date(goal.targetDate) < new Date()
-                  ? "bg-red-500/10 text-red-600 dark:text-red-400"
-                  : "bg-muted text-muted-foreground",
-              )}>
+              <span
+                className={cn(
+                  "text-[10px] px-1.5 py-0.5 rounded-full shrink-0",
+                  new Date(goal.targetDate) < new Date()
+                    ? "bg-red-500/10 text-red-600 dark:text-red-400"
+                    : "bg-muted text-muted-foreground",
+                )}
+              >
                 {new Date(goal.targetDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
               </span>
             )}
           </div>
-          {goal.description && (
-            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{goal.description}</p>
-          )}
+          {goal.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{goal.description}</p>}
           {forecast && (
             <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
               <Clock className="h-3 w-3" />
@@ -61,7 +61,9 @@ export function GoalCard({
         {totalIssues > 0 && (
           <div className="text-right shrink-0">
             <span className="text-xl font-bold tabular-nums">{Math.round(percent)}%</span>
-            <div className="text-[10px] text-muted-foreground tabular-nums">{completed}/{totalIssues} done</div>
+            <div className="text-[10px] text-muted-foreground tabular-nums">
+              {completed}/{totalIssues} done
+            </div>
           </div>
         )}
       </div>
@@ -106,9 +108,9 @@ export function GoalCard({
       )}
 
       {/* Sub-goals indicator */}
-      {children && children.length > 0 && (
+      {subGoals && subGoals.length > 0 && (
         <div className="mt-2 pt-2 border-t border-border/50 text-[11px] text-muted-foreground">
-          {children.length} sub-goal{children.length !== 1 ? "s" : ""}
+          {subGoals.length} sub-goal{subGoals.length !== 1 ? "s" : ""}
         </div>
       )}
     </Link>

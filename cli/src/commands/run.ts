@@ -3,18 +3,13 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import * as p from "@clack/prompts";
 import pc from "picocolors";
-import { bootstrapCeoInvite } from "./auth-bootstrap-ceo.js";
-import { onboard } from "./onboard.js";
-import { doctor } from "./doctor.js";
 import { loadIronworksEnvFile } from "../config/env.js";
-import { configExists, resolveConfigPath } from "../config/store.js";
+import { describeLocalInstancePaths, resolveIronworksHomeDir, resolveIronworksInstanceId } from "../config/home.js";
 import type { IronworksConfig } from "../config/schema.js";
-import { readConfig } from "../config/store.js";
-import {
-  describeLocalInstancePaths,
-  resolveIronworksHomeDir,
-  resolveIronworksInstanceId,
-} from "../config/home.js";
+import { configExists, readConfig, resolveConfigPath } from "../config/store.js";
+import { bootstrapCeoInvite } from "./auth-bootstrap-ceo.js";
+import { doctor } from "./doctor.js";
+import { onboard } from "./onboard.js";
 
 interface RunOptions {
   config?: string;
@@ -91,10 +86,7 @@ export async function runCommand(opts: RunOptions): Promise<void> {
   }
 }
 
-function resolveBootstrapInviteBaseUrl(
-  config: IronworksConfig,
-  startedServer: StartedServer,
-): string {
+function resolveBootstrapInviteBaseUrl(config: IronworksConfig, startedServer: StartedServer): string {
   const explicitBaseUrl =
     process.env.IRONWORKS_PUBLIC_URL ??
     process.env.IRONWORKS_AUTH_PUBLIC_BASE_URL ??
@@ -170,10 +162,7 @@ async function importServerEntry(): Promise<StartedServer> {
           `${formatError(err)}`,
       );
     }
-    throw new Error(
-      `Ironworks server failed to start.\n` +
-        `${formatError(err)}`,
-    );
+    throw new Error(`Ironworks server failed to start.\n${formatError(err)}`);
   }
 }
 

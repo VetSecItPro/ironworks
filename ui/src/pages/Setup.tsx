@@ -1,12 +1,12 @@
-import { useEffect, useState, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertCircle, CheckCircle, Hammer, Loader2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { AsciiArtAnimation } from "@/components/AsciiArtAnimation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useNavigate, useSearchParams } from "@/lib/router";
 import { authApi } from "../api/auth";
 import { queryKeys } from "../lib/queryKeys";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { AsciiArtAnimation } from "@/components/AsciiArtAnimation";
-import { Hammer, AlertCircle, Loader2, CheckCircle } from "lucide-react";
 
 interface SetupResponse {
   companyId: string;
@@ -30,8 +30,7 @@ async function postSetup(body: {
   });
   const payload = await res.json().catch(() => null);
   if (!res.ok) {
-    const message =
-      (payload as { error?: string } | null)?.error ?? `Setup failed (${res.status})`;
+    const message = (payload as { error?: string } | null)?.error ?? `Setup failed (${res.status})`;
     throw new Error(message);
   }
   return payload as SetupResponse;
@@ -140,9 +139,7 @@ export function SetupPage() {
         <div className="max-w-md px-8 text-center">
           <CheckCircle className="mx-auto h-8 w-8 text-green-500 mb-4" />
           <h1 className="text-xl font-semibold">You're all set!</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Redirecting you to your dashboard...
-          </p>
+          <p className="mt-2 text-sm text-muted-foreground">Redirecting you to your dashboard...</p>
         </div>
       </div>
     );
@@ -159,9 +156,7 @@ export function SetupPage() {
           </div>
 
           <h1 className="text-xl font-semibold">Set up your company</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Payment confirmed. Create your account to get started.
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">Payment confirmed. Create your account to get started.</p>
 
           <form
             className="mt-6 space-y-4"
@@ -257,21 +252,11 @@ export function SetupPage() {
               />
               <span className="text-xs text-muted-foreground">
                 I agree to the{" "}
-                <a
-                  href="/terms"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline text-foreground"
-                >
+                <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline text-foreground">
                   Terms of Service
                 </a>{" "}
                 and{" "}
-                <a
-                  href="/aup"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline text-foreground"
-                >
+                <a href="/aup" target="_blank" rel="noopener noreferrer" className="underline text-foreground">
                   Acceptable Use Policy
                 </a>
               </span>
@@ -302,10 +287,7 @@ export function SetupPage() {
 
           <div className="mt-5 text-sm text-muted-foreground">
             Already have an account?{" "}
-            <a
-              href="/auth"
-              className="font-medium text-foreground underline underline-offset-2"
-            >
+            <a href="/auth" className="font-medium text-foreground underline underline-offset-2">
               Sign in
             </a>
           </div>

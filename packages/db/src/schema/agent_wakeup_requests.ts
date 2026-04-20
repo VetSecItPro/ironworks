@@ -1,13 +1,17 @@
-import { pgTable, uuid, text, timestamp, jsonb, integer, index } from "drizzle-orm/pg-core";
-import { companies } from "./companies.js";
+import { index, integer, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { agents } from "./agents.js";
+import { companies } from "./companies.js";
 
 export const agentWakeupRequests = pgTable(
   "agent_wakeup_requests",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    companyId: uuid("company_id").notNull().references(() => companies.id),
-    agentId: uuid("agent_id").notNull().references(() => agents.id),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id),
+    agentId: uuid("agent_id")
+      .notNull()
+      .references(() => agents.id),
     source: text("source").notNull(),
     triggerDetail: text("trigger_detail"),
     reason: text("reason"),
@@ -31,10 +35,7 @@ export const agentWakeupRequests = pgTable(
       table.agentId,
       table.status,
     ),
-    companyRequestedIdx: index("agent_wakeup_requests_company_requested_idx").on(
-      table.companyId,
-      table.requestedAt,
-    ),
+    companyRequestedIdx: index("agent_wakeup_requests_company_requested_idx").on(table.companyId, table.requestedAt),
     agentRequestedIdx: index("agent_wakeup_requests_agent_requested_idx").on(table.agentId, table.requestedAt),
   }),
 );

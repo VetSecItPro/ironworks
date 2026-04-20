@@ -1,34 +1,24 @@
-import { useCallback, useMemo, useState } from "react";
-import { NavLink, useLocation, useNavigate } from "@/lib/router";
+import type { Agent } from "@ironworksai/shared";
+import { AGENT_ROLE_LABELS, DEPARTMENT_LABELS } from "@ironworksai/shared";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Plus, LayoutGrid, List, MessageSquare } from "lucide-react";
-import { useCompany } from "../context/CompanyContext";
-import { useDialog } from "../context/DialogContext";
-import { useSidebar } from "../context/SidebarContext";
+import { ChevronRight, LayoutGrid, List, MessageSquare, Plus } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { NavLink, useLocation, useNavigate } from "@/lib/router";
 import { agentsApi } from "../api/agents";
 import { authApi } from "../api/auth";
 import { heartbeatsApi } from "../api/heartbeats";
-import { queryKeys } from "../lib/queryKeys";
-import { cn, agentRouteRef, agentUrl } from "../lib/utils";
+import { useCompany } from "../context/CompanyContext";
+import { useDialog } from "../context/DialogContext";
+import { useSidebar } from "../context/SidebarContext";
 import { useAgentOrder } from "../hooks/useAgentOrder";
+import { queryKeys } from "../lib/queryKeys";
+import { getRoleLevel } from "../lib/role-icons";
+import { agentRouteRef, agentUrl, cn } from "../lib/utils";
 import { AgentIcon } from "./AgentIconPicker";
 import { BudgetSidebarMarker } from "./BudgetSidebarMarker";
-import { getRoleLevel } from "../lib/role-icons";
-import { AGENT_ROLE_LABELS, DEPARTMENT_LABELS } from "@ironworksai/shared";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import type { Agent } from "@ironworksai/shared";
 
-function RoleBadge({
-  role,
-  employmentType,
-}: {
-  role: string | null | undefined;
-  employmentType?: string;
-}) {
+function RoleBadge({ role, employmentType }: { role: string | null | undefined; employmentType?: string }) {
   const level = getRoleLevel(role);
 
   if (employmentType === "contractor") {
@@ -97,9 +87,7 @@ export function SidebarAgents() {
   }, [liveRuns]);
 
   const visibleAgents = useMemo(() => {
-    const filtered = (agents ?? []).filter(
-      (a: Agent) => a.status !== "terminated"
-    );
+    const filtered = (agents ?? []).filter((a: Agent) => a.status !== "terminated");
     return filtered;
   }, [agents]);
   const currentUserId = session?.user?.id ?? session?.session?.userId ?? null;
@@ -131,7 +119,8 @@ export function SidebarAgents() {
       return a.localeCompare(b);
     });
     for (const key of keys) {
-      const label = key === "__other__" ? "OTHER" : ((DEPARTMENT_LABELS as Record<string, string>)[key] ?? key).toUpperCase();
+      const label =
+        key === "__other__" ? "OTHER" : ((DEPARTMENT_LABELS as Record<string, string>)[key] ?? key).toUpperCase();
       sorted.push({ label, agents: groups.get(key)! });
     }
     return sorted;
@@ -141,79 +130,85 @@ export function SidebarAgents() {
     return orderedAgents.some((a) => (a as unknown as Record<string, unknown>).department);
   }, [orderedAgents]);
 
-  const renderAgentLink = useCallback(function renderAgentLink(agent: Agent) {
-    const runCount = liveCountByAgent.get(agent.id) ?? 0;
-    const ref = agentRouteRef(agent);
-    const isActive = activeAgentId === ref;
-    return (
-      <div
-        key={agent.id}
-        className={cn(
-          "group/agent-link relative flex items-center gap-2.5 px-3 py-1.5 text-[13px] font-medium select-none transition-colors duration-150",
-          isActive
-            ? "bg-accent text-foreground before:absolute before:left-0 before:top-0.5 before:bottom-0.5 before:w-[3px] before:rounded-r-full before:bg-primary"
-            : "text-foreground/80 hover:bg-accent/50 hover:text-foreground",
-        )}
-      >
-        <NavLink
-          to={activeTab ? `${agentUrl(agent)}/${activeTab}` : agentUrl(agent)}
-          onClick={() => {
-            if (isMobile) setSidebarOpen(false);
-          }}
-          className="flex items-center gap-2.5 flex-1 min-w-0 no-underline text-inherit"
+  const renderAgentLink = useCallback(
+    function renderAgentLink(agent: Agent) {
+      const runCount = liveCountByAgent.get(agent.id) ?? 0;
+      const ref = agentRouteRef(agent);
+      const isActive = activeAgentId === ref;
+      return (
+        <div
+          key={agent.id}
+          className={cn(
+            "group/agent-link relative flex items-center gap-2.5 px-3 py-1.5 text-[13px] font-medium select-none transition-colors duration-150",
+            isActive
+              ? "bg-accent text-foreground before:absolute before:left-0 before:top-0.5 before:bottom-0.5 before:w-[3px] before:rounded-r-full before:bg-primary"
+              : "text-foreground/80 hover:bg-accent/50 hover:text-foreground",
+          )}
         >
-          <AgentIcon
-            icon={agent.icon}
-            className={cn(
-              "shrink-0 h-3.5 w-3.5",
-              getRoleLevel(agent.role) === "executive"
-                ? "text-amber-500 dark:text-amber-400"
-                : getRoleLevel(agent.role) === "management"
-                  ? "text-blue-500 dark:text-blue-400"
-                  : "text-muted-foreground",
-            )}
-          />
-          <span className="flex-1 truncate">{agent.title || `${agent.name}${agent.role ? ` - ${AGENT_ROLE_LABELS[agent.role as keyof typeof AGENT_ROLE_LABELS] ?? agent.role}` : ""}`}</span>
-          <RoleBadge role={agent.role} employmentType={(agent as unknown as Record<string, unknown>).employmentType as string | undefined} />
-        </NavLink>
-
-        {/* Status indicators + chat button */}
-        <span className="ml-auto flex items-center gap-1 shrink-0">
-          {agent.pauseReason === "budget" ? (
-            <BudgetSidebarMarker title="Agent paused by budget" />
-          ) : null}
-          {runCount > 0 ? (
-            <span className="relative flex h-2 w-2">
-              <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
-            </span>
-          ) : null}
-          {runCount > 0 ? (
-            <span className="text-[11px] font-medium text-blue-600 dark:text-blue-400">
-              {runCount} live
-            </span>
-          ) : null}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
+          <NavLink
+            to={activeTab ? `${agentUrl(agent)}/${activeTab}` : agentUrl(agent)}
+            onClick={() => {
               if (isMobile) setSidebarOpen(false);
-              navigate(`${agentUrl(agent)}/chat`);
             }}
-            title={`Chat with ${agent.name}`}
-            aria-label={`Chat with ${agent.name}`}
-            className={cn(
-              "flex items-center justify-center h-4 w-4 rounded transition-colors",
-              activeTab === "chat" && isActive
-                ? "text-foreground/70 bg-accent/50"
-                : "text-muted-foreground/0 group-hover/agent-link:text-muted-foreground/80 hover:!text-foreground hover:bg-accent/50",
-            )}
+            className="flex items-center gap-2.5 flex-1 min-w-0 no-underline text-inherit"
           >
-            <MessageSquare className="h-3 w-3" />
-          </button>
-        </span>
-      </div>
-    );
-  }, [liveCountByAgent, activeAgentId, activeTab, isMobile, setSidebarOpen, navigate]);
+            <AgentIcon
+              icon={agent.icon}
+              className={cn(
+                "shrink-0 h-3.5 w-3.5",
+                getRoleLevel(agent.role) === "executive"
+                  ? "text-amber-500 dark:text-amber-400"
+                  : getRoleLevel(agent.role) === "management"
+                    ? "text-blue-500 dark:text-blue-400"
+                    : "text-muted-foreground",
+              )}
+            />
+            <span className="flex-1 truncate">
+              {agent.title ||
+                `${agent.name}${agent.role ? ` - ${AGENT_ROLE_LABELS[agent.role as keyof typeof AGENT_ROLE_LABELS] ?? agent.role}` : ""}`}
+            </span>
+            <RoleBadge
+              role={agent.role}
+              employmentType={(agent as unknown as Record<string, unknown>).employmentType as string | undefined}
+            />
+          </NavLink>
+
+          {/* Status indicators + chat button */}
+          <span className="ml-auto flex items-center gap-1 shrink-0">
+            {agent.pauseReason === "budget" ? <BudgetSidebarMarker title="Agent paused by budget" /> : null}
+            {runCount > 0 ? (
+              <span className="relative flex h-2 w-2">
+                <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
+              </span>
+            ) : null}
+            {runCount > 0 ? (
+              <span className="text-[11px] font-medium text-blue-600 dark:text-blue-400">{runCount} live</span>
+            ) : null}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (isMobile) setSidebarOpen(false);
+                navigate(`${agentUrl(agent)}/chat`);
+              }}
+              title={`Chat with ${agent.name}`}
+              aria-label={`Chat with ${agent.name}`}
+              className={cn(
+                "flex items-center justify-center h-4 w-4 rounded transition-colors",
+                activeTab === "chat" && isActive
+                  ? "text-foreground/70 bg-accent/50"
+                  : "text-muted-foreground/0 group-hover/agent-link:text-muted-foreground/80 hover:!text-foreground hover:bg-accent/50",
+              )}
+            >
+              <MessageSquare className="h-3 w-3" />
+            </button>
+          </span>
+        </div>
+      );
+    },
+    [liveCountByAgent, activeAgentId, activeTab, isMobile, setSidebarOpen, navigate],
+  );
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
@@ -223,16 +218,15 @@ export function SidebarAgents() {
             <ChevronRight
               className={cn(
                 "h-3 w-3 text-muted-foreground/80 transition-transform md:opacity-0 md:group-hover:opacity-100",
-                open && "rotate-90"
+                open && "rotate-90",
               )}
             />
-            <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-              Agents
-            </span>
+            <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Agents</span>
           </CollapsibleTrigger>
           <div className="flex items-center gap-1">
             {hasDepartments && (
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   setGrouped(!grouped);
@@ -241,7 +235,7 @@ export function SidebarAgents() {
                   "flex items-center justify-center h-4 w-4 rounded transition-colors",
                   grouped
                     ? "text-foreground/70 bg-accent/50"
-                    : "text-muted-foreground/80 hover:text-foreground hover:bg-accent/50"
+                    : "text-muted-foreground/80 hover:text-foreground hover:bg-accent/50",
                 )}
                 aria-label={grouped ? "Show flat list" : "Group by department"}
                 title={grouped ? "Show flat list" : "Group by department"}
@@ -250,6 +244,7 @@ export function SidebarAgents() {
               </button>
             )}
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 openNewAgent();
@@ -278,9 +273,7 @@ export function SidebarAgents() {
             ))}
           </div>
         ) : (
-          <div className="flex flex-col gap-0.5 mt-0.5">
-            {orderedAgents.map(renderAgentLink)}
-          </div>
+          <div className="flex flex-col gap-0.5 mt-0.5">{orderedAgents.map(renderAgentLink)}</div>
         )}
       </CollapsibleContent>
     </Collapsible>

@@ -18,10 +18,19 @@ interface LabelsPickerContentProps {
 }
 
 export function LabelsPickerContent({
-  labelSearch, setLabelSearch, inline,
-  labels, issueLabelIds, toggleLabel, deleteLabel,
-  newLabelName, setNewLabelName, newLabelColor, setNewLabelColor,
-  onCreateLabel, isCreating,
+  labelSearch,
+  setLabelSearch,
+  inline,
+  labels,
+  issueLabelIds,
+  toggleLabel,
+  deleteLabel,
+  newLabelName,
+  setNewLabelName,
+  newLabelColor,
+  setNewLabelColor,
+  onCreateLabel,
+  isCreating,
 }: LabelsPickerContentProps) {
   return (
     <>
@@ -30,7 +39,6 @@ export function LabelsPickerContent({
         placeholder="Search labels..."
         value={labelSearch}
         onChange={(e) => setLabelSearch(e.target.value)}
-        autoFocus={!inline}
       />
       <div className="max-h-44 overflow-y-auto overscroll-contain space-y-0.5">
         {labels
@@ -43,9 +51,10 @@ export function LabelsPickerContent({
             return (
               <div key={label.id} className="flex items-center gap-1">
                 <button
+                  type="button"
                   className={cn(
                     "flex items-center gap-2 flex-1 px-2 py-1.5 text-xs rounded hover:bg-accent/50 text-left",
-                    selected && "bg-accent"
+                    selected && "bg-accent",
                   )}
                   onClick={() => toggleLabel(label.id)}
                 >
@@ -66,10 +75,21 @@ export function LabelsPickerContent({
       </div>
       <div className="mt-2 border-t border-border pt-2 space-y-1">
         <div className="flex items-center gap-1">
-          <input className="h-7 w-7 p-0 rounded bg-transparent" type="color" value={newLabelColor} onChange={(e) => setNewLabelColor(e.target.value)} />
-          <input className="flex-1 px-2 py-1.5 text-xs bg-transparent outline-none rounded placeholder:text-muted-foreground/70" placeholder="New label" value={newLabelName} onChange={(e) => setNewLabelName(e.target.value)} />
+          <input
+            className="h-7 w-7 p-0 rounded bg-transparent"
+            type="color"
+            value={newLabelColor}
+            onChange={(e) => setNewLabelColor(e.target.value)}
+          />
+          <input
+            className="flex-1 px-2 py-1.5 text-xs bg-transparent outline-none rounded placeholder:text-muted-foreground/70"
+            placeholder="New label"
+            value={newLabelName}
+            onChange={(e) => setNewLabelName(e.target.value)}
+          />
         </div>
         <button
+          type="button"
           className="flex items-center justify-center gap-1.5 w-full px-2 py-1.5 text-xs rounded border border-border hover:bg-accent/50 disabled:opacity-50"
           disabled={!newLabelName.trim() || isCreating}
           onClick={() => onCreateLabel({ name: newLabelName.trim(), color: newLabelColor })}

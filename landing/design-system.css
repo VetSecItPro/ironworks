@@ -4,13 +4,16 @@
 /* ===== Typography ===== */
 
 /* Headline font: Cabinet Grotesk — distinctive, geometric, premium */
-h1, h2, h3, .font-display {
-  font-family: 'Cabinet Grotesk', 'Geist', system-ui, sans-serif;
+h1,
+h2,
+h3,
+.font-display {
+  font-family: "Cabinet Grotesk", "Geist", system-ui, sans-serif;
 }
 
 /* Body stays Geist */
 body {
-  font-family: 'Geist', system-ui, -apple-system, sans-serif;
+  font-family: "Geist", system-ui, -apple-system, sans-serif;
   background: #0a0a0a;
   color: #e4e4e7;
   -webkit-font-smoothing: antialiased;
@@ -18,7 +21,10 @@ body {
 }
 
 /* Text balance on all headlines */
-h1, h2, h3, h4 {
+h1,
+h2,
+h3,
+h4 {
   text-wrap: balance;
 }
 
@@ -48,18 +54,23 @@ h1, h2, h3, h4 {
 
 /* ===== Card System ===== */
 .card-glow:hover {
-  box-shadow: 0 0 60px rgba(59, 130, 246, 0.06), 0 0 20px rgba(59, 130, 246, 0.03);
+  box-shadow:
+    0 0 60px rgba(59, 130, 246, 0.06),
+    0 0 20px rgba(59, 130, 246, 0.03);
 }
 
 /* Card hover lift */
 .card-hover {
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-              border-color 0.3s ease;
+  transition:
+    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.3s ease;
 }
 .card-hover:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3), 0 0 40px rgba(59, 130, 246, 0.06);
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.3),
+    0 0 40px rgba(59, 130, 246, 0.06);
 }
 
 /* Feature icon container */
@@ -72,31 +83,50 @@ h1, h2, h3, h4 {
   border-radius: 12px;
   background: #1e1e1e;
   border: 1px solid #282828;
-  transition: background 0.3s ease, border-color 0.3s ease;
+  transition:
+    background 0.3s ease,
+    border-color 0.3s ease;
 }
 
 /* ===== Animations ===== */
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
 }
-.float { animation: float 6s ease-in-out infinite; }
+.float {
+  animation: float 6s ease-in-out infinite;
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .float { animation: none; }
-  .card-hover:hover { transform: none; }
+  .float {
+    animation: none;
+  }
+  .card-hover:hover {
+    transform: none;
+  }
 }
 
 /* ===== Button Polish ===== */
 .btn-primary {
-  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  transition:
+    background 0.2s ease,
+    transform 0.15s ease,
+    box-shadow 0.2s ease;
 }
 .btn-primary:hover {
   box-shadow: 0 4px 20px rgba(59, 130, 246, 0.25);
 }
 
 .btn-secondary {
-  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    background 0.2s ease;
 }
 .btn-secondary:hover {
   background: rgba(255, 255, 255, 0.03);
@@ -104,9 +134,10 @@ h1, h2, h3, h4 {
 
 /* ===== Pricing Toggle ===== */
 .toggle-btn {
-  transition: background 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-              color 0.2s ease,
-              box-shadow 0.2s ease;
+  transition:
+    background 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 .toggle-btn.active {
   background: #3b82f6;
@@ -123,11 +154,22 @@ h1, h2, h3, h4 {
 }
 
 /* ===== FAQ Accordion ===== */
-details summary { list-style: none; cursor: pointer; }
-details summary::-webkit-details-marker { display: none; }
-details[open] .chevron { transform: rotate(180deg); }
-.chevron { transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
-details[open] summary .summary-text { color: #fff; }
+details summary {
+  list-style: none;
+  cursor: pointer;
+}
+details summary::-webkit-details-marker {
+  display: none;
+}
+details[open] .chevron {
+  transform: rotate(180deg);
+}
+.chevron {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+details[open] summary .summary-text {
+  color: #fff;
+}
 
 /* ===== Footer ===== */
 footer {

@@ -1,7 +1,7 @@
-import { Link } from "@/lib/router";
 import type { Issue } from "@ironworksai/shared";
-import { StatusIcon } from "../StatusIcon";
+import { Link } from "@/lib/router";
 import { cn } from "../../lib/utils";
+import { StatusIcon } from "../StatusIcon";
 
 interface DepListViewProps {
   blockers: Issue[];
@@ -28,9 +28,7 @@ export function DepListView({ blockers, blocked, criticalPath }: DepListViewProp
                 )}
               >
                 <StatusIcon status={b.status} />
-                <span className="font-mono text-muted-foreground shrink-0">
-                  {b.identifier ?? b.id.slice(0, 8)}
-                </span>
+                <span className="font-mono text-muted-foreground shrink-0">{b.identifier ?? b.id.slice(0, 8)}</span>
                 <span className="truncate">{b.title}</span>
                 {criticalPath.has(b.id) && (
                   <span className="ml-auto text-[10px] font-medium text-amber-500">CRITICAL</span>
@@ -57,9 +55,7 @@ export function DepListView({ blockers, blocked, criticalPath }: DepListViewProp
                 )}
               >
                 <StatusIcon status={b.status} />
-                <span className="font-mono text-muted-foreground shrink-0">
-                  {b.identifier ?? b.id.slice(0, 8)}
-                </span>
+                <span className="font-mono text-muted-foreground shrink-0">{b.identifier ?? b.id.slice(0, 8)}</span>
                 <span className="truncate">{b.title}</span>
                 {criticalPath.has(b.id) && (
                   <span className="ml-auto text-[10px] font-medium text-amber-500">CRITICAL</span>

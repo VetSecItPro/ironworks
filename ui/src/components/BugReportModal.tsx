@@ -1,17 +1,11 @@
+import { Bug, Lightbulb, X } from "lucide-react";
 import { useState } from "react";
-import { X, Bug, Lightbulb } from "lucide-react";
+import { bugReportsApi, type CreateBugReportInput } from "@/api/bugReports";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/context/ToastContext";
-import { bugReportsApi, type CreateBugReportInput } from "@/api/bugReports";
 
 interface BugReportModalProps {
   open: boolean;
@@ -68,19 +62,13 @@ export function BugReportModal({ open, onClose }: BugReportModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-        aria-hidden="true"
-      />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
 
       {/* Panel */}
       <div className="relative z-10 w-full max-w-md rounded-xl border border-border bg-card shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-          <h2 className="text-sm font-semibold">
-            {type === "bug" ? "Report a Bug" : "Request a Feature"}
-          </h2>
+          <h2 className="text-sm font-semibold">{type === "bug" ? "Report a Bug" : "Request a Feature"}</h2>
           <button
             type="button"
             onClick={onClose}
@@ -158,11 +146,9 @@ export function BugReportModal({ open, onClose }: BugReportModalProps) {
           {/* Severity (bugs only) */}
           {type === "bug" && (
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">
-                Severity
-              </label>
+              <span className="text-xs font-medium text-muted-foreground">Severity</span>
               <Select value={severity} onValueChange={(v) => setSeverity(v as CreateBugReportInput["severity"])}>
-                <SelectTrigger className="w-full text-sm">
+                <SelectTrigger className="w-full text-sm" aria-label="Severity">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -177,10 +163,11 @@ export function BugReportModal({ open, onClose }: BugReportModalProps) {
 
           {/* Page URL (read-only) */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
+            <label htmlFor="bug-report-page-url" className="text-xs font-medium text-muted-foreground">
               Page URL
             </label>
             <Input
+              id="bug-report-page-url"
               value={pageUrl}
               readOnly
               tabIndex={-1}

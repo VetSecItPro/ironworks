@@ -1,9 +1,9 @@
-import { useRef, type ChangeEvent } from "react";
 import type { CompanyPortabilityCollisionStrategy } from "@ironworksai/shared";
-import { Button } from "@/components/ui/button";
-import { cn } from "../../lib/utils";
 import { Github, Upload } from "lucide-react";
+import { type ChangeEvent, useRef } from "react";
+import { Button } from "@/components/ui/button";
 import { Field } from "../../components/agent-config-primitives";
+import { cn } from "../../lib/utils";
 
 interface ImportSourceFormProps {
   sourceMode: "github" | "local";
@@ -75,7 +75,10 @@ export function ImportSourceForm({
               "rounded-md border px-3 py-2 text-left text-sm transition-colors",
               sourceMode === key ? "border-foreground bg-accent" : "border-border hover:bg-accent/50",
             )}
-            onClick={() => { onSourceModeChange(key); onClearPreview(); }}
+            onClick={() => {
+              onSourceModeChange(key);
+              onClearPreview();
+            }}
           >
             <div className="flex items-center gap-2">
               <Icon className="h-4 w-4" />
@@ -105,9 +108,7 @@ export function ImportSourceForm({
               </span>
             )}
           </div>
-          {!localPackage && (
-            <p className="mt-2 text-xs text-muted-foreground">{localZipHelpText}</p>
-          )}
+          {!localPackage && <p className="mt-2 text-xs text-muted-foreground">{localZipHelpText}</p>}
         </div>
       ) : (
         <Field
@@ -119,7 +120,10 @@ export function ImportSourceForm({
             type="text"
             value={importUrl}
             placeholder="https://github.com/owner/repo/tree/main/company"
-            onChange={(e) => { onImportUrlChange(e.target.value); onClearPreview(); }}
+            onChange={(e) => {
+              onImportUrlChange(e.target.value);
+              onClearPreview();
+            }}
           />
         </Field>
       )}
@@ -128,7 +132,10 @@ export function ImportSourceForm({
         <select
           className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
           value={targetMode}
-          onChange={(e) => { onTargetModeChange(e.target.value as "existing" | "new"); onClearPreview(); }}
+          onChange={(e) => {
+            onTargetModeChange(e.target.value as "existing" | "new");
+            onClearPreview();
+          }}
         >
           <option value="new">Create new company</option>
           <option value="existing">Existing company: {selectedCompanyName}</option>
@@ -147,10 +154,7 @@ export function ImportSourceForm({
         </Field>
       )}
 
-      <Field
-        label="Collision strategy"
-        hint="Board imports can rename, skip, or replace matching company content."
-      >
+      <Field label="Collision strategy" hint="Board imports can rename, skip, or replace matching company content.">
         <select
           className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
           value={collisionStrategy}
@@ -166,12 +170,7 @@ export function ImportSourceForm({
       </Field>
 
       <div className="flex items-center gap-2">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={onPreview}
-          disabled={previewPending || !hasSource}
-        >
+        <Button size="sm" variant="outline" onClick={onPreview} disabled={previewPending || !hasSource}>
           {previewPending ? "Previewing..." : "Preview import"}
         </Button>
       </div>

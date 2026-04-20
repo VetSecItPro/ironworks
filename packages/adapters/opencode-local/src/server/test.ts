@@ -7,10 +7,10 @@ import {
   asBoolean,
   asString,
   asStringArray,
-  parseObject,
   ensureAbsoluteDirectory,
   ensureCommandResolvable,
   ensurePathInEnv,
+  parseObject,
   runChildProcess,
 } from "@ironworksai/adapter-utils/server-utils";
 import { discoverOpenCodeModels, ensureOpenCodeModelConfiguredAndAvailable } from "./models.js";
@@ -52,9 +52,7 @@ function normalizeEnv(input: unknown): Record<string, string> {
 const OPENCODE_AUTH_REQUIRED_RE =
   /(?:auth(?:entication)?\s+required|api\s*key|invalid\s*api\s*key|not\s+logged\s+in|opencode\s+auth\s+login|free\s+usage\s+exceeded)/i;
 
-export async function testEnvironment(
-  ctx: AdapterEnvironmentTestContext,
-): Promise<AdapterEnvironmentTestResult> {
+export async function testEnvironment(ctx: AdapterEnvironmentTestContext): Promise<AdapterEnvironmentTestResult> {
   const checks: AdapterEnvironmentCheck[] = [];
   const config = parseObject(ctx.config);
   const command = asString(config.command, "opencode");
@@ -131,8 +129,9 @@ export async function testEnvironment(
       }
     }
 
-    const canRunProbe =
-      checks.every((check) => check.code !== "opencode_cwd_invalid" && check.code !== "opencode_command_unresolvable");
+    const canRunProbe = checks.every(
+      (check) => check.code !== "opencode_cwd_invalid" && check.code !== "opencode_command_unresolvable",
+    );
 
     let modelValidationPassed = false;
     const configuredModel = asString(config.model, "").trim();

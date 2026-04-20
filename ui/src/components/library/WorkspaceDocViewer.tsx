@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { FileText } from "lucide-react";
-import { knowledgeApi, type KnowledgePage } from "../../api/knowledge";
+import { type KnowledgePage, knowledgeApi } from "../../api/knowledge";
 import { queryKeys } from "../../lib/queryKeys";
 import { cn } from "../../lib/utils";
 import { PageSkeleton } from "../PageSkeleton";
@@ -50,9 +50,7 @@ export function WorkspaceDocViewer({
     return (
       <div className="px-3 py-6 text-center">
         <p className="text-sm text-muted-foreground">No documents yet</p>
-        <p className="text-xs text-muted-foreground mt-1">
-          {agentName} has not created any workspace documents.
-        </p>
+        <p className="text-xs text-muted-foreground mt-1">{agentName} has not created any workspace documents.</p>
       </div>
     );
   }
@@ -73,12 +71,12 @@ export function WorkspaceDocViewer({
           </div>
           {groupPages.map((page) => (
             <button
+              type="button"
               key={page.id}
               onClick={() => onSelectPage(page.id, page.title)}
               className={cn(
                 "flex items-center gap-2 w-full text-left px-3 py-1.5 text-[13px] hover:bg-accent/50 transition-colors",
-                selectedPageId === page.id &&
-                  "bg-accent text-accent-foreground font-medium",
+                selectedPageId === page.id && "bg-accent text-accent-foreground font-medium",
               )}
             >
               <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />

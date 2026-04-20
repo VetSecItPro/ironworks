@@ -1,84 +1,71 @@
-import express, { Router, type Request as ExpressRequest } from "express";
-import path from "node:path";
 import fs from "node:fs";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createGzip, createDeflate, createBrotliCompress } from "node:zlib";
-import { pipeline } from "node:stream";
+import { createBrotliCompress, createDeflate, createGzip } from "node:zlib";
 import type { Db } from "@ironworksai/db";
 import type { DeploymentExposure, DeploymentMode } from "@ironworksai/shared";
-import type { StorageService } from "./storage/types.js";
-import { httpLogger, errorHandler } from "./middleware/index.js";
-import { cacheControl, etag } from "./middleware/cache.js";
+import express, { type Request as ExpressRequest, Router } from "express";
+import type { BetterAuthSessionResult } from "./auth/better-auth.js";
 import { actorMiddleware } from "./middleware/auth.js";
 import { boardMutationGuard } from "./middleware/board-mutation-guard.js";
+import { cacheControl, etag } from "./middleware/cache.js";
+import { errorHandler, httpLogger } from "./middleware/index.js";
 import { privateHostnameGuard, resolvePrivateHostnameAllowSet } from "./middleware/private-hostname-guard.js";
-import { enforceProjectLimit, enforceStorageLimit, enforcePlaybookRunLimit } from "./middleware/tier-limits.js";
-import { healthRoutes } from "./routes/health.js";
+import { enforcePlaybookRunLimit, enforceProjectLimit, enforceStorageLimit } from "./middleware/tier-limits.js";
+import { accessRoutes } from "./routes/access.js";
+import { activityRoutes } from "./routes/activity.js";
+import { adminRoutes } from "./routes/admin.js";
+import { agentMemoryRoutes } from "./routes/agent-memory.js";
+import { agentRoutes } from "./routes/agents.js";
+import { aiGenerateRoutes } from "./routes/ai-generate.js";
+import { aiGoalBreakdownRoutes } from "./routes/ai-goal-breakdown.js";
+import { announcementRoutes } from "./routes/announcements.js";
+import { approvalRoutes } from "./routes/approvals.js";
+import { assetRoutes } from "./routes/assets.js";
+import { bugReportRoutes } from "./routes/bug-reports.js";
+import { channelRoutes } from "./routes/channels.js";
 import { companyRoutes } from "./routes/companies.js";
 import { companySkillRoutes } from "./routes/company-skills.js";
-import { agentRoutes } from "./routes/agents.js";
-import { projectRoutes } from "./routes/projects.js";
-import { issueRoutes } from "./routes/issues.js";
-import { routineRoutes } from "./routes/routines.js";
-import { executionWorkspaceRoutes } from "./routes/execution-workspaces.js";
-import { goalRoutes } from "./routes/goals.js";
-import { approvalRoutes } from "./routes/approvals.js";
-import { secretRoutes } from "./routes/secrets.js";
 import { costRoutes } from "./routes/costs.js";
-import { activityRoutes } from "./routes/activity.js";
 import { dashboardRoutes } from "./routes/dashboard.js";
-import { sidebarBadgeRoutes } from "./routes/sidebar-badges.js";
-import { instanceSettingsRoutes } from "./routes/instance-settings.js";
-import { llmRoutes } from "./routes/llms.js";
-import { assetRoutes } from "./routes/assets.js";
-import { accessRoutes } from "./routes/access.js";
-import { libraryRoutes } from "./routes/library.js";
-import { playbookRoutes } from "./routes/playbooks.js";
-import { knowledgeRoutes } from "./routes/knowledge.js";
-import { setupRoutes } from "./routes/setup.js";
-import { hiringRoutes } from "./routes/hiring.js";
-import { agentMemoryRoutes } from "./routes/agent-memory.js";
-import { announcementRoutes } from "./routes/announcements.js";
-import { roleTemplateRoutes } from "./routes/role-templates.js";
-import { teamTemplateRoutes } from "./routes/team-templates.js";
-import { aiGenerateRoutes } from "./routes/ai-generate.js";
-import { privacyRoutes, startRetentionScheduler } from "./routes/privacy.js";
-import { supportPublicRoutes } from "./routes/support.js";
-import { goalStatsRoutes } from "./routes/goal-stats.js";
-import { goalCheckInRoutes } from "./routes/goal-check-ins.js";
-import { aiGoalBreakdownRoutes } from "./routes/ai-goal-breakdown.js";
-import { messagingRoutes, emailWebhookRoutes } from "./routes/messaging.js";
-import { slimRoutes } from "./routes/slim.js";
-import { adminRoutes } from "./routes/admin.js";
-import { executiveRoutes } from "./routes/executive.js";
-import { sseRoutes } from "./routes/sse.js";
-import { searchRoutes } from "./routes/search.js";
-import { channelRoutes } from "./routes/channels.js";
-import { bugReportRoutes } from "./routes/bug-reports.js";
 import { deliverableRoutes } from "./routes/deliverables.js";
+import { executionWorkspaceRoutes } from "./routes/execution-workspaces.js";
+import { executiveRoutes } from "./routes/executive.js";
 import { expertiseMapRoutes } from "./routes/expertise-map.js";
+import { goalCheckInRoutes } from "./routes/goal-check-ins.js";
+import { goalStatsRoutes } from "./routes/goal-stats.js";
+import { goalRoutes } from "./routes/goals.js";
+import { healthRoutes } from "./routes/health.js";
+import { hiringRoutes } from "./routes/hiring.js";
+import { instanceSettingsRoutes } from "./routes/instance-settings.js";
+import { issueRoutes } from "./routes/issues.js";
+import { knowledgeRoutes } from "./routes/knowledge.js";
+import { libraryRoutes } from "./routes/library.js";
+import { llmRoutes } from "./routes/llms.js";
+import { emailWebhookRoutes, messagingRoutes } from "./routes/messaging.js";
 import { nolanIntegrationRoutes } from "./routes/nolan-integration.js";
+import { playbookRoutes } from "./routes/playbooks.js";
+import { privacyRoutes, startRetentionScheduler } from "./routes/privacy.js";
+import { projectRoutes } from "./routes/projects.js";
+import { providerRoutes } from "./routes/providers.js";
+import { roleTemplateRoutes } from "./routes/role-templates.js";
+import { routineRoutes } from "./routes/routines.js";
+import { searchRoutes } from "./routes/search.js";
+import { secretRoutes } from "./routes/secrets.js";
+import { setupRoutes } from "./routes/setup.js";
+import { sidebarBadgeRoutes } from "./routes/sidebar-badges.js";
+import { slimRoutes } from "./routes/slim.js";
+import { sseRoutes } from "./routes/sse.js";
+import { supportPublicRoutes } from "./routes/support.js";
+import { teamTemplateRoutes } from "./routes/team-templates.js";
+import { setPluginEventBus } from "./services/activity-log.js";
+import { createPluginEventBus } from "./services/plugin-event-bus.js";
+import { pluginRegistryService } from "./services/plugin-registry.js";
+import type { StorageService } from "./storage/types.js";
 // Plugin system disabled — not needed for V1 productization
 // import { pluginRoutes } from "./routes/plugins.js";
 // import { pluginUiStaticRoutes } from "./routes/plugin-ui-static.js";
 import { applyUiBranding } from "./ui-branding.js";
-import { logger } from "./middleware/logger.js";
-// Plugin system disabled
-// import { DEFAULT_LOCAL_PLUGIN_DIR, pluginLoader } from "./services/plugin-loader.js";
-// import { createPluginWorkerManager } from "./services/plugin-worker-manager.js";
-import { createPluginJobScheduler } from "./services/plugin-job-scheduler.js";
-import { pluginJobStore } from "./services/plugin-job-store.js";
-import { createPluginToolDispatcher } from "./services/plugin-tool-dispatcher.js";
-import { pluginLifecycleManager } from "./services/plugin-lifecycle.js";
-import { createPluginJobCoordinator } from "./services/plugin-job-coordinator.js";
-import { buildHostServices, flushPluginLogBuffer } from "./services/plugin-host-services.js";
-import { createPluginEventBus } from "./services/plugin-event-bus.js";
-import { setPluginEventBus } from "./services/activity-log.js";
-import { createPluginDevWatcher } from "./services/plugin-dev-watcher.js";
-import { createPluginHostServiceCleanup } from "./services/plugin-host-service-cleanup.js";
-import { pluginRegistryService } from "./services/plugin-registry.js";
-import { createHostClientHandlers } from "@ironworksai/plugin-sdk";
-import type { BetterAuthSessionResult } from "./auth/better-auth.js";
 
 type UiMode = "none" | "static" | "vite-dev";
 
@@ -134,7 +121,9 @@ export async function createApp(
     }
     // Prune stale buckets every ~1000 requests
     if (bucket.count === 1 && rateBuckets.size > 1000) {
-      for (const [k, v] of rateBuckets) { if (now > v.resetAt) rateBuckets.delete(k); }
+      for (const [k, v] of rateBuckets) {
+        if (now > v.resetAt) rateBuckets.delete(k);
+      }
     }
     next();
   });
@@ -160,16 +149,18 @@ export async function createApp(
       // style-src retains 'unsafe-inline' because React inline style={{}} props
       // and Radix UI primitives inject styles at runtime. Removing it would
       // require a full CSS-in-JS audit and nonce plumbing — deferred.
-      res.setHeader("Content-Security-Policy",
+      res.setHeader(
+        "Content-Security-Policy",
         "default-src 'self'; " +
-        "script-src 'self' 'sha256-6vvXBpbC3dPDRTfAkvCMzs3MZCffSXiteXHKnMn1oCs='; " +
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-        "font-src 'self' https://fonts.gstatic.com data:; " +
-        "img-src 'self' data: blob:; " +
-        "connect-src 'self' ws: wss: https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com https://ollama.com; " +
-        "frame-src 'none'; " +
-        "object-src 'none'; " +
-        "base-uri 'self'");
+          "script-src 'self' 'sha256-6vvXBpbC3dPDRTfAkvCMzs3MZCffSXiteXHKnMn1oCs='; " +
+          "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+          "font-src 'self' https://fonts.gstatic.com data:; " +
+          "img-src 'self' data: blob:; " +
+          "connect-src 'self' ws: wss: https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com https://ollama.com; " +
+          "frame-src 'none'; " +
+          "object-src 'none'; " +
+          "base-uri 'self'",
+      );
     }
     next();
   });
@@ -180,7 +171,7 @@ export async function createApp(
     const acceptEncoding = req.headers["accept-encoding"] ?? "";
     // Skip compression for Server-Sent Events and tiny responses
     const origEnd = res.end.bind(res);
-    const origWrite = res.write.bind(res);
+    const _origWrite = res.write.bind(res);
     // Only compress JSON API responses (not static files — express.static handles those)
     if (req.path.startsWith("/api") && typeof acceptEncoding === "string") {
       const originalJson = res.json.bind(res);
@@ -197,9 +188,7 @@ export async function createApp(
                 : null;
           if (encoding) {
             const compressor =
-              encoding === "br" ? createBrotliCompress()
-              : encoding === "gzip" ? createGzip()
-              : createDeflate();
+              encoding === "br" ? createBrotliCompress() : encoding === "gzip" ? createGzip() : createDeflate();
             res.setHeader("Content-Encoding", encoding);
             res.removeHeader("Content-Length");
             if (!res.headersSent) {
@@ -224,16 +213,17 @@ export async function createApp(
   // ── ETag support for conditional GET requests ──
   app.use(etag());
 
-  app.use(express.json({
-    // Company import/export payloads can inline full portable packages.
-    limit: "10mb",
-    verify: (req, _res, buf) => {
-      (req as unknown as { rawBody: Buffer }).rawBody = buf;
-    },
-  }));
+  app.use(
+    express.json({
+      // Company import/export payloads can inline full portable packages.
+      limit: "10mb",
+      verify: (req, _res, buf) => {
+        (req as unknown as { rawBody: Buffer }).rawBody = buf;
+      },
+    }),
+  );
   app.use(httpLogger);
-  const privateHostnameGateEnabled =
-    opts.deploymentMode === "authenticated" && opts.deploymentExposure === "private";
+  const privateHostnameGateEnabled = opts.deploymentMode === "authenticated" && opts.deploymentExposure === "private";
   const privateHostnameAllowSet = resolvePrivateHostnameAllowSet({
     allowedHostnames: opts.allowedHostnames,
     bindHost: opts.bindHost,
@@ -317,6 +307,7 @@ export async function createApp(
   api.use(goalRoutes(db));
   api.use(approvalRoutes(db));
   api.use(secretRoutes(db));
+  api.use(providerRoutes(db));
   api.use(costRoutes(db));
   api.use(executiveRoutes(db));
   api.use(activityRoutes(db));
@@ -353,7 +344,7 @@ export async function createApp(
   // The plugin system adds complexity without customer value at this stage.
   // Re-enable when extension marketplace is needed (100+ clients).
   // Original code preserved in git history.
-  const pluginRegistry = pluginRegistryService(db);
+  const _pluginRegistry = pluginRegistryService(db);
   const eventBus = createPluginEventBus();
   setPluginEventBus(eventBus);
   api.use(
@@ -382,25 +373,24 @@ export async function createApp(
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
   if (opts.uiMode === "static") {
     // Try published location first (server/ui-dist/), then monorepo dev location (../../ui/dist)
-    const candidates = [
-      path.resolve(__dirname, "../ui-dist"),
-      path.resolve(__dirname, "../../ui/dist"),
-    ];
+    const candidates = [path.resolve(__dirname, "../ui-dist"), path.resolve(__dirname, "../../ui/dist")];
     const uiDist = candidates.find((p) => fs.existsSync(path.join(p, "index.html")));
     if (uiDist) {
       const indexHtml = applyUiBranding(fs.readFileSync(path.join(uiDist, "index.html"), "utf-8"));
       // Static assets — Vite hashes filenames so hashed files are immutable
-      app.use(express.static(uiDist, {
-        maxAge: "1y",
-        immutable: true,
-        setHeaders: (res, filePath) => {
-          if (filePath.endsWith("index.html") || filePath.endsWith(".html")) {
-            res.setHeader("Cache-Control", "no-cache");
-          } else {
-            res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-          }
-        },
-      }));
+      app.use(
+        express.static(uiDist, {
+          maxAge: "1y",
+          immutable: true,
+          setHeaders: (res, filePath) => {
+            if (filePath.endsWith("index.html") || filePath.endsWith(".html")) {
+              res.setHeader("Cache-Control", "no-cache");
+            } else {
+              res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+            }
+          },
+        }),
+      );
       app.get(/.*/, (_req, res) => {
         res.status(200).set({ "Content-Type": "text/html", "Cache-Control": "no-cache" }).end(indexHtml);
       });

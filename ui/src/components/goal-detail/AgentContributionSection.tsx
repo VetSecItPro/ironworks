@@ -1,14 +1,8 @@
-import { useMemo } from "react";
+import type { Agent, Issue } from "@ironworksai/shared";
 import { Users } from "lucide-react";
-import type { Issue, Agent } from "@ironworksai/shared";
+import { useMemo } from "react";
 
-export function AgentContributionSection({
-  issues,
-  agentMap,
-}: {
-  issues: Issue[];
-  agentMap: Map<string, Agent>;
-}) {
+export function AgentContributionSection({ issues, agentMap }: { issues: Issue[]; agentMap: Map<string, Agent> }) {
   const contributions = useMemo(() => {
     const counts = new Map<string, number>();
     for (const issue of issues) {
@@ -41,10 +35,7 @@ export function AgentContributionSection({
           <div key={c.agentId} className="flex items-center gap-2">
             <span className="text-xs w-24 truncate shrink-0">{c.name}</span>
             <div className="flex-1 bg-muted rounded-full h-2 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-blue-500"
-                style={{ width: `${(c.count / maxCount) * 100}%` }}
-              />
+              <div className="h-full rounded-full bg-blue-500" style={{ width: `${(c.count / maxCount) * 100}%` }} />
             </div>
             <span className="text-xs text-muted-foreground tabular-nums w-6 text-right">{c.count}</span>
           </div>

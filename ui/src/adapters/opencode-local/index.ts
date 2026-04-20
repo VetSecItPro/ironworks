@@ -1,7 +1,6 @@
+import { buildOpenCodeLocalConfig, parseOpenCodeStdoutLine } from "@ironworksai/adapter-opencode-local/ui";
 import type { UIAdapterModule } from "../types";
-import { parseOpenCodeStdoutLine } from "@ironworksai/adapter-opencode-local/ui";
 import { OpenCodeLocalConfigFields } from "./config-fields";
-import { buildOpenCodeLocalConfig } from "@ironworksai/adapter-opencode-local/ui";
 
 export const openCodeLocalUIAdapter: UIAdapterModule = {
   type: "opencode_local",

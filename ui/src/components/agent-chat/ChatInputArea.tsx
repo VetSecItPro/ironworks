@@ -1,6 +1,6 @@
-import { cn } from "../../lib/utils";
-import { Button } from "@/components/ui/button";
 import { Send } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "../../lib/utils";
 
 interface ChatInputAreaProps {
   input: string;
@@ -25,11 +25,7 @@ export function ChatInputArea({
 }: ChatInputAreaProps) {
   return (
     <>
-      {isError && (
-        <p className="px-4 py-1 text-xs text-destructive">
-          Failed to send message. Please try again.
-        </p>
-      )}
+      {isError && <p className="px-4 py-1 text-xs text-destructive">Failed to send message. Please try again.</p>}
 
       <div className="border-t border-border px-4 py-3 flex items-end gap-2">
         <textarea
@@ -52,12 +48,7 @@ export function ChatInputArea({
           }}
           disabled={isPending}
         />
-        <Button
-          size="icon"
-          onClick={onSend}
-          disabled={!input.trim() || isPending}
-          aria-label="Send message"
-        >
+        <Button size="icon" onClick={onSend} disabled={!input.trim() || isPending} aria-label="Send message">
           <Send className="h-4 w-4" />
         </Button>
       </div>

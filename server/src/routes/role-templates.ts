@@ -1,11 +1,11 @@
-import { Router } from "express";
 import type { Db } from "@ironworksai/db";
 import { agentRoleTemplates } from "@ironworksai/db";
-import { and, desc, eq, or } from "drizzle-orm";
 import { DEPARTMENTS, EMPLOYMENT_TYPES } from "@ironworksai/shared";
+import { and, desc, eq, or } from "drizzle-orm";
+import { Router } from "express";
 import { badRequest, forbidden, notFound } from "../errors.js";
-import { assertCanWrite, assertCompanyAccess, getActorInfo } from "./authz.js";
 import { logActivity } from "../services/index.js";
+import { assertCanWrite, assertCompanyAccess, getActorInfo } from "./authz.js";
 
 export function roleTemplateRoutes(db: Db) {
   const router = Router();
@@ -19,12 +19,7 @@ export function roleTemplateRoutes(db: Db) {
     const rows = await db
       .select()
       .from(agentRoleTemplates)
-      .where(
-        or(
-          eq(agentRoleTemplates.companyId, companyId),
-          eq(agentRoleTemplates.isSystem, true),
-        ),
-      )
+      .where(or(eq(agentRoleTemplates.companyId, companyId), eq(agentRoleTemplates.isSystem, true)))
       .orderBy(desc(agentRoleTemplates.isSystem), agentRoleTemplates.name)
       .limit(200);
 
@@ -65,13 +60,18 @@ export function roleTemplateRoutes(db: Db) {
         name: name as string,
         role: role as string,
         title: title as string,
-        department: typeof department === "string" && (DEPARTMENTS as readonly string[]).includes(department) ? department : null,
-        employmentType: typeof employmentType === "string" && ([...EMPLOYMENT_TYPES, "any"] as string[]).includes(employmentType) ? employmentType : "any",
+        department:
+          typeof department === "string" && (DEPARTMENTS as readonly string[]).includes(department) ? department : null,
+        employmentType:
+          typeof employmentType === "string" && ([...EMPLOYMENT_TYPES, "any"] as string[]).includes(employmentType)
+            ? employmentType
+            : "any",
         capabilities: typeof capabilities === "string" ? capabilities : null,
         defaultKbPageIds: Array.isArray(defaultKbPageIds) ? defaultKbPageIds : [],
-        defaultPermissions: (defaultPermissions && typeof defaultPermissions === "object" && !Array.isArray(defaultPermissions))
-          ? defaultPermissions as Record<string, unknown>
-          : {},
+        defaultPermissions:
+          defaultPermissions && typeof defaultPermissions === "object" && !Array.isArray(defaultPermissions)
+            ? (defaultPermissions as Record<string, unknown>)
+            : {},
         systemPromptTemplate: typeof systemPromptTemplate === "string" ? systemPromptTemplate : null,
         isSystem: false,
       })
@@ -167,9 +167,7 @@ export function roleTemplateRoutes(db: Db) {
       throw forbidden("System templates cannot be deleted");
     }
 
-    await db
-      .delete(agentRoleTemplates)
-      .where(eq(agentRoleTemplates.id, id));
+    await db.delete(agentRoleTemplates).where(eq(agentRoleTemplates.id, id));
 
     const actor = getActorInfo(req);
     await logActivity(db, {

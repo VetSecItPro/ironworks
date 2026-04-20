@@ -1,5 +1,3 @@
-import type { Agent } from "@ironworksai/shared";
-
 interface IssueLiveRunBannerProps {
   activeAgentName?: string | null;
 }

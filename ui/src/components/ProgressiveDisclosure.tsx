@@ -1,6 +1,6 @@
-import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
-import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronRight, Layers } from "lucide-react";
+import { createContext, type ReactNode, useCallback, useContext, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { cn } from "../lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -126,11 +126,7 @@ export function AdvancedSection({
         onClick={() => setOpen(!open)}
         className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
       >
-        {open ? (
-          <ChevronDown className="h-3 w-3" />
-        ) : (
-          <ChevronRight className="h-3 w-3" />
-        )}
+        {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
         {label}
       </button>
       {open && <div className="mt-2 space-y-3">{children}</div>}

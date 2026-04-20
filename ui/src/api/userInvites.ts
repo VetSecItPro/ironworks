@@ -41,23 +41,15 @@ export const userInvitesApi = {
   create: (companyId: string, data: { email: string; role?: MembershipRole }) =>
     api.post<UserInviteCreated>(`/companies/${companyId}/user-invites`, data),
 
-  list: (companyId: string) =>
-    api.get<UserInviteRecord[]>(`/companies/${companyId}/user-invites`),
+  list: (companyId: string) => api.get<UserInviteRecord[]>(`/companies/${companyId}/user-invites`),
 
-  getByToken: (token: string) =>
-    api.get<UserInvitePublic>(`/user-invites/${token}`),
+  getByToken: (token: string) => api.get<UserInvitePublic>(`/user-invites/${token}`),
 
   accept: (token: string, data: { name: string; password: string; tosAccepted: boolean }) =>
-    api.post<{ accepted: boolean; userId: string; companyId: string }>(
-      `/user-invites/${token}/accept`,
-      data,
-    ),
+    api.post<{ accepted: boolean; userId: string; companyId: string }>(`/user-invites/${token}/accept`, data),
 
   revoke: (companyId: string, inviteId: string) =>
-    api.post<{ revoked: boolean }>(
-      `/companies/${companyId}/user-invites/${inviteId}/revoke`,
-      {},
-    ),
+    api.post<{ revoked: boolean }>(`/companies/${companyId}/user-invites/${inviteId}/revoke`, {}),
 };
 
 export const meAccessApi = {
@@ -66,8 +58,5 @@ export const meAccessApi = {
 
 export const memberApi = {
   updateRole: (companyId: string, memberId: string, role: MembershipRole) =>
-    api.patch<{ id: string; membershipRole: string }>(
-      `/companies/${companyId}/members/${memberId}/role`,
-      { role },
-    ),
+    api.patch<{ id: string; membershipRole: string }>(`/companies/${companyId}/members/${memberId}/role`, { role }),
 };

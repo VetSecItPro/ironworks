@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Check } from "lucide-react";
+import { useEffect, useState } from "react";
 import { executiveApi } from "../../api/executive";
 import { useToast } from "../../context/ToastContext";
 
@@ -20,9 +20,7 @@ export function RiskThresholdsSection({ companyId }: { companyId: string }) {
 
   useEffect(() => {
     if (!settings) return;
-    setSpendDollars(
-      String((settings.spendingAlertThresholdCents / 100).toFixed(0)),
-    );
+    setSpendDollars(String((settings.spendingAlertThresholdCents / 100).toFixed(0)));
     setPerfThreshold(String(settings.performanceAlertThreshold));
     setResolveHours(String(settings.autoResolveTimeoutHours));
   }, [settings]);
@@ -30,9 +28,7 @@ export function RiskThresholdsSection({ companyId }: { companyId: string }) {
   const saveMutation = useMutation({
     mutationFn: () =>
       executiveApi.updateRiskSettings(companyId, {
-        spendingAlertThresholdCents: Math.round(
-          parseFloat(spendDollars) * 100,
-        ),
+        spendingAlertThresholdCents: Math.round(parseFloat(spendDollars) * 100),
         performanceAlertThreshold: parseInt(perfThreshold, 10),
         autoResolveTimeoutHours: parseInt(resolveHours, 10),
       }),
@@ -55,12 +51,13 @@ export function RiskThresholdsSection({ companyId }: { companyId: string }) {
       </h2>
       <div className="rounded-md border border-border px-4 py-4 space-y-4">
         <div className="space-y-1.5">
-          <label className="text-sm font-medium">
+          <label htmlFor="risk-spend-threshold" className="text-sm font-medium">
             Spending alert threshold (per run)
           </label>
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">$</span>
             <input
+              id="risk-spend-threshold"
               type="number"
               inputMode="decimal"
               min={1}
@@ -70,16 +67,15 @@ export function RiskThresholdsSection({ companyId }: { companyId: string }) {
               className="w-28 rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
             />
           </div>
-          <p className="text-xs text-muted-foreground">
-            Alert fires when a single agent run exceeds this amount.
-          </p>
+          <p className="text-xs text-muted-foreground">Alert fires when a single agent run exceeds this amount.</p>
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-sm font-medium">
+          <label htmlFor="risk-perf-threshold" className="text-sm font-medium">
             Performance alert threshold
           </label>
           <input
+            id="risk-perf-threshold"
             type="number"
             inputMode="decimal"
             min={0}
@@ -88,16 +84,15 @@ export function RiskThresholdsSection({ companyId }: { companyId: string }) {
             onChange={(e) => setPerfThreshold(e.target.value)}
             className="w-28 rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
           />
-          <p className="text-xs text-muted-foreground">
-            Agents scoring below this threshold trigger a medium alert.
-          </p>
+          <p className="text-xs text-muted-foreground">Agents scoring below this threshold trigger a medium alert.</p>
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-sm font-medium">
+          <label htmlFor="risk-resolve-hours" className="text-sm font-medium">
             Auto-resolve timeout (hours)
           </label>
           <input
+            id="risk-resolve-hours"
             type="number"
             inputMode="decimal"
             min={1}
@@ -105,13 +100,12 @@ export function RiskThresholdsSection({ companyId }: { companyId: string }) {
             onChange={(e) => setResolveHours(e.target.value)}
             className="w-28 rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
           />
-          <p className="text-xs text-muted-foreground">
-            Low-severity alerts are auto-resolved after this many hours.
-          </p>
+          <p className="text-xs text-muted-foreground">Low-severity alerts are auto-resolved after this many hours.</p>
         </div>
 
         <div className="flex items-center gap-2 pt-1">
           <button
+            type="button"
             className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-60"
             onClick={() => saveMutation.mutate()}
             disabled={saveMutation.isPending}

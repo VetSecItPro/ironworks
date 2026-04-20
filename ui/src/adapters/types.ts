@@ -1,8 +1,8 @@
-import type { ComponentType } from "react";
 import type { CreateConfigValues } from "@ironworksai/adapter-utils";
+import type { ComponentType } from "react";
 
 // Re-export shared types so local consumers don't need to change imports
-export type { TranscriptEntry, StdoutLineParser, CreateConfigValues } from "@ironworksai/adapter-utils";
+export type { CreateConfigValues, StdoutLineParser, TranscriptEntry } from "@ironworksai/adapter-utils";
 
 export interface AdapterConfigFieldsProps {
   mode: "create" | "edit";

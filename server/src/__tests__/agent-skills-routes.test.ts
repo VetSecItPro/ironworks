@@ -1,8 +1,8 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { agentRoutes } from "../routes/agents.js";
 import { errorHandler } from "../middleware/index.js";
+import { agentRoutes } from "../routes/agents.js";
 
 const mockAgentService = vi.hoisted(() => ({
   getById: vi.fn(),
@@ -57,33 +57,24 @@ const mockAdapter = vi.hoisted(() => ({
   syncSkills: vi.fn(),
 }));
 
-vi.mock("../services/index.js", () => ({
-  agentService: () => mockAgentService,
-  agentInstructionsService: () => mockAgentInstructionsService,
-  accessService: () => mockAccessService,
-  approvalService: () => mockApprovalService,
-  companySkillService: () => mockCompanySkillService,
-  budgetService: () => mockBudgetService,
-  heartbeatService: () => mockHeartbeatService,
-  issueApprovalService: () => mockIssueApprovalService,
-  issueService: () => ({}),
-  logActivity: mockLogActivity,
-  companyPortabilityService: () => ({}),
-  instanceSettingsService: () => ({}),
-  workProductService: () => ({}),
-  executionWorkspaceService: () => ({}),
-  sidebarBadgeService: () => ({}),
-  dashboardService: () => ({}),
-  goalService: () => ({}),
-  financeService: () => ({}),
-  costService: () => ({}),
-  companyService: () => ({}),
-  routineService: () => ({}),
-  playbookService: () => ({ seedDefaults: vi.fn() }),
-  secretService: () => mockSecretService,
-  syncInstructionsBundleConfigFromFilePath: vi.fn((_agent, config) => config),
-  workspaceOperationService: () => mockWorkspaceOperationService,
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    agentService: () => mockAgentService,
+    agentInstructionsService: () => mockAgentInstructionsService,
+    accessService: () => mockAccessService,
+    approvalService: () => mockApprovalService,
+    companySkillService: () => mockCompanySkillService,
+    budgetService: () => mockBudgetService,
+    heartbeatService: () => mockHeartbeatService,
+    issueApprovalService: () => mockIssueApprovalService,
+    logActivity: mockLogActivity,
+    playbookService: () => ({ seedDefaults: vi.fn() }),
+    secretService: () => mockSecretService,
+    syncInstructionsBundleConfigFromFilePath: vi.fn((_agent, config) => config),
+    workspaceOperationService: () => mockWorkspaceOperationService,
+  });
+});
 
 vi.mock("../adapters/index.js", () => ({
   findServerAdapter: vi.fn(() => mockAdapter),
@@ -109,6 +100,7 @@ function createApp(db: Record<string, unknown> = createDb()) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = {
       type: "board",
       userId: "local-board",
@@ -118,6 +110,7 @@ function createApp(db: Record<string, unknown> = createDb()) {
     };
     next();
   });
+  // biome-ignore lint/suspicious/noExplicitAny: test-only type cast to satisfy service/function signature in unit test context
   app.use("/api", agentRoutes(db as any));
   app.use(errorHandler);
   return app;
@@ -160,11 +153,7 @@ describe("agent skill routes", () => {
     ]);
     mockCompanySkillService.resolveRequestedSkillKeys.mockImplementation(
       async (_companyId: string, requested: string[]) =>
-        requested.map((value) =>
-          value === "ironworks"
-            ? "ironworksai/ironworks/ironworks"
-            : value,
-        ),
+        requested.map((value) => (value === "ironworks" ? "ironworksai/ironworks/ironworks" : value)),
     );
     mockAdapter.listSkills.mockResolvedValue({
       adapterType: "claude_local",
@@ -226,8 +215,9 @@ describe("agent skill routes", () => {
   it("skips runtime materialization when listing Claude skills", async () => {
     mockAgentService.getById.mockResolvedValue(makeAgent("claude_local"));
 
-    const res = await request(createApp())
-      .get("/api/agents/11111111-1111-4111-8111-111111111111/skills?companyId=company-1");
+    const res = await request(createApp()).get(
+      "/api/agents/11111111-1111-4111-8111-111111111111/skills?companyId=company-1",
+    );
 
     expect(res.status, JSON.stringify(res.body)).toBe(200);
     expect(mockCompanySkillService.listRuntimeSkillEntries).toHaveBeenCalledWith("company-1", {
@@ -254,8 +244,9 @@ describe("agent skill routes", () => {
       warnings: [],
     });
 
-    const res = await request(createApp())
-      .get("/api/agents/11111111-1111-4111-8111-111111111111/skills?companyId=company-1");
+    const res = await request(createApp()).get(
+      "/api/agents/11111111-1111-4111-8111-111111111111/skills?companyId=company-1",
+    );
 
     expect(res.status, JSON.stringify(res.body)).toBe(200);
     expect(mockCompanySkillService.listRuntimeSkillEntries).toHaveBeenCalledWith("company-1", {
@@ -363,14 +354,12 @@ describe("agent skill routes", () => {
   });
 
   it("materializes the bundled CEO instruction set for default CEO agents", async () => {
-    const res = await request(createApp())
-      .post("/api/companies/company-1/agents")
-      .send({
-        name: "CEO",
-        role: "ceo",
-        adapterType: "claude_local",
-        adapterConfig: {},
-      });
+    const res = await request(createApp()).post("/api/companies/company-1/agents").send({
+      name: "CEO",
+      role: "ceo",
+      adapterType: "claude_local",
+      adapterConfig: {},
+    });
 
     expect(res.status, JSON.stringify(res.body)).toBe(201);
     expect(mockAgentInstructionsService.materializeManagedBundle).toHaveBeenCalledWith(
@@ -390,14 +379,12 @@ describe("agent skill routes", () => {
   });
 
   it("materializes the bundled default instruction set for non-CEO agents with no prompt template", async () => {
-    const res = await request(createApp())
-      .post("/api/companies/company-1/agents")
-      .send({
-        name: "Engineer",
-        role: "engineer",
-        adapterType: "claude_local",
-        adapterConfig: {},
-      });
+    const res = await request(createApp()).post("/api/companies/company-1/agents").send({
+      name: "Engineer",
+      role: "engineer",
+      adapterType: "claude_local",
+      adapterConfig: {},
+    });
 
     expect(res.status, JSON.stringify(res.body)).toBe(201);
     expect(mockAgentInstructionsService.materializeManagedBundle).toHaveBeenCalledWith(

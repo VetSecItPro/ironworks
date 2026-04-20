@@ -1,40 +1,38 @@
+import type { Issue } from "@ironworksai/shared";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "@/lib/router";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { goalsApi } from "../api/goals";
+import { useNavigate, useParams } from "@/lib/router";
 import { activityApi } from "../api/activity";
 import { agentsApi } from "../api/agents";
+import { assetsApi } from "../api/assets";
+import { goalCheckInsApi } from "../api/goalCheckIns";
+import { goalKeyResultsApi } from "../api/goalKeyResults";
+import { goalProgressApi } from "../api/goalProgress";
+import { goalSnapshotsApi } from "../api/goalSnapshots";
+import { goalsApi } from "../api/goals";
 import { issuesApi } from "../api/issues";
 import { projectsApi } from "../api/projects";
-import { assetsApi } from "../api/assets";
-import { goalProgressApi } from "../api/goalProgress";
-import { goalKeyResultsApi } from "../api/goalKeyResults";
-import { goalCheckInsApi } from "../api/goalCheckIns";
-import { goalSnapshotsApi } from "../api/goalSnapshots";
-import { usePanel } from "../context/PanelContext";
+import { GoalProperties } from "../components/GoalProperties";
+import { AgentContributionSection } from "../components/goal-detail/AgentContributionSection";
+import { CelebrationOverlay } from "../components/goal-detail/CelebrationOverlay";
+import { GoalBurndownChart } from "../components/goal-detail/GoalBurndownChart";
+import { GoalBurnupChart } from "../components/goal-detail/GoalBurnupChart";
+import { GoalDetailHeader } from "../components/goal-detail/GoalDetailHeader";
+import { HealthTrendChart } from "../components/goal-detail/GoalHealthBadge";
+import { GoalProgressBar } from "../components/goal-detail/GoalProgressBar";
+import { calculateGoalRisk } from "../components/goal-detail/GoalRiskAssessment";
+import { GoalTabsSection } from "../components/goal-detail/GoalTabsSection";
+import { MilestonesSection, useMilestones } from "../components/goal-detail/MilestonesSection";
+import { RaciDisplay } from "../components/goal-detail/RaciDisplay";
+import { evaluateSmart } from "../components/goal-detail/SmartQualityIndicator";
+import { PageSkeleton } from "../components/PageSkeleton";
+import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { useCompany } from "../context/CompanyContext";
 import { useDialog } from "../context/DialogContext";
-import { useBreadcrumbs } from "../context/BreadcrumbContext";
-import { queryKeys } from "../lib/queryKeys";
-import { GoalProperties } from "../components/GoalProperties";
-import { PageSkeleton } from "../components/PageSkeleton";
-import { cn } from "../lib/utils";
-import { useNavigate } from "@/lib/router";
+import { usePanel } from "../context/PanelContext";
 import { useToast } from "../context/ToastContext";
-import type { Issue } from "@ironworksai/shared";
-
-import { evaluateSmart } from "../components/goal-detail/SmartQualityIndicator";
-import { CelebrationOverlay } from "../components/goal-detail/CelebrationOverlay";
-import { GoalBurnupChart } from "../components/goal-detail/GoalBurnupChart";
-import { GoalBurndownChart } from "../components/goal-detail/GoalBurndownChart";
-import { HealthTrendChart } from "../components/goal-detail/GoalHealthBadge";
-import { calculateGoalRisk } from "../components/goal-detail/GoalRiskAssessment";
-import { RaciDisplay } from "../components/goal-detail/RaciDisplay";
-import { useMilestones, MilestonesSection } from "../components/goal-detail/MilestonesSection";
-import { AgentContributionSection } from "../components/goal-detail/AgentContributionSection";
-import { GoalProgressBar } from "../components/goal-detail/GoalProgressBar";
-import { GoalTabsSection } from "../components/goal-detail/GoalTabsSection";
-import { GoalDetailHeader } from "../components/goal-detail/GoalDetailHeader";
+import { queryKeys } from "../lib/queryKeys";
+import { cn } from "../lib/utils";
 
 export function GoalDetail() {
   const { goalId } = useParams<{ goalId: string }>();
@@ -46,10 +44,18 @@ export function GoalDetail() {
   const navigate = useNavigate();
   const { pushToast } = useToast();
   const [twoPane, setTwoPane] = useState(() => {
-    try { return localStorage.getItem("ironworks:goal-two-pane") === "true"; } catch { return false; }
+    try {
+      return localStorage.getItem("ironworks:goal-two-pane") === "true";
+    } catch {
+      return false;
+    }
   });
 
-  const { data: goal, isLoading, error } = useQuery({
+  const {
+    data: goal,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: queryKeys.goals.detail(goalId!),
     queryFn: () => goalsApi.get(goalId!),
     enabled: !!goalId,
@@ -87,10 +93,13 @@ export function GoalDetail() {
     enabled: !!resolvedCompanyId,
   });
 
-  const goalActivity = (allActivity ?? []).filter((e) =>
-    (e.entityType === "issue" && goalIssueIds.has(e.entityId)) ||
-    (e.entityType === "goal" && e.entityId === goalId)
-  ).slice(0, 30);
+  const goalActivity = (allActivity ?? [])
+    .filter(
+      (e) =>
+        (e.entityType === "issue" && goalIssueIds.has(e.entityId)) ||
+        (e.entityType === "goal" && e.entityId === goalId),
+    )
+    .slice(0, 30);
 
   const agentMap = useMemo(() => {
     const map = new Map<string, import("@ironworksai/shared").Agent>();
@@ -120,18 +129,21 @@ export function GoalDetail() {
   const createKeyResult = useMutation({
     mutationFn: (data: { description: string; targetValue?: string; unit?: string }) =>
       goalKeyResultsApi.create(resolvedCompanyId!, goalId!, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.goals.keyResults(resolvedCompanyId!, goalId!) }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.goals.keyResults(resolvedCompanyId!, goalId!) }),
   });
 
   const updateKeyResult = useMutation({
     mutationFn: ({ krId, data }: { krId: string; data: { currentValue?: string; description?: string } }) =>
       goalKeyResultsApi.update(resolvedCompanyId!, goalId!, krId, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.goals.keyResults(resolvedCompanyId!, goalId!) }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.goals.keyResults(resolvedCompanyId!, goalId!) }),
   });
 
   const deleteKeyResult = useMutation({
     mutationFn: (krId: string) => goalKeyResultsApi.remove(resolvedCompanyId!, goalId!, krId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.goals.keyResults(resolvedCompanyId!, goalId!) }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.goals.keyResults(resolvedCompanyId!, goalId!) }),
   });
 
   const [showKrForm, setShowKrForm] = useState(false);
@@ -215,11 +227,11 @@ export function GoalDetail() {
     [goalIssues, goal?.targetDate],
   );
   const smartCriteria = useMemo(
-    () => goal ? evaluateSmart(goal, (keyResults ?? []).length) : null,
+    () => (goal ? evaluateSmart(goal, (keyResults ?? []).length) : null),
     [goal, keyResults],
   );
   const parentGoal = useMemo(
-    () => goal?.parentId ? (allGoals ?? []).find((g) => g.id === goal.parentId) ?? null : null,
+    () => (goal?.parentId ? ((allGoals ?? []).find((g) => g.id === goal.parentId) ?? null) : null),
     [goal?.parentId, allGoals],
   );
 
@@ -245,14 +257,14 @@ export function GoalDetail() {
   });
 
   useEffect(() => {
-    setBreadcrumbs([
-      { label: "Goals", href: "/goals" },
-      { label: goal?.title ?? goalId ?? "Goal" },
-    ]);
+    setBreadcrumbs([{ label: "Goals", href: "/goals" }, { label: goal?.title ?? goalId ?? "Goal" }]);
   }, [setBreadcrumbs, goal, goalId]);
 
   useEffect(() => {
-    if (twoPane) { closePanel(); return; }
+    if (twoPane) {
+      closePanel();
+      return;
+    }
     if (goal) openPanel(<GoalProperties goal={goal} onUpdate={(data) => updateGoal.mutate(data)} />);
     return () => closePanel();
   }, [goal, twoPane]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -260,7 +272,9 @@ export function GoalDetail() {
   const toggleTwoPane = useCallback(() => {
     setTwoPane((prev) => {
       const next = !prev;
-      try { localStorage.setItem("ironworks:goal-two-pane", String(next)); } catch {}
+      try {
+        localStorage.setItem("ironworks:goal-two-pane", String(next));
+      } catch {}
       return next;
     });
   }, []);
@@ -293,11 +307,13 @@ export function GoalDetail() {
         <RaciDisplay goal={goal} agentMap={agentMap} parentGoal={parentGoal} />
 
         {goalIssues.length >= 5 && (
-          <GoalBurnupChart issues={goalIssues} targetDate={goal.targetDate ?? null} startDate={goal.startDate ?? null} />
+          <GoalBurnupChart
+            issues={goalIssues}
+            targetDate={goal.targetDate ?? null}
+            startDate={goal.startDate ?? null}
+          />
         )}
-        {goalIssues.length > 0 && (
-          <GoalBurndownChart issues={goalIssues} targetDate={goal.targetDate ?? null} />
-        )}
+        {goalIssues.length > 0 && <GoalBurndownChart issues={goalIssues} targetDate={goal.targetDate ?? null} />}
         {progress && <GoalProgressBar progress={progress} />}
 
         <GoalTabsSection
@@ -328,7 +344,14 @@ export function GoalDetail() {
           onCreateKr={() => {
             createKeyResult.mutate(
               { description: krDescription, targetValue: krTarget, unit: krUnit },
-              { onSuccess: () => { setKrDescription(""); setKrTarget("100"); setKrUnit("%"); setShowKrForm(false); } },
+              {
+                onSuccess: () => {
+                  setKrDescription("");
+                  setKrTarget("100");
+                  setKrUnit("%");
+                  setShowKrForm(false);
+                },
+              },
             );
           }}
           onUpdateKrValue={(krId, value) => updateKeyResult.mutate({ krId, data: { currentValue: value } })}

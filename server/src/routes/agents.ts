@@ -1,75 +1,5 @@
-import { Router, type Request } from "express";
 import { generateKeyPairSync, randomUUID } from "node:crypto";
 import path from "node:path";
-import type { Db } from "@ironworksai/db";
-import { ROLE_TEMPLATES, COMMON_AGENT_PREAMBLE } from "../onboarding-assets/role-templates.js";
-import { agents as agentsTable, agentMemoryEntries, companies, companySubscriptions, heartbeatRuns, issues as issuesTable } from "@ironworksai/db";
-import { and, desc, eq, inArray, not, sql } from "drizzle-orm";
-import {
-  agentSkillSyncSchema,
-  createAgentKeySchema,
-  createAgentHireSchema,
-  createAgentSchema,
-  deriveAgentUrlKey,
-  isUuidLike,
-  resetAgentSessionSchema,
-  testAdapterEnvironmentSchema,
-  type AgentSkillSnapshot,
-  type InstanceSchedulerHeartbeatAgent,
-  upsertAgentInstructionsFileSchema,
-  updateAgentInstructionsBundleSchema,
-  updateAgentPermissionsSchema,
-  updateAgentInstructionsPathSchema,
-  wakeAgentSchema,
-  updateAgentSchema,
-  CONTRACT_END_CONDITIONS,
-  DEPARTMENTS,
-  EMPLOYMENT_TYPES,
-  PLAN_AGENT_LIMITS,
-  TERMINATION_REASONS,
-  type ContractEndCondition,
-  type Department,
-  type EmploymentType,
-  type TerminationReason,
-} from "@ironworksai/shared";
-import {
-  readIronworksSkillSyncPreference,
-  writeIronworksSkillSyncPreference,
-} from "@ironworksai/adapter-utils/server-utils";
-import { validate } from "../middleware/validate.js";
-import { logger } from "../middleware/logger.js";
-import {
-  agentService,
-  agentInstructionsService,
-  accessService,
-  approvalService,
-  companySkillService,
-  budgetService,
-  heartbeatService,
-  issueApprovalService,
-  issueService,
-  logActivity,
-  secretService,
-  syncInstructionsBundleConfigFromFilePath,
-  workspaceOperationService,
-  createAgentWorkspace as createAgentWorkspaceService,
-  archiveAgentWorkspace as archiveAgentWorkspaceService,
-  createHiringRecord as createHiringRecordService,
-  createTerminationRecord as createTerminationRecordService,
-  createEmploymentHistoryEntry,
-  buildOnboardingPacket,
-} from "../services/index.js";
-import { conflict, forbidden, notFound, unprocessable } from "../errors.js";
-import { onboardingMetrics } from "../services/performance-score.js";
-import { assertBoard, assertCanWrite, assertCompanyAccess, assertInstanceAdmin, getActorInfo } from "./authz.js";
-import { findServerAdapter, listAdapterModels } from "../adapters/index.js";
-import { redactEventPayload } from "../redaction.js";
-import { redactCurrentUserValue } from "../log-redaction.js";
-import { renderOrgChartSvg, renderOrgChartPng, type OrgNode, type OrgChartStyle, ORG_CHART_STYLES } from "./org-chart-svg.js";
-import { instanceSettingsService } from "../services/instance-settings.js";
-import { ensureLibraryAgentFolder } from "../services/playbook-execution.js";
-import { autoJoinAgentChannels, findCompanyChannel, postMessage as postChannelMessage } from "../services/channels.js";
-import { listVersions as listPromptVersions, rollback as rollbackPromptVersion, snapshotPromptVersion } from "../services/prompt-versions.js";
 import { runClaudeLogin } from "@ironworksai/adapter-claude-local/server";
 import {
   DEFAULT_CODEX_LOCAL_BYPASS_APPROVALS_AND_SANDBOX,
@@ -79,9 +9,94 @@ import { DEFAULT_CURSOR_LOCAL_MODEL } from "@ironworksai/adapter-cursor-local";
 import { DEFAULT_GEMINI_LOCAL_MODEL } from "@ironworksai/adapter-gemini-local";
 import { ensureOpenCodeModelConfiguredAndAvailable } from "@ironworksai/adapter-opencode-local/server";
 import {
+  readIronworksSkillSyncPreference,
+  writeIronworksSkillSyncPreference,
+} from "@ironworksai/adapter-utils/server-utils";
+import type { Db } from "@ironworksai/db";
+import {
+  agentMemoryEntries,
+  agents as agentsTable,
+  companies,
+  companySubscriptions,
+  heartbeatRuns,
+  issues as issuesTable,
+} from "@ironworksai/db";
+import {
+  type AgentSkillSnapshot,
+  agentSkillSyncSchema,
+  createAgentHireSchema,
+  createAgentKeySchema,
+  createAgentSchema,
+  DEPARTMENTS,
+  type Department,
+  deriveAgentUrlKey,
+  EMPLOYMENT_TYPES,
+  type EmploymentType,
+  type InstanceSchedulerHeartbeatAgent,
+  isUuidLike,
+  PLAN_AGENT_LIMITS,
+  resetAgentSessionSchema,
+  TERMINATION_REASONS,
+  type TerminationReason,
+  testAdapterEnvironmentSchema,
+  updateAgentInstructionsBundleSchema,
+  updateAgentInstructionsPathSchema,
+  updateAgentPermissionsSchema,
+  updateAgentSchema,
+  upsertAgentInstructionsFileSchema,
+  wakeAgentSchema,
+} from "@ironworksai/shared";
+import { and, desc, eq, inArray, not, sql } from "drizzle-orm";
+import { type Request, Router } from "express";
+import { findServerAdapter, listAdapterModels } from "../adapters/index.js";
+import { conflict, forbidden, notFound, unprocessable } from "../errors.js";
+import { redactCurrentUserValue } from "../log-redaction.js";
+import { logger } from "../middleware/logger.js";
+import { validate } from "../middleware/validate.js";
+import { COMMON_AGENT_PREAMBLE, ROLE_TEMPLATES } from "../onboarding-assets/role-templates.js";
+import { redactEventPayload } from "../redaction.js";
+import { autoJoinAgentChannels, findCompanyChannel, postMessage as postChannelMessage } from "../services/channels.js";
+import {
   loadDefaultAgentInstructionsBundle,
   resolveDefaultAgentInstructionsBundleRole,
 } from "../services/default-agent-instructions.js";
+import {
+  accessService,
+  agentInstructionsService,
+  agentService,
+  approvalService,
+  archiveAgentWorkspace as archiveAgentWorkspaceService,
+  budgetService,
+  buildOnboardingPacket,
+  companySkillService,
+  createAgentWorkspace as createAgentWorkspaceService,
+  createEmploymentHistoryEntry,
+  createHiringRecord as createHiringRecordService,
+  createTerminationRecord as createTerminationRecordService,
+  heartbeatService,
+  issueApprovalService,
+  issueService,
+  logActivity,
+  secretService,
+  syncInstructionsBundleConfigFromFilePath,
+  workspaceOperationService,
+} from "../services/index.js";
+import { instanceSettingsService } from "../services/instance-settings.js";
+import { onboardingMetrics } from "../services/performance-score.js";
+import { ensureLibraryAgentFolder } from "../services/playbook-execution.js";
+import {
+  listVersions as listPromptVersions,
+  rollback as rollbackPromptVersion,
+  snapshotPromptVersion,
+} from "../services/prompt-versions.js";
+import { assertBoard, assertCanWrite, assertCompanyAccess, assertInstanceAdmin, getActorInfo } from "./authz.js";
+import {
+  ORG_CHART_STYLES,
+  type OrgChartStyle,
+  type OrgNode,
+  renderOrgChartPng,
+  renderOrgChartSvg,
+} from "./org-chart-svg.js";
 
 // ---------------------------------------------------------------------------
 // Auto-budget helpers (Item 4)
@@ -95,9 +110,9 @@ import {
 function defaultBudgetCentsForRole(role: string): number {
   const normalized = role.toLowerCase();
   if (/\b(ceo|cto|cxo|coo|cfo|chief)\b/.test(normalized)) return 10000; // $100
-  if (/\b(manager|director)\b/.test(normalized)) return 5000;            // $50
+  if (/\b(manager|director)\b/.test(normalized)) return 5000; // $50
   if (/\b(engineer|designer|marketer|developer|dev)\b/.test(normalized)) return 3000; // $30
-  return 2000;                                                             // $20
+  return 2000; // $20
 }
 
 export function agentRoutes(db: Db) {
@@ -151,9 +166,7 @@ export function agentRoutes(db: Db) {
 
   async function buildAgentAccessState(agent: NonNullable<Awaited<ReturnType<typeof svc.getById>>>) {
     const membership = await access.getMembership(agent.companyId, "agent", agent.id);
-    const grants = membership
-      ? await access.listPrincipalGrants(agent.companyId, "agent", agent.id)
-      : [];
+    const grants = membership ? await access.listPrincipalGrants(agent.companyId, "agent", agent.id) : [];
     const hasExplicitTaskAssignGrant = grants.some((grant) => grant.permissionKey === "tasks:assign");
 
     if (agent.role === "ceo") {
@@ -207,20 +220,9 @@ export function agentRoutes(db: Db) {
     };
   }
 
-  async function applyDefaultAgentTaskAssignGrant(
-    companyId: string,
-    agentId: string,
-    grantedByUserId: string | null,
-  ) {
+  async function applyDefaultAgentTaskAssignGrant(companyId: string, agentId: string, grantedByUserId: string | null) {
     await access.ensureMembership(companyId, "agent", agentId, "member", "active");
-    await access.setPrincipalPermission(
-      companyId,
-      "agent",
-      agentId,
-      "tasks:assign",
-      true,
-      grantedByUserId,
-    );
+    await access.setPrincipalPermission(companyId, "agent", agentId, "tasks:assign", true, grantedByUserId);
   }
 
   async function assertCanCreateAgentsForCompany(req: Request, companyId: string) {
@@ -274,12 +276,7 @@ export function agentRoutes(db: Db) {
 
     if (actorAgent.id === targetAgent.id) return;
     if (actorAgent.role === "ceo") return;
-    const allowedByGrant = await access.hasPermission(
-      targetAgent.companyId,
-      "agent",
-      actorAgent.id,
-      "agents:create",
-    );
+    const allowedByGrant = await access.hasPermission(targetAgent.companyId, "agent", actorAgent.id, "agents:create");
     if (allowedByGrant || canCreateAgents(actorAgent)) return;
     throw forbidden("Only CEO or agent creators can modify other agents");
   }
@@ -298,9 +295,7 @@ export function agentRoutes(db: Db) {
   async function resolveCompanyIdForAgentReference(req: Request): Promise<string | null> {
     const companyIdQuery = req.query.companyId;
     const requestedCompanyId =
-      typeof companyIdQuery === "string" && companyIdQuery.trim().length > 0
-        ? companyIdQuery.trim()
-        : null;
+      typeof companyIdQuery === "string" && companyIdQuery.trim().length > 0 ? companyIdQuery.trim() : null;
     if (requestedCompanyId) {
       assertCompanyAccess(req, requestedCompanyId);
       return requestedCompanyId;
@@ -330,10 +325,7 @@ export function agentRoutes(db: Db) {
     return resolved.agent.id;
   }
 
-  function parseSourceIssueIds(input: {
-    sourceIssueId?: string | null;
-    sourceIssueIds?: string[];
-  }): string[] {
+  function parseSourceIssueIds(input: { sourceIssueId?: string | null; sourceIssueIds?: string[] }): string[] {
     const values: string[] = [];
     if (Array.isArray(input.sourceIssueIds)) values.push(...input.sourceIssueIds);
     if (typeof input.sourceIssueId === "string" && input.sourceIssueId.length > 0) {
@@ -475,9 +467,7 @@ export function agentRoutes(db: Db) {
 
     const cwd = asNonEmptyString(adapterConfig.cwd);
     if (!cwd) {
-      throw unprocessable(
-        "Relative instructions path requires adapterConfig.cwd to be set to an absolute path",
-      );
+      throw unprocessable("Relative instructions path requires adapterConfig.cwd to be set to an absolute path");
     }
     if (!path.isAbsolute(cwd)) {
       throw unprocessable("adapterConfig.cwd must be an absolute path to resolve relative instructions path");
@@ -485,40 +475,40 @@ export function agentRoutes(db: Db) {
     return path.resolve(cwd, trimmed);
   }
 
-  async function materializeDefaultInstructionsBundleForNewAgent<T extends {
-    id: string;
-    companyId: string;
-    name: string;
-    role: string;
-    adapterType: string;
-    adapterConfig: unknown;
-  }>(agent: T): Promise<T> {
+  async function materializeDefaultInstructionsBundleForNewAgent<
+    T extends {
+      id: string;
+      companyId: string;
+      name: string;
+      role: string;
+      adapterType: string;
+      adapterConfig: unknown;
+    },
+  >(agent: T): Promise<T> {
     if (!DEFAULT_MANAGED_INSTRUCTIONS_ADAPTER_TYPES.has(agent.adapterType)) {
       return agent;
     }
 
     const adapterConfig = asRecord(agent.adapterConfig) ?? {};
     const hasExplicitInstructionsBundle =
-      Boolean(asNonEmptyString(adapterConfig.instructionsBundleMode))
-      || Boolean(asNonEmptyString(adapterConfig.instructionsRootPath))
-      || Boolean(asNonEmptyString(adapterConfig.instructionsEntryFile))
-      || Boolean(asNonEmptyString(adapterConfig.instructionsFilePath))
-      || Boolean(asNonEmptyString(adapterConfig.agentsMdPath));
+      Boolean(asNonEmptyString(adapterConfig.instructionsBundleMode)) ||
+      Boolean(asNonEmptyString(adapterConfig.instructionsRootPath)) ||
+      Boolean(asNonEmptyString(adapterConfig.instructionsEntryFile)) ||
+      Boolean(asNonEmptyString(adapterConfig.instructionsFilePath)) ||
+      Boolean(asNonEmptyString(adapterConfig.agentsMdPath));
     if (hasExplicitInstructionsBundle) {
       return agent;
     }
 
-    const promptTemplate = typeof adapterConfig.promptTemplate === "string"
-      ? adapterConfig.promptTemplate
-      : "";
-    const files = promptTemplate.trim().length === 0
-      ? await loadDefaultAgentInstructionsBundle(resolveDefaultAgentInstructionsBundleRole(agent.role))
-      : { "AGENTS.md": promptTemplate };
-    const materialized = await instructions.materializeManagedBundle(
-      agent,
-      files,
-      { entryFile: "AGENTS.md", replaceExisting: false },
-    );
+    const promptTemplate = typeof adapterConfig.promptTemplate === "string" ? adapterConfig.promptTemplate : "";
+    const files =
+      promptTemplate.trim().length === 0
+        ? await loadDefaultAgentInstructionsBundle(resolveDefaultAgentInstructionsBundleRole(agent.role))
+        : { "AGENTS.md": promptTemplate };
+    const materialized = await instructions.materializeManagedBundle(agent, files, {
+      entryFile: "AGENTS.md",
+      replaceExisting: false,
+    });
     const nextAdapterConfig = { ...materialized.adapterConfig };
     delete nextAdapterConfig.promptTemplate;
 
@@ -560,10 +550,7 @@ export function agentRoutes(db: Db) {
     return details;
   }
 
-  function buildUnsupportedSkillSnapshot(
-    adapterType: string,
-    desiredSkills: string[] = [],
-  ): AgentSkillSnapshot {
+  function buildUnsupportedSkillSnapshot(adapterType: string, desiredSkills: string[] = []): AgentSkillSnapshot {
     return {
       adapterType,
       supported: false,
@@ -578,11 +565,7 @@ export function agentRoutes(db: Db) {
     return adapterType !== "claude_local";
   }
 
-  async function buildRuntimeSkillConfig(
-    companyId: string,
-    adapterType: string,
-    config: Record<string, unknown>,
-  ) {
+  async function buildRuntimeSkillConfig(companyId: string, adapterType: string, config: Record<string, unknown>) {
     const runtimeSkillEntries = await companySkills.listRuntimeSkillEntries(companyId, {
       materializeMissing: shouldMaterializeRuntimeSkillsForAdapter(adapterType),
     });
@@ -606,16 +589,11 @@ export function agentRoutes(db: Db) {
       };
     }
 
-    const resolvedRequestedSkills = await companySkills.resolveRequestedSkillKeys(
-      companyId,
-      requestedDesiredSkills,
-    );
+    const resolvedRequestedSkills = await companySkills.resolveRequestedSkillKeys(companyId, requestedDesiredSkills);
     const runtimeSkillEntries = await companySkills.listRuntimeSkillEntries(companyId, {
       materializeMissing: shouldMaterializeRuntimeSkillsForAdapter(adapterType),
     });
-    const requiredSkills = runtimeSkillEntries
-      .filter((entry) => entry.required)
-      .map((entry) => entry.key);
+    const requiredSkills = runtimeSkillEntries.filter((entry) => entry.required).map((entry) => entry.key);
     const desiredSkills = Array.from(new Set([...requiredSkills, ...resolvedRequestedSkills]));
 
     return {
@@ -670,13 +648,11 @@ export function agentRoutes(db: Db) {
       metadata:
         typeof record.metadata === "object" && record.metadata !== null
           ? redactEventPayload(record.metadata as Record<string, unknown>)
-          : record.metadata ?? null,
+          : (record.metadata ?? null),
     };
   }
 
-  function redactConfigRevision(
-    revision: Record<string, unknown> & { beforeConfig: unknown; afterConfig: unknown },
-  ) {
+  function redactConfigRevision(revision: Record<string, unknown> & { beforeConfig: unknown; afterConfig: unknown }) {
     return {
       ...revision,
       beforeConfig: redactRevisionSnapshot(revision.beforeConfig),
@@ -728,8 +704,7 @@ export function agentRoutes(db: Db) {
         return;
       }
 
-      const inputAdapterConfig =
-        (req.body?.adapterConfig ?? {}) as Record<string, unknown>;
+      const inputAdapterConfig = (req.body?.adapterConfig ?? {}) as Record<string, unknown>;
       const normalizedAdapterConfig = await secretsSvc.normalizeAdapterConfigForPersistence(
         companyId,
         inputAdapterConfig,
@@ -761,14 +736,17 @@ export function agentRoutes(db: Db) {
 
     const adapter = findServerAdapter(agent.adapterType);
     if (!adapter?.listSkills) {
-      const preference = readIronworksSkillSyncPreference(
-        agent.adapterConfig as Record<string, unknown>,
-      );
+      const preference = readIronworksSkillSyncPreference(agent.adapterConfig as Record<string, unknown>);
       const runtimeSkillEntries = await companySkills.listRuntimeSkillEntries(agent.companyId, {
         materializeMissing: false,
       });
       const requiredSkills = runtimeSkillEntries.filter((entry) => entry.required).map((entry) => entry.key);
-      res.json(buildUnsupportedSkillSnapshot(agent.adapterType, Array.from(new Set([...requiredSkills, ...preference.desiredSkills]))));
+      res.json(
+        buildUnsupportedSkillSnapshot(
+          agent.adapterType,
+          Array.from(new Set([...requiredSkills, ...preference.desiredSkills])),
+        ),
+      );
       return;
     }
 
@@ -776,11 +754,7 @@ export function agentRoutes(db: Db) {
       agent.companyId,
       agent.adapterConfig,
     );
-    const runtimeSkillConfig = await buildRuntimeSkillConfig(
-      agent.companyId,
-      agent.adapterType,
-      runtimeConfig,
-    );
+    const runtimeSkillConfig = await buildRuntimeSkillConfig(agent.companyId, agent.adapterType, runtimeConfig);
     const snapshot = await adapter.listSkills({
       agentId: agent.id,
       companyId: agent.companyId,
@@ -790,112 +764,114 @@ export function agentRoutes(db: Db) {
     res.json(snapshot);
   });
 
-  router.post(
-    "/agents/:id/skills/sync",
-    validate(agentSkillSyncSchema),
-    async (req, res) => {
-      const id = req.params.id as string;
-      const agent = await svc.getById(id);
-      if (!agent) {
-        res.status(404).json({ error: "Agent not found" });
-        return;
-      }
-      await assertCanUpdateAgent(req, agent);
+  router.post("/agents/:id/skills/sync", validate(agentSkillSyncSchema), async (req, res) => {
+    const id = req.params.id as string;
+    const agent = await svc.getById(id);
+    if (!agent) {
+      res.status(404).json({ error: "Agent not found" });
+      return;
+    }
+    await assertCanUpdateAgent(req, agent);
 
-      const requestedSkills = Array.from(
-        new Set(
-          (req.body.desiredSkills as string[])
-            .map((value) => value.trim())
-            .filter(Boolean),
-        ),
-      );
-      const {
+    const requestedSkills = Array.from(
+      new Set((req.body.desiredSkills as string[]).map((value) => value.trim()).filter(Boolean)),
+    );
+    const {
+      adapterConfig: nextAdapterConfig,
+      desiredSkills,
+      runtimeSkillEntries,
+    } = await resolveDesiredSkillAssignment(
+      agent.companyId,
+      agent.adapterType,
+      agent.adapterConfig as Record<string, unknown>,
+      requestedSkills,
+    );
+    if (!desiredSkills || !runtimeSkillEntries) {
+      throw unprocessable("Skill sync requires desiredSkills.");
+    }
+    const actor = getActorInfo(req);
+    const updated = await svc.update(
+      agent.id,
+      {
         adapterConfig: nextAdapterConfig,
-        desiredSkills,
-        runtimeSkillEntries,
-      } = await resolveDesiredSkillAssignment(
-        agent.companyId,
-        agent.adapterType,
-        agent.adapterConfig as Record<string, unknown>,
-        requestedSkills,
-      );
-      if (!desiredSkills || !runtimeSkillEntries) {
-        throw unprocessable("Skill sync requires desiredSkills.");
-      }
-      const actor = getActorInfo(req);
-      const updated = await svc.update(agent.id, {
-        adapterConfig: nextAdapterConfig,
-      }, {
+      },
+      {
         recordRevision: {
           createdByAgentId: actor.agentId,
           createdByUserId: actor.actorType === "user" ? actor.actorId : null,
           source: "skill-sync",
         },
-      });
-      if (!updated) {
-        res.status(404).json({ error: "Agent not found" });
-        return;
-      }
+      },
+    );
+    if (!updated) {
+      res.status(404).json({ error: "Agent not found" });
+      return;
+    }
 
-      const adapter = findServerAdapter(updated.adapterType);
-      const { config: runtimeConfig } = await secretsSvc.resolveAdapterConfigForRuntime(
-        updated.companyId,
-        updated.adapterConfig,
-      );
-      const runtimeSkillConfig = {
-        ...runtimeConfig,
-        ironworksRuntimeSkills: runtimeSkillEntries,
-      };
-      const snapshot = adapter?.syncSkills
-        ? await adapter.syncSkills({
+    const adapter = findServerAdapter(updated.adapterType);
+    const { config: runtimeConfig } = await secretsSvc.resolveAdapterConfigForRuntime(
+      updated.companyId,
+      updated.adapterConfig,
+    );
+    const runtimeSkillConfig = {
+      ...runtimeConfig,
+      ironworksRuntimeSkills: runtimeSkillEntries,
+    };
+    const snapshot = adapter?.syncSkills
+      ? await adapter.syncSkills(
+          {
             agentId: updated.id,
             companyId: updated.companyId,
             adapterType: updated.adapterType,
             config: runtimeSkillConfig,
-          }, desiredSkills)
-        : adapter?.listSkills
-          ? await adapter.listSkills({
-              agentId: updated.id,
-              companyId: updated.companyId,
-              adapterType: updated.adapterType,
-              config: runtimeSkillConfig,
-            })
-          : buildUnsupportedSkillSnapshot(updated.adapterType, desiredSkills);
-
-      await logActivity(db, {
-        companyId: updated.companyId,
-        actorType: actor.actorType,
-        actorId: actor.actorId,
-        action: "agent.skills_synced",
-        entityType: "agent",
-        entityId: updated.id,
-        agentId: actor.agentId,
-        runId: actor.runId,
-        details: {
-          adapterType: updated.adapterType,
+          },
           desiredSkills,
-          mode: snapshot.mode,
-          supported: snapshot.supported,
-          entryCount: snapshot.entries.length,
-          warningCount: snapshot.warnings.length,
-        },
-      });
+        )
+      : adapter?.listSkills
+        ? await adapter.listSkills({
+            agentId: updated.id,
+            companyId: updated.companyId,
+            adapterType: updated.adapterType,
+            config: runtimeSkillConfig,
+          })
+        : buildUnsupportedSkillSnapshot(updated.adapterType, desiredSkills);
 
-      res.json(snapshot);
-    },
-  );
+    await logActivity(db, {
+      companyId: updated.companyId,
+      actorType: actor.actorType,
+      actorId: actor.actorId,
+      action: "agent.skills_synced",
+      entityType: "agent",
+      entityId: updated.id,
+      agentId: actor.agentId,
+      runId: actor.runId,
+      details: {
+        adapterType: updated.adapterType,
+        desiredSkills,
+        mode: snapshot.mode,
+        supported: snapshot.supported,
+        entryCount: snapshot.entries.length,
+        warningCount: snapshot.warnings.length,
+      },
+    });
+
+    res.json(snapshot);
+  });
 
   router.get("/companies/:companyId/agents", async (req, res) => {
     const companyId = req.params.companyId as string;
     assertCompanyAccess(req, companyId);
 
     const includeTerminated = req.query.includeTerminated === "true";
-    const employmentType = typeof req.query.employmentType === "string" && EMPLOYMENT_TYPES.includes(req.query.employmentType as EmploymentType)
-      ? req.query.employmentType as string
-      : undefined;
-    const department = typeof req.query.department === "string" && DEPARTMENTS.includes(req.query.department as Department)
-      ? req.query.department as string
-      : undefined;
+    const employmentType =
+      typeof req.query.employmentType === "string" &&
+      EMPLOYMENT_TYPES.includes(req.query.employmentType as EmploymentType)
+        ? (req.query.employmentType as string)
+        : undefined;
+    const department =
+      typeof req.query.department === "string" && DEPARTMENTS.includes(req.query.department as Department)
+        ? (req.query.department as string)
+        : undefined;
 
     const result = await svc.list(companyId, { includeTerminated, employmentType, department });
     const canReadConfigs = await actorCanReadConfigurationsForCompany(req, companyId);
@@ -931,9 +907,7 @@ export function agentRoutes(db: Db) {
       .map((row) => {
         const policy = parseSchedulerHeartbeatPolicy(row.runtimeConfig);
         const statusEligible =
-          row.status !== "paused" &&
-          row.status !== "terminated" &&
-          row.status !== "pending_approval";
+          row.status !== "paused" && row.status !== "terminated" && row.status !== "pending_approval";
 
         return {
           id: row.id,
@@ -952,11 +926,7 @@ export function agentRoutes(db: Db) {
           lastHeartbeatAt: row.lastHeartbeatAt,
         };
       })
-      .filter((item) =>
-        item.status !== "paused" &&
-        item.status !== "terminated" &&
-        item.status !== "pending_approval",
-      )
+      .filter((item) => item.status !== "paused" && item.status !== "terminated" && item.status !== "pending_approval")
       .sort((left, right) => {
         if (left.schedulerActive !== right.schedulerActive) {
           return left.schedulerActive ? -1 : 1;
@@ -980,7 +950,9 @@ export function agentRoutes(db: Db) {
   router.get("/companies/:companyId/org.svg", async (req, res) => {
     const companyId = req.params.companyId as string;
     assertCompanyAccess(req, companyId);
-    const style = (ORG_CHART_STYLES.includes(req.query.style as OrgChartStyle) ? req.query.style : "warmth") as OrgChartStyle;
+    const style = (
+      ORG_CHART_STYLES.includes(req.query.style as OrgChartStyle) ? req.query.style : "warmth"
+    ) as OrgChartStyle;
     const tree = await svc.orgForCompany(companyId);
     const leanTree = tree.map((node) => toLeanOrgNode(node as Record<string, unknown>));
     const svg = renderOrgChartSvg(leanTree as unknown as OrgNode[], style);
@@ -992,7 +964,9 @@ export function agentRoutes(db: Db) {
   router.get("/companies/:companyId/org.png", async (req, res) => {
     const companyId = req.params.companyId as string;
     assertCompanyAccess(req, companyId);
-    const style = (ORG_CHART_STYLES.includes(req.query.style as OrgChartStyle) ? req.query.style : "warmth") as OrgChartStyle;
+    const style = (
+      ORG_CHART_STYLES.includes(req.query.style as OrgChartStyle) ? req.query.style : "warmth"
+    ) as OrgChartStyle;
     const tree = await svc.orgForCompany(companyId);
     const leanTree = tree.map((node) => toLeanOrgNode(node as Record<string, unknown>));
     const png = await renderOrgChartPng(leanTree as unknown as OrgNode[], style);
@@ -1231,9 +1205,7 @@ export function agentRoutes(db: Db) {
     assertCompanyAccess(req, agent.companyId);
 
     const taskKey =
-      typeof req.body.taskKey === "string" && req.body.taskKey.trim().length > 0
-        ? req.body.taskKey.trim()
-        : null;
+      typeof req.body.taskKey === "string" && req.body.taskKey.trim().length > 0 ? req.body.taskKey.trim() : null;
     const state = await heartbeat.resetRuntimeSession(id, { taskKey });
 
     await logActivity(db, {
@@ -1261,7 +1233,7 @@ export function agentRoutes(db: Db) {
     } = req.body;
     const requestedAdapterConfig = applyCreateDefaultsByAdapterType(
       hireInput.adapterType,
-      ((hireInput.adapterConfig ?? {}) as Record<string, unknown>),
+      (hireInput.adapterConfig ?? {}) as Record<string, unknown>,
     );
     const desiredSkillAssignment = await resolveDesiredSkillAssignment(
       companyId,
@@ -1274,11 +1246,7 @@ export function agentRoutes(db: Db) {
       desiredSkillAssignment.adapterConfig,
       { strictMode: strictSecretsMode },
     );
-    await assertAdapterConfigConstraints(
-      companyId,
-      hireInput.adapterType,
-      normalizedAdapterConfig,
-    );
+    await assertAdapterConfigConstraints(companyId, hireInput.adapterType, normalizedAdapterConfig);
     const normalizedHireInput = {
       ...hireInput,
       adapterConfig: normalizedAdapterConfig,
@@ -1310,17 +1278,11 @@ export function agentRoutes(db: Db) {
     if (requiresApproval) {
       const requestedAdapterType = normalizedHireInput.adapterType ?? agent.adapterType;
       const requestedAdapterConfig =
-        redactEventPayload(
-          (agent.adapterConfig ?? normalizedHireInput.adapterConfig) as Record<string, unknown>,
-        ) ?? {};
+        redactEventPayload((agent.adapterConfig ?? normalizedHireInput.adapterConfig) as Record<string, unknown>) ?? {};
       const requestedRuntimeConfig =
-        redactEventPayload(
-          (normalizedHireInput.runtimeConfig ?? agent.runtimeConfig) as Record<string, unknown>,
-        ) ?? {};
+        redactEventPayload((normalizedHireInput.runtimeConfig ?? agent.runtimeConfig) as Record<string, unknown>) ?? {};
       const requestedMetadata =
-        redactEventPayload(
-          ((normalizedHireInput.metadata ?? agent.metadata ?? {}) as Record<string, unknown>),
-        ) ?? {};
+        redactEventPayload((normalizedHireInput.metadata ?? agent.metadata ?? {}) as Record<string, unknown>) ?? {};
       approval = await approvalsSvc.create(companyId, {
         type: "hire_agent",
         requestedByAgentId: actor.actorType === "agent" ? actor.actorId : null,
@@ -1384,11 +1346,7 @@ export function agentRoutes(db: Db) {
       },
     });
 
-    await applyDefaultAgentTaskAssignGrant(
-      companyId,
-      agent.id,
-      actor.actorType === "user" ? actor.actorId : null,
-    );
+    await applyDefaultAgentTaskAssignGrant(companyId, agent.id, actor.actorType === "user" ? actor.actorId : null);
 
     if (approval) {
       await logActivity(db, {
@@ -1422,7 +1380,7 @@ export function agentRoutes(db: Db) {
           hiredAgentId: agent.id,
           hiredAgentName: agent.name,
           hiredAgentRole: agent.role,
-          employmentType: (agent as Record<string, unknown>).employmentType as string ?? "full_time",
+          employmentType: ((agent as Record<string, unknown>).employmentType as string) ?? "full_time",
           hiredByUserId: actor.actorType === "user" ? actor.actorId : null,
           hiredByAgentId: actor.actorType === "agent" ? actor.actorId : null,
         });
@@ -1434,7 +1392,7 @@ export function agentRoutes(db: Db) {
           details: [
             `Agent created and hired directly (no approval required).`,
             `Role: ${agent.role}`,
-            `Employment Type: ${(agent as Record<string, unknown>).employmentType as string ?? "full_time"}`,
+            `Employment Type: ${((agent as Record<string, unknown>).employmentType as string) ?? "full_time"}`,
           ].join("\n"),
         });
       } catch (err) {
@@ -1454,13 +1412,10 @@ export function agentRoutes(db: Db) {
       assertBoard(req);
     }
 
-    const {
-      desiredSkills: requestedDesiredSkills,
-      ...createInput
-    } = req.body;
+    const { desiredSkills: requestedDesiredSkills, ...createInput } = req.body;
     const requestedAdapterConfig = applyCreateDefaultsByAdapterType(
       createInput.adapterType,
-      ((createInput.adapterConfig ?? {}) as Record<string, unknown>),
+      (createInput.adapterConfig ?? {}) as Record<string, unknown>,
     );
     const desiredSkillAssignment = await resolveDesiredSkillAssignment(
       companyId,
@@ -1473,16 +1428,13 @@ export function agentRoutes(db: Db) {
       desiredSkillAssignment.adapterConfig,
       { strictMode: strictSecretsMode },
     );
-    await assertAdapterConfigConstraints(
-      companyId,
-      createInput.adapterType,
-      normalizedAdapterConfig,
-    );
+    await assertAdapterConfigConstraints(companyId, createInput.adapterType, normalizedAdapterConfig);
 
     // ── Headcount limit enforcement ──────────────────────────────────
     const resolvedEmploymentType: EmploymentType =
-      (typeof createInput.employmentType === "string" && EMPLOYMENT_TYPES.includes(createInput.employmentType as EmploymentType))
-        ? createInput.employmentType as EmploymentType
+      typeof createInput.employmentType === "string" &&
+      EMPLOYMENT_TYPES.includes(createInput.employmentType as EmploymentType)
+        ? (createInput.employmentType as EmploymentType)
         : "full_time";
 
     const subRow = await db
@@ -1492,7 +1444,7 @@ export function agentRoutes(db: Db) {
       .then((rows) => rows[0] ?? null);
 
     const tier = subRow?.planTier ?? "starter";
-    const limits = PLAN_AGENT_LIMITS[tier] ?? PLAN_AGENT_LIMITS["starter"]!;
+    const limits = PLAN_AGENT_LIMITS[tier] ?? PLAN_AGENT_LIMITS.starter!;
 
     // Only run headcount query if there's actually a limit to enforce
     const fteLimit = limits.fte;
@@ -1513,20 +1465,22 @@ export function agentRoutes(db: Db) {
       const contractorCount = Number(headcountRow?.contractor ?? 0);
 
       if (resolvedEmploymentType === "full_time" && fteLimit !== -1 && fteCount >= fteLimit) {
-        res.status(403).json({ error: `Full-time agent limit reached (${fteLimit}) for ${tier} plan. Upgrade to add more full-time agents.` });
+        res.status(403).json({
+          error: `Full-time agent limit reached (${fteLimit}) for ${tier} plan. Upgrade to add more full-time agents.`,
+        });
         return;
       }
       if (resolvedEmploymentType === "contractor" && contractorLimit !== -1 && contractorCount >= contractorLimit) {
-        res.status(403).json({ error: `Contractor agent limit reached (${contractorLimit}) for ${tier} plan. Upgrade to add more contractors.` });
+        res.status(403).json({
+          error: `Contractor agent limit reached (${contractorLimit}) for ${tier} plan. Upgrade to add more contractors.`,
+        });
         return;
       }
     }
 
     // Auto-budget: determine default before create so we can pass it in
     // when the caller didn't supply one and the company uses api_key auth.
-    let resolvedBudgetCents = typeof createInput.budgetMonthlyCents === "number"
-      ? createInput.budgetMonthlyCents
-      : 0;
+    let resolvedBudgetCents = typeof createInput.budgetMonthlyCents === "number" ? createInput.budgetMonthlyCents : 0;
 
     if (resolvedBudgetCents === 0) {
       if (subRow?.llmAuthMethod === "api_key") {
@@ -1551,10 +1505,14 @@ export function agentRoutes(db: Db) {
       department: typeof createInput.department === "string" ? createInput.department : undefined,
       hiredByUserId,
       contractEndAt: typeof createInput.contractEndAt === "string" ? new Date(createInput.contractEndAt) : undefined,
-      contractEndCondition: typeof createInput.contractEndCondition === "string" ? createInput.contractEndCondition : undefined,
+      contractEndCondition:
+        typeof createInput.contractEndCondition === "string" ? createInput.contractEndCondition : undefined,
       contractProjectId: typeof createInput.contractProjectId === "string" ? createInput.contractProjectId : undefined,
-      contractBudgetCents: typeof createInput.contractBudgetCents === "number" ? createInput.contractBudgetCents : undefined,
-      onboardingContextIds: Array.isArray(createInput.onboardingContextIds) ? createInput.onboardingContextIds : undefined,
+      contractBudgetCents:
+        typeof createInput.contractBudgetCents === "number" ? createInput.contractBudgetCents : undefined,
+      onboardingContextIds: Array.isArray(createInput.onboardingContextIds)
+        ? createInput.onboardingContextIds
+        : undefined,
     });
     const agent = await materializeDefaultInstructionsBundleForNewAgent(createdAgent);
 
@@ -1648,7 +1606,7 @@ export function agentRoutes(db: Db) {
         suggestedAdapter?: string | null;
         skills?: string[];
         agentsMd?: string | null; // AGENTS.md content
-        soulMd?: string | null;   // SOUL.md content
+        soulMd?: string | null; // SOUL.md content
       }>;
       adapterType: string;
       adapterConfig: Record<string, unknown>;
@@ -1668,10 +1626,7 @@ export function agentRoutes(db: Db) {
 
     for (const item of body.agents) {
       const adapterType = item.suggestedAdapter || body.adapterType;
-      const baseAdapterConfig = applyCreateDefaultsByAdapterType(
-        adapterType,
-        body.adapterConfig ?? {},
-      );
+      const baseAdapterConfig = applyCreateDefaultsByAdapterType(adapterType, body.adapterConfig ?? {});
       const desiredSkillAssignment = await resolveDesiredSkillAssignment(
         companyId,
         adapterType,
@@ -1686,16 +1641,13 @@ export function agentRoutes(db: Db) {
         { strictMode: strictSecretsMode },
       );
 
-      const reportsToAgentId =
-        item.reportsTo ? (agentIdByTemplateKey.get(item.reportsTo) ?? null) : null;
+      const reportsToAgentId = item.reportsTo ? (agentIdByTemplateKey.get(item.reportsTo) ?? null) : null;
 
       // Resolve soul/agents content from the role template or explicit body fields
       const roleTemplate = ROLE_TEMPLATES.find((t) => t.key === item.templateKey);
       const soulContent = item.soulMd ?? roleTemplate?.soul ?? null;
       const agentsContent = item.agentsMd ?? roleTemplate?.agents ?? null;
-      const resolvedAgentInstructions = agentsContent
-        ? `${COMMON_AGENT_PREAMBLE}\n\n${agentsContent}`
-        : null;
+      const resolvedAgentInstructions = agentsContent ? `${COMMON_AGENT_PREAMBLE}\n\n${agentsContent}` : null;
 
       const createdAgent = await svc.create(companyId, {
         name: item.name.trim() || item.title || item.role,
@@ -1768,7 +1720,10 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
         });
       } catch (err) {
         // Non-fatal — team was created successfully; welcome issue failure is logged only
-        logger.warn({ err, companyId, ceoAgentId: ceoAgent.id }, "Non-fatal: failed to create CEO welcome issue after team pack deployment");
+        logger.warn(
+          { err, companyId, ceoAgentId: ceoAgent.id },
+          "Non-fatal: failed to create CEO welcome issue after team pack deployment",
+        );
       }
     }
 
@@ -2092,18 +2047,31 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
     }
     await assertCanUpdateAgent(req, existing);
 
-    if (Object.prototype.hasOwnProperty.call(req.body, "permissions")) {
+    if (Object.hasOwn(req.body, "permissions")) {
       res.status(422).json({ error: "Use /api/agents/:id/permissions for permission changes" });
       return;
     }
 
     // SEC-AUTH-001: Allowlist mutable fields to prevent mass assignment
     const ALLOWED_PATCH_FIELDS = new Set([
-      "name", "role", "title", "icon", "reportsTo", "capabilities",
-      "adapterType", "adapterConfig", "runtimeConfig", "replaceAdapterConfig",
-      "budgetMonthlyCents", "status", "soulMd", "agentsMd",
-      "department", "performanceScore",
-      "systemPrompt", "agentInstructions",
+      "name",
+      "role",
+      "title",
+      "icon",
+      "reportsTo",
+      "capabilities",
+      "adapterType",
+      "adapterConfig",
+      "runtimeConfig",
+      "replaceAdapterConfig",
+      "budgetMonthlyCents",
+      "status",
+      "soulMd",
+      "agentsMd",
+      "department",
+      "performanceScore",
+      "systemPrompt",
+      "agentInstructions",
     ]);
     const rawBody = req.body as Record<string, unknown>;
     const patchData: Record<string, unknown> = {};
@@ -2114,7 +2082,7 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
     delete patchData.replaceAdapterConfig;
 
     // Validate department if provided
-    if (Object.prototype.hasOwnProperty.call(patchData, "department") && patchData.department !== null) {
+    if (Object.hasOwn(patchData, "department") && patchData.department !== null) {
       if (typeof patchData.department !== "string" || !DEPARTMENTS.includes(patchData.department as Department)) {
         res.status(422).json({ error: `Invalid department. Must be one of: ${DEPARTMENTS.join(", ")}` });
         return;
@@ -2122,7 +2090,7 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
     }
 
     // Validate performanceScore if provided
-    if (Object.prototype.hasOwnProperty.call(patchData, "performanceScore") && patchData.performanceScore !== null) {
+    if (Object.hasOwn(patchData, "performanceScore") && patchData.performanceScore !== null) {
       const score = patchData.performanceScore;
       if (typeof score !== "number" || score < 0 || score > 100 || !Number.isInteger(score)) {
         res.status(422).json({ error: "performanceScore must be an integer between 0 and 100" });
@@ -2130,15 +2098,13 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
       }
     }
 
-    if (Object.prototype.hasOwnProperty.call(patchData, "adapterConfig")) {
+    if (Object.hasOwn(patchData, "adapterConfig")) {
       const adapterConfig = asRecord(patchData.adapterConfig);
       if (!adapterConfig) {
         res.status(422).json({ error: "adapterConfig must be an object" });
         return;
       }
-      const changingInstructionsPath = Object.keys(adapterConfig).some((key) =>
-        KNOWN_INSTRUCTIONS_PATH_KEYS.has(key),
-      );
+      const changingInstructionsPath = Object.keys(adapterConfig).some((key) => KNOWN_INSTRUCTIONS_PATH_KEYS.has(key));
       if (changingInstructionsPath) {
         await assertCanManageInstructionsPath(req, existing);
       }
@@ -2148,20 +2114,19 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
     const requestedAdapterType =
       typeof patchData.adapterType === "string" ? patchData.adapterType : existing.adapterType;
     const touchesAdapterConfiguration =
-      Object.prototype.hasOwnProperty.call(patchData, "adapterType") ||
-      Object.prototype.hasOwnProperty.call(patchData, "adapterConfig");
+      Object.hasOwn(patchData, "adapterType") || Object.hasOwn(patchData, "adapterConfig");
     if (touchesAdapterConfiguration) {
       const existingAdapterConfig = asRecord(existing.adapterConfig) ?? {};
       const changingAdapterType =
         typeof patchData.adapterType === "string" && patchData.adapterType !== existing.adapterType;
-      const requestedAdapterConfig = Object.prototype.hasOwnProperty.call(patchData, "adapterConfig")
+      const requestedAdapterConfig = Object.hasOwn(patchData, "adapterConfig")
         ? (asRecord(patchData.adapterConfig) ?? {})
         : null;
       if (
-        requestedAdapterConfig
-        && replaceAdapterConfig
-        && KNOWN_INSTRUCTIONS_BUNDLE_KEYS.some((key) =>
-          existingAdapterConfig[key] !== undefined && requestedAdapterConfig[key] === undefined,
+        requestedAdapterConfig &&
+        replaceAdapterConfig &&
+        KNOWN_INSTRUCTIONS_BUNDLE_KEYS.some(
+          (key) => existingAdapterConfig[key] !== undefined && requestedAdapterConfig[key] === undefined,
         )
       ) {
         await assertCanManageInstructionsPath(req, existing);
@@ -2175,23 +2140,21 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
         // when the adapter type changes. Without this, a PATCH that includes
         // adapterConfig but omits these keys would silently drop them.
         const ADAPTER_AGNOSTIC_KEYS = [
-          "env", "cwd", "timeoutSec", "graceSec",
-          "promptTemplate", "bootstrapPromptTemplate",
+          "env",
+          "cwd",
+          "timeoutSec",
+          "graceSec",
+          "promptTemplate",
+          "bootstrapPromptTemplate",
         ] as const;
         for (const key of ADAPTER_AGNOSTIC_KEYS) {
           if (rawEffectiveAdapterConfig[key] === undefined && existingAdapterConfig[key] !== undefined) {
             rawEffectiveAdapterConfig = { ...rawEffectiveAdapterConfig, [key]: existingAdapterConfig[key] };
           }
         }
-        rawEffectiveAdapterConfig = preserveInstructionsBundleConfig(
-          existingAdapterConfig,
-          rawEffectiveAdapterConfig,
-        );
+        rawEffectiveAdapterConfig = preserveInstructionsBundleConfig(existingAdapterConfig, rawEffectiveAdapterConfig);
       }
-      const effectiveAdapterConfig = applyCreateDefaultsByAdapterType(
-        requestedAdapterType,
-        rawEffectiveAdapterConfig,
-      );
+      const effectiveAdapterConfig = applyCreateDefaultsByAdapterType(requestedAdapterType, rawEffectiveAdapterConfig);
       const normalizedEffectiveAdapterConfig = await secretsSvc.normalizeAdapterConfigForPersistence(
         existing.companyId,
         effectiveAdapterConfig,
@@ -2201,20 +2164,14 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
     }
     if (touchesAdapterConfiguration && requestedAdapterType === "opencode_local") {
       const effectiveAdapterConfig = asRecord(patchData.adapterConfig) ?? {};
-      await assertAdapterConfigConstraints(
-        existing.companyId,
-        requestedAdapterType,
-        effectiveAdapterConfig,
-      );
+      await assertAdapterConfigConstraints(existing.companyId, requestedAdapterType, effectiveAdapterConfig);
     }
 
     const actor = getActorInfo(req);
 
     // ── Prompt version snapshot (REQ-09) ──
     // Before updating systemPrompt or agentInstructions, snapshot the current values.
-    const isPromptChange =
-      Object.prototype.hasOwnProperty.call(patchData, "systemPrompt") ||
-      Object.prototype.hasOwnProperty.call(patchData, "agentInstructions");
+    const isPromptChange = Object.hasOwn(patchData, "systemPrompt") || Object.hasOwn(patchData, "agentInstructions");
     if (isPromptChange) {
       try {
         await snapshotPromptVersion(db, {
@@ -2255,10 +2212,7 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
     });
 
     // Employment history: department change
-    if (
-      Object.prototype.hasOwnProperty.call(patchData, "department") &&
-      agent.department !== existing.department
-    ) {
+    if (Object.hasOwn(patchData, "department") && agent.department !== existing.department) {
       createEmploymentHistoryEntry(db, {
         companyId: agent.companyId,
         agentId: agent.id,
@@ -2274,7 +2228,7 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
 
     // Employment history: significant performance score change (>10 points)
     if (
-      Object.prototype.hasOwnProperty.call(patchData, "performanceScore") &&
+      Object.hasOwn(patchData, "performanceScore") &&
       typeof agent.performanceScore === "number" &&
       typeof existing.performanceScore === "number" &&
       Math.abs(agent.performanceScore - existing.performanceScore) > 10
@@ -2442,7 +2396,9 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
             messageType: "announcement",
           });
         }
-      } catch { /* non-fatal */ }
+      } catch {
+        /* non-fatal */
+      }
     })();
 
     res.json(agent);
@@ -2538,7 +2494,7 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
       payload: req.body.payload ?? null,
       idempotencyKey: req.body.idempotencyKey ?? null,
       requestedByActorType: req.actor.type === "agent" ? "agent" : "user",
-      requestedByActorId: req.actor.type === "agent" ? req.actor.agentId ?? null : req.actor.userId ?? null,
+      requestedByActorId: req.actor.type === "agent" ? (req.actor.agentId ?? null) : (req.actor.userId ?? null),
       contextSnapshot: {
         triggeredBy: req.actor.type,
         actorId: req.actor.type === "agent" ? req.actor.agentId : req.actor.userId,
@@ -2591,7 +2547,7 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
       "manual",
       {
         actorType: req.actor.type === "agent" ? "agent" : "user",
-        actorId: req.actor.type === "agent" ? req.actor.agentId ?? null : req.actor.userId ?? null,
+        actorId: req.actor.type === "agent" ? (req.actor.agentId ?? null) : (req.actor.userId ?? null),
       },
     );
 
@@ -2682,12 +2638,7 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
       .select(columns)
       .from(heartbeatRuns)
       .innerJoin(agentsTable, eq(heartbeatRuns.agentId, agentsTable.id))
-      .where(
-        and(
-          eq(heartbeatRuns.companyId, companyId),
-          inArray(heartbeatRuns.status, ["queued", "running"]),
-        ),
-      )
+      .where(and(eq(heartbeatRuns.companyId, companyId), inArray(heartbeatRuns.status, ["queued", "running"])))
       .orderBy(desc(heartbeatRuns.createdAt));
 
     if (minCount > 0 && liveRuns.length < minCount) {
@@ -2759,13 +2710,20 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
 
     const afterSeq = Number(req.query.afterSeq ?? 0);
     const limit = Number(req.query.limit ?? 200);
-    const events = await heartbeat.listEvents(runId, Number.isFinite(afterSeq) ? afterSeq : 0, Number.isFinite(limit) ? limit : 200);
+    const events = await heartbeat.listEvents(
+      runId,
+      Number.isFinite(afterSeq) ? afterSeq : 0,
+      Number.isFinite(limit) ? limit : 200,
+    );
     const currentUserRedactionOptions = await getCurrentUserRedactionOptions();
     const redactedEvents = events.map((event) =>
-      redactCurrentUserValue({
-        ...event,
-        payload: redactEventPayload(event.payload),
-      }, currentUserRedactionOptions),
+      redactCurrentUserValue(
+        {
+          ...event,
+          payload: redactEventPayload(event.payload),
+        },
+        currentUserRedactionOptions,
+      ),
     );
     res.json(redactedEvents);
   });
@@ -2938,10 +2896,7 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
         .returning();
 
       // Archive all memory entries for this agent
-      await tx
-        .update(agentMemoryEntries)
-        .set({ archivedAt: now })
-        .where(eq(agentMemoryEntries.agentId, agentId));
+      await tx.update(agentMemoryEntries).set({ archivedAt: now }).where(eq(agentMemoryEntries.agentId, agentId));
 
       return updated!;
     });
@@ -2992,7 +2947,9 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
             messageType: "announcement",
           });
         }
-      } catch { /* non-fatal */ }
+      } catch {
+        /* non-fatal */
+      }
     })();
 
     res.json(result);
@@ -3035,7 +2992,7 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
     }
 
     const actor = getActorInfo(req);
-    const entry = await logActivity(db, {
+    const _entry = await logActivity(db, {
       companyId,
       actorType: "agent",
       actorId: fromAgentId,
@@ -3082,7 +3039,7 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
       .then((rows) => rows[0] ?? null);
 
     const tier = subRow?.planTier ?? "starter";
-    const limits = PLAN_AGENT_LIMITS[tier] ?? PLAN_AGENT_LIMITS["starter"]!;
+    const limits = PLAN_AGENT_LIMITS[tier] ?? PLAN_AGENT_LIMITS.starter!;
 
     res.json({
       fte: Number(counts?.fte ?? 0),
@@ -3101,11 +3058,7 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
    * Chat issues use originKind="chat" and are reused across sessions.
    * Inactive for 24 hours -> close automatically (handled by auto-close logic).
    */
-  async function getOrCreateChatIssue(
-    companyId: string,
-    agentId: string,
-    createdByUserId: string | null,
-  ) {
+  async function getOrCreateChatIssue(companyId: string, agentId: string, createdByUserId: string | null) {
     const issueSvc = issueService(db);
 
     // Look for an open chat issue already assigned to this agent
@@ -3294,7 +3247,7 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
     await assertCanWrite(req, agentRow.companyId, db);
 
     const versionNumber = parseInt(version, 10);
-    if (isNaN(versionNumber) || versionNumber < 1) {
+    if (Number.isNaN(versionNumber) || versionNumber < 1) {
       res.status(422).json({ error: "Invalid version number" });
       return;
     }

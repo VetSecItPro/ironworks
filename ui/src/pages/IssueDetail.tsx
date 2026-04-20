@@ -1,45 +1,38 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent } from "react";
+import { Activity as ActivityIcon, EyeOff, GitBranch, ListTree, MessageSquare, Paperclip } from "lucide-react";
+import { type ChangeEvent, type DragEvent, useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLocation, useNavigate, useParams } from "@/lib/router";
-import { usePanel } from "../context/PanelContext";
-import { useToast } from "../context/ToastContext";
-import { useBreadcrumbs } from "../context/BreadcrumbContext";
-import { readIssueDetailBreadcrumb } from "../lib/issueDetailBreadcrumb";
-import { cn } from "../lib/utils";
-import { InlineEditor } from "../components/InlineEditor";
+import { PluginLauncherOutlet } from "@/plugins/launchers";
+import { PluginSlotMount, PluginSlotOutlet } from "@/plugins/slots";
 import { CommentThread } from "../components/CommentThread";
+import { InlineEditor } from "../components/InlineEditor";
+import { IssueDependencyGraph } from "../components/IssueDependencyGraph";
 import { IssueDocumentsSection } from "../components/IssueDocumentsSection";
 import { IssueProperties } from "../components/IssueProperties";
 import { IssueWorkspaceCard } from "../components/IssueWorkspaceCard";
-import { LiveRunWidget } from "../components/LiveRunWidget";
-import { ScrollToBottom } from "../components/ScrollToBottom";
-import { SLATimer } from "../components/SLATimer";
-import { PluginSlotMount, PluginSlotOutlet } from "@/plugins/slots";
-import { PluginLauncherOutlet } from "@/plugins/launchers";
-import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Activity as ActivityIcon,
-  EyeOff,
-  GitBranch,
-  ListTree,
-  MessageSquare,
-  Paperclip,
-} from "lucide-react";
-import { IssueDependencyGraph } from "../components/IssueDependencyGraph";
-import {
-  IssueAncestorBreadcrumb,
-  IssueGoalBanner,
-  IssueLiveRunBanner,
-  IssueHeaderBar,
-  IssueAttachmentsSection,
-  IssueSubissuesTab,
   IssueActivityTab,
+  IssueAncestorBreadcrumb,
   IssueApprovalsSection,
+  IssueAttachmentsSection,
+  IssueGoalBanner,
+  IssueHeaderBar,
+  IssueLiveRunBanner,
   IssueMobilePropsDrawer,
+  IssueSubissuesTab,
   isMarkdownFile,
 } from "../components/issue-detail";
 import { useIssueDetailData } from "../components/issue-detail/useIssueDetailData";
+import { LiveRunWidget } from "../components/LiveRunWidget";
+import { ScrollToBottom } from "../components/ScrollToBottom";
+import { SLATimer } from "../components/SLATimer";
+import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { usePanel } from "../context/PanelContext";
+import { useToast } from "../context/ToastContext";
+import { readIssueDetailBreadcrumb } from "../lib/issueDetailBreadcrumb";
+import { cn } from "../lib/utils";
 
 export function IssueDetail() {
   const { issueId } = useParams<{ issueId: string }>();
@@ -63,14 +56,40 @@ export function IssueDetail() {
   // --- Data layer (queries, mutations, derived data) ---
   const data = useIssueDetailData(issueId);
   const {
-    issue, isLoading, error, session, projects, orderedProjects,
-    parentGoal, parentGoalProgress, agents, liveRuns, activeRun,
-    hasLiveRuns, agentMap, mentionOptions, childIssues, allIssues,
-    commentReassignOptions, actualAssigneeValue, suggestedAssigneeValue,
-    commentsWithRunMeta, timelineRuns, issueCostSummary, activity,
-    linkedRuns, linkedApprovals, attachments, issuePluginTabItems,
-    updateIssue, addComment, addCommentAndReassign,
-    uploadAttachment, importMarkdownDocument, deleteAttachment, markIssueRead,
+    issue,
+    isLoading,
+    error,
+    session,
+    projects,
+    orderedProjects,
+    parentGoal,
+    parentGoalProgress,
+    agents,
+    liveRuns,
+    activeRun,
+    hasLiveRuns,
+    agentMap,
+    mentionOptions,
+    childIssues,
+    allIssues,
+    commentReassignOptions,
+    actualAssigneeValue,
+    suggestedAssigneeValue,
+    commentsWithRunMeta,
+    timelineRuns,
+    issueCostSummary,
+    activity,
+    linkedRuns,
+    linkedApprovals,
+    attachments,
+    issuePluginTabItems,
+    updateIssue,
+    addComment,
+    addCommentAndReassign,
+    uploadAttachment,
+    importMarkdownDocument,
+    deleteAttachment,
+    markIssueRead,
   } = data;
 
   const activePluginTab = issuePluginTabItems.find((item) => item.value === detailTab) ?? null;
@@ -180,7 +199,9 @@ export function IssueDetail() {
         className={cn("shadow-none", attachmentDragActive && "border-primary bg-primary/5")}
       >
         <Paperclip className="h-3.5 w-3.5 mr-1.5" />
-        {uploadAttachment.isPending || importMarkdownDocument.isPending ? "Uploading..." : (
+        {uploadAttachment.isPending || importMarkdownDocument.isPending ? (
+          "Uploading..."
+        ) : (
           <>
             <span className="hidden sm:inline">Upload attachment</span>
             <span className="sm:hidden">Upload</span>
@@ -207,7 +228,12 @@ export function IssueDetail() {
 
       <div className="flex items-center gap-1.5">
         <div className="flex -space-x-1.5">
-          <div className="h-5 w-5 rounded-full bg-foreground/80 border-2 border-background flex items-center justify-center text-[10px] font-medium text-background" title="You">U</div>
+          <div
+            className="h-5 w-5 rounded-full bg-foreground/80 border-2 border-background flex items-center justify-center text-[10px] font-medium text-background"
+            title="You"
+          >
+            U
+          </div>
         </div>
         <span className="text-[10px] text-muted-foreground">Viewing now</span>
       </div>
@@ -238,7 +264,12 @@ export function IssueDetail() {
             setMoreOpen(false);
           }}
         />
-        <InlineEditor value={issue.title} onSave={(title) => updateIssue.mutateAsync({ title })} as="h2" className="text-xl font-bold" />
+        <InlineEditor
+          value={issue.title}
+          onSave={(title) => updateIssue.mutateAsync({ title })}
+          as="h2"
+          className="text-xl font-bold"
+        />
         <InlineEditor
           value={issue.description ?? ""}
           onSave={(description) => updateIssue.mutateAsync({ description })}
@@ -247,7 +278,10 @@ export function IssueDetail() {
           placeholder="Add a description..."
           multiline
           mentions={mentionOptions}
-          imageUploadHandler={async (file) => { const a = await uploadAttachment.mutateAsync(file); return a.contentPath; }}
+          imageUploadHandler={async (file) => {
+            const a = await uploadAttachment.mutateAsync(file);
+            return a.contentPath;
+          }}
         />
         <SLATimer
           priority={issue.priority}
@@ -256,15 +290,53 @@ export function IssueDetail() {
         />
       </div>
 
-      <PluginSlotOutlet slotTypes={["toolbarButton", "contextMenuItem"]} entityType="issue" context={{ companyId: issue.companyId, projectId: issue.projectId ?? null, entityId: issue.id, entityType: "issue" }} className="flex flex-wrap gap-2" itemClassName="inline-flex" missingBehavior="placeholder" />
-      <PluginLauncherOutlet placementZones={["toolbarButton"]} entityType="issue" context={{ companyId: issue.companyId, projectId: issue.projectId ?? null, entityId: issue.id, entityType: "issue" }} className="flex flex-wrap gap-2" itemClassName="inline-flex" />
-      <PluginSlotOutlet slotTypes={["taskDetailView"]} entityType="issue" context={{ companyId: issue.companyId, projectId: issue.projectId ?? null, entityId: issue.id, entityType: "issue" }} className="space-y-3" itemClassName="rounded-lg border border-border p-3" missingBehavior="placeholder" />
+      <PluginSlotOutlet
+        slotTypes={["toolbarButton", "contextMenuItem"]}
+        entityType="issue"
+        context={{
+          companyId: issue.companyId,
+          projectId: issue.projectId ?? null,
+          entityId: issue.id,
+          entityType: "issue",
+        }}
+        className="flex flex-wrap gap-2"
+        itemClassName="inline-flex"
+        missingBehavior="placeholder"
+      />
+      <PluginLauncherOutlet
+        placementZones={["toolbarButton"]}
+        entityType="issue"
+        context={{
+          companyId: issue.companyId,
+          projectId: issue.projectId ?? null,
+          entityId: issue.id,
+          entityType: "issue",
+        }}
+        className="flex flex-wrap gap-2"
+        itemClassName="inline-flex"
+      />
+      <PluginSlotOutlet
+        slotTypes={["taskDetailView"]}
+        entityType="issue"
+        context={{
+          companyId: issue.companyId,
+          projectId: issue.projectId ?? null,
+          entityId: issue.id,
+          entityType: "issue",
+        }}
+        className="space-y-3"
+        itemClassName="rounded-lg border border-border p-3"
+        missingBehavior="placeholder"
+      />
 
       <IssueDocumentsSection
         issue={issue}
         canDeleteDocuments={Boolean(session?.user?.id)}
         mentions={mentionOptions}
-        imageUploadHandler={async (file) => { const a = await uploadAttachment.mutateAsync(file); return a.contentPath; }}
+        imageUploadHandler={async (file) => {
+          const a = await uploadAttachment.mutateAsync(file);
+          return a.contentPath;
+        }}
         extraActions={!hasAttachments ? attachmentUploadButton : undefined}
       />
 
@@ -273,24 +345,53 @@ export function IssueDetail() {
         attachmentUploadButton={attachmentUploadButton}
         attachmentError={attachmentError}
         attachmentDragActive={attachmentDragActive}
-        onDragEnter={(evt) => { evt.preventDefault(); setAttachmentDragActive(true); }}
-        onDragOver={(evt) => { evt.preventDefault(); setAttachmentDragActive(true); }}
-        onDragLeave={(evt) => { if (evt.currentTarget.contains(evt.relatedTarget as Node | null)) return; setAttachmentDragActive(false); }}
+        onDragEnter={(evt) => {
+          evt.preventDefault();
+          setAttachmentDragActive(true);
+        }}
+        onDragOver={(evt) => {
+          evt.preventDefault();
+          setAttachmentDragActive(true);
+        }}
+        onDragLeave={(evt) => {
+          if (evt.currentTarget.contains(evt.relatedTarget as Node | null)) return;
+          setAttachmentDragActive(false);
+        }}
         onDrop={(evt) => void handleAttachmentDrop(evt)}
         onDeleteAttachment={(id) => deleteAttachment.mutate(id)}
         deleteAttachmentPending={deleteAttachment.isPending}
       />
 
-      <IssueWorkspaceCard issue={issue} project={orderedProjects.find((p) => p.id === issue.projectId) ?? null} onUpdate={(d) => updateIssue.mutate(d)} />
+      <IssueWorkspaceCard
+        issue={issue}
+        project={orderedProjects.find((p) => p.id === issue.projectId) ?? null}
+        onUpdate={(d) => updateIssue.mutate(d)}
+      />
       <Separator />
 
       <Tabs value={detailTab} onValueChange={setDetailTab} className="space-y-3">
         <TabsList variant="line" className="w-full justify-start gap-1">
-          <TabsTrigger value="comments" className="gap-1.5"><MessageSquare className="h-3.5 w-3.5" />Comments</TabsTrigger>
-          <TabsTrigger value="subissues" className="gap-1.5"><ListTree className="h-3.5 w-3.5" />Sub-issues</TabsTrigger>
-          <TabsTrigger value="activity" className="gap-1.5"><ActivityIcon className="h-3.5 w-3.5" />Activity</TabsTrigger>
-          <TabsTrigger value="dependencies" className="gap-1.5"><GitBranch className="h-3.5 w-3.5" />Dependencies</TabsTrigger>
-          {issuePluginTabItems.map((item) => <TabsTrigger key={item.value} value={item.value}>{item.label}</TabsTrigger>)}
+          <TabsTrigger value="comments" className="gap-1.5">
+            <MessageSquare className="h-3.5 w-3.5" />
+            Comments
+          </TabsTrigger>
+          <TabsTrigger value="subissues" className="gap-1.5">
+            <ListTree className="h-3.5 w-3.5" />
+            Sub-issues
+          </TabsTrigger>
+          <TabsTrigger value="activity" className="gap-1.5">
+            <ActivityIcon className="h-3.5 w-3.5" />
+            Activity
+          </TabsTrigger>
+          <TabsTrigger value="dependencies" className="gap-1.5">
+            <GitBranch className="h-3.5 w-3.5" />
+            Dependencies
+          </TabsTrigger>
+          {issuePluginTabItems.map((item) => (
+            <TabsTrigger key={item.value} value={item.value}>
+              {item.label}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
         <TabsContent value="comments">
@@ -308,26 +409,63 @@ export function IssueDetail() {
             suggestedAssigneeValue={suggestedAssigneeValue}
             mentions={mentionOptions}
             onAdd={async (body, reopen, reassignment, replyToId) => {
-              if (reassignment) { await addCommentAndReassign.mutateAsync({ body, reopen, reassignment }); return; }
+              if (reassignment) {
+                await addCommentAndReassign.mutateAsync({ body, reopen, reassignment });
+                return;
+              }
               await addComment.mutateAsync({ body, reopen, replyToId });
             }}
-            imageUploadHandler={async (file) => { const a = await uploadAttachment.mutateAsync(file); return a.contentPath; }}
-            onAttachImage={async (file) => { await uploadAttachment.mutateAsync(file); }}
+            imageUploadHandler={async (file) => {
+              const a = await uploadAttachment.mutateAsync(file);
+              return a.contentPath;
+            }}
+            onAttachImage={async (file) => {
+              await uploadAttachment.mutateAsync(file);
+            }}
             liveRunSlot={<LiveRunWidget issueId={issueId!} companyId={issue.companyId} />}
           />
         </TabsContent>
-        <TabsContent value="subissues"><IssueSubissuesTab childIssues={childIssues} agentMap={agentMap} locationState={location.state} /></TabsContent>
-        <TabsContent value="activity"><IssueActivityTab activity={activity} linkedRunsCount={(linkedRuns ?? []).length} issueCostSummary={issueCostSummary} agentMap={agentMap} /></TabsContent>
-        <TabsContent value="dependencies"><IssueDependencyGraph issue={issue} allIssues={allIssues ?? []} /></TabsContent>
+        <TabsContent value="subissues">
+          <IssueSubissuesTab childIssues={childIssues} agentMap={agentMap} locationState={location.state} />
+        </TabsContent>
+        <TabsContent value="activity">
+          <IssueActivityTab
+            activity={activity}
+            linkedRunsCount={(linkedRuns ?? []).length}
+            issueCostSummary={issueCostSummary}
+            agentMap={agentMap}
+          />
+        </TabsContent>
+        <TabsContent value="dependencies">
+          <IssueDependencyGraph issue={issue} allIssues={allIssues ?? []} />
+        </TabsContent>
         {activePluginTab && (
           <TabsContent value={activePluginTab.value}>
-            <PluginSlotMount slot={activePluginTab.slot} context={{ companyId: issue.companyId, projectId: issue.projectId ?? null, entityId: issue.id, entityType: "issue" }} missingBehavior="placeholder" />
+            <PluginSlotMount
+              slot={activePluginTab.slot}
+              context={{
+                companyId: issue.companyId,
+                projectId: issue.projectId ?? null,
+                entityId: issue.id,
+                entityType: "issue",
+              }}
+              missingBehavior="placeholder"
+            />
           </TabsContent>
         )}
       </Tabs>
 
-      <IssueApprovalsSection linkedApprovals={linkedApprovals ?? []} open={secondaryOpen.approvals} onOpenChange={(open) => setSecondaryOpen((prev) => ({ ...prev, approvals: open }))} />
-      <IssueMobilePropsDrawer open={mobilePropsOpen} onOpenChange={setMobilePropsOpen} issue={issue} onUpdate={(d) => updateIssue.mutate(d)} />
+      <IssueApprovalsSection
+        linkedApprovals={linkedApprovals ?? []}
+        open={secondaryOpen.approvals}
+        onOpenChange={(open) => setSecondaryOpen((prev) => ({ ...prev, approvals: open }))}
+      />
+      <IssueMobilePropsDrawer
+        open={mobilePropsOpen}
+        onOpenChange={setMobilePropsOpen}
+        issue={issue}
+        onUpdate={(d) => updateIssue.mutate(d)}
+      />
       <ScrollToBottom />
     </div>
   );

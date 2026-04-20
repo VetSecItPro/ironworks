@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { agents, issues } from "@ironworksai/db";
+import { eq } from "drizzle-orm";
 
 interface OrgAgent {
   id: string;
@@ -15,9 +15,7 @@ interface OrgAgent {
  * CEO (reportsTo = null) manages everyone transitively.
  */
 export async function getManagementChain(db: Db, agentId: string): Promise<string[]> {
-  const allAgents = await db
-    .select({ id: agents.id, reportsTo: agents.reportsTo })
-    .from(agents);
+  const allAgents = await db.select({ id: agents.id, reportsTo: agents.reportsTo }).from(agents);
 
   const chain: string[] = [];
   let current = agentId;
@@ -39,10 +37,7 @@ export async function getManagementChain(db: Db, agentId: string): Promise<strin
  * Get all direct reports for an agent (agents whose reportsTo = this agent).
  */
 export async function getDirectReports(db: Db, agentId: string): Promise<string[]> {
-  const reports = await db
-    .select({ id: agents.id })
-    .from(agents)
-    .where(eq(agents.reportsTo, agentId));
+  const reports = await db.select({ id: agents.id }).from(agents).where(eq(agents.reportsTo, agentId));
   return reports.map((r) => r.id);
 }
 
@@ -50,9 +45,7 @@ export async function getDirectReports(db: Db, agentId: string): Promise<string[
  * Get all transitive reports (full subtree) for an agent.
  */
 export async function getAllReports(db: Db, agentId: string): Promise<string[]> {
-  const allAgents = await db
-    .select({ id: agents.id, reportsTo: agents.reportsTo })
-    .from(agents);
+  const allAgents = await db.select({ id: agents.id, reportsTo: agents.reportsTo }).from(agents);
 
   const result: string[] = [];
   const queue = [agentId];
@@ -100,7 +93,7 @@ export async function resolveVisibleOwnerAgentIds(
   db: Db,
   actorType: "board" | "agent",
   actorAgentId: string | null,
-  companyId: string,
+  _companyId: string,
 ): Promise<{
   seeAll: boolean;
   visibleOwnerAgentIds: string[];
@@ -139,7 +132,5 @@ export async function getAgentProjectIds(db: Db, agentId: string): Promise<strin
     .from(issues)
     .where(eq(issues.assigneeAgentId, agentId));
 
-  return rows
-    .map((r) => r.projectId)
-    .filter((id): id is string => id !== null);
+  return rows.map((r) => r.projectId).filter((id): id is string => id !== null);
 }

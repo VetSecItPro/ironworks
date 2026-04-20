@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import type { Company } from "@ironworksai/shared";
+import { describe, expect, it } from "vitest";
 import { assertDeleteConfirmation, resolveCompanyForDeletion } from "../commands/client/company.js";
 
 function makeCompany(overrides: Partial<Company>): Company {
@@ -57,8 +57,9 @@ describe("resolveCompanyForDeletion", () => {
   });
 
   it("respects explicit prefix mode", () => {
-    expect(() => resolveCompanyForDeletion(companies, "22222222-2222-2222-2222-222222222222", "prefix"))
-      .toThrow(/No company found by shortname/);
+    expect(() => resolveCompanyForDeletion(companies, "22222222-2222-2222-2222-222222222222", "prefix")).toThrow(
+      /No company found by shortname/,
+    );
   });
 });
 
@@ -81,11 +82,13 @@ describe("assertDeleteConfirmation", () => {
       assertDeleteConfirmation(company, {
         yes: true,
         confirm: "22222222-2222-2222-2222-222222222222",
-      })).not.toThrow();
+      }),
+    ).not.toThrow();
   });
 
   it("rejects mismatched confirmation", () => {
-    expect(() => assertDeleteConfirmation(company, { yes: true, confirm: "nope" }))
-      .toThrow(/does not match target company/);
+    expect(() => assertDeleteConfirmation(company, { yes: true, confirm: "nope" })).toThrow(
+      /does not match target company/,
+    );
   });
 });

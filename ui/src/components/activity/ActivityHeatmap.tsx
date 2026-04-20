@@ -1,6 +1,6 @@
+import type { ActivityEvent } from "@ironworksai/shared";
 import { Calendar } from "lucide-react";
 import { cn } from "../../lib/utils";
-import type { ActivityEvent } from "@ironworksai/shared";
 
 function cellColor(count: number, maxCount: number): string {
   if (count === 0) return "bg-muted/40";
@@ -37,9 +37,11 @@ export function ActivityHeatmap({ events }: { events: ActivityEvent[] }) {
       </h4>
       <div className="grid gap-[3px]" style={{ gridTemplateColumns: `repeat(${weeks}, 1fr)` }}>
         {grid.map((week, wi) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: grid cells are position-indexed; week/day position is the identity
           <div key={wi} className="flex flex-col gap-[3px]">
             {week.map((count, di) => (
               <div
+                // biome-ignore lint/suspicious/noArrayIndexKey: grid cells are position-indexed; week/day position is the identity
                 key={di}
                 className={cn("aspect-square w-full min-w-[8px] rounded-[3px]", cellColor(count, maxCount))}
                 title={`${count} events`}

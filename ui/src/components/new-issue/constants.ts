@@ -42,7 +42,8 @@ export interface SimilarIssue {
 
 export const DRAFT_KEY = "ironworks:issue-draft";
 export const DEBOUNCE_MS = 800;
-export const STAGED_FILE_ACCEPT = "image/*,application/pdf,text/plain,text/markdown,application/json,text/csv,text/html,.md,.markdown";
+export const STAGED_FILE_ACCEPT =
+  "image/*,application/pdf,text/plain,text/markdown,application/json,text/csv,text/html,.md,.markdown";
 
 export const ISSUE_OVERRIDE_ADAPTER_TYPES = new Set(["claude_local", "codex_local", "opencode_local"]);
 
@@ -79,7 +80,12 @@ export const statuses = [
 ];
 
 export const priorities = [
-  { value: "critical", label: "Critical", icon: "AlertTriangle" as const, color: priorityColor.critical ?? priorityColorDefault },
+  {
+    value: "critical",
+    label: "Critical",
+    icon: "AlertTriangle" as const,
+    color: priorityColor.critical ?? priorityColorDefault,
+  },
   { value: "high", label: "High", icon: "ArrowUp" as const, color: priorityColor.high ?? priorityColorDefault },
   { value: "medium", label: "Medium", icon: "Minus" as const, color: priorityColor.medium ?? priorityColorDefault },
   { value: "low", label: "Low", icon: "ArrowDown" as const, color: priorityColor.low ?? priorityColorDefault },
@@ -127,7 +133,19 @@ export const ISSUE_TEMPLATES = [
 /* ------------------------------------------------------------------ */
 
 const PRIORITY_KEYWORDS: Record<string, string[]> = {
-  critical: ["urgent", "broken", "crash", "outage", "down", "emergency", "p0", "critical", "production down", "data loss", "security breach"],
+  critical: [
+    "urgent",
+    "broken",
+    "crash",
+    "outage",
+    "down",
+    "emergency",
+    "p0",
+    "critical",
+    "production down",
+    "data loss",
+    "security breach",
+  ],
   high: ["bug", "error", "fail", "broken", "regression", "blocker", "important", "p1", "high"],
   medium: ["feature", "improve", "update", "change", "enhance", "refactor", "p2"],
   low: ["nice to have", "minor", "cosmetic", "typo", "cleanup", "chore", "p3", "low priority"],
@@ -149,7 +167,11 @@ export function suggestPriority(title: string): string | null {
 /* ------------------------------------------------------------------ */
 
 function normalizeForComparison(text: string): string {
-  return text.toLowerCase().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim();
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function computeSimilarity(a: string, b: string): number {
@@ -265,21 +287,29 @@ export function formatFileSize(file: File) {
 /*  Project / workspace defaults                                       */
 /* ------------------------------------------------------------------ */
 
-export function defaultProjectWorkspaceIdForProject(project: { workspaces?: Array<{ id: string; isPrimary: boolean }>; executionWorkspacePolicy?: { defaultProjectWorkspaceId?: string | null } | null } | null | undefined) {
+export function defaultProjectWorkspaceIdForProject(
+  project:
+    | {
+        workspaces?: Array<{ id: string; isPrimary: boolean }>;
+        executionWorkspacePolicy?: { defaultProjectWorkspaceId?: string | null } | null;
+      }
+    | null
+    | undefined,
+) {
   if (!project) return "";
-  return project.executionWorkspacePolicy?.defaultProjectWorkspaceId
-    ?? project.workspaces?.find((workspace) => workspace.isPrimary)?.id
-    ?? project.workspaces?.[0]?.id
-    ?? "";
+  return (
+    project.executionWorkspacePolicy?.defaultProjectWorkspaceId ??
+    project.workspaces?.find((workspace) => workspace.isPrimary)?.id ??
+    project.workspaces?.[0]?.id ??
+    ""
+  );
 }
 
-export function defaultExecutionWorkspaceModeForProject(project: { executionWorkspacePolicy?: { enabled?: boolean; defaultMode?: string | null } | null } | null | undefined) {
+export function defaultExecutionWorkspaceModeForProject(
+  project: { executionWorkspacePolicy?: { enabled?: boolean; defaultMode?: string | null } | null } | null | undefined,
+) {
   const defaultMode = project?.executionWorkspacePolicy?.enabled ? project.executionWorkspacePolicy.defaultMode : null;
-  if (
-    defaultMode === "isolated_workspace" ||
-    defaultMode === "operator_branch" ||
-    defaultMode === "adapter_default"
-  ) {
+  if (defaultMode === "isolated_workspace" || defaultMode === "operator_branch" || defaultMode === "adapter_default") {
     return defaultMode === "adapter_default" ? "agent_default" : defaultMode;
   }
   return "shared_workspace";
@@ -319,8 +349,6 @@ export function buildAssigneeAdapterOverrides(input: {
       adapterConfig.variant = input.thinkingEffortOverride;
     } else if (adapterType === "claude_local") {
       adapterConfig.effort = input.thinkingEffortOverride;
-    } else if (adapterType === "opencode_local") {
-      adapterConfig.variant = input.thinkingEffortOverride;
     }
   }
   if (adapterType === "claude_local" && input.chrome) {

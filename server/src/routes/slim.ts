@@ -1,7 +1,7 @@
-import { Router } from "express";
 import type { Db } from "@ironworksai/db";
 import { agents } from "@ironworksai/db";
 import { eq } from "drizzle-orm";
+import { Router } from "express";
 import { assertCompanyAccess } from "./authz.js";
 
 /**

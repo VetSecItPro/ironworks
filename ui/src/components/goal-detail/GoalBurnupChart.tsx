@@ -1,5 +1,5 @@
-import { BarChart3 } from "lucide-react";
 import type { Issue } from "@ironworksai/shared";
+import { BarChart3 } from "lucide-react";
 
 export function GoalBurnupChart({
   issues,
@@ -20,9 +20,7 @@ export function GoalBurnupChart({
     .sort((a, b) => a - b);
 
   // Build scope timeline (when issues were created)
-  const scopeEvents = issues
-    .map((i) => new Date(i.createdAt).getTime())
-    .sort((a, b) => a - b);
+  const scopeEvents = issues.map((i) => new Date(i.createdAt).getTime()).sort((a, b) => a - b);
 
   const createdDates = issues.map((i) => new Date(i.createdAt).getTime());
   const startDate = goalStartDate ? new Date(goalStartDate).getTime() : Math.min(...createdDates);
@@ -78,18 +76,36 @@ export function GoalBurnupChart({
         Burnup
       </h4>
       <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-full" preserveAspectRatio="xMidYMid meet">
+        <title>Goal burn-up chart</title>
         {/* Grid */}
         <line x1="0" y1={svgH - 20} x2={svgW} y2={svgH - 20} className="stroke-muted/30" strokeWidth="0.5" />
-        <line x1="0" y1={(svgH - 20) / 2} x2={svgW} y2={(svgH - 20) / 2} className="stroke-muted/30" strokeWidth="0.5" />
+        <line
+          x1="0"
+          y1={(svgH - 20) / 2}
+          x2={svgW}
+          y2={(svgH - 20) / 2}
+          className="stroke-muted/30"
+          strokeWidth="0.5"
+        />
         <line x1="0" y1="10" x2={svgW} y2="10" className="stroke-muted/30" strokeWidth="0.5" />
 
         {/* Y labels */}
-        <text x="2" y="8" className="fill-muted-foreground text-[7px]">{total}</text>
-        <text x="2" y={svgH - 16} className="fill-muted-foreground text-[7px]">0</text>
+        <text x="2" y="8" className="fill-muted-foreground text-[7px]">
+          {total}
+        </text>
+        <text x="2" y={svgH - 16} className="fill-muted-foreground text-[7px]">
+          0
+        </text>
 
         {/* Ideal line (dashed) */}
         {targetDate && (
-          <path d={idealPath} fill="none" className="stroke-muted-foreground/30" strokeWidth="1" strokeDasharray="4 3" />
+          <path
+            d={idealPath}
+            fill="none"
+            className="stroke-muted-foreground/30"
+            strokeWidth="1"
+            strokeDasharray="4 3"
+          />
         )}
 
         {/* Scope line (total issues) */}
@@ -99,8 +115,12 @@ export function GoalBurnupChart({
         <path d={completedPath} fill="none" className="stroke-emerald-500" strokeWidth="2" />
 
         {/* X labels */}
-        <text x="2" y={svgH - 2} className="fill-muted-foreground text-[7px]">{startLabel}</text>
-        <text x={svgW - 2} y={svgH - 2} textAnchor="end" className="fill-muted-foreground text-[7px]">{endLabel}</text>
+        <text x="2" y={svgH - 2} className="fill-muted-foreground text-[7px]">
+          {startLabel}
+        </text>
+        <text x={svgW - 2} y={svgH - 2} textAnchor="end" className="fill-muted-foreground text-[7px]">
+          {endLabel}
+        </text>
       </svg>
       <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
         <span className="flex items-center gap-1">
@@ -117,7 +137,9 @@ export function GoalBurnupChart({
             Ideal
           </span>
         )}
-        <span className="ml-auto">{doneCount}/{total} done</span>
+        <span className="ml-auto">
+          {doneCount}/{total} done
+        </span>
       </div>
     </div>
   );

@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { Clock3, FlaskConical, Puzzle, Settings, SlidersHorizontal } from "lucide-react";
-import { NavLink } from "@/lib/router";
 import { pluginsApi } from "@/api/plugins";
 import { queryKeys } from "@/lib/queryKeys";
+import { NavLink } from "@/lib/router";
 import { SidebarNavItem } from "./SidebarNavItem";
 
 export function InstanceSidebar() {
@@ -15,9 +15,7 @@ export function InstanceSidebar() {
     <aside className="w-full h-full min-h-0 border-r border-border bg-background flex flex-col">
       <div className="flex items-center gap-2 px-3 h-12 shrink-0">
         <Settings className="h-4 w-4 text-muted-foreground shrink-0 ml-1" />
-        <span className="flex-1 text-sm font-bold text-foreground truncate">
-          Instance Settings
-        </span>
+        <span className="flex-1 text-sm font-bold text-foreground truncate">Instance Settings</span>
       </div>
 
       <nav className="flex-1 min-h-0 overflow-y-auto scrollbar-auto-hide flex flex-col gap-4 px-3 py-2">

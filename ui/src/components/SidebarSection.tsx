@@ -1,10 +1,6 @@
-import { type ReactNode, useState, useCallback } from "react";
 import { ChevronRight } from "lucide-react";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { type ReactNode, useCallback, useState } from "react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "../lib/utils";
 
 const STORAGE_KEY = "ironworks.sidebarSections";
@@ -53,10 +49,7 @@ export function SidebarSection({ label, children }: SidebarSectionProps) {
       <div className="group">
         <CollapsibleTrigger className="flex items-center w-full px-3 py-1.5">
           <ChevronRight
-            className={cn(
-              "h-3 w-3 text-muted-foreground/70 transition-transform shrink-0",
-              open && "rotate-90",
-            )}
+            className={cn("h-3 w-3 text-muted-foreground/70 transition-transform shrink-0", open && "rotate-90")}
           />
           <span className="ml-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/80">
             {label}

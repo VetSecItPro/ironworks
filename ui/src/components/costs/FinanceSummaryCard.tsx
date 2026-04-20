@@ -20,9 +20,7 @@ export function FinanceSummaryCard({
     <Card>
       <CardHeader className="px-5 pt-5 pb-2">
         <CardTitle className="text-base">Finance ledger</CardTitle>
-        <CardDescription>
-          Account-level charges that do not map to a single inference request.
-        </CardDescription>
+        <CardDescription>Account-level charges that do not map to a single inference request.</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-3 px-5 pb-5 pt-2 sm:grid-cols-2 xl:grid-cols-4">
         <MetricTile

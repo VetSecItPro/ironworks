@@ -1,6 +1,6 @@
-import { MarkdownBody } from "../components/MarkdownBody";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Clock } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { MarkdownBody } from "../components/MarkdownBody";
 
 const SERVICE_LEVEL_AGREEMENT = `
 # Service Level Agreement

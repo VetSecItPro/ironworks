@@ -1,29 +1,19 @@
+import type { AgentDetail as AgentDetailRecord, AgentRuntimeState, HeartbeatRun } from "@ironworksai/shared";
 import { Link } from "@/lib/router";
-import { ChartCard, RunActivityChart, PriorityChart, IssueStatusChart, SuccessRateChart } from "../ActivityCharts";
-import { StatusBadge } from "../StatusBadge";
+import { ChartCard, IssueStatusChart, PriorityChart, RunActivityChart, SuccessRateChart } from "../ActivityCharts";
 import { EntityRow } from "../EntityRow";
-import type {
-  AgentDetail as AgentDetailRecord,
-  HeartbeatRun,
-  AgentRuntimeState,
-} from "@ironworksai/shared";
+import { StatusBadge } from "../StatusBadge";
+import { CostsSection, EmploymentCard, LatestRunCard, ModelStrategyCard, OnboardingChecklist } from "./DashboardCards";
 import {
-  LatestRunCard,
-  CostsSection,
-  OnboardingChecklist,
-  ModelStrategyCard,
-  EmploymentCard,
-} from "./DashboardCards";
-import {
-  UnderperformerBanner,
-  CurrentTaskSpotlight,
-  PerformanceHistoryChart,
-  KnowledgeMap,
   AgentJournal,
-  DecisionLog,
-  CommunicationStyleBadge,
   AgentScheduleInfo,
+  CommunicationStyleBadge,
+  CurrentTaskSpotlight,
+  DecisionLog,
+  KnowledgeMap,
+  PerformanceHistoryChart,
   SuccessionWarning,
+  UnderperformerBanner,
 } from "./DashboardInsights";
 
 export function AgentDashboard({
@@ -36,7 +26,15 @@ export function AgentDashboard({
 }: {
   agent: AgentDetailRecord;
   runs: HeartbeatRun[];
-  assignedIssues: { id: string; title: string; status: string; priority: string; identifier?: string | null; createdAt: Date; completedAt?: Date | string | null }[];
+  assignedIssues: {
+    id: string;
+    title: string;
+    status: string;
+    priority: string;
+    identifier?: string | null;
+    createdAt: Date;
+    completedAt?: Date | string | null;
+  }[];
   runtimeState?: AgentRuntimeState;
   agentId: string;
   agentRouteId: string;
@@ -126,12 +124,7 @@ export function AgentDashboard({
       </div>
 
       {/* Performance History Chart */}
-      <PerformanceHistoryChart
-        runs={runs}
-        issues={assignedIssues}
-        companyId={agent.companyId}
-        agentId={agentId}
-      />
+      <PerformanceHistoryChart runs={runs} issues={assignedIssues} companyId={agent.companyId} agentId={agentId} />
 
       {/* Knowledge Map */}
       <KnowledgeMap companyId={agent.companyId} agentId={agentId} />

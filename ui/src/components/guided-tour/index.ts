@@ -1,7 +1,7 @@
 export { GuidedTour } from "./GuidedTour";
 export {
-  type TourStep,
-  useGuidedTour,
   isFirstRun,
   markFirstRunSeen,
+  type TourStep,
+  useGuidedTour,
 } from "./tour-data";

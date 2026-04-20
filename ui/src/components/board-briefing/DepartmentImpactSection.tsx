@@ -1,6 +1,6 @@
 import { Building2 } from "lucide-react";
-import { formatCents } from "../../lib/utils";
 import type { DepartmentImpactRow } from "../../api/executive";
+import { formatCents } from "../../lib/utils";
 
 interface DepartmentImpactSectionProps {
   departmentImpactData: DepartmentImpactRow[];
@@ -31,9 +31,7 @@ export function DepartmentImpactSection({ departmentImpactData }: DepartmentImpa
                 <td className="py-1.5 pr-4 text-right tabular-nums text-muted-foreground">
                   {formatCents(row.totalCost)}
                 </td>
-                <td className="py-1.5 text-right tabular-nums text-muted-foreground">
-                  {row.humanHoursEquivalent}h
-                </td>
+                <td className="py-1.5 text-right tabular-nums text-muted-foreground">{row.humanHoursEquivalent}h</td>
               </tr>
             ))}
           </tbody>

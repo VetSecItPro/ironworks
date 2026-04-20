@@ -1,11 +1,8 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { listGeminiSkills, syncGeminiSkills } from "@ironworksai/adapter-gemini-local/server";
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  listGeminiSkills,
-  syncGeminiSkills,
-} from "@ironworksai/adapter-gemini-local/server";
 
 async function makeTempDir(prefix: string): Promise<string> {
   return fs.mkdtemp(path.join(os.tmpdir(), prefix));

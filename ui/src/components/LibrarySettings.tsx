@@ -1,5 +1,5 @@
+import { EyeOff, Globe, Lock, Settings } from "lucide-react";
 import { useState } from "react";
-import { Globe, Lock, EyeOff, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,11 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "../lib/utils";
 
 export interface LibraryACLSettings {
@@ -53,9 +49,7 @@ export function LibrarySettingsDialog({
   settings: initialSettings,
   onSave,
 }: LibrarySettingsDialogProps) {
-  const [settings, setSettings] = useState<LibraryACLSettings>(
-    initialSettings ?? DEFAULT_SETTINGS,
-  );
+  const [settings, setSettings] = useState<LibraryACLSettings>(initialSettings ?? DEFAULT_SETTINGS);
 
   const handleSave = () => {
     onSave?.(settings);
@@ -70,15 +64,13 @@ export function LibrarySettingsDialog({
             <Settings className="h-4 w-4" />
             Library Settings
           </DialogTitle>
-          <DialogDescription>
-            Configure access controls and defaults for the company library.
-          </DialogDescription>
+          <DialogDescription>Configure access controls and defaults for the company library.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-2">
           {/* Default Visibility */}
           <div>
-            <label className="text-sm font-medium">Default Visibility</label>
+            <span className="text-sm font-medium">Default Visibility</span>
             <p className="text-xs text-muted-foreground mb-2">
               When agents create files, what visibility should be applied by default?
             </p>
@@ -88,6 +80,7 @@ export function LibrarySettingsDialog({
                 const isSelected = settings.defaultVisibility === opt.value;
                 return (
                   <button
+                    type="button"
                     key={opt.value}
                     onClick={() =>
                       setSettings((s) => ({
@@ -97,9 +90,7 @@ export function LibrarySettingsDialog({
                     }
                     className={cn(
                       "flex flex-col items-center gap-1 p-3 rounded-md border text-center transition-colors",
-                      isSelected
-                        ? "border-foreground bg-accent"
-                        : "border-border hover:border-foreground/30",
+                      isSelected ? "border-foreground bg-accent" : "border-border hover:border-foreground/30",
                     )}
                   >
                     <Icon className="h-4 w-4" />
@@ -114,7 +105,7 @@ export function LibrarySettingsDialog({
           {/* Agent Home Directories */}
           <div className="flex items-center justify-between">
             <div>
-              <label className="text-sm font-medium">Agent Home Directories</label>
+              <span className="text-sm font-medium">Agent Home Directories</span>
               <p className="text-xs text-muted-foreground">
                 Create agents/&lt;name&gt;/ folders automatically for each agent
               </p>
@@ -146,7 +137,7 @@ export function LibrarySettingsDialog({
 
           {/* Shared Folder Write Access */}
           <div>
-            <label className="text-sm font-medium">Shared Folder Write Access</label>
+            <span className="text-sm font-medium">Shared Folder Write Access</span>
             <p className="text-xs text-muted-foreground mb-2">
               Who can create and edit files in the shared/ directory?
             </p>
@@ -155,6 +146,7 @@ export function LibrarySettingsDialog({
                 const isSelected = settings.sharedFolderWriteAccess === opt.value;
                 return (
                   <button
+                    type="button"
                     key={opt.value}
                     onClick={() =>
                       setSettings((s) => ({
@@ -164,9 +156,7 @@ export function LibrarySettingsDialog({
                     }
                     className={cn(
                       "flex items-center gap-3 w-full p-2.5 rounded-md border text-left transition-colors",
-                      isSelected
-                        ? "border-foreground bg-accent"
-                        : "border-border hover:border-foreground/30",
+                      isSelected ? "border-foreground bg-accent" : "border-border hover:border-foreground/30",
                     )}
                   >
                     <div
@@ -175,9 +165,7 @@ export function LibrarySettingsDialog({
                         isSelected ? "border-foreground bg-foreground" : "border-muted-foreground",
                       )}
                     >
-                      {isSelected && (
-                        <div className="h-full w-full rounded-full bg-background scale-[0.35]" />
-                      )}
+                      {isSelected && <div className="h-full w-full rounded-full bg-background scale-[0.35]" />}
                     </div>
                     <div>
                       <span className="text-sm font-medium">{opt.label}</span>
@@ -214,23 +202,13 @@ export function LibrarySettingsButton({
     <>
       <Tooltip delayDuration={300}>
         <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="shrink-0"
-            onClick={() => setOpen(true)}
-          >
+          <Button variant="ghost" size="icon-sm" className="shrink-0" onClick={() => setOpen(true)}>
             <Settings className="h-3.5 w-3.5" />
           </Button>
         </TooltipTrigger>
         <TooltipContent className="text-xs">Library settings</TooltipContent>
       </Tooltip>
-      <LibrarySettingsDialog
-        open={open}
-        onOpenChange={setOpen}
-        settings={settings}
-        onSave={onSave}
-      />
+      <LibrarySettingsDialog open={open} onOpenChange={setOpen} settings={settings} onSave={onSave} />
     </>
   );
 }

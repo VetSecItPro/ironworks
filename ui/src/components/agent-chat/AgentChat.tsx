@@ -1,18 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { AgentDetail } from "@ironworksai/shared";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { agentsApi } from "../../api/agents";
 import { issuesApi } from "../../api/issues";
 import { queryKeys } from "../../lib/queryKeys";
-import {
-  POLL_INTERVAL_MS,
-  normalizeComments,
-  getSuggestedActions,
-  SUGGESTED_ACTION_PROMPTS,
-} from "./chat-helpers";
-import { ChatToolbar } from "./ChatToolbar";
-import { ChatMessageList } from "./ChatMessageList";
 import { ChatInputArea } from "./ChatInputArea";
+import { ChatMessageList } from "./ChatMessageList";
+import { ChatToolbar } from "./ChatToolbar";
+import { getSuggestedActions, normalizeComments, POLL_INTERVAL_MS, SUGGESTED_ACTION_PROMPTS } from "./chat-helpers";
 
 interface AgentChatProps {
   agent: AgentDetail;
@@ -58,10 +53,7 @@ export function AgentChat({ agent, companyId }: AgentChatProps) {
     return agentMsgs.length > 0 ? agentMsgs[agentMsgs.length - 1].body : null;
   }, [messages]);
 
-  const suggestedActions = useMemo(
-    () => getSuggestedActions(lastAgentMessage),
-    [lastAgentMessage],
-  );
+  const suggestedActions = useMemo(() => getSuggestedActions(lastAgentMessage), [lastAgentMessage]);
 
   const isTyping = !!chatIssue && chatIssue.status === "in_progress";
 
@@ -96,7 +88,10 @@ export function AgentChat({ agent, companyId }: AgentChatProps) {
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        handleSend();
+      }
     },
     [handleSend],
   );

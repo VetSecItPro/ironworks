@@ -9,19 +9,10 @@ import {
   Webhook,
   XCircle,
 } from "lucide-react";
+import type { PluginDashboardData, PluginHealthCheckResult } from "@/api/plugins";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import type {
-  PluginDashboardData,
-  PluginHealthCheckResult,
-} from "@/api/plugins";
 
 // ---------------------------------------------------------------------------
 // Dashboard helper components and formatting utilities
@@ -91,12 +82,7 @@ function JobStatusDot({ status }: { status: string }) {
           : status === "cancelled"
             ? "bg-gray-400"
             : "bg-amber-500"; // queued, pending
-  return (
-    <span
-      className={`inline-block h-2 w-2 rounded-full shrink-0 ${colorClass}`}
-      title={status}
-    />
-  );
+  return <span className={`inline-block h-2 w-2 rounded-full shrink-0 ${colorClass}`} title={status} />;
 }
 
 /**
@@ -111,12 +97,7 @@ function DeliveryStatusDot({ status }: { status: string }) {
         : status === "received"
           ? "bg-blue-500"
           : "bg-amber-500"; // pending
-  return (
-    <span
-      className={`inline-block h-2 w-2 rounded-full shrink-0 ${colorClass}`}
-      title={status}
-    />
-  );
+  return <span className={`inline-block h-2 w-2 rounded-full shrink-0 ${colorClass}`} title={status} />;
 }
 
 // ---------------------------------------------------------------------------
@@ -171,9 +152,7 @@ export function PluginStatusTab({
               <Cpu className="h-4 w-4" />
               Runtime Dashboard
             </CardTitle>
-            <CardDescription>
-              Worker process, scheduled jobs, and webhook deliveries
-            </CardDescription>
+            <CardDescription>Worker process, scheduled jobs, and webhook deliveries</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {dashboardData ? (
@@ -211,7 +190,8 @@ export function PluginStatusTab({
                               Crashes
                             </span>
                             <span className="text-xs">
-                              {dashboardData.worker.consecutiveCrashes} consecutive / {dashboardData.worker.totalCrashes} total
+                              {dashboardData.worker.consecutiveCrashes} consecutive /{" "}
+                              {dashboardData.worker.totalCrashes} total
                             </span>
                           </div>
                           {dashboardData.worker.lastCrashAt && (
@@ -301,9 +281,7 @@ export function PluginStatusTab({
                 </div>
               </>
             ) : (
-              <p className="text-sm text-muted-foreground">
-                Runtime diagnostics are unavailable right now.
-              </p>
+              <p className="text-sm text-muted-foreground">Runtime diagnostics are unavailable right now.</p>
             )}
           </CardContent>
         </Card>
@@ -332,9 +310,15 @@ export function PluginStatusTab({
                             : "text-muted-foreground"
                     }`}
                   >
-                    <span className="shrink-0 text-muted-foreground/70">{new Date(entry.createdAt).toLocaleTimeString()}</span>
-                    <Badge variant="outline" className="h-4 shrink-0 px-1 text-[10px]">{entry.level}</Badge>
-                    <span className="truncate" title={entry.message}>{entry.message}</span>
+                    <span className="shrink-0 text-muted-foreground/70">
+                      {new Date(entry.createdAt).toLocaleTimeString()}
+                    </span>
+                    <Badge variant="outline" className="h-4 shrink-0 px-1 text-[10px]">
+                      {entry.level}
+                    </Badge>
+                    <span className="truncate" title={entry.message}>
+                      {entry.message}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -358,15 +342,13 @@ export function PluginStatusTab({
               <div className="space-y-4 text-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Overall</span>
-                  <Badge variant={healthData.healthy ? "default" : "destructive"}>
-                    {healthData.status}
-                  </Badge>
+                  <Badge variant={healthData.healthy ? "default" : "destructive"}>{healthData.status}</Badge>
                 </div>
 
                 {healthData.checks.length > 0 ? (
                   <div className="space-y-2 border-t border-border/50 pt-2">
-                    {healthData.checks.map((check, i) => (
-                      <div key={i} className="flex items-start justify-between gap-2">
+                    {healthData.checks.map((check) => (
+                      <div key={check.name} className="flex items-start justify-between gap-2">
                         <span className="truncate text-muted-foreground" title={check.name}>
                           {check.name}
                         </span>

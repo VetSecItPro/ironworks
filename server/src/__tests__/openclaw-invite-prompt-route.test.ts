@@ -1,8 +1,8 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { accessRoutes } from "../routes/access.js";
 import { errorHandler } from "../middleware/index.js";
+import { accessRoutes } from "../routes/access.js";
 
 const mockAccessService = vi.hoisted(() => ({
   hasPermission: vi.fn(),
@@ -35,33 +35,26 @@ const mockBoardAuthService = vi.hoisted(() => ({
 
 const mockLogActivity = vi.hoisted(() => vi.fn());
 
-vi.mock("../services/index.js", () => ({
-  accessService: () => mockAccessService,
-  agentService: () => mockAgentService,
-  boardAuthService: () => mockBoardAuthService,
-  budgetService: () => ({ upsertPolicy: vi.fn() }),
-  userInviteService: () => ({ create: vi.fn(), getByToken: vi.fn(), accept: vi.fn(), listForCompany: vi.fn(), revoke: vi.fn() }),
-  deduplicateAgentName: vi.fn(),
-  logActivity: mockLogActivity,
-  companyPortabilityService: () => ({}),
-  instanceSettingsService: () => ({}),
-  companySkillService: () => ({}),
-  workProductService: () => ({}),
-  workspaceOperationService: () => ({}),
-  executionWorkspaceService: () => ({}),
-  issueApprovalService: () => ({}),
-  secretService: () => ({}),
-  sidebarBadgeService: () => ({}),
-  dashboardService: () => ({}),
-  heartbeatService: () => ({}),
-  goalService: () => ({}),
-  financeService: () => ({}),
-  costService: () => ({}),
-  companyService: () => ({}),
-  routineService: () => ({}),
-  playbookService: () => ({ seedDefaults: vi.fn() }),
-  notifyHireApproved: vi.fn(),
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    accessService: () => mockAccessService,
+    agentService: () => mockAgentService,
+    boardAuthService: () => mockBoardAuthService,
+    budgetService: () => ({ upsertPolicy: vi.fn() }),
+    userInviteService: () => ({
+      create: vi.fn(),
+      getByToken: vi.fn(),
+      accept: vi.fn(),
+      listForCompany: vi.fn(),
+      revoke: vi.fn(),
+    }),
+    deduplicateAgentName: vi.fn(),
+    logActivity: mockLogActivity,
+    playbookService: () => ({ seedDefaults: vi.fn() }),
+    notifyHireApproved: vi.fn(),
+  });
+});
 
 function createDbStub() {
   const createdInvite = {
@@ -90,11 +83,13 @@ function createApp(actor: Record<string, unknown>, db: Record<string, unknown>) 
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });
   app.use(
     "/api",
+    // biome-ignore lint/suspicious/noExplicitAny: test-only type cast to satisfy service/function signature in unit test context
     accessRoutes(db as any, {
       deploymentMode: "local_trusted",
       deploymentExposure: "private",
@@ -130,9 +125,7 @@ describe("POST /companies/:companyId/openclaw/invite-prompt", () => {
       db,
     );
 
-    const res = await request(app)
-      .post("/api/companies/company-1/openclaw/invite-prompt")
-      .send({});
+    const res = await request(app).post("/api/companies/company-1/openclaw/invite-prompt").send({});
 
     expect(res.status).toBe(403);
     expect(res.body.error).toContain("Only CEO agents");
@@ -179,9 +172,7 @@ describe("POST /companies/:companyId/openclaw/invite-prompt", () => {
       db,
     );
 
-    const res = await request(app)
-      .post("/api/companies/company-1/openclaw/invite-prompt")
-      .send({});
+    const res = await request(app).post("/api/companies/company-1/openclaw/invite-prompt").send({});
 
     expect(res.status).toBe(201);
     expect(res.body.allowedJoinTypes).toBe("agent");
@@ -201,9 +192,7 @@ describe("POST /companies/:companyId/openclaw/invite-prompt", () => {
       db,
     );
 
-    const res = await request(app)
-      .post("/api/companies/company-1/openclaw/invite-prompt")
-      .send({});
+    const res = await request(app).post("/api/companies/company-1/openclaw/invite-prompt").send({});
 
     expect(res.status).toBe(403);
     expect(res.body.error).toBe("Permission denied");

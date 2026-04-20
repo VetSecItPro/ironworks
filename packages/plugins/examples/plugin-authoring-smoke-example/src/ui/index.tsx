@@ -1,4 +1,4 @@
-import { usePluginAction, usePluginData, type PluginWidgetProps } from "@ironworksai/plugin-sdk/ui";
+import { type PluginWidgetProps, usePluginAction, usePluginData } from "@ironworksai/plugin-sdk/ui";
 
 type HealthData = {
   status: "ok" | "degraded" | "error";
@@ -17,7 +17,9 @@ export function DashboardWidget(_props: PluginWidgetProps) {
       <strong>Plugin Authoring Smoke Example</strong>
       <div>Health: {data?.status ?? "unknown"}</div>
       <div>Checked: {data?.checkedAt ?? "never"}</div>
-      <button onClick={() => void ping()}>Ping Worker</button>
+      <button type="button" onClick={() => void ping()}>
+        Ping Worker
+      </button>
     </div>
   );
 }

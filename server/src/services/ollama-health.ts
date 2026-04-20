@@ -1,6 +1,6 @@
 import type { Db } from "@ironworksai/db";
 import { agents } from "@ironworksai/db";
-import { eq, ne } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 import { findCompanyChannel, postMessage } from "./channels.js";
 

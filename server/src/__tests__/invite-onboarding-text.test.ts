@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import type { Request } from "express";
+import { describe, expect, it } from "vitest";
 import { buildInviteOnboardingTextDocument } from "../routes/access.js";
 
 function buildReq(host: string): Request {
@@ -30,6 +30,7 @@ describe("buildInviteOnboardingTextDocument", () => {
       updatedAt: new Date("2026-03-04T00:00:00.000Z"),
     } as const;
 
+    // biome-ignore lint/suspicious/noExplicitAny: test-only type cast to satisfy service/function signature in unit test context
     const text = buildInviteOnboardingTextDocument(req, "token-123", invite as any, {
       deploymentMode: "local_trusted",
       deploymentExposure: "private",
@@ -45,7 +46,7 @@ describe("buildInviteOnboardingTextDocument", () => {
     expect(text).toContain("http://localhost:3100");
     expect(text).toContain("host.docker.internal");
     expect(text).toContain("ironworksApiUrl");
-    expect(text).toContain("adapterType \"openclaw_gateway\"");
+    expect(text).toContain('adapterType "openclaw_gateway"');
     expect(text).toContain("headers.x-openclaw-token");
     expect(text).toContain("Do NOT use /v1/responses or /hooks/*");
     expect(text).toContain("set the first reachable candidate as agentDefaultsPayload.ironworksApiUrl");
@@ -72,6 +73,7 @@ describe("buildInviteOnboardingTextDocument", () => {
       updatedAt: new Date("2026-03-04T00:00:00.000Z"),
     } as const;
 
+    // biome-ignore lint/suspicious/noExplicitAny: test-only type cast to satisfy service/function signature in unit test context
     const text = buildInviteOnboardingTextDocument(req, "token-456", invite as any, {
       deploymentMode: "authenticated",
       deploymentExposure: "private",
@@ -103,6 +105,7 @@ describe("buildInviteOnboardingTextDocument", () => {
       updatedAt: new Date("2026-03-04T00:00:00.000Z"),
     } as const;
 
+    // biome-ignore lint/suspicious/noExplicitAny: test-only type cast to satisfy service/function signature in unit test context
     const text = buildInviteOnboardingTextDocument(req, "token-789", invite as any, {
       deploymentMode: "local_trusted",
       deploymentExposure: "private",

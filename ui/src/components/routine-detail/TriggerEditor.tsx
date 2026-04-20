@@ -1,25 +1,12 @@
+import type { RoutineTrigger } from "@ironworksai/shared";
+import { Clock3, RefreshCw, Save, Trash2, Webhook, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
-import {
-  Clock3,
-  RefreshCw,
-  Save,
-  Trash2,
-  Webhook,
-  Zap,
-} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { ScheduleEditor } from "../ScheduleEditor";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { buildRoutineTriggerPatch } from "../../lib/routine-trigger-patch";
-import type { RoutineTrigger } from "@ironworksai/shared";
+import { ScheduleEditor } from "../ScheduleEditor";
 
 const signingModes = ["bearer", "hmac_sha256"];
 
@@ -62,7 +49,13 @@ export function TriggerEditor({
     <div className="rounded-lg border border-border p-4 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm font-medium">
-          {trigger.kind === "schedule" ? <Clock3 className="h-3.5 w-3.5" /> : trigger.kind === "webhook" ? <Webhook className="h-3.5 w-3.5" /> : <Zap className="h-3.5 w-3.5" />}
+          {trigger.kind === "schedule" ? (
+            <Clock3 className="h-3.5 w-3.5" />
+          ) : trigger.kind === "webhook" ? (
+            <Webhook className="h-3.5 w-3.5" />
+          ) : (
+            <Zap className="h-3.5 w-3.5" />
+          )}
           {trigger.label ?? trigger.kind}
         </div>
         <span className="text-xs text-muted-foreground">
@@ -104,7 +97,9 @@ export function TriggerEditor({
                 </SelectTrigger>
                 <SelectContent>
                   {signingModes.map((mode) => (
-                    <SelectItem key={mode} value={mode}>{mode}</SelectItem>
+                    <SelectItem key={mode} value={mode}>
+                      {mode}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>

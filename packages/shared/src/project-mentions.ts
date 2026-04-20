@@ -107,10 +107,11 @@ export function extractProjectMentionIds(markdown: string): string[] {
   if (!markdown) return [];
   const ids = new Set<string>();
   const re = new RegExp(PROJECT_MENTION_LINK_RE);
-  let match: RegExpExecArray | null;
-  while ((match = re.exec(markdown)) !== null) {
+  let match = re.exec(markdown);
+  while (match !== null) {
     const parsed = parseProjectMentionHref(match[1]);
     if (parsed) ids.add(parsed.projectId);
+    match = re.exec(markdown);
   }
   return [...ids];
 }
@@ -119,10 +120,11 @@ export function extractAgentMentionIds(markdown: string): string[] {
   if (!markdown) return [];
   const ids = new Set<string>();
   const re = new RegExp(AGENT_MENTION_LINK_RE);
-  let match: RegExpExecArray | null;
-  while ((match = re.exec(markdown)) !== null) {
+  let match = re.exec(markdown);
+  while (match !== null) {
     const parsed = parseAgentMentionHref(match[1]);
     if (parsed) ids.add(parsed.agentId);
+    match = re.exec(markdown);
   }
   return [...ids];
 }

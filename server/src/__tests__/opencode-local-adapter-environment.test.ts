@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { testEnvironment } from "@ironworksai/adapter-opencode-local/server";
+import { describe, expect, it } from "vitest";
 
 describe("opencode_local environment diagnostics", () => {
   it("reports a missing working directory as an error when cwd is absolute", async () => {
@@ -66,7 +66,7 @@ describe("opencode_local environment diagnostics", () => {
     const script = [
       "#!/bin/sh",
       "echo 'ProviderModelNotFoundError: ProviderModelNotFoundError' 1>&2",
-      "echo 'data: { providerID: \"openai\", modelID: \"gpt-5.3-codex\", suggestions: [] }' 1>&2",
+      'echo \'data: { providerID: "openai", modelID: "gpt-5.3-codex", suggestions: [] }\' 1>&2',
       "exit 1",
       "",
     ].join("\n");

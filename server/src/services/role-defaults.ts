@@ -100,7 +100,7 @@ export const ROLE_DEFAULT_CAPABILITIES: Record<string, RoleCapabilities> = {
 };
 
 export function getDefaultCapabilitiesForRole(role: string): RoleCapabilities {
-  return ROLE_DEFAULT_CAPABILITIES[role] ?? ROLE_DEFAULT_CAPABILITIES["default"]!;
+  return ROLE_DEFAULT_CAPABILITIES[role] ?? ROLE_DEFAULT_CAPABILITIES.default!;
 }
 
 // ---------------------------------------------------------------------------
@@ -108,17 +108,8 @@ export function getDefaultCapabilitiesForRole(role: string): RoleCapabilities {
 // ---------------------------------------------------------------------------
 
 export const ROLE_DEFAULT_HIRING_PERMISSIONS: Record<string, readonly string[]> = {
-  ceo: [
-    "agents:hire:full_time",
-    "agents:hire:contractor",
-    "agents:hire:approve",
-    "agents:hire:bypass_approval",
-  ],
-  vphr: [
-    "agents:hire:full_time",
-    "agents:hire:contractor",
-    "agents:hire:approve",
-  ],
+  ceo: ["agents:hire:full_time", "agents:hire:contractor", "agents:hire:approve", "agents:hire:bypass_approval"],
+  vphr: ["agents:hire:full_time", "agents:hire:contractor", "agents:hire:approve"],
   cto: ["agents:hire:contractor"],
   coo: ["agents:hire:contractor"],
   cmo: ["agents:hire:contractor"],
@@ -131,5 +122,5 @@ export const ROLE_DEFAULT_HIRING_PERMISSIONS: Record<string, readonly string[]> 
 };
 
 export function getDefaultHiringPermissionsForRole(role: string): readonly string[] {
-  return ROLE_DEFAULT_HIRING_PERMISSIONS[role] ?? ROLE_DEFAULT_HIRING_PERMISSIONS["default"]!;
+  return ROLE_DEFAULT_HIRING_PERMISSIONS[role] ?? ROLE_DEFAULT_HIRING_PERMISSIONS.default!;
 }

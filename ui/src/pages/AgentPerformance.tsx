@@ -1,43 +1,41 @@
-import React, { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { agentsApi } from "../api/agents";
+import { BarChart3 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { agentMemoryApi } from "../api/agentMemory";
-import { issuesApi } from "../api/issues";
+import { agentsApi } from "../api/agents";
 import { costsApi } from "../api/costs";
+import { issuesApi } from "../api/issues";
 import { projectsApi } from "../api/projects";
 import { velocityApi } from "../api/velocity";
-import { useCompany } from "../context/CompanyContext";
-import { useBreadcrumbs } from "../context/BreadcrumbContext";
-import { queryKeys } from "../lib/queryKeys";
-import { formatCents, cn } from "../lib/utils";
+import type { DeptAggRow } from "../components/agent-performance";
+import {
+  AgentKpiCards,
+  DepartmentAggregation,
+  LeaderboardHighlights,
+  PerformanceAlertBanner,
+  PerformanceHeader,
+} from "../components/agent-performance";
 import { EmptyState } from "../components/EmptyState";
 import { PageSkeleton } from "../components/PageSkeleton";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BarChart3 } from "lucide-react";
-
+import { CompanyKpiCards } from "../components/performance/CompanyKpiCards";
+import { PerformanceByProject } from "../components/performance/PerformanceByProject";
+import { PerformanceTrendChart, VelocityChart } from "../components/performance/PerformanceCharts";
+import { PerformanceInsights } from "../components/performance/PerformanceInsights";
+import { PerformanceTable } from "../components/performance/PerformanceTable";
 import {
+  type AgentPerfRow,
   computeAgentPerformance,
   computeRating,
   RATING_COLORS,
-  type AgentPerfRow,
   type SortField,
   type TimeRange,
 } from "../components/performance/ratingUtils";
-import { CompanyKpiCards } from "../components/performance/CompanyKpiCards";
-import { PerformanceInsights } from "../components/performance/PerformanceInsights";
-import { PerformanceTable } from "../components/performance/PerformanceTable";
-import { PerformanceTrendChart, VelocityChart } from "../components/performance/PerformanceCharts";
-import { WorkloadDistribution, AgentPipeline } from "../components/performance/WorkloadCharts";
-import { PerformanceByProject } from "../components/performance/PerformanceByProject";
-
-import {
-  PerformanceHeader,
-  PerformanceAlertBanner,
-  LeaderboardHighlights,
-  DepartmentAggregation,
-  AgentKpiCards,
-} from "../components/agent-performance";
-import type { DeptAggRow } from "../components/agent-performance";
+import { AgentPipeline, WorkloadDistribution } from "../components/performance/WorkloadCharts";
+import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { useCompany } from "../context/CompanyContext";
+import { queryKeys } from "../lib/queryKeys";
+import { cn, formatCents } from "../lib/utils";
 
 // Re-export for consumers (e.g. BoardBriefing)
 export type { AgentPerfRow };
@@ -157,22 +155,27 @@ export function AgentPerformance() {
     const deptMap = new Map<string, { dept: string; agents: AgentPerfRow[] }>();
     for (const row of rows) {
       const agent = (agents ?? []).find((a) => a.id === row.agentId);
-      const dept = (agent as unknown as Record<string, unknown> | undefined)?.department as string | undefined ?? "unassigned";
+      const dept =
+        ((agent as unknown as Record<string, unknown> | undefined)?.department as string | undefined) ?? "unassigned";
       if (!deptMap.has(dept)) deptMap.set(dept, { dept, agents: [] });
       deptMap.get(dept)!.agents.push(row);
     }
-    return Array.from(deptMap.values()).map((g) => {
-      const active = g.agents.filter((r) => r.tasksDone > 0);
-      return {
-        dept: g.dept,
-        agentCount: g.agents.length,
-        avgScore: active.length > 0 ? Math.round(active.reduce((s, r) => s + r.ratingScore, 0) / active.length) : 0,
-        totalDone: g.agents.reduce((s, r) => s + r.tasksDone, 0),
-        avgThroughput: active.length > 0 ? +(active.reduce((s, r) => s + r.throughput, 0) / active.length).toFixed(2) : 0,
-        avgCompletion: active.length > 0 ? Math.round(active.reduce((s, r) => s + r.completionRate, 0) / active.length) : 0,
-        totalSpend: g.agents.reduce((s, r) => s + r.totalSpendCents, 0),
-      };
-    }).sort((a, b) => b.avgScore - a.avgScore);
+    return Array.from(deptMap.values())
+      .map((g) => {
+        const active = g.agents.filter((r) => r.tasksDone > 0);
+        return {
+          dept: g.dept,
+          agentCount: g.agents.length,
+          avgScore: active.length > 0 ? Math.round(active.reduce((s, r) => s + r.ratingScore, 0) / active.length) : 0,
+          totalDone: g.agents.reduce((s, r) => s + r.tasksDone, 0),
+          avgThroughput:
+            active.length > 0 ? +(active.reduce((s, r) => s + r.throughput, 0) / active.length).toFixed(2) : 0,
+          avgCompletion:
+            active.length > 0 ? Math.round(active.reduce((s, r) => s + r.completionRate, 0) / active.length) : 0,
+          totalSpend: g.agents.reduce((s, r) => s + r.totalSpendCents, 0),
+        };
+      })
+      .sort((a, b) => b.avgScore - a.avgScore);
   }, [rows, agents, showDeptAgg]);
 
   const topPerformer = rows.filter((r) => r.tasksDone > 0)[0] ?? null;
@@ -184,7 +187,10 @@ export function AgentPerformance() {
       const prev = prevScoreMap.get(row.agentId);
       if (prev !== undefined && row.tasksDone > 0) {
         const delta = row.ratingScore - prev;
-        if (delta > bestDelta) { bestDelta = delta; best = row; }
+        if (delta > bestDelta) {
+          bestDelta = delta;
+          best = row;
+        }
       }
     }
     return bestDelta > 0 ? best : null;
@@ -194,8 +200,11 @@ export function AgentPerformance() {
   const teamRating = computeRating(teamAvgScore);
 
   const toggleSort = (field: SortField) => {
-    if (sortField === field) setSortDir((d) => d === "asc" ? "desc" : "asc");
-    else { setSortField(field); setSortDir("desc"); }
+    if (sortField === field) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else {
+      setSortField(field);
+      setSortDir("desc");
+    }
   };
 
   if (!selectedCompanyId) {
@@ -205,7 +214,13 @@ export function AgentPerformance() {
 
   return (
     <div className="space-y-6">
-      <PerformanceHeader range={range} setRange={setRange} showDeptAgg={showDeptAgg} setShowDeptAgg={setShowDeptAgg} rows={rows} />
+      <PerformanceHeader
+        range={range}
+        setRange={setRange}
+        showDeptAgg={showDeptAgg}
+        setShowDeptAgg={setShowDeptAgg}
+        rows={rows}
+      />
       <PerformanceAlertBanner rows={rows} prevScoreMap={prevScoreMap} />
       <LeaderboardHighlights topPerformer={topPerformer} mostImproved={mostImproved} prevScoreMap={prevScoreMap} />
       <CompanyKpiCards rows={rows} />
@@ -213,20 +228,28 @@ export function AgentPerformance() {
 
       {velocity && velocity.length > 0 && (
         <div className="rounded-xl border border-border p-4 space-y-3">
-          <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Mission Velocity - Last 12 Weeks</h4>
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Mission Velocity - Last 12 Weeks
+          </h4>
           <VelocityChart data={velocity} />
         </div>
       )}
 
       {/* Team summary */}
       <div className="flex items-center gap-4 rounded-xl border border-border p-4">
-        <div className={cn("inline-flex items-center justify-center h-12 w-12 rounded-xl border text-xl font-bold", RATING_COLORS[teamRating])}>
+        <div
+          className={cn(
+            "inline-flex items-center justify-center h-12 w-12 rounded-xl border text-xl font-bold",
+            RATING_COLORS[teamRating],
+          )}
+        >
           {teamRating}
         </div>
         <div>
           <p className="text-sm font-medium">Team Average</p>
           <p className="text-sm text-muted-foreground">
-            {rows.filter((r) => r.tasksDone > 0).length} active agents · {rows.reduce((s, r) => s + r.tasksDone, 0)} tasks completed · {formatCents(rows.reduce((s, r) => s + r.totalSpendCents, 0))} total spend
+            {rows.filter((r) => r.tasksDone > 0).length} active agents · {rows.reduce((s, r) => s + r.tasksDone, 0)}{" "}
+            tasks completed · {formatCents(rows.reduce((s, r) => s + r.totalSpendCents, 0))} total spend
           </p>
         </div>
       </div>
@@ -238,15 +261,21 @@ export function AgentPerformance() {
       {rows.length > 0 && agents && agents.length > 0 && (
         <div className="rounded-xl border border-border p-4 space-y-3">
           <div className="flex items-center justify-between gap-3">
-            <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Performance Score Trend</h4>
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Performance Score Trend
+            </h4>
             <Select value={effectiveTrendAgentId} onValueChange={setTrendAgentId}>
               <SelectTrigger className="w-[200px] h-8 text-xs">
                 <SelectValue placeholder="Select agent" />
               </SelectTrigger>
               <SelectContent>
-                {agents.filter((a) => a.status !== "terminated").map((a) => (
-                  <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
-                ))}
+                {agents
+                  .filter((a) => a.status !== "terminated")
+                  .map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      {a.name}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>

@@ -1,8 +1,7 @@
 import type { AdapterEnvironmentTestResult } from "./types";
 
 export function AdapterEnvironmentResult({ result }: { result: AdapterEnvironmentTestResult }) {
-  const statusLabel =
-    result.status === "pass" ? "Passed" : result.status === "warn" ? "Warnings" : "Failed";
+  const statusLabel = result.status === "pass" ? "Passed" : result.status === "warn" ? "Warnings" : "Failed";
   const statusClass =
     result.status === "pass"
       ? "text-green-700 dark:text-green-300 border-green-300 dark:border-green-500/40 bg-green-50 dark:bg-green-500/10"
@@ -14,16 +13,12 @@ export function AdapterEnvironmentResult({ result }: { result: AdapterEnvironmen
     <div className={`rounded-md border px-3 py-2 text-xs ${statusClass}`}>
       <div className="flex items-center justify-between gap-2">
         <span className="font-medium">{statusLabel}</span>
-        <span className="text-[11px] opacity-80">
-          {new Date(result.testedAt).toLocaleTimeString()}
-        </span>
+        <span className="text-[11px] opacity-80">{new Date(result.testedAt).toLocaleTimeString()}</span>
       </div>
       <div className="mt-2 space-y-1.5">
-        {result.checks.map((check, idx) => (
-          <div key={`${check.code}-${idx}`} className="text-[11px] leading-relaxed break-words">
-            <span className="font-medium uppercase tracking-wide opacity-80">
-              {check.level}
-            </span>
+        {result.checks.map((check) => (
+          <div key={check.code} className="text-[11px] leading-relaxed break-words">
+            <span className="font-medium uppercase tracking-wide opacity-80">{check.level}</span>
             <span className="mx-1 opacity-60">·</span>
             <span>{check.message}</span>
             {check.detail && <span className="block opacity-75 break-all">({check.detail})</span>}

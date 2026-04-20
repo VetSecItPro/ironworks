@@ -1,7 +1,6 @@
+import { buildGeminiLocalConfig, parseGeminiStdoutLine } from "@ironworksai/adapter-gemini-local/ui";
 import type { UIAdapterModule } from "../types";
-import { parseGeminiStdoutLine } from "@ironworksai/adapter-gemini-local/ui";
 import { GeminiLocalConfigFields } from "./config-fields";
-import { buildGeminiLocalConfig } from "@ironworksai/adapter-gemini-local/ui";
 
 export const geminiLocalUIAdapter: UIAdapterModule = {
   type: "gemini_local",

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -9,9 +9,7 @@ const COMPANY_ID = randomUUID();
 const USER_ID = randomUUID();
 const CHANNEL_ID = randomUUID();
 
-const MOCK_CHANNELS = [
-  { id: CHANNEL_ID, companyId: COMPANY_ID, name: "#company", topic: "General" },
-];
+const MOCK_CHANNELS = [{ id: CHANNEL_ID, companyId: COMPANY_ID, name: "#company", topic: "General" }];
 
 const MOCK_MESSAGES = [
   {
@@ -85,9 +83,12 @@ vi.mock("../services/issues.js", () => ({
   issueService: () => ({ getById: vi.fn().mockResolvedValue(null) }),
 }));
 
-vi.mock("../services/index.js", () => ({
-  heartbeatService: () => ({ wakeup: vi.fn() }),
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    heartbeatService: () => ({ wakeup: vi.fn() }),
+  });
+});
 
 vi.mock("../services/activity-log.js", () => ({
   logActivity: vi.fn(),
@@ -107,6 +108,7 @@ async function createApp(actor: Record<string, unknown>) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });
@@ -116,12 +118,13 @@ async function createApp(actor: Record<string, unknown>) {
     select: vi.fn().mockReturnValue({
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockReturnValue({
-          then: vi.fn().mockImplementation((cb: any) =>
-            cb([{ id: CHANNEL_ID, companyId: COMPANY_ID }]),
-          ),
+          // biome-ignore lint/suspicious/noThenProperty: test mock drizzle thenable contract
+          // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
+          then: vi.fn().mockImplementation((cb: any) => cb([{ id: CHANNEL_ID, companyId: COMPANY_ID }])),
         }),
       }),
     }),
+    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
 
   app.use("/api", channelRoutes(fakeDb));
@@ -133,6 +136,7 @@ function createAppWithNoChannel(actor: Record<string, unknown>) {
   return createAppWithChannelLookup(actor, null);
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
 async function createAppWithChannelLookup(actor: Record<string, unknown>, result: any) {
   const { channelRoutes } = await import("../routes/channels.js");
   const { errorHandler } = await import("../middleware/error-handler.js");
@@ -140,6 +144,7 @@ async function createAppWithChannelLookup(actor: Record<string, unknown>, result
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });
@@ -148,12 +153,13 @@ async function createAppWithChannelLookup(actor: Record<string, unknown>, result
     select: vi.fn().mockReturnValue({
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockReturnValue({
-          then: vi.fn().mockImplementation((cb: any) =>
-            cb(result ? [result] : []),
-          ),
+          // biome-ignore lint/suspicious/noThenProperty: test mock drizzle thenable contract
+          // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
+          then: vi.fn().mockImplementation((cb: any) => cb(result ? [result] : [])),
         }),
       }),
     }),
+    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
 
   app.use("/api", channelRoutes(fakeDb));
@@ -207,9 +213,7 @@ describe("channel routes", () => {
   describe("GET /api/companies/:companyId/channels/:channelId/messages", () => {
     it("returns messages for a valid channel", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app).get(
-        `/api/companies/${COMPANY_ID}/channels/${CHANNEL_ID}/messages`,
-      );
+      const res = await request(app).get(`/api/companies/${COMPANY_ID}/channels/${CHANNEL_ID}/messages`);
 
       expect(res.status).toBe(200);
       expect(res.body).toHaveLength(1);
@@ -219,9 +223,7 @@ describe("channel routes", () => {
     it("returns 404 for non-existent channel", async () => {
       const app = await createAppWithNoChannel(boardUser(USER_ID, [COMPANY_ID]));
       const fakeChannelId = randomUUID();
-      const res = await request(app).get(
-        `/api/companies/${COMPANY_ID}/channels/${fakeChannelId}/messages`,
-      );
+      const res = await request(app).get(`/api/companies/${COMPANY_ID}/channels/${fakeChannelId}/messages`);
       expect(res.status).toBe(404);
     });
   });
@@ -249,9 +251,7 @@ describe("channel routes", () => {
 
     it("rejects missing body field with 400", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post(`/api/companies/${COMPANY_ID}/channels/${CHANNEL_ID}/messages`)
-        .send({});
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/channels/${CHANNEL_ID}/messages`).send({});
 
       expect(res.status).toBe(400);
       expect(res.body.error).toContain("body is required");

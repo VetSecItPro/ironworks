@@ -1,7 +1,6 @@
-import { useState } from "react";
 import { Play } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 interface RunPlaybookDialogProps {
   open: boolean;
@@ -19,13 +19,7 @@ interface RunPlaybookDialogProps {
   isPending?: boolean;
 }
 
-export function RunPlaybookDialog({
-  open,
-  onOpenChange,
-  playbookName,
-  onRun,
-  isPending,
-}: RunPlaybookDialogProps) {
+export function RunPlaybookDialog({ open, onOpenChange, playbookName, onRun, isPending }: RunPlaybookDialogProps) {
   const [name, setName] = useState("");
   const [repoUrl, setRepoUrl] = useState("");
 
@@ -56,16 +50,18 @@ export function RunPlaybookDialog({
             Run: {playbookName}
           </DialogTitle>
           <DialogDescription>
-            This will create a project, goal, and tasks for each step. Agents will pick up their assigned tasks automatically.
+            This will create a project, goal, and tasks for each step. Agents will pick up their assigned tasks
+            automatically.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           <div>
-            <label className="text-xs font-medium text-muted-foreground">
+            <label htmlFor="run-playbook-name" className="text-xs font-medium text-muted-foreground">
               Project Name
             </label>
             <Input
+              id="run-playbook-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={playbookName}
@@ -77,10 +73,11 @@ export function RunPlaybookDialog({
           </div>
 
           <div>
-            <label className="text-xs font-medium text-muted-foreground">
+            <label htmlFor="run-playbook-repo-url" className="text-xs font-medium text-muted-foreground">
               Repository URL (optional)
             </label>
             <Input
+              id="run-playbook-repo-url"
               value={repoUrl}
               onChange={(e) => setRepoUrl(e.target.value)}
               placeholder="https://github.com/org/repo.git"

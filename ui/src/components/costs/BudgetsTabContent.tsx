@@ -1,13 +1,12 @@
-import { Plus } from "lucide-react";
-import type { BudgetPolicySummary, BudgetIncident } from "@ironworksai/shared";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import type { BudgetIncident, BudgetPolicySummary } from "@ironworksai/shared";
+import { ArrowUpRight, Coins, DollarSign, Plus, ReceiptText } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BudgetIncidentCard } from "../BudgetIncidentCard";
 import { BudgetPolicyCard } from "../BudgetPolicyCard";
-import { PageSkeleton } from "../PageSkeleton";
 import { NewBudgetDialog } from "../NewBudgetDialog";
+import { PageSkeleton } from "../PageSkeleton";
 import { MetricTile } from "./MetricTile";
-import { ArrowUpRight, Coins, DollarSign, ReceiptText } from "lucide-react";
 
 interface BudgetOverview {
   policies: BudgetPolicySummary[];
@@ -35,14 +34,26 @@ export function BudgetsTabContent({
   setShowNewBudget: (v: boolean) => void;
   policyMutation: {
     isPending: boolean;
-    mutate: (input: { scopeType: BudgetPolicySummary["scopeType"]; scopeId: string; amount: number; windowKind: BudgetPolicySummary["windowKind"] }, opts?: { onSuccess?: () => void }) => void;
+    mutate: (
+      input: {
+        scopeType: BudgetPolicySummary["scopeType"];
+        scopeId: string;
+        amount: number;
+        windowKind: BudgetPolicySummary["windowKind"];
+      },
+      opts?: { onSuccess?: () => void },
+    ) => void;
   };
   incidentMutation: {
     isPending: boolean;
     mutate: (input: { incidentId: string; action: "keep_paused" | "raise_budget_and_resume"; amount?: number }) => void;
   };
   activeBudgetIncidents: BudgetIncident[];
-  budgetPoliciesByScope: { company: BudgetPolicySummary[]; agent: BudgetPolicySummary[]; project: BudgetPolicySummary[] };
+  budgetPoliciesByScope: {
+    company: BudgetPolicySummary[];
+    agent: BudgetPolicySummary[];
+    project: BudgetPolicySummary[];
+  };
 }) {
   const budgetPolicies = budgetData?.policies ?? [];
 
@@ -80,7 +91,8 @@ export function BudgetsTabContent({
             <CardHeader className="px-5 pt-5 pb-3">
               <CardTitle className="text-base">Status</CardTitle>
               <CardDescription>
-                Hard-stop spend limits for agents and projects. Provider subscription quota stays separate and appears under Providers.
+                Hard-stop spend limits for agents and projects. Provider subscription quota stays separate and appears
+                under Providers.
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3 px-5 pb-5 pt-0 md:grid-cols-4">
@@ -131,7 +143,8 @@ export function BudgetsTabContent({
                         incidentId: incident.id,
                         action: "raise_budget_and_resume",
                         amount,
-                      })}
+                      })
+                    }
                   />
                 ))}
               </div>
@@ -166,7 +179,8 @@ export function BudgetsTabContent({
                             scopeId: summary.scopeId,
                             amount,
                             windowKind: summary.windowKind,
-                          })}
+                          })
+                        }
                       />
                     ))}
                   </div>
@@ -177,7 +191,8 @@ export function BudgetsTabContent({
             {budgetPolicies.length === 0 ? (
               <Card>
                 <CardContent className="px-5 py-8 text-sm text-muted-foreground">
-                  No budget policies yet. Set agent and project budgets from their detail pages, or use the existing company monthly budget control.
+                  No budget policies yet. Set agent and project budgets from their detail pages, or use the existing
+                  company monthly budget control.
                 </CardContent>
               </Card>
             ) : null}

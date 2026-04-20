@@ -1,13 +1,7 @@
-import { useEffect, useRef, useState } from "react";
 import { PROJECT_COLORS } from "@ironworksai/shared";
+import { useEffect, useRef, useState } from "react";
 
-export function ColorPicker({
-  currentColor,
-  onSelect,
-}: {
-  currentColor: string;
-  onSelect: (color: string) => void;
-}) {
+export function ColorPicker({ currentColor, onSelect }: { currentColor: string; onSelect: (color: string) => void }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -25,6 +19,7 @@ export function ColorPicker({
   return (
     <div className="relative" ref={ref}>
       <button
+        type="button"
         onClick={() => setOpen(!open)}
         className="shrink-0 h-5 w-5 rounded-md cursor-pointer hover:ring-2 hover:ring-foreground/20 transition-[box-shadow]"
         style={{ backgroundColor: currentColor }}
@@ -35,6 +30,7 @@ export function ColorPicker({
           <div className="grid grid-cols-5 gap-1.5">
             {PROJECT_COLORS.map((color) => (
               <button
+                type="button"
                 key={color}
                 onClick={() => {
                   onSelect(color);

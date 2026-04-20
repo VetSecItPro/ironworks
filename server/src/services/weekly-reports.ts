@@ -1,9 +1,19 @@
-import { and, desc, eq, gte, isNotNull, lt, ne, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import { agents, issues, costEvents, agentMemoryEntries, companies, goals, goalKeyResults, approvals, heartbeatRuns, knowledgePages, projects } from "@ironworksai/db";
-import { computePerformanceScore } from "./performance-score.js";
-import { createAgentDocument } from "./agent-workspace.js";
+import {
+  agentMemoryEntries,
+  agents,
+  approvals,
+  companies,
+  costEvents,
+  goalKeyResults,
+  goals,
+  issues,
+  projects,
+} from "@ironworksai/db";
+import { and, desc, eq, gte, isNotNull, lt, ne, sql } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
+import { createAgentDocument } from "./agent-workspace.js";
+import { computePerformanceScore } from "./performance-score.js";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -28,11 +38,7 @@ function slugDate(date: Date): string {
  * Generate a weekly report for a single agent covering the past 7 days.
  * Saves the report as a document in the agent's workspace and returns the markdown.
  */
-export async function generateAgentWeeklyReport(
-  db: Db,
-  agentId: string,
-  companyId: string,
-): Promise<string> {
+export async function generateAgentWeeklyReport(db: Db, agentId: string, companyId: string): Promise<string> {
   const now = new Date();
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const periodStart = formatDateCT(sevenDaysAgo);
@@ -73,11 +79,7 @@ export async function generateAgentWeeklyReport(
     .select({ count: sql<number>`count(*)::int` })
     .from(issues)
     .where(
-      and(
-        eq(issues.companyId, companyId),
-        eq(issues.assigneeAgentId, agentId),
-        gte(issues.createdAt, sevenDaysAgo),
-      ),
+      and(eq(issues.companyId, companyId), eq(issues.assigneeAgentId, agentId), gte(issues.createdAt, sevenDaysAgo)),
     );
   const assignedCount = Number(assignedIssues[0]?.count ?? 0);
 
@@ -88,12 +90,7 @@ export async function generateAgentWeeklyReport(
       cancelled: sql<number>`count(*) filter (where ${issues.status} = 'cancelled')::int`,
     })
     .from(issues)
-    .where(
-      and(
-        eq(issues.companyId, companyId),
-        eq(issues.assigneeAgentId, agentId),
-      ),
-    );
+    .where(and(eq(issues.companyId, companyId), eq(issues.assigneeAgentId, agentId)));
   const blockedCount = Number(blockedCancelled[0]?.blocked ?? 0);
   const cancelledCount = Number(blockedCancelled[0]?.cancelled ?? 0);
 
@@ -128,9 +125,7 @@ export async function generateAgentWeeklyReport(
 
   // Build markdown
   const completedList =
-    completedIssues.length > 0
-      ? completedIssues.map((i) => `  - ${i.title}`).join("\n")
-      : "  - None";
+    completedIssues.length > 0 ? completedIssues.map((i) => `  - ${i.title}`).join("\n") : "  - None";
 
   const markdown = [
     `# Weekly Report: ${agent.name}`,
@@ -170,10 +165,7 @@ export async function generateAgentWeeklyReport(
     deliverableStatus: "review",
   });
 
-  logger.info(
-    { agentId, companyId, periodStart, periodEnd },
-    "generated agent weekly report",
-  );
+  logger.info({ agentId, companyId, periodStart, periodEnd }, "generated agent weekly report");
 
   return markdown;
 }
@@ -184,10 +176,7 @@ export async function generateAgentWeeklyReport(
  * Generate a company-wide weekly report aggregating all agent data.
  * Saves to the CEO agent's workspace.
  */
-export async function generateCompanyWeeklyReport(
-  db: Db,
-  companyId: string,
-): Promise<string> {
+export async function generateCompanyWeeklyReport(db: Db, companyId: string): Promise<string> {
   const now = new Date();
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const periodStart = formatDateCT(sevenDaysAgo);
@@ -204,12 +193,7 @@ export async function generateCompanyWeeklyReport(
       performanceScore: agents.performanceScore,
     })
     .from(agents)
-    .where(
-      and(
-        eq(agents.companyId, companyId),
-        ne(agents.status, "terminated"),
-      ),
-    );
+    .where(and(eq(agents.companyId, companyId), ne(agents.status, "terminated")));
 
   // Count FTE vs contractors
   const fteCount = companyAgents.filter((a) => a.employmentType === "full_time").length;
@@ -219,34 +203,19 @@ export async function generateCompanyWeeklyReport(
   const totalCompletedResult = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(issues)
-    .where(
-      and(
-        eq(issues.companyId, companyId),
-        eq(issues.status, "done"),
-        gte(issues.completedAt, sevenDaysAgo),
-      ),
-    );
+    .where(and(eq(issues.companyId, companyId), eq(issues.status, "done"), gte(issues.completedAt, sevenDaysAgo)));
   const totalCompleted = Number(totalCompletedResult[0]?.count ?? 0);
 
   // Total cost company-wide
   const totalCostResult = await db
     .select({ total: sql<number>`coalesce(sum(${costEvents.costCents}), 0)::int` })
     .from(costEvents)
-    .where(
-      and(
-        eq(costEvents.companyId, companyId),
-        gte(costEvents.occurredAt, sevenDaysAgo),
-      ),
-    );
+    .where(and(eq(costEvents.companyId, companyId), gte(costEvents.occurredAt, sevenDaysAgo)));
   const totalCostCents = Number(totalCostResult[0]?.total ?? 0);
 
   // Average performance score
-  const scores = companyAgents
-    .map((a) => a.performanceScore)
-    .filter((s): s is number => s != null);
-  const avgScore = scores.length > 0
-    ? Math.round(scores.reduce((sum, s) => sum + s, 0) / scores.length)
-    : 0;
+  const scores = companyAgents.map((a) => a.performanceScore).filter((s): s is number => s != null);
+  const avgScore = scores.length > 0 ? Math.round(scores.reduce((sum, s) => sum + s, 0) / scores.length) : 0;
 
   // Department breakdown: per-department agent count, issues done, cost
   const deptMap = new Map<string, { agents: number; issuesDone: number; costCents: number }>();
@@ -266,13 +235,7 @@ export async function generateCompanyWeeklyReport(
     })
     .from(issues)
     .innerJoin(agents, eq(issues.assigneeAgentId, agents.id))
-    .where(
-      and(
-        eq(issues.companyId, companyId),
-        eq(issues.status, "done"),
-        gte(issues.completedAt, sevenDaysAgo),
-      ),
-    )
+    .where(and(eq(issues.companyId, companyId), eq(issues.status, "done"), gte(issues.completedAt, sevenDaysAgo)))
     .groupBy(agents.department);
 
   for (const row of deptIssues) {
@@ -290,12 +253,7 @@ export async function generateCompanyWeeklyReport(
     })
     .from(costEvents)
     .innerJoin(agents, eq(costEvents.agentId, agents.id))
-    .where(
-      and(
-        eq(costEvents.companyId, companyId),
-        gte(costEvents.occurredAt, sevenDaysAgo),
-      ),
-    )
+    .where(and(eq(costEvents.companyId, companyId), gte(costEvents.occurredAt, sevenDaysAgo)))
     .groupBy(agents.department);
 
   for (const row of deptCosts) {
@@ -321,13 +279,7 @@ export async function generateCompanyWeeklyReport(
         count: sql<number>`count(*)::int`,
       })
       .from(issues)
-      .where(
-        and(
-          eq(issues.companyId, companyId),
-          eq(issues.status, "done"),
-          gte(issues.completedAt, sevenDaysAgo),
-        ),
-      )
+      .where(and(eq(issues.companyId, companyId), eq(issues.status, "done"), gte(issues.completedAt, sevenDaysAgo)))
       .groupBy(issues.assigneeAgentId);
 
     for (const row of perAgentIssues) {
@@ -338,9 +290,7 @@ export async function generateCompanyWeeklyReport(
   }
 
   // Concerns: low performers and zero-completion agents
-  const lowPerformers = companyAgents.filter(
-    (a) => a.performanceScore != null && a.performanceScore < 50,
-  );
+  const lowPerformers = companyAgents.filter((a) => a.performanceScore != null && a.performanceScore < 50);
 
   // Agents with 0 completed issues this week
   const allAgentCompletions = await db
@@ -349,29 +299,19 @@ export async function generateCompanyWeeklyReport(
       count: sql<number>`count(*)::int`,
     })
     .from(issues)
-    .where(
-      and(
-        eq(issues.companyId, companyId),
-        eq(issues.status, "done"),
-        gte(issues.completedAt, sevenDaysAgo),
-      ),
-    )
+    .where(and(eq(issues.companyId, companyId), eq(issues.status, "done"), gte(issues.completedAt, sevenDaysAgo)))
     .groupBy(issues.assigneeAgentId);
 
   const completionMap = new Map<string, number>();
   for (const row of allAgentCompletions) {
     if (row.agentId) completionMap.set(row.agentId, Number(row.count));
   }
-  const zeroCompletionAgents = companyAgents.filter(
-    (a) => !completionMap.has(a.id),
-  );
+  const zeroCompletionAgents = companyAgents.filter((a) => !completionMap.has(a.id));
 
   // Build department table
   const deptRows: string[] = [];
   for (const [dept, data] of deptMap.entries()) {
-    deptRows.push(
-      `| ${dept} | ${data.agents} | ${data.issuesDone} | $${centsToDollars(data.costCents)} |`,
-    );
+    deptRows.push(`| ${dept} | ${data.agents} | ${data.issuesDone} | $${centsToDollars(data.costCents)} |`);
   }
 
   // Build top performers list
@@ -388,9 +328,7 @@ export async function generateCompanyWeeklyReport(
     );
   }
   if (zeroCompletionAgents.length > 0) {
-    concerns.push(
-      `- Zero completed issues this week: ${zeroCompletionAgents.map((a) => a.name).join(", ")}`,
-    );
+    concerns.push(`- Zero completed issues this week: ${zeroCompletionAgents.map((a) => a.name).join(", ")}`);
   }
   if (concerns.length === 0) {
     concerns.push("- No concerns this period");
@@ -424,11 +362,7 @@ export async function generateCompanyWeeklyReport(
     .select({ id: agents.id })
     .from(agents)
     .where(
-      and(
-        eq(agents.companyId, companyId),
-        sql`lower(${agents.role}) like '%ceo%'`,
-        ne(agents.status, "terminated"),
-      ),
+      and(eq(agents.companyId, companyId), sql`lower(${agents.role}) like '%ceo%'`, ne(agents.status, "terminated")),
     )
     .limit(1);
 
@@ -462,11 +396,7 @@ export async function generateCompanyWeeklyReport(
  * Generate a retrospective analysis for the given period (default 14 days).
  * Saves the document to the CEO agent's workspace and returns the markdown.
  */
-export async function generateRetrospective(
-  db: Db,
-  companyId: string,
-  periodDays: number = 14,
-): Promise<string> {
+export async function generateRetrospective(db: Db, companyId: string, periodDays: number = 14): Promise<string> {
   const now = new Date();
   const periodStart = new Date(now.getTime() - periodDays * 24 * 60 * 60 * 1000);
   const startStr = formatDateCT(periodStart);
@@ -479,18 +409,11 @@ export async function generateRetrospective(
       cancelled: sql<number>`count(*) filter (where ${issues.status} = 'cancelled')::int`,
     })
     .from(issues)
-    .where(
-      and(
-        eq(issues.companyId, companyId),
-        gte(issues.createdAt, periodStart),
-      ),
-    );
+    .where(and(eq(issues.companyId, companyId), gte(issues.createdAt, periodStart)));
   const doneCount = Number(statusCounts[0]?.done ?? 0);
   const cancelledCount = Number(statusCounts[0]?.cancelled ?? 0);
   const totalResolved = doneCount + cancelledCount;
-  const completionRatio = totalResolved > 0
-    ? `${Math.round((doneCount / totalResolved) * 100)}%`
-    : "N/A";
+  const completionRatio = totalResolved > 0 ? `${Math.round((doneCount / totalResolved) * 100)}%` : "N/A";
 
   // 2. Average completion time (hours between createdAt and completedAt)
   const avgCompletionResult = await db
@@ -498,13 +421,7 @@ export async function generateRetrospective(
       avgHours: sql<number>`coalesce(avg(extract(epoch from (${issues.completedAt} - ${issues.createdAt})) / 3600), 0)::float`,
     })
     .from(issues)
-    .where(
-      and(
-        eq(issues.companyId, companyId),
-        eq(issues.status, "done"),
-        gte(issues.completedAt, periodStart),
-      ),
-    );
+    .where(and(eq(issues.companyId, companyId), eq(issues.status, "done"), gte(issues.completedAt, periodStart)));
   const avgCompletionHours = Number(avgCompletionResult[0]?.avgHours ?? 0);
 
   // 3. Agents with most cancellations
@@ -516,13 +433,7 @@ export async function generateRetrospective(
     })
     .from(issues)
     .innerJoin(agents, eq(issues.assigneeAgentId, agents.id))
-    .where(
-      and(
-        eq(issues.companyId, companyId),
-        eq(issues.status, "cancelled"),
-        gte(issues.cancelledAt, periodStart),
-      ),
-    )
+    .where(and(eq(issues.companyId, companyId), eq(issues.status, "cancelled"), gte(issues.cancelledAt, periodStart)))
     .groupBy(issues.assigneeAgentId, agents.name)
     .orderBy(sql`count(*) desc`)
     .limit(5);
@@ -535,13 +446,7 @@ export async function generateRetrospective(
     })
     .from(issues)
     .innerJoin(agents, eq(issues.assigneeAgentId, agents.id))
-    .where(
-      and(
-        eq(issues.companyId, companyId),
-        eq(issues.status, "cancelled"),
-        gte(issues.cancelledAt, periodStart),
-      ),
-    )
+    .where(and(eq(issues.companyId, companyId), eq(issues.status, "cancelled"), gte(issues.cancelledAt, periodStart)))
     .limit(50);
 
   // Group by agent to detect repeated topics
@@ -554,9 +459,7 @@ export async function generateRetrospective(
   const recurringPatterns: string[] = [];
   for (const [agentName, titles] of patternMap.entries()) {
     if (titles.length >= 2) {
-      recurringPatterns.push(
-        `- ${agentName}: ${titles.length} cancelled issues (${titles.slice(0, 3).join(", ")})`,
-      );
+      recurringPatterns.push(`- ${agentName}: ${titles.length} cancelled issues (${titles.slice(0, 3).join(", ")})`);
     }
   }
 
@@ -581,12 +484,7 @@ export async function generateRetrospective(
   const periodCostResult = await db
     .select({ total: sql<number>`coalesce(sum(${costEvents.costCents}), 0)::int` })
     .from(costEvents)
-    .where(
-      and(
-        eq(costEvents.companyId, companyId),
-        gte(costEvents.occurredAt, periodStart),
-      ),
-    );
+    .where(and(eq(costEvents.companyId, companyId), gte(costEvents.occurredAt, periodStart)));
   const periodCostCents = Number(periodCostResult[0]?.total ?? 0);
 
   // Build recommendations
@@ -621,15 +519,11 @@ export async function generateRetrospective(
     "",
     "## Cancellation Leaderboard",
     ...(cancellationsByAgent.length > 0
-      ? cancellationsByAgent.map(
-          (r, i) => `${i + 1}. ${r.agentName} - ${r.count} cancelled`,
-        )
+      ? cancellationsByAgent.map((r, i) => `${i + 1}. ${r.agentName} - ${r.count} cancelled`)
       : ["No cancellations this period."]),
     "",
     "## Recurring Failure Patterns",
-    ...(recurringPatterns.length > 0
-      ? recurringPatterns
-      : ["No recurring patterns detected."]),
+    ...(recurringPatterns.length > 0 ? recurringPatterns : ["No recurring patterns detected."]),
     "",
     "## Budget Overruns",
     ...(overrunAgents.length > 0
@@ -648,11 +542,7 @@ export async function generateRetrospective(
     .select({ id: agents.id })
     .from(agents)
     .where(
-      and(
-        eq(agents.companyId, companyId),
-        sql`lower(${agents.role}) like '%ceo%'`,
-        ne(agents.status, "terminated"),
-      ),
+      and(eq(agents.companyId, companyId), sql`lower(${agents.role}) like '%ceo%'`, ne(agents.status, "terminated")),
     )
     .limit(1);
 
@@ -672,10 +562,7 @@ export async function generateRetrospective(
     });
   }
 
-  logger.info(
-    { companyId, periodDays, startStr, endStr },
-    "generated sprint retrospective",
-  );
+  logger.info({ companyId, periodDays, startStr, endStr }, "generated sprint retrospective");
 
   return markdown;
 }
@@ -686,10 +573,7 @@ export async function generateRetrospective(
  * Generate a weekly HR report covering personnel changes.
  * Saves to VP HR agent's workspace and returns the markdown.
  */
-export async function generateHRWeeklyReport(
-  db: Db,
-  companyId: string,
-): Promise<string> {
+export async function generateHRWeeklyReport(db: Db, companyId: string): Promise<string> {
   const now = new Date();
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const periodStart = formatDateCT(sevenDaysAgo);
@@ -705,12 +589,7 @@ export async function generateHRWeeklyReport(
       hiredAt: agents.hiredAt,
     })
     .from(agents)
-    .where(
-      and(
-        eq(agents.companyId, companyId),
-        gte(agents.hiredAt, sevenDaysAgo),
-      ),
-    );
+    .where(and(eq(agents.companyId, companyId), gte(agents.hiredAt, sevenDaysAgo)));
 
   // Terminations in the period
   const terminations = await db
@@ -722,11 +601,7 @@ export async function generateHRWeeklyReport(
     })
     .from(agents)
     .where(
-      and(
-        eq(agents.companyId, companyId),
-        eq(agents.status, "terminated"),
-        gte(agents.terminatedAt, sevenDaysAgo),
-      ),
+      and(eq(agents.companyId, companyId), eq(agents.status, "terminated"), gte(agents.terminatedAt, sevenDaysAgo)),
     );
 
   // All active agents with performance scores
@@ -741,12 +616,7 @@ export async function generateHRWeeklyReport(
       employmentType: agents.employmentType,
     })
     .from(agents)
-    .where(
-      and(
-        eq(agents.companyId, companyId),
-        ne(agents.status, "terminated"),
-      ),
-    );
+    .where(and(eq(agents.companyId, companyId), ne(agents.status, "terminated")));
 
   const totalHeadcount = activeAgents.length;
   const fteCount = activeAgents.filter((a) => a.employmentType === "full_time").length;
@@ -760,9 +630,7 @@ export async function generateHRWeeklyReport(
 
   // Onboarding status: agents hired in last 30 days still active
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const recentHires = activeAgents.filter(
-    (a) => a.status !== "terminated" && a.employmentType === "full_time",
-  );
+  const _recentHires = activeAgents.filter((a) => a.status !== "terminated" && a.employmentType === "full_time");
   const onboardingAgents = await db
     .select({
       name: agents.name,
@@ -770,13 +638,7 @@ export async function generateHRWeeklyReport(
       hiredAt: agents.hiredAt,
     })
     .from(agents)
-    .where(
-      and(
-        eq(agents.companyId, companyId),
-        ne(agents.status, "terminated"),
-        gte(agents.hiredAt, thirtyDaysAgo),
-      ),
-    );
+    .where(and(eq(agents.companyId, companyId), ne(agents.status, "terminated"), gte(agents.hiredAt, thirtyDaysAgo)));
 
   // Department headcount
   const deptCounts = new Map<string, number>();
@@ -803,24 +665,21 @@ export async function generateHRWeeklyReport(
     "## New Hires",
     ...(newHires.length > 0
       ? newHires.map(
-          (h) => `- ${h.name} (${h.role}, ${h.department ?? "Unassigned"}) - ${h.employmentType === "full_time" ? "FTE" : "Contractor"}`,
+          (h) =>
+            `- ${h.name} (${h.role}, ${h.department ?? "Unassigned"}) - ${h.employmentType === "full_time" ? "FTE" : "Contractor"}`,
         )
       : ["No new hires this period."]),
     "",
     "## Terminations",
     ...(terminations.length > 0
-      ? terminations.map(
-          (t) => `- ${t.name} (${t.role}) - Reason: ${t.terminationReason ?? "Not specified"}`,
-        )
+      ? terminations.map((t) => `- ${t.name} (${t.role}) - Reason: ${t.terminationReason ?? "Not specified"}`)
       : ["No terminations this period."]),
     "",
     "## Performance Distribution",
     `- High performers (80+): ${highPerformers}`,
     `- Mid performers (50-79): ${midPerformers}`,
     `- Low performers (<50): ${lowPerformers.length}`,
-    ...(lowPerformers.length > 0
-      ? lowPerformers.map((a) => `  - ${a.name}: ${a.performanceScore}/100`)
-      : []),
+    ...(lowPerformers.length > 0 ? lowPerformers.map((a) => `  - ${a.name}: ${a.performanceScore}/100`) : []),
     "",
     "## Onboarding (Last 30 Days)",
     ...(onboardingAgents.length > 0
@@ -857,10 +716,7 @@ export async function generateHRWeeklyReport(
     });
   }
 
-  logger.info(
-    { companyId, periodStart, periodEnd },
-    "generated HR weekly report",
-  );
+  logger.info({ companyId, periodStart, periodEnd }, "generated HR weekly report");
 
   return markdown;
 }
@@ -936,10 +792,7 @@ function buildTokenSavingsSection(
  * Generate a weekly CFO financial report.
  * Saves to CFO agent's workspace and returns the markdown.
  */
-export async function generateCFOWeeklyReport(
-  db: Db,
-  companyId: string,
-): Promise<string> {
+export async function generateCFOWeeklyReport(db: Db, companyId: string): Promise<string> {
   const now = new Date();
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
@@ -950,12 +803,7 @@ export async function generateCFOWeeklyReport(
   const currentWeekCost = await db
     .select({ total: sql<number>`coalesce(sum(${costEvents.costCents}), 0)::int` })
     .from(costEvents)
-    .where(
-      and(
-        eq(costEvents.companyId, companyId),
-        gte(costEvents.occurredAt, sevenDaysAgo),
-      ),
-    );
+    .where(and(eq(costEvents.companyId, companyId), gte(costEvents.occurredAt, sevenDaysAgo)));
   const currentWeekCents = Number(currentWeekCost[0]?.total ?? 0);
 
   // Total spend last week (for trend comparison)
@@ -971,9 +819,8 @@ export async function generateCFOWeeklyReport(
     );
   const lastWeekCents = Number(lastWeekCost[0]?.total ?? 0);
 
-  const weekOverWeekChange = lastWeekCents > 0
-    ? Math.round(((currentWeekCents - lastWeekCents) / lastWeekCents) * 100)
-    : 0;
+  const weekOverWeekChange =
+    lastWeekCents > 0 ? Math.round(((currentWeekCents - lastWeekCents) / lastWeekCents) * 100) : 0;
 
   // Spend by department
   const deptSpend = await db
@@ -983,12 +830,7 @@ export async function generateCFOWeeklyReport(
     })
     .from(costEvents)
     .innerJoin(agents, eq(costEvents.agentId, agents.id))
-    .where(
-      and(
-        eq(costEvents.companyId, companyId),
-        gte(costEvents.occurredAt, sevenDaysAgo),
-      ),
-    )
+    .where(and(eq(costEvents.companyId, companyId), gte(costEvents.occurredAt, sevenDaysAgo)))
     .groupBy(agents.department)
     .orderBy(sql`sum(${costEvents.costCents}) desc`);
 
@@ -1001,12 +843,7 @@ export async function generateCFOWeeklyReport(
     })
     .from(costEvents)
     .innerJoin(agents, eq(costEvents.agentId, agents.id))
-    .where(
-      and(
-        eq(costEvents.companyId, companyId),
-        gte(costEvents.occurredAt, sevenDaysAgo),
-      ),
-    )
+    .where(and(eq(costEvents.companyId, companyId), gte(costEvents.occurredAt, sevenDaysAgo)))
     .groupBy(agents.name, agents.role)
     .orderBy(sql`sum(${costEvents.costCents}) desc`)
     .limit(10);
@@ -1024,28 +861,16 @@ export async function generateCFOWeeklyReport(
   const mtdCost = await db
     .select({ total: sql<number>`coalesce(sum(${costEvents.costCents}), 0)::int` })
     .from(costEvents)
-    .where(
-      and(
-        eq(costEvents.companyId, companyId),
-        gte(costEvents.occurredAt, monthStart),
-      ),
-    );
+    .where(and(eq(costEvents.companyId, companyId), gte(costEvents.occurredAt, monthStart)));
   const mtdCents = Number(mtdCost[0]?.total ?? 0);
-  const budgetUtilization = monthlyBudgetCents > 0
-    ? `${Math.round((mtdCents / monthlyBudgetCents) * 100)}%`
-    : "No budget set";
+  const budgetUtilization =
+    monthlyBudgetCents > 0 ? `${Math.round((mtdCents / monthlyBudgetCents) * 100)}%` : "No budget set";
 
   // Cost per issue this week
   const issuesDoneThisWeek = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(issues)
-    .where(
-      and(
-        eq(issues.companyId, companyId),
-        eq(issues.status, "done"),
-        gte(issues.completedAt, sevenDaysAgo),
-      ),
-    );
+    .where(and(eq(issues.companyId, companyId), eq(issues.status, "done"), gte(issues.completedAt, sevenDaysAgo)));
   const doneThisWeek = Number(issuesDoneThisWeek[0]?.count ?? 0);
   const costPerIssue = doneThisWeek > 0 ? currentWeekCents / doneThisWeek : 0;
 
@@ -1058,19 +883,15 @@ export async function generateCFOWeeklyReport(
       totalCached: sql<number>`coalesce(sum(${costEvents.cachedInputTokens}), 0)::int`,
     })
     .from(costEvents)
-    .where(
-      and(
-        eq(costEvents.companyId, companyId),
-        gte(costEvents.occurredAt, sevenDaysAgo),
-      ),
-    );
+    .where(and(eq(costEvents.companyId, companyId), gte(costEvents.occurredAt, sevenDaysAgo)));
   const totalInputTokens = Number(tokenTotals?.totalInput ?? 0);
   const totalOutputTokens = Number(tokenTotals?.totalOutput ?? 0);
   const totalCachedTokens = Number(tokenTotals?.totalCached ?? 0);
   const totalTokens = totalInputTokens + totalOutputTokens + totalCachedTokens;
-  const cacheHitRate = totalInputTokens + totalCachedTokens > 0
-    ? Math.round((totalCachedTokens / (totalInputTokens + totalCachedTokens)) * 100)
-    : 0;
+  const cacheHitRate =
+    totalInputTokens + totalCachedTokens > 0
+      ? Math.round((totalCachedTokens / (totalInputTokens + totalCachedTokens)) * 100)
+      : 0;
 
   // Token cost breakdown by model
   const tokenByModel = await db
@@ -1082,11 +903,7 @@ export async function generateCFOWeeklyReport(
     })
     .from(costEvents)
     .where(
-      and(
-        eq(costEvents.companyId, companyId),
-        gte(costEvents.occurredAt, sevenDaysAgo),
-        isNotNull(costEvents.model),
-      ),
+      and(eq(costEvents.companyId, companyId), gte(costEvents.occurredAt, sevenDaysAgo), isNotNull(costEvents.model)),
     )
     .groupBy(costEvents.model)
     .orderBy(desc(sql`sum(${costEvents.costCents})`));
@@ -1101,14 +918,13 @@ export async function generateCFOWeeklyReport(
     })
     .from(costEvents)
     .innerJoin(agents, eq(costEvents.agentId, agents.id))
-    .where(
-      and(
-        eq(costEvents.companyId, companyId),
-        gte(costEvents.occurredAt, sevenDaysAgo),
+    .where(and(eq(costEvents.companyId, companyId), gte(costEvents.occurredAt, sevenDaysAgo)))
+    .groupBy(agents.name, agents.role)
+    .orderBy(
+      desc(
+        sql`sum(${costEvents.inputTokens}) + sum(${costEvents.outputTokens}) + sum(${costEvents.cachedInputTokens})`,
       ),
     )
-    .groupBy(agents.name, agents.role)
-    .orderBy(desc(sql`sum(${costEvents.inputTokens}) + sum(${costEvents.outputTokens}) + sum(${costEvents.cachedInputTokens})`))
     .limit(5);
 
   // Model cost recommendations
@@ -1124,8 +940,8 @@ export async function generateCFOWeeklyReport(
       const suggestion = model.includes("opus")
         ? "claude-sonnet"
         : model.includes("gpt-4o")
-        ? "gpt-4o-mini"
-        : "gemini-flash";
+          ? "gpt-4o-mini"
+          : "gemini-flash";
       modelRecommendations.push(
         `- ${model} used ${tokens.toLocaleString()} tokens at $${centsToDollars(cost)}. Consider ${suggestion} for routine tasks to reduce cost.`,
       );
@@ -1184,14 +1000,20 @@ export async function generateCFOWeeklyReport(
     "| Model | Input Tokens | Output Tokens | Cost |",
     "|---|---|---|---|",
     ...(tokenByModel.length > 0
-      ? tokenByModel.map((r) => `| ${r.model ?? "unknown"} | ${Number(r.inputTokens).toLocaleString()} | ${Number(r.outputTokens).toLocaleString()} | $${centsToDollars(Number(r.costCents))} |`)
+      ? tokenByModel.map(
+          (r) =>
+            `| ${r.model ?? "unknown"} | ${Number(r.inputTokens).toLocaleString()} | ${Number(r.outputTokens).toLocaleString()} | $${centsToDollars(Number(r.costCents))} |`,
+        )
       : ["| No data | - | - | - |"]),
     "",
     "### Most Token-Hungry Agents (Top 5)",
     "| Agent | Role | Total Tokens | Cost |",
     "|---|---|---|---|",
     ...(tokenByAgent.length > 0
-      ? tokenByAgent.map((r) => `| ${r.agentName} | ${r.agentRole} | ${Number(r.totalTokens).toLocaleString()} | $${centsToDollars(Number(r.costCents))} |`)
+      ? tokenByAgent.map(
+          (r) =>
+            `| ${r.agentName} | ${r.agentRole} | ${Number(r.totalTokens).toLocaleString()} | $${centsToDollars(Number(r.costCents))} |`,
+        )
       : ["| No data | - | - | - |"]),
     "",
     "### Model Selection Recommendations",
@@ -1210,11 +1032,7 @@ export async function generateCFOWeeklyReport(
     .select({ id: agents.id })
     .from(agents)
     .where(
-      and(
-        eq(agents.companyId, companyId),
-        sql`lower(${agents.role}) like '%cfo%'`,
-        ne(agents.status, "terminated"),
-      ),
+      and(eq(agents.companyId, companyId), sql`lower(${agents.role}) like '%cfo%'`, ne(agents.status, "terminated")),
     )
     .limit(1);
 
@@ -1234,10 +1052,7 @@ export async function generateCFOWeeklyReport(
     });
   }
 
-  logger.info(
-    { companyId, periodStart, periodEnd },
-    "generated CFO weekly report",
-  );
+  logger.info({ companyId, periodStart, periodEnd }, "generated CFO weekly report");
 
   return markdown;
 }
@@ -1248,10 +1063,7 @@ export async function generateCFOWeeklyReport(
  * Generate a comprehensive board meeting packet compiling company-wide data.
  * Saves to CEO workspace with document_type "board-packet" and returns the markdown.
  */
-export async function generateBoardMeetingPacket(
-  db: Db,
-  companyId: string,
-): Promise<string> {
+export async function generateBoardMeetingPacket(db: Db, companyId: string): Promise<string> {
   const now = new Date();
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const periodEnd = formatDateCT(now);
@@ -1268,30 +1080,16 @@ export async function generateBoardMeetingPacket(
       performanceScore: agents.performanceScore,
     })
     .from(agents)
-    .where(
-      and(
-        eq(agents.companyId, companyId),
-        ne(agents.status, "terminated"),
-      ),
-    );
+    .where(and(eq(agents.companyId, companyId), ne(agents.status, "terminated")));
 
-  const scores = companyAgents
-    .map((a) => a.performanceScore)
-    .filter((s): s is number => s != null);
-  const avgScore = scores.length > 0
-    ? Math.round(scores.reduce((sum, s) => sum + s, 0) / scores.length)
-    : 0;
+  const scores = companyAgents.map((a) => a.performanceScore).filter((s): s is number => s != null);
+  const avgScore = scores.length > 0 ? Math.round(scores.reduce((sum, s) => sum + s, 0) / scores.length) : 0;
 
   // Active projects
   const activeProjects = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(issues)
-    .where(
-      and(
-        eq(issues.companyId, companyId),
-        sql`${issues.status} not in ('done', 'cancelled')`,
-      ),
-    );
+    .where(and(eq(issues.companyId, companyId), sql`${issues.status} not in ('done', 'cancelled')`));
   const openIssueCount = Number(activeProjects[0]?.count ?? 0);
 
   // ---- 2. Goal Status ----
@@ -1316,12 +1114,7 @@ export async function generateBoardMeetingPacket(
         done: sql<number>`count(*) filter (where ${issues.status} = 'done')::int`,
       })
       .from(issues)
-      .where(
-        and(
-          eq(issues.companyId, companyId),
-          eq(issues.goalId, goal.id),
-        ),
-      );
+      .where(and(eq(issues.companyId, companyId), eq(issues.goalId, goal.id)));
     const total = Number(goalIssueStats[0]?.total ?? 0);
     const done = Number(goalIssueStats[0]?.done ?? 0);
     const pct = total > 0 ? Math.round((done / total) * 100) : 0;
@@ -1337,15 +1130,16 @@ export async function generateBoardMeetingPacket(
       .from(goalKeyResults)
       .where(eq(goalKeyResults.goalId, goal.id));
 
-    const krLines = krs.length > 0
-      ? krs.map((kr) => `  - ${kr.description}: ${kr.currentValue}/${kr.targetValue} ${kr.unit}`).join("\n")
-      : "  - No key results defined";
+    const krLines =
+      krs.length > 0
+        ? krs.map((kr) => `  - ${kr.description}: ${kr.currentValue}/${kr.targetValue} ${kr.unit}`).join("\n")
+        : "  - No key results defined";
 
-    const targetStr = goal.targetDate
-      ? ` (target: ${formatDateCT(new Date(goal.targetDate))})`
-      : "";
+    const targetStr = goal.targetDate ? ` (target: ${formatDateCT(new Date(goal.targetDate))})` : "";
 
-    goalSections.push(`- **${goal.title}** [${goal.status}]${targetStr} - ${pct}% complete (${done}/${total} issues)\n${krLines}`);
+    goalSections.push(
+      `- **${goal.title}** [${goal.status}]${targetStr} - ${pct}% complete (${done}/${total} issues)\n${krLines}`,
+    );
   }
 
   // ---- 3. Financial Summary ----
@@ -1353,12 +1147,7 @@ export async function generateBoardMeetingPacket(
   const totalCostResult = await db
     .select({ total: sql<number>`coalesce(sum(${costEvents.costCents}), 0)::int` })
     .from(costEvents)
-    .where(
-      and(
-        eq(costEvents.companyId, companyId),
-        gte(costEvents.occurredAt, sevenDaysAgo),
-      ),
-    );
+    .where(and(eq(costEvents.companyId, companyId), gte(costEvents.occurredAt, sevenDaysAgo)));
   const weekCostCents = Number(totalCostResult[0]?.total ?? 0);
 
   const [company] = await db
@@ -1377,13 +1166,7 @@ export async function generateBoardMeetingPacket(
   const weekDoneResult = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(issues)
-    .where(
-      and(
-        eq(issues.companyId, companyId),
-        eq(issues.status, "done"),
-        gte(issues.completedAt, sevenDaysAgo),
-      ),
-    );
+    .where(and(eq(issues.companyId, companyId), eq(issues.status, "done"), gte(issues.completedAt, sevenDaysAgo)));
   const weekDone = Number(weekDoneResult[0]?.count ?? 0);
   const costPerIssue = weekDone > 0 ? Math.round(weekCostCents / weekDone) : 0;
 
@@ -1394,9 +1177,7 @@ export async function generateBoardMeetingPacket(
     .sort((a, b) => (b.performanceScore ?? 0) - (a.performanceScore ?? 0));
 
   const topAgents = ranked.slice(0, 5);
-  const bottomAgents = ranked.length > 5
-    ? ranked.slice(-3)
-    : [];
+  const bottomAgents = ranked.length > 5 ? ranked.slice(-3) : [];
 
   // ---- 5. Key Decisions Made (approvals resolved in last 7 days) ----
 
@@ -1416,11 +1197,12 @@ export async function generateBoardMeetingPacket(
       ),
     );
 
-  const decisionLines = recentApprovals.length > 0
-    ? recentApprovals.map(
-        (a) => `- [${a.status?.toUpperCase()}] ${a.type}${a.decisionNote ? ` - ${a.decisionNote}` : ""}`,
-      )
-    : ["- No decisions recorded this week"];
+  const decisionLines =
+    recentApprovals.length > 0
+      ? recentApprovals.map(
+          (a) => `- [${a.status?.toUpperCase()}] ${a.type}${a.decisionNote ? ` - ${a.decisionNote}` : ""}`,
+        )
+      : ["- No decisions recorded this week"];
 
   // ---- 6. Open Risks ----
 
@@ -1456,9 +1238,7 @@ export async function generateBoardMeetingPacket(
   const staleCount = Number(staleItems[0]?.count ?? 0);
 
   // Low performers
-  const lowPerfAgents = companyAgents.filter(
-    (a) => a.performanceScore != null && a.performanceScore < 40,
-  );
+  const lowPerfAgents = companyAgents.filter((a) => a.performanceScore != null && a.performanceScore < 40);
 
   const riskLines: string[] = [];
   for (const issue of overdueIssues) {
@@ -1478,7 +1258,9 @@ export async function generateBoardMeetingPacket(
 
   const recommendations: string[] = [];
   if (lowPerfAgents.length > 0) {
-    recommendations.push(`- Review ${lowPerfAgents.length} underperforming agent(s). Consider PIPs or role reassignment.`);
+    recommendations.push(
+      `- Review ${lowPerfAgents.length} underperforming agent(s). Consider PIPs or role reassignment.`,
+    );
   }
   if (staleCount > 5) {
     recommendations.push("- Triage stale backlog. Reassign or close issues that have not moved in 7+ days.");
@@ -1487,7 +1269,9 @@ export async function generateBoardMeetingPacket(
     recommendations.push("- Monthly spend is above 80% of budget. Review cost controls before month end.");
   }
   if (overdueIssues.length > 3) {
-    recommendations.push("- Multiple critical/high priority issues open. Consider reallocating agents to clear the backlog.");
+    recommendations.push(
+      "- Multiple critical/high priority issues open. Consider reallocating agents to clear the backlog.",
+    );
   }
   const goalsAtRisk = allGoals.filter((g) => g.status === "at_risk" || g.status === "blocked");
   if (goalsAtRisk.length > 0) {
@@ -1527,11 +1311,7 @@ export async function generateBoardMeetingPacket(
       ? topAgents.map((a, i) => `${i + 1}. ${a.name} (${a.role}) - ${a.performanceScore}/100`)
       : ["No performance data available"]),
     ...(bottomAgents.length > 0
-      ? [
-          "",
-          "### Needs Attention",
-          ...bottomAgents.map((a) => `- ${a.name} (${a.role}) - ${a.performanceScore}/100`),
-        ]
+      ? ["", "### Needs Attention", ...bottomAgents.map((a) => `- ${a.name} (${a.role}) - ${a.performanceScore}/100`)]
       : []),
     "",
     "## 5. Key Decisions Made (Last 7 Days)",
@@ -1549,11 +1329,7 @@ export async function generateBoardMeetingPacket(
     .select({ id: agents.id })
     .from(agents)
     .where(
-      and(
-        eq(agents.companyId, companyId),
-        sql`lower(${agents.role}) like '%ceo%'`,
-        ne(agents.status, "terminated"),
-      ),
+      and(eq(agents.companyId, companyId), sql`lower(${agents.role}) like '%ceo%'`, ne(agents.status, "terminated")),
     )
     .limit(1);
 
@@ -1573,10 +1349,7 @@ export async function generateBoardMeetingPacket(
     });
   }
 
-  logger.info(
-    { companyId, date: periodEnd },
-    "generated board meeting packet",
-  );
+  logger.info({ companyId, date: periodEnd }, "generated board meeting packet");
 
   return markdown;
 }
@@ -1586,19 +1359,11 @@ export async function generateBoardMeetingPacket(
 /**
  * Generate weekly reports for all agents in a company, then the company rollup.
  */
-export async function runWeeklyReports(
-  db: Db,
-  companyId: string,
-): Promise<void> {
+export async function runWeeklyReports(db: Db, companyId: string): Promise<void> {
   const companyAgents = await db
     .select({ id: agents.id })
     .from(agents)
-    .where(
-      and(
-        eq(agents.companyId, companyId),
-        ne(agents.status, "terminated"),
-      ),
-    );
+    .where(and(eq(agents.companyId, companyId), ne(agents.status, "terminated")));
 
   for (const agent of companyAgents) {
     try {
@@ -1659,16 +1424,11 @@ export async function runAllWeeklyReports(db: Db): Promise<void> {
  * Generate a monthly cost summary for the CFO covering the full calendar month.
  * Saves to CFO workspace with document_type "monthly-report" and returns the markdown.
  */
-export async function generateMonthlyCostSummary(
-  db: Db,
-  companyId: string,
-): Promise<string> {
+export async function generateMonthlyCostSummary(db: Db, companyId: string): Promise<string> {
   const now = new Date();
 
   // Compute first and last day of the previous full month in CT
-  const ctNow = new Date(
-    now.toLocaleString("en-US", { timeZone: "America/Chicago" }),
-  );
+  const ctNow = new Date(now.toLocaleString("en-US", { timeZone: "America/Chicago" }));
   const monthStart = new Date(ctNow.getFullYear(), ctNow.getMonth() - 1, 1);
   const monthEnd = new Date(ctNow.getFullYear(), ctNow.getMonth(), 0, 23, 59, 59, 999);
 
@@ -1709,9 +1469,7 @@ export async function generateMonthlyCostSummary(
       ),
     );
   const prevTotalCents = Number(prevSpendResult[0]?.total ?? 0);
-  const momChange = prevTotalCents > 0
-    ? Math.round(((totalCents - prevTotalCents) / prevTotalCents) * 100)
-    : 0;
+  const momChange = prevTotalCents > 0 ? Math.round(((totalCents - prevTotalCents) / prevTotalCents) * 100) : 0;
   const momLabel = momChange > 0 ? `+${momChange}%` : `${momChange}%`;
 
   // 3. Spend by department
@@ -1767,9 +1525,7 @@ export async function generateMonthlyCostSummary(
       ),
     );
   const issuesCompleted = Number(issuesCompletedResult[0]?.count ?? 0);
-  const costPerIssue = issuesCompleted > 0
-    ? centsToDollars(Math.round(totalCents / issuesCompleted))
-    : "N/A";
+  const costPerIssue = issuesCompleted > 0 ? centsToDollars(Math.round(totalCents / issuesCompleted)) : "N/A";
 
   // 6. Issues completed last month (MoM cost-per-issue)
   const prevIssuesResult = await db
@@ -1784,9 +1540,10 @@ export async function generateMonthlyCostSummary(
       ),
     );
   const prevIssuesCompleted = Number(prevIssuesResult[0]?.count ?? 0);
-  const prevCostPerIssue = prevIssuesCompleted > 0 && prevTotalCents > 0
-    ? centsToDollars(Math.round(prevTotalCents / prevIssuesCompleted))
-    : "N/A";
+  const prevCostPerIssue =
+    prevIssuesCompleted > 0 && prevTotalCents > 0
+      ? centsToDollars(Math.round(prevTotalCents / prevIssuesCompleted))
+      : "N/A";
 
   // 7. Budget utilization: sum of budgetMonthlyCents across all active agents
   const budgetResult = await db
@@ -1795,44 +1552,35 @@ export async function generateMonthlyCostSummary(
     })
     .from(agents)
     .where(
-      and(
-        eq(agents.companyId, companyId),
-        ne(agents.status, "terminated"),
-        sql`${agents.budgetMonthlyCents} > 0`,
-      ),
+      and(eq(agents.companyId, companyId), ne(agents.status, "terminated"), sql`${agents.budgetMonthlyCents} > 0`),
     );
   const totalBudgetCents = Number(budgetResult[0]?.totalBudget ?? 0);
-  const budgetUtilization = totalBudgetCents > 0
-    ? `${Math.round((totalCents / totalBudgetCents) * 100)}%`
-    : "No budgets set";
+  const budgetUtilization =
+    totalBudgetCents > 0 ? `${Math.round((totalCents / totalBudgetCents) * 100)}%` : "No budgets set";
 
   // 8. Recommendations
   const recommendations: string[] = [];
-  const overBudgetAgents = agentSpend.filter(
-    (a) => a.budgetCents > 0 && a.total > a.budgetCents,
-  );
+  const overBudgetAgents = agentSpend.filter((a) => a.budgetCents > 0 && a.total > a.budgetCents);
   if (overBudgetAgents.length > 0) {
     const names = overBudgetAgents.map((a) => a.agentName).join(", ");
     recommendations.push(`- Agents over monthly budget: ${names}. Review task assignments and model selection.`);
   }
-  const underutilizedAgents = agentSpend.filter(
-    (a) => a.budgetCents > 0 && a.total < a.budgetCents * 0.1,
-  );
+  const underutilizedAgents = agentSpend.filter((a) => a.budgetCents > 0 && a.total < a.budgetCents * 0.1);
   if (underutilizedAgents.length > 0) {
     const names = underutilizedAgents.map((a) => a.agentName).join(", ");
     recommendations.push(`- Potentially underutilized agents (under 10% budget used): ${names}.`);
   }
   if (momChange > 20) {
-    recommendations.push(`- Month-over-month spend increased ${momChange}%. Investigate high-cost agents and task volume.`);
+    recommendations.push(
+      `- Month-over-month spend increased ${momChange}%. Investigate high-cost agents and task volume.`,
+    );
   }
   if (recommendations.length === 0) {
     recommendations.push("- No critical cost concerns this month. Continue current operating cadence.");
   }
 
   // Build markdown
-  const deptRows = deptSpend.map(
-    (d) => `| ${d.department ?? "Unassigned"} | $${centsToDollars(d.total)} |`,
-  );
+  const deptRows = deptSpend.map((d) => `| ${d.department ?? "Unassigned"} | $${centsToDollars(d.total)} |`);
 
   const agentRows = agentSpend.map((a, i) => {
     const budget = a.budgetCents > 0 ? `$${centsToDollars(a.budgetCents)}` : "none";
@@ -1872,16 +1620,15 @@ export async function generateMonthlyCostSummary(
     .select({ id: agents.id })
     .from(agents)
     .where(
-      and(
-        eq(agents.companyId, companyId),
-        sql`lower(${agents.role}) like '%cfo%'`,
-        ne(agents.status, "terminated"),
-      ),
+      and(eq(agents.companyId, companyId), sql`lower(${agents.role}) like '%cfo%'`, ne(agents.status, "terminated")),
     )
     .limit(1);
 
   if (cfoAgent) {
-    const monthSlug = monthStart.toLocaleDateString("en-CA", { timeZone: "America/Chicago" }).slice(0, 7).replace("-", "");
+    const monthSlug = monthStart
+      .toLocaleDateString("en-CA", { timeZone: "America/Chicago" })
+      .slice(0, 7)
+      .replace("-", "");
     const slug = `cfo-monthly-cost-summary-${monthSlug}`;
     await createAgentDocument(db, {
       agentId: cfoAgent.id,
@@ -1897,10 +1644,7 @@ export async function generateMonthlyCostSummary(
     });
   }
 
-  logger.info(
-    { companyId, month: monthLabel },
-    "generated CFO monthly cost summary",
-  );
+  logger.info({ companyId, month: monthLabel }, "generated CFO monthly cost summary");
 
   return markdown;
 }
@@ -1931,11 +1675,7 @@ export async function runAllMonthlyCostSummaries(db: Db): Promise<void> {
  * Generate a client-facing project update report.
  * Strips internal details. Saves with document_type='client-update' and deliverable_status='review'.
  */
-export async function generateClientUpdate(
-  db: Db,
-  companyId: string,
-  projectId: string,
-): Promise<string> {
+export async function generateClientUpdate(db: Db, companyId: string, projectId: string): Promise<string> {
   const now = new Date();
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const periodStart = formatDateCT(sevenDaysAgo);
@@ -1968,13 +1708,7 @@ export async function generateClientUpdate(
   const inProgressIssues = await db
     .select({ id: issues.id, title: issues.title })
     .from(issues)
-    .where(
-      and(
-        eq(issues.companyId, companyId),
-        eq(issues.projectId, projectId),
-        eq(issues.status, "in_progress"),
-      ),
-    );
+    .where(and(eq(issues.companyId, companyId), eq(issues.projectId, projectId), eq(issues.status, "in_progress")));
 
   const upcomingIssues = await db
     .select({ id: issues.id, title: issues.title })
@@ -1988,17 +1722,18 @@ export async function generateClientUpdate(
     )
     .limit(5);
 
-  const completedList = completedIssues.length > 0
-    ? completedIssues.map((i) => `- ${i.title}`).join("\n")
-    : "- Nothing completed this period";
+  const completedList =
+    completedIssues.length > 0
+      ? completedIssues.map((i) => `- ${i.title}`).join("\n")
+      : "- Nothing completed this period";
 
-  const inProgressList = inProgressIssues.length > 0
-    ? inProgressIssues.map((i) => `- ${i.title}`).join("\n")
-    : "- Nothing currently in progress";
+  const inProgressList =
+    inProgressIssues.length > 0
+      ? inProgressIssues.map((i) => `- ${i.title}`).join("\n")
+      : "- Nothing currently in progress";
 
-  const nextStepsList = upcomingIssues.length > 0
-    ? upcomingIssues.map((i) => `- ${i.title}`).join("\n")
-    : "- No upcoming items planned";
+  const nextStepsList =
+    upcomingIssues.length > 0 ? upcomingIssues.map((i) => `- ${i.title}`).join("\n") : "- No upcoming items planned";
 
   const markdown = [
     `# Client Update: ${project.name}`,
@@ -2056,10 +1791,7 @@ export async function generateClientUpdate(
  * Generate a team retrospective for the past sprint period.
  * Wired into Sunday 18:00 CT scheduler alongside weekly reports.
  */
-export async function generateTeamRetrospective(
-  db: Db,
-  companyId: string,
-): Promise<string> {
+export async function generateTeamRetrospective(db: Db, companyId: string): Promise<string> {
   const now = new Date();
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const periodStart = formatDateCT(sevenDaysAgo);
@@ -2073,24 +1805,12 @@ export async function generateTeamRetrospective(
   const completedThisPeriod = await db
     .select({ id: issues.id, title: issues.title })
     .from(issues)
-    .where(
-      and(
-        eq(issues.companyId, companyId),
-        eq(issues.status, "done"),
-        gte(issues.completedAt, sevenDaysAgo),
-      ),
-    );
+    .where(and(eq(issues.companyId, companyId), eq(issues.status, "done"), gte(issues.completedAt, sevenDaysAgo)));
 
   const cancelledThisPeriod = await db
     .select({ id: issues.id, title: issues.title })
     .from(issues)
-    .where(
-      and(
-        eq(issues.companyId, companyId),
-        eq(issues.status, "cancelled"),
-        gte(issues.cancelledAt, sevenDaysAgo),
-      ),
-    );
+    .where(and(eq(issues.companyId, companyId), eq(issues.status, "cancelled"), gte(issues.cancelledAt, sevenDaysAgo)));
 
   const overdueIssues = await db
     .select({ id: issues.id, title: issues.title, identifier: issues.identifier })
@@ -2118,24 +1838,30 @@ export async function generateTeamRetrospective(
 
   const agentNameMap = new Map(companyAgents.map((a) => [a.id, a.name]));
 
-  const wentWellList = completedThisPeriod.length > 0
-    ? completedThisPeriod.map((i) => `- ${i.title}`).join("\n")
-    : "- No issues completed this period";
+  const wentWellList =
+    completedThisPeriod.length > 0
+      ? completedThisPeriod.map((i) => `- ${i.title}`).join("\n")
+      : "- No issues completed this period";
 
-  const cancelledList = cancelledThisPeriod.length > 0
-    ? cancelledThisPeriod.map((i) => `- ${i.title}`).join("\n")
-    : "- No cancelled issues";
+  const cancelledList =
+    cancelledThisPeriod.length > 0
+      ? cancelledThisPeriod.map((i) => `- ${i.title}`).join("\n")
+      : "- No cancelled issues";
 
-  const overdueList = overdueIssues.length > 0
-    ? overdueIssues.map((i) => `- ${i.identifier ? `[${i.identifier}] ` : ""}${i.title}`).join("\n")
-    : "- No overdue issues";
+  const overdueList =
+    overdueIssues.length > 0
+      ? overdueIssues.map((i) => `- ${i.identifier ? `[${i.identifier}] ` : ""}${i.title}`).join("\n")
+      : "- No overdue issues";
 
-  const learningsList = mistakeLearnings.length > 0
-    ? mistakeLearnings.map((m) => {
-        const agentName = m.agentId ? (agentNameMap.get(m.agentId) ?? "Unknown Agent") : "System";
-        return `- ${agentName}: ${m.content}`;
-      }).join("\n")
-    : "- No recorded learnings this period";
+  const learningsList =
+    mistakeLearnings.length > 0
+      ? mistakeLearnings
+          .map((m) => {
+            const agentName = m.agentId ? (agentNameMap.get(m.agentId) ?? "Unknown Agent") : "System";
+            return `- ${agentName}: ${m.content}`;
+          })
+          .join("\n")
+      : "- No recorded learnings this period";
 
   const markdown = [
     `# Sprint Retrospective: ${periodStart} to ${periodEnd}`,
@@ -2154,7 +1880,9 @@ export async function generateTeamRetrospective(
     "",
     "## Action Items",
     overdueIssues.length > 0
-      ? overdueIssues.map((i) => `- Follow up on overdue: ${i.identifier ? `[${i.identifier}] ` : ""}${i.title}`).join("\n")
+      ? overdueIssues
+          .map((i) => `- Follow up on overdue: ${i.identifier ? `[${i.identifier}] ` : ""}${i.title}`)
+          .join("\n")
       : "- No action items generated",
   ].join("\n");
 

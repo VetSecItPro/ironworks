@@ -1,32 +1,28 @@
-import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate, useSearchParams } from "@/lib/router";
-import { useCompany } from "../context/CompanyContext";
-import { useBreadcrumbs } from "../context/BreadcrumbContext";
-import { agentsApi } from "../api/agents";
-import { companySkillsApi } from "../api/companySkills";
-import { queryKeys } from "../lib/queryKeys";
-import { AGENT_ROLES } from "@ironworksai/shared";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Shield } from "lucide-react";
-import { cn, agentUrl } from "../lib/utils";
-import { roleLabels } from "../components/agent-config-primitives";
-import { AgentConfigForm, type CreateConfigValues } from "../components/AgentConfigForm";
-import { defaultCreateValues } from "../components/agent-config-defaults";
-import { getUIAdapter } from "../adapters";
-import { ReportsToPicker } from "../components/ReportsToPicker";
 import {
   DEFAULT_CODEX_LOCAL_BYPASS_APPROVALS_AND_SANDBOX,
   DEFAULT_CODEX_LOCAL_MODEL,
 } from "@ironworksai/adapter-codex-local";
 import { DEFAULT_CURSOR_LOCAL_MODEL } from "@ironworksai/adapter-cursor-local";
 import { DEFAULT_GEMINI_LOCAL_MODEL } from "@ironworksai/adapter-gemini-local";
+import { AGENT_ROLES } from "@ironworksai/shared";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Shield } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useNavigate, useSearchParams } from "@/lib/router";
+import { getUIAdapter } from "../adapters";
+import { agentsApi } from "../api/agents";
+import { companySkillsApi } from "../api/companySkills";
+import { AgentConfigForm, type CreateConfigValues } from "../components/AgentConfigForm";
+import { defaultCreateValues } from "../components/agent-config-defaults";
+import { roleLabels } from "../components/agent-config-primitives";
+import { ReportsToPicker } from "../components/ReportsToPicker";
+import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { useCompany } from "../context/CompanyContext";
+import { queryKeys } from "../lib/queryKeys";
+import { agentUrl, cn } from "../lib/utils";
 
 const SUPPORTED_ADVANCED_ADAPTER_TYPES = new Set<CreateConfigValues["adapterType"]>([
   "claude_local",
@@ -38,15 +34,12 @@ const SUPPORTED_ADVANCED_ADAPTER_TYPES = new Set<CreateConfigValues["adapterType
   "openclaw_gateway",
 ]);
 
-function createValuesForAdapterType(
-  adapterType: CreateConfigValues["adapterType"],
-): CreateConfigValues {
+function createValuesForAdapterType(adapterType: CreateConfigValues["adapterType"]): CreateConfigValues {
   const { adapterType: _discard, ...defaults } = defaultCreateValues;
   const nextValues: CreateConfigValues = { ...defaults, adapterType };
   if (adapterType === "codex_local") {
     nextValues.model = DEFAULT_CODEX_LOCAL_MODEL;
-    nextValues.dangerouslyBypassSandbox =
-      DEFAULT_CODEX_LOCAL_BYPASS_APPROVALS_AND_SANDBOX;
+    nextValues.dangerouslyBypassSandbox = DEFAULT_CODEX_LOCAL_BYPASS_APPROVALS_AND_SANDBOX;
   } else if (adapterType === "gemini_local") {
     nextValues.model = DEFAULT_GEMINI_LOCAL_MODEL;
   } else if (adapterType === "cursor") {
@@ -103,10 +96,7 @@ export function NewAgent() {
   const effectiveRole = isFirstAgent ? "ceo" : role;
 
   useEffect(() => {
-    setBreadcrumbs([
-      { label: "Agents", href: "/agents" },
-      { label: "New Agent" },
-    ]);
+    setBreadcrumbs([{ label: "Agents", href: "/agents" }, { label: "New Agent" }]);
   }, [setBreadcrumbs]);
 
   useEffect(() => {
@@ -129,8 +119,7 @@ export function NewAgent() {
   }, [presetAdapterType]);
 
   const createAgent = useMutation({
-    mutationFn: (data: Record<string, unknown>) =>
-      agentsApi.hire(selectedCompanyId!, data),
+    mutationFn: (data: Record<string, unknown>) => agentsApi.hire(selectedCompanyId!, data),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.agents.list(selectedCompanyId!) });
       queryClient.invalidateQueries({ queryKey: queryKeys.approvals.list(selectedCompanyId!) });
@@ -157,9 +146,7 @@ export function NewAgent() {
       }
       if (adapterModelsError) {
         setFormError(
-          adapterModelsError instanceof Error
-            ? adapterModelsError.message
-            : "Failed to load OpenCode models.",
+          adapterModelsError instanceof Error ? adapterModelsError.message : "Failed to load OpenCode models.",
         );
         return;
       }
@@ -213,9 +200,7 @@ export function NewAgent() {
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
         <h1 className="text-lg font-semibold">New Agent</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Advanced agent configuration
-        </p>
+        <p className="text-sm text-muted-foreground mt-1">Advanced agent configuration</p>
       </div>
 
       <div className="border border-border">
@@ -226,7 +211,6 @@ export function NewAgent() {
             placeholder="Agent name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            autoFocus
           />
         </div>
 
@@ -245,9 +229,10 @@ export function NewAgent() {
           <Popover open={roleOpen} onOpenChange={setRoleOpen}>
             <PopoverTrigger asChild>
               <button
+                type="button"
                 className={cn(
                   "inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/50 transition-colors",
-                  isFirstAgent && "opacity-60 cursor-not-allowed"
+                  isFirstAgent && "opacity-60 cursor-not-allowed",
                 )}
                 disabled={isFirstAgent}
               >
@@ -258,12 +243,16 @@ export function NewAgent() {
             <PopoverContent className="w-36 p-1" align="start">
               {AGENT_ROLES.map((r) => (
                 <button
+                  type="button"
                   key={r}
                   className={cn(
                     "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",
-                    r === role && "bg-accent"
+                    r === role && "bg-accent",
                   )}
-                  onClick={() => { setRole(r); setRoleOpen(false); }}
+                  onClick={() => {
+                    setRole(r);
+                    setRoleOpen(false);
+                  }}
                 >
                   {roleLabels[r] ?? r}
                 </button>
@@ -271,12 +260,7 @@ export function NewAgent() {
             </PopoverContent>
           </Popover>
 
-          <ReportsToPicker
-            agents={agents ?? []}
-            value={reportsTo}
-            onChange={setReportsTo}
-            disabled={isFirstAgent}
-          />
+          <ReportsToPicker agents={agents ?? []} value={reportsTo} onChange={setReportsTo} disabled={isFirstAgent} />
         </div>
 
         {/* Shared config form */}
@@ -296,9 +280,7 @@ export function NewAgent() {
               </p>
             </div>
             {availableSkills.length === 0 ? (
-              <p className="text-xs text-muted-foreground">
-                No optional company skills installed yet.
-              </p>
+              <p className="text-xs text-muted-foreground">No optional company skills installed yet.</p>
             ) : (
               <div className="space-y-3">
                 {availableSkills.map((skill) => {
@@ -313,9 +295,7 @@ export function NewAgent() {
                       />
                       <label htmlFor={inputId} className="grid gap-1 leading-none">
                         <span className="text-sm font-medium">{skill.name}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {skill.description ?? skill.key}
-                        </span>
+                        <span className="text-xs text-muted-foreground">{skill.description ?? skill.key}</span>
                       </label>
                     </div>
                   );
@@ -327,21 +307,13 @@ export function NewAgent() {
 
         {/* Footer */}
         <div className="border-t border-border px-4 py-3">
-          {isFirstAgent && (
-            <p className="text-xs text-muted-foreground mb-2">This will be the CEO</p>
-          )}
-          {formError && (
-            <p className="text-xs text-destructive mb-2">{formError}</p>
-          )}
+          {isFirstAgent && <p className="text-xs text-muted-foreground mb-2">This will be the CEO</p>}
+          {formError && <p className="text-xs text-destructive mb-2">{formError}</p>}
           <div className="flex items-center justify-end gap-2">
             <Button variant="outline" size="sm" onClick={() => navigate("/agents")}>
               Cancel
             </Button>
-            <Button
-              size="sm"
-              disabled={!name.trim() || createAgent.isPending}
-              onClick={handleSubmit}
-            >
+            <Button size="sm" disabled={!name.trim() || createAgent.isPending} onClick={handleSubmit}>
               {createAgent.isPending ? "Creating…" : "Create agent"}
             </Button>
           </div>

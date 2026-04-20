@@ -13,29 +13,24 @@ const mockInstanceSettingsService = vi.hoisted(() => ({
 }));
 const mockLogActivity = vi.hoisted(() => vi.fn());
 
-vi.mock("../services/index.js", () => ({
-  instanceSettingsService: () => mockInstanceSettingsService,
-  logActivity: mockLogActivity,
-  companyPortabilityService: () => ({}),
-  companySkillService: () => ({}),
-  workProductService: () => ({}),
-  workspaceOperationService: () => ({}),
-  executionWorkspaceService: () => ({}),
-  issueApprovalService: () => ({}),
-  secretService: () => ({}),
-  sidebarBadgeService: () => ({}),
-  dashboardService: () => ({}),
-  heartbeatService: () => ({}),
-  goalService: () => ({}),
-  financeService: () => ({}),
-  costService: () => ({}),
-  companyService: () => ({}),
-  routineService: () => ({}),
-  playbookService: () => ({ seedDefaults: vi.fn() }),
-  budgetService: () => ({ upsertPolicy: vi.fn() }),
-  userInviteService: () => ({ create: vi.fn(), getByToken: vi.fn(), accept: vi.fn(), listForCompany: vi.fn(), revoke: vi.fn() }),
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    instanceSettingsService: () => mockInstanceSettingsService,
+    logActivity: mockLogActivity,
+    playbookService: () => ({ seedDefaults: vi.fn() }),
+    budgetService: () => ({ upsertPolicy: vi.fn() }),
+    userInviteService: () => ({
+      create: vi.fn(),
+      getByToken: vi.fn(),
+      accept: vi.fn(),
+      listForCompany: vi.fn(),
+      revoke: vi.fn(),
+    }),
+  });
+});
 
+// biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
 function createApp(actor: any) {
   const app = express();
   app.use(express.json());
@@ -43,6 +38,7 @@ function createApp(actor: any) {
     req.actor = actor;
     next();
   });
+  // biome-ignore lint/suspicious/noExplicitAny: mock Drizzle DB or storage object for unit tests; real type requires full schema-aware Drizzle instance
   app.use("/api", instanceSettingsRoutes({} as any));
   app.use(errorHandler);
   return app;
@@ -130,9 +126,7 @@ describe("instance settings routes", () => {
     expect(getRes.status).toBe(200);
     expect(getRes.body).toEqual({ censorUsernameInLogs: false });
 
-    const patchRes = await request(app)
-      .patch("/api/instance/settings/general")
-      .send({ censorUsernameInLogs: true });
+    const patchRes = await request(app).patch("/api/instance/settings/general").send({ censorUsernameInLogs: true });
 
     expect(patchRes.status).toBe(200);
     expect(mockInstanceSettingsService.updateGeneral).toHaveBeenCalledWith({
@@ -164,9 +158,7 @@ describe("instance settings routes", () => {
       source: "agent_key",
     });
 
-    const res = await request(app)
-      .patch("/api/instance/settings/general")
-      .send({ censorUsernameInLogs: true });
+    const res = await request(app).patch("/api/instance/settings/general").send({ censorUsernameInLogs: true });
 
     expect(res.status).toBe(403);
     expect(mockInstanceSettingsService.updateGeneral).not.toHaveBeenCalled();

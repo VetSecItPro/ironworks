@@ -17,9 +17,7 @@ export function SettingsSidebarNav({ sections, activeSection }: SettingsSidebarN
           href={`#${s.id}`}
           onClick={(e) => {
             e.preventDefault();
-            document
-              .getElementById(s.id)
-              ?.scrollIntoView({ behavior: "smooth", block: "start" });
+            document.getElementById(s.id)?.scrollIntoView({ behavior: "smooth", block: "start" });
           }}
           className={`block px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
             activeSection === s.id

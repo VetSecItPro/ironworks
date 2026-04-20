@@ -1,7 +1,4 @@
-const DEPT_COLORS = [
-  "#6366f1", "#8b5cf6", "#ec4899", "#f97316",
-  "#06b6d4", "#10b981", "#eab308", "#ef4444",
-];
+const DEPT_COLORS = ["#6366f1", "#8b5cf6", "#ec4899", "#f97316", "#06b6d4", "#10b981", "#eab308", "#ef4444"];
 
 export function DepartmentMiniChart({ departments }: { departments: Array<{ name: string; count: number }> }) {
   const maxCount = Math.max(...departments.map((d) => d.count), 1);

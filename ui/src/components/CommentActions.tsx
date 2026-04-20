@@ -1,15 +1,8 @@
+import { Edit3, History, MessageSquareQuote, MoreHorizontal, Trash2, X } from "lucide-react";
 import { memo, useCallback, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { MarkdownEditor, type MarkdownEditorRef } from "./MarkdownEditor";
-import {
-  Edit3,
-  History,
-  MessageSquareQuote,
-  MoreHorizontal,
-  Trash2,
-  X,
-} from "lucide-react";
 import { cn, formatDateTime } from "../lib/utils";
+import { MarkdownEditor, type MarkdownEditorRef } from "./MarkdownEditor";
 
 // ---------------------------------------------------------------------------
 // Comment Edit/Delete with history
@@ -27,14 +20,18 @@ function loadEditHistory(): Record<string, CommentEdit[]> {
   try {
     const raw = localStorage.getItem(EDIT_HISTORY_KEY);
     if (raw) return JSON.parse(raw) as Record<string, CommentEdit[]>;
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return {};
 }
 
 function saveEditHistory(history: Record<string, CommentEdit[]>) {
   try {
     localStorage.setItem(EDIT_HISTORY_KEY, JSON.stringify(history));
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 export function addEditHistoryEntry(commentId: string, previousBody: string) {
@@ -122,7 +119,12 @@ export function EditHistoryViewer({ commentId, open, onClose }: EditHistoryViewe
           <History className="h-3 w-3" />
           Edit history ({history.length} revision{history.length !== 1 ? "s" : ""})
         </div>
-        <button type="button" aria-label="Close edit history" onClick={onClose} className="text-muted-foreground hover:text-foreground">
+        <button
+          type="button"
+          aria-label="Close edit history"
+          onClick={onClose}
+          className="text-muted-foreground hover:text-foreground"
+        >
           <X className="h-3 w-3" />
         </button>
       </div>
@@ -130,8 +132,8 @@ export function EditHistoryViewer({ commentId, open, onClose }: EditHistoryViewe
         <p className="text-muted-foreground">No edit history</p>
       ) : (
         <div className="space-y-2 max-h-40 overflow-y-auto">
-          {history.map((entry, i) => (
-            <div key={i} className="border-l-2 border-border pl-2 py-1">
+          {history.map((entry) => (
+            <div key={entry.editedAt} className="border-l-2 border-border pl-2 py-1">
               <div className="text-muted-foreground">
                 {entry.editedBy} - {formatDateTime(entry.editedAt)}
               </div>
@@ -184,11 +186,25 @@ export const CommentActionMenu = memo(function CommentActionMenu({
       </button>
       {open && (
         <>
-          <div className="fixed inset-0 z-40" onClick={close} />
+          <button
+            type="button"
+            className="fixed inset-0 z-40"
+            aria-label="Close menu"
+            onClick={close}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                close();
+              }
+            }}
+          />
           <div className="absolute right-0 top-full z-50 mt-1 w-44 rounded-md border border-border bg-popover p-1 shadow-md">
             <button
               type="button"
-              onClick={() => { onQuoteReply(commentBody); close(); }}
+              onClick={() => {
+                onQuoteReply(commentBody);
+                close();
+              }}
               className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent transition-colors"
             >
               <MessageSquareQuote className="h-3 w-3" />
@@ -198,7 +214,10 @@ export const CommentActionMenu = memo(function CommentActionMenu({
               <>
                 <button
                   type="button"
-                  onClick={() => { onEdit(); close(); }}
+                  onClick={() => {
+                    onEdit();
+                    close();
+                  }}
                   className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent transition-colors"
                 >
                   <Edit3 className="h-3 w-3" />
@@ -206,7 +225,10 @@ export const CommentActionMenu = memo(function CommentActionMenu({
                 </button>
                 <button
                   type="button"
-                  onClick={() => { onDelete(commentId); close(); }}
+                  onClick={() => {
+                    onDelete(commentId);
+                    close();
+                  }}
                   className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs text-destructive hover:bg-destructive/10 transition-colors"
                 >
                   <Trash2 className="h-3 w-3" />
@@ -216,7 +238,10 @@ export const CommentActionMenu = memo(function CommentActionMenu({
             )}
             <button
               type="button"
-              onClick={() => { onViewHistory(); close(); }}
+              onClick={() => {
+                onViewHistory();
+                close();
+              }}
               className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent transition-colors"
             >
               <History className="h-3 w-3" />
@@ -239,14 +264,18 @@ function loadWatching(): Set<string> {
   try {
     const raw = localStorage.getItem(WATCHING_KEY);
     if (raw) return new Set(JSON.parse(raw) as string[]);
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return new Set();
 }
 
 function saveWatching(watching: Set<string>) {
   try {
     localStorage.setItem(WATCHING_KEY, JSON.stringify([...watching]));
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 export function useWatching(entityId: string) {
@@ -320,5 +349,5 @@ export function TypingIndicator({ agentName, visible }: TypingIndicatorProps) {
 
 export function formatQuoteReply(text: string): string {
   const lines = text.split("\n").map((line) => `> ${line}`);
-  return lines.join("\n") + "\n\n";
+  return `${lines.join("\n")}\n\n`;
 }

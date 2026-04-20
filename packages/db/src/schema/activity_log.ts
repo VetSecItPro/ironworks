@@ -1,13 +1,15 @@
-import { pgTable, uuid, text, timestamp, jsonb, index } from "drizzle-orm/pg-core";
-import { companies } from "./companies.js";
+import { index, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { agents } from "./agents.js";
+import { companies } from "./companies.js";
 import { heartbeatRuns } from "./heartbeat_runs.js";
 
 export const activityLog = pgTable(
   "activity_log",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    companyId: uuid("company_id").notNull().references(() => companies.id),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id),
     actorType: text("actor_type").notNull().default("system"),
     actorId: text("actor_id").notNull(),
     action: text("action").notNull(),

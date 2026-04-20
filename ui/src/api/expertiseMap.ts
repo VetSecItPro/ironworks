@@ -32,9 +32,7 @@ export interface AssigneeSuggestion {
 
 export const expertiseMapApi = {
   skills: (companyId: string) =>
-    api.get<ExpertiseMapResult>(
-      `/companies/${encodeURIComponent(companyId)}/expertise-map/skills`,
-    ),
+    api.get<ExpertiseMapResult>(`/companies/${encodeURIComponent(companyId)}/expertise-map/skills`),
 
   suggest: (companyId: string, labels: string[]) =>
     api.get<AssigneeSuggestion>(

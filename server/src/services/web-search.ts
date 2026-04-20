@@ -50,11 +50,8 @@ function toSearchResult(item: SearxngResultItem): SearchResult | null {
  * @param maxResults - Maximum number of results to return (default 5).
  * @returns Array of SearchResult objects, empty if search fails.
  */
-export async function webSearch(
-  query: string,
-  maxResults: number = DEFAULT_MAX_RESULTS,
-): Promise<SearchResult[]> {
-  if (!query || !query.trim()) return [];
+export async function webSearch(query: string, maxResults: number = DEFAULT_MAX_RESULTS): Promise<SearchResult[]> {
+  if (!query?.trim()) return [];
 
   const url = new URL("/search", SEARXNG_URL);
   url.searchParams.set("q", query.trim());
@@ -73,17 +70,12 @@ export async function webSearch(
     clearTimeout(timer);
 
     if (!response.ok) {
-      logger.warn(
-        { status: response.status, query },
-        "[web-search] SearXNG returned non-OK status",
-      );
+      logger.warn({ status: response.status, query }, "[web-search] SearXNG returned non-OK status");
       return [];
     }
 
     const payload = (await response.json()) as { results?: SearxngResultItem[] };
-    const rawResults: SearxngResultItem[] = Array.isArray(payload.results)
-      ? payload.results
-      : [];
+    const rawResults: SearxngResultItem[] = Array.isArray(payload.results) ? payload.results : [];
 
     const results: SearchResult[] = [];
     for (const item of rawResults) {
@@ -92,10 +84,7 @@ export async function webSearch(
       if (parsed) results.push(parsed);
     }
 
-    logger.debug(
-      { query, resultCount: results.length, maxResults },
-      "[web-search] search completed",
-    );
+    logger.debug({ query, resultCount: results.length, maxResults }, "[web-search] search completed");
 
     return results;
   } catch (err) {

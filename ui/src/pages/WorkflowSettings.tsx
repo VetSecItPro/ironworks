@@ -1,16 +1,15 @@
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
+import type { CustomField, CustomStatus } from "@/components/workflow-settings";
+import {
+  CustomFieldsSection,
+  loadFields,
+  loadStatuses,
+  StatusesSection,
+  saveFields,
+  saveStatuses,
+} from "@/components/workflow-settings";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { useToast } from "../context/ToastContext";
-
-import {
-  StatusesSection,
-  CustomFieldsSection,
-  loadStatuses,
-  saveStatuses,
-  loadFields,
-  saveFields,
-} from "@/components/workflow-settings";
-import type { CustomStatus, CustomField } from "@/components/workflow-settings";
 
 export function WorkflowSettings() {
   const { setBreadcrumbs } = useBreadcrumbs();

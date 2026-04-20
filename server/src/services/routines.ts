@@ -1,5 +1,4 @@
 import crypto from "node:crypto";
-import { and, asc, desc, eq, inArray, isNotNull, isNull, lte, ne, or, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import {
   agents,
@@ -25,19 +24,20 @@ import type {
   UpdateRoutine,
   UpdateRoutineTrigger,
 } from "@ironworksai/shared";
+import { and, asc, desc, eq, inArray, isNotNull, isNull, lte, sql } from "drizzle-orm";
 import { conflict, forbidden, notFound, unauthorized, unprocessable } from "../errors.js";
 import { logger } from "../middleware/logger.js";
-import { issueService } from "./issues.js";
-import { secretService } from "./secrets.js";
+import { logActivity } from "./activity-log.js";
 import { parseCron, validateCron } from "./cron.js";
 import { heartbeatService } from "./heartbeat.js";
-import { queueIssueAssignmentWakeup, type IssueAssignmentWakeupDeps } from "./issue-assignment-wakeup.js";
-import { logActivity } from "./activity-log.js";
+import { type IssueAssignmentWakeupDeps, queueIssueAssignmentWakeup } from "./issue-assignment-wakeup.js";
+import { issueService } from "./issues.js";
 import { playbookExecutionService } from "./playbook-execution.js";
+import { secretService } from "./secrets.js";
 
 const OPEN_ISSUE_STATUSES = ["backlog", "todo", "in_progress", "in_review", "blocked"];
 const LIVE_HEARTBEAT_RUN_STATUSES = ["queued", "running"];
-const TERMINAL_ISSUE_STATUSES = new Set(["done", "cancelled"]);
+const _TERMINAL_ISSUE_STATUSES = new Set(["done", "cancelled"]);
 const MAX_CATCH_UP_RUNS = 25;
 const WEEKDAY_INDEX: Record<string, number> = {
   Sun: 0,
@@ -160,7 +160,7 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
       .then((rows) => rows[0] ?? null);
   }
 
-  async function assertRoutineAccess(companyId: string, routineId: string) {
+  async function _assertRoutineAccess(companyId: string, routineId: string) {
     const routine = await getRoutineById(routineId);
     if (!routine) throw notFound("Routine not found");
     if (routine.companyId !== companyId) throw forbidden("Routine must belong to same company");
@@ -278,20 +278,20 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
         updatedAt: row.updatedAt,
         linkedIssue: row.linkedIssueId
           ? {
-            id: row.linkedIssueId,
-            identifier: row.issueIdentifier,
-            title: row.issueTitle ?? "Routine execution",
-            status: row.issueStatus ?? "todo",
-            priority: row.issuePriority ?? "medium",
-            updatedAt: row.issueUpdatedAt ?? row.updatedAt,
-          }
+              id: row.linkedIssueId,
+              identifier: row.issueIdentifier,
+              title: row.issueTitle ?? "Routine execution",
+              status: row.issueStatus ?? "todo",
+              priority: row.issuePriority ?? "medium",
+              updatedAt: row.issueUpdatedAt ?? row.updatedAt,
+            }
           : null,
         trigger: row.triggerId
           ? {
-            id: row.triggerId,
-            kind: row.triggerKind as NonNullable<RoutineRunSummary["trigger"]>["kind"],
-            label: row.triggerLabel,
-          }
+              id: row.triggerId,
+              kind: row.triggerKind as NonNullable<RoutineRunSummary["trigger"]>["kind"],
+              label: row.triggerLabel,
+            }
           : null,
       });
     }
@@ -313,10 +313,7 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
       .from(issues)
       .innerJoin(
         heartbeatRuns,
-        and(
-          eq(heartbeatRuns.id, issues.executionRunId),
-          inArray(heartbeatRuns.status, LIVE_HEARTBEAT_RUN_STATUSES),
-        ),
+        and(eq(heartbeatRuns.id, issues.executionRunId), inArray(heartbeatRuns.status, LIVE_HEARTBEAT_RUN_STATUSES)),
       )
       .where(
         and(
@@ -388,14 +385,17 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
     return map;
   }
 
-  async function updateRoutineTouchedState(input: {
-    routineId: string;
-    triggerId?: string | null;
-    triggeredAt: Date;
-    status: string;
-    issueId?: string | null;
-    nextRunAt?: Date | null;
-  }, executor: Db = db) {
+  async function updateRoutineTouchedState(
+    input: {
+      routineId: string;
+      triggerId?: string | null;
+      triggeredAt: Date;
+      status: string;
+      issueId?: string | null;
+      nextRunAt?: Date | null;
+    },
+    executor: Db = db,
+  ) {
     await executor
       .update(routines)
       .set({
@@ -424,10 +424,7 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
       .from(issues)
       .innerJoin(
         heartbeatRuns,
-        and(
-          eq(heartbeatRuns.id, issues.executionRunId),
-          inArray(heartbeatRuns.status, LIVE_HEARTBEAT_RUN_STATUSES),
-        ),
+        and(eq(heartbeatRuns.id, issues.executionRunId), inArray(heartbeatRuns.status, LIVE_HEARTBEAT_RUN_STATUSES)),
       )
       .where(
         and(
@@ -480,11 +477,7 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
       .then((rows) => rows[0] ?? null);
   }
 
-  async function createWebhookSecret(
-    companyId: string,
-    routineId: string,
-    actor: Actor,
-  ) {
+  async function createWebhookSecret(companyId: string, routineId: string, actor: Actor) {
     const secretValue = crypto.randomBytes(24).toString("hex");
     const secret = await secretsSvc.create(
       companyId,
@@ -558,33 +551,41 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
         })
         .returning();
 
-      const nextRunAt = input.trigger?.kind === "schedule" && input.trigger.cronExpression && input.trigger.timezone
-        ? nextCronTickInTimeZone(input.trigger.cronExpression, input.trigger.timezone, triggeredAt)
-        : undefined;
+      const nextRunAt =
+        input.trigger?.kind === "schedule" && input.trigger.cronExpression && input.trigger.timezone
+          ? nextCronTickInTimeZone(input.trigger.cronExpression, input.trigger.timezone, triggeredAt)
+          : undefined;
 
       // If routine has a linked playbook, run it instead of creating a single issue
       if (input.routine.playbookId) {
         try {
           const playbookExec = playbookExecutionService(txDb);
-          const pbResult = await playbookExec.runPlaybook({
+          const _pbResult = await playbookExec.runPlaybook({
             companyId: input.routine.companyId,
             playbookId: input.routine.playbookId,
             triggeredBy: `routine:${input.routine.id}`,
             projectId: input.routine.projectId,
             name: input.routine.title,
           });
-          const updated = await finalizeRun(createdRun.id, {
-            status: "issue_created",
-            linkedIssueId: null,
-          }, txDb);
-          await updateRoutineTouchedState({
-            routineId: input.routine.id,
-            triggerId: input.trigger?.id ?? null,
-            triggeredAt,
-            status: "issue_created",
-            issueId: null,
-            nextRunAt,
-          }, txDb);
+          const updated = await finalizeRun(
+            createdRun.id,
+            {
+              status: "issue_created",
+              linkedIssueId: null,
+            },
+            txDb,
+          );
+          await updateRoutineTouchedState(
+            {
+              routineId: input.routine.id,
+              triggerId: input.trigger?.id ?? null,
+              triggeredAt,
+              status: "issue_created",
+              issueId: null,
+              nextRunAt,
+            },
+            txDb,
+          );
           return updated ?? createdRun;
         } catch (pbErr) {
           logger.error({ err: pbErr, routineId: input.routine.id }, "playbook execution from routine failed");
@@ -598,20 +599,27 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
         const activeIssue = await findLiveExecutionIssue(input.routine, txDb);
         if (activeIssue && input.routine.concurrencyPolicy !== "always_enqueue") {
           const status = input.routine.concurrencyPolicy === "skip_if_active" ? "skipped" : "coalesced";
-          const updated = await finalizeRun(createdRun.id, {
-            status,
-            linkedIssueId: activeIssue.id,
-            coalescedIntoRunId: activeIssue.originRunId,
-            completedAt: triggeredAt,
-          }, txDb);
-          await updateRoutineTouchedState({
-            routineId: input.routine.id,
-            triggerId: input.trigger?.id ?? null,
-            triggeredAt,
-            status,
-            issueId: activeIssue.id,
-            nextRunAt,
-          }, txDb);
+          const updated = await finalizeRun(
+            createdRun.id,
+            {
+              status,
+              linkedIssueId: activeIssue.id,
+              coalescedIntoRunId: activeIssue.originRunId,
+              completedAt: triggeredAt,
+            },
+            txDb,
+          );
+          await updateRoutineTouchedState(
+            {
+              routineId: input.routine.id,
+              triggerId: input.trigger?.id ?? null,
+              triggeredAt,
+              status,
+              issueId: activeIssue.id,
+              nextRunAt,
+            },
+            txDb,
+          );
           return updated ?? createdRun;
         }
 
@@ -644,20 +652,27 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
           const existingIssue = await findLiveExecutionIssue(input.routine, txDb);
           if (!existingIssue) throw error;
           const status = input.routine.concurrencyPolicy === "skip_if_active" ? "skipped" : "coalesced";
-          const updated = await finalizeRun(createdRun.id, {
-            status,
-            linkedIssueId: existingIssue.id,
-            coalescedIntoRunId: existingIssue.originRunId,
-            completedAt: triggeredAt,
-          }, txDb);
-          await updateRoutineTouchedState({
-            routineId: input.routine.id,
-            triggerId: input.trigger?.id ?? null,
-            triggeredAt,
-            status,
-            issueId: existingIssue.id,
-            nextRunAt,
-          }, txDb);
+          const updated = await finalizeRun(
+            createdRun.id,
+            {
+              status,
+              linkedIssueId: existingIssue.id,
+              coalescedIntoRunId: existingIssue.originRunId,
+              completedAt: triggeredAt,
+            },
+            txDb,
+          );
+          await updateRoutineTouchedState(
+            {
+              routineId: input.routine.id,
+              triggerId: input.trigger?.id ?? null,
+              triggeredAt,
+              status,
+              issueId: existingIssue.id,
+              nextRunAt,
+            },
+            txDb,
+          );
           return updated ?? createdRun;
         }
 
@@ -671,36 +686,50 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
           requestedByActorType: input.source === "schedule" ? "system" : undefined,
           rethrowOnError: true,
         });
-        const updated = await finalizeRun(createdRun.id, {
-          status: "issue_created",
-          linkedIssueId: createdIssue.id,
-        }, txDb);
-        await updateRoutineTouchedState({
-          routineId: input.routine.id,
-          triggerId: input.trigger?.id ?? null,
-          triggeredAt,
-          status: "issue_created",
-          issueId: createdIssue.id,
-          nextRunAt,
-        }, txDb);
+        const updated = await finalizeRun(
+          createdRun.id,
+          {
+            status: "issue_created",
+            linkedIssueId: createdIssue.id,
+          },
+          txDb,
+        );
+        await updateRoutineTouchedState(
+          {
+            routineId: input.routine.id,
+            triggerId: input.trigger?.id ?? null,
+            triggeredAt,
+            status: "issue_created",
+            issueId: createdIssue.id,
+            nextRunAt,
+          },
+          txDb,
+        );
         return updated ?? createdRun;
       } catch (error) {
         if (createdIssue) {
           await txDb.delete(issues).where(eq(issues.id, createdIssue.id));
         }
         const failureReason = error instanceof Error ? error.message : String(error);
-        const failed = await finalizeRun(createdRun.id, {
-          status: "failed",
-          failureReason,
-          completedAt: new Date(),
-        }, txDb);
-        await updateRoutineTouchedState({
-          routineId: input.routine.id,
-          triggerId: input.trigger?.id ?? null,
-          triggeredAt,
-          status: "failed",
-          nextRunAt,
-        }, txDb);
+        const failed = await finalizeRun(
+          createdRun.id,
+          {
+            status: "failed",
+            failureReason,
+            completedAt: new Date(),
+          },
+          txDb,
+        );
+        await updateRoutineTouchedState(
+          {
+            routineId: input.routine.id,
+            triggerId: input.trigger?.id ?? null,
+            triggeredAt,
+            status: "failed",
+            nextRunAt,
+          },
+          txDb,
+        );
         return failed ?? createdRun;
       }
     });
@@ -766,10 +795,26 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
       const row = await getRoutineById(id);
       if (!row) return null;
       const [project, assignee, parentIssue, triggers, recentRuns, activeIssue] = await Promise.all([
-        row.projectId ? db.select().from(projects).where(eq(projects.id, row.projectId)).then((rows) => rows[0] ?? null) : null,
-        row.assigneeAgentId ? db.select().from(agents).where(eq(agents.id, row.assigneeAgentId)).then((rows) => rows[0] ?? null) : null,
+        row.projectId
+          ? db
+              .select()
+              .from(projects)
+              .where(eq(projects.id, row.projectId))
+              .then((rows) => rows[0] ?? null)
+          : null,
+        row.assigneeAgentId
+          ? db
+              .select()
+              .from(agents)
+              .where(eq(agents.id, row.assigneeAgentId))
+              .then((rows) => rows[0] ?? null)
+          : null,
         row.parentIssueId ? issueSvc.getById(row.parentIssueId) : null,
-        db.select().from(routineTriggers).where(eq(routineTriggers.routineId, row.id)).orderBy(asc(routineTriggers.createdAt)),
+        db
+          .select()
+          .from(routineTriggers)
+          .where(eq(routineTriggers.routineId, row.id))
+          .orderBy(asc(routineTriggers.createdAt)),
         db
           .select({
             id: routineRuns.id,
@@ -820,20 +865,20 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
               updatedAt: run.updatedAt,
               linkedIssue: run.linkedIssueId
                 ? {
-                  id: run.linkedIssueId,
-                  identifier: run.issueIdentifier,
-                  title: run.issueTitle ?? "Routine execution",
-                  status: run.issueStatus ?? "todo",
-                  priority: run.issuePriority ?? "medium",
-                  updatedAt: run.issueUpdatedAt ?? run.updatedAt,
-                }
+                    id: run.linkedIssueId,
+                    identifier: run.issueIdentifier,
+                    title: run.issueTitle ?? "Routine execution",
+                    status: run.issueStatus ?? "todo",
+                    priority: run.issuePriority ?? "medium",
+                    updatedAt: run.issueUpdatedAt ?? run.updatedAt,
+                  }
                 : null,
               trigger: run.triggerId
                 ? {
-                  id: run.triggerId,
-                  kind: run.triggerKind as NonNullable<RoutineRunSummary["trigger"]>["kind"],
-                  label: run.triggerLabel,
-                }
+                    id: run.triggerId,
+                    kind: run.triggerKind as NonNullable<RoutineRunSummary["trigger"]>["kind"],
+                    label: run.triggerLabel,
+                  }
                 : null,
             })),
           ),
@@ -885,7 +930,8 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
       const nextProjectId = patch.projectId ?? existing.projectId;
       const nextAssigneeAgentId = patch.assigneeAgentId ?? existing.assigneeAgentId;
       if (patch.projectId && nextProjectId) await assertProject(existing.companyId, nextProjectId);
-      if (patch.assigneeAgentId && nextAssigneeAgentId) await assertAssignableAgent(existing.companyId, nextAssigneeAgentId);
+      if (patch.assigneeAgentId && nextAssigneeAgentId)
+        await assertAssignableAgent(existing.companyId, nextAssigneeAgentId);
       if (patch.goalId) await assertGoal(existing.companyId, patch.goalId);
       if (patch.parentIssueId) await assertParentIssue(existing.companyId, patch.parentIssueId);
       const [updated] = await db
@@ -950,7 +996,7 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
           label: input.label ?? null,
           enabled: input.enabled ?? true,
           cronExpression: input.kind === "schedule" ? input.cronExpression : null,
-          timezone: input.kind === "schedule" ? (input.timezone || "UTC") : null,
+          timezone: input.kind === "schedule" ? input.timezone || "UTC" : null,
           nextRunAt,
           publicId,
           secretId,
@@ -1070,14 +1116,17 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
       });
     },
 
-    firePublicTrigger: async (publicId: string, input: {
-      authorizationHeader?: string | null;
-      signatureHeader?: string | null;
-      timestampHeader?: string | null;
-      idempotencyKey?: string | null;
-      rawBody?: Buffer | null;
-      payload?: Record<string, unknown> | null;
-    }) => {
+    firePublicTrigger: async (
+      publicId: string,
+      input: {
+        authorizationHeader?: string | null;
+        signatureHeader?: string | null;
+        timestampHeader?: string | null;
+        idempotencyKey?: string | null;
+        rawBody?: Buffer | null;
+        payload?: Record<string, unknown> | null;
+      },
+    ) => {
       const trigger = await db
         .select()
         .from(routineTriggers)
@@ -1095,9 +1144,7 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
         const expectedBuf = Buffer.from(expected);
         const providedBuf = Buffer.alloc(expectedBuf.length);
         providedBuf.write(provided.slice(0, expectedBuf.length));
-        const valid =
-          provided.length === expected.length &&
-          crypto.timingSafeEqual(providedBuf, expectedBuf);
+        const valid = provided.length === expected.length && crypto.timingSafeEqual(providedBuf, expectedBuf);
         if (!valid) {
           throw unauthorized();
         }
@@ -1185,20 +1232,20 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
         updatedAt: row.updatedAt,
         linkedIssue: row.linkedIssueId
           ? {
-            id: row.linkedIssueId,
-            identifier: row.issueIdentifier,
-            title: row.issueTitle ?? "Routine execution",
-            status: row.issueStatus ?? "todo",
-            priority: row.issuePriority ?? "medium",
-            updatedAt: row.issueUpdatedAt ?? row.updatedAt,
-          }
+              id: row.linkedIssueId,
+              identifier: row.issueIdentifier,
+              title: row.issueTitle ?? "Routine execution",
+              status: row.issueStatus ?? "todo",
+              priority: row.issuePriority ?? "medium",
+              updatedAt: row.issueUpdatedAt ?? row.updatedAt,
+            }
           : null,
         trigger: row.triggerId
           ? {
-            id: row.triggerId,
-            kind: row.triggerKind as NonNullable<RoutineRunSummary["trigger"]>["kind"],
-            label: row.triggerLabel,
-          }
+              id: row.triggerId,
+              kind: row.triggerKind as NonNullable<RoutineRunSummary["trigger"]>["kind"],
+              label: row.triggerLabel,
+            }
           : null,
       }));
     },
@@ -1314,31 +1361,36 @@ export function routineService(db: Db, deps: { heartbeat?: IssueAssignmentWakeup
       const seeds = [
         {
           title: "Daily Standup",
-          description: "CEO reviews inbox, checks agent status, delegates new work, and resolves blockers. Runs every morning.",
+          description:
+            "CEO reviews inbox, checks agent status, delegates new work, and resolves blockers. Runs every morning.",
           priority: "medium",
           status: "draft",
         },
         {
           title: "Weekly Performance Review",
-          description: "VP of HR reviews the Agent Performance page, flags underperformers, recommends improvements, and reports findings to CEO.",
+          description:
+            "VP of HR reviews the Agent Performance page, flags underperformers, recommends improvements, and reports findings to CEO.",
           priority: "medium",
           status: "draft",
         },
         {
           title: "Weekly Security Scan",
-          description: "Security Engineer runs a dependency audit and code security review across all active projects. Produces a findings summary.",
+          description:
+            "Security Engineer runs a dependency audit and code security review across all active projects. Produces a findings summary.",
           priority: "high",
           status: "draft",
         },
         {
           title: "Monthly Operations Report",
-          description: "CEO compiles monthly metrics: tasks completed, goals progress, budget utilization, agent performance ratings. Distributes to stakeholders.",
+          description:
+            "CEO compiles monthly metrics: tasks completed, goals progress, budget utilization, agent performance ratings. Distributes to stakeholders.",
           priority: "low",
           status: "draft",
         },
         {
           title: "Content Calendar Review",
-          description: "Content Marketer reviews upcoming content calendar, checks deadlines, and ensures pipeline coverage for the next two weeks.",
+          description:
+            "Content Marketer reviews upcoming content calendar, checks deadlines, and ensures pipeline coverage for the next two weeks.",
           priority: "medium",
           status: "draft",
         },

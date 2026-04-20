@@ -56,7 +56,7 @@ export function validateConfidenceTags(text: string): ConfidenceTagResult {
     if (matches && matches.length > 0) {
       taggedAssertions++;
       for (const match of matches) {
-        const tag = match.replace(/[\[\]]/g, "");
+        const tag = match.replace(/[[\]]/g, "");
         if (tag === "FACT") fact++;
         else if (tag === "ASSESSMENT") assessment++;
         else if (tag === "SPECULATION") speculation++;

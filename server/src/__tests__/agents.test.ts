@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -53,30 +53,49 @@ const mockAccessService = vi.hoisted(() => ({
 
 const mockLogActivity = vi.hoisted(() => vi.fn());
 
-vi.mock("../services/index.js", () => ({
-  accessService: () => mockAccessService,
-  agentService: () => mockAgentService,
-  agentInstructionsService: () => ({ getBundle: vi.fn(), updateBundle: vi.fn(), listFiles: vi.fn().mockResolvedValue([]) }),
-  approvalService: () => ({ list: vi.fn().mockResolvedValue([]) }),
-  budgetService: () => ({ upsertPolicy: vi.fn(), getPolicy: vi.fn(), listPolicies: vi.fn().mockResolvedValue([]), listIncidents: vi.fn().mockResolvedValue([]), resolveIncident: vi.fn() }),
-  companySkillService: () => ({ list: vi.fn().mockResolvedValue([]), scan: vi.fn() }),
-  heartbeatService: () => ({ cancelBudgetScopeWork: vi.fn(), cancelActiveForAgent: vi.fn(), wakeup: vi.fn(), getActiveRun: vi.fn(), listRuns: vi.fn().mockResolvedValue([]) }),
-  issueApprovalService: () => ({ list: vi.fn().mockResolvedValue([]) }),
-  issueService: () => ({ list: vi.fn().mockResolvedValue([]) }),
-  logActivity: mockLogActivity,
-  secretService: () => ({ list: vi.fn().mockResolvedValue([]) }),
-  syncInstructionsBundleConfigFromFilePath: vi.fn(),
-  workspaceOperationService: () => ({}),
-  createAgentWorkspace: vi.fn(),
-  archiveAgentWorkspace: vi.fn(),
-  createHiringRecord: vi.fn(),
-  createTerminationRecord: vi.fn(),
-  createEmploymentHistoryEntry: vi.fn(),
-  buildOnboardingPacket: vi.fn().mockResolvedValue({}),
-  deduplicateAgentName: vi.fn().mockImplementation((_db: any, _cid: any, name: string) => name),
-  notifyHireApproved: vi.fn(),
-  boardAuthService: () => ({ getSession: vi.fn() }),
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    accessService: () => mockAccessService,
+    agentService: () => mockAgentService,
+    agentInstructionsService: () => ({
+      getBundle: vi.fn(),
+      updateBundle: vi.fn(),
+      listFiles: vi.fn().mockResolvedValue([]),
+    }),
+    approvalService: () => ({ list: vi.fn().mockResolvedValue([]) }),
+    budgetService: () => ({
+      upsertPolicy: vi.fn(),
+      getPolicy: vi.fn(),
+      listPolicies: vi.fn().mockResolvedValue([]),
+      listIncidents: vi.fn().mockResolvedValue([]),
+      resolveIncident: vi.fn(),
+    }),
+    companySkillService: () => ({ list: vi.fn().mockResolvedValue([]), scan: vi.fn() }),
+    heartbeatService: () => ({
+      cancelBudgetScopeWork: vi.fn(),
+      cancelActiveForAgent: vi.fn(),
+      wakeup: vi.fn(),
+      getActiveRun: vi.fn(),
+      listRuns: vi.fn().mockResolvedValue([]),
+    }),
+    issueApprovalService: () => ({ list: vi.fn().mockResolvedValue([]) }),
+    issueService: () => ({ list: vi.fn().mockResolvedValue([]) }),
+    logActivity: mockLogActivity,
+    secretService: () => ({ list: vi.fn().mockResolvedValue([]) }),
+    syncInstructionsBundleConfigFromFilePath: vi.fn(),
+    createAgentWorkspace: vi.fn(),
+    archiveAgentWorkspace: vi.fn(),
+    createHiringRecord: vi.fn(),
+    createTerminationRecord: vi.fn(),
+    createEmploymentHistoryEntry: vi.fn(),
+    buildOnboardingPacket: vi.fn().mockResolvedValue({}),
+    // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
+    deduplicateAgentName: vi.fn().mockImplementation((_db: any, _cid: any, name: string) => name),
+    notifyHireApproved: vi.fn(),
+    boardAuthService: () => ({ getSession: vi.fn() }),
+  });
+});
 
 vi.mock("../services/activity-log.js", () => ({
   logActivity: mockLogActivity,
@@ -93,11 +112,14 @@ vi.mock("../adapters/index.js", () => ({
 }));
 
 vi.mock("../redaction.js", () => ({
+  // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
   redactEventPayload: vi.fn((x: any) => x),
+  // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
   sanitizeRecord: vi.fn((x: any) => x),
 }));
 
 vi.mock("../log-redaction.js", () => ({
+  // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
   redactCurrentUserValue: vi.fn((x: any) => x),
 }));
 
@@ -166,9 +188,11 @@ async function createApp(actor: Record<string, unknown>) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });
+  // biome-ignore lint/suspicious/noExplicitAny: mock Drizzle DB or storage object for unit tests; real type requires full schema-aware Drizzle instance
   const fakeDb = {} as any;
   app.use("/api", agentRoutes(fakeDb));
   app.use(errorHandler);

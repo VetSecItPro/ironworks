@@ -65,11 +65,9 @@ describe("approvalService resolution idempotency", () => {
   });
 
   it("treats repeated approve retries as no-ops after another worker resolves the approval", async () => {
-    const dbStub = createDbStub(
-      [[createApproval("pending")], [createApproval("approved")]],
-      [],
-    );
+    const dbStub = createDbStub([[createApproval("pending")], [createApproval("approved")]], []);
 
+    // biome-ignore lint/suspicious/noExplicitAny: test-only type cast to satisfy service/function signature in unit test context
     const svc = approvalService(dbStub.db as any);
     const result = await svc.approve("approval-1", "board", "ship it");
 
@@ -80,11 +78,9 @@ describe("approvalService resolution idempotency", () => {
   });
 
   it("treats repeated reject retries as no-ops after another worker resolves the approval", async () => {
-    const dbStub = createDbStub(
-      [[createApproval("pending")], [createApproval("rejected")]],
-      [],
-    );
+    const dbStub = createDbStub([[createApproval("pending")], [createApproval("rejected")]], []);
 
+    // biome-ignore lint/suspicious/noExplicitAny: test-only type cast to satisfy service/function signature in unit test context
     const svc = approvalService(dbStub.db as any);
     const result = await svc.reject("approval-1", "board", "not now");
 
@@ -97,6 +93,7 @@ describe("approvalService resolution idempotency", () => {
     const approved = createApproval("approved");
     const dbStub = createDbStub([[createApproval("pending")]], [approved]);
 
+    // biome-ignore lint/suspicious/noExplicitAny: test-only type cast to satisfy service/function signature in unit test context
     const svc = approvalService(dbStub.db as any);
     const result = await svc.approve("approval-1", "board", "ship it");
 

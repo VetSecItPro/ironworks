@@ -1,6 +1,6 @@
-import { eq, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { goals, issues } from "@ironworksai/db";
+import { eq, sql } from "drizzle-orm";
 
 /**
  * Recalculate goal status based on child issue statuses.
@@ -39,26 +39,16 @@ export async function recalculateGoalProgress(db: Db, goalId: string): Promise<v
   }
 
   if (newStatus) {
-    const [current] = await db
-      .select({ status: goals.status })
-      .from(goals)
-      .where(eq(goals.id, goalId))
-      .limit(1);
+    const [current] = await db.select({ status: goals.status }).from(goals).where(eq(goals.id, goalId)).limit(1);
 
     // Don't downgrade from achieved (manual override should stick)
     if (current && current.status !== newStatus && current.status !== "achieved") {
-      await db
-        .update(goals)
-        .set({ status: newStatus, updatedAt: new Date() })
-        .where(eq(goals.id, goalId));
+      await db.update(goals).set({ status: newStatus, updatedAt: new Date() }).where(eq(goals.id, goalId));
     }
 
     // Upgrade TO achieved when all done
     if (current && newStatus === "achieved" && current.status !== "achieved") {
-      await db
-        .update(goals)
-        .set({ status: "achieved", updatedAt: new Date() })
-        .where(eq(goals.id, goalId));
+      await db.update(goals).set({ status: "achieved", updatedAt: new Date() }).where(eq(goals.id, goalId));
     }
   }
 }

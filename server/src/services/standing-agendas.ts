@@ -1,24 +1,19 @@
-import { eq } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { agentChannels, companies } from "@ironworksai/db";
-import { postStandingAgenda } from "./channels.js";
+import { eq } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
+import { postStandingAgenda } from "./channels.js";
 
-const ENGINEERING_AGENDA =
-  "Standing agenda: Open PRs, blockers, velocity update. Team, please post your updates.";
+const ENGINEERING_AGENDA = "Standing agenda: Open PRs, blockers, velocity update. Team, please post your updates.";
 
-const COMPANY_AGENDA =
-  "Standing agenda: Weekly priorities review. Department heads, share your top priorities.";
+const COMPANY_AGENDA = "Standing agenda: Weekly priorities review. Department heads, share your top priorities.";
 
 /**
  * Post Monday standing agendas to #engineering and #company channels for all
  * active companies. Called by the CT-aware scheduler every Monday at 09:00 CT.
  */
 export async function postStandingAgendas(db: Db): Promise<void> {
-  const allCompanies = await db
-    .select({ id: companies.id })
-    .from(companies)
-    .where(eq(companies.status, "active"));
+  const allCompanies = await db.select({ id: companies.id }).from(companies).where(eq(companies.status, "active"));
 
   for (const company of allCompanies) {
     try {

@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { Bot, Send, Trash2, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Input } from "@/components/ui/input";
 import { useLocation } from "@/lib/router";
 import { cn } from "../lib/utils";
-import { Input } from "@/components/ui/input";
-import { Bot, Send, X, Trash2 } from "lucide-react";
 
 interface ChatMessage {
   id: string;
@@ -57,6 +57,7 @@ function generateMockResponse(pageContext: string, userMessage: string): string 
 export function AskAIHeaderButton({ onClick }: { onClick: () => void }) {
   return (
     <button
+      type="button"
       onClick={onClick}
       className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
       title="Chat with Iris"
@@ -91,20 +92,25 @@ export function AskAIPanel({ open, onClose }: { open: boolean; onClose: () => vo
   // Welcome message
   useEffect(() => {
     if (open && messages.length === 0) {
-      setMessages([{
-        id: "welcome",
-        role: "assistant",
-        content: `Hi, I'm Iris. I can help you with the ${pageContext} page. What would you like to know?`,
-      }]);
+      setMessages([
+        {
+          id: "welcome",
+          role: "assistant",
+          content: `Hi, I'm Iris. I can help you with the ${pageContext} page. What would you like to know?`,
+        },
+      ]);
     }
   }, [open, pageContext, messages.length]);
 
   // Click outside to close
-  const handleClickOutside = useCallback((e: MouseEvent) => {
-    if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-      onClose();
-    }
-  }, [onClose]);
+  const handleClickOutside = useCallback(
+    (e: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    },
+    [onClose],
+  );
 
   useEffect(() => {
     if (open) {
@@ -116,7 +122,9 @@ export function AskAIPanel({ open, onClose }: { open: boolean; onClose: () => vo
   // Escape to close
   useEffect(() => {
     if (!open) return;
-    const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
     document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
   }, [open, onClose]);
@@ -127,14 +135,20 @@ export function AskAIPanel({ open, onClose }: { open: boolean; onClose: () => vo
     setMessages((prev) => [...prev, { id: `user-${Date.now()}`, role: "user", content: trimmed }]);
     setInput("");
     setIsTyping(true);
-    setTimeout(() => {
-      setMessages((prev) => [...prev, {
-        id: `assistant-${Date.now()}`,
-        role: "assistant",
-        content: generateMockResponse(pageContext, trimmed),
-      }]);
-      setIsTyping(false);
-    }, 800 + Math.random() * 500);
+    setTimeout(
+      () => {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            role: "assistant",
+            content: generateMockResponse(pageContext, trimmed),
+          },
+        ]);
+        setIsTyping(false);
+      },
+      800 + Math.random() * 500,
+    );
   }
 
   if (!open) return null;
@@ -161,11 +175,23 @@ export function AskAIPanel({ open, onClose }: { open: boolean; onClose: () => vo
         </div>
         <div className="flex items-center gap-1 shrink-0">
           {messages.length > 1 && (
-            <button onClick={() => setMessages([])} className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors" title="Clear chat" aria-label="Clear chat">
+            <button
+              type="button"
+              onClick={() => setMessages([])}
+              className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors"
+              title="Clear chat"
+              aria-label="Clear chat"
+            >
               <Trash2 className="h-3 w-3" />
             </button>
           )}
-          <button onClick={onClose} className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors" title="Close" aria-label="Close">
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors"
+            title="Close"
+            aria-label="Close"
+          >
             <X className="h-3.5 w-3.5" />
           </button>
         </div>
@@ -175,12 +201,12 @@ export function AskAIPanel({ open, onClose }: { open: boolean; onClose: () => vo
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
         {messages.map((msg) => (
           <div key={msg.id} className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}>
-            <div className={cn(
-              "max-w-[85%] rounded-lg px-3 py-2 text-xs leading-relaxed whitespace-pre-wrap",
-              msg.role === "user"
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted text-foreground",
-            )}>
+            <div
+              className={cn(
+                "max-w-[85%] rounded-lg px-3 py-2 text-xs leading-relaxed whitespace-pre-wrap",
+                msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground",
+              )}
+            >
               {msg.content}
             </div>
           </div>
@@ -189,9 +215,15 @@ export function AskAIPanel({ open, onClose }: { open: boolean; onClose: () => vo
           <div className="flex justify-start">
             <div className="bg-muted rounded-lg px-3 py-2 text-xs text-muted-foreground">
               <span className="inline-flex gap-0.5">
-                <span className="animate-bounce" style={{ animationDelay: "0ms" }}>.</span>
-                <span className="animate-bounce" style={{ animationDelay: "150ms" }}>.</span>
-                <span className="animate-bounce" style={{ animationDelay: "300ms" }}>.</span>
+                <span className="animate-bounce" style={{ animationDelay: "0ms" }}>
+                  .
+                </span>
+                <span className="animate-bounce" style={{ animationDelay: "150ms" }}>
+                  .
+                </span>
+                <span className="animate-bounce" style={{ animationDelay: "300ms" }}>
+                  .
+                </span>
               </span>
             </div>
           </div>
@@ -205,11 +237,17 @@ export function AskAIPanel({ open, onClose }: { open: boolean; onClose: () => vo
           ref={inputRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSend();
+            }
+          }}
           placeholder="Ask anything..."
           className="h-8 text-xs"
         />
         <button
+          type="button"
           onClick={handleSend}
           disabled={!input.trim() || isTyping}
           className="shrink-0 w-8 h-8 flex items-center justify-center rounded-md bg-primary text-primary-foreground disabled:opacity-50 transition-opacity"

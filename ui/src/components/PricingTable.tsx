@@ -1,6 +1,6 @@
 import { Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import type { PlanTier } from "@/api/billing";
+import { Button } from "@/components/ui/button";
 
 interface PricingTier {
   tier: PlanTier;
@@ -93,20 +93,15 @@ export function PricingTable({ currentTier = "starter", onSelectTier, loading }:
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {TIERS.map((tier) => {
         const isCurrent = tier.tier === currentTier;
-        const isUpgrade =
-          TIERS.findIndex((t) => t.tier === tier.tier) >
-          TIERS.findIndex((t) => t.tier === currentTier);
+        const isUpgrade = TIERS.findIndex((t) => t.tier === tier.tier) > TIERS.findIndex((t) => t.tier === currentTier);
         const isDowngrade =
-          TIERS.findIndex((t) => t.tier === tier.tier) <
-          TIERS.findIndex((t) => t.tier === currentTier);
+          TIERS.findIndex((t) => t.tier === tier.tier) < TIERS.findIndex((t) => t.tier === currentTier);
 
         return (
           <div
             key={tier.tier}
             className={`border rounded-lg p-5 flex flex-col ${
-              isCurrent
-                ? "border-primary bg-primary/5 ring-1 ring-primary"
-                : "border-border"
+              isCurrent ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border"
             }`}
           >
             <div className="mb-4">
@@ -122,9 +117,7 @@ export function PricingTable({ currentTier = "starter", onSelectTier, loading }:
                 <span className="text-3xl font-bold">{formatPrice(tier.priceMonthly)}</span>
                 <span className="text-muted-foreground text-sm">/month</span>
               </div>
-              {tier.subtitle && (
-                <p className="text-xs text-muted-foreground mt-1">{tier.subtitle}</p>
-              )}
+              {tier.subtitle && <p className="text-xs text-muted-foreground mt-1">{tier.subtitle}</p>}
             </div>
 
             <ul className="flex-1 space-y-2 mb-5">
@@ -143,13 +136,7 @@ export function PricingTable({ currentTier = "starter", onSelectTier, loading }:
                 onClick={() => onSelectTier(tier.tier)}
                 className="w-full"
               >
-                {isCurrent
-                  ? "Current Plan"
-                  : isUpgrade
-                    ? "Upgrade"
-                    : isDowngrade
-                      ? "Downgrade"
-                      : "Select"}
+                {isCurrent ? "Current Plan" : isUpgrade ? "Upgrade" : isDowngrade ? "Downgrade" : "Select"}
               </Button>
             )}
           </div>

@@ -1,13 +1,6 @@
 import { z } from "zod";
 
-export const agentSkillStateSchema = z.enum([
-  "available",
-  "configured",
-  "installed",
-  "missing",
-  "stale",
-  "external",
-]);
+export const agentSkillStateSchema = z.enum(["available", "configured", "installed", "missing", "stale", "external"]);
 
 export const agentSkillOriginSchema = z.enum([
   "company_managed",
@@ -16,11 +9,8 @@ export const agentSkillOriginSchema = z.enum([
   "external_unknown",
 ]);
 
-export const agentSkillSyncModeSchema = z.enum([
-  "unsupported",
-  "persistent",
-  "ephemeral",
-]);
+// "system-prompt-injected" added in Phase G — HTTP adapters surface this mode.
+export const agentSkillSyncModeSchema = z.enum(["unsupported", "persistent", "ephemeral", "system-prompt-injected"]);
 
 export const agentSkillEntrySchema = z.object({
   key: z.string().min(1),

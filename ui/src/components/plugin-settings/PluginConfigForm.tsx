@@ -1,15 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { pluginsApi } from "@/api/plugins";
-import { queryKeys } from "@/lib/queryKeys";
-import { Button } from "@/components/ui/button";
 import {
-  JsonSchemaForm,
-  validateJsonSchemaForm,
   getDefaultValues,
+  JsonSchemaForm,
   type JsonSchemaNode,
+  validateJsonSchemaForm,
 } from "@/components/JsonSchemaForm";
+import { Button } from "@/components/ui/button";
+import { queryKeys } from "@/lib/queryKeys";
 
 interface PluginConfigFormProps {
   pluginId: string;
@@ -29,7 +29,14 @@ interface PluginConfigFormProps {
  * Separated from PluginSettings to isolate re-render scope - only the form
  * re-renders on field changes, not the entire page.
  */
-export function PluginConfigForm({ pluginId, schema, initialValues, isLoading, pluginStatus, supportsConfigTest }: PluginConfigFormProps) {
+export function PluginConfigForm({
+  pluginId,
+  schema,
+  initialValues,
+  isLoading,
+  pluginStatus,
+  supportsConfigTest,
+}: PluginConfigFormProps) {
   const queryClient = useQueryClient();
 
   // Form values: start with saved values, fall back to schema defaults
@@ -57,15 +64,16 @@ export function PluginConfigForm({ pluginId, schema, initialValues, isLoading, p
   const [testResult, setTestResult] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Dirty tracking: compare against initial values
-  const isDirty = JSON.stringify(values) !== JSON.stringify({
-    ...getDefaultValues(schema),
-    ...(initialValues ?? {}),
-  });
+  const isDirty =
+    JSON.stringify(values) !==
+    JSON.stringify({
+      ...getDefaultValues(schema),
+      ...(initialValues ?? {}),
+    });
 
   // Save mutation
   const saveMutation = useMutation({
-    mutationFn: (configJson: Record<string, unknown>) =>
-      pluginsApi.saveConfig(pluginId, configJson),
+    mutationFn: (configJson: Record<string, unknown>) => pluginsApi.saveConfig(pluginId, configJson),
     onSuccess: () => {
       setSaveMessage({ type: "success", text: "Configuration saved." });
       setTestResult(null);
@@ -80,8 +88,7 @@ export function PluginConfigForm({ pluginId, schema, initialValues, isLoading, p
 
   // Test configuration mutation
   const testMutation = useMutation({
-    mutationFn: (configJson: Record<string, unknown>) =>
-      pluginsApi.testConfig(pluginId, configJson),
+    mutationFn: (configJson: Record<string, unknown>) => pluginsApi.testConfig(pluginId, configJson),
     onSuccess: (result) => {
       if (result.valid) {
         setTestResult({ type: "success", text: "Configuration test passed." });
@@ -170,11 +177,7 @@ export function PluginConfigForm({ pluginId, schema, initialValues, isLoading, p
 
       {/* Action buttons */}
       <div className="flex items-center gap-2 pt-2">
-        <Button
-          onClick={handleSave}
-          disabled={saveMutation.isPending || !isDirty}
-          size="sm"
-        >
+        <Button onClick={handleSave} disabled={saveMutation.isPending || !isDirty} size="sm">
           {saveMutation.isPending ? (
             <>
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -185,12 +188,7 @@ export function PluginConfigForm({ pluginId, schema, initialValues, isLoading, p
           )}
         </Button>
         {pluginStatus === "ready" && supportsConfigTest && (
-          <Button
-            variant="outline"
-            onClick={handleTestConnection}
-            disabled={testMutation.isPending}
-            size="sm"
-          >
+          <Button variant="outline" onClick={handleTestConnection} disabled={testMutation.isPending} size="sm">
             {testMutation.isPending ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />

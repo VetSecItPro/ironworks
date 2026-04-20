@@ -1,11 +1,7 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import {
-  companyMemberships,
-  instanceUserRoles,
-  principalPermissionGrants,
-} from "@ironworksai/db";
+import { companyMemberships, instanceUserRoles, principalPermissionGrants } from "@ironworksai/db";
 import type { PermissionKey, PrincipalType } from "@ironworksai/shared";
+import { and, eq, inArray, sql } from "drizzle-orm";
 
 type MembershipRow = typeof companyMemberships.$inferSelect;
 type GrantInput = {
@@ -268,22 +264,12 @@ export function accessService(db: Db) {
   async function copyActiveUserMemberships(sourceCompanyId: string, targetCompanyId: string) {
     const sourceMemberships = await listActiveUserMemberships(sourceCompanyId);
     for (const membership of sourceMemberships) {
-      await ensureMembership(
-        targetCompanyId,
-        "user",
-        membership.principalId,
-        membership.membershipRole,
-        "active",
-      );
+      await ensureMembership(targetCompanyId, "user", membership.principalId, membership.membershipRole, "active");
     }
     return sourceMemberships;
   }
 
-  async function listPrincipalGrants(
-    companyId: string,
-    principalType: PrincipalType,
-    principalId: string,
-  ) {
+  async function listPrincipalGrants(companyId: string, principalType: PrincipalType, principalId: string) {
     return db
       .select()
       .from(principalPermissionGrants)

@@ -20,7 +20,7 @@ export function useAnimatedNumber(value: number): { displayValue: number; animCl
 
 /* ── Staggered list entry: returns style per index ── */
 
-export function useStaggeredEntry(itemCount: number, delayPerItem = 30) {
+export function useStaggeredEntry(_itemCount: number, delayPerItem = 30) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -30,10 +30,7 @@ export function useStaggeredEntry(itemCount: number, delayPerItem = 30) {
   }, []);
 
   return useCallback(
-    (index: number) =>
-      visible
-        ? { animationDelay: `${index * delayPerItem}ms` }
-        : { opacity: 0 },
+    (index: number) => (visible ? { animationDelay: `${index * delayPerItem}ms` } : { opacity: 0 }),
     [visible, delayPerItem],
   );
 }
@@ -46,7 +43,7 @@ export function useConfetti() {
   const trigger = useCallback((element: HTMLElement | null) => {
     if (!element) return;
     const rect = element.getBoundingClientRect();
-    const parent = element.offsetParent ?? document.body;
+    const _parent = element.offsetParent ?? document.body;
 
     const colors = ["#22c55e", "#3b82f6", "#f59e0b"];
     for (let i = 0; i < 3; i++) {

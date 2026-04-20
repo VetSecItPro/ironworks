@@ -1,7 +1,8 @@
 import type { UsageSummary } from "@ironworksai/adapter-utils";
-import { asString, asNumber, parseObject, parseJson } from "@ironworksai/adapter-utils/server-utils";
+import { asNumber, asString, parseJson, parseObject } from "@ironworksai/adapter-utils/server-utils";
 
-const CLAUDE_AUTH_REQUIRED_RE = /(?:not\s+logged\s+in|please\s+log\s+in|please\s+run\s+`?claude\s+login`?|login\s+required|requires\s+login|unauthorized|authentication\s+required)/i;
+const CLAUDE_AUTH_REQUIRED_RE =
+  /(?:not\s+logged\s+in|please\s+log\s+in|please\s+run\s+`?claude\s+login`?|login\s+required|requires\s+login|unauthorized|authentication\s+required)/i;
 const URL_RE = /(https?:\/\/[^\s'"`<>()[\]{};,!?]+[^\s'"`<>()[\]{};,!.?:]+)/gi;
 
 export function parseClaudeStreamJson(stdout: string) {
@@ -111,12 +112,12 @@ export function extractClaudeLoginUrl(text: string): string | null {
   const match = text.match(URL_RE);
   if (!match || match.length === 0) return null;
   for (const rawUrl of match) {
-    const cleaned = rawUrl.replace(/[\])}.!,?;:'\"]+$/g, "");
+    const cleaned = rawUrl.replace(/[\])}.!,?;:'"]+$/g, "");
     if (cleaned.includes("claude") || cleaned.includes("anthropic") || cleaned.includes("auth")) {
       return cleaned;
     }
   }
-  return match[0]?.replace(/[\])}.!,?;:'\"]+$/g, "") ?? null;
+  return match[0]?.replace(/[\])}.!,?;:'"]+$/g, "") ?? null;
 }
 
 export function detectClaudeLoginRequired(input: {
@@ -169,9 +170,7 @@ export function isClaudeMaxTurnsResult(parsed: Record<string, unknown> | null | 
 
 export function isClaudeUnknownSessionError(parsed: Record<string, unknown>): boolean {
   const resultText = asString(parsed.result, "").trim();
-  const allMessages = [resultText, ...extractClaudeErrorMessages(parsed)]
-    .map((msg) => msg.trim())
-    .filter(Boolean);
+  const allMessages = [resultText, ...extractClaudeErrorMessages(parsed)].map((msg) => msg.trim()).filter(Boolean);
 
   return allMessages.some((msg) =>
     /no conversation found with session id|unknown session|session .* not found/i.test(msg),

@@ -1,14 +1,5 @@
-import {
-  pgTable,
-  uuid,
-  text,
-  integer,
-  timestamp,
-  jsonb,
-  index,
-  uniqueIndex,
-} from "drizzle-orm/pg-core";
-import type { PluginCategory, PluginStatus, IronworksPluginManifestV1 } from "@ironworksai/shared";
+import type { IronworksPluginManifestV1, PluginCategory, PluginStatus } from "@ironworksai/shared";
+import { index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 /**
  * `plugins` table — stores one row per installed plugin.

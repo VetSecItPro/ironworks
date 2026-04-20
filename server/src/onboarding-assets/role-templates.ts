@@ -28,7 +28,20 @@ export interface RoleTemplate {
   /** Lucide icon name. */
   icon: string;
   /** Agent role enum value. */
-  role: "ceo" | "coo" | "cto" | "cmo" | "cfo" | "ciso" | "vp" | "director" | "manager" | "contractor" | "engineer" | "designer" | "marketer";
+  role:
+    | "ceo"
+    | "coo"
+    | "cto"
+    | "cmo"
+    | "cfo"
+    | "ciso"
+    | "vp"
+    | "director"
+    | "manager"
+    | "contractor"
+    | "engineer"
+    | "designer"
+    | "marketer";
   /** Who this role reports to (key of another template, null for CEO). */
   reportsTo: string | null;
   /** Organizational department. */
@@ -1008,7 +1021,19 @@ export const TEAM_PACKS: TeamPack[] = [
     name: "Enterprise",
     description: "Complete C-suite with specialized engineers — built for scale",
     icon: "landmark",
-    roles: ["ceo", "cto", "cmo", "cfo", "vphr", "compliancedirector", "legalcounsel", "seniorengineer", "devopsengineer", "securityengineer", "contentmarketer"],
+    roles: [
+      "ceo",
+      "cto",
+      "cmo",
+      "cfo",
+      "vphr",
+      "compliancedirector",
+      "legalcounsel",
+      "seniorengineer",
+      "devopsengineer",
+      "securityengineer",
+      "contentmarketer",
+    ],
   },
 ];
 
@@ -1025,7 +1050,5 @@ export function getTeamPack(key: string): TeamPack | undefined {
 export function getTeamPackRoles(packKey: string): RoleTemplate[] {
   const pack = getTeamPack(packKey);
   if (!pack) return [];
-  return pack.roles
-    .map((roleKey) => getRoleTemplate(roleKey))
-    .filter((r): r is RoleTemplate => r != null);
+  return pack.roles.map((roleKey) => getRoleTemplate(roleKey)).filter((r): r is RoleTemplate => r != null);
 }

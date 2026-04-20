@@ -1,5 +1,5 @@
-import { inflateRawSync } from "node:zlib";
 import path from "node:path";
+import { inflateRawSync } from "node:zlib";
 import type { CompanyPortabilityFileEntry } from "@ironworksai/shared";
 
 const textDecoder = new TextDecoder();
@@ -14,10 +14,13 @@ export const binaryContentTypeByExtension: Record<string, string> = {
 };
 
 function normalizeArchivePath(pathValue: string) {
+  // GHSA-6cpc-mj5c-m9rq — strip path-traversal segments so malicious archive entries
+  // cannot escape the extraction root via `..` or `.` segments. `filter(Boolean)` drops
+  // empty segments; the explicit parent/dot filter blocks traversal.
   return pathValue
     .replace(/\\/g, "/")
     .split("/")
-    .filter(Boolean)
+    .filter((seg) => Boolean(seg) && seg !== ".." && seg !== ".")
     .join("/");
 }
 
@@ -27,11 +30,8 @@ function readUint16(source: Uint8Array, offset: number) {
 
 function readUint32(source: Uint8Array, offset: number) {
   return (
-    source[offset]! |
-    (source[offset + 1]! << 8) |
-    (source[offset + 2]! << 16) |
-    (source[offset + 3]! << 24)
-  ) >>> 0;
+    (source[offset]! | (source[offset + 1]! << 8) | (source[offset + 2]! << 16) | (source[offset + 3]! << 24)) >>> 0
+  );
 }
 
 function sharedArchiveRoot(paths: string[]) {
@@ -41,9 +41,7 @@ function sharedArchiveRoot(paths: string[]) {
     .filter((parts) => parts.length > 0);
   if (firstSegments.length === 0) return null;
   const candidate = firstSegments[0]![0]!;
-  return firstSegments.every((parts) => parts.length > 1 && parts[0] === candidate)
-    ? candidate
-    : null;
+  return firstSegments.every((parts) => parts.length > 1 && parts[0] === candidate) ? candidate : null;
 }
 
 function bytesToPortableFileEntry(pathValue: string, bytes: Uint8Array): CompanyPortabilityFileEntry {
@@ -118,9 +116,7 @@ export async function readZipArchive(source: ArrayBuffer | Uint8Array): Promise<
   const files: Record<string, CompanyPortabilityFileEntry> = {};
   for (const entry of entries) {
     const normalizedPath =
-      rootPath && entry.path.startsWith(`${rootPath}/`)
-        ? entry.path.slice(rootPath.length + 1)
-        : entry.path;
+      rootPath && entry.path.startsWith(`${rootPath}/`) ? entry.path.slice(rootPath.length + 1) : entry.path;
     if (!normalizedPath) continue;
     files[normalizedPath] = entry.body;
   }

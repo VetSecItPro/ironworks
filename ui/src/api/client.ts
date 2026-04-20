@@ -50,7 +50,7 @@ async function requestWithRetry<T>(path: string, init?: RequestInit): Promise<T>
 
       // Server error (5xx) - retry with exponential backoff
       if (err.status >= 500 && attempt < MAX_RETRIES) {
-        const delay = BASE_DELAY_MS * Math.pow(2, attempt);
+        const delay = BASE_DELAY_MS * 2 ** attempt;
         await sleep(delay);
         lastError = err;
         continue;
@@ -108,13 +108,9 @@ async function requestOnce<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   get: <T>(path: string) => requestWithRetry<T>(path),
-  post: <T>(path: string, body: unknown) =>
-    requestWithRetry<T>(path, { method: "POST", body: JSON.stringify(body) }),
-  postForm: <T>(path: string, body: FormData) =>
-    requestWithRetry<T>(path, { method: "POST", body }),
-  put: <T>(path: string, body: unknown) =>
-    requestWithRetry<T>(path, { method: "PUT", body: JSON.stringify(body) }),
-  patch: <T>(path: string, body: unknown) =>
-    requestWithRetry<T>(path, { method: "PATCH", body: JSON.stringify(body) }),
+  post: <T>(path: string, body: unknown) => requestWithRetry<T>(path, { method: "POST", body: JSON.stringify(body) }),
+  postForm: <T>(path: string, body: FormData) => requestWithRetry<T>(path, { method: "POST", body }),
+  put: <T>(path: string, body: unknown) => requestWithRetry<T>(path, { method: "PUT", body: JSON.stringify(body) }),
+  patch: <T>(path: string, body: unknown) => requestWithRetry<T>(path, { method: "PATCH", body: JSON.stringify(body) }),
   delete: <T>(path: string) => requestWithRetry<T>(path, { method: "DELETE" }),
 };

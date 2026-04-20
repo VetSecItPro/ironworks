@@ -1,11 +1,11 @@
-import { Command } from "commander";
 import type { DashboardSummary } from "@ironworksai/shared";
+import { Command } from "commander";
 import {
   addCommonClientOptions,
+  type BaseClientOptions,
   handleCommandError,
   printOutput,
   resolveCommandContext,
-  type BaseClientOptions,
 } from "./common.js";
 
 interface DashboardGetOptions extends BaseClientOptions {

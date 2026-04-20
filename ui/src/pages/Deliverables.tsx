@@ -1,17 +1,15 @@
-import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Eye, FileText, Filter } from "lucide-react";
-import { deliverablesApi, type Deliverable } from "../api/deliverables";
-import { useCompany } from "../context/CompanyContext";
+import { useEffect, useState } from "react";
+import { DeliverablePreview, DeliverableRow } from "@/components/deliverables";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { type Deliverable, deliverablesApi } from "../api/deliverables";
+import { EmptyState } from "../components/EmptyState";
+import { PageSkeleton } from "../components/PageSkeleton";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { useCompany } from "../context/CompanyContext";
 import { useToast } from "../context/ToastContext";
 import { queryKeys } from "../lib/queryKeys";
-import { PageSkeleton } from "../components/PageSkeleton";
-import { EmptyState } from "../components/EmptyState";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-import { DeliverableRow, DeliverablePreview } from "@/components/deliverables";
 
 export function Deliverables() {
   const { selectedCompanyId } = useCompany();
@@ -55,9 +53,7 @@ export function Deliverables() {
         <div>
           <h1 className="text-lg font-semibold">Deliverables</h1>
           {pendingReviewCount > 0 && (
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {pendingReviewCount} pending review
-            </p>
+            <p className="text-sm text-muted-foreground mt-0.5">{pendingReviewCount} pending review</p>
           )}
         </div>
         <div className="flex items-center gap-2">
@@ -95,12 +91,15 @@ export function Deliverables() {
                     deliverable={d}
                     isUpdating={updateMutation.isPending}
                     onApprove={(id) => updateMutation.mutate({ id, status: "approved" })}
-                    onRequestRevision={(id, note) => updateMutation.mutate({ id, status: "revision_requested", reviewerNote: note })}
+                    onRequestRevision={(id, note) =>
+                      updateMutation.mutate({ id, status: "revision_requested", reviewerNote: note })
+                    }
                     onReject={(id, note) => updateMutation.mutate({ id, status: "rejected", reviewerNote: note })}
                     onDeliver={(id) => updateMutation.mutate({ id, status: "delivered" })}
                   />
                 </div>
                 <button
+                  type="button"
                   onClick={() => setPreviewDeliverable(d)}
                   className="px-3 py-2 text-muted-foreground hover:text-foreground transition-colors shrink-0"
                   title="Preview deliverable"
@@ -114,10 +113,7 @@ export function Deliverables() {
       </div>
 
       {previewDeliverable && (
-        <DeliverablePreview
-          deliverable={previewDeliverable}
-          onClose={() => setPreviewDeliverable(null)}
-        />
+        <DeliverablePreview deliverable={previewDeliverable} onClose={() => setPreviewDeliverable(null)} />
       )}
     </div>
   );

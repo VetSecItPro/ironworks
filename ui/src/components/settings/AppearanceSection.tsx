@@ -1,8 +1,8 @@
+import type { Company } from "@ironworksai/shared";
 import type { ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Field } from "../agent-config-primitives";
 import { CompanyPatternIcon } from "../CompanyPatternIcon";
-import type { Company } from "@ironworksai/shared";
 
 interface AppearanceSectionProps {
   selectedCompany: Company;
@@ -39,9 +39,7 @@ export function AppearanceSection({
 }: AppearanceSectionProps) {
   return (
     <div id="appearance" className="space-y-4 scroll-mt-6">
-      <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-        Appearance
-      </h2>
+      <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Appearance</h2>
       <div className="space-y-3 rounded-md border border-border px-4 py-4">
         <div className="flex items-start gap-4">
           <div className="shrink-0">
@@ -53,10 +51,7 @@ export function AppearanceSection({
             />
           </div>
           <div className="flex-1 space-y-3">
-            <Field
-              label="Logo"
-              hint="Upload a PNG, JPEG, WEBP, GIF, or SVG logo image."
-            >
+            <Field label="Logo" hint="Upload a PNG, JPEG, WEBP, GIF, or SVG logo image.">
               <div className="space-y-2">
                 <input
                   type="file"
@@ -66,40 +61,21 @@ export function AppearanceSection({
                 />
                 {logoUrl && (
                   <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={onClearLogo}
-                      disabled={isClearPending}
-                    >
+                    <Button size="sm" variant="outline" onClick={onClearLogo} disabled={isClearPending}>
                       {isClearPending ? "Removing..." : "Remove logo"}
                     </Button>
                   </div>
                 )}
                 {(isUploadError || logoUploadError) && (
                   <span className="text-xs text-destructive">
-                    {logoUploadError ??
-                      (uploadError instanceof Error
-                        ? uploadError.message
-                        : "Logo upload failed")}
+                    {logoUploadError ?? (uploadError instanceof Error ? uploadError.message : "Logo upload failed")}
                   </span>
                 )}
-                {isClearError && (
-                  <span className="text-xs text-destructive">
-                    {clearError?.message}
-                  </span>
-                )}
-                {isUploadPending && (
-                  <span className="text-xs text-muted-foreground">
-                    Uploading logo...
-                  </span>
-                )}
+                {isClearError && <span className="text-xs text-destructive">{clearError?.message}</span>}
+                {isUploadPending && <span className="text-xs text-muted-foreground">Uploading logo...</span>}
               </div>
             </Field>
-            <Field
-              label="Brand color"
-              hint="Sets the hue for the company icon. Leave empty for auto-generated color."
-            >
+            <Field label="Brand color" hint="Sets the hue for the company icon. Leave empty for auto-generated color.">
               <div className="flex items-center gap-2">
                 <input
                   type="color"

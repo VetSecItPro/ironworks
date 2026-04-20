@@ -1,19 +1,19 @@
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ArrowRight, BookTemplate } from "lucide-react";
-import type { RoleTemplate } from "../../api/roleTemplates";
 import {
   AGENT_ROLE_LABELS,
   AGENT_ROLES,
-  DEPARTMENTS,
-  DEPARTMENT_LABELS,
-  EMPLOYMENT_TYPE_LABELS,
-  CONTRACT_END_CONDITIONS,
   type AgentRole,
-  type Department,
+  CONTRACT_END_CONDITIONS,
   type ContractEndCondition,
+  DEPARTMENT_LABELS,
+  DEPARTMENTS,
+  type Department,
+  EMPLOYMENT_TYPE_LABELS,
 } from "@ironworksai/shared";
+import { ArrowRight, BookTemplate } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import type { RoleTemplate } from "../../api/roleTemplates";
 
 type EmploymentType = "full_time" | "contractor";
 
@@ -50,16 +50,25 @@ interface HireStepConfigProps {
 }
 
 export function HireStepConfig({
-  name, setName,
-  role, setRole,
-  department, setDepartment,
-  reportsTo, setReportsTo,
+  name,
+  setName,
+  role,
+  setRole,
+  department,
+  setDepartment,
+  reportsTo,
+  setReportsTo,
   employmentType,
-  projectId, setProjectId,
-  endCondition, setEndCondition,
-  endDate, setEndDate,
-  budgetAmount, setBudgetAmount,
-  agents, projects,
+  projectId,
+  setProjectId,
+  endCondition,
+  setEndCondition,
+  endDate,
+  setEndDate,
+  budgetAmount,
+  setBudgetAmount,
+  agents,
+  projects,
   canProceedToReview,
   onNext,
   onShowTalentPool,
@@ -67,34 +76,69 @@ export function HireStepConfig({
   return (
     <div className="space-y-4">
       <div className="space-y-1.5">
-        <label className="text-xs font-medium text-muted-foreground">Name *</label>
-        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Agent name" className="text-sm" />
+        <label htmlFor="hire-agent-name" className="text-xs font-medium text-muted-foreground">
+          Name *
+        </label>
+        <Input
+          id="hire-agent-name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Agent name"
+          className="text-sm"
+        />
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-xs font-medium text-muted-foreground">Role</label>
-        <select value={role} onChange={(e) => setRole(e.target.value as AgentRole)} className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none">
+        <label htmlFor="hire-agent-role" className="text-xs font-medium text-muted-foreground">
+          Role
+        </label>
+        <select
+          id="hire-agent-role"
+          value={role}
+          onChange={(e) => setRole(e.target.value as AgentRole)}
+          className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
+        >
           {AGENT_ROLES.map((r) => (
-            <option key={r} value={r}>{(AGENT_ROLE_LABELS as Record<string, string>)[r] ?? r}</option>
+            <option key={r} value={r}>
+              {(AGENT_ROLE_LABELS as Record<string, string>)[r] ?? r}
+            </option>
           ))}
         </select>
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-xs font-medium text-muted-foreground">Department</label>
-        <select value={department} onChange={(e) => setDepartment(e.target.value as Department)} className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none">
+        <label htmlFor="hire-agent-department" className="text-xs font-medium text-muted-foreground">
+          Department
+        </label>
+        <select
+          id="hire-agent-department"
+          value={department}
+          onChange={(e) => setDepartment(e.target.value as Department)}
+          className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
+        >
           {DEPARTMENTS.map((d) => (
-            <option key={d} value={d}>{(DEPARTMENT_LABELS as Record<string, string>)[d] ?? d}</option>
+            <option key={d} value={d}>
+              {(DEPARTMENT_LABELS as Record<string, string>)[d] ?? d}
+            </option>
           ))}
         </select>
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-xs font-medium text-muted-foreground">Reports To</label>
-        <select value={reportsTo} onChange={(e) => setReportsTo(e.target.value)} className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none">
+        <label htmlFor="hire-agent-reports-to" className="text-xs font-medium text-muted-foreground">
+          Reports To
+        </label>
+        <select
+          id="hire-agent-reports-to"
+          value={reportsTo}
+          onChange={(e) => setReportsTo(e.target.value)}
+          className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
+        >
           <option value="">None</option>
           {agents.map((a) => (
-            <option key={a.id} value={a.id}>{a.name} ({(AGENT_ROLE_LABELS as Record<string, string>)[a.role] ?? a.role})</option>
+            <option key={a.id} value={a.id}>
+              {a.name} ({(AGENT_ROLE_LABELS as Record<string, string>)[a.role] ?? a.role})
+            </option>
           ))}
         </select>
       </div>
@@ -109,19 +153,37 @@ export function HireStepConfig({
           <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Contract Details</div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Project *</label>
-            <select value={projectId} onChange={(e) => setProjectId(e.target.value)} className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none">
+            <label htmlFor="hire-agent-project" className="text-xs font-medium text-muted-foreground">
+              Project *
+            </label>
+            <select
+              id="hire-agent-project"
+              value={projectId}
+              onChange={(e) => setProjectId(e.target.value)}
+              className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
+            >
               <option value="">Select a project</option>
-              {projects.map((p) => (<option key={p.id} value={p.id}>{p.name}</option>))}
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
             </select>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">End Condition</label>
+            <span className="text-xs font-medium text-muted-foreground">End Condition</span>
             <div className="space-y-1">
               {CONTRACT_END_CONDITIONS.map((ec) => (
                 <label key={ec} className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input type="radio" name="endCondition" value={ec} checked={endCondition === ec} onChange={() => setEndCondition(ec)} className="accent-foreground" />
+                  <input
+                    type="radio"
+                    name="endCondition"
+                    value={ec}
+                    checked={endCondition === ec}
+                    onChange={() => setEndCondition(ec)}
+                    className="accent-foreground"
+                  />
                   {END_CONDITION_LABELS[ec]}
                 </label>
               ))}
@@ -130,15 +192,34 @@ export function HireStepConfig({
 
           {endCondition === "date" && (
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">End Date</label>
-              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="text-sm" />
+              <label htmlFor="hire-agent-end-date" className="text-xs font-medium text-muted-foreground">
+                End Date
+              </label>
+              <Input
+                id="hire-agent-end-date"
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="text-sm"
+              />
             </div>
           )}
 
           {endCondition === "budget_exhausted" && (
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Budget Amount ($)</label>
-              <Input type="number" min="0" step="0.01" value={budgetAmount} onChange={(e) => setBudgetAmount(e.target.value)} placeholder="0.00" className="text-sm" />
+              <label htmlFor="hire-agent-budget" className="text-xs font-medium text-muted-foreground">
+                Budget Amount ($)
+              </label>
+              <Input
+                id="hire-agent-budget"
+                type="number"
+                min="0"
+                step="0.01"
+                value={budgetAmount}
+                onChange={(e) => setBudgetAmount(e.target.value)}
+                placeholder="0.00"
+                className="text-sm"
+              />
             </div>
           )}
         </div>
@@ -160,9 +241,7 @@ interface TalentPoolOverlayProps {
 export function TalentPoolOverlay({ templates, onSelect }: TalentPoolOverlayProps) {
   return (
     <div className="space-y-3">
-      <p className="text-xs text-muted-foreground">
-        Select a role template to pre-fill the configuration form.
-      </p>
+      <p className="text-xs text-muted-foreground">Select a role template to pre-fill the configuration form.</p>
       {templates.length === 0 && (
         <p className="text-xs text-muted-foreground py-4 text-center">
           No role templates available. Create templates in Company Settings.
@@ -171,6 +250,7 @@ export function TalentPoolOverlay({ templates, onSelect }: TalentPoolOverlayProp
       <div className="space-y-2 max-h-64 overflow-y-auto">
         {templates.map((t) => (
           <button
+            type="button"
             key={t.id}
             className="w-full text-left rounded-md border border-border p-3 hover:bg-accent/50 transition-colors"
             onClick={() => onSelect(t)}
@@ -194,9 +274,7 @@ export function TalentPoolOverlay({ templates, onSelect }: TalentPoolOverlayProp
                 </>
               )}
             </div>
-            {t.capabilities && (
-              <p className="text-xs text-muted-foreground/70 mt-1">{t.capabilities}</p>
-            )}
+            {t.capabilities && <p className="text-xs text-muted-foreground/70 mt-1">{t.capabilities}</p>}
           </button>
         ))}
       </div>

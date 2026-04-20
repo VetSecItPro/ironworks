@@ -2,29 +2,33 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { inferOpenAiCompatibleBiller, type AdapterExecutionContext, type AdapterExecutionResult } from "@ironworksai/adapter-utils";
 import {
-  asString,
+  type AdapterExecutionContext,
+  type AdapterExecutionResult,
+  inferOpenAiCompatibleBiller,
+} from "@ironworksai/adapter-utils";
+import {
   asNumber,
+  asString,
   asStringArray,
-  parseObject,
   buildIronworksEnv,
-  redactEnvForLogs,
   ensureAbsoluteDirectory,
   ensureCommandResolvable,
   ensureIronworksSkillSymlink,
   ensurePathInEnv,
+  joinPromptSections,
+  parseObject,
   readIronworksRuntimeSkillEntries,
-  resolveIronworksDesiredSkillNames,
+  redactEnvForLogs,
   removeMaintainerOnlySkillSymlinks,
   renderTemplate,
-  joinPromptSections,
+  resolveIronworksDesiredSkillNames,
   runChildProcess,
 } from "@ironworksai/adapter-utils/server-utils";
 import { DEFAULT_CURSOR_LOCAL_MODEL } from "../index.js";
-import { parseCursorJsonl, isCursorUnknownSessionError } from "./parse.js";
 import { normalizeCursorStreamLine } from "../shared/stream.js";
 import { hasCursorTrustBypassArg } from "../shared/trust.js";
+import { isCursorUnknownSessionError, parseCursorJsonl } from "./parse.js";
 
 const __moduleDir = path.dirname(fileURLToPath(import.meta.url));
 
@@ -104,8 +108,9 @@ export async function ensureCursorSkillsInjected(
   onLog: AdapterExecutionContext["onLog"],
   options: EnsureCursorSkillsInjectedOptions = {},
 ) {
-  const skillsEntries = options.skillsEntries
-    ?? (options.skillsDir
+  const skillsEntries =
+    options.skillsEntries ??
+    (options.skillsDir
       ? (await fs.readdir(options.skillsDir, { withFileTypes: true }))
           .filter((entry) => entry.isDirectory())
           .map((entry) => ({
@@ -131,10 +136,7 @@ export async function ensureCursorSkillsInjected(
     skillsEntries.map((entry) => entry.runtimeName),
   );
   for (const skillName of removedSkills) {
-    await onLog(
-      "stderr",
-      `[ironworks] Removed maintainer-only Cursor skill "${skillName}" from ${skillsHome}\n`,
-    );
+    await onLog("stderr", `[ironworks] Removed maintainer-only Cursor skill "${skillName}" from ${skillsHome}\n`);
   }
   const linkSkill = options.linkSkill ?? ((source: string, target: string) => fs.symlink(source, target));
   for (const entry of skillsEntries) {
@@ -200,17 +202,15 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     (typeof context.issueId === "string" && context.issueId.trim().length > 0 && context.issueId.trim()) ||
     null;
   const wakeReason =
-    typeof context.wakeReason === "string" && context.wakeReason.trim().length > 0
-      ? context.wakeReason.trim()
-      : null;
+    typeof context.wakeReason === "string" && context.wakeReason.trim().length > 0 ? context.wakeReason.trim() : null;
   const wakeCommentId =
-    (typeof context.wakeCommentId === "string" && context.wakeCommentId.trim().length > 0 && context.wakeCommentId.trim()) ||
+    (typeof context.wakeCommentId === "string" &&
+      context.wakeCommentId.trim().length > 0 &&
+      context.wakeCommentId.trim()) ||
     (typeof context.commentId === "string" && context.commentId.trim().length > 0 && context.commentId.trim()) ||
     null;
   const approvalId =
-    typeof context.approvalId === "string" && context.approvalId.trim().length > 0
-      ? context.approvalId.trim()
-      : null;
+    typeof context.approvalId === "string" && context.approvalId.trim().length > 0 ? context.approvalId.trim() : null;
   const approvalStatus =
     typeof context.approvalStatus === "string" && context.approvalStatus.trim().length > 0
       ? context.approvalStatus.trim()
@@ -478,19 +478,13 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       : null;
     const parsedError = typeof attempt.parsed.errorMessage === "string" ? attempt.parsed.errorMessage.trim() : "";
     const stderrLine = firstNonEmptyLine(attempt.proc.stderr);
-    const fallbackErrorMessage =
-      parsedError ||
-      stderrLine ||
-      `Cursor exited with code ${attempt.proc.exitCode ?? -1}`;
+    const fallbackErrorMessage = parsedError || stderrLine || `Cursor exited with code ${attempt.proc.exitCode ?? -1}`;
 
     return {
       exitCode: attempt.proc.exitCode,
       signal: attempt.proc.signal,
       timedOut: false,
-      errorMessage:
-        (attempt.proc.exitCode ?? 0) === 0
-          ? null
-          : fallbackErrorMessage,
+      errorMessage: (attempt.proc.exitCode ?? 0) === 0 ? null : fallbackErrorMessage,
       usage: attempt.parsed.usage,
       sessionId: resolvedSessionId,
       sessionParams: resolvedSessionParams,

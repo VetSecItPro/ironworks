@@ -1,4 +1,4 @@
-import { asNumber, asString, parseJson, parseObject } from "@ironworksai/adapter-utils/server-utils";
+import { asNumber, asString, parseJson } from "@ironworksai/adapter-utils/server-utils";
 
 interface ParsedPiOutput {
   sessionId: string | null;
@@ -43,7 +43,7 @@ export function parsePiJsonl(stdout: string): ParsedPiOutput {
     toolCalls: [],
   };
 
-  let currentToolCall: { toolCallId: string; toolName: string; args: unknown } | null = null;
+  let _currentToolCall: { toolCallId: string; toolName: string; args: unknown } | null = null;
 
   for (const rawLine of stdout.split(/\r?\n/)) {
     const line = rawLine.trim();
@@ -55,7 +55,12 @@ export function parsePiJsonl(stdout: string): ParsedPiOutput {
     const eventType = asString(event.type, "");
 
     // RPC protocol messages - skip these (internal implementation detail)
-    if (eventType === "response" || eventType === "extension_ui_request" || eventType === "extension_ui_response" || eventType === "extension_error") {
+    if (
+      eventType === "response" ||
+      eventType === "extension_ui_request" ||
+      eventType === "extension_ui_response" ||
+      eventType === "extension_error"
+    ) {
       continue;
     }
 
@@ -90,14 +95,14 @@ export function parsePiJsonl(stdout: string): ParsedPiOutput {
           result.finalMessage = text;
           result.messages.push(text);
         }
-        
+
         // Extract usage and cost from assistant message
         const usage = asRecord(message.usage);
         if (usage) {
           result.usage.inputTokens += asNumber(usage.input, 0);
           result.usage.outputTokens += asNumber(usage.output, 0);
           result.usage.cachedInputTokens += asNumber(usage.cacheRead, 0);
-          
+
           // Pi stores cost in usage.cost.total (and broken down in usage.cost.input, etc.)
           const cost = asRecord(usage.cost);
           if (cost) {
@@ -105,7 +110,7 @@ export function parsePiJsonl(stdout: string): ParsedPiOutput {
           }
         }
       }
-      
+
       // Tool results are in toolResults array
       const toolResults = event.toolResults as Array<Record<string, unknown>> | undefined;
       if (toolResults) {
@@ -113,7 +118,7 @@ export function parsePiJsonl(stdout: string): ParsedPiOutput {
           const toolCallId = asString(tr.toolCallId, "");
           const content = tr.content;
           const isError = tr.isError === true;
-          
+
           // Find matching tool call by toolCallId
           const existingCall = result.toolCalls.find((tc) => tc.toolCallId === toolCallId);
           if (existingCall) {
@@ -150,7 +155,7 @@ export function parsePiJsonl(stdout: string): ParsedPiOutput {
       const toolCallId = asString(event.toolCallId, "");
       const toolName = asString(event.toolName, "");
       const args = event.args;
-      currentToolCall = { toolCallId, toolName, args };
+      _currentToolCall = { toolCallId, toolName, args };
       result.toolCalls.push({
         toolCallId,
         toolName,
@@ -163,17 +168,17 @@ export function parsePiJsonl(stdout: string): ParsedPiOutput {
 
     if (eventType === "tool_execution_end") {
       const toolCallId = asString(event.toolCallId, "");
-      const toolName = asString(event.toolName, "");
+      const _toolName = asString(event.toolName, "");
       const toolResult = event.result;
       const isError = event.isError === true;
-      
+
       // Find the tool call by toolCallId (not toolName, to handle multiple calls to same tool)
       const existingCall = result.toolCalls.find((tc) => tc.toolCallId === toolCallId);
       if (existingCall) {
         existingCall.result = typeof toolResult === "string" ? toolResult : JSON.stringify(toolResult);
         existingCall.isError = isError;
       }
-      currentToolCall = null;
+      _currentToolCall = null;
       continue;
     }
 
@@ -185,7 +190,7 @@ export function parsePiJsonl(stdout: string): ParsedPiOutput {
         result.usage.inputTokens += asNumber(usage.inputTokens ?? usage.input, 0);
         result.usage.outputTokens += asNumber(usage.outputTokens ?? usage.output, 0);
         result.usage.cachedInputTokens += asNumber(usage.cachedInputTokens ?? usage.cacheRead, 0);
-        
+
         // Cost may be in usage.costUsd (direct) or usage.cost.total (Pi format)
         const cost = asRecord(usage.cost);
         if (cost) {

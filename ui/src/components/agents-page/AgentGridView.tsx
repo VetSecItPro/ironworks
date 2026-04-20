@@ -1,11 +1,11 @@
+import { AGENT_ROLE_LABELS, type Agent, DEPARTMENT_LABELS } from "@ironworksai/shared";
 import { Link } from "@/lib/router";
-import { AGENT_ROLE_LABELS, DEPARTMENT_LABELS, type Agent } from "@ironworksai/shared";
-import { StatusBadge } from "../StatusBadge";
-import { EmploymentBadge } from "../EmploymentBadge";
-import { AgentIcon } from "../AgentIconPicker";
+import { getAgentRingClass, getRoleLevel } from "../../lib/role-icons";
 import { agentStatusDot, agentStatusDotDefault } from "../../lib/status-colors";
-import { cn, agentRouteRef, agentUrl, formatCents } from "../../lib/utils";
-import { getRoleLevel, getAgentRingClass } from "../../lib/role-icons";
+import { agentRouteRef, agentUrl, cn, formatCents } from "../../lib/utils";
+import { AgentIcon } from "../AgentIconPicker";
+import { EmploymentBadge } from "../EmploymentBadge";
+import { StatusBadge } from "../StatusBadge";
 import { LiveRunIndicator } from "./AgentListView";
 
 const roleLabels = AGENT_ROLE_LABELS as Record<string, string>;
@@ -53,7 +53,9 @@ export function AgentGridView({
                 </span>
                 <span className="relative flex h-2.5 w-2.5">
                   {(agent.status === "active" || agent.status === "running") && (
-                    <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-40 ${dotColor}`} />
+                    <span
+                      className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-40 ${dotColor}`}
+                    />
                   )}
                   <span className={`absolute inline-flex h-full w-full rounded-full ${dotColor}`} />
                 </span>
@@ -84,9 +86,7 @@ export function AgentGridView({
             {agent.spentMonthlyCents > 0 && (
               <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border/50 pt-2 mt-auto">
                 <span>Cost to date</span>
-                <span className="tabular-nums font-medium text-foreground">
-                  {formatCents(agent.spentMonthlyCents)}
-                </span>
+                <span className="tabular-nums font-medium text-foreground">{formatCents(agent.spentMonthlyCents)}</span>
               </div>
             )}
             <StatusBadge status={agent.status} />

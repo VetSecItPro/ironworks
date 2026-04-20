@@ -3,8 +3,8 @@ import type { OrgNode } from "../../api/agents";
 // Layout constants - horizontal tree (left-to-right)
 export const CARD_W = 280;
 export const CARD_H = 150;
-export const GAP_X = 80;  // horizontal gap between depth levels
-export const GAP_Y = 24;  // vertical gap between sibling cards
+export const GAP_X = 80; // horizontal gap between depth levels
+export const GAP_Y = 24; // vertical gap between sibling cards
 export const PADDING = 60;
 
 // Tree layout types

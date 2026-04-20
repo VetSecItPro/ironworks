@@ -1,11 +1,11 @@
+import { Download, Printer } from "lucide-react";
 import { cn } from "../../lib/utils";
-import { Printer, Download } from "lucide-react";
 
 type BriefingPeriod = "7d" | "30d" | "this_month";
 const PERIOD_LABELS: Record<BriefingPeriod, string> = {
   "7d": "This Week",
   "30d": "Last 30 Days",
-  "this_month": "This Month",
+  this_month: "This Month",
 };
 
 interface BriefingHeaderProps {
@@ -28,6 +28,7 @@ export function BriefingHeader({ dateStr, companyName, period, onPeriodChange }:
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <button
+            type="button"
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border border-border text-muted-foreground hover:text-foreground transition-colors print:hidden"
             onClick={() => window.print()}
             aria-label="Print briefing"
@@ -36,6 +37,7 @@ export function BriefingHeader({ dateStr, companyName, period, onPeriodChange }:
             Print
           </button>
           <button
+            type="button"
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 transition-colors print:hidden"
             onClick={() => {
               const style = document.createElement("style");
@@ -49,6 +51,7 @@ export function BriefingHeader({ dateStr, companyName, period, onPeriodChange }:
             <Download className="h-3.5 w-3.5" />
             Export PDF
           </button>
+          {/* biome-ignore lint/a11y/useSemanticElements: role="group" on a div toolbar is correct ARIA pattern; <fieldset> is for form controls only */}
           <div
             className="flex items-center gap-1 border border-border rounded-md overflow-hidden shrink-0 print:hidden"
             role="group"
@@ -56,6 +59,7 @@ export function BriefingHeader({ dateStr, companyName, period, onPeriodChange }:
           >
             {(["7d", "30d", "this_month"] as const).map((p) => (
               <button
+                type="button"
                 key={p}
                 className={cn(
                   "px-3 py-1.5 text-xs transition-colors",

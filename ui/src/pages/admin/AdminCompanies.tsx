@@ -1,28 +1,13 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Building2, ChevronDown, ChevronRight, ExternalLink, Pause, Play, RefreshCw, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@/lib/router";
-import { useBreadcrumbs } from "@/context/BreadcrumbContext";
-import { adminApi, type AdminCompany } from "@/api/admin";
-import { cn, formatCents } from "@/lib/utils";
-import {
-  Building2,
-  ChevronDown,
-  ChevronRight,
-  ExternalLink,
-  Pause,
-  Play,
-  RefreshCw,
-  Search,
-} from "lucide-react";
+import { type AdminCompany, adminApi } from "@/api/admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useBreadcrumbs } from "@/context/BreadcrumbContext";
+import { Link } from "@/lib/router";
+import { cn, formatCents } from "@/lib/utils";
 
 function StatusBadge({ status }: { status: string }) {
   return (
@@ -97,6 +82,7 @@ function CompanyRow({
       <tr className="border-b border-border last:border-0 hover:bg-accent/20 transition-colors">
         <td className="px-4 py-3">
           <button
+            type="button"
             onClick={() => setExpanded((v) => !v)}
             className="flex items-center gap-1.5 text-left hover:opacity-70 transition-opacity"
             aria-label={expanded ? "Collapse" : "Expand"}
@@ -176,9 +162,7 @@ function CompanyRow({
               <div>
                 <span className="text-xs text-muted-foreground">Monthly Budget</span>
                 <p className="font-medium mt-0.5">
-                  {company.budgetMonthlyCents > 0
-                    ? formatCents(company.budgetMonthlyCents)
-                    : "Unlimited"}
+                  {company.budgetMonthlyCents > 0 ? formatCents(company.budgetMonthlyCents) : "Unlimited"}
                 </p>
               </div>
               <div>
@@ -248,13 +232,7 @@ export default function AdminCompanies() {
             {data ? `${data.length} total companies` : "All tenant companies"}
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={isFetching}
-          className="gap-1.5"
-        >
+        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching} className="gap-1.5">
           <RefreshCw className={cn("h-3.5 w-3.5", isFetching && "animate-spin")} />
           Refresh
         </Button>

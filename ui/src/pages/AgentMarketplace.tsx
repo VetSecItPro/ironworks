@@ -1,24 +1,23 @@
-import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "@/lib/router";
-import { useCompany } from "../context/CompanyContext";
-import { useBreadcrumbs } from "../context/BreadcrumbContext";
-import { roleTemplatesApi } from "../api/roleTemplates";
-import { queryKeys } from "../lib/queryKeys";
-import { cn } from "../lib/utils";
-import { EmptyState } from "../components/EmptyState";
+import { Bot, LayoutGrid, List, Search } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Bot, LayoutGrid, List, Search } from "lucide-react";
-
+import { useNavigate } from "@/lib/router";
+import { roleTemplatesApi } from "../api/roleTemplates";
+import { MarketplaceGridView } from "../components/agent-marketplace/MarketplaceGridView";
+import { MarketplaceListView } from "../components/agent-marketplace/MarketplaceListView";
+import type { MarketplaceAgent } from "../components/agent-marketplace/marketplaceTypes";
 import {
   CATEGORIES,
   DEFAULT_MARKETPLACE_TEMPLATES,
   mapRoleToCategory,
 } from "../components/agent-marketplace/marketplaceTypes";
-import { MarketplaceGridView } from "../components/agent-marketplace/MarketplaceGridView";
-import { MarketplaceListView } from "../components/agent-marketplace/MarketplaceListView";
-import type { MarketplaceAgent } from "../components/agent-marketplace/marketplaceTypes";
+import { EmptyState } from "../components/EmptyState";
+import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { useCompany } from "../context/CompanyContext";
+import { queryKeys } from "../lib/queryKeys";
+import { cn } from "../lib/utils";
 
 export function AgentMarketplace() {
   const { selectedCompanyId } = useCompany();
@@ -108,6 +107,7 @@ export function AgentMarketplace() {
         <div className="flex items-center gap-1 flex-wrap">
           {CATEGORIES.map((c) => (
             <button
+              type="button"
               key={c.id}
               onClick={() => setCategory(c.id)}
               className={cn(

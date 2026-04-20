@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { makeChainableDb } from "./helpers/drizzle-mock.js";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -52,10 +53,13 @@ const mockGoalService = vi.hoisted(() => ({
 
 const mockLogActivity = vi.hoisted(() => vi.fn());
 
-vi.mock("../services/index.js", () => ({
-  goalService: () => mockGoalService,
-  logActivity: mockLogActivity,
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    goalService: () => mockGoalService,
+    logActivity: mockLogActivity,
+  });
+});
 
 vi.mock("../services/activity-log.js", () => ({
   logActivity: mockLogActivity,
@@ -67,7 +71,8 @@ vi.mock("../middleware/logger.js", () => ({
 }));
 
 vi.mock("../middleware/validate.js", () => ({
-  validate: () => (req: any, _res: any, next: any) => next(),
+  // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
+  validate: () => (_req: any, _res: any, next: any) => next(),
 }));
 
 // ── App builder ─────────────────────────────────────────────────────────────
@@ -79,21 +84,12 @@ async function createApp(actor: Record<string, unknown>) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });
-  // Fake DB chainable for assertCanWrite membership queries.
-  const chainable: any = {};
-  chainable.select = vi.fn().mockReturnValue(chainable);
-  chainable.from = vi.fn().mockReturnValue(chainable);
-  chainable.where = vi.fn().mockReturnValue(chainable);
-  chainable.orderBy = vi.fn().mockReturnValue(chainable);
-  chainable.limit = vi.fn().mockReturnValue(chainable);
-  // Treat board user with non-viewer role by returning empty rows (membership undefined → not viewer).
-  chainable.then = vi.fn().mockImplementation((resolve: any) => resolve([]));
-  const fakeDb: any = {
-    select: vi.fn().mockReturnValue(chainable),
-  };
+  // Empty membership rows → board user treated as non-viewer by assertCanWrite.
+  const fakeDb = makeChainableDb([]);
   app.use("/api", goalRoutes(fakeDb));
   app.use(errorHandler);
   return app;
@@ -179,9 +175,7 @@ describe("goal routes", () => {
 
     it("rejects unauthenticated create with 401", async () => {
       const app = await createApp(noActor());
-      const res = await request(app)
-        .post(`/api/companies/${COMPANY_ID}/goals`)
-        .send({ title: "Test" });
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/goals`).send({ title: "Test" });
       expect(res.status).toBe(401);
     });
   });
@@ -191,9 +185,7 @@ describe("goal routes", () => {
       const updated = { ...MOCK_GOAL, status: "completed" };
       mockGoalService.update.mockResolvedValue(updated);
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .patch(`/api/goals/${GOAL_ID}`)
-        .send({ status: "completed" });
+      const res = await request(app).patch(`/api/goals/${GOAL_ID}`).send({ status: "completed" });
 
       expect(res.status).toBe(200);
       expect(res.body.status).toBe("completed");
@@ -203,9 +195,7 @@ describe("goal routes", () => {
     it("returns 404 for non-existent goal update", async () => {
       mockGoalService.getById.mockResolvedValue(null);
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .patch(`/api/goals/${randomUUID()}`)
-        .send({ status: "completed" });
+      const res = await request(app).patch(`/api/goals/${randomUUID()}`).send({ status: "completed" });
       expect(res.status).toBe(404);
     });
   });
@@ -269,7 +259,9 @@ describe("goal routes", () => {
     it("returns 404 for non-existent key result", async () => {
       mockGoalService.removeKeyResult.mockResolvedValue(null);
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app).delete(`/api/companies/${COMPANY_ID}/goals/${GOAL_ID}/key-results/${randomUUID()}`);
+      const res = await request(app).delete(
+        `/api/companies/${COMPANY_ID}/goals/${GOAL_ID}/key-results/${randomUUID()}`,
+      );
       expect(res.status).toBe(404);
     });
   });

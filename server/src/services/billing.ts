@@ -12,11 +12,10 @@
  *   POLAR_WEBHOOK_SECRET=whsec_...           # From Polar Dashboard -> Webhooks
  */
 
-import { eq } from "drizzle-orm";
-import { createHmac, timingSafeEqual } from "crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import type { Db } from "@ironworksai/db";
-import { companySubscriptions, webhookEvents, projects, companies, libraryFiles, playbookRuns } from "@ironworksai/db";
-import { gte, and } from "drizzle-orm";
+import { companies, companySubscriptions, libraryFiles, playbookRuns, projects, webhookEvents } from "@ironworksai/db";
+import { and, eq, gte } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 
 // ---------------------------------------------------------------------------
@@ -84,10 +83,7 @@ function getPolarToken(): string {
   return token;
 }
 
-async function polarFetch<T>(
-  path: string,
-  options: RequestInit = {},
-): Promise<T> {
+async function polarFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getPolarToken();
   const url = `${POLAR_API_BASE}${path}`;
   const res = await fetch(url, {
@@ -182,10 +178,7 @@ function productIdToTier(productId: string): PlanTier {
 
 export function billingService(db: Db) {
   async function getSubscription(companyId: string): Promise<SubscriptionRecord | null> {
-    const rows = await db
-      .select()
-      .from(companySubscriptions)
-      .where(eq(companySubscriptions.companyId, companyId));
+    const rows = await db.select().from(companySubscriptions).where(eq(companySubscriptions.companyId, companyId));
     return rows[0] ? rowToRecord(rows[0]) : null;
   }
 
@@ -193,11 +186,7 @@ export function billingService(db: Db) {
     const existing = await getSubscription(companyId);
     if (existing) return existing;
 
-    const rows = await db
-      .insert(companySubscriptions)
-      .values({ companyId })
-      .onConflictDoNothing()
-      .returning();
+    const rows = await db.insert(companySubscriptions).values({ companyId }).onConflictDoNothing().returning();
 
     if (rows[0]) return rowToRecord(rows[0]);
     // Race: another request inserted first
@@ -223,20 +212,15 @@ export function billingService(db: Db) {
     const companyRows = await db.select().from(companies).where(eq(companies.id, companyId));
     const companyName = companyRows[0]?.name ?? "IronWorks Company";
 
-    const checkout = await polarFetch<{ url: string; id: string }>(
-      "/checkouts/custom",
-      {
-        method: "POST",
-        body: JSON.stringify({
-          product_id: plan.productId,
-          success_url: successUrl,
-          metadata: { ironworksCompanyId: companyId, planTier },
-          ...(sub.polarCustomerId
-            ? { customer_id: sub.polarCustomerId }
-            : { customer_name: companyName }),
-        }),
-      },
-    );
+    const checkout = await polarFetch<{ url: string; id: string }>("/checkouts/custom", {
+      method: "POST",
+      body: JSON.stringify({
+        product_id: plan.productId,
+        success_url: successUrl,
+        metadata: { ironworksCompanyId: companyId, planTier },
+        ...(sub.polarCustomerId ? { customer_id: sub.polarCustomerId } : { customer_name: companyName }),
+      }),
+    });
 
     if (!checkout.url) {
       throw new Error("Polar did not return a checkout URL");
@@ -244,20 +228,14 @@ export function billingService(db: Db) {
     return checkout.url;
   }
 
-  async function createCustomerPortalSession(
-    companyId: string,
-    _returnUrl: string,
-  ): Promise<string> {
+  async function createCustomerPortalSession(companyId: string, _returnUrl: string): Promise<string> {
     const sub = await getSubscription(companyId);
     if (!sub?.polarCustomerId) {
       throw new Error("No Polar customer found for this company");
     }
 
     // Polar provides a hosted customer portal via their API
-    const portal = await polarFetch<{ url: string }>(
-      `/customers/${sub.polarCustomerId}/portal`,
-      { method: "POST" },
-    );
+    const portal = await polarFetch<{ url: string }>(`/customers/${sub.polarCustomerId}/portal`, { method: "POST" });
     return portal.url;
   }
 
@@ -299,7 +277,7 @@ export function billingService(db: Db) {
         const polarSubscriptionId = data.id as string;
         const polarCustomerId = (data.customer_id ?? data.customer) as string | null;
         const productId = data.product_id as string | undefined;
-        const planTier = productId ? productIdToTier(productId) : (metadata.planTier as PlanTier ?? "starter");
+        const planTier = productId ? productIdToTier(productId) : ((metadata.planTier as PlanTier) ?? "starter");
 
         await getOrCreateSubscription(companyId);
         await db
@@ -327,7 +305,7 @@ export function billingService(db: Db) {
           return;
         }
         const productId = data.product_id as string | undefined;
-        const planTier = productId ? productIdToTier(productId) : (metadata.planTier as PlanTier ?? "starter");
+        const planTier = productId ? productIdToTier(productId) : ((metadata.planTier as PlanTier) ?? "starter");
         const status = mapPolarStatus(data.status as string);
 
         await db
@@ -362,9 +340,7 @@ export function billingService(db: Db) {
           .set({
             status: "active",
             cancelAtPeriodEnd: true,
-            currentPeriodEnd: data.current_period_end
-              ? new Date(data.current_period_end as string)
-              : null,
+            currentPeriodEnd: data.current_period_end ? new Date(data.current_period_end as string) : null,
             updatedAt: new Date(),
           })
           .where(eq(companySubscriptions.companyId, companyId));
@@ -404,18 +380,12 @@ export function billingService(db: Db) {
   // -------------------------------------------------------------------------
 
   async function getProjectCount(companyId: string): Promise<number> {
-    const rows = await db
-      .select()
-      .from(projects)
-      .where(eq(projects.companyId, companyId));
+    const rows = await db.select().from(projects).where(eq(projects.companyId, companyId));
     return rows.length;
   }
 
   async function getStorageUsageBytes(companyId: string): Promise<number> {
-    const rows = await db
-      .select()
-      .from(libraryFiles)
-      .where(eq(libraryFiles.companyId, companyId));
+    const rows = await db.select().from(libraryFiles).where(eq(libraryFiles.companyId, companyId));
     return rows.reduce<number>((sum, f) => sum + (f.sizeBytes ?? 0), 0);
   }
 
@@ -426,10 +396,7 @@ export function billingService(db: Db) {
     const rows = await db
       .select()
       .from(playbookRuns)
-      .where(and(
-        eq(playbookRuns.companyId, companyId),
-        gte(playbookRuns.createdAt, startOfMonth),
-      ));
+      .where(and(eq(playbookRuns.companyId, companyId), gte(playbookRuns.createdAt, startOfMonth)));
     return rows.length;
   }
 

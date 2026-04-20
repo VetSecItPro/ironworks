@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Archive } from "lucide-react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { cn } from "../lib/utils";
 
 interface SwipeToArchiveProps {
@@ -13,12 +13,7 @@ const COMMIT_THRESHOLD = 0.4;
 const MAX_SWIPE = 0.92;
 const COMMIT_DELAY_MS = 210;
 
-export function SwipeToArchive({
-  children,
-  onArchive,
-  disabled = false,
-  className,
-}: SwipeToArchiveProps) {
+export function SwipeToArchive({ children, onArchive, disabled = false, className }: SwipeToArchiveProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const startPointRef = useRef<{ x: number; y: number } | null>(null);
   const widthRef = useRef(0);
@@ -103,8 +98,7 @@ export function SwipeToArchive({
 
   const handleTouchEnd = () => {
     if (disabled || isCollapsing) return;
-    const shouldCommit =
-      widthRef.current > 0 && Math.abs(offsetX) >= widthRef.current * COMMIT_THRESHOLD;
+    const shouldCommit = widthRef.current > 0 && Math.abs(offsetX) >= widthRef.current * COMMIT_THRESHOLD;
     if (shouldCommit) {
       commitArchive();
       return;

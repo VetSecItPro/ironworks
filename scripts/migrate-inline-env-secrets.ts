@@ -1,5 +1,5 @@
-import { eq } from "drizzle-orm";
 import { agents, createDb } from "@ironworksai/db";
+import { eq } from "drizzle-orm";
 import { secretService } from "../server/src/services/secrets.js";
 
 const SENSITIVE_ENV_KEY_RE =
@@ -62,11 +62,7 @@ async function main() {
       if (apply) {
         const existing = await secrets.getByName(agent.companyId, name);
         if (existing) {
-          await secrets.rotate(
-            existing.id,
-            { value: plain },
-            { userId: "migration", agentId: null },
-          );
+          await secrets.rotate(existing.id, { value: plain }, { userId: "migration", agentId: null });
           rotatedSecrets += 1;
           nextEnv[key] = { type: "secret_ref", secretId: existing.id, version: "latest" };
         } else {
@@ -116,9 +112,7 @@ async function main() {
     process.exit(0);
   }
 
-  console.log(
-    `Updated ${changedAgents} agents, created ${createdSecrets} secrets, rotated ${rotatedSecrets} secrets`,
-  );
+  console.log(`Updated ${changedAgents} agents, created ${createdSecrets} secrets, rotated ${rotatedSecrets} secrets`);
   process.exit(0);
 }
 

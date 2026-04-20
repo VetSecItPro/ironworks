@@ -1,12 +1,10 @@
-import { Button } from "@/components/ui/button";
 import { Download, Upload } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function CompanyPackagesSection() {
   return (
     <div className="space-y-4">
-      <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-        Company Packages
-      </h2>
+      <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Company Packages</h2>
       <div className="rounded-md border border-border px-4 py-4">
         <p className="text-sm text-muted-foreground">
           Import and export have moved to dedicated pages accessible from the{" "}

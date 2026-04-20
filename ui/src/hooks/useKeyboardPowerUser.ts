@@ -15,12 +15,7 @@ interface VimNavigationOptions {
   enabled?: boolean;
 }
 
-export function useVimNavigation({
-  itemSelector,
-  containerRef,
-  onSelect,
-  enabled = true,
-}: VimNavigationOptions) {
+export function useVimNavigation({ itemSelector, containerRef, onSelect, enabled = true }: VimNavigationOptions) {
   const [activeIndex, setActiveIndex] = useState(-1);
 
   useEffect(() => {

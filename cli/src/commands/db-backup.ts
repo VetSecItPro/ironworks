@@ -1,12 +1,8 @@
 import path from "node:path";
 import * as p from "@clack/prompts";
-import pc from "picocolors";
 import { formatDatabaseBackupResult, runDatabaseBackup } from "@ironworksai/db";
-import {
-  expandHomePrefix,
-  resolveDefaultBackupDir,
-  resolveIronworksInstanceId,
-} from "../config/home.js";
+import pc from "picocolors";
+import { expandHomePrefix, resolveDefaultBackupDir, resolveIronworksInstanceId } from "../config/home.js";
 import { readConfig, resolveConfigPath } from "../config/store.js";
 import { printIronworksCliBanner } from "../utils/banner.js";
 
@@ -56,10 +52,7 @@ export async function dbBackupCommand(opts: DbBackupOptions): Promise<void> {
   const defaultDir = resolveDefaultBackupDir(resolveIronworksInstanceId());
   const configuredDir = opts.dir?.trim() || config?.database.backup.dir || defaultDir;
   const backupDir = resolveBackupDir(configuredDir);
-  const retentionDays = normalizeRetentionDays(
-    opts.retentionDays,
-    config?.database.backup.retentionDays ?? 30,
-  );
+  const retentionDays = normalizeRetentionDays(opts.retentionDays, config?.database.backup.retentionDays ?? 30);
   const filenamePrefix = opts.filenamePrefix?.trim() || "ironworks";
 
   p.log.message(pc.dim(`Config: ${configPath}`));

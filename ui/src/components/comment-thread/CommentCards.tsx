@@ -1,14 +1,14 @@
-import { memo } from "react";
-import { Link } from "react-router-dom";
 import type { Agent } from "@ironworksai/shared";
 import { Reply } from "lucide-react";
+import { memo } from "react";
+import { Link } from "react-router-dom";
+import { PluginSlotOutlet } from "@/plugins/slots";
+import { formatDateTime } from "../../lib/utils";
 import { Identity } from "../Identity";
 import { MarkdownBody } from "../MarkdownBody";
 import { StatusBadge } from "../StatusBadge";
-import { formatDateTime } from "../../lib/utils";
-import { PluginSlotOutlet } from "@/plugins/slots";
-import type { CommentWithRunMeta, LinkedRunItem, ReactionMap, TimelineItem } from "./comment-thread-utils";
-import { ReactionBar, CopyMarkdownButton } from "./comment-thread-utils";
+import type { CommentWithRunMeta, ReactionMap, TimelineItem } from "./comment-thread-utils";
+import { CopyMarkdownButton, ReactionBar } from "./comment-thread-utils";
 
 // ---------------------------------------------------------------------------
 // Single comment card (used for both top-level and reply comments)
@@ -89,11 +89,7 @@ export function CommentCard({
         </span>
       </div>
       <MarkdownBody className="text-sm">{comment.body}</MarkdownBody>
-      <ReactionBar
-        commentId={comment.id}
-        reactions={reactions[comment.id]}
-        onToggle={onToggleReaction}
-      />
+      <ReactionBar commentId={comment.id} reactions={reactions[comment.id]} onToggle={onToggleReaction} />
       {companyId ? (
         <div className="mt-2 space-y-2">
           <PluginSlotOutlet
@@ -167,17 +163,15 @@ export const TimelineList = memo(function TimelineList({
         if (item.kind === "run") {
           const run = item.run;
           return (
-            <div key={`run:${run.runId}`} className="border border-border bg-accent/20 p-3 overflow-hidden min-w-0 rounded-sm">
+            <div
+              key={`run:${run.runId}`}
+              className="border border-border bg-accent/20 p-3 overflow-hidden min-w-0 rounded-sm"
+            >
               <div className="flex items-center justify-between mb-2">
                 <Link to={`/agents/${run.agentId}`} className="hover:underline">
-                  <Identity
-                    name={agentMap?.get(run.agentId)?.name ?? run.agentId.slice(0, 8)}
-                    size="sm"
-                  />
+                  <Identity name={agentMap?.get(run.agentId)?.name ?? run.agentId.slice(0, 8)} size="sm" />
                 </Link>
-                <span className="text-xs text-muted-foreground">
-                  {formatDateTime(run.startedAt ?? run.createdAt)}
-                </span>
+                <span className="text-xs text-muted-foreground">{formatDateTime(run.startedAt ?? run.createdAt)}</span>
               </div>
               <div className="flex items-center gap-2 text-xs">
                 <span className="text-muted-foreground">Run</span>

@@ -1,5 +1,5 @@
+import { Building2, Check, ChevronDown, ChevronUp, Rocket, Zap } from "lucide-react";
 import { useState } from "react";
-import { Check, ChevronDown, ChevronUp, Zap, Building2, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "../lib/utils";
 
@@ -127,9 +127,7 @@ export function PricingPage() {
       {/* Hero / Header */}
       <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600/20 via-background to-purple-600/10 border-b border-border">
         <div className="mx-auto max-w-5xl px-6 py-16 text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-            Simple, transparent pricing
-          </h1>
+          <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">Simple, transparent pricing</h1>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
             Scale your AI workforce from startup to enterprise. Every plan includes unlimited agents.
           </p>
@@ -166,12 +164,7 @@ export function PricingPage() {
                 </div>
                 <p className="text-sm text-muted-foreground mb-6">{tier.description}</p>
                 <Button
-                  className={cn(
-                    "w-full",
-                    tier.highlight
-                      ? "bg-indigo-500 hover:bg-indigo-600 text-white"
-                      : "",
-                  )}
+                  className={cn("w-full", tier.highlight ? "bg-indigo-500 hover:bg-indigo-600 text-white" : "")}
                   variant={tier.highlight ? "default" : "outline"}
                 >
                   Get Started
@@ -210,13 +203,7 @@ export function PricingPage() {
             </thead>
             <tbody>
               {FEATURE_KEYS.map((key, idx) => (
-                <tr
-                  key={key}
-                  className={cn(
-                    "border-b border-border/50",
-                    idx % 2 === 0 ? "" : "bg-muted/10",
-                  )}
-                >
+                <tr key={key} className={cn("border-b border-border/50", idx % 2 === 0 ? "" : "bg-muted/10")}>
                   <td className="px-4 py-2.5 text-muted-foreground">{FEATURE_LABELS[key]}</td>
                   {TIERS.map((tier) => (
                     <td key={tier.name} className="text-center px-4 py-2.5 font-medium">
@@ -255,6 +242,7 @@ function FaqAccordion({ item }: { item: FaqItem }) {
   return (
     <div className="rounded-lg border border-border">
       <button
+        type="button"
         className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium hover:bg-accent/50 transition-colors"
         onClick={() => setOpen(!open)}
       >
@@ -265,11 +253,7 @@ function FaqAccordion({ item }: { item: FaqItem }) {
           <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
         )}
       </button>
-      {open && (
-        <div className="px-4 pb-3 text-sm text-muted-foreground">
-          {item.answer}
-        </div>
-      )}
+      {open && <div className="px-4 pb-3 text-sm text-muted-foreground">{item.answer}</div>}
     </div>
   );
 }

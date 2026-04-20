@@ -1,5 +1,5 @@
-import { Link } from "@/lib/router";
 import { Megaphone } from "lucide-react";
+import { Link } from "@/lib/router";
 
 interface Announcement {
   id: string;
@@ -32,7 +32,11 @@ export function AnnouncementsSection({ announcements }: { announcements: Announc
             <div className="min-w-0">
               <p className="text-sm font-medium truncate">{a.title}</p>
               <p className="text-xs text-muted-foreground">
-                {new Date(a.createdAt).toLocaleDateString("en-US", { timeZone: "America/Chicago", month: "short", day: "numeric" })}
+                {new Date(a.createdAt).toLocaleDateString("en-US", {
+                  timeZone: "America/Chicago",
+                  month: "short",
+                  day: "numeric",
+                })}
                 {a.createdByUserId ? " - Board" : a.createdByAgentId ? " - Agent" : ""}
               </p>
             </div>

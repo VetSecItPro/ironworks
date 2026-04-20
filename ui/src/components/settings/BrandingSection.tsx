@@ -1,7 +1,7 @@
 import type { ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
-import { Field } from "../agent-config-primitives";
 import { useToast } from "../../context/ToastContext";
+import { Field } from "../agent-config-primitives";
 
 interface BrandingSectionProps {
   accentColor: string;
@@ -40,33 +40,27 @@ export function BrandingSection({
 
   return (
     <div id="branding" className="space-y-4 scroll-mt-6">
-      <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-        Branding
-      </h2>
+      <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Branding</h2>
       <div className="space-y-4 rounded-md border border-border px-4 py-4">
         <Field
           label="Accent color"
           hint="Select an accent color for your company theme. Applied to sidebar indicators and highlights."
         >
           <div className="flex items-center gap-2 flex-wrap">
-            {["#6366f1", "#8b5cf6", "#ec4899", "#f97316", "#10b981", "#0ea5e9"].map(
-              (color) => (
-                <button
-                  key={color}
-                  type="button"
-                  className={`w-8 h-8 rounded-full border-2 transition-all ${
-                    accentColor === color
-                      ? "border-foreground scale-110 shadow-md"
-                      : "border-transparent hover:border-muted-foreground/40 hover:scale-105"
-                  }`}
-                  style={{ backgroundColor: color }}
-                  onClick={() =>
-                    setAccentColor(accentColor === color ? "" : color)
-                  }
-                  aria-label={`Select accent color ${color}`}
-                />
-              ),
-            )}
+            {["#6366f1", "#8b5cf6", "#ec4899", "#f97316", "#10b981", "#0ea5e9"].map((color) => (
+              <button
+                key={color}
+                type="button"
+                className={`w-8 h-8 rounded-full border-2 transition-all ${
+                  accentColor === color
+                    ? "border-foreground scale-110 shadow-md"
+                    : "border-transparent hover:border-muted-foreground/40 hover:scale-105"
+                }`}
+                style={{ backgroundColor: color }}
+                onClick={() => setAccentColor(accentColor === color ? "" : color)}
+                aria-label={`Select accent color ${color}`}
+              />
+            ))}
             {accentColor && (
               <Button
                 size="sm"
@@ -80,13 +74,8 @@ export function BrandingSection({
           </div>
           {accentColor && (
             <div className="flex items-center gap-2 mt-2">
-              <div
-                className="w-4 h-4 rounded-sm"
-                style={{ backgroundColor: accentColor }}
-              />
-              <span className="text-xs font-mono text-muted-foreground">
-                {accentColor}
-              </span>
+              <div className="w-4 h-4 rounded-sm" style={{ backgroundColor: accentColor }} />
+              <span className="text-xs font-mono text-muted-foreground">{accentColor}</span>
             </div>
           )}
         </Field>
@@ -104,11 +93,7 @@ export function BrandingSection({
             />
             {customFavicon && (
               <div className="flex items-center gap-2">
-                <img
-                  src={customFavicon}
-                  alt="Custom favicon"
-                  className="w-6 h-6"
-                />
+                <img src={customFavicon} alt="Custom favicon" className="w-6 h-6" />
                 <Button
                   size="sm"
                   variant="outline"
@@ -138,8 +123,8 @@ export function BrandingSection({
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Hide the IronWorks name and logo from the sidebar footer and
-                login page. Available on the Business tier only.
+                Hide the IronWorks name and logo from the sidebar footer and login page. Available on the Business tier
+                only.
               </p>
             </div>
             <button
@@ -147,20 +132,14 @@ export function BrandingSection({
               role="switch"
               data-slot="toggle"
               aria-checked={removeIronWorksBranding}
-              aria-label={
-                removeIronWorksBranding
-                  ? "Disable remove branding"
-                  : "Enable remove branding"
-              }
+              aria-label={removeIronWorksBranding ? "Disable remove branding" : "Enable remove branding"}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0 ${
                 removeIronWorksBranding ? "bg-foreground" : "bg-muted"
               }`}
               onClick={() => {
                 setRemoveIronWorksBranding(!removeIronWorksBranding);
                 pushToast({
-                  title: !removeIronWorksBranding
-                    ? "IronWorks branding hidden"
-                    : "IronWorks branding restored",
+                  title: !removeIronWorksBranding ? "IronWorks branding hidden" : "IronWorks branding restored",
                   tone: "success",
                 });
               }}

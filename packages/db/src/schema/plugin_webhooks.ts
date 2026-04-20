@@ -1,14 +1,6 @@
-import {
-  pgTable,
-  uuid,
-  text,
-  integer,
-  timestamp,
-  jsonb,
-  index,
-} from "drizzle-orm/pg-core";
-import { plugins } from "./plugins.js";
 import type { PluginWebhookDeliveryStatus } from "@ironworksai/shared";
+import { index, integer, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { plugins } from "./plugins.js";
 
 /**
  * `plugin_webhook_deliveries` table — inbound webhook delivery history for plugins.

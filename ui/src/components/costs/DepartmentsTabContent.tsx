@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PageSkeleton } from "../PageSkeleton";
 import { formatCents } from "../../lib/utils";
+import { PageSkeleton } from "../PageSkeleton";
 
 interface DepartmentSpendingRow {
   department: string;
@@ -44,7 +44,9 @@ export function DepartmentsTabContent({
                     <tr key={row.department} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
                       <td className="py-2 pr-4 font-medium capitalize">{row.department}</td>
                       <td className="py-2 pr-4 text-right tabular-nums">{row.agentCount}</td>
-                      <td className="py-2 pr-4 text-right font-mono text-xs tabular-nums">{formatCents(row.totalSpend)}</td>
+                      <td className="py-2 pr-4 text-right font-mono text-xs tabular-nums">
+                        {formatCents(row.totalSpend)}
+                      </td>
                       <td className="py-2 text-right font-mono text-xs tabular-nums">{formatCents(row.avgPerAgent)}</td>
                     </tr>
                   ))}

@@ -59,11 +59,7 @@ export function getDefaultForSchema(schema: JsonSchemaNode): unknown {
 }
 
 /** Validate a single field value against schema constraints. Returns error string or null. */
-export function validateField(
-  value: unknown,
-  schema: JsonSchemaNode,
-  isRequired: boolean,
-): string | null {
+export function validateField(value: unknown, schema: JsonSchemaNode, isRequired: boolean): string | null {
   const type = resolveType(schema);
 
   // Required check
@@ -101,7 +97,7 @@ export function validateField(
 
   if (type === "number" || type === "integer") {
     const num = Number(value);
-    if (isNaN(num)) return "Must be a valid number";
+    if (Number.isNaN(num)) return "Must be a valid number";
     if (schema.minimum != null && num < schema.minimum) {
       return `Must be at least ${schema.minimum}`;
     }
@@ -160,10 +156,7 @@ export function validateJsonSchemaForm(
 
     // Recurse into objects
     if (type === "object" && propSchema.properties && typeof value === "object" && value !== null) {
-      Object.assign(
-        errors,
-        validateJsonSchemaForm(propSchema, value as Record<string, unknown>, fieldPath),
-      );
+      Object.assign(errors, validateJsonSchemaForm(propSchema, value as Record<string, unknown>, fieldPath));
     }
 
     // Recurse into arrays
@@ -176,14 +169,7 @@ export function validateJsonSchemaForm(
         const itemErrorKey = `/${itemPath.join("/")}`;
 
         if (isObjectItem) {
-          Object.assign(
-            errors,
-            validateJsonSchemaForm(
-              itemSchema,
-              item as Record<string, unknown>,
-              itemPath,
-            ),
-          );
+          Object.assign(errors, validateJsonSchemaForm(itemSchema, item as Record<string, unknown>, itemPath));
         } else {
           const itemErr = validateField(item, itemSchema, false);
           if (itemErr) {

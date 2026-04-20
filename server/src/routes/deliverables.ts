@@ -1,10 +1,10 @@
-import { Router } from "express";
 import type { Db } from "@ironworksai/db";
-import { and, desc, eq, inArray, isNotNull } from "drizzle-orm";
-import { knowledgePages, agents } from "@ironworksai/db";
+import { agents, knowledgePages } from "@ironworksai/db";
 import { DELIVERABLE_DOCUMENT_TYPES, DELIVERABLE_STATUSES } from "@ironworksai/shared";
-import { assertCompanyAccess, assertCanWrite, getActorInfo } from "./authz.js";
+import { and, desc, eq, inArray, isNotNull } from "drizzle-orm";
+import { Router } from "express";
 import { logActivity } from "../services/activity-log.js";
+import { assertCanWrite, assertCompanyAccess, getActorInfo } from "./authz.js";
 
 const DELIVERABLE_TYPES = [...DELIVERABLE_DOCUMENT_TYPES];
 
@@ -24,7 +24,7 @@ export function deliverableRoutes(db: Db) {
       isNotNull(knowledgePages.deliverableStatus),
     ];
 
-    if (status && DELIVERABLE_STATUSES.includes(status as typeof DELIVERABLE_STATUSES[number])) {
+    if (status && DELIVERABLE_STATUSES.includes(status as (typeof DELIVERABLE_STATUSES)[number])) {
       conditions.push(eq(knowledgePages.deliverableStatus, status));
     }
 
@@ -61,7 +61,10 @@ export function deliverableRoutes(db: Db) {
     const id = req.params.id as string;
     const { deliverableStatus, reviewerNote } = req.body as { deliverableStatus?: string; reviewerNote?: string };
 
-    if (!deliverableStatus || !DELIVERABLE_STATUSES.includes(deliverableStatus as typeof DELIVERABLE_STATUSES[number])) {
+    if (
+      !deliverableStatus ||
+      !DELIVERABLE_STATUSES.includes(deliverableStatus as (typeof DELIVERABLE_STATUSES)[number])
+    ) {
       res.status(400).json({ error: `deliverableStatus must be one of: ${DELIVERABLE_STATUSES.join(", ")}` });
       return;
     }

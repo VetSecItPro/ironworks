@@ -13,30 +13,24 @@
  */
 
 import { randomUUID } from "node:crypto";
+import type { Db } from "@ironworksai/db";
+import { authAccounts, authSessions, authUsers, companySubscriptions, instanceUserRoles } from "@ironworksai/db";
+import { eq } from "drizzle-orm";
 import { Router } from "express";
 import { z } from "zod";
-import { eq } from "drizzle-orm";
-import type { Db } from "@ironworksai/db";
-import {
-  authUsers,
-  authAccounts,
-  authSessions,
-  companySubscriptions,
-  instanceUserRoles,
-} from "@ironworksai/db";
-import {
-  companyService,
-  accessService,
-  playbookService,
-  routineService,
-  billingService,
-  PLAN_DEFINITIONS,
-  type PlanTier,
-} from "../services/index.js";
-import { knowledgeService } from "../services/knowledge.js";
-import { logActivity } from "../services/activity-log.js";
 import { badRequest, conflict } from "../errors.js";
 import { logger } from "../middleware/logger.js";
+import { logActivity } from "../services/activity-log.js";
+import {
+  accessService,
+  billingService,
+  companyService,
+  PLAN_DEFINITIONS,
+  type PlanTier,
+  playbookService,
+  routineService,
+} from "../services/index.js";
+import { knowledgeService } from "../services/knowledge.js";
 
 // ---------------------------------------------------------------------------
 // Polar API helper (reuse the same pattern from billing service)
@@ -133,9 +127,20 @@ function checkRateLimit(ip: string): boolean {
 
 const setupSchema = z.object({
   checkoutId: z.string().min(1, "checkoutId is required"),
-  companyName: z.string().min(1, "Company name is required").max(100).transform((s) => s.trim()),
-  userName: z.string().min(1, "Name is required").max(100).transform((s) => s.trim()),
-  email: z.string().email("Invalid email address").transform((s) => s.trim().toLowerCase()),
+  companyName: z
+    .string()
+    .min(1, "Company name is required")
+    .max(100)
+    .transform((s) => s.trim()),
+  userName: z
+    .string()
+    .min(1, "Name is required")
+    .max(100)
+    .transform((s) => s.trim()),
+  email: z
+    .string()
+    .email("Invalid email address")
+    .transform((s) => s.trim().toLowerCase()),
   password: z.string().min(8, "Password must be at least 8 characters"),
   tosAccepted: z.literal(true, {
     errorMap: () => ({ message: "You must accept the Terms of Service and Acceptable Use Policy" }),
@@ -160,14 +165,11 @@ function validateRedirectUrl(rawUrl: string, fieldName: string): void {
     throw badRequest(`${fieldName} must be a valid URL`);
   }
   // Allow localhost/127.0.0.1 for development environments only
-  const isLocalhost =
-    parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1";
+  const isLocalhost = parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1";
   const isDev = process.env.NODE_ENV !== "production";
   if (isLocalhost && isDev) return;
   if (!ALLOWED_CHECKOUT_REDIRECT_ORIGINS.has(parsed.origin)) {
-    throw badRequest(
-      `${fieldName} must point to an allowed domain (got: ${parsed.origin})`,
-    );
+    throw badRequest(`${fieldName} must point to an allowed domain (got: ${parsed.origin})`);
   }
 }
 
@@ -230,9 +232,7 @@ export function setupRoutes(db: Db) {
     }
 
     if (checkout.status !== "succeeded" && checkout.status !== "confirmed") {
-      throw badRequest(
-        `Payment has not been completed (status: ${checkout.status}). Please complete checkout first.`,
-      );
+      throw badRequest(`Payment has not been completed (status: ${checkout.status}). Please complete checkout first.`);
     }
 
     // SEC-ADV-012: Verify the submitted email matches the checkout email
@@ -242,9 +242,7 @@ export function setupRoutes(db: Db) {
     }
 
     // 2. Determine plan tier from product_id
-    const planTier: PlanTier = checkout.product_id
-      ? productIdToTier(checkout.product_id)
-      : "starter";
+    const planTier: PlanTier = checkout.product_id ? productIdToTier(checkout.product_id) : "starter";
 
     // 3. Check email uniqueness
     const existingUser = await db
@@ -302,8 +300,7 @@ export function setupRoutes(db: Db) {
     await access.ensureMembership(company.id, "user", userId, "owner", "active");
 
     // 8. Create subscription record linking company to Polar
-    const polarCustomerId =
-      (checkout.metadata?.polarCustomerId as string | undefined) ?? null;
+    const polarCustomerId = (checkout.metadata?.polarCustomerId as string | undefined) ?? null;
 
     await billingSvc.getOrCreateSubscription(company.id);
     await db
@@ -363,10 +360,7 @@ export function setupRoutes(db: Db) {
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });
 
-    logger.info(
-      { userId, companyId: company.id, planTier, checkoutId },
-      "Self-serve signup completed",
-    );
+    logger.info({ userId, companyId: company.id, planTier, checkoutId }, "Self-serve signup completed");
 
     res.status(201).json({
       companyId: company.id,
@@ -395,18 +389,15 @@ export function setupRoutes(db: Db) {
       throw badRequest(`No Polar product configured for tier: ${tier}`);
     }
 
-    const checkout = await polarFetch<{ url: string; id: string }>(
-      "/checkouts/custom",
-      {
-        method: "POST",
-        body: JSON.stringify({
-          product_id: plan.productId,
-          success_url: successUrl,
-          cancel_url: cancelUrl,
-          metadata: { planTier: tier, source: "self-serve" },
-        }),
-      },
-    );
+    const checkout = await polarFetch<{ url: string; id: string }>("/checkouts/custom", {
+      method: "POST",
+      body: JSON.stringify({
+        product_id: plan.productId,
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        metadata: { planTier: tier, source: "self-serve" },
+      }),
+    });
 
     if (!checkout.url) {
       throw new Error("Polar did not return a checkout URL");

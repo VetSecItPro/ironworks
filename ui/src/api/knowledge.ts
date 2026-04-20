@@ -47,23 +47,31 @@ export const knowledgeApi = {
   listByAgent: (companyId: string, agentId: string) =>
     api.get<KnowledgePage[]>(`/companies/${companyId}/knowledge?agentId=${encodeURIComponent(agentId)}`),
 
-  get: (pageId: string) =>
-    api.get<KnowledgePage>(`/knowledge/${pageId}`),
+  get: (pageId: string) => api.get<KnowledgePage>(`/knowledge/${pageId}`),
 
   getBySlug: (companyId: string, slug: string) =>
     api.get<KnowledgePage>(`/companies/${companyId}/knowledge/slug/${encodeURIComponent(slug)}`),
 
-  create: (companyId: string, data: { title: string; body?: string; visibility?: string; projectId?: string; department?: string; folder?: string }) =>
-    api.post<KnowledgePage>(`/companies/${companyId}/knowledge`, data),
+  create: (
+    companyId: string,
+    data: {
+      title: string;
+      body?: string;
+      visibility?: string;
+      projectId?: string;
+      department?: string;
+      folder?: string;
+    },
+  ) => api.post<KnowledgePage>(`/companies/${companyId}/knowledge`, data),
 
-  update: (pageId: string, data: { title?: string; body?: string; visibility?: string; projectId?: string; changeSummary?: string }) =>
-    api.patch<KnowledgePage>(`/knowledge/${pageId}`, data),
+  update: (
+    pageId: string,
+    data: { title?: string; body?: string; visibility?: string; projectId?: string; changeSummary?: string },
+  ) => api.patch<KnowledgePage>(`/knowledge/${pageId}`, data),
 
-  remove: (pageId: string) =>
-    api.delete<{ ok: boolean }>(`/knowledge/${pageId}`),
+  remove: (pageId: string) => api.delete<{ ok: boolean }>(`/knowledge/${pageId}`),
 
-  listRevisions: (pageId: string) =>
-    api.get<KnowledgePageRevision[]>(`/knowledge/${pageId}/revisions`),
+  listRevisions: (pageId: string) => api.get<KnowledgePageRevision[]>(`/knowledge/${pageId}/revisions`),
 
   getRevision: (pageId: string, revisionNumber: number) =>
     api.get<KnowledgePageRevision>(`/knowledge/${pageId}/revisions/${revisionNumber}`),

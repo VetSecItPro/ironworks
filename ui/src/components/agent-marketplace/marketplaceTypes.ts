@@ -1,13 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import {
-  Bot,
-  Brain,
-  Code,
-  Palette,
-  Search,
-  Shield,
-  Users,
-} from "lucide-react";
+import { Bot, Brain, Code, Palette, Search, Shield, Users } from "lucide-react";
 
 export interface MarketplaceAgent {
   id: string;
@@ -46,7 +38,8 @@ export const DEFAULT_MARKETPLACE_TEMPLATES: MarketplaceAgent[] = [
     id: "tpl-engineer",
     role: "engineer",
     title: "Software Engineer",
-    description: "Full-stack development, code reviews, bug fixes, and feature implementation. Handles complex technical tasks autonomously.",
+    description:
+      "Full-stack development, code reviews, bug fixes, and feature implementation. Handles complex technical tasks autonomously.",
     skills: ["TypeScript", "React", "Node.js", "Git", "Testing"],
     recommendedModel: "claude-sonnet-4-20250514",
     category: "engineering",
@@ -56,7 +49,8 @@ export const DEFAULT_MARKETPLACE_TEMPLATES: MarketplaceAgent[] = [
     id: "tpl-qa",
     role: "qa",
     title: "QA Engineer",
-    description: "Automated testing, quality assurance, bug triage, and regression testing. Ensures code quality before deployment.",
+    description:
+      "Automated testing, quality assurance, bug triage, and regression testing. Ensures code quality before deployment.",
     skills: ["Testing", "Cypress", "Jest", "Bug Triage", "Automation"],
     recommendedModel: "claude-sonnet-4-20250514",
     category: "engineering",

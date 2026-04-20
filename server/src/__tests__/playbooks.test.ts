@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -73,10 +73,13 @@ vi.mock("../services/activity-log.js", () => ({
   setPluginEventBus: vi.fn(),
 }));
 
-vi.mock("../services/index.js", () => ({
-  accessService: () => mockAccessService,
-  logActivity: mockLogActivity,
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    accessService: () => mockAccessService,
+    logActivity: mockLogActivity,
+  });
+});
 
 vi.mock("../middleware/logger.js", () => ({
   logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn(), debug: vi.fn() },
@@ -91,6 +94,7 @@ async function createApp(actor: Record<string, unknown>) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });
@@ -98,7 +102,9 @@ async function createApp(actor: Record<string, unknown>) {
     select: vi.fn().mockReturnThis(),
     from: vi.fn().mockReturnThis(),
     where: vi.fn().mockReturnThis(),
+    // biome-ignore lint/suspicious/noThenProperty: test mock drizzle thenable contract
     then: vi.fn().mockResolvedValue([{ membershipRole: "owner" }]),
+    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
   app.use("/api", playbookRoutes(fakeDb));
   app.use(errorHandler);
@@ -234,9 +240,7 @@ describe("playbook routes", () => {
   describe("POST /api/companies/:companyId/playbooks/:playbookId/run", () => {
     it("runs a playbook and returns 201", async () => {
       const app = await createApp(instanceAdmin(USER_ID));
-      const res = await request(app)
-        .post(`/api/companies/${COMPANY_ID}/playbooks/${PLAYBOOK_ID}/run`)
-        .send({});
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/playbooks/${PLAYBOOK_ID}/run`).send({});
 
       expect(res.status).toBe(201);
       expect(res.body).toMatchObject({ status: "running" });
@@ -266,9 +270,7 @@ describe("playbook routes", () => {
 
     it("rejects missing issueId with 400", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post(`/api/companies/${COMPANY_ID}/playbook-runs/issue-completed`)
-        .send({});
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/playbook-runs/issue-completed`).send({});
       expect(res.status).toBe(400);
     });
   });

@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+import { AlertTriangle } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -7,9 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AlertTriangle } from "lucide-react";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -65,9 +65,7 @@ export function ConfirmDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {isDestructive && (
-              <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
-            )}
+            {isDestructive && <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />}
             {title}
           </DialogTitle>
           <DialogDescription>{description}</DialogDescription>

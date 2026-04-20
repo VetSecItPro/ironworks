@@ -1,9 +1,9 @@
-import { describe, expect, it } from "vitest";
 import { $createLinkNode } from "@lexical/link";
 import { createEditor } from "lexical";
+import { describe, expect, it } from "vitest";
 import {
-  MentionAwareLinkNode,
   getMentionAwareLinkNodeInit,
+  MentionAwareLinkNode,
   mentionAwareLinkNodeReplacement,
 } from "./mention-aware-link-node";
 

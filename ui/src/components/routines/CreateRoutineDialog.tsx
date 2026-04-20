@@ -1,18 +1,18 @@
-import { useEffect, useRef } from "react";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
-import { AgentIcon } from "../AgentIconPicker";
-import { InlineEntitySelector, type InlineEntityOption } from "../InlineEntitySelector";
-import { MarkdownEditor, type MarkdownEditorRef } from "../MarkdownEditor";
+import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AgentIcon } from "../AgentIconPicker";
+import { type InlineEntityOption, InlineEntitySelector } from "../InlineEntitySelector";
+import { MarkdownEditor, type MarkdownEditorRef } from "../MarkdownEditor";
 import {
   autoResizeTextarea,
-  concurrencyPolicies,
   catchUpPolicies,
-  concurrencyPolicyDescriptions,
   catchUpPolicyDescriptions,
+  concurrencyPolicies,
+  concurrencyPolicyDescriptions,
 } from "./routine-constants";
 
 export interface RoutineDraft {
@@ -66,8 +66,8 @@ export function CreateRoutineDialog({
   const assigneeSelectorRef = useRef<HTMLButtonElement | null>(null);
   const projectSelectorRef = useRef<HTMLButtonElement | null>(null);
 
-  const currentAssignee = draft.assigneeAgentId ? agentById.get(draft.assigneeAgentId) ?? null : null;
-  const currentProject = draft.projectId ? projectById.get(draft.projectId) ?? null : null;
+  const currentAssignee = draft.assigneeAgentId ? (agentById.get(draft.assigneeAgentId) ?? null) : null;
+  const currentProject = draft.projectId ? (projectById.get(draft.projectId) ?? null) : null;
 
   useEffect(() => {
     autoResizeTextarea(titleInputRef.current);
@@ -179,7 +179,9 @@ export function CreateRoutineDialog({
                   const assignee = agentById.get(option.id);
                   return (
                     <>
-                      {assignee ? <AgentIcon icon={assignee.icon} className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : null}
+                      {assignee ? (
+                        <AgentIcon icon={assignee.icon} className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      ) : null}
                       <span className="truncate">{option.label}</span>
                     </>
                   );
@@ -250,7 +252,11 @@ export function CreateRoutineDialog({
                 <p className="text-sm font-medium">Advanced delivery settings</p>
                 <p className="text-sm text-muted-foreground">Keep policy controls secondary to the work definition.</p>
               </div>
-              {advancedOpen ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+              {advancedOpen ? (
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              )}
             </CollapsibleTrigger>
             <CollapsibleContent className="pt-3">
               <div className="grid gap-4 md:grid-cols-2">
@@ -265,11 +271,15 @@ export function CreateRoutineDialog({
                     </SelectTrigger>
                     <SelectContent>
                       {concurrencyPolicies.map((value) => (
-                        <SelectItem key={value} value={value}>{value.replaceAll("_", " ")}</SelectItem>
+                        <SelectItem key={value} value={value}>
+                          {value.replaceAll("_", " ")}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-muted-foreground">{concurrencyPolicyDescriptions[draft.concurrencyPolicy]}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {concurrencyPolicyDescriptions[draft.concurrencyPolicy]}
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Catch-up</p>
@@ -282,7 +292,9 @@ export function CreateRoutineDialog({
                     </SelectTrigger>
                     <SelectContent>
                       {catchUpPolicies.map((value) => (
-                        <SelectItem key={value} value={value}>{value.replaceAll("_", " ")}</SelectItem>
+                        <SelectItem key={value} value={value}>
+                          {value.replaceAll("_", " ")}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -300,12 +312,7 @@ export function CreateRoutineDialog({
           <div className="flex flex-col gap-2 sm:items-end">
             <Button
               onClick={onSubmit}
-              disabled={
-                isPending ||
-                !draft.title.trim() ||
-                !draft.projectId ||
-                !draft.assigneeAgentId
-              }
+              disabled={isPending || !draft.title.trim() || !draft.projectId || !draft.assigneeAgentId}
             >
               <Plus className="mr-2 h-4 w-4" />
               {isPending ? "Creating..." : "Create routine"}

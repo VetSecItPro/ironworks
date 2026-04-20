@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "@/lib/router";
+import { getTargetRect, SpotlightOverlay } from "./SpotlightOverlay";
+import { TooltipCard } from "./TooltipCard";
 import type { TourStep } from "./tour-data";
 import { DEFAULT_STEPS } from "./tour-data";
-import { SpotlightOverlay, getTargetRect } from "./SpotlightOverlay";
-import { TooltipCard } from "./TooltipCard";
 
 interface GuidedTourProps {
   steps?: TourStep[];
@@ -14,14 +14,7 @@ interface GuidedTourProps {
   onDismiss: () => void;
 }
 
-export function GuidedTour({
-  steps = DEFAULT_STEPS,
-  active,
-  currentStep,
-  onNext,
-  onPrev,
-  onDismiss,
-}: GuidedTourProps) {
+export function GuidedTour({ steps = DEFAULT_STEPS, active, currentStep, onNext, onPrev, onDismiss }: GuidedTourProps) {
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const navigate = useNavigate();
 
@@ -66,11 +59,7 @@ export function GuidedTour({
   return (
     <>
       <SpotlightOverlay targetRect={targetRect} />
-      <div
-        className="fixed inset-0 z-[9998]"
-        onClick={(e) => e.stopPropagation()}
-        aria-hidden="true"
-      />
+      <div className="fixed inset-0 z-[9998]" onClick={(e) => e.stopPropagation()} aria-hidden="true" />
       <TooltipCard
         step={step}
         stepIndex={currentStep}

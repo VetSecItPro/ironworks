@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate, useSearchParams } from "@/lib/router";
-import { authApi } from "../api/auth";
-import { queryKeys } from "../lib/queryKeys";
+import { Eye, EyeOff, Hammer } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AsciiArtAnimation } from "@/components/AsciiArtAnimation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AsciiArtAnimation } from "@/components/AsciiArtAnimation";
-import { Hammer, Eye, EyeOff } from "lucide-react";
+import { Link, useNavigate, useSearchParams } from "@/lib/router";
+import { authApi } from "../api/auth";
 import { usePageTitle } from "../hooks/usePageTitle";
+import { queryKeys } from "../lib/queryKeys";
 
 type AuthMode = "sign_in" | "sign_up";
 
@@ -147,7 +147,9 @@ export function AuthPage() {
           >
             {mode === "sign_up" && (
               <div>
-                <label htmlFor="name" className="text-xs text-muted-foreground mb-1 block">Name</label>
+                <label htmlFor="name" className="text-xs text-muted-foreground mb-1 block">
+                  Name
+                </label>
                 <Input
                   id="name"
                   name="name"
@@ -160,7 +162,9 @@ export function AuthPage() {
               </div>
             )}
             <div>
-              <label htmlFor="email" className="text-xs text-muted-foreground mb-1 block">Email</label>
+              <label htmlFor="email" className="text-xs text-muted-foreground mb-1 block">
+                Email
+              </label>
               <Input
                 id="email"
                 name="email"
@@ -174,7 +178,9 @@ export function AuthPage() {
               />
             </div>
             <div>
-              <label htmlFor="password" className="text-xs text-muted-foreground mb-1 block">Password</label>
+              <label htmlFor="password" className="text-xs text-muted-foreground mb-1 block">
+                Password
+              </label>
               <div className="relative">
                 <Input
                   id="password"
@@ -192,11 +198,7 @@ export function AuthPage() {
                   tabIndex={-1}
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
 
@@ -240,21 +242,11 @@ export function AuthPage() {
                 />
                 <span className="text-xs text-muted-foreground">
                   I agree to the{" "}
-                  <a
-                    href="/terms"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline text-foreground"
-                  >
+                  <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline text-foreground">
                     Terms of Service
                   </a>{" "}
                   and{" "}
-                  <a
-                    href="/aup"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline text-foreground"
-                  >
+                  <a href="/aup" target="_blank" rel="noopener noreferrer" className="underline text-foreground">
                     Acceptable Use Policy
                   </a>
                 </span>
@@ -264,7 +256,9 @@ export function AuthPage() {
             {/* Inline error message */}
             {error && (
               <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2">
-                <p role="alert" className="text-xs text-destructive">{error}</p>
+                <p role="alert" className="text-xs text-destructive">
+                  {error}
+                </p>
               </div>
             )}
 
@@ -274,11 +268,7 @@ export function AuthPage() {
               aria-disabled={!canSubmit || mutation.isPending}
               className={`w-full ${!canSubmit && !mutation.isPending ? "opacity-50" : ""}`}
             >
-              {mutation.isPending
-                ? "Working..."
-                : mode === "sign_in"
-                  ? "Sign In"
-                  : "Create Account"}
+              {mutation.isPending ? "Working..." : mode === "sign_in" ? "Sign In" : "Create Account"}
             </Button>
           </form>
 

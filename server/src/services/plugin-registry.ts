@@ -1,30 +1,26 @@
-import { asc, eq, ne, sql, and } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import {
-  plugins,
   pluginConfig,
   pluginEntities,
-  pluginJobs,
   pluginJobRuns,
+  pluginJobs,
+  plugins,
   pluginWebhookDeliveries,
 } from "@ironworksai/db";
 import type {
-  IronworksPluginManifestV1,
-  PluginStatus,
   InstallPlugin,
-  UpdatePluginStatus,
-  UpsertPluginConfig,
+  IronworksPluginManifestV1,
   PatchPluginConfig,
-  PluginEntityRecord,
   PluginEntityQuery,
-  PluginJobRecord,
-  PluginJobRunRecord,
-  PluginWebhookDeliveryRecord,
-  PluginJobStatus,
   PluginJobRunStatus,
   PluginJobRunTrigger,
+  PluginJobStatus,
+  PluginStatus,
   PluginWebhookDeliveryStatus,
+  UpdatePluginStatus,
+  UpsertPluginConfig,
 } from "@ironworksai/shared";
+import { and, asc, eq, ne, sql } from "drizzle-orm";
 import { conflict, notFound } from "../errors.js";
 
 // ---------------------------------------------------------------------------
@@ -80,9 +76,7 @@ export function pluginRegistryService(db: Db) {
   }
 
   async function nextInstallOrder(): Promise<number> {
-    const result = await db
-      .select({ maxOrder: sql<number>`coalesce(max(${plugins.installOrder}), 0)` })
-      .from(plugins);
+    const result = await db.select({ maxOrder: sql<number>`coalesce(max(${plugins.installOrder}), 0)` }).from(plugins);
     return (result[0]?.maxOrder ?? 0) + 1;
   }
 
@@ -94,30 +88,18 @@ export function pluginRegistryService(db: Db) {
     // ----- Read -----------------------------------------------------------
 
     /** List all registered plugins ordered by install order. */
-    list: () =>
-      db
-        .select()
-        .from(plugins)
-        .orderBy(asc(plugins.installOrder)),
+    list: () => db.select().from(plugins).orderBy(asc(plugins.installOrder)),
 
     /**
      * List installed plugins (excludes soft-deleted/uninstalled).
      * Use for Plugin Manager and default API list so uninstalled plugins do not appear.
      */
     listInstalled: () =>
-      db
-        .select()
-        .from(plugins)
-        .where(ne(plugins.status, "uninstalled"))
-        .orderBy(asc(plugins.installOrder)),
+      db.select().from(plugins).where(ne(plugins.status, "uninstalled")).orderBy(asc(plugins.installOrder)),
 
     /** List plugins filtered by status. */
     listByStatus: (status: PluginStatus) =>
-      db
-        .select()
-        .from(plugins)
-        .where(eq(plugins.status, status))
-        .orderBy(asc(plugins.installOrder)),
+      db.select().from(plugins).where(eq(plugins.status, status)).orderBy(asc(plugins.installOrder)),
 
     /** Get a single plugin by primary key. */
     getById,
@@ -379,10 +361,7 @@ export function pluginRegistryService(db: Db) {
 
     /** Delete a plugin's config row. */
     deleteConfig: async (pluginId: string) => {
-      const rows = await db
-        .delete(pluginConfig)
-        .where(eq(pluginConfig.pluginId, pluginId))
-        .returning();
+      const rows = await db.delete(pluginConfig).where(eq(pluginConfig.pluginId, pluginId)).returning();
 
       return rows[0] ?? null;
     },
@@ -418,11 +397,7 @@ export function pluginRegistryService(db: Db) {
      * @param externalId - The identifier in the external system.
      * @returns The matching `PluginEntityRecord` or null.
      */
-    getEntityByExternalId: (
-      pluginId: string,
-      entityType: string,
-      externalId: string,
-    ) =>
+    getEntityByExternalId: (pluginId: string, entityType: string, externalId: string) =>
       db
         .select()
         .from(pluginEntities)
@@ -475,10 +450,10 @@ export function pluginRegistryService(db: Db) {
 
       return db
         .insert(pluginEntities)
-        .values({
-          ...input,
-          pluginId,
-        } as any)
+        .values(
+          // biome-ignore lint/suspicious/noExplicitAny: spread of typed input with pluginId doesn't satisfy Drizzle's Values<> constraint
+          { ...input, pluginId } as any,
+        )
         .returning()
         .then((rows) => rows[0]);
     },
@@ -490,10 +465,7 @@ export function pluginRegistryService(db: Db) {
      * @returns The deleted record, or null if not found.
      */
     deleteEntity: async (id: string) => {
-      const rows = await db
-        .delete(pluginEntities)
-        .where(eq(pluginEntities.id, id))
-        .returning();
+      const rows = await db.delete(pluginEntities).where(eq(pluginEntities.id, id)).returning();
       return rows[0] ?? null;
     },
 
@@ -506,11 +478,7 @@ export function pluginRegistryService(db: Db) {
      * @returns A list of `PluginJobRecord` objects.
      */
     listJobs: (pluginId: string) =>
-      db
-        .select()
-        .from(pluginJobs)
-        .where(eq(pluginJobs.pluginId, pluginId))
-        .orderBy(asc(pluginJobs.jobKey)),
+      db.select().from(pluginJobs).where(eq(pluginJobs.pluginId, pluginId)).orderBy(asc(pluginJobs.jobKey)),
 
     /**
      * Look up a plugin job by its unique job key.
@@ -534,11 +502,7 @@ export function pluginRegistryService(db: Db) {
      * @param input - The schedule (cron) and optional status.
      * @returns The updated or created `PluginJobRecord`.
      */
-    upsertJob: async (
-      pluginId: string,
-      jobKey: string,
-      input: { schedule: string; status?: PluginJobStatus },
-    ) => {
+    upsertJob: async (pluginId: string, jobKey: string, input: { schedule: string; status?: PluginJobStatus }) => {
       const existing = await db
         .select()
         .from(pluginJobs)
@@ -578,11 +542,7 @@ export function pluginRegistryService(db: Db) {
      * @param trigger - What triggered this run (e.g., 'schedule', 'manual').
      * @returns The newly created `PluginJobRunRecord` in 'pending' status.
      */
-    createJobRun: async (
-      pluginId: string,
-      jobId: string,
-      trigger: PluginJobRunTrigger,
-    ) => {
+    createJobRun: async (pluginId: string, jobId: string, trigger: PluginJobRunTrigger) => {
       return db
         .insert(pluginJobRuns)
         .values({

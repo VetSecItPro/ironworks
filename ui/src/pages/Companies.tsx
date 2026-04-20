@@ -1,12 +1,6 @@
-import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCompany } from "../context/CompanyContext";
-import { useDialog } from "../context/DialogContext";
-import { useBreadcrumbs } from "../context/BreadcrumbContext";
-import { companiesApi } from "../api/companies";
-import { queryKeys } from "../lib/queryKeys";
-import { formatCents, relativeTime } from "../lib/utils";
-import { Input } from "@/components/ui/input";
+import { Calendar, Check, CircleDot, DollarSign, MoreHorizontal, Pencil, Plus, Trash2, Users, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -15,27 +9,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Pencil,
-  Check,
-  X,
-  Plus,
-  MoreHorizontal,
-  Trash2,
-  Users,
-  CircleDot,
-  DollarSign,
-  Calendar,
-} from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { companiesApi } from "../api/companies";
+import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { useCompany } from "../context/CompanyContext";
+import { useDialog } from "../context/DialogContext";
+import { queryKeys } from "../lib/queryKeys";
+import { formatCents, relativeTime } from "../lib/utils";
 
 export function Companies() {
-  const {
-    companies,
-    selectedCompanyId,
-    setSelectedCompanyId,
-    loading,
-    error,
-  } = useCompany();
+  const { companies, selectedCompanyId, setSelectedCompanyId, loading, error } = useCompany();
   const { openOnboarding } = useDialog();
   const { setBreadcrumbs } = useBreadcrumbs();
   const queryClient = useQueryClient();
@@ -51,8 +34,7 @@ export function Companies() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const editMutation = useMutation({
-    mutationFn: ({ id, newName }: { id: string; newName: string }) =>
-      companiesApi.update(id, { name: newName }),
+    mutationFn: ({ id, newName }: { id: string; newName: string }) => companiesApi.update(id, { name: newName }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.companies.all });
       setEditingId(null);
@@ -111,16 +93,13 @@ export function Companies() {
           const issueCount = companyStats?.issueCount ?? 0;
           const budgetPct =
             company.budgetMonthlyCents > 0
-              ? Math.round(
-                  (company.spentMonthlyCents / company.budgetMonthlyCents) * 100,
-                )
+              ? Math.round((company.spentMonthlyCents / company.budgetMonthlyCents) * 100)
               : 0;
 
           return (
-            <div
+            <button
               key={company.id}
-              role="button"
-              tabIndex={0}
+              type="button"
               onClick={() => setSelectedCompanyId(company.id)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
@@ -128,19 +107,19 @@ export function Companies() {
                   setSelectedCompanyId(company.id);
                 }
               }}
-              className={`group text-left bg-card border rounded-lg p-5 transition-colors cursor-pointer ${
-                selected
-                  ? "border-primary ring-1 ring-primary"
-                  : "border-border hover:border-muted-foreground/30"
+              className={`group w-full text-left bg-card border rounded-lg p-5 transition-colors cursor-pointer ${
+                selected ? "border-primary ring-1 ring-primary" : "border-border hover:border-muted-foreground/30"
               }`}
             >
               {/* Header row: name + menu */}
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   {isEditing ? (
+                    // biome-ignore lint/a11y/noStaticElementInteractions: stopPropagation container prevents edit input clicks from bubbling to parent button
                     <div
                       className="flex items-center gap-2"
                       onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => e.stopPropagation()}
                     >
                       <Input
                         value={editName}
@@ -194,14 +173,13 @@ export function Companies() {
                     </div>
                   )}
                   {company.description && !isEditing && (
-                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                      {company.description}
-                    </p>
+                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{company.description}</p>
                   )}
                 </div>
 
                 {/* Three-dot menu */}
-                <div onClick={(e) => e.stopPropagation()}>
+                {/* biome-ignore lint/a11y/noStaticElementInteractions: stopPropagation container prevents dropdown clicks from bubbling to parent button */}
+                <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
@@ -214,17 +192,12 @@ export function Companies() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onClick={() => startEdit(company.id, company.name)}
-                      >
+                      <DropdownMenuItem onClick={() => startEdit(company.id, company.name)}>
                         <Pencil className="h-3.5 w-3.5" />
                         Rename
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        variant="destructive"
-                        onClick={() => setConfirmDeleteId(company.id)}
-                      >
+                      <DropdownMenuItem variant="destructive" onClick={() => setConfirmDeleteId(company.id)}>
                         <Trash2 className="h-3.5 w-3.5" />
                         Delete Company
                       </DropdownMenuItem>
@@ -251,9 +224,14 @@ export function Companies() {
                   <DollarSign className="h-3.5 w-3.5" />
                   <span>
                     {formatCents(company.spentMonthlyCents)}
-                    {company.budgetMonthlyCents > 0
-                      ? <> / {formatCents(company.budgetMonthlyCents)} <span className="text-xs">({budgetPct}%)</span></>
-                      : <span className="text-xs ml-1">Unlimited budget</span>}
+                    {company.budgetMonthlyCents > 0 ? (
+                      <>
+                        {" "}
+                        / {formatCents(company.budgetMonthlyCents)} <span className="text-xs">({budgetPct}%)</span>
+                      </>
+                    ) : (
+                      <span className="text-xs ml-1">Unlimited budget</span>
+                    )}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 ml-auto">
@@ -264,9 +242,11 @@ export function Companies() {
 
               {/* Delete confirmation */}
               {isConfirmingDelete && (
+                // biome-ignore lint/a11y/noStaticElementInteractions: stopPropagation container prevents delete confirmation clicks from bubbling to parent button
                 <div
                   className="mt-4 flex items-center justify-between bg-destructive/5 border border-destructive/20 rounded-md px-4 py-3"
                   onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
                 >
                   <p className="text-sm text-destructive font-medium">
                     Delete this company and all its data? This cannot be undone.
@@ -291,7 +271,7 @@ export function Companies() {
                   </div>
                 </div>
               )}
-            </div>
+            </button>
           );
         })}
       </div>

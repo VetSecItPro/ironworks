@@ -1,18 +1,19 @@
-import path from "path";
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import path from "node:path";
 import tailwindcss from "@tailwindcss/vite";
+import react from "@vitejs/plugin-react";
 import { visualizer } from "rollup-plugin-visualizer";
+import { defineConfig } from "vite";
 
 export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     tailwindcss(),
-    process.env.ANALYZE && visualizer({
-      filename: "dist/bundle-analysis.html",
-      open: false,
-      gzipSize: true,
-    }),
+    process.env.ANALYZE &&
+      visualizer({
+        filename: "dist/bundle-analysis.html",
+        open: false,
+        gzipSize: true,
+      }),
   ].filter(Boolean),
   resolve: {
     alias: {
@@ -27,7 +28,11 @@ export default defineConfig(({ mode }) => ({
       output: {
         manualChunks(id) {
           // MDX editor - loaded only when dialogs open
-          if (id.includes("node_modules/@mdxeditor") || id.includes("node_modules/lexical") || id.includes("node_modules/@lexical")) {
+          if (
+            id.includes("node_modules/@mdxeditor") ||
+            id.includes("node_modules/lexical") ||
+            id.includes("node_modules/@lexical")
+          ) {
             return "vendor-editor";
           }
           // Mermaid, cytoscape, katex: already lazy via MarkdownBody - let Vite split naturally

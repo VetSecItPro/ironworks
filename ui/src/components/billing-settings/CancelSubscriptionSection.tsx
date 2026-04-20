@@ -1,8 +1,8 @@
-import { useRef, useState } from "react";
 import { AlertTriangle, Download, XCircle } from "lucide-react";
+import { useRef, useState } from "react";
+import { privacyApi } from "@/api/privacy";
 import { Button } from "@/components/ui/button";
 import { formatBillingDate } from "./billingHelpers";
-import { privacyApi } from "@/api/privacy";
 
 interface CancelSubscriptionSectionProps {
   companyId: string;
@@ -39,15 +39,11 @@ export function CancelSubscriptionSection({
       <h2 className="text-lg font-semibold text-destructive">Cancel Subscription</h2>
       <div className="border border-destructive/40 rounded-lg p-5 bg-destructive/5 space-y-4">
         <p className="text-sm text-muted-foreground">
-          Cancelling your subscription will stop future charges. Your team can continue working
-          until the end of your current billing period.
+          Cancelling your subscription will stop future charges. Your team can continue working until the end of your
+          current billing period.
         </p>
         {!cancelDialogOpen ? (
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={openCancelDialog}
-          >
+          <Button variant="destructive" size="sm" onClick={openCancelDialog}>
             <XCircle className="h-4 w-4 mr-1.5" />
             Cancel Subscription
           </Button>
@@ -57,7 +53,10 @@ export function CancelSubscriptionSection({
             <div className="space-y-2 text-sm">
               <div className="flex items-start gap-2">
                 <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
-                <span>Your team will continue working until the end of your billing period ({formatBillingDate(currentPeriodEnd)}).</span>
+                <span>
+                  Your team will continue working until the end of your billing period (
+                  {formatBillingDate(currentPeriodEnd)}).
+                </span>
               </div>
               <div className="flex items-start gap-2">
                 <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
@@ -92,7 +91,8 @@ export function CancelSubscriptionSection({
             {/* Company name confirmation */}
             <div className="space-y-2">
               <label htmlFor="cancel-confirm-name" className="text-sm font-medium">
-                Type your company name <span className="font-mono text-muted-foreground">"{companyName}"</span> to confirm:
+                Type your company name <span className="font-mono text-muted-foreground">"{companyName}"</span> to
+                confirm:
               </label>
               <input
                 id="cancel-confirm-name"
@@ -117,11 +117,7 @@ export function CancelSubscriptionSection({
               >
                 {isCancelling ? "Redirecting..." : "Confirm Cancellation"}
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCancelDialogOpen(false)}
-              >
+              <Button variant="outline" size="sm" onClick={() => setCancelDialogOpen(false)}>
                 Keep Subscription
               </Button>
             </div>

@@ -1,18 +1,11 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Company } from "@ironworksai/shared";
-import { companiesApi } from "../api/companies";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { ApiError } from "../api/client";
-import { queryKeys } from "../lib/queryKeys";
+import { companiesApi } from "../api/companies";
 import type { CompanySelectionSource } from "../lib/company-selection";
+import { queryKeys } from "../lib/queryKeys";
+
 type CompanySelectionOptions = { source?: CompanySelectionSource };
 
 interface CompanyContextValue {
@@ -24,11 +17,7 @@ interface CompanyContextValue {
   error: Error | null;
   setSelectedCompanyId: (companyId: string, options?: CompanySelectionOptions) => void;
   reloadCompanies: () => Promise<void>;
-  createCompany: (data: {
-    name: string;
-    description?: string | null;
-    budgetMonthlyCents?: number;
-  }) => Promise<Company>;
+  createCompany: (data: { name: string; description?: string | null; budgetMonthlyCents?: number }) => Promise<Company>;
 }
 
 const STORAGE_KEY = "ironworks.selectedCompanyId";
@@ -38,9 +27,15 @@ const CompanyContext = createContext<CompanyContextValue | null>(null);
 export function CompanyProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [selectionSource, setSelectionSource] = useState<CompanySelectionSource>("bootstrap");
-  const [selectedCompanyId, setSelectedCompanyIdState] = useState<string | null>(() => localStorage.getItem(STORAGE_KEY));
+  const [selectedCompanyId, setSelectedCompanyIdState] = useState<string | null>(() =>
+    localStorage.getItem(STORAGE_KEY),
+  );
 
-  const { data: companies = [], isLoading, error } = useQuery({
+  const {
+    data: companies = [],
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: queryKeys.companies.all,
     queryFn: async () => {
       try {
@@ -54,10 +49,7 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
     },
     retry: false,
   });
-  const sidebarCompanies = useMemo(
-    () => companies.filter((company) => company.status !== "archived"),
-    [companies],
-  );
+  const sidebarCompanies = useMemo(() => companies.filter((company) => company.status !== "archived"), [companies]);
 
   // Auto-select first company when list loads
   useEffect(() => {
@@ -85,11 +77,7 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
   }, [queryClient]);
 
   const createMutation = useMutation({
-    mutationFn: (data: {
-      name: string;
-      description?: string | null;
-      budgetMonthlyCents?: number;
-    }) =>
+    mutationFn: (data: { name: string; description?: string | null; budgetMonthlyCents?: number }) =>
       companiesApi.create(data),
     onSuccess: (company) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.companies.all });
@@ -98,11 +86,7 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
   });
 
   const createCompany = useCallback(
-    async (data: {
-      name: string;
-      description?: string | null;
-      budgetMonthlyCents?: number;
-    }) => {
+    async (data: { name: string; description?: string | null; budgetMonthlyCents?: number }) => {
       return createMutation.mutateAsync(data);
     },
     [createMutation],

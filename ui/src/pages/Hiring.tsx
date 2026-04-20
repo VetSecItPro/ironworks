@@ -1,18 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
+import { AGENT_ROLE_LABELS, type Agent, DEPARTMENT_LABELS } from "@ironworksai/shared";
 import { useQuery } from "@tanstack/react-query";
-import { hiringApi, type HiringRequest } from "../api/hiring";
+import { Briefcase, CheckCircle2, UserPlus, Users } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { agentsApi } from "../api/agents";
-import { useCompany } from "../context/CompanyContext";
-import { useDialog } from "../context/DialogContext";
-import { useBreadcrumbs } from "../context/BreadcrumbContext";
-import { queryKeys } from "../lib/queryKeys";
+import { type HiringRequest, hiringApi } from "../api/hiring";
 import { EmptyState } from "../components/EmptyState";
 import { PageSkeleton } from "../components/PageSkeleton";
-import { Button } from "@/components/ui/button";
-import { UserPlus, CheckCircle2, Clock, Users, Briefcase } from "lucide-react";
-import { cn } from "../lib/utils";
-import { DEPARTMENT_LABELS, AGENT_ROLE_LABELS, type Agent } from "@ironworksai/shared";
+import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { useCompany } from "../context/CompanyContext";
+import { useDialog } from "../context/DialogContext";
 import { exportToCSV } from "../lib/exportCSV";
+import { queryKeys } from "../lib/queryKeys";
+import { cn } from "../lib/utils";
 
 const departmentLabels = DEPARTMENT_LABELS as Record<string, string>;
 const roleLabels = AGENT_ROLE_LABELS as Record<string, string>;
@@ -139,7 +139,7 @@ export function Hiring() {
   const headcountByDept = useMemo(() => {
     const depts = new Map<string, { current: number; planned: number }>();
     for (const a of agents ?? []) {
-      const dept = (a as unknown as Record<string, unknown>).department as string | undefined ?? "unassigned";
+      const dept = ((a as unknown as Record<string, unknown>).department as string | undefined) ?? "unassigned";
       if (!depts.has(dept)) depts.set(dept, { current: 0, planned: 0 });
       depts.get(dept)!.current++;
     }
@@ -152,7 +152,7 @@ export function Hiring() {
     }
     return Array.from(depts.entries())
       .map(([dept, counts]) => ({ dept, ...counts }))
-      .sort((a, b) => (b.current + b.planned) - (a.current + a.planned));
+      .sort((a, b) => b.current + b.planned - (a.current + a.planned));
   }, [agents, hiringRequests]);
 
   if (!selectedCompanyId) {
@@ -198,16 +198,21 @@ export function Hiring() {
                   <p className="text-xs text-muted-foreground/70 py-2 text-center">No requests</p>
                 ) : (
                   pipeline[stage].map((req) => (
-                    <div
+                    <button
+                      type="button"
                       key={req.id}
-                      className="bg-card rounded-md border border-border/50 px-2.5 py-2 cursor-pointer hover:border-foreground/20 transition-colors"
+                      className="w-full text-left bg-card rounded-md border border-border/50 px-2.5 py-2 cursor-pointer hover:border-foreground/20 transition-colors"
                       onClick={() => setExpandedId(expandedId === req.id ? null : req.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setExpandedId(expandedId === req.id ? null : req.id);
+                        }
+                      }}
                     >
                       <div className="text-sm font-medium truncate">{req.title}</div>
                       <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className="text-[10px] text-muted-foreground">
-                          {roleLabels[req.role] ?? req.role}
-                        </span>
+                        <span className="text-[10px] text-muted-foreground">{roleLabels[req.role] ?? req.role}</span>
                         {req.department && (
                           <>
                             <span className="text-[10px] text-muted-foreground/40">-</span>
@@ -217,7 +222,7 @@ export function Hiring() {
                           </>
                         )}
                       </div>
-                    </div>
+                    </button>
                   ))
                 )}
               </div>
@@ -227,7 +232,9 @@ export function Hiring() {
       </div>
 
       {/* Onboarding Checklist for recently created agents */}
-      {(hiringRequests ?? []).filter((r) => mapStatusToStage(r.status) === "created" || mapStatusToStage(r.status) === "onboarded").length > 0 && (
+      {(hiringRequests ?? []).filter(
+        (r) => mapStatusToStage(r.status) === "created" || mapStatusToStage(r.status) === "onboarded",
+      ).length > 0 && (
         <div className="rounded-xl border border-border p-4 space-y-3">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
             <CheckCircle2 className="h-3.5 w-3.5" />
@@ -245,14 +252,13 @@ export function Hiring() {
                 return (
                   <div key={req.id} className="rounded-lg border border-border bg-muted/20 overflow-hidden">
                     <button
+                      type="button"
                       className="w-full flex items-center justify-between px-3 py-2.5 text-left hover:bg-accent/10 transition-colors"
                       onClick={() => setExpandedId(isExpanded ? null : req.id)}
                     >
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="text-sm font-medium truncate">{req.title}</span>
-                        {agent && (
-                          <span className="text-xs text-muted-foreground shrink-0">- {agent.name}</span>
-                        )}
+                        {agent && <span className="text-xs text-muted-foreground shrink-0">- {agent.name}</span>}
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
@@ -261,17 +267,21 @@ export function Hiring() {
                             style={{ width: `${(doneCount / checklist.length) * 100}%` }}
                           />
                         </div>
-                        <span className="text-xs text-muted-foreground tabular-nums">{doneCount}/{checklist.length}</span>
+                        <span className="text-xs text-muted-foreground tabular-nums">
+                          {doneCount}/{checklist.length}
+                        </span>
                       </div>
                     </button>
                     {isExpanded && (
                       <div className="px-3 pb-3 space-y-1.5 border-t border-border/50 pt-2">
                         {checklist.map((item) => (
                           <div key={item.id} className="flex items-center gap-2 text-sm">
-                            <span className={cn(
-                              "h-4 w-4 rounded border flex items-center justify-center shrink-0",
-                              item.done ? "bg-emerald-500/20 border-emerald-500/40" : "border-border",
-                            )}>
+                            <span
+                              className={cn(
+                                "h-4 w-4 rounded border flex items-center justify-center shrink-0",
+                                item.done ? "bg-emerald-500/20 border-emerald-500/40" : "border-border",
+                              )}
+                            >
                               {item.done && <CheckCircle2 className="h-3 w-3 text-emerald-400" />}
                             </span>
                             <span className={item.done ? "text-muted-foreground line-through" : ""}>{item.label}</span>
@@ -321,10 +331,18 @@ export function Hiring() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/30">
-                <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Department</th>
-                <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Current</th>
-                <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Planned</th>
-                <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Total</th>
+                <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Department
+                </th>
+                <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Current
+                </th>
+                <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Planned
+                </th>
+                <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Total
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -345,7 +363,9 @@ export function Hiring() {
               {headcountByDept.length > 0 && (
                 <tr className="bg-muted/20 font-semibold">
                   <td className="px-4 py-2.5">Total</td>
-                  <td className="px-4 py-2.5 text-right tabular-nums">{headcountByDept.reduce((s, r) => s + r.current, 0)}</td>
+                  <td className="px-4 py-2.5 text-right tabular-nums">
+                    {headcountByDept.reduce((s, r) => s + r.current, 0)}
+                  </td>
                   <td className="px-4 py-2.5 text-right tabular-nums text-blue-400">
                     +{headcountByDept.reduce((s, r) => s + r.planned, 0)}
                   </td>

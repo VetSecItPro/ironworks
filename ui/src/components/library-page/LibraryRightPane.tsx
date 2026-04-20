@@ -1,9 +1,9 @@
 import { BookOpen, Bot, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "../../lib/utils";
 import type { KnowledgePage } from "../../api/knowledge";
-import { KnowledgePageViewer } from "../library/KnowledgePageViewer";
+import { cn } from "../../lib/utils";
 import { FileViewer } from "../library/FileViewer";
+import { KnowledgePageViewer } from "../library/KnowledgePageViewer";
 
 interface LibraryRightPaneProps {
   companyId: string;
@@ -51,13 +51,7 @@ export function LibraryRightPane({
       <p className="text-xs text-muted-foreground mt-1 max-w-xs">
         Browse the file tree on the left to view documents, reports, and files created by your agents.
       </p>
-      <Button
-        variant="outline"
-        size="sm"
-        className="mt-4"
-        onClick={onScan}
-        disabled={isScanPending}
-      >
+      <Button variant="outline" size="sm" className="mt-4" onClick={onScan} disabled={isScanPending}>
         <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", isScanPending && "animate-spin")} />
         Scan Library
       </Button>

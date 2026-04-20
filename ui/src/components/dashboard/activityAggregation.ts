@@ -33,7 +33,12 @@ export function aggregateActivityEvents(
     const eventTime = new Date(event.createdAt).getTime();
     while (j < events.length) {
       const next = events[j];
-      if (next.action === event.action && next.actorId === event.actorId && Math.abs(eventTime - new Date(next.createdAt).getTime()) < fiveMinutes) j++;
+      if (
+        next.action === event.action &&
+        next.actorId === event.actorId &&
+        Math.abs(eventTime - new Date(next.createdAt).getTime()) < fiveMinutes
+      )
+        j++;
       else break;
     }
     if (j - i >= 3) {
@@ -45,7 +50,15 @@ export function aggregateActivityEvents(
         const model = (e.details as Record<string, unknown> | null)?.model as string | undefined;
         if (model) models.add(model);
       }
-      result.push({ key: `agg-${event.id}`, action: event.action, actorName, count: j - i, models: [...models], latestEvent: event, events: groupEvents });
+      result.push({
+        key: `agg-${event.id}`,
+        action: event.action,
+        actorName,
+        count: j - i,
+        models: [...models],
+        latestEvent: event,
+        events: groupEvents,
+      });
       i = j;
     } else {
       result.push(event);
@@ -55,6 +68,8 @@ export function aggregateActivityEvents(
   return result;
 }
 
-export function isAggregated(item: import("@ironworksai/shared").ActivityEvent | AggregatedGroup): item is AggregatedGroup {
+export function isAggregated(
+  item: import("@ironworksai/shared").ActivityEvent | AggregatedGroup,
+): item is AggregatedGroup {
   return "count" in item && "key" in item;
 }

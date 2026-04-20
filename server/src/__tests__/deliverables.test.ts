@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -34,7 +34,7 @@ function createFakeDb() {
   const returning = vi.fn().mockImplementation(() => mockUpdateRows());
   const whereUpdate = vi.fn().mockReturnValue({ returning });
   const set = vi.fn().mockReturnValue({ where: whereUpdate });
-  const updateFrom = vi.fn().mockReturnValue({ set });
+  const _updateFrom = vi.fn().mockReturnValue({ set });
 
   const limit = vi.fn().mockImplementation(() => mockSelectRows());
   const whereSelectChained = vi.fn().mockReturnValue({ limit });
@@ -47,6 +47,7 @@ function createFakeDb() {
   return {
     select: selectObj,
     update: vi.fn().mockReturnValue({ set }),
+    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
 }
 
@@ -65,7 +66,8 @@ vi.mock("../middleware/logger.js", () => ({
 
 // Mock assertCanWrite to avoid DB calls for membership checks
 vi.mock("../routes/authz.js", async (importOriginal) => {
-  const original = await importOriginal() as any;
+  // biome-ignore lint/suspicious/noExplicitAny: test-only type cast to satisfy service/function signature in unit test context
+  const original = (await importOriginal()) as any;
   return {
     ...original,
     assertCanWrite: vi.fn().mockResolvedValue(undefined),
@@ -74,6 +76,7 @@ vi.mock("../routes/authz.js", async (importOriginal) => {
 
 // ── App builder ─────────────────────────────────────────────────────────────
 
+// biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
 async function createApp(actor: Record<string, unknown>, fakeDb?: any) {
   const { deliverableRoutes } = await import("../routes/deliverables.js");
   const { errorHandler } = await import("../middleware/error-handler.js");
@@ -81,6 +84,7 @@ async function createApp(actor: Record<string, unknown>, fakeDb?: any) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });
@@ -145,13 +149,15 @@ describe("deliverable routes", () => {
 
   describe("PATCH /api/companies/:companyId/deliverables/:id", () => {
     it("updates deliverable status for authorized user", async () => {
-      mockSelectRows.mockResolvedValue([{
-        id: DELIVERABLE_ID,
-        companyId: COMPANY_ID,
-        deliverableStatus: "draft",
-        documentType: "weekly-report",
-        title: "Test Report",
-      }]);
+      mockSelectRows.mockResolvedValue([
+        {
+          id: DELIVERABLE_ID,
+          companyId: COMPANY_ID,
+          deliverableStatus: "draft",
+          documentType: "weekly-report",
+          title: "Test Report",
+        },
+      ]);
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
       const res = await request(app)
         .patch(`/api/companies/${COMPANY_ID}/deliverables/${DELIVERABLE_ID}`)
@@ -180,9 +186,7 @@ describe("deliverable routes", () => {
 
     it("rejects missing deliverableStatus with 400", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .patch(`/api/companies/${COMPANY_ID}/deliverables/${DELIVERABLE_ID}`)
-        .send({});
+      const res = await request(app).patch(`/api/companies/${COMPANY_ID}/deliverables/${DELIVERABLE_ID}`).send({});
 
       expect(res.status).toBe(400);
     });
@@ -198,13 +202,15 @@ describe("deliverable routes", () => {
     });
 
     it("logs activity after status update", async () => {
-      mockSelectRows.mockResolvedValue([{
-        id: DELIVERABLE_ID,
-        companyId: COMPANY_ID,
-        deliverableStatus: "draft",
-        documentType: "weekly-report",
-        title: "Test Report",
-      }]);
+      mockSelectRows.mockResolvedValue([
+        {
+          id: DELIVERABLE_ID,
+          companyId: COMPANY_ID,
+          deliverableStatus: "draft",
+          documentType: "weekly-report",
+          title: "Test Report",
+        },
+      ]);
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
       await request(app)
         .patch(`/api/companies/${COMPANY_ID}/deliverables/${DELIVERABLE_ID}`)

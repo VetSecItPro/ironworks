@@ -1,7 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
+import { printOpenCodeStreamEvent } from "@ironworksai/adapter-opencode-local/cli";
 import { isOpenCodeUnknownSessionError, parseOpenCodeJsonl } from "@ironworksai/adapter-opencode-local/server";
 import { parseOpenCodeStdoutLine } from "@ironworksai/adapter-opencode-local/ui";
-import { printOpenCodeStreamEvent } from "@ironworksai/adapter-opencode-local/cli";
+import { describe, expect, it, vi } from "vitest";
 
 describe("opencode_local parser", () => {
   it("extracts session, summary, usage, cost, and terminal error message", () => {
@@ -152,6 +152,7 @@ describe("opencode_local ui stdout parser", () => {
 });
 
 function stripAnsi(value: string): string {
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional ANSI escape sequence stripping
   return value.replace(/\x1b\[[0-9;]*m/g, "");
 }
 
@@ -160,10 +161,7 @@ describe("opencode_local cli formatter", () => {
     const spy = vi.spyOn(console, "log").mockImplementation(() => {});
 
     try {
-      printOpenCodeStreamEvent(
-        JSON.stringify({ type: "step_start", sessionID: "ses_abc" }),
-        false,
-      );
+      printOpenCodeStreamEvent(JSON.stringify({ type: "step_start", sessionID: "ses_abc" }), false);
       printOpenCodeStreamEvent(
         JSON.stringify({
           type: "text",
@@ -203,9 +201,7 @@ describe("opencode_local cli formatter", () => {
         false,
       );
 
-      const lines = spy.mock.calls
-        .map((call) => call.map((v) => String(v)).join(" "))
-        .map(stripAnsi);
+      const lines = spy.mock.calls.map((call) => call.map((v) => String(v)).join(" ")).map(stripAnsi);
 
       expect(lines).toEqual(
         expect.arrayContaining([

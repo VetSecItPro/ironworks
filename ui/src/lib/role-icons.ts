@@ -1,19 +1,19 @@
+import { ROLE_LEVEL_MAP, type RoleLevel } from "@ironworksai/shared";
 import {
-  Crown,
+  Bot,
   Code,
+  Crown,
   DollarSign,
+  type LucideIcon,
   Megaphone,
-  Users,
-  Terminal,
-  Shield,
+  Palette,
   PenLine,
   Scale,
   Server,
-  Palette,
-  Bot,
-  type LucideIcon,
+  Shield,
+  Terminal,
+  Users,
 } from "lucide-react";
-import { ROLE_LEVEL_MAP, type RoleLevel } from "@ironworksai/shared";
 
 /**
  * Maps role template keys (normalized) to their distinctive Lucide icon.
@@ -110,12 +110,8 @@ export function getRoleLevel(role: string | null | undefined): RoleLevel {
  * Executive roles get a gold ring, management gets blue, staff gets a subtle border ring.
  * Contractors get a dashed amber ring regardless of level.
  */
-export function getAgentRingClass(
-  role: string | null | undefined,
-  employmentType?: string,
-): string {
-  if (employmentType === "contractor")
-    return "ring-1 ring-dashed ring-amber-400/50";
+export function getAgentRingClass(role: string | null | undefined, employmentType?: string): string {
+  if (employmentType === "contractor") return "ring-1 ring-dashed ring-amber-400/50";
   const level = getRoleLevel(role);
   switch (level) {
     case "executive":

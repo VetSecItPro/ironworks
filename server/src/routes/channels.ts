@@ -1,9 +1,7 @@
-import { Router } from "express";
 import type { Db } from "@ironworksai/db";
 import { agentChannels } from "@ironworksai/db";
 import { eq } from "drizzle-orm";
-import { assertCompanyAccess, getActorInfo } from "./authz.js";
-import { publishLiveEvent } from "../services/live-events.js";
+import { Router } from "express";
 import {
   checkQuorum,
   concludeDeliberation,
@@ -22,8 +20,10 @@ import {
   unpinMessage,
 } from "../services/channels.js";
 import { channelAnalytics } from "../services/executive-analytics.js";
-import { issueService } from "../services/issues.js";
 import { heartbeatService } from "../services/index.js";
+import { issueService } from "../services/issues.js";
+import { publishLiveEvent } from "../services/live-events.js";
+import { assertCompanyAccess, getActorInfo } from "./authz.js";
 
 export function channelRoutes(db: Db) {
   const router = Router();
@@ -108,6 +108,7 @@ export function channelRoutes(db: Db) {
 
     const actor = getActorInfo(req);
 
+    // biome-ignore lint/suspicious/noExplicitAny: Drizzle DB type does not unify across schema-scoped overloads
     const heartbeat = heartbeatService(db as any);
     const message = await postMessage(db, {
       channelId,
@@ -120,6 +121,7 @@ export function channelRoutes(db: Db) {
       linkedIssueId: typeof body.linkedIssueId === "string" ? body.linkedIssueId : undefined,
       replyToId: typeof body.replyToId === "string" ? body.replyToId : undefined,
       reasoning: typeof body.reasoning === "string" ? body.reasoning : undefined,
+      // biome-ignore lint/suspicious/noExplicitAny: wakeOpts type differs between plugin-sdk and heartbeat service signatures
       enqueueWakeup: (agentId, wakeOpts) => heartbeat.wakeup(agentId, wakeOpts as any),
     });
 
@@ -166,61 +168,55 @@ export function channelRoutes(db: Db) {
   // DELETE /api/companies/:companyId/channels/:channelId/messages/:messageId/pin
   // GET    /api/companies/:companyId/channels/:channelId/pinned
   // -------------------------------------------------------------------------
-  router.post(
-    "/companies/:companyId/channels/:channelId/messages/:messageId/pin",
-    async (req, res) => {
-      const companyId = req.params.companyId as string;
-      const channelId = req.params.channelId as string;
-      const messageId = req.params.messageId as string;
-      assertCompanyAccess(req, companyId);
+  router.post("/companies/:companyId/channels/:channelId/messages/:messageId/pin", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    const channelId = req.params.channelId as string;
+    const messageId = req.params.messageId as string;
+    assertCompanyAccess(req, companyId);
 
-      const channel = await db
-        .select({ id: agentChannels.id, companyId: agentChannels.companyId })
-        .from(agentChannels)
-        .where(eq(agentChannels.id, channelId))
-        .then((rows) => rows[0] ?? null);
+    const channel = await db
+      .select({ id: agentChannels.id, companyId: agentChannels.companyId })
+      .from(agentChannels)
+      .where(eq(agentChannels.id, channelId))
+      .then((rows) => rows[0] ?? null);
 
-      if (!channel) {
-        res.status(404).json({ error: "Channel not found" });
-        return;
-      }
-      if (channel.companyId !== companyId) {
-        res.status(403).json({ error: "Channel does not belong to this company" });
-        return;
-      }
+    if (!channel) {
+      res.status(404).json({ error: "Channel not found" });
+      return;
+    }
+    if (channel.companyId !== companyId) {
+      res.status(403).json({ error: "Channel does not belong to this company" });
+      return;
+    }
 
-      await pinMessage(db, channelId, messageId);
-      res.json({ ok: true });
-    },
-  );
+    await pinMessage(db, channelId, messageId);
+    res.json({ ok: true });
+  });
 
-  router.delete(
-    "/companies/:companyId/channels/:channelId/messages/:messageId/pin",
-    async (req, res) => {
-      const companyId = req.params.companyId as string;
-      const channelId = req.params.channelId as string;
-      const messageId = req.params.messageId as string;
-      assertCompanyAccess(req, companyId);
+  router.delete("/companies/:companyId/channels/:channelId/messages/:messageId/pin", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    const channelId = req.params.channelId as string;
+    const messageId = req.params.messageId as string;
+    assertCompanyAccess(req, companyId);
 
-      const channel = await db
-        .select({ id: agentChannels.id, companyId: agentChannels.companyId })
-        .from(agentChannels)
-        .where(eq(agentChannels.id, channelId))
-        .then((rows) => rows[0] ?? null);
+    const channel = await db
+      .select({ id: agentChannels.id, companyId: agentChannels.companyId })
+      .from(agentChannels)
+      .where(eq(agentChannels.id, channelId))
+      .then((rows) => rows[0] ?? null);
 
-      if (!channel) {
-        res.status(404).json({ error: "Channel not found" });
-        return;
-      }
-      if (channel.companyId !== companyId) {
-        res.status(403).json({ error: "Channel does not belong to this company" });
-        return;
-      }
+    if (!channel) {
+      res.status(404).json({ error: "Channel not found" });
+      return;
+    }
+    if (channel.companyId !== companyId) {
+      res.status(403).json({ error: "Channel does not belong to this company" });
+      return;
+    }
 
-      await unpinMessage(db, channelId, messageId);
-      res.json({ ok: true });
-    },
-  );
+    await unpinMessage(db, channelId, messageId);
+    res.json({ ok: true });
+  });
 
   router.get("/companies/:companyId/channels/:channelId/pinned", async (req, res) => {
     const companyId = req.params.companyId as string;
@@ -247,97 +243,89 @@ export function channelRoutes(db: Db) {
   // POST /api/companies/:companyId/channels/:channelId/deliberate
   // POST /api/companies/:companyId/channels/:channelId/deliberations/:deliberationId/conclude
   // -------------------------------------------------------------------------
-  router.post(
-    "/companies/:companyId/channels/:channelId/deliberate",
-    async (req, res) => {
-      const companyId = req.params.companyId as string;
-      const channelId = req.params.channelId as string;
-      assertCompanyAccess(req, companyId);
+  router.post("/companies/:companyId/channels/:channelId/deliberate", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    const channelId = req.params.channelId as string;
+    assertCompanyAccess(req, companyId);
 
-      const channel = await db
-        .select({ id: agentChannels.id, companyId: agentChannels.companyId })
-        .from(agentChannels)
-        .where(eq(agentChannels.id, channelId))
-        .then((rows) => rows[0] ?? null);
+    const channel = await db
+      .select({ id: agentChannels.id, companyId: agentChannels.companyId })
+      .from(agentChannels)
+      .where(eq(agentChannels.id, channelId))
+      .then((rows) => rows[0] ?? null);
 
-      if (!channel) {
-        res.status(404).json({ error: "Channel not found" });
-        return;
-      }
-      if (channel.companyId !== companyId) {
-        res.status(403).json({ error: "Channel does not belong to this company" });
-        return;
-      }
+    if (!channel) {
+      res.status(404).json({ error: "Channel not found" });
+      return;
+    }
+    if (channel.companyId !== companyId) {
+      res.status(403).json({ error: "Channel does not belong to this company" });
+      return;
+    }
 
-      const body = req.body as {
-        topic?: unknown;
-        invitedAgentIds?: unknown;
-        initiatedByAgentId?: unknown;
-      };
+    const body = req.body as {
+      topic?: unknown;
+      invitedAgentIds?: unknown;
+      initiatedByAgentId?: unknown;
+    };
 
-      if (typeof body.topic !== "string" || !body.topic.trim()) {
-        res.status(400).json({ error: "topic is required" });
-        return;
-      }
-      if (!Array.isArray(body.invitedAgentIds) || body.invitedAgentIds.length === 0) {
-        res.status(400).json({ error: "invitedAgentIds must be a non-empty array" });
-        return;
-      }
+    if (typeof body.topic !== "string" || !body.topic.trim()) {
+      res.status(400).json({ error: "topic is required" });
+      return;
+    }
+    if (!Array.isArray(body.invitedAgentIds) || body.invitedAgentIds.length === 0) {
+      res.status(400).json({ error: "invitedAgentIds must be a non-empty array" });
+      return;
+    }
 
-      const actor = getActorInfo(req);
-      const initiatedByAgentId =
-        typeof body.initiatedByAgentId === "string"
-          ? body.initiatedByAgentId
-          : (actor.agentId ?? "");
+    const actor = getActorInfo(req);
+    const initiatedByAgentId =
+      typeof body.initiatedByAgentId === "string" ? body.initiatedByAgentId : (actor.agentId ?? "");
 
-      const deliberationId = await startDeliberation(db, {
-        channelId,
-        companyId,
-        topic: body.topic.trim(),
-        initiatedByAgentId,
-        invitedAgentIds: body.invitedAgentIds as string[],
-      });
+    const deliberationId = await startDeliberation(db, {
+      channelId,
+      companyId,
+      topic: body.topic.trim(),
+      initiatedByAgentId,
+      invitedAgentIds: body.invitedAgentIds as string[],
+    });
 
-      publishLiveEvent({
-        companyId,
-        type: "channel.message",
-        payload: { channelId },
-      });
+    publishLiveEvent({
+      companyId,
+      type: "channel.message",
+      payload: { channelId },
+    });
 
-      res.status(201).json({ deliberationId });
-    },
-  );
+    res.status(201).json({ deliberationId });
+  });
 
-  router.post(
-    "/companies/:companyId/channels/:channelId/deliberations/:deliberationId/conclude",
-    async (req, res) => {
-      const companyId = req.params.companyId as string;
-      const channelId = req.params.channelId as string;
-      const deliberationId = req.params.deliberationId as string;
-      assertCompanyAccess(req, companyId);
+  router.post("/companies/:companyId/channels/:channelId/deliberations/:deliberationId/conclude", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    const channelId = req.params.channelId as string;
+    const deliberationId = req.params.deliberationId as string;
+    assertCompanyAccess(req, companyId);
 
-      const channel = await db
-        .select({ id: agentChannels.id })
-        .from(agentChannels)
-        .where(eq(agentChannels.id, channelId))
-        .then((rows) => rows[0] ?? null);
+    const channel = await db
+      .select({ id: agentChannels.id })
+      .from(agentChannels)
+      .where(eq(agentChannels.id, channelId))
+      .then((rows) => rows[0] ?? null);
 
-      if (!channel) {
-        res.status(404).json({ error: "Channel not found" });
-        return;
-      }
+    if (!channel) {
+      res.status(404).json({ error: "Channel not found" });
+      return;
+    }
 
-      const synthesis = await concludeDeliberation(db, deliberationId);
+    const synthesis = await concludeDeliberation(db, deliberationId);
 
-      publishLiveEvent({
-        companyId,
-        type: "channel.message",
-        payload: { channelId },
-      });
+    publishLiveEvent({
+      companyId,
+      type: "channel.message",
+      payload: { channelId },
+    });
 
-      res.json({ synthesis });
-    },
-  );
+    res.json({ synthesis });
+  });
 
   // -------------------------------------------------------------------------
   // Feature 4: Expertise Map
@@ -355,72 +343,69 @@ export function channelRoutes(db: Db) {
   // Feature 5: Fork-and-Test
   // POST /api/companies/:companyId/channels/:channelId/fork-and-test
   // -------------------------------------------------------------------------
-  router.post(
-    "/companies/:companyId/channels/:channelId/fork-and-test",
-    async (req, res) => {
-      const companyId = req.params.companyId as string;
-      const channelId = req.params.channelId as string;
-      assertCompanyAccess(req, companyId);
+  router.post("/companies/:companyId/channels/:channelId/fork-and-test", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    const channelId = req.params.channelId as string;
+    assertCompanyAccess(req, companyId);
 
-      const channel = await db
-        .select({ id: agentChannels.id, companyId: agentChannels.companyId })
-        .from(agentChannels)
-        .where(eq(agentChannels.id, channelId))
-        .then((rows) => rows[0] ?? null);
+    const channel = await db
+      .select({ id: agentChannels.id, companyId: agentChannels.companyId })
+      .from(agentChannels)
+      .where(eq(agentChannels.id, channelId))
+      .then((rows) => rows[0] ?? null);
 
-      if (!channel) {
-        res.status(404).json({ error: "Channel not found" });
-        return;
-      }
-      if (channel.companyId !== companyId) {
-        res.status(403).json({ error: "Channel does not belong to this company" });
-        return;
-      }
+    if (!channel) {
+      res.status(404).json({ error: "Channel not found" });
+      return;
+    }
+    if (channel.companyId !== companyId) {
+      res.status(403).json({ error: "Channel does not belong to this company" });
+      return;
+    }
 
-      const body = req.body as {
-        topic?: unknown;
-        approachA?: unknown;
-        approachB?: unknown;
-        goalId?: unknown;
-        projectId?: unknown;
-      };
+    const body = req.body as {
+      topic?: unknown;
+      approachA?: unknown;
+      approachB?: unknown;
+      goalId?: unknown;
+      projectId?: unknown;
+    };
 
-      if (typeof body.topic !== "string" || !body.topic.trim()) {
-        res.status(400).json({ error: "topic is required" });
-        return;
-      }
+    if (typeof body.topic !== "string" || !body.topic.trim()) {
+      res.status(400).json({ error: "topic is required" });
+      return;
+    }
 
-      const approachA = body.approachA as { agentId?: string; description?: string } | undefined;
-      const approachB = body.approachB as { agentId?: string; description?: string } | undefined;
+    const approachA = body.approachA as { agentId?: string; description?: string } | undefined;
+    const approachB = body.approachB as { agentId?: string; description?: string } | undefined;
 
-      if (!approachA?.agentId || !approachA.description) {
-        res.status(400).json({ error: "approachA.agentId and approachA.description are required" });
-        return;
-      }
-      if (!approachB?.agentId || !approachB.description) {
-        res.status(400).json({ error: "approachB.agentId and approachB.description are required" });
-        return;
-      }
+    if (!approachA?.agentId || !approachA.description) {
+      res.status(400).json({ error: "approachA.agentId and approachA.description are required" });
+      return;
+    }
+    if (!approachB?.agentId || !approachB.description) {
+      res.status(400).json({ error: "approachB.agentId and approachB.description are required" });
+      return;
+    }
 
-      const result = await createForkAndTest(db, {
-        companyId,
-        channelId,
-        topic: body.topic.trim(),
-        approachA: { agentId: approachA.agentId, description: approachA.description },
-        approachB: { agentId: approachB.agentId, description: approachB.description },
-        goalId: typeof body.goalId === "string" ? body.goalId : null,
-        projectId: typeof body.projectId === "string" ? body.projectId : null,
-      });
+    const result = await createForkAndTest(db, {
+      companyId,
+      channelId,
+      topic: body.topic.trim(),
+      approachA: { agentId: approachA.agentId, description: approachA.description },
+      approachB: { agentId: approachB.agentId, description: approachB.description },
+      goalId: typeof body.goalId === "string" ? body.goalId : null,
+      projectId: typeof body.projectId === "string" ? body.projectId : null,
+    });
 
-      publishLiveEvent({
-        companyId,
-        type: "channel.message",
-        payload: { channelId },
-      });
+    publishLiveEvent({
+      companyId,
+      type: "channel.message",
+      payload: { channelId },
+    });
 
-      res.status(201).json(result);
-    },
-  );
+    res.status(201).json(result);
+  });
 
   // -------------------------------------------------------------------------
   // Enhancement 5: Channel Analytics
@@ -442,12 +427,8 @@ export function channelRoutes(db: Db) {
       return;
     }
 
-    const periodDaysParam = typeof req.query.periodDays === "string"
-      ? parseInt(req.query.periodDays, 10)
-      : 30;
-    const periodDays = Number.isFinite(periodDaysParam) && periodDaysParam > 0
-      ? Math.min(periodDaysParam, 365)
-      : 30;
+    const periodDaysParam = typeof req.query.periodDays === "string" ? parseInt(req.query.periodDays, 10) : 30;
+    const periodDays = Number.isFinite(periodDaysParam) && periodDaysParam > 0 ? Math.min(periodDaysParam, 365) : 30;
 
     const data = await channelAnalytics(db, channelId, periodDays);
     res.json(data);
@@ -484,113 +465,105 @@ export function channelRoutes(db: Db) {
   // Phase 8 - Enhancement 2: Chat-to-Issue Pipeline
   // POST /api/companies/:companyId/channels/:channelId/messages/:messageId/create-issue
   // -------------------------------------------------------------------------
-  router.post(
-    "/companies/:companyId/channels/:channelId/messages/:messageId/create-issue",
-    async (req, res) => {
-      const companyId = req.params.companyId as string;
-      const channelId = req.params.channelId as string;
-      const messageId = req.params.messageId as string;
-      assertCompanyAccess(req, companyId);
+  router.post("/companies/:companyId/channels/:channelId/messages/:messageId/create-issue", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    const channelId = req.params.channelId as string;
+    const messageId = req.params.messageId as string;
+    assertCompanyAccess(req, companyId);
 
-      const channel = await db
-        .select({ id: agentChannels.id, companyId: agentChannels.companyId })
-        .from(agentChannels)
-        .where(eq(agentChannels.id, channelId))
-        .then((rows) => rows[0] ?? null);
+    const channel = await db
+      .select({ id: agentChannels.id, companyId: agentChannels.companyId })
+      .from(agentChannels)
+      .where(eq(agentChannels.id, channelId))
+      .then((rows) => rows[0] ?? null);
 
-      if (!channel) {
-        res.status(404).json({ error: "Channel not found" });
-        return;
-      }
-      if (channel.companyId !== companyId) {
-        res.status(403).json({ error: "Channel does not belong to this company" });
-        return;
-      }
+    if (!channel) {
+      res.status(404).json({ error: "Channel not found" });
+      return;
+    }
+    if (channel.companyId !== companyId) {
+      res.status(403).json({ error: "Channel does not belong to this company" });
+      return;
+    }
 
-      // Fetch the source message and up to 3 replies
-      const msgs = await getMessages(db, channelId, { limit: 200 });
-      const sourceMessage = msgs.find((m) => m.id === messageId) ?? null;
+    // Fetch the source message and up to 3 replies
+    const msgs = await getMessages(db, channelId, { limit: 200 });
+    const sourceMessage = msgs.find((m) => m.id === messageId) ?? null;
 
-      if (!sourceMessage) {
-        res.status(404).json({ error: "Message not found" });
-        return;
-      }
+    if (!sourceMessage) {
+      res.status(404).json({ error: "Message not found" });
+      return;
+    }
 
-      const replyContext = msgs
-        .filter((r) => r.replyToId === messageId)
-        .slice(0, 3)
-        .map((r) => `Reply: ${r.body}`)
-        .join("\n");
+    const replyContext = msgs
+      .filter((r) => r.replyToId === messageId)
+      .slice(0, 3)
+      .map((r) => `Reply: ${r.body}`)
+      .join("\n");
 
-      const body = req.body as { title?: unknown; assigneeAgentId?: unknown };
-      const rawTitle = typeof body.title === "string" ? body.title.trim() : "";
-      const title = rawTitle || sourceMessage.body.slice(0, 80);
-      const assigneeAgentId = typeof body.assigneeAgentId === "string" ? body.assigneeAgentId : undefined;
+    const body = req.body as { title?: unknown; assigneeAgentId?: unknown };
+    const rawTitle = typeof body.title === "string" ? body.title.trim() : "";
+    const title = rawTitle || sourceMessage.body.slice(0, 80);
+    const assigneeAgentId = typeof body.assigneeAgentId === "string" ? body.assigneeAgentId : undefined;
 
-      const description = replyContext
-        ? `${sourceMessage.body}\n\n---\n${replyContext}`
-        : sourceMessage.body;
+    const description = replyContext ? `${sourceMessage.body}\n\n---\n${replyContext}` : sourceMessage.body;
 
-      const actor = getActorInfo(req);
-      const svc = issueService(db);
-      const issue = await svc.create(companyId, {
-        title,
-        description,
-        status: "todo",
-        priority: "medium",
-        assigneeAgentId: assigneeAgentId ?? undefined,
-        createdByAgentId: actor.agentId ?? undefined,
-        createdByUserId: actor.actorType === "user" ? actor.actorId : undefined,
-      });
+    const actor = getActorInfo(req);
+    const svc = issueService(db);
+    const issue = await svc.create(companyId, {
+      title,
+      description,
+      status: "todo",
+      priority: "medium",
+      assigneeAgentId: assigneeAgentId ?? undefined,
+      createdByAgentId: actor.agentId ?? undefined,
+      createdByUserId: actor.actorType === "user" ? actor.actorId : undefined,
+    });
 
-      // Post a status update back to the channel
-      const statusMsg = await postMessage(db, {
-        channelId,
-        companyId,
-        authorAgentId: actor.agentId ?? undefined,
-        authorUserId: actor.actorType === "user" ? actor.actorId : undefined,
-        body: `Created issue: ${title}`,
-        messageType: "status_update",
-        linkedIssueId: issue.id,
-      });
+    // Post a status update back to the channel
+    const statusMsg = await postMessage(db, {
+      channelId,
+      companyId,
+      authorAgentId: actor.agentId ?? undefined,
+      authorUserId: actor.actorType === "user" ? actor.actorId : undefined,
+      body: `Created issue: ${title}`,
+      messageType: "status_update",
+      linkedIssueId: issue.id,
+    });
 
-      publishLiveEvent({
-        companyId,
-        type: "channel.message",
-        payload: { message: statusMsg, channelId },
-      });
+    publishLiveEvent({
+      companyId,
+      type: "channel.message",
+      payload: { message: statusMsg, channelId },
+    });
 
-      res.status(201).json(issue);
-    },
-  );
+    res.status(201).json(issue);
+  });
 
   // -------------------------------------------------------------------------
   // Phase 8 - Enhancement 7: Quorum Detection
   // GET /api/companies/:companyId/channels/:channelId/messages/:messageId/quorum
   // -------------------------------------------------------------------------
-  router.get(
-    "/companies/:companyId/channels/:channelId/messages/:messageId/quorum",
-    async (req, res) => {
-      const companyId = req.params.companyId as string;
-      const channelId = req.params.channelId as string;
-      const messageId = req.params.messageId as string;
-      assertCompanyAccess(req, companyId);
+  router.get("/companies/:companyId/channels/:channelId/messages/:messageId/quorum", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    const channelId = req.params.channelId as string;
+    const messageId = req.params.messageId as string;
+    assertCompanyAccess(req, companyId);
 
-      const channel = await db
-        .select({ id: agentChannels.id })
-        .from(agentChannels)
-        .where(eq(agentChannels.id, channelId))
-        .then((rows) => rows[0] ?? null);
+    const channel = await db
+      .select({ id: agentChannels.id })
+      .from(agentChannels)
+      .where(eq(agentChannels.id, channelId))
+      .then((rows) => rows[0] ?? null);
 
-      if (!channel) {
-        res.status(404).json({ error: "Channel not found" });
-        return;
-      }
+    if (!channel) {
+      res.status(404).json({ error: "Channel not found" });
+      return;
+    }
 
-      const quorum = await checkQuorum(db, channelId, messageId);
-      res.json(quorum);
-    },
-  );
+    const quorum = await checkQuorum(db, channelId, messageId);
+    res.json(quorum);
+  });
 
   // -------------------------------------------------------------------------
   // Phase 8 - Enhancement 4: Cross-Channel Overlap

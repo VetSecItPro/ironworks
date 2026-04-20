@@ -1,7 +1,7 @@
 import type { AgentDetail } from "@ironworksai/shared";
+import { getRoleLevel } from "../../lib/role-icons";
 import { cn, relativeTime } from "../../lib/utils";
 import { AgentIcon } from "../AgentIconPicker";
-import { getRoleLevel } from "../../lib/role-icons";
 import type { ChatMessage } from "./chat-helpers";
 
 interface ChatMessageListProps {
@@ -65,9 +65,7 @@ export function ChatMessageList({
           </div>
           <div>
             <p className="text-sm font-medium">{agent.name}</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Send a message to start a conversation.
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">Send a message to start a conversation.</p>
           </div>
         </div>
       )}
@@ -81,10 +79,7 @@ export function ChatMessageList({
       {messages.map((msg) => (
         <div
           key={msg.id}
-          className={cn(
-            "flex gap-2.5 max-w-[85%]",
-            msg.fromUser ? "ml-auto flex-row-reverse" : "mr-auto flex-row",
-          )}
+          className={cn("flex gap-2.5 max-w-[85%]", msg.fromUser ? "ml-auto flex-row-reverse" : "mr-auto flex-row")}
         >
           {!msg.fromUser && (
             <div className={cn("shrink-0 flex items-center justify-center h-7 w-7 rounded-full", avatarBg)}>
@@ -96,19 +91,12 @@ export function ChatMessageList({
             <div
               className={cn(
                 "px-3 py-2 rounded-2xl text-sm whitespace-pre-wrap break-words",
-                msg.fromUser
-                  ? "bg-blue-600 text-white rounded-tr-sm"
-                  : "bg-accent text-foreground rounded-tl-sm",
+                msg.fromUser ? "bg-blue-600 text-white rounded-tr-sm" : "bg-accent text-foreground rounded-tl-sm",
               )}
             >
               {msg.body}
             </div>
-            <span
-              className={cn(
-                "text-[11px] text-muted-foreground",
-                msg.fromUser ? "text-right" : "text-left",
-              )}
-            >
+            <span className={cn("text-[11px] text-muted-foreground", msg.fromUser ? "text-right" : "text-left")}>
               {relativeTime(msg.createdAt)}
             </span>
           </div>

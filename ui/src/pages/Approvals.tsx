@@ -1,19 +1,19 @@
-import { useEffect, useState } from "react";
-import { useNavigate, useLocation } from "@/lib/router";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { usePageTitle } from "../hooks/usePageTitle";
-import { approvalsApi } from "../api/approvals";
-import { agentsApi } from "../api/agents";
-import { useCompany } from "../context/CompanyContext";
-import { useBreadcrumbs } from "../context/BreadcrumbContext";
-import { queryKeys } from "../lib/queryKeys";
-import { cn } from "../lib/utils";
-import { PageTabBar } from "../components/PageTabBar";
-import { Tabs } from "@/components/ui/tabs";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ShieldCheck } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Tabs } from "@/components/ui/tabs";
+import { useLocation, useNavigate } from "@/lib/router";
+import { agentsApi } from "../api/agents";
+import { approvalsApi } from "../api/approvals";
 import { ApprovalCard } from "../components/ApprovalCard";
 import { EmptyState } from "../components/EmptyState";
 import { PageSkeleton } from "../components/PageSkeleton";
+import { PageTabBar } from "../components/PageTabBar";
+import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { useCompany } from "../context/CompanyContext";
+import { usePageTitle } from "../hooks/usePageTitle";
+import { queryKeys } from "../lib/queryKeys";
+import { cn } from "../lib/utils";
 
 type StatusFilter = "pending" | "all";
 
@@ -68,14 +68,10 @@ export function Approvals() {
   });
 
   const filtered = (data ?? [])
-    .filter(
-      (a) => statusFilter === "all" || a.status === "pending" || a.status === "revision_requested",
-    )
+    .filter((a) => statusFilter === "all" || a.status === "pending" || a.status === "revision_requested")
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  const pendingCount = (data ?? []).filter(
-    (a) => a.status === "pending" || a.status === "revision_requested",
-  ).length;
+  const pendingCount = (data ?? []).filter((a) => a.status === "pending" || a.status === "revision_requested").length;
 
   if (!selectedCompanyId) {
     return <p className="text-sm text-muted-foreground">Select a company first.</p>;
@@ -89,22 +85,42 @@ export function Approvals() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <Tabs value={statusFilter} onValueChange={(v) => navigate(`/approvals/${v}`)}>
-          <PageTabBar items={[
-            { value: "pending", label: <>Pending{pendingCount > 0 && (
-              <span className={cn(
-                "ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium",
-                "bg-yellow-500/20 text-yellow-500"
-              )}>
-                {pendingCount}
-              </span>
-            )}</> },
-            { value: "all", label: "All" },
-          ]} />
+          <PageTabBar
+            items={[
+              {
+                value: "pending",
+                label: (
+                  <>
+                    Pending
+                    {pendingCount > 0 && (
+                      <span
+                        className={cn(
+                          "ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium",
+                          "bg-yellow-500/20 text-yellow-500",
+                        )}
+                      >
+                        {pendingCount}
+                      </span>
+                    )}
+                  </>
+                ),
+              },
+              { value: "all", label: "All" },
+            ]}
+          />
         </Tabs>
       </div>
 
-      {error && <p role="alert" className="text-sm text-destructive">{error.message}</p>}
-      {actionError && <p role="alert" className="text-sm text-destructive">{actionError}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-destructive">
+          {error.message}
+        </p>
+      )}
+      {actionError && (
+        <p role="alert" className="text-sm text-destructive">
+          {actionError}
+        </p>
+      )}
 
       {filtered.length === 0 && (
         <EmptyState
@@ -119,7 +135,11 @@ export function Approvals() {
             <ApprovalCard
               key={approval.id}
               approval={approval}
-              requesterAgent={approval.requestedByAgentId ? (agents ?? []).find((a) => a.id === approval.requestedByAgentId) ?? null : null}
+              requesterAgent={
+                approval.requestedByAgentId
+                  ? ((agents ?? []).find((a) => a.id === approval.requestedByAgentId) ?? null)
+                  : null
+              }
               onApprove={() => approveMutation.mutate(approval.id)}
               onReject={() => rejectMutation.mutate(approval.id)}
               detailLink={`/approvals/${approval.id}`}

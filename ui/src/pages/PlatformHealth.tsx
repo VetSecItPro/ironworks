@@ -1,18 +1,18 @@
-import { useEffect, useState } from "react";
-import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import {
   Activity,
-  CheckCircle2,
   AlertTriangle,
-  XCircle,
+  CheckCircle2,
   Cpu,
   Database,
   Globe,
   Plug,
-  Server,
   RefreshCw,
+  Server,
+  XCircle,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { cn } from "../lib/utils";
 
 /* ------------------------------------------------------------------ */
@@ -111,8 +111,18 @@ function generateMockAgentStats(): AgentRuntimeStats {
 /* ------------------------------------------------------------------ */
 
 const STATUS_CONFIG: Record<HealthStatus, { color: string; bg: string; icon: React.ElementType; label: string }> = {
-  healthy: { color: "text-green-600 dark:text-green-400", bg: "bg-green-100 dark:bg-green-900/40", icon: CheckCircle2, label: "Healthy" },
-  degraded: { color: "text-yellow-600 dark:text-yellow-400", bg: "bg-yellow-100 dark:bg-yellow-900/40", icon: AlertTriangle, label: "Degraded" },
+  healthy: {
+    color: "text-green-600 dark:text-green-400",
+    bg: "bg-green-100 dark:bg-green-900/40",
+    icon: CheckCircle2,
+    label: "Healthy",
+  },
+  degraded: {
+    color: "text-yellow-600 dark:text-yellow-400",
+    bg: "bg-yellow-100 dark:bg-yellow-900/40",
+    icon: AlertTriangle,
+    label: "Degraded",
+  },
   down: { color: "text-red-600 dark:text-red-400", bg: "bg-red-100 dark:bg-red-900/40", icon: XCircle, label: "Down" },
 };
 
@@ -160,10 +170,18 @@ function MetricRow({ metric }: { metric: PerformanceMetric }) {
       <span className="text-sm">{metric.label}</span>
       <div className="flex items-center gap-4 text-xs">
         <span className="text-muted-foreground">
-          p50: <span className="font-medium text-foreground">{metric.p50}{metric.unit}</span>
+          p50:{" "}
+          <span className="font-medium text-foreground">
+            {metric.p50}
+            {metric.unit}
+          </span>
         </span>
         <span className={cn("text-muted-foreground", p95Warning && "text-yellow-600 dark:text-yellow-400")}>
-          p95: <span className="font-medium">{metric.p95}{metric.unit}</span>
+          p95:{" "}
+          <span className="font-medium">
+            {metric.p95}
+            {metric.unit}
+          </span>
         </span>
       </div>
     </div>
@@ -230,9 +248,7 @@ export function PlatformHealth() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-xs text-muted-foreground">
-            Last checked: {lastRefresh.toLocaleTimeString()}
-          </span>
+          <span className="text-xs text-muted-foreground">Last checked: {lastRefresh.toLocaleTimeString()}</span>
           <Button size="sm" variant="outline" onClick={refresh} disabled={refreshing}>
             <RefreshCw className={cn("h-3.5 w-3.5 mr-1.5", refreshing && "animate-spin")} />
             Refresh
@@ -241,16 +257,15 @@ export function PlatformHealth() {
       </div>
 
       {/* Overall status banner */}
-      <div className={cn(
-        "rounded-lg border p-4 flex items-center gap-3",
-        overallStatus === "healthy" && "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30",
-        overallStatus === "degraded" && "border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/30",
-        overallStatus === "down" && "border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30",
-      )}>
-        <Server className={cn(
-          "h-5 w-5",
-          STATUS_CONFIG[overallStatus].color,
-        )} />
+      <div
+        className={cn(
+          "rounded-lg border p-4 flex items-center gap-3",
+          overallStatus === "healthy" && "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30",
+          overallStatus === "degraded" && "border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/30",
+          overallStatus === "down" && "border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30",
+        )}
+      >
+        <Server className={cn("h-5 w-5", STATUS_CONFIG[overallStatus].color)} />
         <div>
           <span className={cn("text-sm font-semibold", STATUS_CONFIG[overallStatus].color)}>
             {overallStatus === "healthy"
@@ -304,19 +319,23 @@ export function PlatformHealth() {
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Queue Depth</p>
-            <p className={cn(
-              "text-xl font-semibold mt-0.5",
-              agentStats.queueDepth > 8 && "text-yellow-600 dark:text-yellow-400",
-            )}>
+            <p
+              className={cn(
+                "text-xl font-semibold mt-0.5",
+                agentStats.queueDepth > 8 && "text-yellow-600 dark:text-yellow-400",
+              )}
+            >
               {agentStats.queueDepth}
             </p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Error Rate</p>
-            <p className={cn(
-              "text-xl font-semibold mt-0.5",
-              agentStats.errorRate > 2 && "text-red-600 dark:text-red-400",
-            )}>
+            <p
+              className={cn(
+                "text-xl font-semibold mt-0.5",
+                agentStats.errorRate > 2 && "text-red-600 dark:text-red-400",
+              )}
+            >
               {agentStats.errorRate}%
             </p>
           </div>

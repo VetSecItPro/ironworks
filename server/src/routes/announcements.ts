@@ -1,10 +1,10 @@
-import { Router } from "express";
 import type { Db } from "@ironworksai/db";
-import { knowledgePages, knowledgePageRevisions } from "@ironworksai/db";
+import { knowledgePageRevisions, knowledgePages } from "@ironworksai/db";
 import { and, desc, eq } from "drizzle-orm";
+import { Router } from "express";
 import { badRequest, notFound } from "../errors.js";
-import { assertCanWrite, assertCompanyAccess, getActorInfo } from "./authz.js";
 import { logActivity } from "../services/index.js";
+import { assertCanWrite, assertCompanyAccess, getActorInfo } from "./authz.js";
 
 export function announcementRoutes(db: Db) {
   const router = Router();

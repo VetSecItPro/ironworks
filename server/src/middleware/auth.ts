@@ -1,13 +1,13 @@
 import { createHash } from "node:crypto";
-import type { Request, RequestHandler } from "express";
-import { and, eq, isNull } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { agentApiKeys, agents, companyMemberships, instanceUserRoles } from "@ironworksai/db";
-import { verifyLocalAgentJwt } from "../agent-auth-jwt.js";
 import type { DeploymentMode } from "@ironworksai/shared";
+import { and, eq, isNull } from "drizzle-orm";
+import type { Request, RequestHandler } from "express";
+import { verifyLocalAgentJwt } from "../agent-auth-jwt.js";
 import type { BetterAuthSessionResult } from "../auth/better-auth.js";
-import { logger } from "./logger.js";
 import { boardAuthService } from "../services/board-auth.js";
+import { logger } from "./logger.js";
 
 function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
@@ -143,10 +143,7 @@ export function actorMiddleware(db: Db, opts: ActorMiddlewareOptions): RequestHa
       return;
     }
 
-    await db
-      .update(agentApiKeys)
-      .set({ lastUsedAt: new Date() })
-      .where(eq(agentApiKeys.id, key.id));
+    await db.update(agentApiKeys).set({ lastUsedAt: new Date() }).where(eq(agentApiKeys.id, key.id));
 
     const agentRecord = await db
       .select()

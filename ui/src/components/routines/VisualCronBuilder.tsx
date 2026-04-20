@@ -1,12 +1,6 @@
 import { cn } from "../../lib/utils";
 
-export function VisualCronBuilder({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (cron: string) => void;
-}) {
+export function VisualCronBuilder({ value, onChange }: { value: string; onChange: (cron: string) => void }) {
   const daysOfWeek = [
     { value: "1", label: "Mon" },
     { value: "2", label: "Tue" },
@@ -24,9 +18,7 @@ export function VisualCronBuilder({
   const dow = isValid ? parts[4] : "*";
 
   const selectedDays = new Set(
-    dow === "*" ? daysOfWeek.map((d) => d.value) :
-    dow === "1-5" ? ["1", "2", "3", "4", "5"] :
-    dow.split(",")
+    dow === "*" ? daysOfWeek.map((d) => d.value) : dow === "1-5" ? ["1", "2", "3", "4", "5"] : dow.split(","),
   );
 
   const toggleDay = (dayVal: string) => {
@@ -48,7 +40,7 @@ export function VisualCronBuilder({
           onChange={(e) => onChange(`${minute} ${e.target.value} * * ${dow}`)}
         >
           {Array.from({ length: 24 }, (_, i) => (
-            <option key={i} value={String(i)}>
+            <option key={String(i)} value={String(i)}>
               {i === 0 ? "12 AM" : i < 12 ? `${i} AM` : i === 12 ? "12 PM" : `${i - 12} PM`}
             </option>
           ))}
@@ -60,7 +52,7 @@ export function VisualCronBuilder({
           onChange={(e) => onChange(`${e.target.value} ${hour} * * ${dow}`)}
         >
           {Array.from({ length: 12 }, (_, i) => (
-            <option key={i} value={String(i * 5)}>
+            <option key={String(i * 5)} value={String(i * 5)}>
               {String(i * 5).padStart(2, "0")}
             </option>
           ))}
@@ -84,9 +76,7 @@ export function VisualCronBuilder({
           </button>
         ))}
       </div>
-      <div className="text-[10px] font-mono text-muted-foreground/80">
-        Cron: {value}
-      </div>
+      <div className="text-[10px] font-mono text-muted-foreground/80">Cron: {value}</div>
     </div>
   );
 }

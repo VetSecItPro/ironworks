@@ -1,8 +1,8 @@
-import { and, desc, eq, gte, isNotNull, lt, ne, sql } from "drizzle-orm";
-import type { Db } from "@ironworksai/db";
-import { agents, issues, agentMemoryEntries, knowledgePages } from "@ironworksai/db";
-import { logger } from "../middleware/logger.js";
 import { randomUUID } from "node:crypto";
+import type { Db } from "@ironworksai/db";
+import { agentMemoryEntries, agents, issues, knowledgePages } from "@ironworksai/db";
+import { and, desc, eq, gte, isNotNull, lt, ne, sql } from "drizzle-orm";
+import { logger } from "../middleware/logger.js";
 
 /** Format a Date as YYYY-MM-DD in Central Time. */
 function formatDateCT(date: Date): string {
@@ -59,13 +59,7 @@ export async function generateRetrospective(
   const completedIssues = await db
     .select({ id: issues.id, title: issues.title })
     .from(issues)
-    .where(
-      and(
-        eq(issues.companyId, companyId),
-        eq(issues.status, "done"),
-        gte(issues.completedAt, periodStart),
-      ),
-    )
+    .where(and(eq(issues.companyId, companyId), eq(issues.status, "done"), gte(issues.completedAt, periodStart)))
     .orderBy(desc(issues.completedAt))
     .limit(30);
 
@@ -73,25 +67,14 @@ export async function generateRetrospective(
   const cancelledIssues = await db
     .select({ id: issues.id, title: issues.title })
     .from(issues)
-    .where(
-      and(
-        eq(issues.companyId, companyId),
-        eq(issues.status, "cancelled"),
-        gte(issues.cancelledAt, periodStart),
-      ),
-    )
+    .where(and(eq(issues.companyId, companyId), eq(issues.status, "cancelled"), gte(issues.cancelledAt, periodStart)))
     .limit(20);
 
   // 3. Blocked issues
   const blockedIssues = await db
     .select({ id: issues.id, title: issues.title, identifier: issues.identifier })
     .from(issues)
-    .where(
-      and(
-        eq(issues.companyId, companyId),
-        eq(issues.status, "blocked"),
-      ),
-    )
+    .where(and(eq(issues.companyId, companyId), eq(issues.status, "blocked")))
     .limit(10);
 
   // 4. Overdue issues
@@ -122,9 +105,8 @@ export async function generateRetrospective(
     .limit(10);
 
   // Build sections
-  const whatWorkedItems = completedIssues.length > 0
-    ? completedIssues.map((i) => i.title)
-    : ["No issues completed this period"];
+  const whatWorkedItems =
+    completedIssues.length > 0 ? completedIssues.map((i) => i.title) : ["No issues completed this period"];
 
   const whatDidntItems: string[] = [];
   if (cancelledIssues.length > 0) {
@@ -137,10 +119,12 @@ export async function generateRetrospective(
     whatDidntItems.push(...overdueIssues.map((i) => `Overdue: ${i.identifier ? `[${i.identifier}] ` : ""}${i.title}`));
   }
   if (learnings.length > 0) {
-    whatDidntItems.push(...learnings.map((m) => {
-      const name = m.agentId ? (agentNameMap.get(m.agentId) ?? "Agent") : "System";
-      return `Learning (${name}): ${m.content}`;
-    }));
+    whatDidntItems.push(
+      ...learnings.map((m) => {
+        const name = m.agentId ? (agentNameMap.get(m.agentId) ?? "Agent") : "System";
+        return `Learning (${name}): ${m.content}`;
+      }),
+    );
   }
   if (whatDidntItems.length === 0) {
     whatDidntItems.push("No issues or concerns identified");
@@ -258,12 +242,7 @@ export async function getLatestRetrospective(
       createdAt: knowledgePages.createdAt,
     })
     .from(knowledgePages)
-    .where(
-      and(
-        eq(knowledgePages.companyId, companyId),
-        eq(knowledgePages.documentType, "retrospective"),
-      ),
-    )
+    .where(and(eq(knowledgePages.companyId, companyId), eq(knowledgePages.documentType, "retrospective")))
     .orderBy(desc(knowledgePages.createdAt))
     .limit(1);
 

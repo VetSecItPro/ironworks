@@ -1,12 +1,15 @@
-import { useState, useRef, useEffect, useCallback } from "react";
-import {
-  Tooltip, TooltipTrigger, TooltipContent,
-} from "@/components/ui/tooltip";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-} from "@/components/ui/dialog";
+import { ChevronDown, ChevronRight, HelpCircle } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { HelpCircle, ChevronDown, ChevronRight } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "../../lib/utils";
 
 /* ---- Primitive components ---- */
@@ -15,11 +18,17 @@ export function HintIcon({ text }: { text: string }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <button type="button" className="inline-flex text-muted-foreground/70 hover:text-muted-foreground transition-colors" aria-label="Help">
+        <button
+          type="button"
+          className="inline-flex text-muted-foreground/70 hover:text-muted-foreground transition-colors"
+          aria-label="Help"
+        >
           <HelpCircle className="h-3 w-3" />
         </button>
       </TooltipTrigger>
-      <TooltipContent side="top" className="max-w-xs">{text}</TooltipContent>
+      <TooltipContent side="top" className="max-w-xs">
+        {text}
+      </TooltipContent>
     </Tooltip>
   );
 }
@@ -28,7 +37,7 @@ export function Field({ label, hint, children }: { label: string; hint?: string;
   return (
     <div>
       <div className="flex items-center gap-1.5 mb-1">
-        <label className="text-xs text-muted-foreground">{label}</label>
+        <span className="text-xs text-muted-foreground">{label}</span>
         {hint && <HintIcon text={hint} />}
       </div>
       {children}
@@ -36,25 +45,65 @@ export function Field({ label, hint, children }: { label: string; hint?: string;
   );
 }
 
-export function ToggleField({ label, hint, checked, onChange }: { label: string; hint?: string; checked: boolean; onChange: (v: boolean) => void }) {
+export function ToggleField({
+  label,
+  hint,
+  checked,
+  onChange,
+}: {
+  label: string;
+  hint?: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-1.5">
         <span className="text-xs text-muted-foreground">{label}</span>
         {hint && <HintIcon text={hint} />}
       </div>
-      <button data-slot="toggle" className={cn("relative inline-flex h-5 w-9 items-center rounded-full transition-colors", checked ? "bg-green-600" : "bg-muted")} onClick={() => onChange(!checked)}>
-        <span className={cn("inline-block h-3.5 w-3.5 rounded-full bg-background shadow-sm transition-transform", checked ? "translate-x-4.5" : "translate-x-0.5")} />
+      <button
+        type="button"
+        data-slot="toggle"
+        className={cn(
+          "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
+          checked ? "bg-green-600" : "bg-muted",
+        )}
+        onClick={() => onChange(!checked)}
+      >
+        <span
+          className={cn(
+            "inline-block h-3.5 w-3.5 rounded-full bg-background shadow-sm transition-transform",
+            checked ? "translate-x-4.5" : "translate-x-0.5",
+          )}
+        />
       </button>
     </div>
   );
 }
 
 export function ToggleWithNumber({
-  label, hint, checked, onCheckedChange, number, onNumberChange, numberLabel, numberHint, numberPrefix, showNumber,
+  label,
+  hint,
+  checked,
+  onCheckedChange,
+  number,
+  onNumberChange,
+  numberLabel,
+  numberHint,
+  numberPrefix,
+  showNumber,
 }: {
-  label: string; hint?: string; checked: boolean; onCheckedChange: (v: boolean) => void;
-  number: number; onNumberChange: (v: number) => void; numberLabel: string; numberHint?: string; numberPrefix?: string; showNumber: boolean;
+  label: string;
+  hint?: string;
+  checked: boolean;
+  onCheckedChange: (v: boolean) => void;
+  number: number;
+  onNumberChange: (v: number) => void;
+  numberLabel: string;
+  numberHint?: string;
+  numberPrefix?: string;
+  showNumber: boolean;
 }) {
   return (
     <div className="space-y-2">
@@ -63,14 +112,33 @@ export function ToggleWithNumber({
           <span className="text-xs text-muted-foreground">{label}</span>
           {hint && <HintIcon text={hint} />}
         </div>
-        <button data-slot="toggle" className={cn("relative inline-flex h-5 w-9 items-center rounded-full transition-colors shrink-0", checked ? "bg-green-600" : "bg-muted")} onClick={() => onCheckedChange(!checked)}>
-          <span className={cn("inline-block h-3.5 w-3.5 rounded-full bg-background shadow-sm transition-transform", checked ? "translate-x-4.5" : "translate-x-0.5")} />
+        <button
+          type="button"
+          data-slot="toggle"
+          className={cn(
+            "relative inline-flex h-5 w-9 items-center rounded-full transition-colors shrink-0",
+            checked ? "bg-green-600" : "bg-muted",
+          )}
+          onClick={() => onCheckedChange(!checked)}
+        >
+          <span
+            className={cn(
+              "inline-block h-3.5 w-3.5 rounded-full bg-background shadow-sm transition-transform",
+              checked ? "translate-x-4.5" : "translate-x-0.5",
+            )}
+          />
         </button>
       </div>
       {showNumber && (
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           {numberPrefix && <span>{numberPrefix}</span>}
-          <input type="number" inputMode="numeric" className="w-16 rounded-md border border-border px-2 py-0.5 bg-transparent outline-none text-xs font-mono text-center" value={number} onChange={(e) => onNumberChange(Number(e.target.value))} />
+          <input
+            type="number"
+            inputMode="numeric"
+            className="w-16 rounded-md border border-border px-2 py-0.5 bg-transparent outline-none text-xs font-mono text-center"
+            value={number}
+            onChange={(e) => onNumberChange(Number(e.target.value))}
+          />
           <span>{numberLabel}</span>
           {numberHint && <HintIcon text={numberHint} />}
         </div>
@@ -79,10 +147,28 @@ export function ToggleWithNumber({
   );
 }
 
-export function CollapsibleSection({ title, icon, open, onToggle, bordered, children }: { title: string; icon?: React.ReactNode; open: boolean; onToggle: () => void; bordered?: boolean; children: React.ReactNode }) {
+export function CollapsibleSection({
+  title,
+  icon,
+  open,
+  onToggle,
+  bordered,
+  children,
+}: {
+  title: string;
+  icon?: React.ReactNode;
+  open: boolean;
+  onToggle: () => void;
+  bordered?: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <div className={cn(bordered && "border-t border-border")}>
-      <button className="flex items-center gap-2 w-full px-4 py-2 text-xs font-medium text-muted-foreground hover:bg-accent/30 transition-colors" onClick={onToggle}>
+      <button
+        type="button"
+        className="flex items-center gap-2 w-full px-4 py-2 text-xs font-medium text-muted-foreground hover:bg-accent/30 transition-colors"
+        onClick={onToggle}
+      >
         {open ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
         {icon}
         {title}
@@ -92,7 +178,19 @@ export function CollapsibleSection({ title, icon, open, onToggle, bordered, chil
   );
 }
 
-export function AutoExpandTextarea({ value, onChange, onBlur, placeholder, minRows }: { value: string; onChange: (v: string) => void; onBlur?: () => void; placeholder?: string; minRows?: number }) {
+export function AutoExpandTextarea({
+  value,
+  onChange,
+  onBlur,
+  placeholder,
+  minRows,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onBlur?: () => void;
+  placeholder?: string;
+  minRows?: number;
+}) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const rows = minRows ?? 3;
   const lineHeight = 20;
@@ -105,40 +203,125 @@ export function AutoExpandTextarea({ value, onChange, onBlur, placeholder, minRo
     el.style.height = `${Math.max(minHeight, el.scrollHeight)}px`;
   }, [minHeight]);
 
-  useEffect(() => { adjustHeight(); }, [value, adjustHeight]);
+  useEffect(() => {
+    adjustHeight();
+  }, [value, adjustHeight]);
 
   return (
-    <textarea ref={textareaRef} className="w-full rounded-md border border-border px-2.5 py-1.5 bg-transparent outline-none text-sm font-mono placeholder:text-muted-foreground/40 resize-none overflow-hidden" placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)} onBlur={onBlur} style={{ minHeight }} />
+    <textarea
+      ref={textareaRef}
+      className="w-full rounded-md border border-border px-2.5 py-1.5 bg-transparent outline-none text-sm font-mono placeholder:text-muted-foreground/40 resize-none overflow-hidden"
+      placeholder={placeholder}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      onBlur={onBlur}
+      style={{ minHeight }}
+    />
   );
 }
 
-export function DraftInput({ value, onCommit, immediate, className, ...props }: { value: string; onCommit: (v: string) => void; immediate?: boolean; className?: string } & Omit<React.InputHTMLAttributes<HTMLInputElement>, "value" | "onChange" | "className">) {
+export function DraftInput({
+  value,
+  onCommit,
+  immediate,
+  className,
+  ...props
+}: { value: string; onCommit: (v: string) => void; immediate?: boolean; className?: string } & Omit<
+  React.InputHTMLAttributes<HTMLInputElement>,
+  "value" | "onChange" | "className"
+>) {
   const [draft, setDraft] = useState(value);
   useEffect(() => setDraft(value), [value]);
   return (
-    <input className={className} value={draft} onChange={(e) => { setDraft(e.target.value); if (immediate) onCommit(e.target.value); }} onBlur={() => { if (draft !== value) onCommit(draft); }} {...props} />
+    <input
+      className={className}
+      value={draft}
+      onChange={(e) => {
+        setDraft(e.target.value);
+        if (immediate) onCommit(e.target.value);
+      }}
+      onBlur={() => {
+        if (draft !== value) onCommit(draft);
+      }}
+      {...props}
+    />
   );
 }
 
-export function DraftTextarea({ value, onCommit, immediate, placeholder, minRows }: { value: string; onCommit: (v: string) => void; immediate?: boolean; placeholder?: string; minRows?: number }) {
+export function DraftTextarea({
+  value,
+  onCommit,
+  immediate,
+  placeholder,
+  minRows,
+}: {
+  value: string;
+  onCommit: (v: string) => void;
+  immediate?: boolean;
+  placeholder?: string;
+  minRows?: number;
+}) {
   const [draft, setDraft] = useState(value);
   useEffect(() => setDraft(value), [value]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const rows = minRows ?? 3;
   const lineHeight = 20;
   const minHeight = rows * lineHeight;
-  const adjustHeight = useCallback(() => { const el = textareaRef.current; if (!el) return; el.style.height = "auto"; el.style.height = `${Math.max(minHeight, el.scrollHeight)}px`; }, [minHeight]);
-  useEffect(() => { adjustHeight(); }, [draft, adjustHeight]);
+  const adjustHeight = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.max(minHeight, el.scrollHeight)}px`;
+  }, [minHeight]);
+  useEffect(() => {
+    adjustHeight();
+  }, [draft, adjustHeight]);
   return (
-    <textarea ref={textareaRef} className="w-full rounded-md border border-border px-2.5 py-1.5 bg-transparent outline-none text-sm font-mono placeholder:text-muted-foreground/40 resize-none overflow-hidden" placeholder={placeholder} value={draft} onChange={(e) => { setDraft(e.target.value); if (immediate) onCommit(e.target.value); }} onBlur={() => { if (draft !== value) onCommit(draft); }} style={{ minHeight }} />
+    <textarea
+      ref={textareaRef}
+      className="w-full rounded-md border border-border px-2.5 py-1.5 bg-transparent outline-none text-sm font-mono placeholder:text-muted-foreground/40 resize-none overflow-hidden"
+      placeholder={placeholder}
+      value={draft}
+      onChange={(e) => {
+        setDraft(e.target.value);
+        if (immediate) onCommit(e.target.value);
+      }}
+      onBlur={() => {
+        if (draft !== value) onCommit(draft);
+      }}
+      style={{ minHeight }}
+    />
   );
 }
 
-export function DraftNumberInput({ value, onCommit, immediate, className, ...props }: { value: number; onCommit: (v: number) => void; immediate?: boolean; className?: string } & Omit<React.InputHTMLAttributes<HTMLInputElement>, "value" | "onChange" | "className" | "type">) {
+export function DraftNumberInput({
+  value,
+  onCommit,
+  immediate,
+  className,
+  ...props
+}: { value: number; onCommit: (v: number) => void; immediate?: boolean; className?: string } & Omit<
+  React.InputHTMLAttributes<HTMLInputElement>,
+  "value" | "onChange" | "className" | "type"
+>) {
   const [draft, setDraft] = useState(String(value));
   useEffect(() => setDraft(String(value)), [value]);
   return (
-    <input type="number" inputMode="numeric" className={className} value={draft} onChange={(e) => { setDraft(e.target.value); if (immediate) onCommit(Number(e.target.value) || 0); }} onBlur={() => { const num = Number(draft) || 0; if (num !== value) onCommit(num); }} {...props} />
+    <input
+      type="number"
+      inputMode="numeric"
+      className={className}
+      value={draft}
+      onChange={(e) => {
+        setDraft(e.target.value);
+        if (immediate) onCommit(Number(e.target.value) || 0);
+      }}
+      onBlur={() => {
+        const num = Number(draft) || 0;
+        if (num !== value) onCommit(num);
+      }}
+      {...props}
+    />
   );
 }
 
@@ -146,19 +329,30 @@ export function ChoosePathButton() {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button type="button" className="inline-flex items-center rounded-md border border-border px-2 py-0.5 text-xs text-muted-foreground hover:bg-accent/50 transition-colors shrink-0" onClick={() => setOpen(true)}>Choose</button>
+      <button
+        type="button"
+        className="inline-flex items-center rounded-md border border-border px-2 py-0.5 text-xs text-muted-foreground hover:bg-accent/50 transition-colors shrink-0"
+        onClick={() => setOpen(true)}
+      >
+        Choose
+      </button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Specify path manually</DialogTitle>
-            <DialogDescription>Browser security blocks apps from reading full local paths via a file picker. Copy the absolute path and paste it into the input.</DialogDescription>
+            <DialogDescription>
+              Browser security blocks apps from reading full local paths via a file picker. Copy the absolute path and
+              paste it into the input.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 text-sm">
             <section className="space-y-1.5">
               <p className="font-medium">macOS (Finder)</p>
               <ol className="list-decimal space-y-1 pl-5 text-muted-foreground">
                 <li>Find the folder in Finder.</li>
-                <li>Hold <kbd>Option</kbd> and right-click the folder.</li>
+                <li>
+                  Hold <kbd>Option</kbd> and right-click the folder.
+                </li>
                 <li>Click "Copy &lt;folder name&gt; as Pathname".</li>
                 <li>Paste the result into the path input.</li>
               </ol>
@@ -168,7 +362,9 @@ export function ChoosePathButton() {
               <p className="font-medium">Windows (File Explorer)</p>
               <ol className="list-decimal space-y-1 pl-5 text-muted-foreground">
                 <li>Find the folder in File Explorer.</li>
-                <li>Hold <kbd>Shift</kbd> and right-click the folder.</li>
+                <li>
+                  Hold <kbd>Shift</kbd> and right-click the folder.
+                </li>
                 <li>Click "Copy as path".</li>
                 <li>Paste the result into the path input.</li>
               </ol>
@@ -177,13 +373,21 @@ export function ChoosePathButton() {
             <section className="space-y-1.5">
               <p className="font-medium">Terminal fallback (macOS/Linux)</p>
               <ol className="list-decimal space-y-1 pl-5 text-muted-foreground">
-                <li>Run <code>cd /path/to/folder</code>.</li>
-                <li>Run <code>pwd</code>.</li>
+                <li>
+                  Run <code>cd /path/to/folder</code>.
+                </li>
+                <li>
+                  Run <code>pwd</code>.
+                </li>
                 <li>Copy the output and paste it into the path input.</li>
               </ol>
             </section>
           </div>
-          <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>OK</Button></DialogFooter>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              OK
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
@@ -194,7 +398,7 @@ export function InlineField({ label, hint, children }: { label: string; hint?: s
   return (
     <div className="flex items-center gap-3">
       <div className="flex items-center gap-1.5 shrink-0">
-        <label className="text-xs text-muted-foreground">{label}</label>
+        <span className="text-xs text-muted-foreground">{label}</span>
         {hint && <HintIcon text={hint} />}
       </div>
       <div className="w-24 ml-auto">{children}</div>

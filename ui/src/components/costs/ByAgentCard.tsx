@@ -1,9 +1,9 @@
+import type { CostByAgentModel } from "@ironworksai/shared";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { billingTypeDisplayName, cn, formatCents, formatTokens, providerDisplayName } from "../../lib/utils";
 import { Identity } from "../Identity";
 import { StatusBadge } from "../StatusBadge";
-import { cn, formatCents, formatTokens, providerDisplayName, billingTypeDisplayName } from "../../lib/utils";
-import type { CostByAgentModel } from "@ironworksai/shared";
 
 interface ByAgentRow {
   agentId: string;
@@ -44,15 +44,33 @@ export function ByAgentCard({
             const hasBreakdown = modelRows.length > 0;
             return (
               <div key={row.agentId} className="border border-border px-4 py-3">
+                {/* biome-ignore lint/a11y/noStaticElementInteractions: role and onClick are both conditional on hasBreakdown; when false the element is purely presentational */}
                 <div
-                  className={cn("flex items-start justify-between gap-3", hasBreakdown ? "cursor-pointer select-none" : "")}
+                  className={cn(
+                    "flex items-start justify-between gap-3",
+                    hasBreakdown ? "cursor-pointer select-none" : "",
+                  )}
+                  role={hasBreakdown ? "button" : undefined}
+                  tabIndex={hasBreakdown ? 0 : undefined}
                   onClick={() => hasBreakdown && toggleAgent(row.agentId)}
+                  onKeyDown={
+                    hasBreakdown
+                      ? (e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            toggleAgent(row.agentId);
+                          }
+                        }
+                      : undefined
+                  }
                 >
                   <div className="flex min-w-0 items-center gap-2">
                     {hasBreakdown ? (
-                      isExpanded
-                        ? <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
-                        : <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
+                      isExpanded ? (
+                        <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
+                      ) : (
+                        <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
+                      )
                     ) : (
                       <span className="h-3 w-3 shrink-0" />
                     )}
@@ -64,13 +82,11 @@ export function ByAgentCard({
                     <div className="text-sm text-muted-foreground">
                       in {formatTokens(row.inputTokens + row.cachedInputTokens)} - out {formatTokens(row.outputTokens)}
                     </div>
-                    {(row.apiRunCount > 0 || row.subscriptionRunCount > 0) ? (
+                    {row.apiRunCount > 0 || row.subscriptionRunCount > 0 ? (
                       <div className="text-sm text-muted-foreground">
                         {row.apiRunCount > 0 ? `${row.apiRunCount} api` : "0 api"}
                         {" - "}
-                        {row.subscriptionRunCount > 0
-                          ? `${row.subscriptionRunCount} subscription`
-                          : "0 subscription"}
+                        {row.subscriptionRunCount > 0 ? `${row.subscriptionRunCount} subscription` : "0 subscription"}
                       </div>
                     ) : null}
                   </div>
@@ -101,7 +117,8 @@ export function ByAgentCard({
                               <span className="ml-1 font-normal text-muted-foreground">({sharePct}%)</span>
                             </div>
                             <div className="text-muted-foreground">
-                              {formatTokens(modelRow.inputTokens + modelRow.cachedInputTokens + modelRow.outputTokens)} tok
+                              {formatTokens(modelRow.inputTokens + modelRow.cachedInputTokens + modelRow.outputTokens)}{" "}
+                              tok
                             </div>
                           </div>
                         </div>

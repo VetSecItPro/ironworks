@@ -1,7 +1,7 @@
+import { BookOpen } from "lucide-react";
 import { useMemo } from "react";
 import type { KnowledgePage } from "../../api/knowledge";
 import { cn } from "../../lib/utils";
-import { BookOpen } from "lucide-react";
 
 export function WikiLinkedBody({
   body,
@@ -17,9 +17,9 @@ export function WikiLinkedBody({
     const wikiLinkPattern = /\[\[([^\]]+)\]\]/g;
     const parts: Array<{ type: "text" | "link"; value: string; slug?: string }> = [];
     let lastIndex = 0;
-    let match: RegExpExecArray | null;
+    let match = wikiLinkPattern.exec(body);
 
-    while ((match = wikiLinkPattern.exec(body)) !== null) {
+    while (match !== null) {
       if (match.index > lastIndex) {
         parts.push({ type: "text", value: body.slice(lastIndex, match.index) });
       }
@@ -33,6 +33,7 @@ export function WikiLinkedBody({
         slug: linkedPage?.slug,
       });
       lastIndex = match.index + match[0].length;
+      match = wikiLinkPattern.exec(body);
     }
     if (lastIndex < body.length) {
       parts.push({ type: "text", value: body.slice(lastIndex) });
@@ -48,9 +49,10 @@ export function WikiLinkedBody({
     <div className="flex flex-wrap gap-1 pb-2">
       {rendered
         .filter((p) => p.type === "link")
-        .map((p, i) => (
+        .map((p) => (
           <button
-            key={i}
+            type="button"
+            key={p.slug ?? p.value}
             onClick={() => p.slug && onNavigate(p.slug)}
             className={cn(
               "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-medium transition-colors",

@@ -1,8 +1,8 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { agentRoutes } from "../routes/agents.js";
 import { errorHandler } from "../middleware/index.js";
+import { agentRoutes } from "../routes/agents.js";
 
 const mockAgentService = vi.hoisted(() => ({
   getById: vi.fn(),
@@ -33,33 +33,19 @@ const mockSecretService = vi.hoisted(() => ({
 
 const mockLogActivity = vi.hoisted(() => vi.fn());
 
-vi.mock("../services/index.js", () => ({
-  agentService: () => mockAgentService,
-  agentInstructionsService: () => mockAgentInstructionsService,
-  accessService: () => mockAccessService,
-  approvalService: () => ({}),
-  companySkillService: () => ({ listRuntimeSkillEntries: vi.fn() }),
-  budgetService: () => ({}),
-  heartbeatService: () => ({}),
-  issueApprovalService: () => ({}),
-  issueService: () => ({}),
-  logActivity: mockLogActivity,
-  companyPortabilityService: () => ({}),
-  instanceSettingsService: () => ({}),
-  workProductService: () => ({}),
-  executionWorkspaceService: () => ({}),
-  sidebarBadgeService: () => ({}),
-  dashboardService: () => ({}),
-  goalService: () => ({}),
-  financeService: () => ({}),
-  costService: () => ({}),
-  companyService: () => ({}),
-  routineService: () => ({}),
-  playbookService: () => ({ seedDefaults: vi.fn() }),
-  secretService: () => mockSecretService,
-  syncInstructionsBundleConfigFromFilePath: vi.fn((_agent, config) => config),
-  workspaceOperationService: () => ({}),
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    agentService: () => mockAgentService,
+    agentInstructionsService: () => mockAgentInstructionsService,
+    accessService: () => mockAccessService,
+    companySkillService: () => ({ listRuntimeSkillEntries: vi.fn() }),
+    logActivity: mockLogActivity,
+    playbookService: () => ({ seedDefaults: vi.fn() }),
+    secretService: () => mockSecretService,
+    syncInstructionsBundleConfigFromFilePath: vi.fn((_agent, config) => config),
+  });
+});
 
 vi.mock("../adapters/index.js", () => ({
   findServerAdapter: vi.fn(),
@@ -70,6 +56,7 @@ function createApp() {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = {
       type: "board",
       userId: "local-board",
@@ -79,6 +66,7 @@ function createApp() {
     };
     next();
   });
+  // biome-ignore lint/suspicious/noExplicitAny: mock Drizzle DB or storage object for unit tests; real type requires full schema-aware Drizzle instance
   app.use("/api", agentRoutes({} as any));
   app.use(errorHandler);
   return app;
@@ -122,16 +110,18 @@ describe("agent instructions bundle routes", () => {
       warnings: [],
       legacyPromptTemplateActive: false,
       legacyBootstrapPromptTemplateActive: false,
-      files: [{
-        path: "AGENTS.md",
-        size: 12,
-        language: "markdown",
-        markdown: true,
-        isEntryFile: true,
-        editable: true,
-        deprecated: false,
-        virtual: false,
-      }],
+      files: [
+        {
+          path: "AGENTS.md",
+          size: 12,
+          language: "markdown",
+          markdown: true,
+          isEntryFile: true,
+          editable: true,
+          deprecated: false,
+          virtual: false,
+        },
+      ],
     });
     mockAgentInstructionsService.readFile.mockResolvedValue({
       path: "AGENTS.md",
@@ -167,8 +157,9 @@ describe("agent instructions bundle routes", () => {
   });
 
   it("returns bundle metadata", async () => {
-    const res = await request(createApp())
-      .get("/api/agents/11111111-1111-4111-8111-111111111111/instructions-bundle?companyId=company-1");
+    const res = await request(createApp()).get(
+      "/api/agents/11111111-1111-4111-8111-111111111111/instructions-bundle?companyId=company-1",
+    );
 
     expect(res.status, JSON.stringify(res.body)).toBe(200);
     expect(res.body).toMatchObject({

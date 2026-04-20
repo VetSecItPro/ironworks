@@ -1,22 +1,18 @@
-import {
-  type AnyPgColumn,
-  pgTable,
-  uuid,
-  text,
-  jsonb,
-  timestamp,
-  index,
-} from "drizzle-orm/pg-core";
-import { companies } from "./companies.js";
+import { type AnyPgColumn, index, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { agentChannels } from "./agent_channels.js";
 import { agents } from "./agents.js";
+import { companies } from "./companies.js";
 
 export const channelMessages = pgTable(
   "channel_messages",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    companyId: uuid("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
-    channelId: uuid("channel_id").notNull().references(() => agentChannels.id, { onDelete: "cascade" }),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    channelId: uuid("channel_id")
+      .notNull()
+      .references(() => agentChannels.id, { onDelete: "cascade" }),
     authorAgentId: uuid("author_agent_id").references(() => agents.id, { onDelete: "set null" }),
     authorUserId: text("author_user_id"),
     body: text("body").notNull(),

@@ -31,9 +31,7 @@ export function computeCriticalPath(
     visited.add(id);
     const node = issueMap.get(id);
     if (!node) return [id];
-    const deps = (node.dependsOn ?? [])
-      .map((did) => issueMap.get(did))
-      .filter((n): n is Issue => !!n);
+    const deps = (node.dependsOn ?? []).map((did) => issueMap.get(did)).filter((n): n is Issue => !!n);
     if (deps.length === 0) return [id];
     let longest: string[] = [];
     for (const dep of deps) {

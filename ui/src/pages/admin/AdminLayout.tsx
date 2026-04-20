@@ -1,6 +1,3 @@
-import { Navigate, NavLink, Outlet, useLocation } from "@/lib/router";
-import { useMeAccess } from "@/hooks/useMeAccess";
-import { useTheme } from "@/context/ThemeContext";
 import {
   Activity,
   ArrowLeft,
@@ -16,6 +13,9 @@ import {
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTheme } from "@/context/ThemeContext";
+import { useMeAccess } from "@/hooks/useMeAccess";
+import { Navigate, NavLink, Outlet, useLocation } from "@/lib/router";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
@@ -42,11 +42,7 @@ export default function AdminLayout() {
   const location = useLocation();
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen text-sm text-muted-foreground">
-        Loading...
-      </div>
-    );
+    return <div className="flex items-center justify-center h-screen text-sm text-muted-foreground">Loading...</div>;
   }
 
   if (!isInstanceAdmin) {
@@ -75,9 +71,7 @@ export default function AdminLayout() {
         {/* Tab nav — hidden on small screens (use bottom bar below) */}
         <nav className="hidden md:flex items-center gap-0.5 ml-4 flex-1">
           {NAV_ITEMS.map((item) => {
-            const isActive = item.end
-              ? location.pathname === item.to
-              : location.pathname.startsWith(item.to);
+            const isActive = item.end ? location.pathname === item.to : location.pathname.startsWith(item.to);
             return (
               <NavLink
                 key={item.to}
@@ -119,9 +113,7 @@ export default function AdminLayout() {
       {/* Mobile bottom nav */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 border-t border-border bg-background/95 backdrop-blur flex items-center justify-around px-2 py-1 pb-[env(safe-area-inset-bottom)]">
         {NAV_ITEMS.map((item) => {
-          const isActive = item.end
-            ? location.pathname === item.to
-            : location.pathname.startsWith(item.to);
+          const isActive = item.end ? location.pathname === item.to : location.pathname.startsWith(item.to);
           return (
             <NavLink
               key={item.to}

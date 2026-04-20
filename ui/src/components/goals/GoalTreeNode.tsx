@@ -1,12 +1,12 @@
-import { useState } from "react";
-import { CheckCircle2, ChevronDown, ChevronRight, Circle, Loader2, ShieldAlert } from "lucide-react";
 import type { Goal } from "@ironworksai/shared";
+import { CheckCircle2, ChevronDown, ChevronRight, Circle, Loader2, ShieldAlert } from "lucide-react";
+import { useState } from "react";
+import { Link } from "@/lib/router";
 import type { GoalProgressItem } from "../../api/goalProgress";
 import { cn } from "../../lib/utils";
 import { StatusBadge } from "../StatusBadge";
-import { Link } from "@/lib/router";
-import { HealthBadge } from "./HealthBadge";
 import { resolveGoalHealth } from "./goal-health";
+import { HealthBadge } from "./HealthBadge";
 
 function progressColor(percent: number): string {
   if (percent >= 70) return "text-emerald-600 dark:text-emerald-400";
@@ -30,7 +30,15 @@ export interface GoalTreeNodeProps {
   depth?: number;
 }
 
-export function GoalTreeNode({ goal, progress, childGoals, allGoals, progressMap, issuesByGoal, depth = 0 }: GoalTreeNodeProps) {
+export function GoalTreeNode({
+  goal,
+  progress,
+  childGoals,
+  allGoals,
+  progressMap,
+  issuesByGoal,
+  depth = 0,
+}: GoalTreeNodeProps) {
   const [expanded, setExpanded] = useState(depth === 0);
   const percent = progress?.progressPercent ?? 0;
   const issues = issuesByGoal.get(goal.id) ?? [];
@@ -46,18 +54,33 @@ export function GoalTreeNode({ goal, progress, childGoals, allGoals, progressMap
 
   return (
     <div className={cn("border border-border rounded-lg", depth > 0 && "ml-6 mt-2")}>
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: role and onClick are both conditional on hasChildren; when false the element is purely presentational */}
       <div
         className={cn(
           "flex items-center gap-2 p-3 rounded-t-lg",
           hasChildren && "cursor-pointer hover:bg-accent/30",
           !expanded && "rounded-b-lg",
         )}
+        role={hasChildren ? "button" : undefined}
+        tabIndex={hasChildren ? 0 : undefined}
         onClick={() => hasChildren && setExpanded((e) => !e)}
+        onKeyDown={
+          hasChildren
+            ? (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setExpanded((v) => !v);
+                }
+              }
+            : undefined
+        }
       >
         {hasChildren ? (
-          expanded
-            ? <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-            : <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+          expanded ? (
+            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+          )
         ) : (
           <span className="w-4 shrink-0" />
         )}
@@ -78,7 +101,10 @@ export function GoalTreeNode({ goal, progress, childGoals, allGoals, progressMap
             <div className="mt-1.5 flex items-center gap-2">
               <div className="flex-1 max-w-[200px] bg-muted rounded-full h-2 overflow-hidden">
                 <div
-                  className={cn("h-full rounded-full transition-[width] duration-500 ease-out", progressBarColor(percent))}
+                  className={cn(
+                    "h-full rounded-full transition-[width] duration-500 ease-out",
+                    progressBarColor(percent),
+                  )}
                   style={{ width: `${Math.min(100, percent)}%` }}
                 />
               </div>
@@ -103,18 +129,18 @@ export function GoalTreeNode({ goal, progress, childGoals, allGoals, progressMap
                 to={`/issues/${issue.id}`}
                 className="text-xs hover:underline text-muted-foreground hover:text-foreground truncate"
               >
-                {issue.identifier ? (
-                  <span className="font-mono mr-1 text-[10px]">{issue.identifier}</span>
-                ) : null}
+                {issue.identifier ? <span className="font-mono mr-1 text-[10px]">{issue.identifier}</span> : null}
                 {issue.title}
               </Link>
-              <span className={cn(
-                "text-[10px] px-1.5 py-0.5 rounded-full shrink-0",
-                issue.status === "done" && "bg-emerald-500/10 text-emerald-600",
-                issue.status === "in_progress" && "bg-blue-500/10 text-blue-600",
-                issue.status === "blocked" && "bg-red-500/10 text-red-600",
-                !["done", "in_progress", "blocked"].includes(issue.status) && "bg-muted text-muted-foreground",
-              )}>
+              <span
+                className={cn(
+                  "text-[10px] px-1.5 py-0.5 rounded-full shrink-0",
+                  issue.status === "done" && "bg-emerald-500/10 text-emerald-600",
+                  issue.status === "in_progress" && "bg-blue-500/10 text-blue-600",
+                  issue.status === "blocked" && "bg-red-500/10 text-red-600",
+                  !["done", "in_progress", "blocked"].includes(issue.status) && "bg-muted text-muted-foreground",
+                )}
+              >
                 {issue.status.replace("_", " ")}
               </span>
             </div>

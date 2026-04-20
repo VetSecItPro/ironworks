@@ -1,11 +1,13 @@
-import { pgTable, uuid, text, integer, timestamp, index, jsonb, boolean } from "drizzle-orm/pg-core";
+import { boolean, index, integer, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { companies } from "./companies.js";
 
 export const playbooks = pgTable(
   "playbooks",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    companyId: uuid("company_id").notNull().references(() => companies.id),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id),
     /** Display name. */
     name: text("name").notNull(),
     /** One-liner description shown in the list. */
@@ -37,7 +39,9 @@ export const playbookSteps = pgTable(
   "playbook_steps",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    playbookId: uuid("playbook_id").notNull().references(() => playbooks.id, { onDelete: "cascade" }),
+    playbookId: uuid("playbook_id")
+      .notNull()
+      .references(() => playbooks.id, { onDelete: "cascade" }),
     /** Step order (1-based). */
     stepOrder: integer("step_order").notNull(),
     /** Step title. */

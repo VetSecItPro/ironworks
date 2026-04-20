@@ -1,18 +1,19 @@
-export { execute, ensureCodexSkillsInjected } from "./execute.js";
-export { listCodexSkills, syncCodexSkills } from "./skills.js";
-export { testEnvironment } from "./test.js";
-export { parseCodexJsonl, isCodexUnknownSessionError } from "./parse.js";
+export { ensureCodexSkillsInjected, execute } from "./execute.js";
+export { isCodexUnknownSessionError, parseCodexJsonl } from "./parse.js";
 export {
-  getQuotaWindows,
-  readCodexAuthInfo,
-  readCodexToken,
+  codexHomeDir,
   fetchCodexQuota,
   fetchCodexRpcQuota,
-  mapCodexRpcQuota,
-  secondsToWindowLabel,
   fetchWithTimeout,
-  codexHomeDir,
+  getQuotaWindows,
+  mapCodexRpcQuota,
+  readCodexAuthInfo,
+  readCodexToken,
+  secondsToWindowLabel,
 } from "./quota.js";
+export { listCodexSkills, syncCodexSkills } from "./skills.js";
+export { testEnvironment } from "./test.js";
+
 import type { AdapterSessionCodec } from "@ironworksai/adapter-utils";
 
 function readNonEmptyString(value: unknown): string | null {
@@ -26,9 +27,7 @@ export const sessionCodec: AdapterSessionCodec = {
     const sessionId = readNonEmptyString(record.sessionId) ?? readNonEmptyString(record.session_id);
     if (!sessionId) return null;
     const cwd =
-      readNonEmptyString(record.cwd) ??
-      readNonEmptyString(record.workdir) ??
-      readNonEmptyString(record.folder);
+      readNonEmptyString(record.cwd) ?? readNonEmptyString(record.workdir) ?? readNonEmptyString(record.folder);
     const workspaceId = readNonEmptyString(record.workspaceId) ?? readNonEmptyString(record.workspace_id);
     const repoUrl = readNonEmptyString(record.repoUrl) ?? readNonEmptyString(record.repo_url);
     const repoRef = readNonEmptyString(record.repoRef) ?? readNonEmptyString(record.repo_ref);
@@ -45,9 +44,7 @@ export const sessionCodec: AdapterSessionCodec = {
     const sessionId = readNonEmptyString(params.sessionId) ?? readNonEmptyString(params.session_id);
     if (!sessionId) return null;
     const cwd =
-      readNonEmptyString(params.cwd) ??
-      readNonEmptyString(params.workdir) ??
-      readNonEmptyString(params.folder);
+      readNonEmptyString(params.cwd) ?? readNonEmptyString(params.workdir) ?? readNonEmptyString(params.folder);
     const workspaceId = readNonEmptyString(params.workspaceId) ?? readNonEmptyString(params.workspace_id);
     const repoUrl = readNonEmptyString(params.repoUrl) ?? readNonEmptyString(params.repo_url);
     const repoRef = readNonEmptyString(params.repoRef) ?? readNonEmptyString(params.repo_ref);

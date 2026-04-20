@@ -5,12 +5,7 @@
  * and the sidebar badge logic.
  */
 
-import type {
-  Approval,
-  HeartbeatRun,
-  Issue,
-  JoinRequest,
-} from "@ironworksai/shared";
+import type { Approval, HeartbeatRun, Issue, JoinRequest } from "@ironworksai/shared";
 
 export type InboxTab = "mine" | "recent" | "unread" | "all";
 export type InboxApprovalFilter = "all" | "actionable" | "resolved";

@@ -1,12 +1,6 @@
 import type { Issue } from "@ironworksai/shared";
 
-export const BOARD_STATUSES = [
-  "backlog",
-  "todo",
-  "in_progress",
-  "in_review",
-  "done",
-] as const;
+export const BOARD_STATUSES = ["backlog", "todo", "in_progress", "in_review", "done"] as const;
 
 export type BoardStatus = (typeof BOARD_STATUSES)[number];
 

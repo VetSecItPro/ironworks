@@ -1,7 +1,6 @@
 import { ArrowRight, Check } from "lucide-react";
 import { cn } from "../../lib/utils";
 import type { ConflictItem } from "./ImportHelpers";
-import { ACTION_COLORS } from "./ImportHelpers";
 
 export function ConflictResolutionList({
   conflicts,
@@ -74,9 +73,7 @@ export function ConflictResolutionList({
                 <span
                   className={cn(
                     "shrink-0 font-mono text-xs",
-                    isSkipped
-                      ? "text-muted-foreground line-through"
-                      : "text-muted-foreground",
+                    isSkipped ? "text-muted-foreground line-through" : "text-muted-foreground",
                   )}
                 >
                   {item.originalName}
@@ -86,9 +83,7 @@ export function ConflictResolutionList({
                   <>
                     <ArrowRight className="h-3 w-3 shrink-0 text-muted-foreground" />
                     {isConfirmed ? (
-                      <span className="min-w-0 flex-1 font-mono text-xs text-emerald-500">
-                        {currentName}
-                      </span>
+                      <span className="min-w-0 flex-1 font-mono text-xs text-emerald-500">{currentName}</span>
                     ) : (
                       <input
                         className="min-w-0 flex-1 rounded-md border border-border bg-transparent px-2 py-1 font-mono text-xs outline-none focus:border-foreground"

@@ -1,25 +1,42 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { useNavigate, useLocation } from "@/lib/router";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { usePageTitle } from "../hooks/usePageTitle";
+import { type Agent, type AgentLifecycleStage, DEPARTMENT_LABELS, DEPARTMENTS } from "@ironworksai/shared";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import {
+  BarChart3,
+  Bot,
+  GitBranch,
+  Layers,
+  LayoutGrid,
+  List,
+  Plus,
+  Search,
+  SlidersHorizontal,
+  UserPlus,
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs } from "@/components/ui/tabs";
+import { useLocation, useNavigate } from "@/lib/router";
 import { agentsApi, type OrgNode } from "../api/agents";
 import { heartbeatsApi } from "../api/heartbeats";
 import { issuesApi } from "../api/issues";
-import { useCompany } from "../context/CompanyContext";
-import { useDialog } from "../context/DialogContext";
-import { useBreadcrumbs } from "../context/BreadcrumbContext";
-import { useSidebar } from "../context/SidebarContext";
-import { queryKeys } from "../lib/queryKeys";
+import {
+  AgentCompareModal,
+  AgentGridView,
+  AgentListView,
+  AgentOrgTreeNode,
+  AgentPipelineView,
+} from "../components/agents-page";
 import { EmptyState } from "../components/EmptyState";
 import { PageSkeleton } from "../components/PageSkeleton";
-import { cn } from "../lib/utils";
 import { PageTabBar } from "../components/PageTabBar";
-import { Tabs } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Bot, Plus, List, LayoutGrid, GitBranch, Search, SlidersHorizontal, UserPlus, Layers, BarChart3 } from "lucide-react";
-import { DEPARTMENTS, DEPARTMENT_LABELS, type Agent, type AgentLifecycleStage } from "@ironworksai/shared";
-import { AgentCompareModal, AgentListView, AgentGridView, AgentPipelineView, AgentOrgTreeNode } from "../components/agents-page";
+import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { useCompany } from "../context/CompanyContext";
+import { useDialog } from "../context/DialogContext";
+import { useSidebar } from "../context/SidebarContext";
+import { usePageTitle } from "../hooks/usePageTitle";
+import { queryKeys } from "../lib/queryKeys";
+import { cn } from "../lib/utils";
 
 type FilterTab = "all" | "active" | "paused" | "error";
 
@@ -59,7 +76,10 @@ export function Agents() {
   const location = useLocation();
   const { isMobile } = useSidebar();
   const pathSegment = location.pathname.split("/").pop() ?? "all";
-  const tab: FilterTab = (pathSegment === "all" || pathSegment === "active" || pathSegment === "paused" || pathSegment === "error") ? pathSegment : "all";
+  const tab: FilterTab =
+    pathSegment === "all" || pathSegment === "active" || pathSegment === "paused" || pathSegment === "error"
+      ? pathSegment
+      : "all";
   const [view, setView] = useState<"list" | "grid" | "org" | "pipeline">("org");
   const forceListView = isMobile;
   const effectiveView: "list" | "grid" | "org" | "pipeline" = forceListView ? "list" : view;
@@ -84,7 +104,11 @@ export function Agents() {
     mutationFn: (agentId: string) => agentsApi.invoke(agentId, selectedCompanyId!),
   });
 
-  const { data: agents, isLoading, error } = useQuery({
+  const {
+    data: agents,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: queryKeys.agents.list(selectedCompanyId!),
     queryFn: () => agentsApi.list(selectedCompanyId!),
     enabled: !!selectedCompanyId,
@@ -115,7 +139,10 @@ export function Agents() {
     for (const r of runs ?? []) {
       if (r.status !== "running" && r.status !== "queued") continue;
       const existing = map.get(r.agentId);
-      if (existing) { existing.liveCount += 1; continue; }
+      if (existing) {
+        existing.liveCount += 1;
+        continue;
+      }
       map.set(r.agentId, { runId: r.id, liveCount: 1 });
     }
     return map;
@@ -138,14 +165,17 @@ export function Agents() {
     return map;
   }, [issues]);
 
-  const deriveLifecycleStage = useCallback((agent: Agent): AgentLifecycleStage => {
-    if (agent.status === "terminated") return "retired";
-    const completedCount = completedIssuesByAgent.get(agent.id) ?? 0;
-    if (agent.status === "active" || agent.status === "running") {
-      return completedCount >= 5 ? "production" : "pilot";
-    }
-    return "draft";
-  }, [completedIssuesByAgent]);
+  const deriveLifecycleStage = useCallback(
+    (agent: Agent): AgentLifecycleStage => {
+      if (agent.status === "terminated") return "retired";
+      const completedCount = completedIssuesByAgent.get(agent.id) ?? 0;
+      if (agent.status === "active" || agent.status === "running") {
+        return completedCount >= 5 ? "production" : "pilot";
+      }
+      return "draft";
+    },
+    [completedIssuesByAgent],
+  );
 
   useEffect(() => {
     setBreadcrumbs([{ label: "Agents" }]);
@@ -155,8 +185,14 @@ export function Agents() {
   if (isLoading && !agents) return <PageSkeleton variant="list" />;
 
   const filtered = filterAgents(agents ?? [], tab, showTerminated).filter((a) => {
-    if (agentSearch.trim() && !a.name.toLowerCase().includes(agentSearch.toLowerCase()) && !(a.title ?? "").toLowerCase().includes(agentSearch.toLowerCase())) return false;
-    if (departmentFilter !== "all" && (a as unknown as Record<string, unknown>).department !== departmentFilter) return false;
+    if (
+      agentSearch.trim() &&
+      !a.name.toLowerCase().includes(agentSearch.toLowerCase()) &&
+      !(a.title ?? "").toLowerCase().includes(agentSearch.toLowerCase())
+    )
+      return false;
+    if (departmentFilter !== "all" && (a as unknown as Record<string, unknown>).department !== departmentFilter)
+      return false;
     const empType = ((a as unknown as Record<string, unknown>).employmentType as string) ?? "full_time";
     if (employmentFilter !== "all" && empType !== employmentFilter) return false;
     return true;
@@ -181,39 +217,86 @@ export function Agents() {
         <div className="flex items-center gap-2">
           <div className="relative w-40 sm:w-52 md:w-64">
             <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input value={agentSearch} onChange={(e) => setAgentSearch(e.target.value)} placeholder="Search agents..." aria-label="Search agents" className="pl-7 text-xs h-8" />
+            <Input
+              value={agentSearch}
+              onChange={(e) => setAgentSearch(e.target.value)}
+              placeholder="Search agents..."
+              aria-label="Search agents"
+              className="pl-7 text-xs h-8"
+            />
           </div>
           <div className="relative">
             <button
-              className={cn("flex items-center gap-1.5 px-2 py-1.5 text-xs transition-colors border border-border", filtersOpen || showTerminated ? "text-foreground bg-accent" : "text-muted-foreground hover:bg-accent/50")}
+              type="button"
+              className={cn(
+                "flex items-center gap-1.5 px-2 py-1.5 text-xs transition-colors border border-border",
+                filtersOpen || showTerminated
+                  ? "text-foreground bg-accent"
+                  : "text-muted-foreground hover:bg-accent/50",
+              )}
               onClick={() => setFiltersOpen(!filtersOpen)}
             >
               <SlidersHorizontal className="h-3 w-3" />
               Filters
               {(showTerminated || departmentFilter !== "all" || employmentFilter !== "all") && (
                 <span className="ml-0.5 px-1 bg-foreground/10 rounded text-[10px]">
-                  {(showTerminated ? 1 : 0) + (departmentFilter !== "all" ? 1 : 0) + (employmentFilter !== "all" ? 1 : 0)}
+                  {(showTerminated ? 1 : 0) +
+                    (departmentFilter !== "all" ? 1 : 0) +
+                    (employmentFilter !== "all" ? 1 : 0)}
                 </span>
               )}
             </button>
             {filtersOpen && (
               <div className="absolute right-0 top-full mt-1 z-50 w-52 border border-border bg-popover shadow-md p-1 space-y-0.5">
-                <button className="flex items-center gap-2 w-full px-2 py-1.5 text-xs text-left hover:bg-accent/50 transition-colors" onClick={() => setShowTerminated(!showTerminated)}>
-                  <span className={cn("flex items-center justify-center h-3.5 w-3.5 border border-border rounded-sm", showTerminated && "bg-foreground")}>
+                <button
+                  type="button"
+                  className="flex items-center gap-2 w-full px-2 py-1.5 text-xs text-left hover:bg-accent/50 transition-colors"
+                  onClick={() => setShowTerminated(!showTerminated)}
+                >
+                  <span
+                    className={cn(
+                      "flex items-center justify-center h-3.5 w-3.5 border border-border rounded-sm",
+                      showTerminated && "bg-foreground",
+                    )}
+                  >
                     {showTerminated && <span className="text-background text-[10px] leading-none">&#10003;</span>}
                   </span>
                   Show terminated
                 </button>
                 <div className="px-2 py-1.5">
-                  <label className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">Department</label>
-                  <select value={departmentFilter} onChange={(e) => setDepartmentFilter(e.target.value)} className="w-full text-xs bg-transparent border border-border rounded px-1.5 py-1">
+                  <label
+                    htmlFor="agents-dept-filter"
+                    className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1"
+                  >
+                    Department
+                  </label>
+                  <select
+                    id="agents-dept-filter"
+                    value={departmentFilter}
+                    onChange={(e) => setDepartmentFilter(e.target.value)}
+                    className="w-full text-xs bg-transparent border border-border rounded px-1.5 py-1"
+                  >
                     <option value="all">All departments</option>
-                    {DEPARTMENTS.map((d) => (<option key={d} value={d}>{(DEPARTMENT_LABELS as Record<string, string>)[d] ?? d}</option>))}
+                    {DEPARTMENTS.map((d) => (
+                      <option key={d} value={d}>
+                        {(DEPARTMENT_LABELS as Record<string, string>)[d] ?? d}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div className="px-2 py-1.5">
-                  <label className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1">Employment Type</label>
-                  <select value={employmentFilter} onChange={(e) => setEmploymentFilter(e.target.value)} className="w-full text-xs bg-transparent border border-border rounded px-1.5 py-1">
+                  <label
+                    htmlFor="agents-employment-filter"
+                    className="text-[10px] text-muted-foreground uppercase tracking-wider block mb-1"
+                  >
+                    Employment Type
+                  </label>
+                  <select
+                    id="agents-employment-filter"
+                    value={employmentFilter}
+                    onChange={(e) => setEmploymentFilter(e.target.value)}
+                    className="w-full text-xs bg-transparent border border-border rounded px-1.5 py-1"
+                  >
                     <option value="all">All types</option>
                     <option value="full_time">Full-Time</option>
                     <option value="contractor">Contractor</option>
@@ -224,10 +307,52 @@ export function Agents() {
           </div>
           {!forceListView && (
             <div className="flex items-center border border-border">
-              <button className={cn("p-1.5 transition-colors", effectiveView === "list" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50")} onClick={() => setView("list")} title="List view"><List className="h-3.5 w-3.5" /></button>
-              <button className={cn("p-1.5 transition-colors", effectiveView === "grid" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50")} onClick={() => setView("grid")} title="Grid view"><LayoutGrid className="h-3.5 w-3.5" /></button>
-              <button className={cn("p-1.5 transition-colors", effectiveView === "org" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50")} onClick={() => setView("org")} title="Org chart view"><GitBranch className="h-3.5 w-3.5" /></button>
-              <button className={cn("p-1.5 transition-colors", effectiveView === "pipeline" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50")} onClick={() => setView("pipeline")} title="Pipeline view"><Layers className="h-3.5 w-3.5" /></button>
+              <button
+                type="button"
+                className={cn(
+                  "p-1.5 transition-colors",
+                  effectiveView === "list" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50",
+                )}
+                onClick={() => setView("list")}
+                title="List view"
+              >
+                <List className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                className={cn(
+                  "p-1.5 transition-colors",
+                  effectiveView === "grid" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50",
+                )}
+                onClick={() => setView("grid")}
+                title="Grid view"
+              >
+                <LayoutGrid className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                className={cn(
+                  "p-1.5 transition-colors",
+                  effectiveView === "org" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50",
+                )}
+                onClick={() => setView("org")}
+                title="Org chart view"
+              >
+                <GitBranch className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                className={cn(
+                  "p-1.5 transition-colors",
+                  effectiveView === "pipeline"
+                    ? "bg-accent text-foreground"
+                    : "text-muted-foreground hover:bg-accent/50",
+                )}
+                onClick={() => setView("pipeline")}
+                title="Pipeline view"
+              >
+                <Layers className="h-3.5 w-3.5" />
+              </button>
             </div>
           )}
           {compareIds.size > 0 && (
@@ -236,16 +361,45 @@ export function Agents() {
               Compare ({compareIds.size})
             </Button>
           )}
-          <Button size="sm" variant="outline" onClick={openHireAgent}><UserPlus className="h-3.5 w-3.5 mr-1.5" />Hire Agent</Button>
-          <Button size="sm" variant="outline" onClick={openNewAgent}><Plus className="h-3.5 w-3.5 mr-1.5" />New Agent</Button>
+          <Button size="sm" variant="outline" onClick={openHireAgent}>
+            <UserPlus className="h-3.5 w-3.5 mr-1.5" />
+            Hire Agent
+          </Button>
+          <Button size="sm" variant="outline" onClick={openNewAgent}>
+            <Plus className="h-3.5 w-3.5 mr-1.5" />
+            New Agent
+          </Button>
         </div>
       </div>
 
-      {filtered.length > 0 && <p className="text-xs text-muted-foreground">{filtered.length} agent{filtered.length !== 1 ? "s" : ""}</p>}
-      {error && <p role="alert" className="text-sm text-destructive">{error.message}</p>}
-      {agents && agents.length === 0 && <EmptyState icon={Bot} message="Create your first agent to get started." action="New Agent" onAction={openNewAgent} />}
+      {filtered.length > 0 && (
+        <p className="text-xs text-muted-foreground">
+          {filtered.length} agent{filtered.length !== 1 ? "s" : ""}
+        </p>
+      )}
+      {error && (
+        <p role="alert" className="text-sm text-destructive">
+          {error.message}
+        </p>
+      )}
+      {agents && agents.length === 0 && (
+        <EmptyState
+          icon={Bot}
+          message="Create your first agent to get started."
+          action="New Agent"
+          onAction={openNewAgent}
+        />
+      )}
 
-      {effectiveView === "list" && <AgentListView agents={filtered} liveRunByAgent={liveRunByAgent} compareIds={compareIds} toggleCompare={toggleCompare} onInvoke={(id) => invokeMutation.mutate(id)} />}
+      {effectiveView === "list" && (
+        <AgentListView
+          agents={filtered}
+          liveRunByAgent={liveRunByAgent}
+          compareIds={compareIds}
+          toggleCompare={toggleCompare}
+          onInvoke={(id) => invokeMutation.mutate(id)}
+        />
+      )}
       {effectiveView === "list" && agents && agents.length > 0 && filtered.length === 0 && (
         <p className="text-sm text-muted-foreground text-center py-8">No agents match the selected filter.</p>
       )}
@@ -269,10 +423,16 @@ export function Agents() {
         <p className="text-sm text-muted-foreground text-center py-8">No organizational hierarchy defined.</p>
       )}
 
-      {effectiveView === "pipeline" && <AgentPipelineView agents={agents ?? []} deriveLifecycleStage={deriveLifecycleStage} />}
+      {effectiveView === "pipeline" && (
+        <AgentPipelineView agents={agents ?? []} deriveLifecycleStage={deriveLifecycleStage} />
+      )}
 
       {showCompare && compareIds.size > 0 && (
-        <AgentCompareModal agents={(agents ?? []).filter((a) => compareIds.has(a.id))} liveRunByAgent={liveRunByAgent} onClose={() => setShowCompare(false)} />
+        <AgentCompareModal
+          agents={(agents ?? []).filter((a) => compareIds.has(a.id))}
+          liveRunByAgent={liveRunByAgent}
+          onClose={() => setShowCompare(false)}
+        />
       )}
     </div>
   );

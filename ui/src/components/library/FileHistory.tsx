@@ -1,5 +1,5 @@
-import { useMemo } from "react";
 import { Activity, Bot } from "lucide-react";
+import { useMemo } from "react";
 import type { LibraryContributor, LibraryFileEvent } from "../../api/library";
 import { cn } from "../../lib/utils";
 import { formatRelative } from "./libraryHelpers";
@@ -16,10 +16,7 @@ export function EventHistory({ events }: { events: LibraryFileEvent[] }) {
       </div>
       <div className="divide-y divide-border">
         {events.slice(0, 10).map((event) => (
-          <div
-            key={event.id}
-            className="px-4 py-2 text-xs flex items-center gap-2"
-          >
+          <div key={event.id} className="px-4 py-2 text-xs flex items-center gap-2">
             <span
               className={cn(
                 "inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium",
@@ -32,17 +29,11 @@ export function EventHistory({ events }: { events: LibraryFileEvent[] }) {
             >
               {event.action}
             </span>
-            <span className="text-foreground font-medium">
-              {event.agentName ?? event.userId ?? "Unknown"}
-            </span>
+            <span className="text-foreground font-medium">{event.agentName ?? event.userId ?? "Unknown"}</span>
             {event.changeSummary && (
-              <span className="text-muted-foreground truncate flex-1">
-                - {event.changeSummary}
-              </span>
+              <span className="text-muted-foreground truncate flex-1">- {event.changeSummary}</span>
             )}
-            <span className="text-muted-foreground shrink-0 ml-auto">
-              {formatRelative(event.createdAt)}
-            </span>
+            <span className="text-muted-foreground shrink-0 ml-auto">{formatRelative(event.createdAt)}</span>
           </div>
         ))}
       </div>
@@ -60,10 +51,7 @@ export function UsageAnalyticsPanel({
   contributors: LibraryContributor[];
 }) {
   const writesByAgent = useMemo(() => {
-    const map = new Map<
-      string,
-      { name: string; writes: number; lastWrite: string }
-    >();
+    const map = new Map<string, { name: string; writes: number; lastWrite: string }>();
     for (const e of events) {
       if (e.action === "created" || e.action === "modified") {
         const name = e.agentName ?? e.userId ?? "Unknown";
@@ -93,18 +81,13 @@ export function UsageAnalyticsPanel({
             </p>
             <div className="space-y-1">
               {writesByAgent.map((a) => (
-                <div
-                  key={a.name}
-                  className="flex items-center justify-between text-xs"
-                >
+                <div key={a.name} className="flex items-center justify-between text-xs">
                   <span className="font-medium text-foreground">{a.name}</span>
                   <div className="flex items-center gap-2">
                     <span className="text-muted-foreground">
                       {a.writes} write{a.writes !== 1 ? "s" : ""}
                     </span>
-                    <span className="text-[10px] text-muted-foreground/80">
-                      {formatRelative(a.lastWrite)}
-                    </span>
+                    <span className="text-[10px] text-muted-foreground/80">{formatRelative(a.lastWrite)}</span>
                   </div>
                 </div>
               ))}

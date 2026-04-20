@@ -1,9 +1,9 @@
 import type { Goal } from "@ironworksai/shared";
-import { Link } from "@/lib/router";
-import { StatusBadge } from "./StatusBadge";
 import { ChevronRight } from "lucide-react";
-import { cn } from "../lib/utils";
 import { useState } from "react";
+import { Link } from "@/lib/router";
+import { cn } from "../lib/utils";
+import { StatusBadge } from "./StatusBadge";
 
 interface GoalTreeProps {
   goals: Goal[];
@@ -13,22 +13,23 @@ interface GoalTreeProps {
 
 interface GoalNodeProps {
   goal: Goal;
-  children: Goal[];
+  childGoals: Goal[];
   allGoals: Goal[];
   depth: number;
   goalLink?: (goal: Goal) => string;
   onSelect?: (goal: Goal) => void;
 }
 
-function GoalNode({ goal, children, allGoals, depth, goalLink, onSelect }: GoalNodeProps) {
+function GoalNode({ goal, childGoals, allGoals, depth, goalLink, onSelect }: GoalNodeProps) {
   const [expanded, setExpanded] = useState(true);
-  const hasChildren = children.length > 0;
+  const hasChildren = childGoals.length > 0;
   const link = goalLink?.(goal);
 
   const inner = (
     <>
       {hasChildren ? (
         <button
+          type="button"
           className="p-0.5"
           onClick={(e) => {
             e.preventDefault();
@@ -36,9 +37,7 @@ function GoalNode({ goal, children, allGoals, depth, goalLink, onSelect }: GoalN
             setExpanded(!expanded);
           }}
         >
-          <ChevronRight
-            className={cn("h-3 w-3 transition-transform", expanded && "rotate-90")}
-          />
+          <ChevronRight className={cn("h-3 w-3 transition-transform", expanded && "rotate-90")} />
         </button>
       ) : (
         <span className="w-4" />
@@ -49,9 +48,7 @@ function GoalNode({ goal, children, allGoals, depth, goalLink, onSelect }: GoalN
     </>
   );
 
-  const classes = cn(
-    "flex items-center gap-2 px-3 py-1.5 text-sm transition-colors cursor-pointer hover:bg-accent/50",
-  );
+  const classes = cn("flex items-center gap-2 px-3 py-1.5 text-sm transition-colors cursor-pointer hover:bg-accent/50");
 
   return (
     <div>
@@ -64,21 +61,28 @@ function GoalNode({ goal, children, allGoals, depth, goalLink, onSelect }: GoalN
           {inner}
         </Link>
       ) : (
-        <div
+        <button
+          type="button"
           className={classes}
           style={{ paddingLeft: `${depth * 16 + 12}px` }}
           onClick={() => onSelect?.(goal)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              onSelect?.(goal);
+            }
+          }}
         >
           {inner}
-        </div>
+        </button>
       )}
       {hasChildren && expanded && (
         <div>
-          {children.map((child) => (
+          {childGoals.map((child) => (
             <GoalNode
               key={child.id}
               goal={child}
-              children={allGoals.filter((g) => g.parentId === child.id)}
+              childGoals={allGoals.filter((g) => g.parentId === child.id)}
               allGoals={allGoals}
               depth={depth + 1}
               goalLink={goalLink}
@@ -105,7 +109,7 @@ export function GoalTree({ goals, goalLink, onSelect }: GoalTreeProps) {
         <GoalNode
           key={goal.id}
           goal={goal}
-          children={goals.filter((g) => g.parentId === goal.id)}
+          childGoals={goals.filter((g) => g.parentId === goal.id)}
           allGoals={goals}
           depth={0}
           goalLink={goalLink}

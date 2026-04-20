@@ -1,12 +1,12 @@
-import { and, asc, desc, eq } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import {
-  channelDeliberations,
+  agents,
   channelDeliberationPositions,
   channelDeliberationRebuttals,
-  agents,
+  channelDeliberations,
   channelMessages,
 } from "@ironworksai/db";
+import { and, asc, eq } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 
 // ── Deliberation Protocol ─────────────────────────────────────────────────
@@ -63,17 +63,14 @@ export async function startDeliberationProtocol(
     .returning();
 
   // Fetch participant names for the announcement
-  const agentRows = participantAgentIds.length > 0
-    ? await db
-        .select({ id: agents.id, name: agents.name })
-        .from(agents)
-        .where(
-          and(
-            eq(agents.companyId, companyId),
-          ),
-        )
-        .then((rows) => rows.filter((r) => participantAgentIds.includes(r.id)))
-    : [];
+  const agentRows =
+    participantAgentIds.length > 0
+      ? await db
+          .select({ id: agents.id, name: agents.name })
+          .from(agents)
+          .where(and(eq(agents.companyId, companyId)))
+          .then((rows) => rows.filter((r) => participantAgentIds.includes(r.id)))
+      : [];
 
   const participantNames = agentRows.map((a) => `@${a.name}`).join(", ");
 
@@ -128,11 +125,7 @@ export async function addPosition(
     .returning();
 
   // Post to channel as a reply context
-  const [agentRow] = await db
-    .select({ name: agents.name })
-    .from(agents)
-    .where(eq(agents.id, agentId))
-    .limit(1);
+  const [agentRow] = await db.select({ name: agents.name }).from(agents).where(eq(agents.id, agentId)).limit(1);
 
   const agentName = agentRow?.name ?? "Agent";
   const evidenceNote = evidence ? `\n\nEvidence: ${evidence}` : "";
@@ -146,10 +139,7 @@ export async function addPosition(
     mentions: [],
   });
 
-  logger.info(
-    { deliberationId, agentId, agentName },
-    "position added to deliberation",
-  );
+  logger.info({ deliberationId, agentId, agentName }, "position added to deliberation");
 
   return positionRow.id;
 }
@@ -194,11 +184,7 @@ export async function addRebuttal(
     .returning();
 
   // Post to channel
-  const [agentRow] = await db
-    .select({ name: agents.name })
-    .from(agents)
-    .where(eq(agents.id, agentId))
-    .limit(1);
+  const [agentRow] = await db.select({ name: agents.name }).from(agents).where(eq(agents.id, agentId)).limit(1);
 
   const [targetAgentRow] = await db
     .select({ name: agents.name })
@@ -218,10 +204,7 @@ export async function addRebuttal(
     mentions: [targetPosition.agentId],
   });
 
-  logger.info(
-    { deliberationId, agentId, agentName, targetPositionId },
-    "rebuttal added to deliberation",
-  );
+  logger.info({ deliberationId, agentId, agentName, targetPositionId }, "rebuttal added to deliberation");
 
   return rebuttalRow.id;
 }
@@ -230,10 +213,7 @@ export async function addRebuttal(
  * Synthesize all positions and rebuttals into a summary.
  * Closes the deliberation and posts the synthesis to the channel.
  */
-export async function synthesize(
-  db: Db,
-  deliberationId: string,
-): Promise<string> {
+export async function synthesize(db: Db, deliberationId: string): Promise<string> {
   const [deliberation] = await db
     .select()
     .from(channelDeliberations)
@@ -269,18 +249,14 @@ export async function synthesize(
     .orderBy(asc(channelDeliberationRebuttals.createdAt));
 
   // Fetch agent names
-  const allAgentIds = [
-    ...new Set([
-      ...positions.map((p) => p.agentId),
-      ...rebuttals.map((r) => r.agentId),
-    ]),
-  ];
-  const agentRows = allAgentIds.length > 0
-    ? await db
-        .select({ id: agents.id, name: agents.name })
-        .from(agents)
-        .then((rows) => rows.filter((r) => allAgentIds.includes(r.id)))
-    : [];
+  const allAgentIds = [...new Set([...positions.map((p) => p.agentId), ...rebuttals.map((r) => r.agentId)])];
+  const agentRows =
+    allAgentIds.length > 0
+      ? await db
+          .select({ id: agents.id, name: agents.name })
+          .from(agents)
+          .then((rows) => rows.filter((r) => allAgentIds.includes(r.id)))
+      : [];
   const agentNameMap = new Map(agentRows.map((a) => [a.id, a.name]));
 
   // Build synthesis text
@@ -320,7 +296,9 @@ export async function synthesize(
     lines.push("Multiple positions were presented with no rebuttals. All approaches appear viable.");
   } else {
     lines.push("## Areas of Disagreement");
-    lines.push(`${rebuttals.length} rebuttal(s) were raised across ${uniqueAgentPositions} positions. Further discussion may be needed to reach alignment.`);
+    lines.push(
+      `${rebuttals.length} rebuttal(s) were raised across ${uniqueAgentPositions} positions. Further discussion may be needed to reach alignment.`,
+    );
   }
 
   const synthesisText = lines.join("\n");
@@ -358,10 +336,7 @@ export async function synthesize(
 /**
  * Fetch a full deliberation with all positions and rebuttals.
  */
-export async function getDeliberation(
-  db: Db,
-  deliberationId: string,
-): Promise<DeliberationSummary | null> {
+export async function getDeliberation(db: Db, deliberationId: string): Promise<DeliberationSummary | null> {
   const [deliberation] = await db
     .select()
     .from(channelDeliberations)
@@ -395,18 +370,14 @@ export async function getDeliberation(
     .orderBy(asc(channelDeliberationRebuttals.createdAt));
 
   // Fetch all agent names
-  const allAgentIds = [
-    ...new Set([
-      ...positions.map((p) => p.agentId),
-      ...rebuttals.map((r) => r.agentId),
-    ]),
-  ];
-  const agentRows = allAgentIds.length > 0
-    ? await db
-        .select({ id: agents.id, name: agents.name })
-        .from(agents)
-        .then((rows) => rows.filter((r) => allAgentIds.includes(r.id)))
-    : [];
+  const allAgentIds = [...new Set([...positions.map((p) => p.agentId), ...rebuttals.map((r) => r.agentId)])];
+  const agentRows =
+    allAgentIds.length > 0
+      ? await db
+          .select({ id: agents.id, name: agents.name })
+          .from(agents)
+          .then((rows) => rows.filter((r) => allAgentIds.includes(r.id)))
+      : [];
   const agentNameMap = new Map(agentRows.map((a) => [a.id, a.name]));
 
   return {

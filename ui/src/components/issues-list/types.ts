@@ -95,7 +95,9 @@ export function getViewState(key: string): IssueViewState {
   try {
     const raw = localStorage.getItem(key);
     if (raw) return { ...defaultViewState, ...JSON.parse(raw) };
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return { ...defaultViewState };
 }
 
@@ -128,19 +130,27 @@ export function applyFilters(issues: Issue[], state: IssueViewState, currentUser
       return false;
     });
   }
-  if (state.labels.length > 0) result = result.filter((i) => (i.labelIds ?? []).some((id) => state.labels.includes(id)));
-  if (state.projects.length > 0) result = result.filter((i) => i.projectId != null && state.projects.includes(i.projectId));
+  if (state.labels.length > 0)
+    result = result.filter((i) => (i.labelIds ?? []).some((id) => state.labels.includes(id)));
+  if (state.projects.length > 0)
+    result = result.filter((i) => i.projectId != null && state.projects.includes(i.projectId));
   return result;
 }
 
 function compareByField(a: Issue, b: Issue, field: string, dir: number): number {
   switch (field) {
-    case "status": return dir * (statusOrder.indexOf(a.status) - statusOrder.indexOf(b.status));
-    case "priority": return dir * (priorityOrder.indexOf(a.priority) - priorityOrder.indexOf(b.priority));
-    case "title": return dir * a.title.localeCompare(b.title);
-    case "created": return dir * (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-    case "updated": return dir * (new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime());
-    default: return 0;
+    case "status":
+      return dir * (statusOrder.indexOf(a.status) - statusOrder.indexOf(b.status));
+    case "priority":
+      return dir * (priorityOrder.indexOf(a.priority) - priorityOrder.indexOf(b.priority));
+    case "title":
+      return dir * a.title.localeCompare(b.title);
+    case "created":
+      return dir * (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    case "updated":
+      return dir * (new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime());
+    default:
+      return 0;
   }
 }
 

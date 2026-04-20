@@ -15,18 +15,22 @@ export const schedulerSettingsSchema = z.object({
   heartbeatSafetyNetMinutes: z.number().int().min(5).max(60).default(30),
 });
 
-export const instanceGeneralSettingsSchema = z.object({
-  censorUsernameInLogs: z.boolean().default(false),
-  backupRetention: backupRetentionPolicySchema.optional(),
-  scheduler: schedulerSettingsSchema.optional(),
-}).strict();
+export const instanceGeneralSettingsSchema = z
+  .object({
+    censorUsernameInLogs: z.boolean().default(false),
+    backupRetention: backupRetentionPolicySchema.optional(),
+    scheduler: schedulerSettingsSchema.optional(),
+  })
+  .strict();
 
 export const patchInstanceGeneralSettingsSchema = instanceGeneralSettingsSchema.partial();
 
-export const instanceExperimentalSettingsSchema = z.object({
-  enableIsolatedWorkspaces: z.boolean().default(false),
-  autoRestartDevServerWhenIdle: z.boolean().default(false),
-}).strict();
+export const instanceExperimentalSettingsSchema = z
+  .object({
+    enableIsolatedWorkspaces: z.boolean().default(false),
+    autoRestartDevServerWhenIdle: z.boolean().default(false),
+  })
+  .strict();
 
 export const patchInstanceExperimentalSettingsSchema = instanceExperimentalSettingsSchema.partial();
 

@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useBeforeUnload } from "react-router-dom";
 
 /**
@@ -20,14 +20,11 @@ export function useUnsavedChanges(
 
   // Native browser beforeunload (handles tab close / hard refresh)
   useBeforeUnload(
-    useCallback(
-      (event) => {
-        if (dirtyRef.current) {
-          event.preventDefault();
-        }
-      },
-      [],
-    ),
+    useCallback((event) => {
+      if (dirtyRef.current) {
+        event.preventDefault();
+      }
+    }, []),
   );
 
   // Handle in-app popstate navigation (back/forward browser buttons)

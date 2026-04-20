@@ -1,8 +1,8 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
 import { ensureCursorSkillsInjected } from "@ironworksai/adapter-cursor-local/server";
+import { afterEach, describe, expect, it } from "vitest";
 
 async function makeTempDir(prefix: string): Promise<string> {
   return fs.mkdtemp(path.join(os.tmpdir(), prefix));
@@ -43,9 +43,7 @@ describe("cursor local adapter skill injection", () => {
     expect((await fs.lstat(injectedA)).isSymbolicLink()).toBe(true);
     expect((await fs.lstat(injectedB)).isSymbolicLink()).toBe(true);
     expect(await fs.realpath(injectedA)).toBe(await fs.realpath(path.join(skillsDir, "ironworks")));
-    expect(await fs.realpath(injectedB)).toBe(
-      await fs.realpath(path.join(skillsDir, "ironworks-create-agent")),
-    );
+    expect(await fs.realpath(injectedB)).toBe(await fs.realpath(path.join(skillsDir, "ironworks-create-agent")));
     expect(logs.some((line) => line.includes('Injected Cursor skill "ironworks"'))).toBe(true);
     expect(logs.some((line) => line.includes('Injected Cursor skill "ironworks-create-agent"'))).toBe(true);
   });

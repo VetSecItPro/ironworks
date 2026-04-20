@@ -1,6 +1,6 @@
-import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { agentMemoryEntries } from "@ironworksai/db";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 
 // ── Agent Learning System ─────────────────────────────────────────────────
 //
@@ -16,24 +16,14 @@ export interface AgentLesson {
   createdAt: Date;
 }
 
-const LESSON_CATEGORIES = [
-  "lesson_learned",
-  "lesson",
-  "quality_flag",
-  "mistake_learning",
-  "feedback",
-] as const;
+const LESSON_CATEGORIES = ["lesson_learned", "lesson", "quality_flag", "mistake_learning", "feedback"] as const;
 
 /**
  * Retrieve lesson entries for an agent, sorted by most recent first.
  * Lessons include categories: lesson_learned, quality_flag, mistake_learning,
  * and the new "lesson" category from quality gate reflections.
  */
-export async function getAgentLessons(
-  db: Db,
-  agentId: string,
-  limit = 10,
-): Promise<AgentLesson[]> {
+export async function getAgentLessons(db: Db, agentId: string, limit = 10): Promise<AgentLesson[]> {
   return db
     .select({
       id: agentMemoryEntries.id,
@@ -48,7 +38,10 @@ export async function getAgentLessons(
       and(
         eq(agentMemoryEntries.agentId, agentId),
         isNull(agentMemoryEntries.archivedAt),
-        sql`${agentMemoryEntries.category} IN (${sql.join(LESSON_CATEGORIES.map((c) => sql`${c}`), sql`, `)})`,
+        sql`${agentMemoryEntries.category} IN (${sql.join(
+          LESSON_CATEGORIES.map((c) => sql`${c}`),
+          sql`, `,
+        )})`,
       ),
     )
     .orderBy(desc(agentMemoryEntries.createdAt))
@@ -59,15 +52,10 @@ export async function getAgentLessons(
  * Format lessons for prompt injection into agent context.
  * Returns a string block suitable for prepending to agent instructions.
  */
-export function injectLessons(
-  context: string,
-  lessons: AgentLesson[],
-): string {
+export function injectLessons(context: string, lessons: AgentLesson[]): string {
   if (lessons.length === 0) return context;
 
-  const lessonBlock = lessons
-    .map((l, i) => `${i + 1}. [${l.category ?? "lesson"}] ${l.content}`)
-    .join("\n");
+  const lessonBlock = lessons.map((l, i) => `${i + 1}. [${l.category ?? "lesson"}] ${l.content}`).join("\n");
 
   const header = `\n\n--- LESSONS FROM PAST EXPERIENCE ---\nApply these lessons to improve your work quality:\n${lessonBlock}\n--- END LESSONS ---\n\n`;
 

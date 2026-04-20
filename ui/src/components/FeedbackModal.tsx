@@ -1,13 +1,13 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/context/ToastContext";
+import { useState } from "react";
 import { authApi } from "@/api/auth";
 import { supportApi } from "@/api/support";
-import { queryKeys } from "@/lib/queryKeys";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useCompany } from "@/context/CompanyContext";
+import { useToast } from "@/context/ToastContext";
+import { queryKeys } from "@/lib/queryKeys";
 
 interface FeedbackModalProps {
   open: boolean;
@@ -59,19 +59,13 @@ export function FeedbackModal({ open, onClose }: FeedbackModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-        aria-hidden="true"
-      />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
 
       {/* Panel */}
       <div className="relative z-10 w-full max-w-md rounded-xl border border-border bg-card shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-          <h2 className="text-sm font-semibold">
-            {type === "bug" ? "Report a Bug" : "Request a Feature"}
-          </h2>
+          <h2 className="text-sm font-semibold">{type === "bug" ? "Report a Bug" : "Request a Feature"}</h2>
           <button
             type="button"
             onClick={onClose}
@@ -85,7 +79,7 @@ export function FeedbackModal({ open, onClose }: FeedbackModalProps) {
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {/* Type radio */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-2 block">Type</label>
+            <span className="text-xs font-medium text-muted-foreground mb-2 block">Type</span>
             <div className="flex gap-3">
               {(["bug", "feature"] as FeedbackType[]).map((t) => (
                 <label key={t} className="flex items-center gap-2 cursor-pointer">
@@ -150,11 +144,7 @@ export function FeedbackModal({ open, onClose }: FeedbackModalProps) {
             <Button type="button" variant="ghost" size="sm" onClick={onClose}>
               Cancel
             </Button>
-            <Button
-              type="submit"
-              size="sm"
-              disabled={submitting || !subject.trim() || !description.trim()}
-            >
+            <Button type="submit" size="sm" disabled={submitting || !subject.trim() || !description.trim()}>
               {submitting ? "Submitting..." : "Submit"}
             </Button>
           </div>

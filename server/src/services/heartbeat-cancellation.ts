@@ -6,12 +6,12 @@
  * and budget-related pending wakeup cancellations.
  */
 
-import { and, eq, inArray, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { agentWakeupRequests, heartbeatRuns, issues } from "@ironworksai/db";
-import type { BudgetEnforcementScope } from "./budgets.js";
-import { notFound } from "../errors.js";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { runningProcesses } from "../adapters/index.js";
+import { notFound } from "../errors.js";
+import type { BudgetEnforcementScope } from "./budgets.js";
 import { publishLiveEvent } from "./live-events.js";
 
 // Re-exported for convenience
@@ -19,12 +19,7 @@ export type { BudgetEnforcementScope };
 
 // ── Internal helpers ────────────────────────────────────────────────────────
 
-async function setRunStatus(
-  db: Db,
-  runId: string,
-  status: string,
-  patch?: Partial<typeof heartbeatRuns.$inferInsert>,
-) {
+async function setRunStatus(db: Db, runId: string, status: string, patch?: Partial<typeof heartbeatRuns.$inferInsert>) {
   const updated = await db
     .update(heartbeatRuns)
     .set({ status, ...patch, updatedAt: new Date() })
@@ -76,21 +71,16 @@ async function getRun(db: Db, runId: string) {
 
 // ── Project-scoped run/wakeup helpers ─────────────────────────────────────
 
-export async function listProjectScopedRunIds(
-  db: Db,
-  companyId: string,
-  projectId: string,
-): Promise<string[]> {
+export async function listProjectScopedRunIds(db: Db, companyId: string, projectId: string): Promise<string[]> {
   const runIssueId = sql<string | null>`${heartbeatRuns.contextSnapshot} ->> 'issueId'`;
-  const effectiveProjectId = sql<string | null>`coalesce(${heartbeatRuns.contextSnapshot} ->> 'projectId', ${issues.projectId}::text)`;
+  const effectiveProjectId = sql<
+    string | null
+  >`coalesce(${heartbeatRuns.contextSnapshot} ->> 'projectId', ${issues.projectId}::text)`;
 
   const rows = await db
     .selectDistinctOn([heartbeatRuns.id], { id: heartbeatRuns.id })
     .from(heartbeatRuns)
-    .leftJoin(
-      issues,
-      and(eq(issues.companyId, companyId), sql`${issues.id}::text = ${runIssueId}`),
-    )
+    .leftJoin(issues, and(eq(issues.companyId, companyId), sql`${issues.id}::text = ${runIssueId}`))
     .where(
       and(
         eq(heartbeatRuns.companyId, companyId),
@@ -102,21 +92,16 @@ export async function listProjectScopedRunIds(
   return rows.map((row) => row.id);
 }
 
-export async function listProjectScopedWakeupIds(
-  db: Db,
-  companyId: string,
-  projectId: string,
-): Promise<string[]> {
+export async function listProjectScopedWakeupIds(db: Db, companyId: string, projectId: string): Promise<string[]> {
   const wakeIssueId = sql<string | null>`${agentWakeupRequests.payload} ->> 'issueId'`;
-  const effectiveProjectId = sql<string | null>`coalesce(${agentWakeupRequests.payload} ->> 'projectId', ${issues.projectId}::text)`;
+  const effectiveProjectId = sql<
+    string | null
+  >`coalesce(${agentWakeupRequests.payload} ->> 'projectId', ${issues.projectId}::text)`;
 
   const rows = await db
     .selectDistinctOn([agentWakeupRequests.id], { id: agentWakeupRequests.id })
     .from(agentWakeupRequests)
-    .leftJoin(
-      issues,
-      and(eq(issues.companyId, companyId), sql`${issues.id}::text = ${wakeIssueId}`),
-    )
+    .leftJoin(issues, and(eq(issues.companyId, companyId), sql`${issues.id}::text = ${wakeIssueId}`))
     .where(
       and(
         eq(agentWakeupRequests.companyId, companyId),
@@ -131,10 +116,7 @@ export async function listProjectScopedWakeupIds(
 
 // ── Cancel pending wakeups for budget scope ────────────────────────────────
 
-export async function cancelPendingWakeupsForBudgetScope(
-  db: Db,
-  scope: BudgetEnforcementScope,
-): Promise<number> {
+export async function cancelPendingWakeupsForBudgetScope(db: Db, scope: BudgetEnforcementScope): Promise<number> {
   const now = new Date();
   let wakeupIds: string[] = [];
 
@@ -255,9 +237,7 @@ export async function cancelActiveForAgentInternal(
   const runs = await db
     .select()
     .from(heartbeatRuns)
-    .where(
-      and(eq(heartbeatRuns.agentId, agentId), inArray(heartbeatRuns.status, ["queued", "running"])),
-    );
+    .where(and(eq(heartbeatRuns.agentId, agentId), inArray(heartbeatRuns.status, ["queued", "running"])));
 
   await Promise.all(
     runs.map(async (run) => {
@@ -306,10 +286,7 @@ export async function cancelBudgetScopeWork(
           .select({ id: heartbeatRuns.id })
           .from(heartbeatRuns)
           .where(
-            and(
-              eq(heartbeatRuns.companyId, scope.companyId),
-              inArray(heartbeatRuns.status, ["queued", "running"]),
-            ),
+            and(eq(heartbeatRuns.companyId, scope.companyId), inArray(heartbeatRuns.status, ["queued", "running"])),
           )
           .then((rows) => rows.map((row) => row.id))
       : await listProjectScopedRunIds(db, scope.companyId, scope.scopeId);

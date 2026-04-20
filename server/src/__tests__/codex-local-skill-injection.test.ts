@@ -1,8 +1,8 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
 import { ensureCodexSkillsInjected } from "@ironworksai/adapter-codex-local/server";
+import { afterEach, describe, expect, it } from "vitest";
 
 async function makeTempDir(prefix: string): Promise<string> {
   return fs.mkdtemp(path.join(os.tmpdir(), prefix));
@@ -14,20 +14,12 @@ async function createIronworksRepoSkill(root: string, skillName: string) {
   await fs.mkdir(path.join(root, "skills", skillName), { recursive: true });
   await fs.writeFile(path.join(root, "pnpm-workspace.yaml"), "packages:\n  - packages/*\n", "utf8");
   await fs.writeFile(path.join(root, "package.json"), '{"name":"ironworks"}\n', "utf8");
-  await fs.writeFile(
-    path.join(root, "skills", skillName, "SKILL.md"),
-    `---\nname: ${skillName}\n---\n`,
-    "utf8",
-  );
+  await fs.writeFile(path.join(root, "skills", skillName, "SKILL.md"), `---\nname: ${skillName}\n---\n`, "utf8");
 }
 
 async function createCustomSkill(root: string, skillName: string) {
   await fs.mkdir(path.join(root, "custom", skillName), { recursive: true });
-  await fs.writeFile(
-    path.join(root, "custom", skillName, "SKILL.md"),
-    `---\nname: ${skillName}\n---\n`,
-    "utf8",
-  );
+  await fs.writeFile(path.join(root, "custom", skillName, "SKILL.md"), `---\nname: ${skillName}\n---\n`, "utf8");
 }
 
 describe("codex local adapter skill injection", () => {
@@ -58,11 +50,13 @@ describe("codex local adapter skill injection", () => {
       },
       {
         skillsHome,
-        skillsEntries: [{
-          key: ironworksKey,
-          runtimeName: "ironworks",
-          source: path.join(currentRepo, "skills", "ironworks"),
-        }],
+        skillsEntries: [
+          {
+            key: ironworksKey,
+            runtimeName: "ironworks",
+            source: path.join(currentRepo, "skills", "ironworks"),
+          },
+        ],
       },
     );
 
@@ -91,11 +85,13 @@ describe("codex local adapter skill injection", () => {
 
     await ensureCodexSkillsInjected(async () => {}, {
       skillsHome,
-      skillsEntries: [{
-        key: ironworksKey,
-        runtimeName: "ironworks",
-        source: path.join(currentRepo, "skills", "ironworks"),
-      }],
+      skillsEntries: [
+        {
+          key: ironworksKey,
+          runtimeName: "ironworks",
+          source: path.join(currentRepo, "skills", "ironworks"),
+        },
+      ],
     });
 
     expect(await fs.realpath(path.join(skillsHome, "ironworks"))).toBe(
@@ -124,11 +120,13 @@ describe("codex local adapter skill injection", () => {
       },
       {
         skillsHome,
-        skillsEntries: [{
-          key: ironworksKey,
-          runtimeName: "ironworks",
-          source: path.join(currentRepo, "skills", "ironworks"),
-        }],
+        skillsEntries: [
+          {
+            key: ironworksKey,
+            runtimeName: "ironworks",
+            source: path.join(currentRepo, "skills", "ironworks"),
+          },
+        ],
       },
     );
 
@@ -151,18 +149,17 @@ describe("codex local adapter skill injection", () => {
 
     await createIronworksRepoSkill(currentRepo, "ironworks");
     await createIronworksRepoSkill(currentRepo, "agent-browser");
-    await fs.symlink(
-      path.join(currentRepo, "skills", "agent-browser"),
-      path.join(skillsHome, "agent-browser"),
-    );
+    await fs.symlink(path.join(currentRepo, "skills", "agent-browser"), path.join(skillsHome, "agent-browser"));
 
     await ensureCodexSkillsInjected(async () => {}, {
       skillsHome,
-      skillsEntries: [{
-        key: ironworksKey,
-        runtimeName: "ironworks",
-        source: path.join(currentRepo, "skills", "ironworks"),
-      }],
+      skillsEntries: [
+        {
+          key: ironworksKey,
+          runtimeName: "ironworks",
+          source: path.join(currentRepo, "skills", "ironworks"),
+        },
+      ],
     });
 
     expect((await fs.lstat(path.join(skillsHome, "ironworks"))).isSymbolicLink()).toBe(true);

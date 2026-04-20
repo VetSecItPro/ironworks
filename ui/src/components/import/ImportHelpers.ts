@@ -1,7 +1,4 @@
-import type {
-  CompanyPortabilityPreviewResult,
-  CompanyPortabilityFileEntry,
-} from "@ironworksai/shared";
+import type { CompanyPortabilityPreviewResult } from "@ironworksai/shared";
 
 export const ACTION_COLORS: Record<string, string> = {
   create: "text-emerald-500 border-emerald-500/30",
@@ -17,9 +14,7 @@ export function ensureMarkdownPath(p: string): string {
 }
 
 /** Build a map from file path to planned action using the manifest + plan */
-export function buildActionMap(
-  preview: CompanyPortabilityPreviewResult,
-): Map<string, string> {
+export function buildActionMap(preview: CompanyPortabilityPreviewResult): Map<string, string> {
   const map = new Map<string, string>();
   const manifest = preview.manifest;
 
@@ -59,12 +54,7 @@ export function buildActionMap(
 
   if (manifest.company) {
     const path = ensureMarkdownPath(manifest.company.path);
-    map.set(
-      path,
-      preview.plan.companyAction === "none"
-        ? "skip"
-        : preview.plan.companyAction,
-    );
+    map.set(path, preview.plan.companyAction === "none" ? "skip" : preview.plan.companyAction);
   }
 
   return map;
@@ -79,9 +69,7 @@ export interface ConflictItem {
   action: "rename" | "update";
 }
 
-export function buildConflictList(
-  preview: CompanyPortabilityPreviewResult,
-): ConflictItem[] {
+export function buildConflictList(preview: CompanyPortabilityPreviewResult): ConflictItem[] {
   const conflicts: ConflictItem[] = [];
   const manifest = preview.manifest;
 
@@ -132,9 +120,7 @@ export function deriveSourcePrefix(
     const url = importUrl.trim();
     if (!url) return null;
     try {
-      const pathname = new URL(
-        url.startsWith("http") ? url : `https://${url}`,
-      ).pathname;
+      const pathname = new URL(url.startsWith("http") ? url : `https://${url}`).pathname;
       const segments = pathname.split("/").filter(Boolean);
       return segments.length > 0 ? segments[segments.length - 1] : null;
     } catch {
@@ -145,10 +131,7 @@ export function deriveSourcePrefix(
 }
 
 /** Generate a prefix-based rename: e.g. "gstack" + "CEO" - "gstack-CEO" */
-export function prefixedName(
-  prefix: string | null,
-  originalName: string,
-): string {
+export function prefixedName(prefix: string | null, originalName: string): string {
   if (!prefix) return originalName;
   return `${prefix}-${originalName}`;
 }

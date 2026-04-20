@@ -1,17 +1,11 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Copy, Eye, EyeOff, Key, Plus } from "lucide-react";
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { agentsApi, type AgentKey } from "../../api/agents";
-import { queryKeys } from "../../lib/queryKeys";
-import { formatDate } from "../../lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Plus,
-  Key,
-  Eye,
-  EyeOff,
-  Copy,
-} from "lucide-react";
+import { type AgentKey, agentsApi } from "../../api/agents";
+import { queryKeys } from "../../lib/queryKeys";
+import { formatDate } from "../../lib/utils";
 
 export function KeysTab({ agentId, companyId }: { agentId: string; companyId?: string }) {
   const queryClient = useQueryClient();
@@ -72,22 +66,12 @@ export function KeysTab({ agentId, companyId }: { agentId: string; companyId?: s
             >
               {tokenVisible ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
             </Button>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={copyToken}
-              title="Copy"
-            >
+            <Button variant="ghost" size="icon-sm" onClick={copyToken} title="Copy">
               <Copy className="h-3.5 w-3.5" />
             </Button>
             {copied && <span className="text-xs text-green-400">Copied!</span>}
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground text-xs"
-            onClick={() => setNewToken(null)}
-          >
+          <Button variant="ghost" size="sm" className="text-muted-foreground text-xs" onClick={() => setNewToken(null)}>
             Dismiss
           </Button>
         </div>
@@ -112,11 +96,7 @@ export function KeysTab({ agentId, companyId }: { agentId: string; companyId?: s
               if (e.key === "Enter") createKey.mutate();
             }}
           />
-          <Button
-            size="sm"
-            onClick={() => createKey.mutate()}
-            disabled={createKey.isPending}
-          >
+          <Button size="sm" onClick={() => createKey.mutate()} disabled={createKey.isPending}>
             <Plus className="h-3.5 w-3.5 mr-1" />
             Create
           </Button>
@@ -132,17 +112,13 @@ export function KeysTab({ agentId, companyId }: { agentId: string; companyId?: s
 
       {activeKeys.length > 0 && (
         <div>
-          <h3 className="text-xs font-medium text-muted-foreground mb-2">
-            Active Keys
-          </h3>
+          <h3 className="text-xs font-medium text-muted-foreground mb-2">Active Keys</h3>
           <div className="border border-border rounded-lg divide-y divide-border">
             {activeKeys.map((key: AgentKey) => (
               <div key={key.id} className="flex items-center justify-between px-4 py-2.5">
                 <div>
                   <span className="text-sm font-medium">{key.name}</span>
-                  <span className="text-xs text-muted-foreground ml-3">
-                    Created {formatDate(key.createdAt)}
-                  </span>
+                  <span className="text-xs text-muted-foreground ml-3">Created {formatDate(key.createdAt)}</span>
                 </div>
                 <Button
                   variant="ghost"
@@ -162,9 +138,7 @@ export function KeysTab({ agentId, companyId }: { agentId: string; companyId?: s
       {/* Revoked keys */}
       {revokedKeys.length > 0 && (
         <div>
-          <h3 className="text-xs font-medium text-muted-foreground mb-2">
-            Revoked Keys
-          </h3>
+          <h3 className="text-xs font-medium text-muted-foreground mb-2">Revoked Keys</h3>
           <div className="border border-border rounded-lg divide-y divide-border opacity-50">
             {revokedKeys.map((key: AgentKey) => (
               <div key={key.id} className="flex items-center justify-between px-4 py-2.5">

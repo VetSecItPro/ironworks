@@ -1,14 +1,14 @@
-import { memo } from "react";
-import { Link } from "@/lib/router";
-import { Button } from "@/components/ui/button";
+import type { HeartbeatRun, Issue } from "@ironworksai/shared";
 import { RotateCcw, X, XCircle } from "lucide-react";
-import { StatusBadge } from "../StatusBadge";
+import { memo } from "react";
+import { Button } from "@/components/ui/button";
+import { Link } from "@/lib/router";
 import { timeAgo } from "../../lib/timeAgo";
 import { cn } from "../../lib/utils";
-import { SnoozeButton } from "./SnoozeButton";
-import { getSeverityBorderClass, runFailureMessage, readIssueIdFromRun } from "./inboxHelpers";
+import { StatusBadge } from "../StatusBadge";
+import { getSeverityBorderClass, readIssueIdFromRun, runFailureMessage } from "./inboxHelpers";
 import type { NonIssueUnreadState } from "./inboxTypes";
-import type { HeartbeatRun, Issue } from "@ironworksai/shared";
+import { SnoozeButton } from "./SnoozeButton";
 
 export const FailedRunInboxRow = memo(function FailedRunInboxRow({
   run,
@@ -41,17 +41,19 @@ export const FailedRunInboxRow = memo(function FailedRunInboxRow({
   snoozeKey?: string;
 }) {
   const issueId = readIssueIdFromRun(run);
-  const issue = issueId ? issueById.get(issueId) ?? null : null;
+  const issue = issueId ? (issueById.get(issueId) ?? null) : null;
   const displayError = runFailureMessage(run);
   const showUnreadSlot = unreadState !== null;
   const showUnreadDot = unreadState === "visible" || unreadState === "fading";
 
   return (
-    <div className={cn(
-      "group border-b border-border px-2 py-2.5 last:border-b-0 sm:px-1 sm:pr-3 sm:py-2",
-      getSeverityBorderClass({ kind: "failed_run" }),
-      className,
-    )}>
+    <div
+      className={cn(
+        "group border-b border-border px-2 py-2.5 last:border-b-0 sm:px-1 sm:pr-3 sm:py-2",
+        getSeverityBorderClass({ kind: "failed_run" }),
+        className,
+      )}
+    >
       <div className="flex items-start gap-2 sm:items-center">
         {showUnreadSlot ? (
           <span className="hidden sm:inline-flex h-4 w-4 shrink-0 items-center justify-center self-center">
@@ -62,10 +64,12 @@ export const FailedRunInboxRow = memo(function FailedRunInboxRow({
                 className="inline-flex h-4 w-4 items-center justify-center rounded-full transition-colors hover:bg-blue-500/20"
                 aria-label="Mark as read"
               >
-                <span className={cn(
-                  "block h-2 w-2 rounded-full bg-blue-600 transition-opacity duration-300 dark:bg-blue-400",
-                  unreadState === "fading" ? "opacity-0" : "opacity-100",
-                )} />
+                <span
+                  className={cn(
+                    "block h-2 w-2 rounded-full bg-blue-600 transition-opacity duration-300 dark:bg-blue-400",
+                    unreadState === "fading" ? "opacity-0" : "opacity-100",
+                  )}
+                />
               </button>
             ) : onArchive ? (
               <button
@@ -124,9 +128,7 @@ export const FailedRunInboxRow = memo(function FailedRunInboxRow({
             <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
             {isRetrying ? "Retrying..." : "Retry"}
           </Button>
-          {onSnooze && snoozeKey && (
-            <SnoozeButton itemKey={snoozeKey} onSnooze={onSnooze} />
-          )}
+          {onSnooze && snoozeKey && <SnoozeButton itemKey={snoozeKey} onSnooze={onSnooze} />}
           {!showUnreadSlot && (
             <button
               type="button"

@@ -1,7 +1,7 @@
-import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
-import type { AnyPgColumn, AnyPgTable } from "drizzle-orm/pg-core";
 import type { Db } from "@ironworksai/db";
 import { agents, costEvents, financeEvents, goals, heartbeatRuns, issues, projects } from "@ironworksai/db";
+import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
+import type { AnyPgColumn, AnyPgTable } from "drizzle-orm/pg-core";
 import { notFound, unprocessable } from "../errors.js";
 
 export interface FinanceDateRange {
@@ -12,13 +12,7 @@ export interface FinanceDateRange {
 /** Drizzle pg table that exposes `id` and `companyId` columns — structural constraint for ownership checks. */
 type OwnedTable = AnyPgTable & { id: AnyPgColumn; companyId: AnyPgColumn };
 
-async function assertBelongsToCompany(
-  db: Db,
-  table: OwnedTable,
-  id: string,
-  companyId: string,
-  label: string,
-) {
+async function assertBelongsToCompany(db: Db, table: OwnedTable, id: string, companyId: string, label: string) {
   const row = await db
     .select()
     .from(table)
@@ -49,7 +43,8 @@ export function financeService(db: Db) {
       if (data.issueId) await assertBelongsToCompany(db, issues, data.issueId, companyId, "Issue");
       if (data.projectId) await assertBelongsToCompany(db, projects, data.projectId, companyId, "Project");
       if (data.goalId) await assertBelongsToCompany(db, goals, data.goalId, companyId, "Goal");
-      if (data.heartbeatRunId) await assertBelongsToCompany(db, heartbeatRuns, data.heartbeatRunId, companyId, "Heartbeat run");
+      if (data.heartbeatRunId)
+        await assertBelongsToCompany(db, heartbeatRuns, data.heartbeatRunId, companyId, "Heartbeat run");
       if (data.costEventId) await assertBelongsToCompany(db, costEvents, data.costEventId, companyId, "Cost event");
 
       const event = await db

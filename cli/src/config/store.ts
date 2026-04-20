@@ -1,10 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import { ironworksConfigSchema, type IronworksConfig } from "./schema.js";
-import {
-  resolveDefaultConfigPath,
-  resolveIronworksInstanceId,
-} from "./home.js";
+import { resolveDefaultConfigPath, resolveIronworksInstanceId } from "./home.js";
+import { type IronworksConfig, ironworksConfigSchema } from "./schema.js";
 
 const DEFAULT_CONFIG_BASENAME = "config.json";
 
@@ -95,22 +92,19 @@ export function readConfig(configPath?: string): IronworksConfig | null {
   return parsed.data;
 }
 
-export function writeConfig(
-  config: IronworksConfig,
-  configPath?: string,
-): void {
+export function writeConfig(config: IronworksConfig, configPath?: string): void {
   const filePath = resolveConfigPath(configPath);
   const dir = path.dirname(filePath);
   fs.mkdirSync(dir, { recursive: true });
 
   // Backup existing config before overwriting
   if (fs.existsSync(filePath)) {
-    const backupPath = filePath + ".backup";
+    const backupPath = `${filePath}.backup`;
     fs.copyFileSync(filePath, backupPath);
     fs.chmodSync(backupPath, 0o600);
   }
 
-  fs.writeFileSync(filePath, JSON.stringify(config, null, 2) + "\n", {
+  fs.writeFileSync(filePath, `${JSON.stringify(config, null, 2)}\n`, {
     mode: 0o600,
   });
 }

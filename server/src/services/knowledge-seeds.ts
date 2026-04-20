@@ -3087,7 +3087,6 @@ Every entry must contain: timestamp (ISO 8601), event_type, agent_id, company_id
   },
 ];
 
-
 // SOP Templates for agent operating procedures
 const sopTemplates = [
   {
@@ -3251,7 +3250,6 @@ If the new agent cannot complete their first task within 24 hours:
 | Month 1 review | VP of HR + Manager | |`,
   },
 ];
-
 
 export function getKnowledgeSeeds(): { seeds: KnowledgeSeed[]; sopTemplates: KnowledgeSeed[] } {
   return { seeds, sopTemplates };

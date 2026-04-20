@@ -1,6 +1,6 @@
 import type { Db } from "@ironworksai/db";
-import { lookupPlaybook } from "./playbook-rag.js";
 import { logger } from "../middleware/logger.js";
+import { type LookupResult, lookupPlaybook } from "./playbook-rag.js";
 
 /**
  * Post-execution audit: after an agent completes a run, a small Ollama
@@ -36,26 +36,23 @@ export interface AuditInput {
   companyId: string;
   agentId: string;
   agentName: string;
-  agentRole: string;        // e.g., "cmo", "cfo", "engineer"
+  agentRole: string; // e.g., "cmo", "cfo", "engineer"
   agentDepartment: string | null;
-  taskSummary: string;      // e.g., "draft Q2 launch announcement"
-  agentOutput: string;      // what the agent produced
+  taskSummary: string; // e.g., "draft Q2 launch announcement"
+  agentOutput: string; // what the agent produced
 }
 
 export interface AuditVerdict {
-  followed: boolean;        // true = agent followed playbook discipline
-  confidence: number;       // 0-100; how confident the auditor is
-  violations: string[];     // specific rule violations (empty if followed=true)
-  suggestions: string[];    // what the agent should do differently next time
-  chunksConsulted: number;  // how many playbook chunks the auditor referenced
+  followed: boolean; // true = agent followed playbook discipline
+  confidence: number; // 0-100; how confident the auditor is
+  violations: string[]; // specific rule violations (empty if followed=true)
+  suggestions: string[]; // what the agent should do differently next time
+  chunksConsulted: number; // how many playbook chunks the auditor referenced
   auditModel: string;
   auditDurationMs: number;
 }
 
-export async function auditAgentRun(
-  db: Db,
-  input: AuditInput,
-): Promise<AuditVerdict | null> {
+export async function auditAgentRun(db: Db, input: AuditInput): Promise<AuditVerdict | null> {
   const start = Date.now();
 
   const apiKey = process.env.OLLAMA_API_KEY;
@@ -71,7 +68,7 @@ export async function auditAgentRun(
 
   // Look up relevant playbook chunks via RAG. Filter by department so
   // we don't audit a CMO output against a security playbook.
-  let chunks;
+  let chunks: LookupResult[];
   try {
     chunks = await lookupPlaybook(db, {
       companyId: input.companyId,
@@ -95,9 +92,7 @@ export async function auditAgentRun(
     return null;
   }
 
-  const playbookSummary = chunks
-    .map((c) => `### ${c.headingPath}\n\n${c.body.slice(0, 1500)}`)
-    .join("\n\n---\n\n");
+  const playbookSummary = chunks.map((c) => `### ${c.headingPath}\n\n${c.body.slice(0, 1500)}`).join("\n\n---\n\n");
 
   const auditPrompt = `You are a quality auditor evaluating whether an AI agent followed its operating playbook.
 

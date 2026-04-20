@@ -1,5 +1,5 @@
-import { Router, type Request } from "express";
 import type { Db } from "@ironworksai/db";
+import { hiringRequests } from "@ironworksai/db";
 import {
   addApprovalCommentSchema,
   createApprovalSchema,
@@ -7,8 +7,14 @@ import {
   resolveApprovalSchema,
   resubmitApprovalSchema,
 } from "@ironworksai/shared";
-import { validate } from "../middleware/validate.js";
+import { and, eq } from "drizzle-orm";
+import { type Request, Router } from "express";
 import { logger } from "../middleware/logger.js";
+import { validate } from "../middleware/validate.js";
+import { redactEventPayload } from "../redaction.js";
+import { extractLessonFromRejection } from "../services/agent-reflection.js";
+import { generateMeetingMinutes } from "../services/agent-workspace.js";
+import { findCompanyChannel, postMessage as postChannelMessage } from "../services/channels.js";
 import {
   approvalService,
   heartbeatService,
@@ -16,13 +22,7 @@ import {
   logActivity,
   secretService,
 } from "../services/index.js";
-import { hiringRequests } from "@ironworksai/db";
-import { and, eq } from "drizzle-orm";
 import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
-import { redactEventPayload } from "../redaction.js";
-import { extractLessonFromRejection } from "../services/agent-reflection.js";
-import { generateMeetingMinutes } from "../services/agent-workspace.js";
-import { findCompanyChannel, postMessage as postChannelMessage } from "../services/channels.js";
 
 function redactApprovalPayload<T extends { payload: Record<string, unknown> }>(approval: T): T {
   return {
@@ -78,11 +78,9 @@ export function approvalRoutes(db: Db) {
     const { issueIds: _issueIds, ...approvalInput } = req.body;
     const normalizedPayload =
       approvalInput.type === "hire_agent"
-        ? await secretsSvc.normalizeHireApprovalPayloadForPersistence(
-            companyId,
-            approvalInput.payload,
-            { strictMode: strictSecretsMode },
-          )
+        ? await secretsSvc.normalizeHireApprovalPayloadForPersistence(companyId, approvalInput.payload, {
+            strictMode: strictSecretsMode,
+          })
         : approvalInput.payload;
 
     const actor = getActorInfo(req);
@@ -90,8 +88,7 @@ export function approvalRoutes(db: Db) {
       ...approvalInput,
       payload: normalizedPayload,
       requestedByUserId: actor.actorType === "user" ? actor.actorId : null,
-      requestedByAgentId:
-        approvalInput.requestedByAgentId ?? (actor.actorType === "agent" ? actor.actorId : null),
+      requestedByAgentId: approvalInput.requestedByAgentId ?? (actor.actorType === "agent" ? actor.actorId : null),
       status: "pending",
       decisionNote: null,
       decidedByUserId: null,
@@ -139,11 +136,7 @@ export function approvalRoutes(db: Db) {
       res.status(404).json({ error: "Approval not found" });
       return;
     }
-    const { approval, applied } = await svc.approve(
-      id,
-      req.body.decidedByUserId ?? "board",
-      req.body.decisionNote,
-    );
+    const { approval, applied } = await svc.approve(id, req.body.decidedByUserId ?? "board", req.body.decisionNote);
 
     if (applied) {
       const linkedIssues = await issueApprovalsSvc.listIssuesForApproval(approval.id);
@@ -172,12 +165,7 @@ export function approvalRoutes(db: Db) {
           await db
             .update(hiringRequests)
             .set({ status: "approved", updatedAt: new Date() })
-            .where(
-              and(
-                eq(hiringRequests.id, hiringRequestId),
-                eq(hiringRequests.companyId, approval.companyId),
-              ),
-            )
+            .where(and(eq(hiringRequests.id, hiringRequestId), eq(hiringRequests.companyId, approval.companyId)))
             .catch((err) => logger.warn({ err, hiringRequestId }, "failed to sync hiring request status on approval"));
         }
       }
@@ -251,9 +239,7 @@ export function approvalRoutes(db: Db) {
         sourceType: "approval",
         sourceId: approval.id,
         title: `${approval.type} Approval`,
-      }).catch((err) =>
-        logger.warn({ err, approvalId: approval.id }, "meeting minutes generation failed (approve)"),
-      );
+      }).catch((err) => logger.warn({ err, approvalId: approval.id }, "meeting minutes generation failed (approve)"));
 
       // Post decision to #company channel (non-fatal).
       void (async () => {
@@ -268,7 +254,9 @@ export function approvalRoutes(db: Db) {
               messageType: "decision",
             });
           }
-        } catch { /* non-fatal */ }
+        } catch {
+          /* non-fatal */
+        }
       })();
     }
 
@@ -282,11 +270,7 @@ export function approvalRoutes(db: Db) {
       res.status(404).json({ error: "Approval not found" });
       return;
     }
-    const { approval, applied } = await svc.reject(
-      id,
-      req.body.decidedByUserId ?? "board",
-      req.body.decisionNote,
-    );
+    const { approval, applied } = await svc.reject(id, req.body.decidedByUserId ?? "board", req.body.decisionNote);
 
     if (applied) {
       await logActivity(db, {
@@ -307,12 +291,7 @@ export function approvalRoutes(db: Db) {
           await db
             .update(hiringRequests)
             .set({ status: "rejected", updatedAt: new Date() })
-            .where(
-              and(
-                eq(hiringRequests.id, hiringRequestId),
-                eq(hiringRequests.companyId, approval.companyId),
-              ),
-            )
+            .where(and(eq(hiringRequests.id, hiringRequestId), eq(hiringRequests.companyId, approval.companyId)))
             .catch((err) => logger.warn({ err, hiringRequestId }, "failed to sync hiring request status on rejection"));
         }
       }
@@ -327,9 +306,7 @@ export function approvalRoutes(db: Db) {
           companyId: approval.companyId,
           issueId: primaryIssueId ?? approval.id,
           rejectionReason: req.body.decisionNote,
-        }).catch((err) =>
-          logger.warn({ err, approvalId: approval.id }, "failed to extract lesson from rejection"),
-        );
+        }).catch((err) => logger.warn({ err, approvalId: approval.id }, "failed to extract lesson from rejection"));
       }
 
       // Auto-generate meeting minutes if the approval has substantive discussion
@@ -338,9 +315,7 @@ export function approvalRoutes(db: Db) {
         sourceType: "approval",
         sourceId: approval.id,
         title: `${approval.type} Approval`,
-      }).catch((err) =>
-        logger.warn({ err, approvalId: approval.id }, "meeting minutes generation failed (reject)"),
-      );
+      }).catch((err) => logger.warn({ err, approvalId: approval.id }, "meeting minutes generation failed (reject)"));
 
       // Post decision to #company channel (non-fatal).
       void (async () => {
@@ -355,42 +330,36 @@ export function approvalRoutes(db: Db) {
               messageType: "decision",
             });
           }
-        } catch { /* non-fatal */ }
+        } catch {
+          /* non-fatal */
+        }
       })();
     }
 
     res.json(redactApprovalPayload(approval));
   });
 
-  router.post(
-    "/approvals/:id/request-revision",
-    validate(requestApprovalRevisionSchema),
-    async (req, res) => {
-      assertBoard(req);
-      const id = req.params.id as string;
-      if (!(await requireApprovalAccess(req, id))) {
-        res.status(404).json({ error: "Approval not found" });
-        return;
-      }
-      const approval = await svc.requestRevision(
-        id,
-        req.body.decidedByUserId ?? "board",
-        req.body.decisionNote,
-      );
+  router.post("/approvals/:id/request-revision", validate(requestApprovalRevisionSchema), async (req, res) => {
+    assertBoard(req);
+    const id = req.params.id as string;
+    if (!(await requireApprovalAccess(req, id))) {
+      res.status(404).json({ error: "Approval not found" });
+      return;
+    }
+    const approval = await svc.requestRevision(id, req.body.decidedByUserId ?? "board", req.body.decisionNote);
 
-      await logActivity(db, {
-        companyId: approval.companyId,
-        actorType: "user",
-        actorId: req.actor.userId ?? "board",
-        action: "approval.revision_requested",
-        entityType: "approval",
-        entityId: approval.id,
-        details: { type: approval.type },
-      });
+    await logActivity(db, {
+      companyId: approval.companyId,
+      actorType: "user",
+      actorId: req.actor.userId ?? "board",
+      action: "approval.revision_requested",
+      entityType: "approval",
+      entityId: approval.id,
+      details: { type: approval.type },
+    });
 
-      res.json(redactApprovalPayload(approval));
-    },
-  );
+    res.json(redactApprovalPayload(approval));
+  });
 
   router.post("/approvals/:id/resubmit", validate(resubmitApprovalSchema), async (req, res) => {
     const id = req.params.id as string;
@@ -408,11 +377,9 @@ export function approvalRoutes(db: Db) {
 
     const normalizedPayload = req.body.payload
       ? existing.type === "hire_agent"
-        ? await secretsSvc.normalizeHireApprovalPayloadForPersistence(
-            existing.companyId,
-            req.body.payload,
-            { strictMode: strictSecretsMode },
-          )
+        ? await secretsSvc.normalizeHireApprovalPayloadForPersistence(existing.companyId, req.body.payload, {
+            strictMode: strictSecretsMode,
+          })
         : req.body.payload
       : undefined;
     const approval = await svc.resubmit(id, normalizedPayload);

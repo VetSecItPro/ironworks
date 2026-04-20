@@ -1,7 +1,7 @@
-import type { KnowledgePage, KnowledgePageRevision } from "../../api/knowledge";
-import { Button } from "@/components/ui/button";
-import { timeAgo } from "../../lib/timeAgo";
 import { Eye, Undo2, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import type { KnowledgePage, KnowledgePageRevision } from "../../api/knowledge";
+import { timeAgo } from "../../lib/timeAgo";
 import { SimpleDiff } from "./SimpleDiff";
 
 export function KBRevisionHistory({
@@ -27,7 +27,8 @@ export function KBRevisionHistory({
         <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Revision History</h3>
         {compareRevision !== null && (
           <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => onSetCompareRevision(null)}>
-            <X className="h-3 w-3 mr-1" />Close Diff
+            <X className="h-3 w-3 mr-1" />
+            Close Diff
           </Button>
         )}
       </div>
@@ -57,11 +58,12 @@ export function KBRevisionHistory({
                   size="sm"
                   variant="ghost"
                   className="h-7 text-xs"
-                  onClick={() => onSetCompareRevision(
-                    compareRevision === rev.revisionNumber ? null : rev.revisionNumber,
-                  )}
+                  onClick={() =>
+                    onSetCompareRevision(compareRevision === rev.revisionNumber ? null : rev.revisionNumber)
+                  }
                 >
-                  <Eye className="h-3 w-3 mr-1" />{compareRevision === rev.revisionNumber ? "Hide Diff" : "Compare"}
+                  <Eye className="h-3 w-3 mr-1" />
+                  {compareRevision === rev.revisionNumber ? "Hide Diff" : "Compare"}
                 </Button>
                 <Button
                   size="sm"
@@ -70,7 +72,8 @@ export function KBRevisionHistory({
                   disabled={isReverting}
                   onClick={() => onRevert(rev.revisionNumber)}
                 >
-                  <Undo2 className="h-3 w-3 mr-1" />Revert
+                  <Undo2 className="h-3 w-3 mr-1" />
+                  Revert
                 </Button>
               </>
             )}

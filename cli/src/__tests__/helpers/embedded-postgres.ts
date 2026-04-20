@@ -1,6 +1,6 @@
 export {
-  getEmbeddedPostgresTestSupport,
-  startEmbeddedPostgresTestDatabase,
   type EmbeddedPostgresTestDatabase,
   type EmbeddedPostgresTestSupport,
+  getEmbeddedPostgresTestSupport,
+  startEmbeddedPostgresTestDatabase,
 } from "@ironworksai/db";

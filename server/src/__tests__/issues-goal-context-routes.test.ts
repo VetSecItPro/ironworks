@@ -1,8 +1,8 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { issueRoutes } from "../routes/issues.js";
 import { errorHandler } from "../middleware/index.js";
+import { issueRoutes } from "../routes/issues.js";
 
 const mockIssueService = vi.hoisted(() => ({
   getById: vi.fn(),
@@ -22,41 +22,44 @@ const mockGoalService = vi.hoisted(() => ({
   getDefaultCompanyGoal: vi.fn(),
 }));
 
-vi.mock("../services/index.js", () => ({
-  accessService: () => ({
-    canUser: vi.fn(),
-    hasPermission: vi.fn(),
-  }),
-  agentService: () => ({
-    getById: vi.fn(),
-  }),
-  documentService: () => ({
-    getIssueDocumentPayload: vi.fn(async () => ({})),
-  }),
-  executionWorkspaceService: () => ({
-    getById: vi.fn(),
-  }),
-  goalService: () => mockGoalService,
-  heartbeatService: () => ({
-    wakeup: vi.fn(async () => undefined),
-    reportRunActivity: vi.fn(async () => undefined),
-  }),
-  issueApprovalService: () => ({}),
-  issueService: () => mockIssueService,
-  logActivity: vi.fn(async () => undefined),
-  projectService: () => mockProjectService,
-  routineService: () => ({
-    syncRunStatusForIssue: vi.fn(async () => undefined),
-  }),
-  workProductService: () => ({
-    listForIssue: vi.fn(async () => []),
-  }),
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    accessService: () => ({
+      canUser: vi.fn(),
+      hasPermission: vi.fn(),
+    }),
+    agentService: () => ({
+      getById: vi.fn(),
+    }),
+    documentService: () => ({
+      getIssueDocumentPayload: vi.fn(async () => ({})),
+    }),
+    executionWorkspaceService: () => ({
+      getById: vi.fn(),
+    }),
+    goalService: () => mockGoalService,
+    heartbeatService: () => ({
+      wakeup: vi.fn(async () => undefined),
+      reportRunActivity: vi.fn(async () => undefined),
+    }),
+    issueService: () => mockIssueService,
+    logActivity: vi.fn(async () => undefined),
+    projectService: () => mockProjectService,
+    routineService: () => ({
+      syncRunStatusForIssue: vi.fn(async () => undefined),
+    }),
+    workProductService: () => ({
+      listForIssue: vi.fn(async () => []),
+    }),
+  });
+});
 
 function createApp() {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = {
       type: "board",
       userId: "local-board",
@@ -66,6 +69,7 @@ function createApp() {
     };
     next();
   });
+  // biome-ignore lint/suspicious/noExplicitAny: mock Drizzle DB or storage object for unit tests; real type requires full schema-aware Drizzle instance
   app.use("/api", issueRoutes({} as any, {} as any));
   app.use(errorHandler);
   return app;
@@ -149,9 +153,7 @@ describe("issue goal context routes", () => {
       updatedAt: new Date("2026-03-20T00:00:00Z"),
     });
     mockProjectService.listByIds.mockResolvedValue([]);
-    mockGoalService.getById.mockImplementation(async (id: string) =>
-      id === projectGoal.id ? projectGoal : null,
-    );
+    mockGoalService.getById.mockImplementation(async (id: string) => (id === projectGoal.id ? projectGoal : null));
     mockGoalService.getDefaultCompanyGoal.mockResolvedValue(null);
   });
 
@@ -170,9 +172,7 @@ describe("issue goal context routes", () => {
   });
 
   it("surfaces the project goal from GET /issues/:id/heartbeat-context", async () => {
-    const res = await request(createApp()).get(
-      "/api/issues/11111111-1111-4111-8111-111111111111/heartbeat-context",
-    );
+    const res = await request(createApp()).get("/api/issues/11111111-1111-4111-8111-111111111111/heartbeat-context");
 
     expect(res.status).toBe(200);
     expect(res.body.issue.goalId).toBe(projectGoal.id);

@@ -1,23 +1,15 @@
-import { memo, useRef } from "react";
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
 import { useDroppable } from "@dnd-kit/core";
-import { StatusIcon } from "../StatusIcon";
-import { KanbanCard } from "../KanbanCard";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import type { Issue } from "@ironworksai/shared";
+import { AlertTriangle, ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { memo, useRef } from "react";
 import { cn } from "../../lib/utils";
 import { HelpBeacon } from "../HelpBeacon";
-import {
-  Plus,
-  ChevronDown,
-  ChevronRight,
-  AlertTriangle,
-} from "lucide-react";
-import type { Issue } from "@ironworksai/shared";
-import type { Agent } from "./types";
-import { statusLabel, STATUS_COLUMN_TINTS } from "./types";
+import { KanbanCard } from "../KanbanCard";
+import { StatusIcon } from "../StatusIcon";
 import { ColumnHealthIndicator } from "./KanbanHelpers";
+import type { Agent } from "./types";
+import { STATUS_COLUMN_TINTS, statusLabel } from "./types";
 
 export const KanbanColumn = memo(function KanbanColumn({
   status,
@@ -56,6 +48,7 @@ export const KanbanColumn = memo(function KanbanColumn({
         )}
       >
         <button
+          type="button"
           onClick={onToggleCollapse}
           className="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity"
         >
@@ -81,21 +74,18 @@ export const KanbanColumn = memo(function KanbanColumn({
           )}
         >
           {count}
-          {wipLimit !== undefined && (
-            <span className="text-muted-foreground/40">/{wipLimit}</span>
-          )}
+          {wipLimit !== undefined && <span className="text-muted-foreground/40">/{wipLimit}</span>}
         </span>
         {wipLimit !== undefined && (
           <HelpBeacon text="WIP (Work In Progress) limits cap how many issues can be in this column at once. When the limit is reached, the count turns amber. Going over turns it red. This helps prevent overloading agents with too many concurrent tasks." />
         )}
 
-        {overLimit && (
-          <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />
-        )}
+        {overLimit && <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />}
 
         <ColumnHealthIndicator issues={issues} />
 
         <button
+          type="button"
           onClick={onQuickCreate}
           className="ml-auto p-0.5 rounded hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors"
           title={`Create issue in ${statusLabel(status)}`}
@@ -114,14 +104,11 @@ export const KanbanColumn = memo(function KanbanColumn({
           className={cn(
             "flex-1 min-h-[120px] rounded-b-lg p-1.5 transition-colors overflow-y-auto",
             "scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent",
-            isOver ? "bg-accent/40 ring-1 ring-primary/20" : STATUS_COLUMN_TINTS[status] ?? "bg-muted/20",
+            isOver ? "bg-accent/40 ring-1 ring-primary/20" : (STATUS_COLUMN_TINTS[status] ?? "bg-muted/20"),
           )}
           style={{ maxHeight: "calc(100vh - 220px)" }}
         >
-          <SortableContext
-            items={issues.map((i) => i.id)}
-            strategy={verticalListSortingStrategy}
-          >
+          <SortableContext items={issues.map((i) => i.id)} strategy={verticalListSortingStrategy}>
             <div className="flex flex-col gap-2">
               {issues.map((issue) => (
                 <KanbanCard

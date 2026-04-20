@@ -1,19 +1,9 @@
 import { Clock, Users } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { LibraryContributor, LibraryFileMeta } from "../../api/library";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { formatRelative, visibilityIcon } from "./libraryHelpers";
 
-export function FileMetaBar({
-  meta,
-  contributors,
-}: {
-  meta: LibraryFileMeta;
-  contributors: LibraryContributor[];
-}) {
+export function FileMetaBar({ meta, contributors }: { meta: LibraryFileMeta; contributors: LibraryContributor[] }) {
   const VisIcon = visibilityIcon(meta.visibility);
   return (
     <div className="flex items-center gap-3 px-4 py-1.5 border-b border-border bg-muted/10 text-xs text-muted-foreground">
@@ -24,9 +14,7 @@ export function FileMetaBar({
             {meta.visibility}
           </span>
         </TooltipTrigger>
-        <TooltipContent className="text-xs">
-          Visibility: {meta.visibility}
-        </TooltipContent>
+        <TooltipContent className="text-xs">Visibility: {meta.visibility}</TooltipContent>
       </Tooltip>
 
       <span className="flex items-center gap-1">
@@ -44,9 +32,7 @@ export function FileMetaBar({
             </span>
           </TooltipTrigger>
           <TooltipContent className="text-xs">
-            {contributors
-              .map((c) => c.agentName ?? c.agentId ?? "Unknown")
-              .join(", ")}
+            {contributors.map((c) => c.agentName ?? c.agentId ?? "Unknown").join(", ")}
           </TooltipContent>
         </Tooltip>
       )}

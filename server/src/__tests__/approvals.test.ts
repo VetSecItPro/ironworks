@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -58,18 +58,22 @@ const mockIssueApprovalService = vi.hoisted(() => ({
 }));
 
 const mockSecretService = vi.hoisted(() => ({
+  // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
   normalizeHireApprovalPayloadForPersistence: vi.fn().mockImplementation((_cid: any, payload: any) => payload),
 }));
 
 const mockLogActivity = vi.hoisted(() => vi.fn());
 
-vi.mock("../services/index.js", () => ({
-  approvalService: () => mockApprovalService,
-  heartbeatService: () => mockHeartbeatService,
-  issueApprovalService: () => mockIssueApprovalService,
-  secretService: () => mockSecretService,
-  logActivity: mockLogActivity,
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    approvalService: () => mockApprovalService,
+    heartbeatService: () => mockHeartbeatService,
+    issueApprovalService: () => mockIssueApprovalService,
+    secretService: () => mockSecretService,
+    logActivity: mockLogActivity,
+  });
+});
 
 vi.mock("../services/activity-log.js", () => ({
   logActivity: mockLogActivity,
@@ -77,6 +81,7 @@ vi.mock("../services/activity-log.js", () => ({
 }));
 
 vi.mock("../redaction.js", () => ({
+  // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
   redactEventPayload: vi.fn((x: any) => x),
 }));
 
@@ -98,7 +103,8 @@ vi.mock("../middleware/logger.js", () => ({
 }));
 
 vi.mock("../middleware/validate.js", () => ({
-  validate: () => (req: any, _res: any, next: any) => next(),
+  // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
+  validate: () => (_req: any, _res: any, next: any) => next(),
 }));
 
 // ── App builder ─────────────────────────────────────────────────────────────
@@ -110,9 +116,11 @@ async function createApp(actor: Record<string, unknown>) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });
+  // biome-ignore lint/suspicious/noExplicitAny: mock Drizzle DB or storage object for unit tests; real type requires full schema-aware Drizzle instance
   const fakeDb = {} as any;
   app.use("/api", approvalRoutes(fakeDb));
   app.use(errorHandler);
@@ -135,7 +143,10 @@ describe("approval routes", () => {
     mockApprovalService.list.mockResolvedValue([MOCK_APPROVAL]);
     mockApprovalService.getById.mockResolvedValue(MOCK_APPROVAL);
     mockApprovalService.create.mockResolvedValue(MOCK_APPROVAL);
-    mockApprovalService.approve.mockResolvedValue({ approval: { ...MOCK_APPROVAL, status: "approved" }, applied: true });
+    mockApprovalService.approve.mockResolvedValue({
+      approval: { ...MOCK_APPROVAL, status: "approved" },
+      applied: true,
+    });
     mockApprovalService.reject.mockResolvedValue({ approval: { ...MOCK_APPROVAL, status: "rejected" }, applied: true });
     mockApprovalService.requestRevision.mockResolvedValue({ ...MOCK_APPROVAL, status: "revision_requested" });
     mockApprovalService.resubmit.mockResolvedValue({ ...MOCK_APPROVAL, status: "pending" });
@@ -220,9 +231,7 @@ describe("approval routes", () => {
     it("rejects non-board actors from approving", async () => {
       const agentActor = { type: "agent", agentId: AGENT_ID, companyId: COMPANY_ID };
       const app = await createApp(agentActor);
-      const res = await request(app)
-        .post(`/api/approvals/${APPROVAL_ID}/approve`)
-        .send({ decidedByUserId: USER_ID });
+      const res = await request(app).post(`/api/approvals/${APPROVAL_ID}/approve`).send({ decidedByUserId: USER_ID });
 
       expect(res.status).toBe(403);
     });
@@ -242,9 +251,7 @@ describe("approval routes", () => {
     it("rejects non-board actors from rejecting", async () => {
       const agentActor = { type: "agent", agentId: AGENT_ID, companyId: COMPANY_ID };
       const app = await createApp(agentActor);
-      const res = await request(app)
-        .post(`/api/approvals/${APPROVAL_ID}/reject`)
-        .send({ decidedByUserId: USER_ID });
+      const res = await request(app).post(`/api/approvals/${APPROVAL_ID}/reject`).send({ decidedByUserId: USER_ID });
 
       expect(res.status).toBe(403);
     });
@@ -283,9 +290,7 @@ describe("approval routes", () => {
   describe("POST /api/approvals/:id/comments", () => {
     it("adds a comment to an approval", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post(`/api/approvals/${APPROVAL_ID}/comments`)
-        .send({ body: "Looks good to me" });
+      const res = await request(app).post(`/api/approvals/${APPROVAL_ID}/comments`).send({ body: "Looks good to me" });
 
       expect(res.status).toBe(201);
       expect(res.body).toMatchObject({ body: "Looks good to me" });
@@ -294,9 +299,7 @@ describe("approval routes", () => {
     it("returns 404 for comment on non-existent approval", async () => {
       mockApprovalService.getById.mockResolvedValue(null);
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post(`/api/approvals/${randomUUID()}/comments`)
-        .send({ body: "Test" });
+      const res = await request(app).post(`/api/approvals/${randomUUID()}/comments`).send({ body: "Test" });
       expect(res.status).toBe(404);
     });
   });

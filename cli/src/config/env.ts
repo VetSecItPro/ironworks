@@ -1,6 +1,6 @@
+import { randomBytes } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { randomBytes } from "node:crypto";
 import { config as loadDotenv, parse as parseEnvFileContents } from "dotenv";
 import { resolveConfigPath } from "./store.js";
 

@@ -1,6 +1,6 @@
+import { Check, X } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { LlmProviderLogo } from "../LlmProviderLogos";
-import { Check, X } from "lucide-react";
 import { LLM_PROVIDERS } from "./constants";
 
 interface StepLlmProviderProps {
@@ -39,7 +39,11 @@ export function StepLlmProvider({
           <button
             key={p.key}
             type="button"
-            onClick={() => { onProviderChange(p.key); onApiKeyChange(""); onErrorClear(); }}
+            onClick={() => {
+              onProviderChange(p.key);
+              onApiKeyChange("");
+              onErrorClear();
+            }}
             className={cn(
               "rounded-lg border px-3 py-2.5 text-left text-sm transition-colors",
               llmProvider === p.key
@@ -57,16 +61,20 @@ export function StepLlmProvider({
 
       {/* API Key / URL input */}
       <div className="space-y-2">
-        <label className="text-sm font-medium">
+        <label htmlFor="llm-api-key" className="text-sm font-medium">
           {activeProvider.key === "ollama" ? "Server URL" : "API Key"}
         </label>
         <div className="relative">
           <input
+            id="llm-api-key"
             type={activeProvider.key === "ollama" ? "url" : "password"}
             className="w-full rounded-md border border-border bg-transparent px-3 py-2 pr-9 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/70"
             placeholder={activeProvider.placeholder}
             value={llmApiKey}
-            onChange={(e) => { onApiKeyChange(e.target.value); onErrorClear(); }}
+            onChange={(e) => {
+              onApiKeyChange(e.target.value);
+              onErrorClear();
+            }}
             autoComplete="off"
           />
           {/* Inline format validation indicator */}
@@ -76,18 +84,12 @@ export function StepLlmProvider({
                 const val = llmApiKey.trim();
                 const prefix = activeProvider.placeholder.split("...")[0] || "";
                 const valid = val.length > 10 && (prefix === "API key" || prefix === "http" || val.startsWith(prefix));
-                return valid ? (
-                  <Check className="h-4 w-4 text-green-500" />
-                ) : (
-                  <X className="h-4 w-4 text-red-400" />
-                );
+                return valid ? <Check className="h-4 w-4 text-green-500" /> : <X className="h-4 w-4 text-red-400" />;
               })()}
             </span>
           )}
         </div>
-        <p className="text-xs text-muted-foreground">
-          {activeProvider.hint}
-        </p>
+        <p className="text-xs text-muted-foreground">{activeProvider.hint}</p>
       </div>
 
       {llmSaved && (
@@ -101,7 +103,9 @@ export function StepLlmProvider({
       )}
 
       {error && (
-        <p className="text-sm text-destructive" role="alert">{error}</p>
+        <p className="text-sm text-destructive" role="alert">
+          {error}
+        </p>
       )}
     </div>
   );

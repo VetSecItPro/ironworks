@@ -1,20 +1,17 @@
-import {
-  pgTable,
-  uuid,
-  text,
-  numeric,
-  timestamp,
-  index,
-} from "drizzle-orm/pg-core";
-import { goals } from "./goals.js";
+import { index, numeric, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { companies } from "./companies.js";
+import { goals } from "./goals.js";
 
 export const goalKeyResults = pgTable(
   "goal_key_results",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    goalId: uuid("goal_id").notNull().references(() => goals.id, { onDelete: "cascade" }),
-    companyId: uuid("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+    goalId: uuid("goal_id")
+      .notNull()
+      .references(() => goals.id, { onDelete: "cascade" }),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
     description: text("description").notNull(),
     targetValue: numeric("target_value").notNull().default("100"),
     currentValue: numeric("current_value").notNull().default("0"),

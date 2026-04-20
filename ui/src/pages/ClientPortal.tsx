@@ -1,23 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
-import { useCompany } from "../context/CompanyContext";
-import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { useQuery } from "@tanstack/react-query";
-import { issuesApi } from "../api/issues";
+import { Building2, CheckCircle2, Circle, Clock, Flag, Milestone, Target } from "lucide-react";
+import { useEffect, useMemo } from "react";
 import { goalProgressApi } from "../api/goalProgress";
-import { queryKeys } from "../lib/queryKeys";
-import { cn } from "../lib/utils";
+import { issuesApi } from "../api/issues";
 import { EmptyState } from "../components/EmptyState";
 import { PageSkeleton } from "../components/PageSkeleton";
-import {
-  Building2,
-  CheckCircle2,
-  Circle,
-  Clock,
-  ExternalLink,
-  Flag,
-  Milestone,
-  Target,
-} from "lucide-react";
+import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { useCompany } from "../context/CompanyContext";
+import { queryKeys } from "../lib/queryKeys";
+import { cn } from "../lib/utils";
 
 /**
  * Client Portal - read-only project dashboard mockup for external stakeholders.
@@ -68,10 +59,10 @@ export function ClientPortal() {
       label: g.title,
       status:
         g.status === "completed" || g.status === "done"
-          ? "completed" as const
+          ? ("completed" as const)
           : g.status === "in_progress" || g.status === "active"
-            ? "in_progress" as const
-            : "upcoming" as const,
+            ? ("in_progress" as const)
+            : ("upcoming" as const),
       date: null,
     }));
   }, [goalsProgress]);
@@ -99,12 +90,7 @@ export function ClientPortal() {
   const nextSteps = useMemo(() => {
     if (!issues) return [];
     return issues
-      .filter(
-        (i) =>
-          i.status === "in_progress" ||
-          i.status === "todo" ||
-          i.status === "backlog",
-      )
+      .filter((i) => i.status === "in_progress" || i.status === "todo" || i.status === "backlog")
       .slice(0, 6)
       .map((i) => ({
         id: i.id,
@@ -128,10 +114,7 @@ export function ClientPortal() {
     <div className="max-w-4xl mx-auto space-y-8">
       {/* Header - branded */}
       <div className="rounded-xl border border-border bg-card overflow-hidden">
-        <div
-          className="h-2"
-          style={{ backgroundColor: selectedCompany?.brandColor ?? "hsl(var(--primary))" }}
-        />
+        <div className="h-2" style={{ backgroundColor: selectedCompany?.brandColor ?? "hsl(var(--primary))" }} />
         <div className="p-6">
           <div className="flex items-center gap-3">
             {selectedCompany?.brandColor && (
@@ -144,9 +127,7 @@ export function ClientPortal() {
             )}
             <div>
               <h1 className="text-xl font-bold">{selectedCompany?.name ?? "Project"}</h1>
-              <p className="text-sm text-muted-foreground">
-                Client project overview
-              </p>
+              <p className="text-sm text-muted-foreground">Client project overview</p>
             </div>
           </div>
 
@@ -193,12 +174,7 @@ export function ClientPortal() {
                   <Circle className="h-4 w-4 text-muted-foreground/40 shrink-0" />
                 )}
                 <div className="flex-1 min-w-0">
-                  <div
-                    className={cn(
-                      "text-sm",
-                      m.status === "completed" && "line-through text-muted-foreground",
-                    )}
-                  >
+                  <div className={cn("text-sm", m.status === "completed" && "line-through text-muted-foreground")}>
                     {m.label}
                   </div>
                 </div>
@@ -217,11 +193,7 @@ export function ClientPortal() {
                         : "bg-muted text-muted-foreground",
                   )}
                 >
-                  {m.status === "completed"
-                    ? "Done"
-                    : m.status === "in_progress"
-                      ? "In Progress"
-                      : "Upcoming"}
+                  {m.status === "completed" ? "Done" : m.status === "in_progress" ? "In Progress" : "Upcoming"}
                 </span>
               </div>
             ))}
@@ -244,9 +216,7 @@ export function ClientPortal() {
                 <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
                 <span className="text-sm flex-1 min-w-0 truncate">{d.title}</span>
                 {d.completedAt && (
-                  <span className="text-xs text-muted-foreground tabular-nums shrink-0">
-                    {d.completedAt}
-                  </span>
+                  <span className="text-xs text-muted-foreground tabular-nums shrink-0">{d.completedAt}</span>
                 )}
               </div>
             ))}
@@ -265,10 +235,7 @@ export function ClientPortal() {
         ) : (
           <div className="space-y-2">
             {nextSteps.map((step) => (
-              <div
-                key={step.id}
-                className="flex items-center gap-3 rounded-lg border border-border px-3 py-2.5"
-              >
+              <div key={step.id} className="flex items-center gap-3 rounded-lg border border-border px-3 py-2.5">
                 <Flag
                   className={cn(
                     "h-3.5 w-3.5 shrink-0",
@@ -290,11 +257,7 @@ export function ClientPortal() {
                         : "bg-muted text-muted-foreground",
                   )}
                 >
-                  {step.status === "in_progress"
-                    ? "Active"
-                    : step.status === "todo"
-                      ? "Queued"
-                      : "Backlog"}
+                  {step.status === "in_progress" ? "Active" : step.status === "todo" ? "Queued" : "Backlog"}
                 </span>
               </div>
             ))}

@@ -1,8 +1,8 @@
-import { relativeTime, formatTokens } from "@/lib/utils";
-import { Identity } from "@/components/Identity";
-import { formatAction } from "./issue-detail-utils";
-import type { IssueCostSummary } from "./issue-detail-utils";
 import type { ActivityEvent, Agent } from "@ironworksai/shared";
+import { Identity } from "@/components/Identity";
+import { formatTokens, relativeTime } from "@/lib/utils";
+import type { IssueCostSummary } from "./issue-detail-utils";
+import { formatAction } from "./issue-detail-utils";
 
 function ActorIdentity({ evt, agentMap }: { evt: ActivityEvent; agentMap: Map<string, Agent> }) {
   const id = evt.actorId;
@@ -33,9 +33,7 @@ export function IssueActivityTab({ activity, linkedRunsCount, issueCostSummary, 
           ) : (
             <div className="flex flex-wrap gap-3 text-xs text-muted-foreground tabular-nums">
               {issueCostSummary.hasCost && (
-                <span className="font-medium text-foreground">
-                  ${issueCostSummary.cost.toFixed(4)}
-                </span>
+                <span className="font-medium text-foreground">${issueCostSummary.cost.toFixed(4)}</span>
               )}
               {issueCostSummary.hasTokens && (
                 <span>

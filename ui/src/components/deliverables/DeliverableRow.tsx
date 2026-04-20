@@ -1,17 +1,10 @@
+import { CheckCircle2, Clock, FileText, RotateCcw, Send, XCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import {
-  CheckCircle2,
-  Clock,
-  FileText,
-  RotateCcw,
-  Send,
-  XCircle,
-} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/lib/router";
 import type { Deliverable } from "../../api/deliverables";
-import { StatusBadge } from "./StatusBadge";
 import { DOC_TYPE_LABELS, formatDeliverableDate } from "./deliverableHelpers";
+import { StatusBadge } from "./StatusBadge";
 
 interface DeliverableRowProps {
   deliverable: Deliverable;
@@ -22,7 +15,14 @@ interface DeliverableRowProps {
   isUpdating: boolean;
 }
 
-export function DeliverableRow({ deliverable, onApprove, onRequestRevision, onReject, onDeliver, isUpdating }: DeliverableRowProps) {
+export function DeliverableRow({
+  deliverable,
+  onApprove,
+  onRequestRevision,
+  onReject,
+  onDeliver,
+  isUpdating,
+}: DeliverableRowProps) {
   const docTypeLabel = DOC_TYPE_LABELS[deliverable.documentType ?? ""] ?? deliverable.documentType ?? "Document";
   const isInReview = deliverable.deliverableStatus === "review";
   const [showNoteFor, setShowNoteFor] = useState<"revision" | "reject" | null>(null);
@@ -78,20 +78,42 @@ export function DeliverableRow({ deliverable, onApprove, onRequestRevision, onRe
 
         {isInReview && (
           <div className="flex items-center gap-2 shrink-0">
-            <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 hover:bg-red-500/10 hover:text-red-600 border-red-200 dark:border-red-800 dark:text-red-400" disabled={isUpdating} onClick={() => setShowNoteFor(showNoteFor === "reject" ? null : "reject")}>
-              <XCircle className="h-3 w-3 mr-1" />Reject
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs text-red-600 hover:bg-red-500/10 hover:text-red-600 border-red-200 dark:border-red-800 dark:text-red-400"
+              disabled={isUpdating}
+              onClick={() => setShowNoteFor(showNoteFor === "reject" ? null : "reject")}
+            >
+              <XCircle className="h-3 w-3 mr-1" />
+              Reject
             </Button>
-            <Button size="sm" variant="outline" className="h-7 text-xs" disabled={isUpdating} onClick={() => setShowNoteFor(showNoteFor === "revision" ? null : "revision")}>
-              <RotateCcw className="h-3 w-3 mr-1" />Revise
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs"
+              disabled={isUpdating}
+              onClick={() => setShowNoteFor(showNoteFor === "revision" ? null : "revision")}
+            >
+              <RotateCcw className="h-3 w-3 mr-1" />
+              Revise
             </Button>
             <Button size="sm" className="h-7 text-xs" disabled={isUpdating} onClick={() => onApprove(deliverable.id)}>
-              <CheckCircle2 className="h-3 w-3 mr-1" />Approve
+              <CheckCircle2 className="h-3 w-3 mr-1" />
+              Approve
             </Button>
           </div>
         )}
         {deliverable.deliverableStatus === "approved" && (
-          <Button size="sm" variant="outline" className="h-7 text-xs shrink-0" disabled={isUpdating} onClick={() => onDeliver(deliverable.id)}>
-            <Send className="h-3 w-3 mr-1" />Mark Delivered
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs shrink-0"
+            disabled={isUpdating}
+            onClick={() => onDeliver(deliverable.id)}
+          >
+            <Send className="h-3 w-3 mr-1" />
+            Mark Delivered
           </Button>
         )}
       </div>
@@ -106,10 +128,24 @@ export function DeliverableRow({ deliverable, onApprove, onRequestRevision, onRe
             className="flex-1 rounded border border-border bg-transparent px-2 py-1.5 text-xs resize-none h-16"
           />
           <div className="flex flex-col gap-1">
-            <Button size="sm" variant={showNoteFor === "reject" ? "destructive" : "outline"} className="h-7 text-xs" disabled={isUpdating || !reviewerNote.trim()} onClick={handleSubmitNote}>
+            <Button
+              size="sm"
+              variant={showNoteFor === "reject" ? "destructive" : "outline"}
+              className="h-7 text-xs"
+              disabled={isUpdating || !reviewerNote.trim()}
+              onClick={handleSubmitNote}
+            >
               {showNoteFor === "reject" ? "Confirm Reject" : "Request Revision"}
             </Button>
-            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => { setShowNoteFor(null); setReviewerNote(""); }}>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 text-xs"
+              onClick={() => {
+                setShowNoteFor(null);
+                setReviewerNote("");
+              }}
+            >
               Cancel
             </Button>
           </div>

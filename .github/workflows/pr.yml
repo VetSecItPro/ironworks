@@ -128,6 +128,22 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Lint (changed files only — baseline allowance for legacy debt)
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          # Enforce biome on PR-changed files only. Existing violations in legacy
+          # code are tracked tech debt (see CHANGELOG / .github/BIOME_DEBT.md);
+          # new or modified code must pass cleanly.
+          CHANGED=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- '*.ts' '*.tsx' '*.js' '*.jsx' | tr '\n' ' ')
+          if [ -n "$CHANGED" ]; then
+            echo "Running biome check on changed files: $CHANGED"
+            pnpm biome check $CHANGED
+          else
+            echo "No TS/JS files changed — skipping biome check"
+          fi
+
       - name: Typecheck
         run: pnpm -r typecheck
 

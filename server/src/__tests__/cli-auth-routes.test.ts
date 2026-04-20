@@ -25,34 +25,28 @@ const mockBoardAuthService = vi.hoisted(() => ({
 
 const mockLogActivity = vi.hoisted(() => vi.fn());
 
-vi.mock("../services/index.js", () => ({
-  accessService: () => mockAccessService,
-  agentService: () => mockAgentService,
-  boardAuthService: () => mockBoardAuthService,
-  logActivity: mockLogActivity,
-  companyPortabilityService: () => ({}),
-  instanceSettingsService: () => ({}),
-  companySkillService: () => ({}),
-  workProductService: () => ({}),
-  workspaceOperationService: () => ({}),
-  executionWorkspaceService: () => ({}),
-  issueApprovalService: () => ({}),
-  secretService: () => ({}),
-  sidebarBadgeService: () => ({}),
-  dashboardService: () => ({}),
-  heartbeatService: () => ({}),
-  goalService: () => ({}),
-  financeService: () => ({}),
-  costService: () => ({}),
-  companyService: () => ({}),
-  routineService: () => ({}),
-  playbookService: () => ({ seedDefaults: vi.fn() }),
-  budgetService: () => ({ upsertPolicy: vi.fn() }),
-  userInviteService: () => ({ create: vi.fn(), getByToken: vi.fn(), accept: vi.fn(), listForCompany: vi.fn(), revoke: vi.fn() }),
-  notifyHireApproved: vi.fn(),
-  deduplicateAgentName: vi.fn((name: string) => name),
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    accessService: () => mockAccessService,
+    agentService: () => mockAgentService,
+    boardAuthService: () => mockBoardAuthService,
+    logActivity: mockLogActivity,
+    playbookService: () => ({ seedDefaults: vi.fn() }),
+    budgetService: () => ({ upsertPolicy: vi.fn() }),
+    userInviteService: () => ({
+      create: vi.fn(),
+      getByToken: vi.fn(),
+      accept: vi.fn(),
+      listForCompany: vi.fn(),
+      revoke: vi.fn(),
+    }),
+    notifyHireApproved: vi.fn(),
+    deduplicateAgentName: vi.fn((name: string) => name),
+  });
+});
 
+// biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
 function createApp(actor: any) {
   const app = express();
   app.use(express.json());
@@ -64,6 +58,7 @@ function createApp(actor: any) {
     import("../middleware/index.js").then(({ errorHandler }) => {
       app.use(
         "/api",
+        // biome-ignore lint/suspicious/noExplicitAny: mock Drizzle DB or storage object for unit tests; real type requires full schema-aware Drizzle instance
         accessRoutes({} as any, {
           deploymentMode: "authenticated",
           deploymentExposure: "private",
@@ -73,7 +68,7 @@ function createApp(actor: any) {
       );
       app.use(errorHandler);
       return app;
-    })
+    }),
   );
 }
 
@@ -93,13 +88,11 @@ describe("cli auth routes", () => {
     });
 
     const app = await createApp({ type: "none", source: "none" });
-    const res = await request(app)
-      .post("/api/cli-auth/challenges")
-      .send({
-        command: "ironworksai company import",
-        clientName: "ironworksai cli",
-        requestedAccess: "board",
-      });
+    const res = await request(app).post("/api/cli-auth/challenges").send({
+      command: "ironworksai company import",
+      clientName: "ironworksai cli",
+      requestedAccess: "board",
+    });
 
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject({

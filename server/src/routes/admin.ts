@@ -1,26 +1,26 @@
-import { Router } from "express";
-import { eq, sql, and, gte, ne, desc, count } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import {
-  companies,
-  agents,
-  authUsers,
-  companyMemberships,
-  heartbeatRuns,
-  costEvents,
-  companySubscriptions,
-  budgetIncidents,
   activityLog,
-  instanceUserRoles,
-  authSessions,
+  agents,
   analyticsSnapshots,
+  authSessions,
+  authUsers,
+  budgetIncidents,
+  companies,
+  companyMemberships,
+  companySubscriptions,
+  costEvents,
+  heartbeatRuns,
+  instanceUserRoles,
   issues,
 } from "@ironworksai/db";
-import { assertInstanceAdmin } from "./authz.js";
-import { notFound, badRequest } from "../errors.js";
+import { and, count, desc, eq, gte, ne, sql } from "drizzle-orm";
+import { Router } from "express";
+import { badRequest, notFound } from "../errors.js";
 import { gatherLiveMetrics } from "../services/analytics.js";
-import { supportAdminRoutes } from "./support.js";
 import { logActivity } from "../services/index.js";
+import { assertInstanceAdmin } from "./authz.js";
+import { supportAdminRoutes } from "./support.js";
 
 // UUID v4 format validation
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -74,27 +74,16 @@ export function adminRoutes(db: Db) {
       openIncidentsRows,
     ] = await Promise.all([
       // totalCompanies — exclude deleted
-      db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(companies)
-        .where(ne(companies.status, "deleted")),
+      db.select({ count: sql<number>`count(*)::int` }).from(companies).where(ne(companies.status, "deleted")),
 
       // totalAgents — exclude terminated
-      db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(agents)
-        .where(ne(agents.status, "terminated")),
+      db.select({ count: sql<number>`count(*)::int` }).from(agents).where(ne(agents.status, "terminated")),
 
       // totalUsers (Better Auth `user` table)
-      db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(authUsers),
+      db.select({ count: sql<number>`count(*)::int` }).from(authUsers),
 
       // activeAgentsNow
-      db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(agents)
-        .where(eq(agents.status, "running")),
+      db.select({ count: sql<number>`count(*)::int` }).from(agents).where(eq(agents.status, "running")),
 
       // totalRunsToday
       db
@@ -248,10 +237,7 @@ export function adminRoutes(db: Db) {
       throw badRequest("Invalid company ID format");
     }
 
-    const [companyRow] = await db
-      .select()
-      .from(companies)
-      .where(eq(companies.id, companyId));
+    const [companyRow] = await db.select().from(companies).where(eq(companies.id, companyId));
 
     if (!companyRow) {
       throw notFound("Company not found");
@@ -270,10 +256,7 @@ export function adminRoutes(db: Db) {
         .where(and(eq(agents.companyId, companyId), ne(agents.status, "terminated"))),
 
       // FIND-004: replace raw SQL with Drizzle query builder
-      db
-        .select({ count: count() })
-        .from(issues)
-        .where(eq(issues.companyId, companyId)),
+      db.select({ count: count() }).from(issues).where(eq(issues.companyId, companyId)),
 
       db
         .select({ count: sql<number>`count(*)::int` })
@@ -392,12 +375,7 @@ export function adminRoutes(db: Db) {
         membershipRole: companyMemberships.membershipRole,
       })
       .from(companyMemberships)
-      .where(
-        and(
-          eq(companyMemberships.principalType, "user"),
-          eq(companyMemberships.status, "active"),
-        ),
-      );
+      .where(and(eq(companyMemberships.principalType, "user"), eq(companyMemberships.status, "active")));
 
     // Get instance admin flags
     const adminRows = await db
@@ -451,20 +429,12 @@ export function adminRoutes(db: Db) {
 
     const since24h = ago24h();
 
-    const [
-      dbSizeRows,
-      totalRunsRows,
-      runs24hRows,
-      agentStatusRows,
-      topSpendRows,
-    ] = await Promise.all([
+    const [dbSizeRows, totalRunsRows, runs24hRows, agentStatusRows, topSpendRows] = await Promise.all([
       // DB size
       db.execute(sql`SELECT pg_database_size(current_database()) AS size_bytes`),
 
       // Total heartbeat runs ever
-      db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(heartbeatRuns),
+      db.select({ count: sql<number>`count(*)::int` }).from(heartbeatRuns),
 
       // Error rate 24h
       db
@@ -536,10 +506,7 @@ export function adminRoutes(db: Db) {
     assertInstanceAdmin(req);
 
     const limitParam = req.query.limit;
-    const limit = Math.min(
-      1000,
-      Math.max(1, Number.isFinite(Number(limitParam)) ? Number(limitParam) : 100),
-    );
+    const limit = Math.min(1000, Math.max(1, Number.isFinite(Number(limitParam)) ? Number(limitParam) : 100));
 
     const rows = await db
       .select({
@@ -592,10 +559,7 @@ export function adminRoutes(db: Db) {
   router.get("/analytics/export", async (req, res) => {
     assertInstanceAdmin(req);
 
-    const rows = await db
-      .select()
-      .from(analyticsSnapshots)
-      .orderBy(analyticsSnapshots.snapshotDate);
+    const rows = await db.select().from(analyticsSnapshots).orderBy(analyticsSnapshots.snapshotDate);
 
     const headers = [
       "snapshot_date",
@@ -641,10 +605,7 @@ export function adminRoutes(db: Db) {
     const todayStr = `${today[2]}-${today[0]}-${today[1]}`;
 
     res.setHeader("Content-Type", "text/csv");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="ironworks-analytics-${todayStr}.csv"`,
-    );
+    res.setHeader("Content-Disposition", `attachment; filename="ironworks-analytics-${todayStr}.csv"`);
     res.send(csvLines.join("\n"));
   });
 

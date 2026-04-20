@@ -1,14 +1,6 @@
-import {
-  customType,
-  pgTable,
-  uuid,
-  text,
-  integer,
-  timestamp,
-  index,
-} from "drizzle-orm/pg-core";
-import { knowledgePages } from "./knowledge_pages.js";
+import { customType, index, integer, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { companies } from "./companies.js";
+import { knowledgePages } from "./knowledge_pages.js";
 
 /**
  * Custom Drizzle type for pgvector's vector(768) column.
@@ -51,8 +43,12 @@ export const knowledgeChunks = pgTable(
   "knowledge_chunks",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    pageId: uuid("page_id").notNull().references(() => knowledgePages.id, { onDelete: "cascade" }),
-    companyId: uuid("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+    pageId: uuid("page_id")
+      .notNull()
+      .references(() => knowledgePages.id, { onDelete: "cascade" }),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
 
     // Source metadata (denormalized from page for fast filtering)
     department: text("department"),
@@ -61,8 +57,8 @@ export const knowledgeChunks = pgTable(
     documentType: text("document_type"),
 
     // Chunk content
-    anchor: text("anchor").notNull(),        // "#cost-attribution-model"
-    heading: text("heading").notNull(),       // "Cost Attribution Model"
+    anchor: text("anchor").notNull(), // "#cost-attribution-model"
+    heading: text("heading").notNull(), // "Cost Attribution Model"
     headingPath: text("heading_path").notNull(), // "CFO Playbook > Cost Attribution Model"
     body: text("body").notNull(),
     tokenCount: integer("token_count").notNull(),

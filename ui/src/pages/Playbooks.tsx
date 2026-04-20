@@ -1,20 +1,20 @@
-import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { trackFeatureUsed } from "../lib/analytics";
 import { BookTemplate, Plus, Wand2 } from "lucide-react";
-import { playbooksApi, type Playbook, type PlaybookWithSteps } from "../api/playbooks";
-import { useCompany } from "../context/CompanyContext";
-import { useBreadcrumbs } from "../context/BreadcrumbContext";
-import { useToast } from "../context/ToastContext";
-import { queryKeys } from "../lib/queryKeys";
-import { cn } from "../lib/utils";
-import { PageSkeleton } from "../components/PageSkeleton";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { type Playbook, type PlaybookWithSteps, playbooksApi } from "../api/playbooks";
 import { NewPlaybookDialog } from "../components/NewPlaybookDialog";
+import { PageSkeleton } from "../components/PageSkeleton";
+import { DryRunDialog, PlaybookCard, PlaybookDetailPanel } from "../components/playbooks";
 import { RunPlaybookDialog } from "../components/RunPlaybookDialog";
-import { PlaybookCard, PlaybookDetailPanel, DryRunDialog } from "../components/playbooks";
+import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { useCompany } from "../context/CompanyContext";
+import { useToast } from "../context/ToastContext";
+import { trackFeatureUsed } from "../lib/analytics";
+import { queryKeys } from "../lib/queryKeys";
+import { cn } from "../lib/utils";
 
 /* ------------------------------------------------------------------ */
 /*  Main Playbooks Page                                                */
@@ -119,9 +119,7 @@ export function Playbooks() {
       <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Playbooks</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Multi-agent workflows you can run with one click.
-          </p>
+          <p className="text-sm text-muted-foreground mt-0.5">Multi-agent workflows you can run with one click.</p>
           {totalPlaybooks > 0 && (
             <p className="text-xs text-muted-foreground mt-0.5">
               {totalPlaybooks} playbook{totalPlaybooks !== 1 ? "s" : ""} available
@@ -136,94 +134,92 @@ export function Playbooks() {
 
       {/* Two-pane content */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
-      {/* Left pane: Playbook list */}
-      <div className="w-80 shrink-0 border-r border-border flex flex-col bg-background">
-        <div className="flex items-center gap-2 px-3 py-2 border-b border-border shrink-0">
-          <Input
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            placeholder="Filter playbooks..."
-            className="h-7 text-xs"
-          />
+        {/* Left pane: Playbook list */}
+        <div className="w-80 shrink-0 border-r border-border flex flex-col bg-background">
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-border shrink-0">
+            <Input
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              placeholder="Filter playbooks..."
+              className="h-7 text-xs"
+            />
+          </div>
+
+          <ScrollArea className="flex-1 min-h-0">
+            {isLoading && !playbooksList ? (
+              <div className="p-3">
+                <PageSkeleton variant="list" />
+              </div>
+            ) : filteredPlaybooks.length === 0 ? (
+              <div className="px-3 py-8 text-center">
+                <BookTemplate className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">No playbooks yet</p>
+                <p className="text-xs text-muted-foreground mt-1">Click the wand icon to load templates</p>
+              </div>
+            ) : (
+              Object.entries(grouped).map(([category, pbs]) => (
+                <div key={category}>
+                  <div className="px-3 py-1.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider bg-muted/30 border-b border-border">
+                    {category}
+                  </div>
+                  {pbs.map((pb) => (
+                    <PlaybookCard
+                      key={pb.id}
+                      playbook={pb}
+                      isSelected={pb.id === selectedId}
+                      onSelect={() => setSelectedId(pb.id)}
+                    />
+                  ))}
+                </div>
+              ))
+            )}
+          </ScrollArea>
         </div>
 
-        <ScrollArea className="flex-1 min-h-0">
-          {isLoading && !playbooksList ? (
-            <div className="p-3">
-              <PageSkeleton variant="list" />
-            </div>
-          ) : filteredPlaybooks.length === 0 ? (
-            <div className="px-3 py-8 text-center">
-              <BookTemplate className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">No playbooks yet</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Click the wand icon to load templates
-              </p>
-            </div>
+        {/* Right pane: Detail */}
+        <div className="flex-1 min-w-0 bg-background">
+          {selectedId ? (
+            <PlaybookDetailPanel
+              companyId={selectedCompanyId}
+              playbookId={selectedId}
+              onRun={() => setShowRunDialog(true)}
+              onDryRun={() => {
+                const cached = playbooksApi.detail(selectedCompanyId, selectedId);
+                cached
+                  .then((data) => {
+                    setDryRunPlaybook(data);
+                    setShowDryRunDialog(true);
+                  })
+                  .catch((err: unknown) => {
+                    console.error("Failed to fetch playbook for dry run", err instanceof Error ? err.message : err);
+                    setShowDryRunDialog(true);
+                  });
+              }}
+              isRunning={runMutation.isPending}
+            />
           ) : (
-            Object.entries(grouped).map(([category, pbs]) => (
-              <div key={category}>
-                <div className="px-3 py-1.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider bg-muted/30 border-b border-border">
-                  {category}
-                </div>
-                {pbs.map((pb) => (
-                  <PlaybookCard
-                    key={pb.id}
-                    playbook={pb}
-                    isSelected={pb.id === selectedId}
-                    onSelect={() => setSelectedId(pb.id)}
-                  />
-                ))}
-              </div>
-            ))
+            <div className="flex flex-col items-center justify-center h-full text-center px-6">
+              <BookTemplate className="h-12 w-12 text-muted-foreground/20 mb-3" />
+              <p className="text-sm font-medium text-muted-foreground">Select a playbook to view</p>
+              <p className="text-xs text-muted-foreground mt-1 max-w-xs">
+                Playbooks are reusable multi-agent workflows. Select one to see the steps, or load templates to get
+                started.
+              </p>
+              {(!playbooksList || playbooksList.length === 0) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-4"
+                  onClick={() => seedMutation.mutate()}
+                  disabled={seedMutation.isPending}
+                >
+                  <Wand2 className={cn("h-3.5 w-3.5 mr-1.5", seedMutation.isPending && "animate-pulse")} />
+                  Load Template Playbooks
+                </Button>
+              )}
+            </div>
           )}
-        </ScrollArea>
-      </div>
-
-      {/* Right pane: Detail */}
-      <div className="flex-1 min-w-0 bg-background">
-        {selectedId ? (
-          <PlaybookDetailPanel
-            companyId={selectedCompanyId}
-            playbookId={selectedId}
-            onRun={() => setShowRunDialog(true)}
-            onDryRun={() => {
-              const cached = playbooksApi.detail(selectedCompanyId, selectedId);
-              cached.then((data) => {
-                setDryRunPlaybook(data);
-                setShowDryRunDialog(true);
-              }).catch((err: unknown) => {
-                console.error("Failed to fetch playbook for dry run", err instanceof Error ? err.message : err);
-                setShowDryRunDialog(true);
-              });
-            }}
-            isRunning={runMutation.isPending}
-          />
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full text-center px-6">
-            <BookTemplate className="h-12 w-12 text-muted-foreground/20 mb-3" />
-            <p className="text-sm font-medium text-muted-foreground">
-              Select a playbook to view
-            </p>
-            <p className="text-xs text-muted-foreground mt-1 max-w-xs">
-              Playbooks are reusable multi-agent workflows. Select one to see the steps, or load templates to get started.
-            </p>
-            {(!playbooksList || playbooksList.length === 0) && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-4"
-                onClick={() => seedMutation.mutate()}
-                disabled={seedMutation.isPending}
-              >
-                <Wand2 className={cn("h-3.5 w-3.5 mr-1.5", seedMutation.isPending && "animate-pulse")} />
-                Load Template Playbooks
-              </Button>
-            )}
-          </div>
-        )}
-      </div>
-
+        </div>
       </div>
 
       <NewPlaybookDialog

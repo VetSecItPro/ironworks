@@ -1,15 +1,21 @@
-import { useState } from "react";
+import type { CompanySecret } from "@ironworksai/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { secretsApi } from "../api/secrets";
+import { AlertTriangle, Check, ChevronDown, ChevronUp, Key } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import { agentsApi } from "../api/agents";
+import { secretsApi } from "../api/secrets";
 import { useCompany } from "../context/CompanyContext";
 import { useToast } from "../context/ToastContext";
 import { queryKeys } from "../lib/queryKeys";
-import { Button } from "@/components/ui/button";
-import { Key, Check, AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
-import type { CompanySecret } from "@ironworksai/shared";
 
-type ProviderKey = "ANTHROPIC_API_KEY" | "OPENAI_API_KEY" | "GEMINI_API_KEY" | "OPENROUTER_API_KEY" | "OLLAMA_API_KEY" | "OLLAMA_BASE_URL";
+type ProviderKey =
+  | "ANTHROPIC_API_KEY"
+  | "OPENAI_API_KEY"
+  | "GEMINI_API_KEY"
+  | "OPENROUTER_API_KEY"
+  | "OLLAMA_API_KEY"
+  | "OLLAMA_BASE_URL";
 
 const PROVIDERS: { key: ProviderKey; label: string; placeholder: string }[] = [
   { key: "ANTHROPIC_API_KEY", label: "Anthropic", placeholder: "sk-ant-..." },
@@ -20,7 +26,7 @@ const PROVIDERS: { key: ProviderKey; label: string; placeholder: string }[] = [
   { key: "OLLAMA_BASE_URL", label: "Ollama (self-hosted)", placeholder: "http://localhost:11434" },
 ];
 
-function maskKey(key: string): string {
+function _maskKey(key: string): string {
   if (key.length < 12) return "****";
   return `${key.slice(0, 7)}...${key.slice(-4)}`;
 }
@@ -43,11 +49,7 @@ export function ApiKeyOnboardingBanner() {
 
   const secrets = secretsQuery.data ?? [];
   const configuredKeys = new Set(
-    secrets
-      .filter((s: CompanySecret) =>
-        PROVIDERS.some((p) => p.key === s.name),
-      )
-      .map((s: CompanySecret) => s.name),
+    secrets.filter((s: CompanySecret) => PROVIDERS.some((p) => p.key === s.name)).map((s: CompanySecret) => s.name),
   );
 
   // Also check if agents are using ollama_cloud adapter (uses server env var, not company secret)
@@ -57,7 +59,7 @@ export function ApiKeyOnboardingBanner() {
     enabled: !!selectedCompanyId,
   });
   const hasOllamaCloudAgent = (agentsQuery.data ?? []).some(
-    (a) => (a as unknown as Record<string, unknown>).adapterType === "ollama_cloud"
+    (a) => (a as unknown as Record<string, unknown>).adapterType === "ollama_cloud",
   );
 
   const hasAnyLlmKey = PROVIDERS.some((p) => configuredKeys.has(p.key)) || hasOllamaCloudAgent;
@@ -138,7 +140,8 @@ export function ApiKeyOnboardingBanner() {
         <div className="flex-1">
           <h3 className="text-sm font-medium">Configure your LLM API key</h3>
           <p className="mt-1 text-xs text-muted-foreground">
-            Your agents need an API key to communicate with LLM providers. Enter your Anthropic or OpenAI key to get started.
+            Your agents need an API key to communicate with LLM providers. Enter your Anthropic or OpenAI key to get
+            started.
           </p>
 
           <div className="mt-3 flex gap-2">
@@ -181,9 +184,7 @@ export function ApiKeyOnboardingBanner() {
             </Button>
           </div>
 
-          {validationError && (
-            <p className="mt-2 text-xs text-destructive">{validationError}</p>
-          )}
+          {validationError && <p className="mt-2 text-xs text-destructive">{validationError}</p>}
         </div>
       </div>
     </div>

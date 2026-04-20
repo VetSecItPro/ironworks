@@ -1,7 +1,7 @@
-import { useCallback, useRef, useState } from "react";
-import type { Issue, ExecutionWorkspace } from "@ironworksai/shared";
-import { cn } from "../../lib/utils";
+import type { ExecutionWorkspace, Issue } from "@ironworksai/shared";
 import { Check, Copy } from "lucide-react";
+import { useCallback, useRef, useState } from "react";
+import { cn } from "../../lib/utils";
 
 export const EXECUTION_WORKSPACE_OPTIONS = [
   { value: "shared_workspace", label: "Project default" },
@@ -17,12 +17,11 @@ export function issueModeForExistingWorkspace(mode: string | null | undefined) {
 
 export function shouldPresentExistingWorkspaceSelection(issue: Issue) {
   const persistedMode =
-    issue.currentExecutionWorkspace?.mode
-    ?? issue.executionWorkspaceSettings?.mode
-    ?? issue.executionWorkspacePreference;
+    issue.currentExecutionWorkspace?.mode ??
+    issue.executionWorkspaceSettings?.mode ??
+    issue.executionWorkspacePreference;
   return Boolean(
-    issue.executionWorkspaceId &&
-    (persistedMode === "isolated_workspace" || persistedMode === "operator_branch"),
+    issue.executionWorkspaceId && (persistedMode === "isolated_workspace" || persistedMode === "operator_branch"),
   );
 }
 
@@ -37,11 +36,16 @@ export function defaultExecutionWorkspaceModeForProject(
 
 export function workspaceModeLabel(mode: string | null | undefined) {
   switch (mode) {
-    case "isolated_workspace": return "Isolated workspace";
-    case "operator_branch": return "Operator branch";
-    case "cloud_sandbox": return "Cloud sandbox";
-    case "adapter_managed": return "Adapter managed";
-    default: return "Workspace";
+    case "isolated_workspace":
+      return "Isolated workspace";
+    case "operator_branch":
+      return "Operator branch";
+    case "cloud_sandbox":
+      return "Cloud sandbox";
+    case "adapter_managed":
+      return "Adapter managed";
+    default:
+      return "Workspace";
   }
 }
 
@@ -77,7 +81,7 @@ export function statusBadge(status: string) {
 
 export function BreakablePath({ text }: { text: string }) {
   const parts: React.ReactNode[] = [];
-  const segments = text.split(/(?<=[\/-])/);
+  const segments = text.split(/(?<=[/-])/);
   for (let i = 0; i < segments.length; i++) {
     if (i > 0) parts.push(<wbr key={i} />);
     parts.push(segments[i]);
@@ -94,7 +98,9 @@ export function CopyableInline({ value, label, mono }: { value: string; label?: 
       setCopied(true);
       clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => setCopied(false), 1500);
-    } catch { /* noop */ }
+    } catch {
+      /* noop */
+    }
   }, [value]);
 
   return (

@@ -37,21 +37,11 @@ export function BulkOperationsToolbar({
           <Lock className="h-3 w-3 mr-0.5" />
           Private
         </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-6 text-[10px] px-2 text-destructive"
-          onClick={onDelete}
-        >
+        <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2 text-destructive" onClick={onDelete}>
           <Trash2 className="h-3 w-3 mr-0.5" />
           Delete
         </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-6 text-[10px] px-2"
-          onClick={onClearSelection}
-        >
+        <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={onClearSelection}>
           Clear
         </Button>
       </div>

@@ -1,14 +1,14 @@
-import { useEffect, useState } from "react";
-import { useBreadcrumbs } from "@/context/BreadcrumbContext";
-import { usePageTitle } from "../hooks/usePageTitle";
-import { Button } from "@/components/ui/button";
 import { Bell, BellOff, Check, Clock, Mail, Smartphone, VolumeX } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { useBreadcrumbs } from "@/context/BreadcrumbContext";
 import {
-  loadDigestFrequency,
-  saveDigestFrequency,
-  requestPushPermission,
   type DigestFrequency,
+  loadDigestFrequency,
+  requestPushPermission,
+  saveDigestFrequency,
 } from "../components/NotificationCenter";
+import { usePageTitle } from "../hooks/usePageTitle";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -98,10 +98,7 @@ export function NotificationSettings() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    setBreadcrumbs([
-      { label: "Profile", href: "/profile" },
-      { label: "Notifications" },
-    ]);
+    setBreadcrumbs([{ label: "Profile", href: "/profile" }, { label: "Notifications" }]);
   }, [setBreadcrumbs]);
 
   function updateChannel(key: string, value: NotificationChannel) {
@@ -145,12 +142,8 @@ export function NotificationSettings() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-border bg-muted/40">
-              <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">
-                Category
-              </th>
-              <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3 w-[180px]">
-                Delivery
-              </th>
+              <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Category</th>
+              <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3 w-[180px]">Delivery</th>
             </tr>
           </thead>
           <tbody>
@@ -295,9 +288,7 @@ export function NotificationSettings() {
           >
             <span
               className={`pointer-events-none inline-block h-5 w-5 transform rounded-full shadow ring-0 transition duration-200 ease-in-out ${
-                prefs.dndEnabled
-                  ? "translate-x-5 bg-background"
-                  : "translate-x-0 bg-muted-foreground"
+                prefs.dndEnabled ? "translate-x-5 bg-background" : "translate-x-0 bg-muted-foreground"
               }`}
             />
           </button>
@@ -340,11 +331,7 @@ export function NotificationSettings() {
             "Save preferences"
           )}
         </Button>
-        {saved && (
-          <span className="text-xs text-green-600 dark:text-green-400">
-            Notification preferences updated
-          </span>
-        )}
+        {saved && <span className="text-xs text-green-600 dark:text-green-400">Notification preferences updated</span>}
       </div>
     </div>
   );

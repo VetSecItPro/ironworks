@@ -1,7 +1,4 @@
-import type {
-  CompanyPortabilityFileEntry,
-  CompanyPortabilityPreviewResult,
-} from "@ironworksai/shared";
+import type { CompanyPortabilityFileEntry, CompanyPortabilityPreviewResult } from "@ironworksai/shared";
 import { getAgentOrderStorageKey, writeAgentOrder } from "../../lib/agent-order";
 import { getProjectOrderStorageKey, writeProjectOrder } from "../../lib/project-order";
 import { readZipArchive } from "../../lib/zip";
@@ -25,17 +22,13 @@ export function applyImportedSidebarOrder(
 
   const agentIdBySlug = new Map(
     result.agents
-      .filter(
-        (agent): agent is { slug: string; id: string } =>
-          typeof agent.id === "string" && agent.id.length > 0,
-      )
+      .filter((agent): agent is { slug: string; id: string } => typeof agent.id === "string" && agent.id.length > 0)
       .map((agent) => [agent.slug, agent.id]),
   );
   const projectIdBySlug = new Map(
     result.projects
       .filter(
-        (project): project is { slug: string; id: string } =>
-          typeof project.id === "string" && project.id.length > 0,
+        (project): project is { slug: string; id: string } => typeof project.id === "string" && project.id.length > 0,
       )
       .map((project) => [project.slug, project.id]),
   );
@@ -48,16 +41,10 @@ export function applyImportedSidebarOrder(
     .filter((id): id is string => Boolean(id));
 
   if (orderedAgentIds.length > 0) {
-    writeAgentOrder(
-      getAgentOrderStorageKey(result.company.id, userId),
-      orderedAgentIds,
-    );
+    writeAgentOrder(getAgentOrderStorageKey(result.company.id, userId), orderedAgentIds);
   }
   if (orderedProjectIds.length > 0) {
-    writeProjectOrder(
-      getProjectOrderStorageKey(result.company.id, userId),
-      orderedProjectIds,
-    );
+    writeProjectOrder(getProjectOrderStorageKey(result.company.id, userId), orderedProjectIds);
   }
 }
 

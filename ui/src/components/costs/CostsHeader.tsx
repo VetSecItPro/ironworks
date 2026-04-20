@@ -1,10 +1,10 @@
+import type { BudgetOverview, CostByAgent, CostSummary } from "@ironworksai/shared";
 import { ArrowUpRight, Coins, CreditCard, DollarSign, Download, ReceiptText } from "lucide-react";
-import { exportToCSV } from "../../lib/exportCSV";
-import { PRESET_KEYS, PRESET_LABELS, type DatePreset } from "../../hooks/useDateRange";
-import { formatCents, formatTokens } from "../../lib/utils";
 import { Button } from "@/components/ui/button";
+import { type DatePreset, PRESET_KEYS, PRESET_LABELS } from "../../hooks/useDateRange";
+import { exportToCSV } from "../../lib/exportCSV";
+import { formatCents, formatTokens } from "../../lib/utils";
 import { MetricTile } from "./MetricTile";
-import type { BudgetOverview, CostSummary, CostByAgent } from "@ironworksai/shared";
 
 interface CostsHeaderProps {
   preset: DatePreset;
@@ -13,24 +13,39 @@ interface CostsHeaderProps {
   setCustomFrom: (v: string) => void;
   customTo: string;
   setCustomTo: (v: string) => void;
-  spendData: {
-    summary: CostSummary;
-    byAgent: CostByAgent[];
-  } | undefined;
-  financeData: {
-    summary: {
-      netCents: number;
-      debitCents: number;
-      creditCents: number;
-      eventCount: number;
-      estimatedDebitCents: number;
-    };
-  } | undefined;
+  spendData:
+    | {
+        summary: CostSummary;
+        byAgent: CostByAgent[];
+      }
+    | undefined;
+  financeData:
+    | {
+        summary: {
+          netCents: number;
+          debitCents: number;
+          creditCents: number;
+          eventCount: number;
+          estimatedDebitCents: number;
+        };
+      }
+    | undefined;
   equivalentSpend: { billingMode: string; totalEquivalentCents: number } | undefined;
   budgetData: BudgetOverview | undefined;
   activeBudgetIncidents: Array<{ id: string }>;
   inferenceTokenTotal: number;
-  setMainTab: (tab: "overview" | "budgets" | "providers" | "billers" | "finance" | "projects" | "tokens" | "departments" | "analysis") => void;
+  setMainTab: (
+    tab:
+      | "overview"
+      | "budgets"
+      | "providers"
+      | "billers"
+      | "finance"
+      | "projects"
+      | "tokens"
+      | "departments"
+      | "analysis",
+  ) => void;
 }
 
 export function CostsHeader({
@@ -134,11 +149,13 @@ export function CostsHeader({
         />
         <MetricTile
           label="Budget"
-          value={activeBudgetIncidents.length > 0 ? String(activeBudgetIncidents.length) : (
-            spendData?.summary.budgetCents && spendData.summary.budgetCents > 0
-              ? `${spendData.summary.utilizationPercent}%`
-              : "Open"
-          )}
+          value={
+            activeBudgetIncidents.length > 0
+              ? String(activeBudgetIncidents.length)
+              : spendData?.summary.budgetCents && spendData.summary.budgetCents > 0
+                ? `${spendData.summary.utilizationPercent}%`
+                : "Open"
+          }
           subtitle={
             activeBudgetIncidents.length > 0
               ? `${budgetData?.pausedAgentCount ?? 0} agents paused - ${budgetData?.pausedProjectCount ?? 0} projects paused`

@@ -1,16 +1,22 @@
-import { pgTable, uuid, timestamp, index, uniqueIndex } from "drizzle-orm/pg-core";
-import { companies } from "./companies.js";
-import { issues } from "./issues.js";
+import { index, pgTable, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { assets } from "./assets.js";
+import { companies } from "./companies.js";
 import { issueComments } from "./issue_comments.js";
+import { issues } from "./issues.js";
 
 export const issueAttachments = pgTable(
   "issue_attachments",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    companyId: uuid("company_id").notNull().references(() => companies.id),
-    issueId: uuid("issue_id").notNull().references(() => issues.id, { onDelete: "cascade" }),
-    assetId: uuid("asset_id").notNull().references(() => assets.id, { onDelete: "cascade" }),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id),
+    issueId: uuid("issue_id")
+      .notNull()
+      .references(() => issues.id, { onDelete: "cascade" }),
+    assetId: uuid("asset_id")
+      .notNull()
+      .references(() => assets.id, { onDelete: "cascade" }),
     issueCommentId: uuid("issue_comment_id").references(() => issueComments.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

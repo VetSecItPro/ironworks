@@ -1,4 +1,4 @@
-import type { Request, Response, NextFunction } from "express";
+import type { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
 import { HttpError } from "../errors.js";
 import { captureError } from "../lib/error-tracking.js";
@@ -12,12 +12,8 @@ export interface ErrorContext {
   reqQuery?: unknown;
 }
 
-function attachErrorContext(
-  req: Request,
-  res: Response,
-  payload: ErrorContext["error"],
-  rawError?: Error,
-) {
+function attachErrorContext(req: Request, res: Response, payload: ErrorContext["error"], rawError?: Error) {
+  // biome-ignore lint/suspicious/noExplicitAny: attaching custom props to Express Response not in its type definitions
   (res as any).__errorContext = {
     error: payload,
     method: req.method,
@@ -27,16 +23,12 @@ function attachErrorContext(
     reqQuery: req.query,
   } satisfies ErrorContext;
   if (rawError) {
+    // biome-ignore lint/suspicious/noExplicitAny: attaching custom props to Express Response not in its type definitions
     (res as any).err = rawError;
   }
 }
 
-export function errorHandler(
-  err: unknown,
-  req: Request,
-  res: Response,
-  _next: NextFunction,
-) {
+export function errorHandler(err: unknown, req: Request, res: Response, _next: NextFunction) {
   if (err instanceof HttpError) {
     if (err.status >= 500) {
       attachErrorContext(

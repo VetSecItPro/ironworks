@@ -1,11 +1,6 @@
-import { and, desc, eq, inArray, isNull, lt } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import {
-  activityLog,
-  agentMemoryEntries,
-  approvals,
-  issues,
-} from "@ironworksai/db";
+import { activityLog, agentMemoryEntries, approvals, issues } from "@ironworksai/db";
+import { and, desc, eq, inArray, isNull, lt } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 import { getContextualMemories } from "./agent-memory.js";
 
@@ -41,12 +36,15 @@ export async function saveSessionState(
   });
 
   // Fix 6: Keep only the latest session state per agent to prevent accumulation.
-  await db.delete(agentMemoryEntries)
-    .where(and(
-      eq(agentMemoryEntries.agentId, agentId),
-      eq(agentMemoryEntries.category, "session_state"),
-      eq(agentMemoryEntries.memoryType, "procedural"),
-    ));
+  await db
+    .delete(agentMemoryEntries)
+    .where(
+      and(
+        eq(agentMemoryEntries.agentId, agentId),
+        eq(agentMemoryEntries.category, "session_state"),
+        eq(agentMemoryEntries.memoryType, "procedural"),
+      ),
+    );
 
   await db.insert(agentMemoryEntries).values({
     agentId,
@@ -71,10 +69,7 @@ export async function saveSessionState(
     logger.debug({ anchorErr, agentId }, "session anchor update failed (non-fatal)");
   }
 
-  logger.info(
-    { agentId, issueId },
-    "saved session state",
-  );
+  logger.info({ agentId, issueId }, "saved session state");
 }
 
 /**
@@ -141,10 +136,7 @@ const SESSION_ANCHORS_CATEGORY = "session_anchors";
 /**
  * Load the current session anchors for an agent, or return empty anchors.
  */
-export async function getSessionAnchors(
-  db: Db,
-  agentId: string,
-): Promise<SessionAnchors | null> {
+export async function getSessionAnchors(db: Db, agentId: string): Promise<SessionAnchors | null> {
   const [entry] = await db
     .select({ content: agentMemoryEntries.content })
     .from(agentMemoryEntries)
@@ -203,9 +195,7 @@ export function mergeIntoAnchors(
       // Already captured - skip
       return existing.slice(0, maxLen);
     }
-    const combined = existing
-      ? `${existing.trimEnd()}; ${newContent}`
-      : newContent;
+    const combined = existing ? `${existing.trimEnd()}; ${newContent}` : newContent;
     return combined.slice(0, maxLen);
   };
 
@@ -266,11 +256,7 @@ export async function saveSessionAnchors(
  *
  * Returns the compressed summary paragraph (empty string if nothing to compress).
  */
-export async function compressConversationHistory(
-  db: Db,
-  agentId: string,
-  maxTurns = 10,
-): Promise<string> {
+export async function compressConversationHistory(db: Db, agentId: string, maxTurns = 10): Promise<string> {
   // Fetch all active session-state entries ordered newest first
   const allEntries = await db
     .select({
@@ -351,10 +337,7 @@ export async function compressConversationHistory(
     });
   }
 
-  logger.info(
-    { agentId, archivedCount: toCompress.length, maxTurns },
-    "compressed conversation history",
-  );
+  logger.info({ agentId, archivedCount: toCompress.length, maxTurns }, "compressed conversation history");
 
   return compressedSummary;
 }
@@ -368,11 +351,7 @@ export async function compressConversationHistory(
  *   - Recent activity relevant to this agent (last 10 entries)
  *   - Pending approvals for this agent
  */
-export async function buildMorningBriefing(
-  db: Db,
-  agentId: string,
-  companyId: string,
-): Promise<string> {
+export async function buildMorningBriefing(db: Db, agentId: string, companyId: string): Promise<string> {
   const sections: string[] = [];
 
   // 0. Run compression first so the session state we display is up-to-date
@@ -442,12 +421,7 @@ export async function buildMorningBriefing(
     const activeIssueRow = await db
       .select({ title: issues.title })
       .from(issues)
-      .where(
-        and(
-          eq(issues.companyId, companyId),
-          eq(issues.assigneeAgentId, agentId),
-        ),
-      )
+      .where(and(eq(issues.companyId, companyId), eq(issues.assigneeAgentId, agentId)))
       .orderBy(desc(issues.createdAt))
       .limit(5);
 
@@ -480,23 +454,14 @@ export async function buildMorningBriefing(
       status: issues.status,
     })
     .from(issues)
-    .where(
-      and(
-        eq(issues.companyId, companyId),
-        eq(issues.assigneeAgentId, agentId),
-      ),
-    )
+    .where(and(eq(issues.companyId, companyId), eq(issues.assigneeAgentId, agentId)))
     .orderBy(desc(issues.createdAt))
     .limit(20);
 
-  const activeIssues = openIssues.filter(
-    (i) => !["done", "cancelled"].includes(i.status),
-  );
+  const activeIssues = openIssues.filter((i) => !["done", "cancelled"].includes(i.status));
 
   if (activeIssues.length > 0) {
-    const issueLines = activeIssues.map(
-      (i) => `- [${i.identifier ?? i.id.slice(0, 8)}] ${i.title} (${i.status})`,
-    );
+    const issueLines = activeIssues.map((i) => `- [${i.identifier ?? i.id.slice(0, 8)}] ${i.title} (${i.status})`);
     sections.push(`## Open Issues (${activeIssues.length})\n${issueLines.join("\n")}`);
   }
 
@@ -509,12 +474,7 @@ export async function buildMorningBriefing(
       createdAt: activityLog.createdAt,
     })
     .from(activityLog)
-    .where(
-      and(
-        eq(activityLog.companyId, companyId),
-        eq(activityLog.agentId, agentId),
-      ),
-    )
+    .where(and(eq(activityLog.companyId, companyId), eq(activityLog.agentId, agentId)))
     .orderBy(desc(activityLog.createdAt))
     .limit(10);
 
@@ -611,17 +571,11 @@ export async function detectContextDrift(
       status: issues.status,
     })
     .from(issues)
-    .where(
-      and(
-        eq(issues.assigneeAgentId, agentId),
-      ),
-    )
+    .where(and(eq(issues.assigneeAgentId, agentId)))
     .orderBy(desc(issues.createdAt))
     .limit(20);
 
-  const active = recentIssues.find(
-    (i) => !["done", "cancelled", "backlog"].includes(i.status),
-  );
+  const active = recentIssues.find((i) => !["done", "cancelled", "backlog"].includes(i.status));
 
   if (!active) {
     return { driftDetected: false, similarity: 1, recommendation: null };
@@ -639,9 +593,7 @@ export async function detectContextDrift(
   }
 
   // Drift detected - compose a refocus recommendation
-  const originalPreview = active.title.length > 80
-    ? `${active.title.slice(0, 80)}...`
-    : active.title;
+  const originalPreview = active.title.length > 80 ? `${active.title.slice(0, 80)}...` : active.title;
 
   const recommendation = [
     `Context drift detected (similarity: ${(similarity * 100).toFixed(0)}%).`,
@@ -650,10 +602,7 @@ export async function detectContextDrift(
     `before pursuing related work, or create a separate issue for the new direction.`,
   ].join(" ");
 
-  logger.info(
-    { agentId, similarity, originalTitle: active.title },
-    "context drift detected in agent objective",
-  );
+  logger.info({ agentId, similarity, originalTitle: active.title }, "context drift detected in agent objective");
 
   return { driftDetected: true, similarity, recommendation };
 }
@@ -661,11 +610,54 @@ export async function detectContextDrift(
 // ── Drift helpers ──────────────────────────────────────────────────────────
 
 const DRIFT_STOP_WORDS = new Set([
-  "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for",
-  "of", "with", "by", "from", "is", "was", "are", "were", "be", "been",
-  "being", "have", "has", "had", "do", "does", "did", "will", "would",
-  "could", "should", "may", "might", "shall", "can", "not", "this",
-  "that", "these", "those", "it", "its", "as", "if", "so", "up", "out",
+  "a",
+  "an",
+  "the",
+  "and",
+  "or",
+  "but",
+  "in",
+  "on",
+  "at",
+  "to",
+  "for",
+  "of",
+  "with",
+  "by",
+  "from",
+  "is",
+  "was",
+  "are",
+  "were",
+  "be",
+  "been",
+  "being",
+  "have",
+  "has",
+  "had",
+  "do",
+  "does",
+  "did",
+  "will",
+  "would",
+  "could",
+  "should",
+  "may",
+  "might",
+  "shall",
+  "can",
+  "not",
+  "this",
+  "that",
+  "these",
+  "those",
+  "it",
+  "its",
+  "as",
+  "if",
+  "so",
+  "up",
+  "out",
 ]);
 
 function extractKeywordSet(text: string): Set<string> {

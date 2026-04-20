@@ -1,9 +1,9 @@
 import { useState } from "react";
-import type { PlaybookSubmitData, StepDraft } from "./playbook-types";
-import { emptyStep } from "./playbook-types";
-import { ModeChooser } from "./ModeChooser";
 import { AutoModeDialog } from "./AutoModeDialog";
 import { ManualModeDialog } from "./ManualModeDialog";
+import { ModeChooser } from "./ModeChooser";
+import type { PlaybookSubmitData, StepDraft } from "./playbook-types";
+import { emptyStep } from "./playbook-types";
 
 interface NewPlaybookDialogProps {
   open: boolean;
@@ -12,12 +12,7 @@ interface NewPlaybookDialogProps {
   isPending?: boolean;
 }
 
-export function NewPlaybookDialog({
-  open,
-  onOpenChange,
-  onSubmit,
-  isPending,
-}: NewPlaybookDialogProps) {
+export function NewPlaybookDialog({ open, onOpenChange, onSubmit, isPending }: NewPlaybookDialogProps) {
   const [mode, setMode] = useState<"choose" | "manual" | "auto">("choose");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -50,7 +45,7 @@ export function NewPlaybookDialog({
         dependsOn: s.dependsOn
           .split(",")
           .map((d) => parseInt(d.trim(), 10))
-          .filter((n) => !isNaN(n)),
+          .filter((n) => !Number.isNaN(n)),
         estimatedMinutes: s.estimatedMinutes ? parseInt(s.estimatedMinutes, 10) || undefined : undefined,
         requiresApproval: s.requiresApproval,
       }));

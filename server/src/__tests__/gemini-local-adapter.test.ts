@@ -1,7 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
+import { printGeminiStreamEvent } from "@ironworksai/adapter-gemini-local/cli";
 import { isGeminiUnknownSessionError, parseGeminiJsonl } from "@ironworksai/adapter-gemini-local/server";
 import { parseGeminiStdoutLine } from "@ironworksai/adapter-gemini-local/ui";
-import { printGeminiStreamEvent } from "@ironworksai/adapter-gemini-local/cli";
+import { describe, expect, it, vi } from "vitest";
 
 describe("gemini_local parser", () => {
   it("extracts session, summary, usage, cost, and terminal error message", () => {
@@ -139,6 +139,7 @@ describe("gemini_local ui stdout parser", () => {
 });
 
 function stripAnsi(value: string): string {
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional ANSI escape sequence stripping
   return value.replace(/\x1b\[[0-9;]*m/g, "");
 }
 
@@ -172,10 +173,7 @@ describe("gemini_local cli formatter", () => {
         }),
         false,
       );
-      printGeminiStreamEvent(
-        JSON.stringify({ type: "error", message: "boom" }),
-        false,
-      );
+      printGeminiStreamEvent(JSON.stringify({ type: "error", message: "boom" }), false);
       joined = spy.mock.calls.map((call) => stripAnsi(call.join(" "))).join("\n");
     } finally {
       spy.mockRestore();

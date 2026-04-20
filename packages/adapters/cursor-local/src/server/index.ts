@@ -1,7 +1,8 @@
-export { execute, ensureCursorSkillsInjected } from "./execute.js";
+export { ensureCursorSkillsInjected, execute } from "./execute.js";
+export { isCursorUnknownSessionError, parseCursorJsonl } from "./parse.js";
 export { listCursorSkills, syncCursorSkills } from "./skills.js";
 export { testEnvironment } from "./test.js";
-export { parseCursorJsonl, isCursorUnknownSessionError } from "./parse.js";
+
 import type { AdapterSessionCodec } from "@ironworksai/adapter-utils";
 
 function readNonEmptyString(value: unknown): string | null {
@@ -18,9 +19,7 @@ export const sessionCodec: AdapterSessionCodec = {
       readNonEmptyString(record.sessionID);
     if (!sessionId) return null;
     const cwd =
-      readNonEmptyString(record.cwd) ??
-      readNonEmptyString(record.workdir) ??
-      readNonEmptyString(record.folder);
+      readNonEmptyString(record.cwd) ?? readNonEmptyString(record.workdir) ?? readNonEmptyString(record.folder);
     const workspaceId = readNonEmptyString(record.workspaceId) ?? readNonEmptyString(record.workspace_id);
     const repoUrl = readNonEmptyString(record.repoUrl) ?? readNonEmptyString(record.repo_url);
     const repoRef = readNonEmptyString(record.repoRef) ?? readNonEmptyString(record.repo_ref);
@@ -40,9 +39,7 @@ export const sessionCodec: AdapterSessionCodec = {
       readNonEmptyString(params.sessionID);
     if (!sessionId) return null;
     const cwd =
-      readNonEmptyString(params.cwd) ??
-      readNonEmptyString(params.workdir) ??
-      readNonEmptyString(params.folder);
+      readNonEmptyString(params.cwd) ?? readNonEmptyString(params.workdir) ?? readNonEmptyString(params.folder);
     const workspaceId = readNonEmptyString(params.workspaceId) ?? readNonEmptyString(params.workspace_id);
     const repoUrl = readNonEmptyString(params.repoUrl) ?? readNonEmptyString(params.repo_url);
     const repoRef = readNonEmptyString(params.repoRef) ?? readNonEmptyString(params.repo_ref);

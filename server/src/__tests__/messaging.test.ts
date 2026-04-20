@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -51,11 +51,14 @@ vi.mock("../services/messaging-bridges.js", () => ({
   messagingBridgeService: () => mockBridgeService,
 }));
 
-vi.mock("../services/index.js", () => ({
-  logActivity: mockLogActivity,
-  secretService: () => mockSecretService,
-  companyService: () => mockCompanyService,
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    logActivity: mockLogActivity,
+    secretService: () => mockSecretService,
+    companyService: () => mockCompanyService,
+  });
+});
 
 vi.mock("../services/activity-log.js", () => ({
   logActivity: mockLogActivity,
@@ -87,9 +90,11 @@ async function createApp(actor: Record<string, unknown>) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });
+  // biome-ignore lint/suspicious/noExplicitAny: mock Drizzle DB or storage object for unit tests; real type requires full schema-aware Drizzle instance
   const fakeDb = {} as any;
   app.use("/api", messagingRoutes(fakeDb));
   app.use("/api", emailWebhookRoutes(fakeDb));
@@ -143,18 +148,14 @@ describe("messaging routes", () => {
   describe("POST /api/companies/:companyId/messaging/telegram", () => {
     it("rejects missing token with 400", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post(`/api/companies/${COMPANY_ID}/messaging/telegram`)
-        .send({});
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/messaging/telegram`).send({});
       expect(res.status).toBe(400);
       expect(res.body.error).toContain("valid Telegram bot token");
     });
 
     it("rejects short token with 400", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post(`/api/companies/${COMPANY_ID}/messaging/telegram`)
-        .send({ token: "short" });
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/messaging/telegram`).send({ token: "short" });
       expect(res.status).toBe(400);
     });
 
@@ -178,9 +179,7 @@ describe("messaging routes", () => {
       mockSecretService.getByName.mockResolvedValue({ id: SECRET_ID });
 
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app).delete(
-        `/api/companies/${COMPANY_ID}/messaging/telegram`,
-      );
+      const res = await request(app).delete(`/api/companies/${COMPANY_ID}/messaging/telegram`);
 
       expect(res.status).toBe(200);
       expect(res.body.ok).toBe(true);
@@ -192,9 +191,7 @@ describe("messaging routes", () => {
       mockBridgeService.getByPlatform.mockResolvedValue(null);
 
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app).post(
-        `/api/companies/${COMPANY_ID}/messaging/telegram/test`,
-      );
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/messaging/telegram/test`);
 
       expect(res.status).toBe(404);
       expect(res.body.error).toContain("No Telegram bridge configured");
@@ -205,9 +202,7 @@ describe("messaging routes", () => {
     it("rejects when webhook secret not set", async () => {
       delete process.env.IRONWORKS_EMAIL_WEBHOOK_SECRET;
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post("/api/webhooks/email")
-        .send({ from: "test@example.com", subject: "Test" });
+      const res = await request(app).post("/api/webhooks/email").send({ from: "test@example.com", subject: "Test" });
 
       expect(res.status).toBe(503);
     });

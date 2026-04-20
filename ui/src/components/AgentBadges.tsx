@@ -1,7 +1,7 @@
-import { useMemo } from "react";
-import { Award, Flame, Shield, Zap, Wallet } from "lucide-react";
-import { cn } from "../lib/utils";
 import type { HeartbeatRun } from "@ironworksai/shared";
+import { Award, Flame, Shield, Wallet, Zap } from "lucide-react";
+import { useMemo } from "react";
+import { cn } from "../lib/utils";
 
 /* ── Badge definitions ── */
 
@@ -110,9 +110,7 @@ export function computeEarnedBadges(input: AgentBadgesInput): AgentBadge[] {
   }
 
   // Zero Failures: 0 failed runs in last 30 days
-  const recentRuns = runs.filter(
-    (r) => new Date(r.createdAt).getTime() > thirtyDaysAgo,
-  );
+  const recentRuns = runs.filter((r) => new Date(r.createdAt).getTime() > thirtyDaysAgo);
   const failedRecent = recentRuns.filter((r) => r.status === "failed").length;
   if (recentRuns.length >= 5 && failedRecent === 0) {
     earned.push(BADGE_DEFS.find((b) => b.key === "zero_failures")!);
@@ -120,17 +118,12 @@ export function computeEarnedBadges(input: AgentBadgesInput): AgentBadge[] {
 
   // Speed Demon: avg cycle time < 1 hour for completed issues in last 30 days
   const recentCompleted = assignedIssues.filter(
-    (i) =>
-      i.status === "done" &&
-      i.completedAt &&
-      i.startedAt &&
-      new Date(i.completedAt).getTime() > thirtyDaysAgo,
+    (i) => i.status === "done" && i.completedAt && i.startedAt && new Date(i.completedAt).getTime() > thirtyDaysAgo,
   );
   if (recentCompleted.length >= 3) {
     const avgCycleMs =
       recentCompleted.reduce(
-        (sum, i) =>
-          sum + (new Date(i.completedAt!).getTime() - new Date(i.startedAt!).getTime()),
+        (sum, i) => sum + (new Date(i.completedAt!).getTime() - new Date(i.startedAt!).getTime()),
         0,
       ) / recentCompleted.length;
     if (avgCycleMs < 60 * 60 * 1000) {
@@ -139,11 +132,7 @@ export function computeEarnedBadges(input: AgentBadgesInput): AgentBadge[] {
   }
 
   // Budget Hero: total cost < 80% of budget (when budget is set)
-  if (
-    typeof budgetCents === "number" &&
-    budgetCents > 0 &&
-    typeof totalCostCents === "number"
-  ) {
+  if (typeof budgetCents === "number" && budgetCents > 0 && typeof totalCostCents === "number") {
     if (totalCostCents <= budgetCents * 0.8) {
       earned.push(BADGE_DEFS.find((b) => b.key === "budget_hero")!);
     }
@@ -164,19 +153,14 @@ export function AgentBadgesPanel({ badges, className }: AgentBadgesProps) {
 
   return (
     <div className={cn("rounded-xl border border-border p-4 space-y-3", className)}>
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        Achievements
-      </h3>
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Achievements</h3>
       <div className="flex flex-wrap gap-2">
         {badges.map((badge) => {
           const Icon = badge.icon;
           return (
             <div
               key={badge.key}
-              className={cn(
-                "flex items-center gap-2 rounded-lg px-3 py-2 border border-border",
-                badge.bgColor,
-              )}
+              className={cn("flex items-center gap-2 rounded-lg px-3 py-2 border border-border", badge.bgColor)}
               title={badge.description}
             >
               <Icon className={cn("h-4 w-4 shrink-0", badge.color)} />
@@ -223,10 +207,8 @@ export function AgentBadgeIcons({ badges, className }: AgentBadgeIconsProps) {
 /* ── Hook for convenient usage ── */
 
 export function useAgentBadges(input: AgentBadgesInput): AgentBadge[] {
-  return useMemo(() => computeEarnedBadges(input), [
-    input.runs,
-    input.assignedIssues,
-    input.totalCostCents,
-    input.budgetCents,
-  ]);
+  return useMemo(
+    () => computeEarnedBadges(input),
+    [input.runs, input.assignedIssues, input.totalCostCents, input.budgetCents],
+  );
 }

@@ -1,16 +1,12 @@
-import { Router } from "express";
-import { eq } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { agents } from "@ironworksai/db";
-import { assertCanWrite } from "./authz.js";
+import { eq } from "drizzle-orm";
+import { Router } from "express";
 import { badRequest } from "../errors.js";
+import { type GoalBreakdownResult, sanitizeAiInput, validateGoalBreakdownOutput } from "../lib/ai-security.js";
+import { buildAnthropicHeaders, resolveAnthropicAuth } from "../lib/anthropic-auth.js";
 import { logger } from "../middleware/logger.js";
-import {
-  sanitizeAiInput,
-  validateGoalBreakdownOutput,
-  type GoalBreakdownResult,
-} from "../lib/ai-security.js";
-import { resolveAnthropicAuth, buildAnthropicHeaders } from "../lib/anthropic-auth.js";
+import { assertCanWrite } from "./authz.js";
 
 const AVAILABLE_ROLES = [
   "ceo",
@@ -41,61 +37,53 @@ interface GeneratedIssue {
 export function aiGoalBreakdownRoutes(db: Db) {
   const router = Router();
 
-  router.post(
-    "/companies/:companyId/ai/generate-goal-breakdown",
-    async (req, res) => {
-      const companyId = req.params.companyId as string;
-      await assertCanWrite(req, companyId, db);
+  router.post("/companies/:companyId/ai/generate-goal-breakdown", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    await assertCanWrite(req, companyId, db);
 
-      const { goalTitle: rawGoalTitle, goalDescription: rawGoalDescription, projectId } = req.body as {
-        goalTitle?: string;
-        goalDescription?: string;
-        projectId?: string;
-      };
+    const {
+      goalTitle: rawGoalTitle,
+      goalDescription: rawGoalDescription,
+      projectId,
+    } = req.body as {
+      goalTitle?: string;
+      goalDescription?: string;
+      projectId?: string;
+    };
 
-      if (!rawGoalTitle || rawGoalTitle.trim().length === 0) {
-        throw badRequest("goalTitle is required");
+    if (!rawGoalTitle || rawGoalTitle.trim().length === 0) {
+      throw badRequest("goalTitle is required");
+    }
+
+    // SEC-LLM-001: sanitize user inputs before interpolating into LLM prompts
+    const goalTitle = sanitizeAiInput(rawGoalTitle, "goalTitle");
+    const goalDescription =
+      rawGoalDescription != null ? sanitizeAiInput(rawGoalDescription, "goalDescription") : undefined;
+
+    // Load company agents to determine available roles
+    const companyAgents = await db
+      .select({ name: agents.name, role: agents.role })
+      .from(agents)
+      .where(eq(agents.companyId, companyId));
+
+    const agentRoles = companyAgents.map((a) => a.role?.toLowerCase() ?? a.name.toLowerCase());
+
+    // SEC-ADV-010: resolve per-company BYOK credentials; fall back to server env only if none set
+    const auth = await resolveAnthropicAuth(companyId, db);
+    if (auth) {
+      try {
+        const result = await generateWithAnthropic(auth, goalTitle, goalDescription, agentRoles);
+        res.json(result);
+        return;
+      } catch (err) {
+        logger.warn({ err }, "Anthropic API call failed for goal breakdown, falling back to template");
       }
+    }
 
-      // SEC-LLM-001: sanitize user inputs before interpolating into LLM prompts
-      const goalTitle = sanitizeAiInput(rawGoalTitle, "goalTitle");
-      const goalDescription = rawGoalDescription != null
-        ? sanitizeAiInput(rawGoalDescription, "goalDescription")
-        : undefined;
-
-      // Load company agents to determine available roles
-      const companyAgents = await db
-        .select({ name: agents.name, role: agents.role })
-        .from(agents)
-        .where(eq(agents.companyId, companyId));
-
-      const agentRoles = companyAgents.map((a) => a.role?.toLowerCase() ?? a.name.toLowerCase());
-
-      // SEC-ADV-010: resolve per-company BYOK credentials; fall back to server env only if none set
-      const auth = await resolveAnthropicAuth(companyId, db);
-      if (auth) {
-        try {
-          const result = await generateWithAnthropic(
-            auth,
-            goalTitle,
-            goalDescription,
-            agentRoles,
-          );
-          res.json(result);
-          return;
-        } catch (err) {
-          logger.warn(
-            { err },
-            "Anthropic API call failed for goal breakdown, falling back to template",
-          );
-        }
-      }
-
-      // Fallback: template-based breakdown
-      const result = generateTemplateBreakdown(goalTitle, goalDescription, agentRoles);
-      res.json(result);
-    },
-  );
+    // Fallback: template-based breakdown
+    const result = generateTemplateBreakdown(goalTitle, goalDescription, agentRoles);
+    res.json(result);
+  });
 
   return router;
 }
@@ -106,10 +94,7 @@ async function generateWithAnthropic(
   goalDescription: string | undefined,
   availableRoles: string[],
 ): Promise<GoalBreakdownResult> {
-  const roleList =
-    availableRoles.length > 0
-      ? availableRoles.join(", ")
-      : AVAILABLE_ROLES.join(", ");
+  const roleList = availableRoles.length > 0 ? availableRoles.join(", ") : AVAILABLE_ROLES.join(", ");
 
   const systemPrompt = `You are an AI project planner. Given a goal, break it down into actionable issues that a team of AI agents can execute.
 
@@ -138,9 +123,7 @@ Rules:
 - Assign roles based on expertise match; default to "ceo" for strategic tasks
 - Descriptions should be detailed enough for an AI agent to execute`;
 
-  const userPrompt = goalDescription
-    ? `Goal: ${goalTitle}\n\nDescription: ${goalDescription}`
-    : `Goal: ${goalTitle}`;
+  const userPrompt = goalDescription ? `Goal: ${goalTitle}\n\nDescription: ${goalDescription}` : `Goal: ${goalTitle}`;
 
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -188,16 +171,10 @@ function generateTemplateBreakdown(
 ): GoalBreakdownResult {
   const ceo = availableRoles.find((r) => r.includes("ceo")) ?? "ceo";
   const cto =
-    availableRoles.find((r) => r.includes("cto")) ??
-    availableRoles.find((r) => r.includes("engineer")) ??
-    "cto";
-  const engineer =
-    availableRoles.find((r) => r.includes("senior") || r.includes("engineer")) ??
-    "seniorengineer";
+    availableRoles.find((r) => r.includes("cto")) ?? availableRoles.find((r) => r.includes("engineer")) ?? "cto";
+  const engineer = availableRoles.find((r) => r.includes("senior") || r.includes("engineer")) ?? "seniorengineer";
 
-  const context = goalDescription
-    ? `${goalTitle} - ${goalDescription}`
-    : goalTitle;
+  const context = goalDescription ? `${goalTitle} - ${goalDescription}` : goalTitle;
 
   const issues: GeneratedIssue[] = [
     {

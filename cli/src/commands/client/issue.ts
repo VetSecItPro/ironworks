@@ -1,19 +1,19 @@
-import { Command } from "commander";
 import {
   addIssueCommentSchema,
   checkoutIssueSchema,
   createIssueSchema,
-  updateIssueSchema,
   type Issue,
   type IssueComment,
+  updateIssueSchema,
 } from "@ironworksai/shared";
+import { Command } from "commander";
 import {
   addCommonClientOptions,
+  type BaseClientOptions,
   formatInlineRecord,
   handleCommandError,
   printOutput,
   resolveCommandContext,
-  type BaseClientOptions,
 } from "./common.js";
 
 interface IssueBaseOptions extends BaseClientOptions {
@@ -207,7 +207,10 @@ export function registerIssueCommands(program: Command): void {
             hiddenAt: parseHiddenAt(opts.hiddenAt),
           });
 
-          const updated = await ctx.api.patch<Issue & { comment?: IssueComment | null }>(`/api/issues/${issueId}`, payload);
+          const updated = await ctx.api.patch<Issue & { comment?: IssueComment | null }>(
+            `/api/issues/${issueId}`,
+            payload,
+          );
           printOutput(updated, { json: ctx.json });
         } catch (err) {
           handleCommandError(err);
@@ -243,11 +246,7 @@ export function registerIssueCommands(program: Command): void {
       .description("Checkout issue for an agent")
       .argument("<issueId>", "Issue ID")
       .requiredOption("--agent-id <id>", "Agent ID")
-      .option(
-        "--expected-statuses <csv>",
-        "Expected current statuses",
-        "todo,backlog,blocked",
-      )
+      .option("--expected-statuses <csv>", "Expected current statuses", "todo,backlog,blocked")
       .action(async (issueId: string, opts: IssueCheckoutOptions) => {
         try {
           const ctx = resolveCommandContext(opts);
@@ -282,7 +281,10 @@ export function registerIssueCommands(program: Command): void {
 
 function parseCsv(value: string | undefined): string[] {
   if (!value) return [];
-  return value.split(",").map((v) => v.trim()).filter(Boolean);
+  return value
+    .split(",")
+    .map((v) => v.trim())
+    .filter(Boolean);
 }
 
 function parseOptionalInt(value: string | undefined): number | undefined {

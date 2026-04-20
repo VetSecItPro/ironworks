@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import type { LiveEvent } from "@ironworksai/shared";
-import { instanceSettingsApi } from "../../api/instanceSettings";
-import { heartbeatsApi, type LiveRunForIssue } from "../../api/heartbeats";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { buildTranscript, getUIAdapter, type RunLogChunk, type TranscriptEntry } from "../../adapters";
+import { heartbeatsApi, type LiveRunForIssue } from "../../api/heartbeats";
+import { instanceSettingsApi } from "../../api/instanceSettings";
 import { queryKeys } from "../../lib/queryKeys";
 
 const LOG_POLL_INTERVAL_MS = 2000;
@@ -59,11 +59,7 @@ function parsePersistedLogContent(
   return parsed;
 }
 
-export function useLiveRunTranscripts({
-  runs,
-  companyId,
-  maxChunksPerRun = 200,
-}: UseLiveRunTranscriptsOptions) {
+export function useLiveRunTranscripts({ runs, companyId, maxChunksPerRun = 200 }: UseLiveRunTranscriptsOptions) {
   const [chunksByRun, setChunksByRun] = useState<Map<string, RunLogChunk[]>>(new Map());
   const seenChunkKeysRef = useRef(new Set<string>());
   const pendingLogRowsByRunRef = useRef(new Map<string, string>());
@@ -79,7 +75,11 @@ export function useLiveRunTranscripts({
     [runs],
   );
   const runIdsKey = useMemo(
-    () => runs.map((run) => run.id).sort((a, b) => a.localeCompare(b)).join(","),
+    () =>
+      runs
+        .map((run) => run.id)
+        .sort((a, b) => a.localeCompare(b))
+        .join(","),
     [runs],
   );
 
@@ -202,50 +202,56 @@ export function useLiveRunTranscripts({
 
         if (event.companyId !== companyId) return;
         const payload = event.payload ?? {};
-        const runId = readString(payload["runId"]);
+        const runId = readString(payload.runId);
         if (!runId || !activeRunIds.has(runId)) return;
         if (!runById.has(runId)) return;
 
         if (event.type === "heartbeat.run.log") {
-          const chunk = readString(payload["chunk"]);
+          const chunk = readString(payload.chunk);
           if (!chunk) return;
-          const ts = readString(payload["ts"]) ?? event.createdAt;
+          const ts = readString(payload.ts) ?? event.createdAt;
           const stream =
-            readString(payload["stream"]) === "stderr"
+            readString(payload.stream) === "stderr"
               ? "stderr"
-              : readString(payload["stream"]) === "system"
+              : readString(payload.stream) === "system"
                 ? "system"
                 : "stdout";
-          appendChunks(runId, [{
-            ts,
-            stream,
-            chunk,
-            dedupeKey: `log:${runId}:${ts}:${stream}:${chunk}`,
-          }]);
+          appendChunks(runId, [
+            {
+              ts,
+              stream,
+              chunk,
+              dedupeKey: `log:${runId}:${ts}:${stream}:${chunk}`,
+            },
+          ]);
           return;
         }
 
         if (event.type === "heartbeat.run.event") {
-          const seq = typeof payload["seq"] === "number" ? payload["seq"] : null;
-          const eventType = readString(payload["eventType"]) ?? "event";
-          const messageText = readString(payload["message"]) ?? eventType;
-          appendChunks(runId, [{
-            ts: event.createdAt,
-            stream: eventType === "error" ? "stderr" : "system",
-            chunk: messageText,
-            dedupeKey: `socket:event:${runId}:${seq ?? `${eventType}:${messageText}:${event.createdAt}`}`,
-          }]);
+          const seq = typeof payload.seq === "number" ? payload.seq : null;
+          const eventType = readString(payload.eventType) ?? "event";
+          const messageText = readString(payload.message) ?? eventType;
+          appendChunks(runId, [
+            {
+              ts: event.createdAt,
+              stream: eventType === "error" ? "stderr" : "system",
+              chunk: messageText,
+              dedupeKey: `socket:event:${runId}:${seq ?? `${eventType}:${messageText}:${event.createdAt}`}`,
+            },
+          ]);
           return;
         }
 
         if (event.type === "heartbeat.run.status") {
-          const status = readString(payload["status"]) ?? "updated";
-          appendChunks(runId, [{
-            ts: event.createdAt,
-            stream: isTerminalStatus(status) && status !== "succeeded" ? "stderr" : "system",
-            chunk: `run ${status}`,
-            dedupeKey: `socket:status:${runId}:${status}:${readString(payload["finishedAt"]) ?? ""}`,
-          }]);
+          const status = readString(payload.status) ?? "updated";
+          appendChunks(runId, [
+            {
+              ts: event.createdAt,
+              stream: isTerminalStatus(status) && status !== "succeeded" ? "stderr" : "system",
+              chunk: `run ${status}`,
+              dedupeKey: `socket:status:${runId}:${status}:${readString(payload.finishedAt) ?? ""}`,
+            },
+          ]);
         }
       };
 

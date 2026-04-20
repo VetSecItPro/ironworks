@@ -1,6 +1,6 @@
 import { LineChart } from "lucide-react";
 import { formatCents } from "../../lib/utils";
-import { WeeklyLineChart, WeeklyBarChart } from "../briefing/BriefingCharts";
+import { WeeklyBarChart, WeeklyLineChart } from "../briefing/BriefingCharts";
 
 interface WeeklyTrendsSectionProps {
   spendTrendWeeks: Array<{ label: string; cost: number }>;
@@ -25,9 +25,7 @@ export function WeeklyTrendsSection({ spendTrendWeeks, issueTrendWeeks }: Weekly
 
       <div className="space-y-2">
         <p className="text-xs font-medium text-muted-foreground">Missions Completed per Week</p>
-        <WeeklyBarChart
-          data={issueTrendWeeks.map((w) => ({ label: w.label, value: w.count }))}
-        />
+        <WeeklyBarChart data={issueTrendWeeks.map((w) => ({ label: w.label, value: w.count }))} />
       </div>
     </div>
   );

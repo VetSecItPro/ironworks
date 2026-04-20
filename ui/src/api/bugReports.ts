@@ -32,8 +32,7 @@ export interface UpdateBugReportInput {
 }
 
 export const bugReportsApi = {
-  create: (input: CreateBugReportInput) =>
-    api.post<BugReport>("/bug-reports", input),
+  create: (input: CreateBugReportInput) => api.post<BugReport>("/bug-reports", input),
 
   list: (params?: { status?: string; type?: string }) => {
     const searchParams = new URLSearchParams();
@@ -43,6 +42,5 @@ export const bugReportsApi = {
     return api.get<BugReport[]>(`/bug-reports${qs ? `?${qs}` : ""}`);
   },
 
-  update: (id: string, input: UpdateBugReportInput) =>
-    api.patch<BugReport>(`/bug-reports/${id}`, input),
+  update: (id: string, input: UpdateBugReportInput) => api.patch<BugReport>(`/bug-reports/${id}`, input),
 };

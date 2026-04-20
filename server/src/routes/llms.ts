@@ -1,8 +1,8 @@
-import { Router, type Request } from "express";
 import type { Db } from "@ironworksai/db";
 import { AGENT_ICON_NAMES } from "@ironworksai/shared";
-import { forbidden } from "../errors.js";
+import { type Request, Router } from "express";
 import { listServerAdapters } from "../adapters/index.js";
+import { forbidden } from "../errors.js";
 import { agentService } from "../services/agents.js";
 
 function hasCreatePermission(agent: { role: string; permissions: Record<string, unknown> | null | undefined }) {

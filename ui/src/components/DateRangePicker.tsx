@@ -1,7 +1,7 @@
-import { useCallback, useMemo, useState } from "react";
 import { Calendar, ChevronDown } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useCallback, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "../lib/utils";
 
 export interface DateRange {
@@ -104,7 +104,7 @@ export function DateRangePicker({ value, onChange, className, placeholder = "Dat
     if (!customFrom || !customTo) return;
     const from = new Date(customFrom);
     const to = new Date(customTo);
-    if (isNaN(from.getTime()) || isNaN(to.getTime())) return;
+    if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) return;
     setActivePreset("custom");
     onChange({ from: startOfDay(from), to: endOfDay(to) });
     setOpen(false);
@@ -166,7 +166,12 @@ export function DateRangePicker({ value, onChange, className, placeholder = "Dat
               />
             </div>
             <div className="flex gap-1.5 mt-1.5">
-              <Button size="sm" className="flex-1 h-6 text-xs" onClick={handleCustomApply} disabled={!customFrom || !customTo}>
+              <Button
+                size="sm"
+                className="flex-1 h-6 text-xs"
+                onClick={handleCustomApply}
+                disabled={!customFrom || !customTo}
+              >
                 Apply
               </Button>
               {value && (

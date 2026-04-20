@@ -1,8 +1,15 @@
-import { and, desc, eq, gt, gte, inArray, lt, or, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import { agentChannels, agents, agentWakeupRequests, channelMemberships, channelMessages, issues } from "@ironworksai/db";
+import {
+  agentChannels,
+  agents,
+  agentWakeupRequests,
+  channelMemberships,
+  channelMessages,
+  issues,
+} from "@ironworksai/db";
+import { and, desc, eq, gt, gte, inArray, lt, sql } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
-import { selectRespondingAgents, recordAgentResponse, recordHumanMessage } from "./channel-router.js";
+import { recordAgentResponse, recordHumanMessage, selectRespondingAgents } from "./channel-router.js";
 
 // ---------------------------------------------------------------------------
 // Module-level constants
@@ -42,9 +49,7 @@ async function upsertChannel(
       and(
         eq(agentChannels.companyId, companyId),
         eq(agentChannels.scopeType, scopeType),
-        scopeId !== null
-          ? eq(agentChannels.scopeId, scopeId)
-          : sql`${agentChannels.scopeId} IS NULL`,
+        scopeId !== null ? eq(agentChannels.scopeId, scopeId) : sql`${agentChannels.scopeId} IS NULL`,
       ),
     )
     .then((rows) => rows[0] ?? null);
@@ -87,11 +92,7 @@ export async function seedDefaultChannels(db: Db, companyId: string): Promise<vo
 }
 
 /** Auto-create a department channel. Returns the channel id. */
-export async function ensureDepartmentChannel(
-  db: Db,
-  companyId: string,
-  department: string,
-): Promise<string> {
+export async function ensureDepartmentChannel(db: Db, companyId: string, department: string): Promise<string> {
   return upsertChannel(db, companyId, "department", department, department);
 }
 
@@ -127,20 +128,13 @@ export async function autoJoinAgentChannels(
 
   for (const channelId of channelIds) {
     // Upsert membership - ignore conflict if already a member
-    await db
-      .insert(channelMemberships)
-      .values({ channelId, agentId })
-      .onConflictDoNothing();
+    await db.insert(channelMemberships).values({ channelId, agentId }).onConflictDoNothing();
   }
 }
 
 /** List all channels for a company, with member count. */
 export async function listChannels(db: Db, companyId: string): Promise<Channel[]> {
-  return db
-    .select()
-    .from(agentChannels)
-    .where(eq(agentChannels.companyId, companyId))
-    .orderBy(agentChannels.createdAt);
+  return db.select().from(agentChannels).where(eq(agentChannels.companyId, companyId)).orderBy(agentChannels.createdAt);
 }
 
 /** Get paginated messages for a channel, newest first. */
@@ -169,7 +163,10 @@ export async function getMessages(
   const userNames = new Map<string, string>();
   if (userIds.length > 0) {
     const { authUsers } = await import("@ironworksai/db");
-    const users = await db.select({ id: authUsers.id, name: authUsers.name }).from(authUsers).where(inArray(authUsers.id, userIds));
+    const users = await db
+      .select({ id: authUsers.id, name: authUsers.name })
+      .from(authUsers)
+      .where(inArray(authUsers.id, userIds));
     for (const u of users) userNames.set(u.id, u.name);
   }
 
@@ -183,10 +180,7 @@ export async function getMessages(
  * Find the #company channel for a company. Returns the channel or null if it
  * doesn't exist yet (channels are created lazily on first agent join).
  */
-export async function findCompanyChannel(
-  db: Db,
-  companyId: string,
-): Promise<{ id: string } | null> {
+export async function findCompanyChannel(db: Db, companyId: string): Promise<{ id: string } | null> {
   return db
     .select({ id: agentChannels.id })
     .from(agentChannels)
@@ -224,11 +218,7 @@ export async function findAgentDepartmentChannel(
 }
 
 /** Get last N messages from a channel for context injection, oldest first. */
-export async function getRecentMessages(
-  db: Db,
-  channelId: string,
-  limit: number,
-): Promise<Message[]> {
+export async function getRecentMessages(db: Db, channelId: string, limit: number): Promise<Message[]> {
   const rows = await db
     .select()
     .from(channelMessages)
@@ -268,10 +258,7 @@ export async function postMessage(
   // --- Contradiction detection (non-fatal) ---
   // For decision messages posted by agents, check for contradictions with prior decisions.
   let bodyWithNote = cleanBody;
-  if (
-    opts.authorAgentId &&
-    (opts.messageType === "decision" || opts.messageType === "message")
-  ) {
+  if (opts.authorAgentId && (opts.messageType === "decision" || opts.messageType === "message")) {
     try {
       // Inline heuristic: find prior decision messages from this agent, check keyword negation overlap
       const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -299,7 +286,12 @@ export async function postMessage(
         const negWords = ["not", "never", "no", "stop", "cancel", "reject", "avoid", "remove", "disable"];
         const newHasNeg = negWords.some((n) => cleanBody.toLowerCase().includes(n));
         for (const prior of priorRows) {
-          const priorWords = new Set(prior.body.toLowerCase().split(/\W+/).filter((w) => w.length >= 5));
+          const priorWords = new Set(
+            prior.body
+              .toLowerCase()
+              .split(/\W+/)
+              .filter((w) => w.length >= 5),
+          );
           const priorHasNeg = negWords.some((n) => prior.body.toLowerCase().includes(n));
           const overlap = [...newWords].filter((w) => priorWords.has(w)).length;
           if (overlap >= 3 && newHasNeg !== priorHasNeg) {
@@ -349,10 +341,7 @@ export async function postMessage(
             .select({ id: agents.id, name: agents.name })
             .from(agents)
             .where(
-              and(
-                eq(agents.companyId, opts.companyId),
-                sql`lower(${agents.role}) ~ '\\mceo\\M|\\mchief executive\\M'`,
-              ),
+              and(eq(agents.companyId, opts.companyId), sql`lower(${agents.role}) ~ '\\mceo\\M|\\mchief executive\\M'`),
             )
             .limit(1)
             .then((rows) => rows[0] ?? null);
@@ -417,14 +406,7 @@ export async function postMessage(
         .where(eq(agentChannels.id, opts.channelId))
         .then((r) => r[0] ?? null);
       if (channel) {
-        const toWake = await selectRespondingAgents(
-          db,
-          opts.channelId,
-          channel.name,
-          opts.companyId,
-          cleanBody,
-          null,
-        );
+        const toWake = await selectRespondingAgents(db, opts.channelId, channel.name, opts.companyId, cleanBody, null);
         for (const agent of toWake) {
           if (opts.enqueueWakeup) {
             // Preferred path: creates both the wakeup request AND a heartbeat run
@@ -466,11 +448,12 @@ export async function postMessage(
       await recordAgentResponse(db, opts.channelId, opts.companyId);
 
       // Check for @mentions in agent message - wake ONLY mentioned agents
-      const mentionPattern = /@(\w[\w\s]*?)(?=[\s,\.!?]|$)/g;
+      const mentionPattern = /@(\w[\w\s]*?)(?=[\s,.!?]|$)/g;
       const mentionMatches: string[] = [];
-      let mentionMatch;
-      while ((mentionMatch = mentionPattern.exec(cleanBody)) !== null) {
+      let mentionMatch = mentionPattern.exec(cleanBody);
+      while (mentionMatch !== null) {
         mentionMatches.push(mentionMatch[1].trim().toLowerCase());
+        mentionMatch = mentionPattern.exec(cleanBody);
       }
 
       if (mentionMatches.length > 0 && opts.enqueueWakeup) {
@@ -480,12 +463,15 @@ export async function postMessage(
           .where(and(eq(agents.companyId, opts.companyId), eq(agents.status, "idle")));
 
         const mentionedAgents = idleAgents
-          .filter(a => mentionMatches.some(m => a.name.toLowerCase().includes(m)) && a.id !== opts.authorAgentId)
+          .filter((a) => mentionMatches.some((m) => a.name.toLowerCase().includes(m)) && a.id !== opts.authorAgentId)
           .slice(0, 2);
 
         if (mentionedAgents.length > 0) {
-          const ch = await db.select({ name: agentChannels.name }).from(agentChannels)
-            .where(eq(agentChannels.id, opts.channelId)).then(r => r[0] ?? null);
+          const ch = await db
+            .select({ name: agentChannels.name })
+            .from(agentChannels)
+            .where(eq(agentChannels.id, opts.channelId))
+            .then((r) => r[0] ?? null);
           if (ch) {
             for (const mentionedAgent of mentionedAgents) {
               await opts.enqueueWakeup(mentionedAgent.id, {
@@ -496,7 +482,10 @@ export async function postMessage(
                 contextSnapshot: { channelName: ch.name, messagePreview: cleanBody.slice(0, 200) },
               });
             }
-            logger.info({ from: opts.authorAgentId, mentioned: mentionedAgents.map(a => a.name), channel: ch.name }, "agent @mention triggered wakeup");
+            logger.info(
+              { from: opts.authorAgentId, mentioned: mentionedAgents.map((a) => a.name), channel: ch.name },
+              "agent @mention triggered wakeup",
+            );
           }
         }
       }
@@ -522,15 +511,8 @@ export interface DecisionRecord {
 }
 
 /** Return all decision (and optional escalation) messages from a channel. */
-export async function extractDecisions(
-  db: Db,
-  channelId: string,
-  since?: Date,
-): Promise<DecisionRecord[]> {
-  const conditions = [
-    eq(channelMessages.channelId, channelId),
-    eq(channelMessages.messageType, "decision"),
-  ];
+export async function extractDecisions(db: Db, channelId: string, since?: Date): Promise<DecisionRecord[]> {
+  const conditions = [eq(channelMessages.channelId, channelId), eq(channelMessages.messageType, "decision")];
   if (since) {
     conditions.push(gte(channelMessages.createdAt, since));
   }
@@ -575,11 +557,7 @@ export interface PendingMention {
  * Find messages that mention a specific agent where no reply from that agent
  * exists within the 3 messages posted after the mention.
  */
-export async function getPendingMentions(
-  db: Db,
-  agentId: string,
-  companyId: string,
-): Promise<PendingMention[]> {
+export async function getPendingMentions(db: Db, agentId: string, companyId: string): Promise<PendingMention[]> {
   // Get all messages in this company that mention the agent (mentions is jsonb array of strings)
   const mentionRows = await db
     .select({
@@ -613,9 +591,7 @@ export async function getPendingMentions(
   const channelNameMap = new Map(channelRows.map((c) => [c.id, c.name]));
 
   // Fetch author names for the mentioning messages
-  const authorAgentIds = mentionRows
-    .map((r) => r.authorAgentId)
-    .filter((id): id is string => id !== null);
+  const authorAgentIds = mentionRows.map((r) => r.authorAgentId).filter((id): id is string => id !== null);
 
   const authorRows =
     authorAgentIds.length > 0
@@ -639,21 +615,13 @@ export async function getPendingMentions(
   }
 
   // One query per channel (channels are typically 1-3 for a given agent).
-  const subsequentByChannel = new Map<
-    string,
-    Array<{ authorAgentId: string | null; createdAt: Date }>
-  >();
+  const subsequentByChannel = new Map<string, Array<{ authorAgentId: string | null; createdAt: Date }>>();
   await Promise.all(
     [...earliestByChannel.entries()].map(async ([cid, earliest]) => {
       const rows = await db
         .select({ authorAgentId: channelMessages.authorAgentId, createdAt: channelMessages.createdAt })
         .from(channelMessages)
-        .where(
-          and(
-            eq(channelMessages.channelId, cid),
-            gt(channelMessages.createdAt, earliest),
-          ),
-        )
+        .where(and(eq(channelMessages.channelId, cid), gt(channelMessages.createdAt, earliest)))
         .orderBy(channelMessages.createdAt);
       subsequentByChannel.set(cid, rows);
     }),
@@ -662,9 +630,7 @@ export async function getPendingMentions(
   for (const mention of mentionRows) {
     // Check if the agent replied within the next 3 messages in the same channel
     const allSubsequent = subsequentByChannel.get(mention.channelId) ?? [];
-    const nextMessages = allSubsequent
-      .filter((m) => m.createdAt > mention.createdAt)
-      .slice(0, 3);
+    const nextMessages = allSubsequent.filter((m) => m.createdAt > mention.createdAt).slice(0, 3);
 
     const agentReplied = nextMessages.some((m) => m.authorAgentId === agentId);
     if (agentReplied) continue;
@@ -691,11 +657,7 @@ export async function getPendingMentions(
 // ---------------------------------------------------------------------------
 
 /** Pin a message in a channel. Idempotent. */
-export async function pinMessage(
-  db: Db,
-  channelId: string,
-  messageId: string,
-): Promise<void> {
+export async function pinMessage(db: Db, channelId: string, messageId: string): Promise<void> {
   const channel = await db
     .select({ pinnedMessageIds: agentChannels.pinnedMessageIds })
     .from(agentChannels)
@@ -714,11 +676,7 @@ export async function pinMessage(
 }
 
 /** Unpin a message from a channel. Idempotent. */
-export async function unpinMessage(
-  db: Db,
-  channelId: string,
-  messageId: string,
-): Promise<void> {
+export async function unpinMessage(db: Db, channelId: string, messageId: string): Promise<void> {
   const channel = await db
     .select({ pinnedMessageIds: agentChannels.pinnedMessageIds })
     .from(agentChannels)
@@ -728,32 +686,23 @@ export async function unpinMessage(
   if (!channel) return;
 
   const updated = (channel.pinnedMessageIds ?? []).filter((id) => id !== messageId);
-  await db
-    .update(agentChannels)
-    .set({ pinnedMessageIds: updated })
-    .where(eq(agentChannels.id, channelId));
+  await db.update(agentChannels).set({ pinnedMessageIds: updated }).where(eq(agentChannels.id, channelId));
 }
 
 /** Get all pinned messages for a channel. */
-export async function getPinnedMessages(
-  db: Db,
-  channelId: string,
-): Promise<Message[]> {
+export async function getPinnedMessages(db: Db, channelId: string): Promise<Message[]> {
   const channel = await db
     .select({ pinnedMessageIds: agentChannels.pinnedMessageIds })
     .from(agentChannels)
     .where(eq(agentChannels.id, channelId))
     .then((rows) => rows[0] ?? null);
 
-  if (!channel || !channel.pinnedMessageIds || channel.pinnedMessageIds.length === 0) {
+  if (!channel?.pinnedMessageIds || channel.pinnedMessageIds.length === 0) {
     return [];
   }
 
   const ids = channel.pinnedMessageIds;
-  const rows = await db
-    .select()
-    .from(channelMessages)
-    .where(sql`${channelMessages.id} = ANY(${ids})`);
+  const rows = await db.select().from(channelMessages).where(sql`${channelMessages.id} = ANY(${ids})`);
 
   // Return in pinned order
   const rowMap = new Map(rows.map((r) => [r.id, r]));
@@ -778,10 +727,7 @@ export interface ChannelHealthResult {
  * - stalled: > 8 messages sharing repeated keywords with no decision
  * - healthy: everything else
  */
-export async function channelHealth(
-  db: Db,
-  channelId: string,
-): Promise<ChannelHealthResult> {
+export async function channelHealth(db: Db, channelId: string): Promise<ChannelHealthResult> {
   const now = new Date();
   const cutoff48h = new Date(now.getTime() - 48 * 60 * 60 * 1000);
   const cutoff7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -789,12 +735,7 @@ export async function channelHealth(
   const [countRow] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(channelMessages)
-    .where(
-      and(
-        eq(channelMessages.channelId, channelId),
-        gte(channelMessages.createdAt, cutoff48h),
-      ),
-    );
+    .where(and(eq(channelMessages.channelId, channelId), gte(channelMessages.createdAt, cutoff48h)));
   const messagesLast48h = Number(countRow?.count ?? 0);
 
   const [decisionRow] = await db
@@ -949,10 +890,7 @@ export async function submitDeliberationPosition(
  * and post a "deliberation_summary" message.
  * Returns the synthesis text.
  */
-export async function concludeDeliberation(
-  db: Db,
-  deliberationId: string,
-): Promise<string> {
+export async function concludeDeliberation(db: Db, deliberationId: string): Promise<string> {
   const deliberationMsg = await db
     .select({
       channelId: channelMessages.channelId,
@@ -981,18 +919,11 @@ export async function concludeDeliberation(
       createdAt: channelMessages.createdAt,
     })
     .from(channelMessages)
-    .where(
-      and(
-        eq(channelMessages.replyToId, deliberationId),
-        eq(channelMessages.channelId, deliberationMsg.channelId),
-      ),
-    )
+    .where(and(eq(channelMessages.replyToId, deliberationId), eq(channelMessages.channelId, deliberationMsg.channelId)))
     .orderBy(channelMessages.createdAt);
 
   // Fetch agent names
-  const agentIds = replies
-    .map((r) => r.authorAgentId)
-    .filter((id): id is string => id !== null);
+  const agentIds = replies.map((r) => r.authorAgentId).filter((id): id is string => id !== null);
 
   const agentNameMap = new Map<string, string>();
   if (agentIds.length > 0) {
@@ -1057,16 +988,89 @@ export async function concludeDeliberation(
 
 // Topic keywords grouped by domain
 const TOPIC_KEYWORD_MAP: Record<string, string[]> = {
-  engineering: ["code", "deploy", "bug", "test", "api", "database", "backend", "frontend", "build", "ci", "pipeline", "refactor", "typescript", "python", "golang"],
-  design: ["design", "ux", "ui", "wireframe", "prototype", "figma", "layout", "color", "typography", "accessibility", "brand"],
-  marketing: ["marketing", "campaign", "seo", "content", "social", "email", "ad", "conversion", "funnel", "lead", "brand", "copy"],
-  sales: ["sales", "deal", "prospect", "customer", "crm", "quota", "pipeline", "close", "revenue", "contract", "proposal"],
+  engineering: [
+    "code",
+    "deploy",
+    "bug",
+    "test",
+    "api",
+    "database",
+    "backend",
+    "frontend",
+    "build",
+    "ci",
+    "pipeline",
+    "refactor",
+    "typescript",
+    "python",
+    "golang",
+  ],
+  design: [
+    "design",
+    "ux",
+    "ui",
+    "wireframe",
+    "prototype",
+    "figma",
+    "layout",
+    "color",
+    "typography",
+    "accessibility",
+    "brand",
+  ],
+  marketing: [
+    "marketing",
+    "campaign",
+    "seo",
+    "content",
+    "social",
+    "email",
+    "ad",
+    "conversion",
+    "funnel",
+    "lead",
+    "brand",
+    "copy",
+  ],
+  sales: [
+    "sales",
+    "deal",
+    "prospect",
+    "customer",
+    "crm",
+    "quota",
+    "pipeline",
+    "close",
+    "revenue",
+    "contract",
+    "proposal",
+  ],
   finance: ["finance", "budget", "cost", "spend", "invoice", "accounting", "forecast", "revenue", "profit", "cash"],
   hr: ["hiring", "recruit", "onboard", "performance", "review", "team", "culture", "headcount", "compensation"],
-  product: ["product", "roadmap", "feature", "sprint", "backlog", "priority", "requirements", "stakeholder", "launch", "milestone"],
+  product: [
+    "product",
+    "roadmap",
+    "feature",
+    "sprint",
+    "backlog",
+    "priority",
+    "requirements",
+    "stakeholder",
+    "launch",
+    "milestone",
+  ],
   security: ["security", "vulnerability", "audit", "compliance", "encryption", "auth", "permission", "threat", "risk"],
   data: ["data", "analytics", "dashboard", "metrics", "report", "kpi", "insight", "model", "ml", "ai", "llm"],
-  operations: ["operations", "process", "workflow", "automation", "infrastructure", "monitoring", "alerting", "incident"],
+  operations: [
+    "operations",
+    "process",
+    "workflow",
+    "automation",
+    "infrastructure",
+    "monitoring",
+    "alerting",
+    "incident",
+  ],
 };
 
 function detectTopics(text: string): string[] {
@@ -1098,12 +1102,7 @@ export async function discoverExpertise(
       messageType: channelMessages.messageType,
     })
     .from(channelMessages)
-    .where(
-      and(
-        eq(channelMessages.companyId, companyId),
-        sql`${channelMessages.authorAgentId} IS NOT NULL`,
-      ),
-    )
+    .where(and(eq(channelMessages.companyId, companyId), sql`${channelMessages.authorAgentId} IS NOT NULL`))
     .orderBy(desc(channelMessages.createdAt))
     .limit(2000);
 
@@ -1320,12 +1319,7 @@ export async function getPendingDeliberations(
     db
       .select({ replyToId: channelMessages.replyToId })
       .from(channelMessages)
-      .where(
-        and(
-          inArray(channelMessages.replyToId, deliberationIds),
-          eq(channelMessages.authorAgentId, agentId),
-        ),
-      ),
+      .where(and(inArray(channelMessages.replyToId, deliberationIds), eq(channelMessages.authorAgentId, agentId))),
   ]);
 
   const concludedIds = new Set(summaryRows.map((r) => r.replyToId).filter((id): id is string => id !== null));
@@ -1448,11 +1442,7 @@ const ACTION_ITEM_PATTERN = /create issue|will do|i'll|i will|assigned to|TODO/i
  * Summarize a channel over the last N days (default 7).
  * Heuristic only — no LLM call.
  */
-export async function summarizeChannel(
-  db: Db,
-  channelId: string,
-  sinceDays?: number,
-): Promise<ChannelSummary> {
+export async function summarizeChannel(db: Db, channelId: string, sinceDays?: number): Promise<ChannelSummary> {
   const days = sinceDays ?? 7;
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
@@ -1465,12 +1455,7 @@ export async function summarizeChannel(
       createdAt: channelMessages.createdAt,
     })
     .from(channelMessages)
-    .where(
-      and(
-        eq(channelMessages.channelId, channelId),
-        gte(channelMessages.createdAt, since),
-      ),
-    )
+    .where(and(eq(channelMessages.channelId, channelId), gte(channelMessages.createdAt, since)))
     .orderBy(channelMessages.createdAt);
 
   const decisions: string[] = [];
@@ -1503,12 +1488,7 @@ export async function summarizeChannel(
 /**
  * Post a standing agenda message to a channel as a system announcement.
  */
-export async function postStandingAgenda(
-  db: Db,
-  channelId: string,
-  companyId: string,
-  topic: string,
-): Promise<void> {
+export async function postStandingAgenda(db: Db, channelId: string, companyId: string, topic: string): Promise<void> {
   await db.insert(channelMessages).values({
     channelId,
     companyId,
@@ -1527,10 +1507,39 @@ export async function postStandingAgenda(
 // ---------------------------------------------------------------------------
 
 const STOP_WORDS = new Set([
-  "the", "and", "for", "with", "that", "this", "have", "from", "they",
-  "will", "been", "would", "could", "should", "their", "there", "here",
-  "were", "what", "when", "where", "which", "your", "about", "more",
-  "also", "then", "than", "into", "some", "does", "just", "very",
+  "the",
+  "and",
+  "for",
+  "with",
+  "that",
+  "this",
+  "have",
+  "from",
+  "they",
+  "will",
+  "been",
+  "would",
+  "could",
+  "should",
+  "their",
+  "there",
+  "here",
+  "were",
+  "what",
+  "when",
+  "where",
+  "which",
+  "your",
+  "about",
+  "more",
+  "also",
+  "then",
+  "than",
+  "into",
+  "some",
+  "does",
+  "just",
+  "very",
 ]);
 
 function extractKeywords(text: string, topN: number): string[] {
@@ -1721,9 +1730,7 @@ export async function getHighSignalMessages(
     tryAdd(msg);
   }
 
-  return selected.sort(
-    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-  );
+  return selected.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 }
 
 // ---------------------------------------------------------------------------
@@ -1741,11 +1748,7 @@ export interface QuorumResult {
  * For a decision message, check how many channel members have replied
  * after that message.
  */
-export async function checkQuorum(
-  db: Db,
-  channelId: string,
-  messageId: string,
-): Promise<QuorumResult> {
+export async function checkQuorum(db: Db, channelId: string, messageId: string): Promise<QuorumResult> {
   const decisionMsg = await db
     .select({ createdAt: channelMessages.createdAt })
     .from(channelMessages)
@@ -1778,11 +1781,7 @@ export async function checkQuorum(
       ),
     );
 
-  const respondedSet = new Set(
-    respondedRows
-      .map((r) => r.authorAgentId)
-      .filter((id): id is string => id !== null),
-  );
+  const respondedSet = new Set(respondedRows.map((r) => r.authorAgentId).filter((id): id is string => id !== null));
 
   const responded = required.filter((id) => respondedSet.has(id));
   const missing = required.filter((id) => !respondedSet.has(id));
@@ -1799,11 +1798,7 @@ export async function checkQuorum(
  * Generate a markdown onboarding replay for a new channel member.
  * Uses the channel summary + last 5 decisions + open escalations.
  */
-export async function generateOnboardingReplay(
-  db: Db,
-  channelId: string,
-  days?: number,
-): Promise<string> {
+export async function generateOnboardingReplay(db: Db, channelId: string, days?: number): Promise<string> {
   const channelRow = await db
     .select({ name: agentChannels.name })
     .from(agentChannels)
@@ -1813,12 +1808,7 @@ export async function generateOnboardingReplay(
   const channelName = channelRow?.name ?? channelId;
   const summary = await summarizeChannel(db, channelId, days ?? 7);
 
-  const lines: string[] = [
-    `## Channel Briefing: #${channelName}`,
-    "",
-    `**Overview:** ${summary.summary}`,
-    "",
-  ];
+  const lines: string[] = [`## Channel Briefing: #${channelName}`, "", `**Overview:** ${summary.summary}`, ""];
 
   if (summary.decisions.length > 0) {
     lines.push("**Recent Decisions:**");
@@ -1878,19 +1868,11 @@ export interface AgentLoadResult {
  * Calculate a cognitive load score (0-100) for an agent.
  * Combines open issue count + pending mentions + recent channel activity.
  */
-export async function agentCognitiveLoad(
-  db: Db,
-  agentId: string,
-): Promise<AgentLoadResult> {
+export async function agentCognitiveLoad(db: Db, agentId: string): Promise<AgentLoadResult> {
   const [issueRow] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(issues)
-    .where(
-      and(
-        eq(issues.assigneeAgentId, agentId),
-        sql`${issues.status} IN ('todo', 'in_progress')`,
-      ),
-    );
+    .where(and(eq(issues.assigneeAgentId, agentId), sql`${issues.status} IN ('todo', 'in_progress')`));
   const openIssues = Number(issueRow?.count ?? 0);
 
   const cutoff48h = new Date(Date.now() - 48 * 60 * 60 * 1000);
@@ -1908,12 +1890,7 @@ export async function agentCognitiveLoad(
   const [threadRow] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(channelMessages)
-    .where(
-      and(
-        eq(channelMessages.authorAgentId, agentId),
-        gte(channelMessages.createdAt, cutoff48h),
-      ),
-    );
+    .where(and(eq(channelMessages.authorAgentId, agentId), gte(channelMessages.createdAt, cutoff48h)));
   const activeThreads = Number(threadRow?.count ?? 0);
 
   const issueScore = Math.min(openIssues * 6, 60);

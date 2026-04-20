@@ -33,9 +33,7 @@ export function EmptySourceHelpDialog({
           >
             <span>
               <span className="block font-medium">Browse skills.sh</span>
-              <span className="mt-1 block text-muted-foreground">
-                Find install commands and paste one here.
-              </span>
+              <span className="mt-1 block text-muted-foreground">Find install commands and paste one here.</span>
             </span>
             <ExternalLink className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
           </a>

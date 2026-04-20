@@ -1,13 +1,12 @@
-import { memo, useMemo } from "react";
-import { Link } from "@/lib/router";
-import { CSS } from "@dnd-kit/utilities";
 import { useSortable } from "@dnd-kit/sortable";
-import { PriorityIcon } from "./PriorityIcon";
-import { Identity } from "./Identity";
-import { cn } from "../lib/utils";
-import { Calendar, Link2, AlertTriangle } from "lucide-react";
-import { pickTextColorForPillBg } from "@/lib/color-contrast";
+import { CSS } from "@dnd-kit/utilities";
 import type { Issue, IssueLabel } from "@ironworksai/shared";
+import { AlertTriangle, Calendar, Link2 } from "lucide-react";
+import { memo, useMemo } from "react";
+import { pickTextColorForPillBg } from "@/lib/color-contrast";
+import { Link } from "@/lib/router";
+import { cn } from "../lib/utils";
+import { Identity } from "./Identity";
 
 /* ── Priority dot colors ── */
 
@@ -62,21 +61,11 @@ export interface KanbanCardProps {
 
 /* ── Component ── */
 
-export const KanbanCard = memo(function KanbanCard({
-  issue,
-  agents,
-  isLive,
-  isOverlay,
-  isBlocked,
-}: KanbanCardProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: issue.id, data: { issue } });
+export const KanbanCard = memo(function KanbanCard({ issue, agents, isLive, isOverlay, isBlocked }: KanbanCardProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: issue.id,
+    data: { issue },
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -96,11 +85,7 @@ export const KanbanCard = memo(function KanbanCard({
   const labels = issue.labels ?? [];
 
   // Card background tint for overdue / due-soon
-  const cardBg = isOverdue
-    ? "bg-red-500/10 border-l-red-500"
-    : isDueSoon
-      ? "bg-amber-500/10"
-      : "";
+  const cardBg = isOverdue ? "bg-red-500/10 border-l-red-500" : isDueSoon ? "bg-amber-500/10" : "";
 
   return (
     <div
@@ -109,7 +94,6 @@ export const KanbanCard = memo(function KanbanCard({
       {...attributes}
       {...listeners}
       data-kanban-card={issue.id}
-      tabIndex={0}
       className={cn(
         "bg-card rounded-lg border border-border p-3 shadow-sm transition-all cursor-grab active:cursor-grabbing border-l-2 focus:outline-2 focus:outline-primary/50 focus:outline-offset-1",
         priorityBorder[issue.priority] ?? "border-l-gray-400",
@@ -130,10 +114,7 @@ export const KanbanCard = memo(function KanbanCard({
         {/* Row 1: Priority dot + identifier + live indicator */}
         <div className="flex items-center gap-1.5 mb-1">
           <span
-            className={cn(
-              "inline-block h-2 w-2 rounded-full shrink-0",
-              priorityDot[issue.priority] ?? "bg-gray-400",
-            )}
+            className={cn("inline-block h-2 w-2 rounded-full shrink-0", priorityDot[issue.priority] ?? "bg-gray-400")}
           />
           <span className="text-xs text-muted-foreground font-mono shrink-0">
             {issue.identifier ?? issue.id.slice(0, 8)}
@@ -144,9 +125,7 @@ export const KanbanCard = memo(function KanbanCard({
               <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
             </span>
           )}
-          {isBlocked && (
-            <AlertTriangle className="h-3 w-3 text-amber-500 ml-auto shrink-0" />
-          )}
+          {isBlocked && <AlertTriangle className="h-3 w-3 text-amber-500 ml-auto shrink-0" />}
         </div>
 
         {/* Row 2: Title */}
@@ -166,22 +145,14 @@ export const KanbanCard = memo(function KanbanCard({
               <span
                 className={cn(
                   "inline-flex items-center gap-1",
-                  isOverdue
-                    ? "text-red-500"
-                    : isDueSoon
-                      ? "text-amber-500"
-                      : "text-muted-foreground",
+                  isOverdue ? "text-red-500" : isDueSoon ? "text-amber-500" : "text-muted-foreground",
                 )}
               >
                 <Calendar className="h-3 w-3" />
                 {formatDueLabel(targetDate)}
               </span>
             )}
-            {issue.project && (
-              <span className="text-muted-foreground/80 truncate ml-auto">
-                {issue.project.name}
-              </span>
-            )}
+            {issue.project && <span className="text-muted-foreground/80 truncate ml-auto">{issue.project.name}</span>}
           </div>
         )}
 
@@ -200,11 +171,7 @@ export const KanbanCard = memo(function KanbanCard({
                 {label.name}
               </span>
             ))}
-            {labels.length > 3 && (
-              <span className="text-[10px] text-muted-foreground/80">
-                +{labels.length - 3}
-              </span>
-            )}
+            {labels.length > 3 && <span className="text-[10px] text-muted-foreground/80">+{labels.length - 3}</span>}
           </div>
         )}
 

@@ -1,5 +1,5 @@
-import path from "node:path";
 import fs from "node:fs";
+import path from "node:path";
 import pino from "pino";
 import { pinoHttp } from "pino-http";
 import { readConfigFile } from "../config-file.js";
@@ -26,23 +26,26 @@ const sharedOpts = {
   singleLine: true,
 };
 
-export const logger = pino({
-  level: "debug",
-  redact: ["req.headers.authorization", "req.headers[\"authorization\"]"],
-}, pino.transport({
-  targets: [
-    {
-      target: "pino-pretty",
-      options: { ...sharedOpts, ignore: "pid,hostname,req,res,responseTime", colorize: true, destination: 1 },
-      level: "info",
-    },
-    {
-      target: "pino-pretty",
-      options: { ...sharedOpts, colorize: false, destination: logFile, mkdir: true },
-      level: "debug",
-    },
-  ],
-}));
+export const logger = pino(
+  {
+    level: "debug",
+    redact: ["req.headers.authorization", 'req.headers["authorization"]'],
+  },
+  pino.transport({
+    targets: [
+      {
+        target: "pino-pretty",
+        options: { ...sharedOpts, ignore: "pid,hostname,req,res,responseTime", colorize: true, destination: 1 },
+        level: "info",
+      },
+      {
+        target: "pino-pretty",
+        options: { ...sharedOpts, colorize: false, destination: logFile, mkdir: true },
+        level: "debug",
+      },
+    ],
+  }),
+);
 
 export const httpLogger = pinoHttp({
   logger,
@@ -55,12 +58,15 @@ export const httpLogger = pinoHttp({
     return `${req.method} ${req.url} ${res.statusCode}`;
   },
   customErrorMessage(req, res, err) {
+    // biome-ignore lint/suspicious/noExplicitAny: reading custom props attached to Express Response by error-handler middleware
     const ctx = (res as any).__errorContext;
+    // biome-ignore lint/suspicious/noExplicitAny: reading custom props attached to Express Response by error-handler middleware
     const errMsg = ctx?.error?.message || err?.message || (res as any).err?.message || "unknown error";
     return `${req.method} ${req.url} ${res.statusCode} — ${errMsg}`;
   },
   customProps(req, res) {
     if (res.statusCode >= 400) {
+      // biome-ignore lint/suspicious/noExplicitAny: reading custom props attached to Express Response by error-handler middleware
       const ctx = (res as any).__errorContext;
       if (ctx) {
         return {
@@ -71,6 +77,7 @@ export const httpLogger = pinoHttp({
         };
       }
       const props: Record<string, unknown> = {};
+      // biome-ignore lint/suspicious/noExplicitAny: Express Request body/params/query are typed as any by express
       const { body, params, query } = req as any;
       if (body && typeof body === "object" && Object.keys(body).length > 0) {
         props.reqBody = body;
@@ -81,7 +88,9 @@ export const httpLogger = pinoHttp({
       if (query && typeof query === "object" && Object.keys(query).length > 0) {
         props.reqQuery = query;
       }
+      // biome-ignore lint/suspicious/noExplicitAny: accessing Express route.path which is not typed on Request
       if ((req as any).route?.path) {
+        // biome-ignore lint/suspicious/noExplicitAny: accessing Express route.path which is not typed on Request
         props.routePath = (req as any).route.path;
       }
       return props;

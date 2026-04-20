@@ -1,15 +1,19 @@
-import { pgTable, uuid, text, timestamp, index } from "drizzle-orm/pg-core";
-import { companies } from "./companies.js";
-import { issues } from "./issues.js";
+import { index, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { agents } from "./agents.js";
 import { authUsers } from "./auth.js";
+import { companies } from "./companies.js";
+import { issues } from "./issues.js";
 
 export const issueStatusChanges = pgTable(
   "issue_status_changes",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    companyId: uuid("company_id").notNull().references(() => companies.id),
-    issueId: uuid("issue_id").notNull().references(() => issues.id, { onDelete: "cascade" }),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id),
+    issueId: uuid("issue_id")
+      .notNull()
+      .references(() => issues.id, { onDelete: "cascade" }),
     fromStatus: text("from_status").notNull(),
     toStatus: text("to_status").notNull(),
     changedByAgentId: uuid("changed_by_agent_id").references(() => agents.id),

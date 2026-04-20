@@ -1,29 +1,28 @@
 import { Command } from "commander";
-import { onboard } from "./commands/onboard.js";
-import { doctor } from "./commands/doctor.js";
-import { envCommand } from "./commands/env.js";
-import { configure } from "./commands/configure.js";
 import { addAllowedHostname } from "./commands/allowed-hostname.js";
-import { heartbeatRun } from "./commands/heartbeat-run.js";
-import { runCommand } from "./commands/run.js";
 import { bootstrapCeoInvite } from "./commands/auth-bootstrap-ceo.js";
-import { dbBackupCommand } from "./commands/db-backup.js";
-import { registerContextCommands } from "./commands/client/context.js";
-import { registerCompanyCommands } from "./commands/client/company.js";
-import { registerIssueCommands } from "./commands/client/issue.js";
+import { registerActivityCommands } from "./commands/client/activity.js";
 import { registerAgentCommands } from "./commands/client/agent.js";
 import { registerApprovalCommands } from "./commands/client/approval.js";
-import { registerActivityCommands } from "./commands/client/activity.js";
+import { registerClientAuthCommands } from "./commands/client/auth.js";
+import { registerCompanyCommands } from "./commands/client/company.js";
+import { registerContextCommands } from "./commands/client/context.js";
 import { registerDashboardCommands } from "./commands/client/dashboard.js";
+import { registerIssueCommands } from "./commands/client/issue.js";
+import { registerPluginCommands } from "./commands/client/plugin.js";
+import { configure } from "./commands/configure.js";
+import { dbBackupCommand } from "./commands/db-backup.js";
+import { doctor } from "./commands/doctor.js";
+import { envCommand } from "./commands/env.js";
+import { heartbeatRun } from "./commands/heartbeat-run.js";
+import { onboard } from "./commands/onboard.js";
+import { runCommand } from "./commands/run.js";
+import { registerWorktreeCommands } from "./commands/worktree.js";
 import { applyDataDirOverride, type DataDirOptionLike } from "./config/data-dir.js";
 import { loadIronworksEnvFile } from "./config/env.js";
-import { registerWorktreeCommands } from "./commands/worktree.js";
-import { registerPluginCommands } from "./commands/client/plugin.js";
-import { registerClientAuthCommands } from "./commands/client/auth.js";
 
 const program = new Command();
-const DATA_DIR_OPTION_HELP =
-  "Ironworks data directory root (isolates state from ~/.ironworks)";
+const DATA_DIR_OPTION_HELP = "Ironworks data directory root (isolates state from ~/.ironworks)";
 
 program
   .name("ironworksai")
@@ -119,11 +118,7 @@ heartbeat
   .option("--profile <name>", "CLI context profile name")
   .option("--api-base <url>", "Base URL for the Ironworks server API")
   .option("--api-key <token>", "Bearer token for agent-authenticated calls")
-  .option(
-    "--source <source>",
-    "Invocation source (timer | assignment | on_demand | automation)",
-    "on_demand",
-  )
+  .option("--source <source>", "Invocation source (timer | assignment | on_demand | automation)", "on_demand")
   .option("--trigger <trigger>", "Trigger detail (manual | ping | callback | system)", "manual")
   .option("--timeout-ms <ms>", "Max time to wait before giving up", "0")
   .option("--json", "Output raw JSON where applicable")

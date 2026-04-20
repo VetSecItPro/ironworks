@@ -1,6 +1,6 @@
-import type { RefObject, ReactNode } from "react";
+import type { RefObject } from "react";
 import { AgentIcon } from "../AgentIconPicker";
-import { InlineEntitySelector, type InlineEntityOption } from "../InlineEntitySelector";
+import { type InlineEntityOption, InlineEntitySelector } from "../InlineEntitySelector";
 
 interface AgentData {
   id: string;
@@ -60,7 +60,10 @@ export function AssignmentRow({
           renderTriggerValue={(option) =>
             option ? (
               currentAssignee ? (
-                <><AgentIcon icon={currentAssignee.icon} className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /><span className="truncate">{option.label}</span></>
+                <>
+                  <AgentIcon icon={currentAssignee.icon} className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  <span className="truncate">{option.label}</span>
+                </>
               ) : (
                 <span className="truncate">{option.label}</span>
               )
@@ -71,7 +74,14 @@ export function AssignmentRow({
           renderOption={(option) => {
             if (!option.id) return <span className="truncate">{option.label}</span>;
             const assignee = agentById.get(option.id);
-            return <>{assignee ? <AgentIcon icon={assignee.icon} className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : null}<span className="truncate">{option.label}</span></>;
+            return (
+              <>
+                {assignee ? (
+                  <AgentIcon icon={assignee.icon} className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                ) : null}
+                <span className="truncate">{option.label}</span>
+              </>
+            );
           }}
         />
         <span>in</span>
@@ -87,7 +97,13 @@ export function AssignmentRow({
           onConfirm={onProjectConfirm}
           renderTriggerValue={(option) =>
             option && currentProject ? (
-              <><span className="h-3.5 w-3.5 shrink-0 rounded-sm" style={{ backgroundColor: currentProject.color ?? "#64748b" }} /><span className="truncate">{option.label}</span></>
+              <>
+                <span
+                  className="h-3.5 w-3.5 shrink-0 rounded-sm"
+                  style={{ backgroundColor: currentProject.color ?? "#64748b" }}
+                />
+                <span className="truncate">{option.label}</span>
+              </>
             ) : (
               <span className="text-muted-foreground">Project</span>
             )
@@ -95,7 +111,15 @@ export function AssignmentRow({
           renderOption={(option) => {
             if (!option.id) return <span className="truncate">{option.label}</span>;
             const project = projectById.get(option.id);
-            return <><span className="h-3.5 w-3.5 shrink-0 rounded-sm" style={{ backgroundColor: project?.color ?? "#64748b" }} /><span className="truncate">{option.label}</span></>;
+            return (
+              <>
+                <span
+                  className="h-3.5 w-3.5 shrink-0 rounded-sm"
+                  style={{ backgroundColor: project?.color ?? "#64748b" }}
+                />
+                <span className="truncate">{option.label}</span>
+              </>
+            );
           }}
         />
       </div>

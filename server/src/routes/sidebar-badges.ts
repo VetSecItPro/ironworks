@@ -1,14 +1,17 @@
-import { Router } from "express";
 import type { Db } from "@ironworksai/db";
-import { and, eq, sql } from "drizzle-orm";
 import { joinRequests } from "@ironworksai/db";
-import { sidebarBadgeService } from "../services/sidebar-badges.js";
+import { and, eq, sql } from "drizzle-orm";
+import { Router } from "express";
 import { accessService } from "../services/access.js";
 import { dashboardService } from "../services/dashboard.js";
+import { sidebarBadgeService } from "../services/sidebar-badges.js";
 import { assertCompanyAccess } from "./authz.js";
 
 // In-memory cache for sidebar badge results (badges don't need to be real-time)
-type CachedBadgeEntry = { value: ReturnType<typeof computeBadges> extends Promise<infer T> ? T : never; expiresAt: number };
+type CachedBadgeEntry = {
+  value: ReturnType<typeof computeBadges> extends Promise<infer T> ? T : never;
+  expiresAt: number;
+};
 const badgeCache = new Map<string, { value: unknown; expiresAt: number }>();
 const BADGE_CACHE_TTL_MS = 30_000; // 30 seconds
 
@@ -55,10 +58,10 @@ async function computeBadges(
   // Step 2: fetch join request count (depends on canApproveJoins) and all badge/summary data in parallel
   const joinRequestCountPromise = canApproveJoins
     ? db
-      .select({ count: sql<number>`count(*)` })
-      .from(joinRequests)
-      .where(and(eq(joinRequests.companyId, companyId), eq(joinRequests.status, "pending_approval")))
-      .then((rows) => Number(rows[0]?.count ?? 0))
+        .select({ count: sql<number>`count(*)` })
+        .from(joinRequests)
+        .where(and(eq(joinRequests.companyId, companyId), eq(joinRequests.status, "pending_approval")))
+        .then((rows) => Number(rows[0]?.count ?? 0))
     : Promise.resolve(0);
 
   const [joinRequestCount, badges, summary] = await Promise.all([

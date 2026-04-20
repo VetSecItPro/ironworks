@@ -1,7 +1,7 @@
 import { ArrowUpDown, CalendarRange, Filter, LayoutList, Network, Search } from "lucide-react";
-import { cn } from "../../lib/utils";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "../../lib/utils";
 
 export type GoalSortField = "title" | "progress" | "updated";
 export type GoalStatusFilter = "all" | "planned" | "active" | "achieved" | "cancelled";
@@ -67,6 +67,7 @@ export function GoalFilterBar({
         {/* View mode toggle */}
         <div className="flex items-center rounded-md border border-border overflow-hidden">
           <button
+            type="button"
             className={cn(
               "flex items-center justify-center h-8 w-8 transition-colors",
               viewMode === "list" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50",
@@ -77,6 +78,7 @@ export function GoalFilterBar({
             <LayoutList className="h-3.5 w-3.5" />
           </button>
           <button
+            type="button"
             className={cn(
               "flex items-center justify-center h-8 w-8 transition-colors",
               viewMode === "tree" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50",
@@ -87,6 +89,7 @@ export function GoalFilterBar({
             <Network className="h-3.5 w-3.5" />
           </button>
           <button
+            type="button"
             className={cn(
               "flex items-center justify-center h-8 w-8 transition-colors",
               viewMode === "timeline" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50",

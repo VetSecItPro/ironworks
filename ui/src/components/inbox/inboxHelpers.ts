@@ -1,4 +1,4 @@
-import type { HeartbeatRun, Approval } from "@ironworksai/shared";
+import type { Approval, HeartbeatRun } from "@ironworksai/shared";
 
 // Severity border colors
 export function getSeverityBorderClass(item: { kind: string; status?: string }): string {
@@ -17,7 +17,10 @@ export function getSeverityBorderClass(item: { kind: string; status?: string }):
 
 export function firstNonEmptyLine(value: string | null | undefined): string | null {
   if (!value) return null;
-  const line = value.split("\n").map((chunk) => chunk.trim()).find(Boolean);
+  const line = value
+    .split("\n")
+    .map((chunk) => chunk.trim())
+    .find(Boolean);
   return line ?? null;
 }
 
@@ -33,10 +36,10 @@ export function readIssueIdFromRun(run: HeartbeatRun): string | null {
   const context = run.contextSnapshot;
   if (!context) return null;
 
-  const issueId = context["issueId"];
+  const issueId = context.issueId;
   if (typeof issueId === "string" && issueId.length > 0) return issueId;
 
-  const taskId = context["taskId"];
+  const taskId = context.taskId;
   if (typeof taskId === "string" && taskId.length > 0) return taskId;
 
   return null;

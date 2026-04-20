@@ -1,9 +1,8 @@
 import * as p from "@clack/prompts";
 import pc from "picocolors";
-import type { IronworksConfig } from "../config/schema.js";
-import { readConfig, resolveConfigPath } from "../config/store.js";
 import {
   agentJwtSecretCheck,
+  type CheckResult,
   configCheck,
   databaseCheck,
   deploymentAuthCheck,
@@ -12,9 +11,10 @@ import {
   portCheck,
   secretsCheck,
   storageCheck,
-  type CheckResult,
 } from "../checks/index.js";
 import { loadIronworksEnvFile } from "../config/env.js";
+import type { IronworksConfig } from "../config/schema.js";
+import { readConfig, resolveConfigPath } from "../config/store.js";
 import { printIronworksCliBanner } from "../utils/banner.js";
 
 const STATUS_ICON = {
@@ -132,10 +132,7 @@ function printResult(result: CheckResult): void {
   }
 }
 
-async function maybeRepair(
-  result: CheckResult,
-  opts: { repair?: boolean; yes?: boolean },
-): Promise<boolean> {
+async function maybeRepair(result: CheckResult, opts: { repair?: boolean; yes?: boolean }): Promise<boolean> {
   if (result.status === "pass" || !result.canRepair || !result.repair) return false;
   if (!opts.repair) return false;
 

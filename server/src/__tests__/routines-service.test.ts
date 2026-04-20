@@ -1,6 +1,4 @@
 import { createHmac, randomUUID } from "node:crypto";
-import { eq } from "drizzle-orm";
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import {
   activityLog,
   agents,
@@ -15,12 +13,11 @@ import {
   routines,
   routineTriggers,
 } from "@ironworksai/db";
-import {
-  getEmbeddedPostgresTestSupport,
-  startEmbeddedPostgresTestDatabase,
-} from "./helpers/embedded-postgres.js";
+import { eq } from "drizzle-orm";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { issueService } from "../services/issues.ts";
 import { routineService } from "../services/routines.ts";
+import { getEmbeddedPostgresTestSupport, startEmbeddedPostgresTestDatabase } from "./helpers/embedded-postgres.js";
 
 const embeddedPostgresSupport = await getEmbeddedPostgresTestSupport();
 const describeEmbeddedPostgres = embeddedPostgresSupport.supported ? describe : describe.skip;
@@ -308,10 +305,7 @@ describeEmbeddedPostgres("routine service live-execution coalescing", () => {
     expect(run.linkedIssueId).toBe(previousIssue.id);
     expect(run.coalescedIntoRunId).toBe(previousRunId);
 
-    const routineIssues = await db
-      .select({ id: issues.id })
-      .from(issues)
-      .where(eq(issues.originId, routine.id));
+    const routineIssues = await db.select({ id: issues.id }).from(issues).where(eq(issues.originId, routine.id));
 
     expect(routineIssues).toHaveLength(1);
     expect(routineIssues[0]?.id).toBe(previousIssue.id);
@@ -357,10 +351,7 @@ describeEmbeddedPostgres("routine service live-execution coalescing", () => {
     expect(second.linkedIssueId).toBeTruthy();
     expect(first.linkedIssueId).toBe(second.linkedIssueId);
 
-    const routineIssues = await db
-      .select({ id: issues.id })
-      .from(issues)
-      .where(eq(issues.originId, routine.id));
+    const routineIssues = await db.select({ id: issues.id }).from(issues).where(eq(issues.originId, routine.id));
 
     expect(routineIssues).toHaveLength(1);
   });
@@ -378,10 +369,7 @@ describeEmbeddedPostgres("routine service live-execution coalescing", () => {
     expect(run.failureReason).toContain("queue unavailable");
     expect(run.linkedIssueId).toBeNull();
 
-    const routineIssues = await db
-      .select({ id: issues.id })
-      .from(issues)
-      .where(eq(issues.originId, routine.id));
+    const routineIssues = await db.select({ id: issues.id }).from(issues).where(eq(issues.originId, routine.id));
 
     expect(routineIssues).toHaveLength(0);
   });

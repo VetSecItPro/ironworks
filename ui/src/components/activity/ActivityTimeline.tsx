@@ -1,9 +1,9 @@
-import { useState } from "react";
+import type { ActivityEvent, Agent } from "@ironworksai/shared";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { ActivityRow } from "../ActivityRow";
-import { isAggregated, ACTION_LABELS } from "./activityHelpers";
-import type { Agent, ActivityEvent } from "@ironworksai/shared";
+import { useState } from "react";
 import type { AggregatedGroup } from "../../types/dashboard";
+import { ActivityRow } from "../ActivityRow";
+import { ACTION_LABELS, isAggregated } from "./activityHelpers";
 
 interface ActivityTimelineProps {
   groupedItems: Map<string, (ActivityEvent | AggregatedGroup)[]>;
@@ -12,12 +12,7 @@ interface ActivityTimelineProps {
   entityTitleMap: Map<string, string>;
 }
 
-export function ActivityTimeline({
-  groupedItems,
-  agentMap,
-  entityNameMap,
-  entityTitleMap,
-}: ActivityTimelineProps) {
+export function ActivityTimeline({ groupedItems, agentMap, entityNameMap, entityTitleMap }: ActivityTimelineProps) {
   const [expandedAgg, setExpandedAgg] = useState<Set<string>>(new Set());
 
   return (
@@ -36,6 +31,7 @@ export function ActivityTimeline({
                 <div key={item.key} className="relative">
                   <div className="absolute left-[17px] top-4 h-2 w-2 rounded-full bg-muted-foreground/40 border-2 border-background z-10 hidden sm:block" />
                   <button
+                    type="button"
                     onClick={() => {
                       setExpandedAgg((prev) => {
                         const next = new Set(prev);

@@ -1,11 +1,11 @@
 import type {
-  CompanyPortabilityFileEntry,
   CompanyPortabilityExportResult,
+  CompanyPortabilityFileEntry,
   CompanyPortabilityManifest,
 } from "@ironworksai/shared";
+import { createZipArchive } from "../../lib/zip";
 import type { FileTreeNode } from "../PackageFileTree";
 import { collectAllPaths } from "../PackageFileTree";
-import { createZipArchive } from "../../lib/zip";
 
 /**
  * Extract the set of agent/project/task slugs that are "checked" based on
@@ -96,7 +96,7 @@ export function filterIronworksYaml(yaml: string, checkedFiles: Set<string>): st
     }
 
     if (currentSection === "sidebar") {
-      const sidebarMatch = line.match(/^  ([\w-]+):\s*$/);
+      const sidebarMatch = line.match(/^ {2}([\w-]+):\s*$/);
       if (sidebarMatch && !line.startsWith("    ")) {
         flushSidebarSection();
         const sidebarKey = sidebarMatch[1];
@@ -105,7 +105,7 @@ export function filterIronworksYaml(yaml: string, checkedFiles: Set<string>): st
         continue;
       }
 
-      const sidebarEntryMatch = line.match(/^    - ["']?([^"'\n]+)["']?\s*$/);
+      const sidebarEntryMatch = line.match(/^ {4}- ["']?([^"'\n]+)["']?\s*$/);
       if (sidebarEntryMatch && currentSidebarList) {
         const slug = sidebarEntryMatch[1];
         const sectionSlugs = slugs[currentSidebarList as keyof typeof slugs];
@@ -122,7 +122,7 @@ export function filterIronworksYaml(yaml: string, checkedFiles: Set<string>): st
     }
 
     if (currentSection && filterableSections.has(currentSection)) {
-      const entryMatch = line.match(/^  ([\w][\w-]*):\s*(.*)$/);
+      const entryMatch = line.match(/^ {2}([\w][\w-]*):\s*(.*)$/);
       if (entryMatch && !line.startsWith("    ")) {
         const slug = entryMatch[1];
         currentEntry = slug;
@@ -162,14 +162,10 @@ export function filterTree(nodes: FileTreeNode[], query: string): FileTreeNode[]
   return nodes
     .map((node) => {
       if (node.kind === "file") {
-        return node.name.toLowerCase().includes(lower) || node.path.toLowerCase().includes(lower)
-          ? node
-          : null;
+        return node.name.toLowerCase().includes(lower) || node.path.toLowerCase().includes(lower) ? node : null;
       }
       const filteredChildren = filterTree(node.children, query);
-      return filteredChildren.length > 0
-        ? { ...node, children: filteredChildren }
-        : null;
+      return filteredChildren.length > 0 ? { ...node, children: filteredChildren } : null;
     })
     .filter((n): n is FileTreeNode => n !== null);
 }
@@ -197,20 +193,22 @@ export function collectMatchedParentDirs(nodes: FileTreeNode[], query: string): 
 
 /** Sort tree: checked files first, then unchecked */
 export function sortByChecked(nodes: FileTreeNode[], checkedFiles: Set<string>): FileTreeNode[] {
-  return nodes.map((node) => {
-    if (node.kind === "dir") {
-      return { ...node, children: sortByChecked(node.children, checkedFiles) };
-    }
-    return node;
-  }).sort((a, b) => {
-    if (a.kind !== b.kind) return a.kind === "file" ? -1 : 1;
-    if (a.kind === "file" && b.kind === "file") {
-      const aChecked = checkedFiles.has(a.path);
-      const bChecked = checkedFiles.has(b.path);
-      if (aChecked !== bChecked) return aChecked ? -1 : 1;
-    }
-    return a.name.localeCompare(b.name);
-  });
+  return nodes
+    .map((node) => {
+      if (node.kind === "dir") {
+        return { ...node, children: sortByChecked(node.children, checkedFiles) };
+      }
+      return node;
+    })
+    .sort((a, b) => {
+      if (a.kind !== b.kind) return a.kind === "file" ? -1 : 1;
+      if (a.kind === "file" && b.kind === "file") {
+        const aChecked = checkedFiles.has(a.path);
+        const bChecked = checkedFiles.has(b.path);
+        if (aChecked !== bChecked) return aChecked ? -1 : 1;
+      }
+      return a.name.localeCompare(b.name);
+    });
 }
 
 export const TASKS_PAGE_SIZE = 10;
@@ -238,11 +236,11 @@ export function paginateTaskNodes(
       for (const child of node.children) {
         const childFiles = collectAllPaths([child], "file");
         const isChecked = [...childFiles].some((p) => checkedFiles.has(p));
-        const isSearchMatch = searchQuery && (
-          child.name.toLowerCase().includes(lower) ||
-          child.path.toLowerCase().includes(lower) ||
-          [...childFiles].some((p) => p.toLowerCase().includes(lower))
-        );
+        const isSearchMatch =
+          searchQuery &&
+          (child.name.toLowerCase().includes(lower) ||
+            child.path.toLowerCase().includes(lower) ||
+            [...childFiles].some((p) => p.toLowerCase().includes(lower)));
         if (isChecked || isSearchMatch) {
           pinned.push(child);
         } else {
@@ -307,8 +305,15 @@ export function expandAncestors(filePath: string): string[] {
 }
 
 const ROLE_LABELS: Record<string, string> = {
-  ceo: "CEO", cto: "CTO", cmo: "CMO", cfo: "CFO", coo: "COO",
-  vp: "VP", manager: "Manager", engineer: "Engineer", agent: "Agent",
+  ceo: "CEO",
+  cto: "CTO",
+  cmo: "CMO",
+  cfo: "CFO",
+  coo: "COO",
+  vp: "VP",
+  manager: "Manager",
+  engineer: "Engineer",
+  agent: "Agent",
 };
 
 /**
@@ -326,7 +331,9 @@ export function generateReadmeFromSelection(
   const projects = manifest.projects.filter((p) => slugs.projects.has(p.slug));
   const tasks = manifest.issues.filter((t) => slugs.tasks.has(t.slug));
   const skills = manifest.skills.filter((s) => {
-    return [...checkedFiles].some((f) => f.startsWith(`skills/${s.key}/`) || f.startsWith(`skills/`) && f.includes(`/${s.slug}/`));
+    return [...checkedFiles].some(
+      (f) => f.startsWith(`skills/${s.key}/`) || (f.startsWith(`skills/`) && f.includes(`/${s.slug}/`)),
+    );
   });
 
   const lines: string[] = [];
@@ -393,7 +400,9 @@ export function generateReadmeFromSelection(
   lines.push("See [Ironworks](https://PLACEHOLDER_IRONWORKS_DOT_ING) for more information.");
   lines.push("");
   lines.push("---");
-  lines.push(`Exported from [Ironworks](https://PLACEHOLDER_IRONWORKS_DOT_ING) on ${new Date().toISOString().split("T")[0]}`);
+  lines.push(
+    `Exported from [Ironworks](https://PLACEHOLDER_IRONWORKS_DOT_ING) on ${new Date().toISOString().split("T")[0]}`,
+  );
   lines.push("");
 
   return lines.join("\n");

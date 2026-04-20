@@ -1,8 +1,8 @@
-import { Link } from "@/lib/router";
-import { relativeTime, cn } from "@/lib/utils";
+import { ChevronDown } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown } from "lucide-react";
+import { Link } from "@/lib/router";
+import { cn, relativeTime } from "@/lib/utils";
 
 interface Approval {
   id: string;
@@ -21,18 +21,10 @@ export function IssueApprovalsSection({ linkedApprovals, open, onOpenChange }: I
   if (linkedApprovals.length === 0) return null;
 
   return (
-    <Collapsible
-      open={open}
-      onOpenChange={onOpenChange}
-      className="rounded-lg border border-border"
-    >
+    <Collapsible open={open} onOpenChange={onOpenChange} className="rounded-lg border border-border">
       <CollapsibleTrigger className="flex w-full items-center justify-between px-3 py-2 text-left">
-        <span className="text-sm font-medium text-muted-foreground">
-          Linked Approvals ({linkedApprovals.length})
-        </span>
-        <ChevronDown
-          className={cn("h-4 w-4 text-muted-foreground transition-transform", open && "rotate-180")}
-        />
+        <span className="text-sm font-medium text-muted-foreground">Linked Approvals ({linkedApprovals.length})</span>
+        <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", open && "rotate-180")} />
       </CollapsibleTrigger>
       <CollapsibleContent>
         <div className="border-t border-border divide-y divide-border">

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { vi, describe, it, expect, beforeEach } from "vitest";
 import type { Mock } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ---- mock declarations must come before the module under test is imported ----
 
@@ -34,6 +34,7 @@ function sha256(token: string) {
 }
 
 /** Create a minimal Express-like request. */
+// biome-ignore lint/suspicious/noExplicitAny: noExplicitAny in test file — mock or test-only type cast
 function mockReq(headers: Record<string, string> = {}): any {
   const lower: Record<string, string> = {};
   for (const [k, v] of Object.entries(headers)) {
@@ -48,6 +49,7 @@ function mockReq(headers: Record<string, string> = {}): any {
   };
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: noExplicitAny in test file — mock or test-only type cast
 function mockRes(): any {
   return {};
 }
@@ -57,11 +59,13 @@ function mockRes(): any {
 // db.update().set().where() for agent API keys and agent rows.
 // We use a flexible factory that lets each test override what rows come back.
 
+// biome-ignore lint/suspicious/noExplicitAny: noExplicitAny in test file — mock or test-only type cast
 type SelectSetup = { rows: any[] }[];
 
 function makeMockDb(selectSetups: SelectSetup = []) {
   let callIndex = -1;
 
+  // biome-ignore lint/suspicious/noExplicitAny: noExplicitAny in test file — mock or test-only type cast
   const db: any = {
     select: vi.fn(() => {
       callIndex++;
@@ -70,6 +74,8 @@ function makeMockDb(selectSetups: SelectSetup = []) {
       return {
         from: vi.fn().mockReturnThis(),
         where: vi.fn().mockReturnValue({
+          // biome-ignore lint/suspicious/noThenProperty: test mock drizzle thenable contract
+          // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
           then: vi.fn((cb: (r: any[]) => any) => Promise.resolve(cb(rows))),
         }),
       };
@@ -85,16 +91,15 @@ function makeMockDb(selectSetups: SelectSetup = []) {
 }
 
 // Convenience: build the middleware with given mode and optional resolveSession
-function makeMiddleware(
-  deploymentMode: string,
-  resolveSession?: () => Promise<any>,
-  db?: any,
-) {
+// biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
+function makeMiddleware(deploymentMode: string, resolveSession?: () => Promise<any>, db?: any) {
   const database = db ?? makeMockDb();
+  // biome-ignore lint/suspicious/noExplicitAny: test-only type cast to satisfy service/function signature in unit test context
   return actorMiddleware(database, { deploymentMode: deploymentMode as any, resolveSession });
 }
 
 // Run the middleware and return the mutated req
+// biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
 async function run(mw: any, req: any) {
   const next = vi.fn();
   await mw(req, mockRes(), next);
@@ -229,10 +234,7 @@ describe("actorMiddleware", () => {
     });
 
     it("propagates run-id when session resolves", async () => {
-      const db = makeMockDb([
-        { rows: [] },
-        { rows: [{ companyId: "co-x" }] },
-      ]);
+      const db = makeMockDb([{ rows: [] }, { rows: [{ companyId: "co-x" }] }]);
 
       const resolveSession = vi.fn().mockResolvedValue({ user: { id: "uid" } });
       const mw = makeMiddleware("authenticated", resolveSession, db);
@@ -348,6 +350,7 @@ describe("actorMiddleware", () => {
 
   describe("agent API key (hash lookup)", () => {
     // Helper: token whose hash matches, no board key match
+    // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
     function setupAgentKeyTest(agentKeyRow: any, agentRow: any) {
       // board key lookup returns null
       const boardServiceMock = {
@@ -362,7 +365,7 @@ describe("actorMiddleware", () => {
 
       const selectSetups: SelectSetup = [
         { rows: agentKeyRow ? [agentKeyRow] : [] }, // agentApiKeys select
-        { rows: agentRow ? [agentRow] : [] },        // agents select
+        { rows: agentRow ? [agentRow] : [] }, // agents select
       ];
 
       return makeMockDb(selectSetups);
@@ -443,7 +446,13 @@ describe("actorMiddleware", () => {
 
     it("actor stays 'none' when agent record not found", async () => {
       const token = "missing-agent-token";
-      const keyRow = { id: "ak-m", agentId: "agent-missing", companyId: "co-m", keyHash: sha256(token), revokedAt: null };
+      const keyRow = {
+        id: "ak-m",
+        agentId: "agent-missing",
+        companyId: "co-m",
+        keyHash: sha256(token),
+        revokedAt: null,
+      };
 
       const db = setupAgentKeyTest(keyRow, null); // no agent row
       const mw = makeMiddleware("unauthenticated", undefined, db);
@@ -472,6 +481,7 @@ describe("actorMiddleware", () => {
   // --------------------------------------------------------------------------
 
   describe("agent JWT", () => {
+    // biome-ignore lint/suspicious/noExplicitAny: noExplicitAny in test file — mock or test-only type cast
     function setupJwtTest(jwtClaims: any | null, agentRow: any | null) {
       const boardServiceMock = {
         findBoardApiKeyByToken: vi.fn().mockResolvedValue(null),

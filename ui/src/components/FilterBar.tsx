@@ -1,6 +1,6 @@
 import { X } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 export interface FilterValue {
   key: string;
@@ -24,6 +24,7 @@ export function FilterBar({ filters, onRemove, onClear }: FilterBarProps) {
           <span className="text-muted-foreground">{f.label}:</span>
           <span>{f.value}</span>
           <button
+            type="button"
             className="ml-1 rounded-full hover:bg-accent p-1 -mr-0.5"
             onClick={() => onRemove(f.key)}
           >

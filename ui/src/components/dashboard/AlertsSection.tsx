@@ -1,6 +1,6 @@
 import { AlertTriangle } from "lucide-react";
-import { cn } from "../../lib/utils";
 import type { SmartAlert } from "../../api/executive";
+import { cn } from "../../lib/utils";
 
 export function AlertsSection({
   alerts,
@@ -50,12 +50,11 @@ export function AlertsSection({
               />
               <div className="min-w-0">
                 <p className="font-medium truncate">{alert.title}</p>
-                {alert.description && (
-                  <p className="text-xs text-muted-foreground truncate">{alert.description}</p>
-                )}
+                {alert.description && <p className="text-xs text-muted-foreground truncate">{alert.description}</p>}
               </div>
             </div>
             <button
+              type="button"
               className="text-xs text-muted-foreground hover:text-foreground shrink-0 transition-colors underline underline-offset-2"
               onClick={() => onResolve(alert.id)}
               disabled={isResolving}

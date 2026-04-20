@@ -1,6 +1,6 @@
-import { and, desc, eq, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { agentPromptVersions, agents } from "@ironworksai/db";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 
 // ── Prompt Version History ────────────────────────────────────────────────
@@ -46,10 +46,7 @@ export async function snapshotPromptVersion(
     })
     .returning();
 
-  logger.info(
-    { agentId: opts.agentId, version: nextVersion },
-    "created prompt version snapshot",
-  );
+  logger.info({ agentId: opts.agentId, version: nextVersion }, "created prompt version snapshot");
 
   return version;
 }
@@ -57,10 +54,7 @@ export async function snapshotPromptVersion(
 /**
  * List all prompt versions for an agent, newest first.
  */
-export async function listVersions(
-  db: Db,
-  agentId: string,
-): Promise<PromptVersion[]> {
+export async function listVersions(db: Db, agentId: string): Promise<PromptVersion[]> {
   return db
     .select()
     .from(agentPromptVersions)
@@ -83,12 +77,7 @@ export async function rollback(
   const [targetVersion] = await db
     .select()
     .from(agentPromptVersions)
-    .where(
-      and(
-        eq(agentPromptVersions.agentId, agentId),
-        eq(agentPromptVersions.versionNumber, versionNumber),
-      ),
-    )
+    .where(and(eq(agentPromptVersions.agentId, agentId), eq(agentPromptVersions.versionNumber, versionNumber)))
     .limit(1);
 
   if (!targetVersion) {
@@ -130,10 +119,7 @@ export async function rollback(
     })
     .where(eq(agents.id, agentId));
 
-  logger.info(
-    { agentId, targetVersion: versionNumber },
-    "rolled back agent prompts to previous version",
-  );
+  logger.info({ agentId, targetVersion: versionNumber }, "rolled back agent prompts to previous version");
 
   return { success: true };
 }

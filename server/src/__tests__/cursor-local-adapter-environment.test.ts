@@ -1,10 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { testEnvironment } from "@ironworksai/adapter-cursor-local/server";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-async function writeFakeAgentCommand(binDir: string, argsCapturePath: string): Promise<string> {
+async function writeFakeAgentCommand(binDir: string, _argsCapturePath: string): Promise<string> {
   const commandPath = path.join(binDir, "agent");
   const script = `#!/usr/bin/env node
 const fs = require("node:fs");
@@ -125,10 +125,7 @@ describe("cursor environment diagnostics", () => {
   });
 
   it("emits cursor_native_auth_present when cli-config.json has authInfo and CURSOR_API_KEY is unset", async () => {
-    const root = path.join(
-      os.tmpdir(),
-      `ironworks-cursor-auth-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    );
+    const root = path.join(os.tmpdir(), `ironworks-cursor-auth-${Date.now()}-${Math.random().toString(16).slice(2)}`);
     const cursorHome = path.join(root, ".cursor");
     const cwd = path.join(root, "workspace");
 
@@ -165,10 +162,7 @@ describe("cursor environment diagnostics", () => {
   });
 
   it("emits cursor_api_key_missing when neither env var nor native auth exists", async () => {
-    const root = path.join(
-      os.tmpdir(),
-      `ironworks-cursor-noauth-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    );
+    const root = path.join(os.tmpdir(), `ironworks-cursor-noauth-${Date.now()}-${Math.random().toString(16).slice(2)}`);
     const cursorHome = path.join(root, ".cursor");
     const cwd = path.join(root, "workspace");
 

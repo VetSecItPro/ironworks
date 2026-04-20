@@ -1,6 +1,6 @@
-import { MarkdownBody } from "../components/MarkdownBody";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { FileText } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { MarkdownBody } from "../components/MarkdownBody";
 
 const TERMS_OF_SERVICE = `
 # Terms of Service

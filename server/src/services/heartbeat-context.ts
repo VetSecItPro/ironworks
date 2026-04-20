@@ -10,24 +10,23 @@
  * operations are best-effort; failures are caught and logged as debug/warn.
  */
 
-import { desc, and, eq, isNotNull, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import {
   agents,
   channelMessages,
+  goals,
   heartbeatRuns,
-  issues,
   issueLabels,
+  issues,
   knowledgePages,
   labels,
-  goals,
 } from "@ironworksai/db";
+import { and, desc, eq, isNotNull, sql } from "drizzle-orm";
+import { PROMPT_MAX_LENGTHS, sanitizeForPrompt } from "../lib/prompt-security.js";
 import { logger } from "../middleware/logger.js";
-import { buildMorningBriefing, detectContextDrift, getLatestSessionState } from "./session-state.js";
 import {
   agentCognitiveLoad,
   channelHealth,
-  ensureProjectChannel,
   findAgentDepartmentChannel,
   findCompanyChannel,
   generateOnboardingReplay,
@@ -35,26 +34,17 @@ import {
   getPendingDeliberations,
   getPendingMentions,
 } from "./channels.js";
-import { webSearch, isResearchTask, extractSearchQuery } from "./web-search.js";
-import { getQualityExamples } from "./quality-gate.js";
-import { sanitizeForPrompt, PROMPT_MAX_LENGTHS } from "../lib/prompt-security.js";
-import { lookupPlaybook } from "./playbook-rag.js";
 import { CONFIDENCE_TAGGING_PROMPT } from "./confidence-tags.js";
-import {
-  classifyContextTier,
-  classifyTaskType,
-  PROMPT_TEMPLATES,
-  readNonEmptyString,
-} from "./heartbeat-types.js";
 import { buildPlatformAwareness } from "./heartbeat-awareness.js";
+import { classifyContextTier, classifyTaskType, PROMPT_TEMPLATES, readNonEmptyString } from "./heartbeat-types.js";
+import { lookupPlaybook } from "./playbook-rag.js";
+import { getQualityExamples } from "./quality-gate.js";
+import { buildMorningBriefing, detectContextDrift, getLatestSessionState } from "./session-state.js";
+import { extractSearchQuery, isResearchTask, webSearch } from "./web-search.js";
 
 // ── Session state + morning briefing ──────────────────────────────────────
 
-export async function injectSessionContext(
-  db: Db,
-  context: Record<string, unknown>,
-  agentId: string,
-): Promise<void> {
+export async function injectSessionContext(db: Db, context: Record<string, unknown>, agentId: string): Promise<void> {
   const contextTier = classifyContextTier(context);
   context.ironworksContextTier = contextTier;
   try {
@@ -102,13 +92,15 @@ export async function injectChannelMessages(
 
     if (isCeo) {
       const companyChannel = await findCompanyChannel(db, agent.companyId);
-      if (companyChannel) channelsToRead.push({ channel: companyChannel, contextKey: "ironworksCompanyChannelUpdates" });
+      if (companyChannel)
+        channelsToRead.push({ channel: companyChannel, contextKey: "ironworksCompanyChannelUpdates" });
     }
 
     // C-suite and directors also read #leadership channel
     if (isCsuite) {
       const leadershipChannel = await findAgentDepartmentChannel(db, agent.companyId, "leadership");
-      if (leadershipChannel) channelsToRead.push({ channel: leadershipChannel, contextKey: "ironworksLeadershipChannelUpdates" });
+      if (leadershipChannel)
+        channelsToRead.push({ channel: leadershipChannel, contextKey: "ironworksLeadershipChannelUpdates" });
     }
 
     // Everyone reads their own department channel
@@ -168,11 +160,7 @@ export function injectConfidenceTagging(context: Record<string, unknown>): void 
 
 // ── Quality examples ───────────────────────────────────────────────────────
 
-export async function injectQualityExamples(
-  db: Db,
-  context: Record<string, unknown>,
-  agentId: string,
-): Promise<void> {
+export async function injectQualityExamples(db: Db, context: Record<string, unknown>, agentId: string): Promise<void> {
   try {
     const qualityExamples = await getQualityExamples(db, agentId);
     if (qualityExamples.good.length > 0 || qualityExamples.bad.length > 0) {
@@ -377,9 +365,7 @@ export async function injectContextDriftWarning(
     const [runCountRow] = await db
       .select({ count: sql<number>`count(*)::int` })
       .from(heartbeatRuns)
-      .where(
-        and(eq(heartbeatRuns.agentId, agentId), eq(heartbeatRuns.companyId, companyId)),
-      );
+      .where(and(eq(heartbeatRuns.agentId, agentId), eq(heartbeatRuns.companyId, companyId)));
     const totalRuns = Number(runCountRow?.count ?? 0);
     if (totalRuns % 5 === 0 && totalRuns > 0) {
       const currentObjective =
@@ -426,10 +412,7 @@ export async function injectContextUtilizationNote(
     const avgInputPerRun = completedRuns > 0 ? Math.round(totalInputTokens / completedRuns) : 0;
 
     const MODEL_DEFAULT_CONTEXT = 200_000;
-    const utilizationPct =
-      MODEL_DEFAULT_CONTEXT > 0
-        ? Math.round((avgInputPerRun / MODEL_DEFAULT_CONTEXT) * 100)
-        : 0;
+    const utilizationPct = MODEL_DEFAULT_CONTEXT > 0 ? Math.round((avgInputPerRun / MODEL_DEFAULT_CONTEXT) * 100) : 0;
 
     if (utilizationPct > 70) {
       context.ironworksContextNote = `Note: Your context window is ${utilizationPct}% full. Be concise in your responses. Focus on the most important information.`;
@@ -476,8 +459,7 @@ export async function injectRecentDocuments(
   companyId: string,
 ): Promise<void> {
   try {
-    const taskType =
-      typeof context.ironworksTaskType === "string" ? context.ironworksTaskType : "routine_check";
+    const taskType = typeof context.ironworksTaskType === "string" ? context.ironworksTaskType : "routine_check";
     if (taskType !== "routine_check") {
       const recentDocs = await db
         .select({
@@ -497,8 +479,7 @@ export async function injectRecentDocuments(
 
       if (recentDocs.length > 0) {
         const docLines = recentDocs.map(
-          (doc) =>
-            `- **${doc.title}**: ${doc.body.slice(0, 200)}${doc.body.length > 200 ? "..." : ""}`,
+          (doc) => `- **${doc.title}**: ${doc.body.slice(0, 200)}${doc.body.length > 200 ? "..." : ""}`,
         );
         context.ironworksRecentDocuments = `## Your Recent Documents\n${docLines.join("\n")}`;
       }
@@ -519,8 +500,7 @@ export async function injectBatchedTasks(
 ): Promise<void> {
   try {
     if (!issueId) {
-      const taskType =
-        typeof context.ironworksTaskType === "string" ? context.ironworksTaskType : null;
+      const taskType = typeof context.ironworksTaskType === "string" ? context.ironworksTaskType : null;
       if (taskType && taskType !== "routine_check") {
         const queuedIssues = await db
           .select({
@@ -563,7 +543,7 @@ export async function injectBatchedTasks(
 // ── Web research ───────────────────────────────────────────────────────────
 
 export async function injectWebResearch(
-  db: Db,
+  _db: Db,
   context: Record<string, unknown>,
   agentId: string,
   issueContext: { description?: string } | null,
@@ -580,14 +560,9 @@ export async function injectWebResearch(
       const searchResults = await webSearch(searchQuery, 3);
       if (searchResults.length > 0) {
         const resultLines = searchResults.map(
-          (r, i) =>
-            `${i + 1}. **${r.title}**\n   URL: ${r.url}\n   ${sanitizeForPrompt(r.content.slice(0, 300), 300)}`,
+          (r, i) => `${i + 1}. **${r.title}**\n   URL: ${r.url}\n   ${sanitizeForPrompt(r.content.slice(0, 300), 300)}`,
         );
-        context.ironworksWebResearch = [
-          `## Web Research - ${searchQuery}`,
-          "",
-          ...resultLines,
-        ].join("\n");
+        context.ironworksWebResearch = [`## Web Research - ${searchQuery}`, "", ...resultLines].join("\n");
         logger.info(
           { agentId, query: searchQuery, resultCount: searchResults.length },
           "[web-search] injected web research into agent context",
@@ -656,10 +631,7 @@ export async function injectDeadlineUrgency(
 
 // ── Dependency context ─────────────────────────────────────────────────────
 
-export async function injectDependencyContext(
-  db: Db,
-  context: Record<string, unknown>,
-): Promise<void> {
+export async function injectDependencyContext(db: Db, context: Record<string, unknown>): Promise<void> {
   try {
     const contextIssueIdForDeps = readNonEmptyString(context.issueId);
     if (contextIssueIdForDeps) {
@@ -687,9 +659,7 @@ export async function injectDependencyContext(
             status: issues.status,
           })
           .from(issues)
-          .where(
-            sql`${issues.id}::text = ANY(${JSON.stringify(currentIssueForDeps.dependsOn)}::text[])`,
-          );
+          .where(sql`${issues.id}::text = ANY(${JSON.stringify(currentIssueForDeps.dependsOn)}::text[])`);
 
         const pendingBlockers = blockingIssues.filter((i) => i.status !== "done");
         if (pendingBlockers.length > 0) {
@@ -701,8 +671,7 @@ export async function injectDependencyContext(
             .join(", ");
           context.ironworksDependencyContext = `This issue is BLOCKED by: ${blockerList}. Do not start work on this issue until all blockers are done.`;
         } else {
-          context.ironworksDependencyContext =
-            "All dependencies for this issue are complete. You can proceed.";
+          context.ironworksDependencyContext = "All dependencies for this issue are complete. You can proceed.";
         }
       }
     }
@@ -803,7 +772,7 @@ export async function injectPlaybookGuidance(
     if (issueTitle) {
       query = issueTitle;
       if (issueDescription) {
-        query += ". " + issueDescription.slice(0, 500);
+        query += `. ${issueDescription.slice(0, 500)}`;
       }
     } else {
       // Fall back to latest comment if present
@@ -841,7 +810,7 @@ export async function injectPlaybookGuidance(
     lines.push("");
 
     for (const chunk of chunks) {
-      const body = chunk.body.length > 1200 ? chunk.body.slice(0, 1200) + "..." : chunk.body;
+      const body = chunk.body.length > 1200 ? `${chunk.body.slice(0, 1200)}...` : chunk.body;
       lines.push(`### ${chunk.headingPath}`);
       lines.push("");
       lines.push(body);

@@ -1,9 +1,9 @@
-import { Router } from "express";
-import type { Response } from "express";
 import type { Db } from "@ironworksai/db";
-import { assertCompanyAccess } from "./authz.js";
-import { subscribeCompanyLiveEvents } from "../services/live-events.js";
 import type { LiveEvent } from "@ironworksai/shared";
+import type { Response } from "express";
+import { Router } from "express";
+import { subscribeCompanyLiveEvents } from "../services/live-events.js";
+import { assertCompanyAccess } from "./authz.js";
 
 // Map of companyId -> set of active SSE response objects
 const clients = new Map<string, Set<Response>>();
@@ -41,7 +41,7 @@ export function sseRoutes(_db: Db) {
     res.writeHead(200, {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache, no-transform",
-      "Connection": "keep-alive",
+      Connection: "keep-alive",
       "X-Accel-Buffering": "no", // Disable nginx proxy buffering if present
     });
     // Flush headers immediately so the client sees the 200
@@ -78,10 +78,7 @@ export function sseRoutes(_db: Db) {
  */
 function sseEventName_(type: string): string {
   if (type === "activity.logged") return "activity";
-  if (
-    type === "heartbeat.run.queued" ||
-    type === "heartbeat.run.status"
-  ) {
+  if (type === "heartbeat.run.queued" || type === "heartbeat.run.status") {
     return "agent_run";
   }
   if (type === "channel.message") return "channel_message";

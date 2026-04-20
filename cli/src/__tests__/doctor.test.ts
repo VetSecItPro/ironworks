@@ -3,8 +3,8 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { doctor } from "../commands/doctor.js";
-import { writeConfig } from "../config/store.js";
 import type { IronworksConfig } from "../config/schema.js";
+import { writeConfig } from "../config/store.js";
 
 const ORIGINAL_ENV = { ...process.env };
 

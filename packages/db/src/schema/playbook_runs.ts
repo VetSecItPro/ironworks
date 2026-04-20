@@ -1,15 +1,19 @@
-import { pgTable, uuid, text, integer, timestamp, index, jsonb } from "drizzle-orm/pg-core";
+import { index, integer, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { companies } from "./companies.js";
-import { playbooks } from "./playbooks.js";
 import { goals } from "./goals.js";
 import { issues } from "./issues.js";
+import { playbooks } from "./playbooks.js";
 
 export const playbookRuns = pgTable(
   "playbook_runs",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    companyId: uuid("company_id").notNull().references(() => companies.id),
-    playbookId: uuid("playbook_id").notNull().references(() => playbooks.id),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id),
+    playbookId: uuid("playbook_id")
+      .notNull()
+      .references(() => playbooks.id),
     /** Goal created for this run. */
     goalId: uuid("goal_id").references(() => goals.id, { onDelete: "set null" }),
     /** Status: running, completed, failed, cancelled. */
@@ -36,7 +40,9 @@ export const playbookRunSteps = pgTable(
   "playbook_run_steps",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    runId: uuid("run_id").notNull().references(() => playbookRuns.id, { onDelete: "cascade" }),
+    runId: uuid("run_id")
+      .notNull()
+      .references(() => playbookRuns.id, { onDelete: "cascade" }),
     /** Original step order from the playbook template. */
     stepOrder: integer("step_order").notNull(),
     /** Step title (copied from template). */

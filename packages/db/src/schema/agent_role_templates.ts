@@ -1,19 +1,13 @@
-import {
-  boolean,
-  pgTable,
-  uuid,
-  text,
-  timestamp,
-  jsonb,
-  index,
-} from "drizzle-orm/pg-core";
+import { boolean, index, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { companies } from "./companies.js";
 
 export const agentRoleTemplates = pgTable(
   "agent_role_templates",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    companyId: uuid("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     role: text("role").notNull(),
     department: text("department"),

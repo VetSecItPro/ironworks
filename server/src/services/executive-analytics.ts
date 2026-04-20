@@ -1,4 +1,3 @@
-import { and, desc, eq, gte, inArray, isNotNull, lt, ne, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import {
   activityLog,
@@ -14,8 +13,9 @@ import {
   principalPermissionGrants,
   projects,
 } from "@ironworksai/db";
-import { SLA_TARGETS } from "@ironworksai/shared";
 import type { IssuePriority, RiskLevel } from "@ironworksai/shared";
+import { SLA_TARGETS } from "@ironworksai/shared";
+import { and, desc, eq, gte, inArray, isNotNull, lt, ne, sql } from "drizzle-orm";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -132,12 +132,7 @@ export function executiveAnalyticsService(db: Db) {
           totalCents: sql<number>`coalesce(sum(${costEvents.costCents}), 0)::int`,
         })
         .from(costEvents)
-        .where(
-          and(
-            eq(costEvents.companyId, companyId),
-            gte(costEvents.occurredAt, sevenDaysAgo),
-          ),
-        );
+        .where(and(eq(costEvents.companyId, companyId), gte(costEvents.occurredAt, sevenDaysAgo)));
 
       const weekSpendCents = Number(weekSpendRow?.totalCents ?? 0);
       const dailyRate = weekSpendCents / 7;
@@ -190,10 +185,10 @@ export function executiveAnalyticsService(db: Db) {
           issueCount: sql<number>`count(distinct ${issues.id})::int`,
         })
         .from(costEvents)
-        .innerJoin(issues, and(
-          eq(costEvents.companyId, issues.companyId),
-          sql`${costEvents.agentId} = ${issues.assigneeAgentId}`,
-        ))
+        .innerJoin(
+          issues,
+          and(eq(costEvents.companyId, issues.companyId), sql`${costEvents.agentId} = ${issues.assigneeAgentId}`),
+        )
         .innerJoin(projects, eq(issues.projectId, projects.id))
         .where(
           and(
@@ -211,9 +206,7 @@ export function executiveAnalyticsService(db: Db) {
         projectName: row.projectName,
         costCents: Number(row.costCents),
         issueCount: Number(row.issueCount),
-        costPerIssue: Number(row.issueCount) > 0
-          ? Math.round(Number(row.costCents) / Number(row.issueCount))
-          : 0,
+        costPerIssue: Number(row.issueCount) > 0 ? Math.round(Number(row.costCents) / Number(row.issueCount)) : 0,
       }));
     },
 
@@ -229,13 +222,7 @@ export function executiveAnalyticsService(db: Db) {
           completedAt: issues.completedAt,
         })
         .from(issues)
-        .where(
-          and(
-            eq(issues.companyId, companyId),
-            eq(issues.status, "done"),
-            isNotNull(issues.completedAt),
-          ),
-        );
+        .where(and(eq(issues.companyId, companyId), eq(issues.status, "done"), isNotNull(issues.completedAt)));
 
       let total = 0;
       let withinSla = 0;
@@ -430,9 +417,7 @@ export function executiveAnalyticsService(db: Db) {
       }
 
       for (const issue of staleIssues) {
-        const ageDays = Math.round(
-          (now.getTime() - new Date(issue.createdAt).getTime()) / (1000 * 60 * 60 * 24),
-        );
+        const ageDays = Math.round((now.getTime() - new Date(issue.createdAt).getTime()) / (1000 * 60 * 60 * 24));
         risks.push({
           level: "medium",
           category: "stale_issue",
@@ -471,7 +456,9 @@ export function executiveAnalyticsService(db: Db) {
     /**
      * Per-agent security profile: permissions, data scopes, tool authorizations, access log.
      */
-    agentSecurityProfile: async (agentId: string): Promise<{
+    agentSecurityProfile: async (
+      agentId: string,
+    ): Promise<{
       permissions: string[];
       dataScopes: string[];
       toolAuthorizations: string[];
@@ -482,10 +469,7 @@ export function executiveAnalyticsService(db: Db) {
         .select({ permissionKey: principalPermissionGrants.permissionKey })
         .from(principalPermissionGrants)
         .where(
-          and(
-            eq(principalPermissionGrants.principalType, "agent"),
-            eq(principalPermissionGrants.principalId, agentId),
-          ),
+          and(eq(principalPermissionGrants.principalType, "agent"), eq(principalPermissionGrants.principalId, agentId)),
         );
       const permissions = permissionRows.map((r) => r.permissionKey);
 
@@ -538,7 +522,10 @@ export function executiveAnalyticsService(db: Db) {
           }
         }
         if (agentRow.capabilities) {
-          const caps = agentRow.capabilities.split(",").map((c: string) => c.trim()).filter(Boolean);
+          const caps = agentRow.capabilities
+            .split(",")
+            .map((c: string) => c.trim())
+            .filter(Boolean);
           for (const cap of caps) {
             if (!toolAuthorizations.includes(cap)) toolAuthorizations.push(cap);
           }
@@ -585,21 +572,14 @@ export function executiveAnalyticsService(db: Db) {
         .select()
         .from(activityLog)
         .where(
-          and(
-            eq(activityLog.companyId, companyId),
-            gte(activityLog.createdAt, from),
-            lt(activityLog.createdAt, to),
-          ),
+          and(eq(activityLog.companyId, companyId), gte(activityLog.createdAt, from), lt(activityLog.createdAt, to)),
         )
         .orderBy(desc(activityLog.createdAt))
         .limit(5000);
 
       // 2. Approval decisions
       const approvalActions = allActivity.filter(
-        (a) =>
-          a.action.includes("approval") ||
-          a.action.includes("approved") ||
-          a.action.includes("rejected"),
+        (a) => a.action.includes("approval") || a.action.includes("approved") || a.action.includes("rejected"),
       );
 
       // 3. Hiring/termination events
@@ -616,11 +596,7 @@ export function executiveAnalyticsService(db: Db) {
         .select()
         .from(costEvents)
         .where(
-          and(
-            eq(costEvents.companyId, companyId),
-            gte(costEvents.occurredAt, from),
-            lt(costEvents.occurredAt, to),
-          ),
+          and(eq(costEvents.companyId, companyId), gte(costEvents.occurredAt, from), lt(costEvents.occurredAt, to)),
         )
         .orderBy(desc(costEvents.occurredAt))
         .limit(5000);
@@ -676,12 +652,7 @@ export function executiveAnalyticsService(db: Db) {
           department: agents.department,
         })
         .from(agents)
-        .where(
-          and(
-            eq(agents.companyId, companyId),
-            ne(agents.status, "terminated"),
-          ),
-        )
+        .where(and(eq(agents.companyId, companyId), ne(agents.status, "terminated")))
         .orderBy(agents.name);
 
       const allGrants = await db
@@ -691,10 +662,7 @@ export function executiveAnalyticsService(db: Db) {
         })
         .from(principalPermissionGrants)
         .where(
-          and(
-            eq(principalPermissionGrants.companyId, companyId),
-            eq(principalPermissionGrants.principalType, "agent"),
-          ),
+          and(eq(principalPermissionGrants.companyId, companyId), eq(principalPermissionGrants.principalType, "agent")),
         );
 
       // Build a set of all distinct permission keys
@@ -786,7 +754,9 @@ export function executiveAnalyticsService(db: Db) {
     /**
      * Composite company health score (0-100) with breakdown by category.
      */
-    companyHealthScore: async (companyId: string): Promise<{
+    companyHealthScore: async (
+      companyId: string,
+    ): Promise<{
       score: number;
       breakdown: {
         agentPerformance: number;
@@ -803,11 +773,7 @@ export function executiveAnalyticsService(db: Db) {
         })
         .from(agents)
         .where(
-          and(
-            eq(agents.companyId, companyId),
-            ne(agents.status, "terminated"),
-            isNotNull(agents.performanceScore),
-          ),
+          and(eq(agents.companyId, companyId), ne(agents.status, "terminated"), isNotNull(agents.performanceScore)),
         );
       const agentPerformance = Math.min(100, Math.max(0, Number(perfResult[0]?.avg ?? 0)));
 
@@ -821,9 +787,7 @@ export function executiveAnalyticsService(db: Db) {
         .where(eq(goals.companyId, companyId));
       const totalGoals = Number(goalCounts[0]?.total ?? 0);
       const onTrackGoals = Number(goalCounts[0]?.onTrack ?? 0);
-      const goalCompletion = totalGoals > 0
-        ? Math.round((onTrackGoals / totalGoals) * 100)
-        : 100; // No goals = full score (not penalized)
+      const goalCompletion = totalGoals > 0 ? Math.round((onTrackGoals / totalGoals) * 100) : 100; // No goals = full score (not penalized)
 
       // 3. Budget health: under budget = 100, over budget scales down
       const [companyRow] = await db
@@ -855,13 +819,7 @@ export function executiveAnalyticsService(db: Db) {
           completedAt: issues.completedAt,
         })
         .from(issues)
-        .where(
-          and(
-            eq(issues.companyId, companyId),
-            eq(issues.status, "done"),
-            isNotNull(issues.completedAt),
-          ),
-        );
+        .where(and(eq(issues.companyId, companyId), eq(issues.status, "done"), isNotNull(issues.completedAt)));
 
       let slaTotal = 0;
       let slaWithin = 0;
@@ -926,18 +884,18 @@ export function executiveAnalyticsService(db: Db) {
       // Composite score: weighted average
       const weights = {
         agentPerformance: 0.25,
-        goalCompletion: 0.20,
-        budgetHealth: 0.20,
-        slaCompliance: 0.20,
+        goalCompletion: 0.2,
+        budgetHealth: 0.2,
+        slaCompliance: 0.2,
         riskLevel: 0.15,
       };
 
       const score = Math.round(
         agentPerformance * weights.agentPerformance +
-        goalCompletion * weights.goalCompletion +
-        budgetHealth * weights.budgetHealth +
-        slaCompliance * weights.slaCompliance +
-        riskLevel * weights.riskLevel,
+          goalCompletion * weights.goalCompletion +
+          budgetHealth * weights.budgetHealth +
+          slaCompliance * weights.slaCompliance +
+          riskLevel * weights.riskLevel,
       );
 
       return {
@@ -971,20 +929,14 @@ export interface BudgetForecastResult {
  * Project current-month spend to end of month and assess budget health.
  * Uses daily average from spend so far this month to project month-end total.
  */
-export async function budgetForecast(
-  db: Db,
-  companyId: string,
-): Promise<BudgetForecastResult> {
+export async function budgetForecast(db: Db, companyId: string): Promise<BudgetForecastResult> {
   const now = new Date();
 
   // Month boundaries (UTC)
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
   const monthEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
   const daysInMonth = Math.round((monthEnd.getTime() - monthStart.getTime()) / (1000 * 60 * 60 * 24));
-  const dayOfMonth = Math.max(
-    1,
-    Math.round((now.getTime() - monthStart.getTime()) / (1000 * 60 * 60 * 24)),
-  );
+  const dayOfMonth = Math.max(1, Math.round((now.getTime() - monthStart.getTime()) / (1000 * 60 * 60 * 24)));
   const daysRemaining = Math.max(0, daysInMonth - dayOfMonth);
 
   // Current month spend so far
@@ -992,11 +944,7 @@ export async function budgetForecast(
     .select({ total: sql<number>`coalesce(sum(${costEvents.costCents}), 0)::int` })
     .from(costEvents)
     .where(
-      and(
-        eq(costEvents.companyId, companyId),
-        gte(costEvents.occurredAt, monthStart),
-        lt(costEvents.occurredAt, now),
-      ),
+      and(eq(costEvents.companyId, companyId), gte(costEvents.occurredAt, monthStart), lt(costEvents.occurredAt, now)),
     );
   const currentMonthSpend = Number(mtdRow?.total ?? 0);
 
@@ -1013,9 +961,7 @@ export async function budgetForecast(
     .where(eq(companies.id, companyId))
     .limit(1);
   const monthlyBudget: number | null =
-    company?.budgetMonthlyCents && company.budgetMonthlyCents > 0
-      ? company.budgetMonthlyCents
-      : null;
+    company?.budgetMonthlyCents && company.budgetMonthlyCents > 0 ? company.budgetMonthlyCents : null;
 
   // Days until budget exhausted
   let daysUntilBudgetExhausted: number | null = null;
@@ -1070,13 +1016,15 @@ const DEPRECATED_MODELS = ["claude-2", "claude-instant", "gpt-3.5-turbo", "gpt-4
 export async function modelHealthCheck(
   db: Db,
   companyId: string,
-): Promise<Array<{
-  agentId: string;
-  agentName: string;
-  model: string;
-  isDeprecated: boolean;
-  recommendation: string | null;
-}>> {
+): Promise<
+  Array<{
+    agentId: string;
+    agentName: string;
+    model: string;
+    isDeprecated: boolean;
+    recommendation: string | null;
+  }>
+> {
   const rows = await db
     .select({
       id: agents.id,
@@ -1084,17 +1032,12 @@ export async function modelHealthCheck(
       adapterConfig: agents.adapterConfig,
     })
     .from(agents)
-    .where(
-      and(
-        eq(agents.companyId, companyId),
-        ne(agents.status, "terminated"),
-      ),
-    );
+    .where(and(eq(agents.companyId, companyId), ne(agents.status, "terminated")));
 
   return rows.map((row) => {
-    const config = (typeof row.adapterConfig === "object" && row.adapterConfig !== null
-      ? row.adapterConfig
-      : {}) as Record<string, unknown>;
+    const config = (
+      typeof row.adapterConfig === "object" && row.adapterConfig !== null ? row.adapterConfig : {}
+    ) as Record<string, unknown>;
     const model = typeof config.model === "string" ? config.model : "";
     const isDeprecated = model.length > 0 && DEPRECATED_MODELS.some((d) => model.startsWith(d));
     let recommendation: string | null = null;
@@ -1134,10 +1077,7 @@ export interface DepartmentSpendingRow {
  * Per-department spending summary: joins cost_events through agents.
  * Agents with no department are grouped under "unassigned".
  */
-export async function departmentSpendingSummary(
-  db: Db,
-  companyId: string,
-): Promise<DepartmentSpendingRow[]> {
+export async function departmentSpendingSummary(db: Db, companyId: string): Promise<DepartmentSpendingRow[]> {
   const rows = await db
     .select({
       department: sql<string>`coalesce(${agents.department}, 'unassigned')`,
@@ -1176,11 +1116,7 @@ export interface DepartmentImpactRow {
  * Per-department impact: completed issues, total cost, and human-hours
  * equivalent (2 hours per completed issue).
  */
-export async function departmentImpact(
-  db: Db,
-  companyId: string,
-  periodDays = 30,
-): Promise<DepartmentImpactRow[]> {
+export async function departmentImpact(db: Db, companyId: string, periodDays = 30): Promise<DepartmentImpactRow[]> {
   const since = new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000);
 
   const issueRows = await db
@@ -1207,12 +1143,7 @@ export async function departmentImpact(
     })
     .from(costEvents)
     .innerJoin(agents, eq(costEvents.agentId, agents.id))
-    .where(
-      and(
-        eq(costEvents.companyId, companyId),
-        gte(costEvents.occurredAt, since),
-      ),
-    )
+    .where(and(eq(costEvents.companyId, companyId), gte(costEvents.occurredAt, since)))
     .groupBy(sql`coalesce(${agents.department}, 'Unassigned')`);
 
   const costMap = new Map<string, number>();
@@ -1247,10 +1178,7 @@ export interface DepartmentBudgetVsActualRow {
  * Budget vs actual for each department this calendar month.
  * Budget is the sum of agent budgetMonthlyCents in each department.
  */
-export async function departmentBudgetVsActual(
-  db: Db,
-  companyId: string,
-): Promise<DepartmentBudgetVsActualRow[]> {
+export async function departmentBudgetVsActual(db: Db, companyId: string): Promise<DepartmentBudgetVsActualRow[]> {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
@@ -1260,12 +1188,7 @@ export async function departmentBudgetVsActual(
       budgetCents: sql<number>`coalesce(sum(${agents.budgetMonthlyCents}), 0)::int`,
     })
     .from(agents)
-    .where(
-      and(
-        eq(agents.companyId, companyId),
-        ne(agents.status, "terminated"),
-      ),
-    )
+    .where(and(eq(agents.companyId, companyId), ne(agents.status, "terminated")))
     .groupBy(sql`coalesce(${agents.department}, 'Unassigned')`);
 
   const actualRows = await db
@@ -1275,12 +1198,7 @@ export async function departmentBudgetVsActual(
     })
     .from(costEvents)
     .innerJoin(agents, eq(costEvents.agentId, agents.id))
-    .where(
-      and(
-        eq(costEvents.companyId, companyId),
-        gte(costEvents.occurredAt, monthStart),
-      ),
-    )
+    .where(and(eq(costEvents.companyId, companyId), gte(costEvents.occurredAt, monthStart)))
     .groupBy(sql`coalesce(${agents.department}, 'Unassigned')`);
 
   const actualMap = new Map<string, number>();
@@ -1317,10 +1235,7 @@ export interface AgentEfficiencyRow {
  * Agents with zero completed issues are excluded.
  * performanceScore is a composite: 50% from cost rank, 50% from volume rank.
  */
-export async function agentEfficiencyRankings(
-  db: Db,
-  companyId: string,
-): Promise<AgentEfficiencyRow[]> {
+export async function agentEfficiencyRankings(db: Db, companyId: string): Promise<AgentEfficiencyRow[]> {
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
@@ -1344,9 +1259,7 @@ export async function agentEfficiencyRankings(
 
   if (issueRows.length === 0) return [];
 
-  const agentIds = issueRows
-    .map((r) => r.agentId)
-    .filter((id): id is string => id !== null);
+  const agentIds = issueRows.map((r) => r.agentId).filter((id): id is string => id !== null);
 
   const costRows = await db
     .select({
@@ -1406,39 +1319,23 @@ export interface HumanOverrideRate {
  * Fraction of heartbeat runs in the period that triggered a human approval
  * or were manually overridden/cancelled by a user.
  */
-export async function humanOverrideRate(
-  db: Db,
-  companyId: string,
-  periodDays = 30,
-): Promise<HumanOverrideRate> {
+export async function humanOverrideRate(db: Db, companyId: string, periodDays = 30): Promise<HumanOverrideRate> {
   const since = new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000);
 
   const [runRow] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(heartbeatRuns)
-    .where(
-      and(
-        eq(heartbeatRuns.companyId, companyId),
-        gte(heartbeatRuns.startedAt, since),
-      ),
-    );
+    .where(and(eq(heartbeatRuns.companyId, companyId), gte(heartbeatRuns.startedAt, since)));
   const totalRuns = Number(runRow?.count ?? 0);
 
   // Count approvals (pending OR decided) that were linked to runs in this period
   const [approvalRow] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(approvals)
-    .where(
-      and(
-        eq(approvals.companyId, companyId),
-        gte(approvals.createdAt, since),
-      ),
-    );
+    .where(and(eq(approvals.companyId, companyId), gte(approvals.createdAt, since)));
   const overriddenRuns = Number(approvalRow?.count ?? 0);
 
-  const overrideRate = totalRuns > 0
-    ? Math.round((overriddenRuns / totalRuns) * 10000) / 100
-    : 0;
+  const overrideRate = totalRuns > 0 ? Math.round((overriddenRuns / totalRuns) * 10000) / 100 : 0;
 
   return { totalRuns, overriddenRuns, overrideRate };
 }
@@ -1458,10 +1355,7 @@ export interface SystemHealthSummary {
  * Returns a real-time snapshot of the system health for a company.
  * Used by the Board Briefing "System Status" indicator.
  */
-export async function systemHealthSummary(
-  db: Db,
-  companyId: string,
-): Promise<SystemHealthSummary> {
+export async function systemHealthSummary(db: Db, companyId: string): Promise<SystemHealthSummary> {
   const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
   // Agent status counts
@@ -1552,11 +1446,7 @@ export interface CouncilAnalyticsResult {
  * Analyze multi-model council performance from activity log entries.
  * Queries activity_log where action = "model_council.completed".
  */
-export async function councilAnalytics(
-  db: Db,
-  companyId: string,
-  periodDays = 30,
-): Promise<CouncilAnalyticsResult> {
+export async function councilAnalytics(db: Db, companyId: string, periodDays = 30): Promise<CouncilAnalyticsResult> {
   const since = new Date();
   since.setDate(since.getDate() - periodDays);
 
@@ -1613,7 +1503,11 @@ export async function councilAnalytics(
     // Compute quality delta (best score minus worst score in the council)
     if (models.length >= 2) {
       const scores = models
-        .map((m) => (typeof (m as Record<string, unknown>).score === "number" ? (m as Record<string, unknown>).score as number : 0))
+        .map((m) =>
+          typeof (m as Record<string, unknown>).score === "number"
+            ? ((m as Record<string, unknown>).score as number)
+            : 0,
+        )
         .sort((a, b) => b - a);
       totalQualityDelta += scores[0] - scores[scores.length - 1];
       qualityDeltaCount++;
@@ -1658,11 +1552,7 @@ export interface ChannelAnalyticsResult {
  * Compute message statistics for a single channel over the last `periodDays`
  * days (default 30).
  */
-export async function channelAnalytics(
-  db: Db,
-  channelId: string,
-  periodDays = 30,
-): Promise<ChannelAnalyticsResult> {
+export async function channelAnalytics(db: Db, channelId: string, periodDays = 30): Promise<ChannelAnalyticsResult> {
   const since = new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000);
 
   // Total message count and per-type breakdown
@@ -1672,12 +1562,7 @@ export async function channelAnalytics(
       authorAgentId: channelMessages.authorAgentId,
     })
     .from(channelMessages)
-    .where(
-      and(
-        eq(channelMessages.channelId, channelId),
-        gte(channelMessages.createdAt, since),
-      ),
-    );
+    .where(and(eq(channelMessages.channelId, channelId), gte(channelMessages.createdAt, since)));
 
   const totalMessages = allRows.length;
   const messagesByType: Record<string, number> = {};
@@ -1688,31 +1573,21 @@ export async function channelAnalytics(
     messagesByType[t] = (messagesByType[t] ?? 0) + 1;
 
     if (row.authorAgentId) {
-      contributorCounts.set(
-        row.authorAgentId,
-        (contributorCounts.get(row.authorAgentId) ?? 0) + 1,
-      );
+      contributorCounts.set(row.authorAgentId, (contributorCounts.get(row.authorAgentId) ?? 0) + 1);
     }
   }
 
-  const decisionsCount = messagesByType["decision"] ?? 0;
-  const escalationsCount = messagesByType["escalation"] ?? 0;
-  const avgMessagesPerDay = periodDays > 0
-    ? Math.round((totalMessages / periodDays) * 100) / 100
-    : 0;
+  const decisionsCount = messagesByType.decision ?? 0;
+  const escalationsCount = messagesByType.escalation ?? 0;
+  const avgMessagesPerDay = periodDays > 0 ? Math.round((totalMessages / periodDays) * 100) / 100 : 0;
 
   // Resolve agent names for top contributors (top 5)
-  const sortedContributors = [...contributorCounts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
+  const sortedContributors = [...contributorCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
 
   const agentIds = sortedContributors.map(([id]) => id);
   const agentRows =
     agentIds.length > 0
-      ? await db
-          .select({ id: agents.id, name: agents.name })
-          .from(agents)
-          .where(inArray(agents.id, agentIds))
+      ? await db.select({ id: agents.id, name: agents.name }).from(agents).where(inArray(agents.id, agentIds))
       : [];
   const agentNameMap = new Map(agentRows.map((a) => [a.id, a.name]));
 

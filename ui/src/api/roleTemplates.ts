@@ -18,8 +18,7 @@ export interface RoleTemplate {
 }
 
 export const roleTemplatesApi = {
-  list: (companyId: string) =>
-    api.get<RoleTemplate[]>(`/companies/${companyId}/role-templates`),
+  list: (companyId: string) => api.get<RoleTemplate[]>(`/companies/${companyId}/role-templates`),
 
   create: (companyId: string, data: Record<string, unknown>) =>
     api.post<RoleTemplate>(`/companies/${companyId}/role-templates`, data),
@@ -27,6 +26,5 @@ export const roleTemplatesApi = {
   update: (companyId: string, id: string, data: Record<string, unknown>) =>
     api.patch<RoleTemplate>(`/companies/${companyId}/role-templates/${id}`, data),
 
-  remove: (companyId: string, id: string) =>
-    api.delete<{ ok: true }>(`/companies/${companyId}/role-templates/${id}`),
+  remove: (companyId: string, id: string) => api.delete<{ ok: true }>(`/companies/${companyId}/role-templates/${id}`),
 };

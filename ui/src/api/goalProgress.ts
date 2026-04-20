@@ -29,21 +29,21 @@ export interface GoalBreakdownIssue {
 
 export const goalProgressApi = {
   /** Get progress for a single goal. */
-  detail: (goalId: string) =>
-    api.get<GoalProgressDetail>(`/goals/${encodeURIComponent(goalId)}/progress`),
+  detail: (goalId: string) => api.get<GoalProgressDetail>(`/goals/${encodeURIComponent(goalId)}/progress`),
 
   /** Get progress for all goals in a company. */
   batch: (companyId: string) =>
-    api.get<GoalProgressItem[]>(
-      `/companies/${encodeURIComponent(companyId)}/goals/progress`,
-    ),
+    api.get<GoalProgressItem[]>(`/companies/${encodeURIComponent(companyId)}/goals/progress`),
 
   /** AI-assisted goal breakdown into issues. */
-  generateBreakdown: (companyId: string, input: {
-    goalTitle: string;
-    goalDescription?: string;
-    projectId?: string;
-  }) =>
+  generateBreakdown: (
+    companyId: string,
+    input: {
+      goalTitle: string;
+      goalDescription?: string;
+      projectId?: string;
+    },
+  ) =>
     api.post<{ issues: GoalBreakdownIssue[] }>(
       `/companies/${encodeURIComponent(companyId)}/ai/generate-goal-breakdown`,
       input,

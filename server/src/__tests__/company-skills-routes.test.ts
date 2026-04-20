@@ -1,8 +1,8 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { companySkillRoutes } from "../routes/company-skills.js";
 import { errorHandler } from "../middleware/index.js";
+import { companySkillRoutes } from "../routes/company-skills.js";
 
 const mockAgentService = vi.hoisted(() => ({
   getById: vi.fn(),
@@ -19,38 +19,34 @@ const mockCompanySkillService = vi.hoisted(() => ({
 
 const mockLogActivity = vi.hoisted(() => vi.fn());
 
-vi.mock("../services/index.js", () => ({
-  accessService: () => mockAccessService,
-  agentService: () => mockAgentService,
-  companySkillService: () => mockCompanySkillService,
-  logActivity: mockLogActivity,
-  companyPortabilityService: () => ({}),
-  instanceSettingsService: () => ({}),
-  workProductService: () => ({}),
-  workspaceOperationService: () => ({}),
-  executionWorkspaceService: () => ({}),
-  issueApprovalService: () => ({}),
-  secretService: () => ({}),
-  sidebarBadgeService: () => ({}),
-  dashboardService: () => ({}),
-  heartbeatService: () => ({}),
-  goalService: () => ({}),
-  financeService: () => ({}),
-  costService: () => ({}),
-  companyService: () => ({}),
-  routineService: () => ({}),
-  playbookService: () => ({ seedDefaults: vi.fn() }),
-  budgetService: () => ({ upsertPolicy: vi.fn() }),
-  userInviteService: () => ({ create: vi.fn(), getByToken: vi.fn(), accept: vi.fn(), listForCompany: vi.fn(), revoke: vi.fn() }),
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    accessService: () => mockAccessService,
+    agentService: () => mockAgentService,
+    companySkillService: () => mockCompanySkillService,
+    logActivity: mockLogActivity,
+    playbookService: () => ({ seedDefaults: vi.fn() }),
+    budgetService: () => ({ upsertPolicy: vi.fn() }),
+    userInviteService: () => ({
+      create: vi.fn(),
+      getByToken: vi.fn(),
+      accept: vi.fn(),
+      listForCompany: vi.fn(),
+      revoke: vi.fn(),
+    }),
+  });
+});
 
 function createApp(actor: Record<string, unknown>) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });
+  // biome-ignore lint/suspicious/noExplicitAny: mock Drizzle DB or storage object for unit tests; real type requires full schema-aware Drizzle instance
   app.use("/api", companySkillRoutes({} as any));
   app.use(errorHandler);
   return app;
@@ -69,13 +65,15 @@ describe("company skill mutation permissions", () => {
   });
 
   it("allows local board operators to mutate company skills", async () => {
-    const res = await request(createApp({
-      type: "board",
-      userId: "local-board",
-      companyIds: ["company-1"],
-      source: "local_implicit",
-      isInstanceAdmin: false,
-    }))
+    const res = await request(
+      createApp({
+        type: "board",
+        userId: "local-board",
+        companyIds: ["company-1"],
+        source: "local_implicit",
+        isInstanceAdmin: false,
+      }),
+    )
       .post("/api/companies/company-1/skills/import")
       .send({ source: "https://github.com/vercel-labs/agent-browser" });
 
@@ -93,12 +91,14 @@ describe("company skill mutation permissions", () => {
       permissions: {},
     });
 
-    const res = await request(createApp({
-      type: "agent",
-      agentId: "agent-1",
-      companyId: "company-1",
-      runId: "run-1",
-    }))
+    const res = await request(
+      createApp({
+        type: "agent",
+        agentId: "agent-1",
+        companyId: "company-1",
+        runId: "run-1",
+      }),
+    )
       .post("/api/companies/company-1/skills/import")
       .send({ source: "https://github.com/vercel-labs/agent-browser" });
 
@@ -113,12 +113,14 @@ describe("company skill mutation permissions", () => {
       permissions: { canCreateAgents: true },
     });
 
-    const res = await request(createApp({
-      type: "agent",
-      agentId: "agent-1",
-      companyId: "company-1",
-      runId: "run-1",
-    }))
+    const res = await request(
+      createApp({
+        type: "agent",
+        agentId: "agent-1",
+        companyId: "company-1",
+        runId: "run-1",
+      }),
+    )
       .post("/api/companies/company-1/skills/import")
       .send({ source: "https://github.com/vercel-labs/agent-browser" });
 

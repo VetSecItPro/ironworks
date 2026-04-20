@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
 import { ArrowDown } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 
 function resolveScrollTarget() {
   const mainContent = document.getElementById("main-content");
@@ -7,8 +7,8 @@ function resolveScrollTarget() {
   if (mainContent instanceof HTMLElement) {
     const overflowY = window.getComputedStyle(mainContent).overflowY;
     const usesOwnScroll =
-      (overflowY === "auto" || overflowY === "scroll" || overflowY === "overlay")
-      && mainContent.scrollHeight > mainContent.clientHeight + 1;
+      (overflowY === "auto" || overflowY === "scroll" || overflowY === "overlay") &&
+      mainContent.scrollHeight > mainContent.clientHeight + 1;
 
     if (usesOwnScroll) {
       return { type: "element" as const, element: mainContent };
@@ -69,6 +69,7 @@ export function ScrollToBottom() {
 
   return (
     <button
+      type="button"
       onClick={scroll}
       className="fixed bottom-[calc(1.5rem+5rem+env(safe-area-inset-bottom))] right-6 z-40 flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background shadow-md hover:bg-accent transition-colors md:bottom-6"
       aria-label="Scroll to bottom"

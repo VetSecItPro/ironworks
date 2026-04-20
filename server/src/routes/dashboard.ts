@@ -1,7 +1,7 @@
-import { Router } from "express";
-import { eq, sql, and, gte } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import { goals, issues, costEvents } from "@ironworksai/db";
+import { costEvents, goals, issues } from "@ironworksai/db";
+import { and, eq, gte, sql } from "drizzle-orm";
+import { Router } from "express";
 import { dashboardService } from "../services/dashboard.js";
 import { assertCompanyAccess } from "./authz.js";
 
@@ -62,9 +62,7 @@ export function dashboardRoutes(db: Db) {
     const goalsWithProgress = goalsProgress.map((g) => ({
       ...g,
       progressPercent:
-        Number(g.totalIssues) > 0
-          ? Math.round((Number(g.completedIssues) / Number(g.totalIssues)) * 100)
-          : 0,
+        Number(g.totalIssues) > 0 ? Math.round((Number(g.completedIssues) / Number(g.totalIssues)) * 100) : 0,
     }));
 
     res.json({

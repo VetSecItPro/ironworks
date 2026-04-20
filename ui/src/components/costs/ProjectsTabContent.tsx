@@ -1,10 +1,9 @@
-import { Download } from "lucide-react";
-import { FolderKanban, CreditCard } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CreditCard, Download, FolderKanban } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { EmptyState } from "../EmptyState";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { costsApi } from "../../api/costs";
 import { cn, formatCents, formatTokens } from "../../lib/utils";
+import { EmptyState } from "../EmptyState";
 
 interface EquivalentSpend {
   billingMode: string;
@@ -38,14 +37,16 @@ export function ProjectsTabContent({
   return (
     <>
       {equivalentSpend && equivalentSpend.billingMode !== "none" && (
-        <div className={cn(
-          "flex items-center gap-3 p-3 rounded-lg border text-sm",
-          equivalentSpend.billingMode === "subscription"
-            ? "border-blue-500/30 bg-blue-500/5 text-blue-700 dark:text-blue-300"
-            : equivalentSpend.billingMode === "mixed"
-              ? "border-amber-500/30 bg-amber-500/5 text-amber-700 dark:text-amber-300"
-              : "border-border bg-muted/30",
-        )}>
+        <div
+          className={cn(
+            "flex items-center gap-3 p-3 rounded-lg border text-sm",
+            equivalentSpend.billingMode === "subscription"
+              ? "border-blue-500/30 bg-blue-500/5 text-blue-700 dark:text-blue-300"
+              : equivalentSpend.billingMode === "mixed"
+                ? "border-amber-500/30 bg-amber-500/5 text-amber-700 dark:text-amber-300"
+                : "border-border bg-muted/30",
+          )}
+        >
           <CreditCard className="h-4 w-4 shrink-0" />
           <div className="flex-1">
             <span className="font-medium">
@@ -55,16 +56,12 @@ export function ProjectsTabContent({
                   ? "Mixed billing (subscription + API)"
                   : "API-metered billing"}
             </span>
-            <span className="text-xs ml-2 opacity-80">
-              {equivalentSpend.note}
-            </span>
+            <span className="text-xs ml-2 opacity-80">{equivalentSpend.note}</span>
           </div>
           {equivalentSpend.subscriptionEquivalentCents > 0 && (
             <div className="text-right shrink-0">
               <div className="text-xs opacity-70">Equivalent API spend</div>
-              <div className="font-mono font-semibold">
-                {formatCents(equivalentSpend.totalEquivalentCents)}
-              </div>
+              <div className="font-mono font-semibold">{formatCents(equivalentSpend.totalEquivalentCents)}</div>
             </div>
           )}
         </div>
@@ -103,9 +100,7 @@ export function ProjectsTabContent({
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div>
                     <div className="text-xs text-muted-foreground">Actual Spend</div>
-                    <div className="text-lg font-mono font-semibold">
-                      {formatCents(project.costCents)}
-                    </div>
+                    <div className="text-lg font-mono font-semibold">{formatCents(project.costCents)}</div>
                   </div>
                   <div>
                     <div className="text-xs text-muted-foreground">Equivalent Spend</div>
@@ -115,15 +110,11 @@ export function ProjectsTabContent({
                   </div>
                   <div>
                     <div className="text-xs text-muted-foreground">Input Tokens</div>
-                    <div className="text-sm font-mono">
-                      {formatTokens(project.inputTokens)}
-                    </div>
+                    <div className="text-sm font-mono">{formatTokens(project.inputTokens)}</div>
                   </div>
                   <div>
                     <div className="text-xs text-muted-foreground">Output Tokens</div>
-                    <div className="text-sm font-mono">
-                      {formatTokens(project.outputTokens)}
-                    </div>
+                    <div className="text-sm font-mono">{formatTokens(project.outputTokens)}</div>
                   </div>
                 </div>
               </CardContent>

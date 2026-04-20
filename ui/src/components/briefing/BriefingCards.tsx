@@ -1,14 +1,6 @@
 import { cn } from "../../lib/utils";
 
-export function StatBlock({
-  label,
-  value,
-  color,
-}: {
-  label: string;
-  value: number | string;
-  color?: string;
-}) {
+export function StatBlock({ label, value, color }: { label: string; value: number | string; color?: string }) {
   return (
     <div className="rounded-lg bg-muted/30 px-3 py-2.5">
       <p className="text-xs text-muted-foreground">{label}</p>
@@ -42,12 +34,8 @@ export function DORAMetricBlock({
   };
   return (
     <div className="rounded-lg bg-muted/30 px-3 py-3 space-y-1">
-      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-        {label}
-      </p>
-      <p className={cn("text-xl font-bold tabular-nums", tierColors[tier])}>
-        {value}
-      </p>
+      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className={cn("text-xl font-bold tabular-nums", tierColors[tier])}>{value}</p>
       <p className="text-[10px] text-muted-foreground">{description}</p>
       <span
         className={cn(
@@ -70,13 +58,7 @@ export const RATING_COLORS: Record<string, string> = {
   F: "text-red-400 bg-red-500/10",
 };
 
-export function HealthBreakdownItem({
-  label,
-  value,
-}: {
-  label: string;
-  value: number;
-}) {
+export function HealthBreakdownItem({ label, value }: { label: string; value: number }) {
   return (
     <div className="text-center">
       <div
@@ -93,9 +75,7 @@ export function HealthBreakdownItem({
       >
         {value}
       </div>
-      <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
-        {label}
-      </div>
+      <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{label}</div>
     </div>
   );
 }

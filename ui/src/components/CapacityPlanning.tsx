@@ -1,7 +1,7 @@
+import type { Agent, Issue } from "@ironworksai/shared";
+import { AlertTriangle, TrendingUp, Users } from "lucide-react";
 import { useMemo } from "react";
 import { cn } from "../lib/utils";
-import { TrendingUp, AlertTriangle, BarChart3, Users } from "lucide-react";
-import type { Agent, Issue } from "@ironworksai/shared";
 
 interface CapacityPlanningProps {
   issues: Issue[];
@@ -26,15 +26,9 @@ function BacklogBurnUpChart({ issues }: { issues: Issue[] }) {
       const weekEnd = new Date(weekStart);
       weekEnd.setDate(weekEnd.getDate() + 7);
 
-      const created = issues.filter(
-        (i) => new Date(i.createdAt) <= weekEnd,
-      ).length;
+      const created = issues.filter((i) => new Date(i.createdAt) <= weekEnd).length;
 
-      const completed = issues.filter(
-        (i) =>
-          i.completedAt &&
-          new Date(i.completedAt) <= weekEnd,
-      ).length;
+      const completed = issues.filter((i) => i.completedAt && new Date(i.completedAt) <= weekEnd).length;
 
       weeks.push({
         label: `W${8 - w}`,
@@ -45,13 +39,8 @@ function BacklogBurnUpChart({ issues }: { issues: Issue[] }) {
 
     // Project 2 more weeks based on velocity
     const recentCompleted =
-      weeks.length >= 2
-        ? (weeks[weeks.length - 1].completed - weeks[weeks.length - 3].completed) / 2
-        : 0;
-    const recentCreated =
-      weeks.length >= 2
-        ? (weeks[weeks.length - 1].total - weeks[weeks.length - 3].total) / 2
-        : 0;
+      weeks.length >= 2 ? (weeks[weeks.length - 1].completed - weeks[weeks.length - 3].completed) / 2 : 0;
+    const recentCreated = weeks.length >= 2 ? (weeks[weeks.length - 1].total - weeks[weeks.length - 3].total) / 2 : 0;
 
     for (let p = 1; p <= 2; p++) {
       const lastWeek = weeks[weeks.length - 1];
@@ -72,15 +61,10 @@ function BacklogBurnUpChart({ issues }: { issues: Issue[] }) {
 
   const scaleX = (i: number) =>
     padding.left + (i / (chartData.length - 1)) * (chartWidth - padding.left - padding.right);
-  const scaleY = (v: number) =>
-    padding.top + (1 - v / maxVal) * (chartHeight - padding.top - padding.bottom);
+  const scaleY = (v: number) => padding.top + (1 - v / maxVal) * (chartHeight - padding.top - padding.bottom);
 
-  const totalPath = chartData
-    .map((d, i) => `${i === 0 ? "M" : "L"} ${scaleX(i)} ${scaleY(d.total)}`)
-    .join(" ");
-  const completedPath = chartData
-    .map((d, i) => `${i === 0 ? "M" : "L"} ${scaleX(i)} ${scaleY(d.completed)}`)
-    .join(" ");
+  const totalPath = chartData.map((d, i) => `${i === 0 ? "M" : "L"} ${scaleX(i)} ${scaleY(d.total)}`).join(" ");
+  const completedPath = chartData.map((d, i) => `${i === 0 ? "M" : "L"} ${scaleX(i)} ${scaleY(d.completed)}`).join(" ");
 
   // Projection starts at week 8 (index 7)
   const projStartIdx = 8;
@@ -100,6 +84,7 @@ function BacklogBurnUpChart({ issues }: { issues: Issue[] }) {
         <h3 className="text-sm font-semibold">Backlog Burn-up</h3>
       </div>
       <svg width="100%" viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="overflow-visible">
+        <title>Backlog burn-up chart</title>
         {/* Y-axis labels */}
         {[0, Math.round(maxVal / 2), maxVal].map((v) => (
           <g key={v}>
@@ -129,10 +114,7 @@ function BacklogBurnUpChart({ issues }: { issues: Issue[] }) {
             key={d.label}
             x={scaleX(i)}
             y={chartHeight - 5}
-            className={cn(
-              "text-[10px]",
-              d.label.startsWith("P") ? "fill-amber-500" : "fill-muted-foreground",
-            )}
+            className={cn("text-[10px]", d.label.startsWith("P") ? "fill-amber-500" : "fill-muted-foreground")}
             textAnchor="middle"
           >
             {d.label}
@@ -141,24 +123,24 @@ function BacklogBurnUpChart({ issues }: { issues: Issue[] }) {
 
         {/* Total line (solid for actual, dashed for projection) */}
         <path
-          d={totalPath.split(" ").slice(0, projStartIdx * 3).join(" ")}
+          d={totalPath
+            .split(" ")
+            .slice(0, projStartIdx * 3)
+            .join(" ")}
           fill="none"
           className="stroke-blue-500"
           strokeWidth={1.5}
         />
         {projStartIdx < chartData.length && (
-          <path
-            d={projTotalPath}
-            fill="none"
-            className="stroke-blue-500"
-            strokeWidth={1.5}
-            strokeDasharray="4 2"
-          />
+          <path d={projTotalPath} fill="none" className="stroke-blue-500" strokeWidth={1.5} strokeDasharray="4 2" />
         )}
 
         {/* Completed line */}
         <path
-          d={completedPath.split(" ").slice(0, projStartIdx * 3).join(" ")}
+          d={completedPath
+            .split(" ")
+            .slice(0, projStartIdx * 3)
+            .join(" ")}
           fill="none"
           className="stroke-emerald-500"
           strokeWidth={1.5}
@@ -183,7 +165,10 @@ function BacklogBurnUpChart({ issues }: { issues: Issue[] }) {
           Completed
         </span>
         <span className="flex items-center gap-1">
-          <span className="inline-block w-3 h-0.5 bg-amber-500 rounded border-dashed" style={{ borderTop: "1px dashed" }} />
+          <span
+            className="inline-block w-3 h-0.5 bg-amber-500 rounded border-dashed"
+            style={{ borderTop: "1px dashed" }}
+          />
           Projection
         </span>
       </div>
@@ -198,16 +183,11 @@ function BacklogBurnUpChart({ issues }: { issues: Issue[] }) {
 function WorkloadBalancer({ issues, agents }: CapacityPlanningProps) {
   const agentWorkload = useMemo(() => {
     const counts = new Map<string, number>();
-    const activeIssues = issues.filter(
-      (i) => i.status !== "done" && i.status !== "cancelled",
-    );
+    const activeIssues = issues.filter((i) => i.status !== "done" && i.status !== "cancelled");
 
     for (const issue of activeIssues) {
       if (issue.assigneeAgentId) {
-        counts.set(
-          issue.assigneeAgentId,
-          (counts.get(issue.assigneeAgentId) ?? 0) + 1,
-        );
+        counts.set(issue.assigneeAgentId, (counts.get(issue.assigneeAgentId) ?? 0) + 1);
       }
     }
 
@@ -272,9 +252,7 @@ function WorkloadBalancer({ issues, agents }: CapacityPlanningProps) {
             >
               {agent.count}
             </div>
-            {agent.overloaded && (
-              <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />
-            )}
+            {agent.overloaded && <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />}
           </div>
         ))}
       </div>

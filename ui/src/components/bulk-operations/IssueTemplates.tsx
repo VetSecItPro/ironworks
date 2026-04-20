@@ -20,7 +20,8 @@ export const BUILT_IN_TEMPLATES: IssueTemplate[] = [
     icon: "bug",
     defaults: {
       title: "[Bug] ",
-      description: "## Steps to Reproduce\n1. \n\n## Expected Behavior\n\n\n## Actual Behavior\n\n\n## Environment\n- \n",
+      description:
+        "## Steps to Reproduce\n1. \n\n## Expected Behavior\n\n\n## Actual Behavior\n\n\n## Environment\n- \n",
       priority: "high",
       labels: ["bug"],
     },
@@ -83,12 +84,14 @@ export function TemplatePicker({ templates = BUILT_IN_TEMPLATES, onSelect, class
       <button
         type="button"
         className="flex items-center gap-2 rounded-lg border border-dashed border-border px-3 py-2 text-left text-sm text-muted-foreground hover:bg-accent/50 transition-colors"
-        onClick={() => onSelect({
-          id: "blank",
-          name: "Blank Issue",
-          icon: "file",
-          defaults: {},
-        })}
+        onClick={() =>
+          onSelect({
+            id: "blank",
+            name: "Blank Issue",
+            icon: "file",
+            defaults: {},
+          })
+        }
       >
         <Plus className="h-4 w-4 shrink-0" />
         <span>Blank</span>

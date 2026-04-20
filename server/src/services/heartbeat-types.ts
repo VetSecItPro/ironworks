@@ -5,10 +5,9 @@
  * heartbeat modules. No database dependencies.
  */
 
-import { appendWithCap, MAX_EXCERPT_BYTES, asNumber, parseObject } from "../adapters/utils.js";
 import type { BillingType } from "@ironworksai/shared";
-import type { AdapterExecutionResult, UsageSummary } from "../adapters/index.js";
-import type { AdapterSessionCodec } from "../adapters/index.js";
+import type { AdapterExecutionResult, AdapterSessionCodec, UsageSummary } from "../adapters/index.js";
+import { appendWithCap, asNumber, MAX_EXCERPT_BYTES, parseObject } from "../adapters/utils.js";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -22,11 +21,7 @@ export const MANAGED_WORKSPACE_GIT_CLONE_TIMEOUT_MS = 10 * 60 * 1000;
 export const HEARTBEAT_TASK_KEY = "__heartbeat__";
 export const MAX_TOOL_OUTPUT_CHARS = 2000;
 
-export const COMPLETION_MARKERS = [
-  "Task complete",
-  "Issue resolved",
-  "No further action needed",
-] as const;
+export const COMPLETION_MARKERS = ["Task complete", "Issue resolved", "No further action needed"] as const;
 
 export const SESSIONED_LOCAL_ADAPTERS = new Set([
   "claude_local",
@@ -45,12 +40,7 @@ export const startLocksByAgent = new Map<string, Promise<void>>();
 
 export type ContextTier = "minimal" | "standard" | "full";
 
-export type TaskTemplateType =
-  | "answer_question"
-  | "write_code"
-  | "write_report"
-  | "review_document"
-  | "routine_check";
+export type TaskTemplateType = "answer_question" | "write_code" | "write_report" | "review_document" | "routine_check";
 
 export const PROMPT_TEMPLATES: Record<
   TaskTemplateType,
@@ -141,10 +131,7 @@ export function resolveLedgerBiller(result: AdapterExecutionResult): string {
   return readNonEmptyString(result.biller) ?? readNonEmptyString(result.provider) ?? "unknown";
 }
 
-export function normalizeBilledCostCents(
-  costUsd: number | null | undefined,
-  billingType: BillingType,
-): number {
+export function normalizeBilledCostCents(costUsd: number | null | undefined, billingType: BillingType): number {
   if (billingType === "subscription_included") return 0;
   if (typeof costUsd !== "number" || !Number.isFinite(costUsd)) return 0;
   return Math.max(0, Math.round(costUsd * 100));
@@ -163,18 +150,12 @@ export function readRawUsageTotals(usageJson: unknown): UsageTotals | null {
   const parsed = parseObject(usageJson);
   if (Object.keys(parsed).length === 0) return null;
 
-  const inputTokens = Math.max(
-    0,
-    Math.floor(asNumber(parsed.rawInputTokens, asNumber(parsed.inputTokens, 0))),
-  );
+  const inputTokens = Math.max(0, Math.floor(asNumber(parsed.rawInputTokens, asNumber(parsed.inputTokens, 0))));
   const cachedInputTokens = Math.max(
     0,
     Math.floor(asNumber(parsed.rawCachedInputTokens, asNumber(parsed.cachedInputTokens, 0))),
   );
-  const outputTokens = Math.max(
-    0,
-    Math.floor(asNumber(parsed.rawOutputTokens, asNumber(parsed.outputTokens, 0))),
-  );
+  const outputTokens = Math.max(0, Math.floor(asNumber(parsed.rawOutputTokens, asNumber(parsed.outputTokens, 0))));
 
   if (inputTokens <= 0 && cachedInputTokens <= 0 && outputTokens <= 0) {
     return null;
@@ -191,17 +172,13 @@ export function deriveNormalizedUsageDelta(
   if (!previous) return { ...current };
 
   const inputTokens =
-    current.inputTokens >= previous.inputTokens
-      ? current.inputTokens - previous.inputTokens
-      : current.inputTokens;
+    current.inputTokens >= previous.inputTokens ? current.inputTokens - previous.inputTokens : current.inputTokens;
   const cachedInputTokens =
     current.cachedInputTokens >= previous.cachedInputTokens
       ? current.cachedInputTokens - previous.cachedInputTokens
       : current.cachedInputTokens;
   const outputTokens =
-    current.outputTokens >= previous.outputTokens
-      ? current.outputTokens - previous.outputTokens
-      : current.outputTokens;
+    current.outputTokens >= previous.outputTokens ? current.outputTokens - previous.outputTokens : current.outputTokens;
 
   return {
     inputTokens: Math.max(0, inputTokens),
@@ -234,16 +211,11 @@ export function normalizeMaxConcurrentRuns(value: unknown) {
 }
 
 export function classifyContextTier(contextSnapshot: Record<string, unknown>): ContextTier {
-  const wakeReason =
-    typeof contextSnapshot.wakeReason === "string" ? contextSnapshot.wakeReason : null;
-  const source =
-    typeof contextSnapshot.wakeSource === "string" ? contextSnapshot.wakeSource : null;
-  const issueId =
-    typeof contextSnapshot.issueId === "string" ? contextSnapshot.issueId : null;
-  const commentId =
-    typeof contextSnapshot.wakeCommentId === "string" ? contextSnapshot.wakeCommentId : null;
-  const approvalId =
-    typeof contextSnapshot.approvalId === "string" ? contextSnapshot.approvalId : null;
+  const wakeReason = typeof contextSnapshot.wakeReason === "string" ? contextSnapshot.wakeReason : null;
+  const source = typeof contextSnapshot.wakeSource === "string" ? contextSnapshot.wakeSource : null;
+  const issueId = typeof contextSnapshot.issueId === "string" ? contextSnapshot.issueId : null;
+  const commentId = typeof contextSnapshot.wakeCommentId === "string" ? contextSnapshot.wakeCommentId : null;
+  const approvalId = typeof contextSnapshot.approvalId === "string" ? contextSnapshot.approvalId : null;
 
   if (approvalId || wakeReason === "approval_approved" || wakeReason === "approval_rejected") {
     return "full";
@@ -267,16 +239,10 @@ export function classifyTaskType(issueTitle: string, labelNames: string[]): Task
   const titleLower = issueTitle.toLowerCase();
   const allText = [titleLower, ...labelNames.map((l) => l.toLowerCase())].join(" ");
 
-  if (
-    /\b(bug|fix|implement|refactor|test|code|build|deploy|ci|pr|pull request|feature)\b/.test(allText)
-  ) {
+  if (/\b(bug|fix|implement|refactor|test|code|build|deploy|ci|pr|pull request|feature)\b/.test(allText)) {
     return "write_code";
   }
-  if (
-    /\b(report|analysis|analyse|analyze|research|audit|review weekly|weekly|summary|findings)\b/.test(
-      allText,
-    )
-  ) {
+  if (/\b(report|analysis|analyse|analyze|research|audit|review weekly|weekly|summary|findings)\b/.test(allText)) {
     return "write_report";
   }
   if (/\b(review|feedback|approve|assess|evaluate)\b/.test(allText)) {
@@ -309,10 +275,7 @@ export function isSameTaskScope(left: string | null, right: string | null) {
   return (left ?? null) === (right ?? null);
 }
 
-export function mergeCoalescedContextSnapshot(
-  existingRaw: unknown,
-  incoming: Record<string, unknown>,
-) {
+export function mergeCoalescedContextSnapshot(existingRaw: unknown, incoming: Record<string, unknown>) {
   const existing = parseObject(existingRaw);
   const merged: Record<string, unknown> = {
     ...existing,
@@ -334,33 +297,33 @@ export function enrichWakeContextSnapshot(input: {
   payload: Record<string, unknown> | null;
 }) {
   const { contextSnapshot, reason, source, triggerDetail, payload } = input;
-  const issueIdFromPayload = readNonEmptyString(payload?.["issueId"]);
-  const commentIdFromPayload = readNonEmptyString(payload?.["commentId"]);
+  const issueIdFromPayload = readNonEmptyString(payload?.issueId);
+  const commentIdFromPayload = readNonEmptyString(payload?.commentId);
   const taskKey = deriveTaskKey(contextSnapshot, payload);
   const wakeCommentId = deriveCommentId(contextSnapshot, payload);
 
-  if (!readNonEmptyString(contextSnapshot["wakeReason"]) && reason) {
+  if (!readNonEmptyString(contextSnapshot.wakeReason) && reason) {
     contextSnapshot.wakeReason = reason;
   }
-  if (!readNonEmptyString(contextSnapshot["issueId"]) && issueIdFromPayload) {
+  if (!readNonEmptyString(contextSnapshot.issueId) && issueIdFromPayload) {
     contextSnapshot.issueId = issueIdFromPayload;
   }
-  if (!readNonEmptyString(contextSnapshot["taskId"]) && issueIdFromPayload) {
+  if (!readNonEmptyString(contextSnapshot.taskId) && issueIdFromPayload) {
     contextSnapshot.taskId = issueIdFromPayload;
   }
-  if (!readNonEmptyString(contextSnapshot["taskKey"]) && taskKey) {
+  if (!readNonEmptyString(contextSnapshot.taskKey) && taskKey) {
     contextSnapshot.taskKey = taskKey;
   }
-  if (!readNonEmptyString(contextSnapshot["commentId"]) && commentIdFromPayload) {
+  if (!readNonEmptyString(contextSnapshot.commentId) && commentIdFromPayload) {
     contextSnapshot.commentId = commentIdFromPayload;
   }
-  if (!readNonEmptyString(contextSnapshot["wakeCommentId"]) && wakeCommentId) {
+  if (!readNonEmptyString(contextSnapshot.wakeCommentId) && wakeCommentId) {
     contextSnapshot.wakeCommentId = wakeCommentId;
   }
-  if (!readNonEmptyString(contextSnapshot["wakeSource"]) && source) {
+  if (!readNonEmptyString(contextSnapshot.wakeSource) && source) {
     contextSnapshot.wakeSource = source;
   }
-  if (!readNonEmptyString(contextSnapshot["wakeTriggerDetail"]) && triggerDetail) {
+  if (!readNonEmptyString(contextSnapshot.wakeTriggerDetail) && triggerDetail) {
     contextSnapshot.wakeTriggerDetail = triggerDetail;
   }
 
@@ -401,9 +364,7 @@ export function deriveTaskKeyWithHeartbeatFallback(
   return null;
 }
 
-export function shouldResetTaskSessionForWake(
-  contextSnapshot: Record<string, unknown> | null | undefined,
-) {
+export function shouldResetTaskSessionForWake(contextSnapshot: Record<string, unknown> | null | undefined) {
   if (contextSnapshot?.forceFreshSession === true) return true;
 
   const wakeReason = readNonEmptyString(contextSnapshot?.wakeReason);
@@ -411,9 +372,7 @@ export function shouldResetTaskSessionForWake(
   return false;
 }
 
-export function describeSessionResetReason(
-  contextSnapshot: Record<string, unknown> | null | undefined,
-) {
+export function describeSessionResetReason(contextSnapshot: Record<string, unknown> | null | undefined) {
   if (contextSnapshot?.forceFreshSession === true) return "forceFreshSession was requested";
 
   const wakeReason = readNonEmptyString(contextSnapshot?.wakeReason);
@@ -433,15 +392,11 @@ export function deriveCommentId(
   );
 }
 
-export function parseIssueAssigneeAdapterOverrides(
-  raw: unknown,
-): ParsedIssueAssigneeAdapterOverrides | null {
+export function parseIssueAssigneeAdapterOverrides(raw: unknown): ParsedIssueAssigneeAdapterOverrides | null {
   const parsed = parseObject(raw);
   const parsedAdapterConfig = parseObject(parsed.adapterConfig);
-  const adapterConfig =
-    Object.keys(parsedAdapterConfig).length > 0 ? parsedAdapterConfig : null;
-  const useProjectWorkspace =
-    typeof parsed.useProjectWorkspace === "boolean" ? parsed.useProjectWorkspace : null;
+  const adapterConfig = Object.keys(parsedAdapterConfig).length > 0 ? parsedAdapterConfig : null;
+  const useProjectWorkspace = typeof parsed.useProjectWorkspace === "boolean" ? parsed.useProjectWorkspace : null;
   if (!adapterConfig && useProjectWorkspace === null) return null;
   return {
     adapterConfig,
@@ -456,8 +411,7 @@ export function resolveNextSessionState(input: {
   previousDisplayId: string | null;
   previousLegacySessionId: string | null;
 }) {
-  const { codec, adapterResult, previousParams, previousDisplayId, previousLegacySessionId } =
-    input;
+  const { codec, adapterResult, previousParams, previousDisplayId, previousLegacySessionId } = input;
 
   if (adapterResult.clearSession) {
     return {
@@ -483,9 +437,7 @@ export function resolveNextSessionState(input: {
         : null
       : previousParams;
 
-  const serialized = normalizeSessionParams(
-    codec.serialize(normalizeSessionParams(candidateParams) ?? null),
-  );
+  const serialized = normalizeSessionParams(codec.serialize(normalizeSessionParams(candidateParams) ?? null));
   const deserialized = normalizeSessionParams(codec.deserialize(serialized));
 
   const displayId = truncateDisplayId(
@@ -563,7 +515,7 @@ export function compressToolOutput(toolName: string, output: string): string {
   }
 
   if (compressed.length > MAX_TOOL_OUTPUT_CHARS) {
-    compressed = compressed.slice(0, MAX_TOOL_OUTPUT_CHARS) + " [truncated]";
+    compressed = `${compressed.slice(0, MAX_TOOL_OUTPUT_CHARS)} [truncated]`;
   }
 
   return compressed;
@@ -584,17 +536,13 @@ export function buildExplicitResumeSessionOverride(input: {
   taskSession: ResumeSessionRow | null;
   sessionCodec: AdapterSessionCodec;
 }) {
-  const desiredDisplayId = truncateDisplayId(
-    input.resumeRunSessionIdAfter ?? input.resumeRunSessionIdBefore,
-  );
+  const desiredDisplayId = truncateDisplayId(input.resumeRunSessionIdAfter ?? input.resumeRunSessionIdBefore);
   const taskSessionParams = normalizeSessionParams(
     input.sessionCodec.deserialize(input.taskSession?.sessionParamsJson ?? null),
   );
   const taskSessionDisplayId = truncateDisplayId(
     input.taskSession?.sessionDisplayId ??
-      (input.sessionCodec.getDisplayId
-        ? input.sessionCodec.getDisplayId(taskSessionParams)
-        : null) ??
+      (input.sessionCodec.getDisplayId ? input.sessionCodec.getDisplayId(taskSessionParams) : null) ??
       readNonEmptyString(taskSessionParams?.sessionId),
   );
   const canReuseTaskSessionParams =
@@ -606,8 +554,7 @@ export function buildExplicitResumeSessionOverride(input: {
     : desiredDisplayId
       ? { sessionId: desiredDisplayId }
       : null;
-  const sessionDisplayId =
-    desiredDisplayId ?? (canReuseTaskSessionParams ? taskSessionDisplayId : null);
+  const sessionDisplayId = desiredDisplayId ?? (canReuseTaskSessionParams ? taskSessionDisplayId : null);
 
   if (!sessionDisplayId && !sessionParams) return null;
   return {

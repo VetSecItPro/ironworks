@@ -1,6 +1,6 @@
-import { and, eq, gte, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { agents, approvals, companies, costEvents, issues } from "@ironworksai/db";
+import { and, eq, gte, sql } from "drizzle-orm";
 import { notFound } from "../errors.js";
 import { budgetService } from "./budgets.js";
 
@@ -69,20 +69,12 @@ export function dashboardService(db: Db) {
             monthSpend: sql<number>`coalesce(sum(${costEvents.costCents}), 0)::int`,
           })
           .from(costEvents)
-          .where(
-            and(
-              eq(costEvents.companyId, companyId),
-              gte(costEvents.occurredAt, monthStart),
-            ),
-          ),
+          .where(and(eq(costEvents.companyId, companyId), gte(costEvents.occurredAt, monthStart))),
         budgets.overview(companyId),
       ]);
 
       const monthSpendCents = Number(monthSpend);
-      const utilization =
-        company.budgetMonthlyCents > 0
-          ? (monthSpendCents / company.budgetMonthlyCents) * 100
-          : 0;
+      const utilization = company.budgetMonthlyCents > 0 ? (monthSpendCents / company.budgetMonthlyCents) * 100 : 0;
 
       return {
         companyId,

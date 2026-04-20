@@ -1,9 +1,9 @@
 import type { PluginRecord } from "@ironworksai/shared";
 import { AlertTriangle, Power, Puzzle, Settings, Trash } from "lucide-react";
-import { Link } from "@/lib/router";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Link } from "@/lib/router";
 import { cn } from "@/lib/utils";
 
 interface InstalledPluginsSectionProps {
@@ -39,9 +39,7 @@ export function InstalledPluginsSection({
           <CardContent className="flex flex-col items-center justify-center py-10">
             <Puzzle className="h-10 w-10 text-muted-foreground mb-4" />
             <p className="text-sm font-medium">No plugins installed</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Install a plugin to extend functionality.
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">Install a plugin to extend functionality.</p>
           </CardContent>
         </Card>
       ) : (
@@ -58,9 +56,7 @@ export function InstalledPluginsSection({
                     >
                       {plugin.manifestJson.displayName ?? plugin.packageName}
                     </Link>
-                    {examplePackageNames.has(plugin.packageName) && (
-                      <Badge variant="outline">Example</Badge>
-                    )}
+                    {examplePackageNames.has(plugin.packageName) && <Badge variant="outline">Example</Badge>}
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground mt-0.5 truncate" title={plugin.packageName}>
@@ -106,12 +102,9 @@ export function InstalledPluginsSection({
                             ? "default"
                             : plugin.status === "error"
                               ? "destructive"
-                            : "secondary"
+                              : "secondary"
                         }
-                        className={cn(
-                          "shrink-0",
-                          plugin.status === "ready" ? "bg-green-600 hover:bg-green-700" : ""
-                        )}
+                        className={cn("shrink-0", plugin.status === "ready" ? "bg-green-600 hover:bg-green-700" : "")}
                       >
                         {plugin.status}
                       </Badge>

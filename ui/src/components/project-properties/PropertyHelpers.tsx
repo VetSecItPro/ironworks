@@ -1,10 +1,10 @@
-import { useState } from "react";
 import type { Project } from "@ironworksai/shared";
-import { cn } from "../../lib/utils";
-import { statusBadge, statusBadgeDefault } from "../../lib/status-colors";
+import { AlertCircle, Archive, ArchiveRestore, Check, Loader2, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { AlertCircle, Archive, ArchiveRestore, Check, Loader2, Trash2 } from "lucide-react";
+import { statusBadge, statusBadgeDefault } from "../../lib/status-colors";
+import { cn } from "../../lib/utils";
 import type { ProjectFieldSaveState } from "./types";
 
 const PROJECT_STATUSES = [
@@ -43,13 +43,7 @@ export function SaveIndicator({ state }: { state: ProjectFieldSaveState }) {
   return null;
 }
 
-export function FieldLabel({
-  label,
-  state,
-}: {
-  label: string;
-  state: ProjectFieldSaveState;
-}) {
+export function FieldLabel({ label, state }: { label: string; state: ProjectFieldSaveState }) {
   return (
     <div className="flex items-center gap-1.5">
       <span className="text-xs text-muted-foreground">{label}</span>
@@ -87,6 +81,7 @@ export function ProjectStatusPicker({ status, onChange }: { status: string; onCh
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
+          type="button"
           className={cn(
             "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap shrink-0 cursor-pointer hover:opacity-80 transition-opacity",
             colorClass,
@@ -145,7 +140,14 @@ export function ArchiveDangerZone({
           <span className="text-sm text-destructive font-medium">
             {action} &ldquo;{project.name}&rdquo;?
           </span>
-          <Button size="sm" variant="destructive" onClick={() => { setConfirming(false); onArchive(isArchive); }}>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => {
+              setConfirming(false);
+              onArchive(isArchive);
+            }}
+          >
             Confirm
           </Button>
           <Button size="sm" variant="outline" onClick={() => setConfirming(false)}>
@@ -155,9 +157,15 @@ export function ArchiveDangerZone({
       ) : (
         <Button size="sm" variant="destructive" onClick={() => setConfirming(true)}>
           {isArchive ? (
-            <><Archive className="h-3 w-3 mr-1" />{action} project</>
+            <>
+              <Archive className="h-3 w-3 mr-1" />
+              {action} project
+            </>
           ) : (
-            <><ArchiveRestore className="h-3 w-3 mr-1" />{action} project</>
+            <>
+              <ArchiveRestore className="h-3 w-3 mr-1" />
+              {action} project
+            </>
           )}
         </Button>
       )}
@@ -191,7 +199,14 @@ export function DeleteDangerZone({
           <span className="text-sm text-destructive font-medium">
             Delete &ldquo;{project.name}&rdquo;? This cannot be undone.
           </span>
-          <Button size="sm" variant="destructive" onClick={() => { setConfirming(false); onDelete(); }}>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => {
+              setConfirming(false);
+              onDelete();
+            }}
+          >
             Delete permanently
           </Button>
           <Button size="sm" variant="outline" onClick={() => setConfirming(false)}>

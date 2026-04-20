@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -20,22 +20,22 @@ const MOCK_COMPANY = {
 
 // ── DB mock ─────────────────────────────────────────────────────────────────
 
-const mockSelect = vi.hoisted(() => vi.fn());
-const mockFrom = vi.hoisted(() => vi.fn());
-const mockWhere = vi.hoisted(() => vi.fn());
-const mockOrderBy = vi.hoisted(() => vi.fn());
-const mockLimit = vi.hoisted(() => vi.fn());
-const mockGroupBy = vi.hoisted(() => vi.fn());
-const mockLeftJoin = vi.hoisted(() => vi.fn());
-const mockInnerJoin = vi.hoisted(() => vi.fn());
-const mockUpdate = vi.hoisted(() => vi.fn());
-const mockSet = vi.hoisted(() => vi.fn());
-const mockReturning = vi.hoisted(() => vi.fn());
-const mockExecute = vi.hoisted(() => vi.fn());
-const mockThen = vi.hoisted(() => vi.fn());
+const _mockSelect = vi.hoisted(() => vi.fn());
+const _mockFrom = vi.hoisted(() => vi.fn());
+const _mockWhere = vi.hoisted(() => vi.fn());
+const _mockOrderBy = vi.hoisted(() => vi.fn());
+const _mockLimit = vi.hoisted(() => vi.fn());
+const _mockGroupBy = vi.hoisted(() => vi.fn());
+const _mockLeftJoin = vi.hoisted(() => vi.fn());
+const _mockInnerJoin = vi.hoisted(() => vi.fn());
+const _mockUpdate = vi.hoisted(() => vi.fn());
+const _mockSet = vi.hoisted(() => vi.fn());
+const _mockReturning = vi.hoisted(() => vi.fn());
+const _mockExecute = vi.hoisted(() => vi.fn());
+const _mockThen = vi.hoisted(() => vi.fn());
 
 function buildChainableQuery(defaultResult: unknown = []) {
-  const chain: Record<string, any> = {};
+  const chain: Record<string, unknown> = {};
   chain.select = vi.fn().mockReturnValue(chain);
   chain.from = vi.fn().mockReturnValue(chain);
   chain.where = vi.fn().mockReturnValue(chain);
@@ -48,15 +48,20 @@ function buildChainableQuery(defaultResult: unknown = []) {
   chain.set = vi.fn().mockReturnValue(chain);
   chain.returning = vi.fn().mockReturnValue(chain);
   chain.execute = vi.fn().mockResolvedValue(defaultResult);
+  // biome-ignore lint/suspicious/noThenProperty: test mock drizzle thenable contract
+  // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
   chain.then = vi.fn().mockImplementation((resolve: any) => resolve(defaultResult));
   return chain;
 }
 
 const mockLogActivity = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 
-vi.mock("../services/index.js", () => ({
-  logActivity: mockLogActivity,
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    logActivity: mockLogActivity,
+  });
+});
 
 vi.mock("../services/activity-log.js", () => ({
   logActivity: mockLogActivity,
@@ -91,6 +96,7 @@ async function createApp(actor: Record<string, unknown>) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });
@@ -100,19 +106,24 @@ async function createApp(actor: Record<string, unknown>) {
   // Make the db itself callable for select/update/execute
   const dbProxy = new Proxy(fakeDb, {
     get(target, prop) {
-      if (prop === "select") return (...args: any[]) => {
-        const chain = buildChainableQuery([{ count: 0 }]);
-        return chain;
-      };
-      if (prop === "update") return (...args: any[]) => {
-        const chain = buildChainableQuery([MOCK_COMPANY]);
-        return chain;
-      };
+      if (prop === "select")
+        // biome-ignore lint/suspicious/noExplicitAny: noExplicitAny in test file — mock or test-only type cast
+        return (..._args: any[]) => {
+          const chain = buildChainableQuery([{ count: 0 }]);
+          return chain;
+        };
+      if (prop === "update")
+        // biome-ignore lint/suspicious/noExplicitAny: noExplicitAny in test file — mock or test-only type cast
+        return (..._args: any[]) => {
+          const chain = buildChainableQuery([MOCK_COMPANY]);
+          return chain;
+        };
       if (prop === "execute") return vi.fn().mockResolvedValue([{ size_bytes: 1024 }]);
       return target[prop as string];
     },
   });
 
+  // biome-ignore lint/suspicious/noExplicitAny: test-only type cast to satisfy service/function signature in unit test context
   app.use("/api/admin", adminRoutes(dbProxy as any));
   app.use(errorHandler);
   return app;

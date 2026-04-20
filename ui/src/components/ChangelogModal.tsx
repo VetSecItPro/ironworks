@@ -1,12 +1,7 @@
-import { useState, useEffect } from "react";
 import { Bell, Check, Gift, Wrench, Zap } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "../lib/utils";
 
 /* ------------------------------------------------------------------ */
@@ -28,7 +23,9 @@ function getReadIds(): Set<string> {
   try {
     const raw = localStorage.getItem(CHANGELOG_READ_KEY);
     if (raw) return new Set(JSON.parse(raw) as string[]);
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return new Set();
 }
 
@@ -47,7 +44,8 @@ const CHANGELOG: ChangelogEntry[] = [
     version: "0.12.70",
     date: "2026-04-05",
     title: "Platform Health Dashboard",
-    description: "New real-time system status page showing API, database, agent runtime, and integration health with performance metrics and auto-refresh.",
+    description:
+      "New real-time system status page showing API, database, agent runtime, and integration health with performance metrics and auto-refresh.",
     type: "feature",
   },
   {
@@ -55,7 +53,8 @@ const CHANGELOG: ChangelogEntry[] = [
     version: "0.12.63",
     date: "2026-04-05",
     title: "SLA & Service Level Management",
-    description: "Configure response and resolution time targets per priority level. Track compliance rates and SLA breaches with countdown timers on issues.",
+    description:
+      "Configure response and resolution time targets per priority level. Track compliance rates and SLA breaches with countdown timers on issues.",
     type: "feature",
   },
   {
@@ -63,7 +62,8 @@ const CHANGELOG: ChangelogEntry[] = [
     version: "0.12.67",
     date: "2026-04-05",
     title: "Advanced Playbook Features",
-    description: "Conditional step logic with skip-on-failure toggles, playbook parameters for runtime variables, and dry-run simulation mode.",
+    description:
+      "Conditional step logic with skip-on-failure toggles, playbook parameters for runtime variables, and dry-run simulation mode.",
     type: "improvement",
   },
   {
@@ -71,7 +71,8 @@ const CHANGELOG: ChangelogEntry[] = [
     version: "0.12.74",
     date: "2026-04-05",
     title: "Smart Priority Suggestions & Duplicate Detection",
-    description: "AI-powered priority suggestions based on issue title keywords and automatic duplicate issue detection when creating new issues.",
+    description:
+      "AI-powered priority suggestions based on issue title keywords and automatic duplicate issue detection when creating new issues.",
     type: "feature",
   },
   {
@@ -79,7 +80,8 @@ const CHANGELOG: ChangelogEntry[] = [
     version: "0.12.62",
     date: "2026-04-05",
     title: "Custom Workflow & Status Configuration",
-    description: "Define custom issue statuses beyond the defaults, map them to open/closed categories, and add custom fields (text, number, date, select) to issues.",
+    description:
+      "Define custom issue statuses beyond the defaults, map them to open/closed categories, and add custom fields (text, number, date, select) to issues.",
     type: "feature",
   },
 ];
@@ -90,21 +92,36 @@ const CHANGELOG: ChangelogEntry[] = [
 
 const TYPE_CONFIG: Record<ChangelogEntry["type"], { icon: React.ElementType; color: string; label: string }> = {
   feature: { icon: Gift, color: "text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/40", label: "New" },
-  improvement: { icon: Zap, color: "text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40", label: "Improved" },
-  fix: { icon: Wrench, color: "text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/40", label: "Fixed" },
+  improvement: {
+    icon: Zap,
+    color: "text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40",
+    label: "Improved",
+  },
+  fix: {
+    icon: Wrench,
+    color: "text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/40",
+    label: "Fixed",
+  },
 };
 
 function EntryCard({ entry, isNew }: { entry: ChangelogEntry; isNew: boolean }) {
   const cfg = TYPE_CONFIG[entry.type];
   const Icon = cfg.icon;
   return (
-    <div className={cn(
-      "rounded-lg border border-border p-4 transition-colors",
-      isNew && "ring-1 ring-primary/30 bg-primary/5",
-    )}>
+    <div
+      className={cn(
+        "rounded-lg border border-border p-4 transition-colors",
+        isNew && "ring-1 ring-primary/30 bg-primary/5",
+      )}
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className={cn("inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium", cfg.color)}>
+          <span
+            className={cn(
+              "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium",
+              cfg.color,
+            )}
+          >
             <Icon className="h-3 w-3" />
             {cfg.label}
           </span>
@@ -138,11 +155,7 @@ export function useChangelogUnread(): number {
 export function ChangelogTrigger({ onClick }: { onClick: () => void }) {
   const unread = useChangelogUnread();
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="relative hover:text-foreground transition-colors"
-    >
+    <button type="button" onClick={onClick} className="relative hover:text-foreground transition-colors">
       What&apos;s New
       {unread > 0 && (
         <span className="absolute -top-1.5 -right-2 h-3.5 min-w-[14px] rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center px-0.5">
@@ -157,13 +170,7 @@ export function ChangelogTrigger({ onClick }: { onClick: () => void }) {
 /*  Modal                                                              */
 /* ------------------------------------------------------------------ */
 
-export function ChangelogModal({
-  open,
-  onOpenChange,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
+export function ChangelogModal({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const [readIds, setReadIds] = useState<Set<string>>(() => getReadIds());
 
   function handleMarkAllRead() {
@@ -197,11 +204,7 @@ export function ChangelogModal({
 
         <div className="flex-1 overflow-y-auto space-y-3 pr-1">
           {CHANGELOG.map((entry) => (
-            <EntryCard
-              key={entry.id}
-              entry={entry}
-              isNew={!readIds.has(entry.id)}
-            />
+            <EntryCard key={entry.id} entry={entry} isNew={!readIds.has(entry.id)} />
           ))}
         </div>
 

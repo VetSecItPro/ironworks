@@ -32,22 +32,22 @@
   <link rel="stylesheet" href="/design-system.css">
   <style>
     .prose h2 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; margin-top: 2.5rem; margin-bottom: 1rem; color: #fff; }
-    .prose h3 { font-size: 1.125rem; font-weight: 600; margin-top: 2rem; margin-bottom: 0.75rem; color: #e4e4e7; }
-    .prose p { color: #a1a1aa; line-height: 1.75; margin-bottom: 1rem; }
-    .prose ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 1rem; color: #a1a1aa; }
-    .prose ol { list-style: decimal; padding-left: 1.5rem; margin-bottom: 1rem; color: #a1a1aa; }
-    .prose li { margin-bottom: 0.4rem; line-height: 1.7; }
-    .prose strong { color: #e4e4e7; font-weight: 600; }
-    .prose a { color: #60a5fa; text-decoration: underline; text-underline-offset: 2px; }
-    .prose a:hover { color: #93c5fd; }
-    .prose code { font-family: 'Geist Mono', monospace; background: #1e1e1e; border: 1px solid #282828; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.85em; color: #e4e4e7; }
-    .prose pre { background: #141414; border: 1px solid #282828; border-radius: 10px; padding: 1.25rem; overflow-x: auto; margin-bottom: 1.25rem; }
-    .prose pre code { background: none; border: none; padding: 0; font-size: 0.875rem; }
-    .prose table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; font-size: 0.9rem; }
-    .prose th { text-align: left; padding: 0.6rem 0.75rem; border-bottom: 1px solid #282828; color: #e4e4e7; font-weight: 600; }
-    .prose td { padding: 0.6rem 0.75rem; border-bottom: 1px solid #1e1e1e; color: #a1a1aa; }
-    .prose blockquote { border-left: 3px solid #3b82f6; padding-left: 1rem; color: #a1a1aa; margin: 1.5rem 0; font-style: italic; }
-    .prose hr { border-color: #282828; margin: 2rem 0; }
+                        .prose h3 { font-size: 1.125rem; font-weight: 600; margin-top: 2rem; margin-bottom: 0.75rem; color: #e4e4e7; }
+                        .prose p { color: #a1a1aa; line-height: 1.75; margin-bottom: 1rem; }
+                        .prose ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 1rem; color: #a1a1aa; }
+                        .prose ol { list-style: decimal; padding-left: 1.5rem; margin-bottom: 1rem; color: #a1a1aa; }
+                        .prose li { margin-bottom: 0.4rem; line-height: 1.7; }
+                        .prose strong { color: #e4e4e7; font-weight: 600; }
+                        .prose a { color: #60a5fa; text-decoration: underline; text-underline-offset: 2px; }
+                        .prose a:hover { color: #93c5fd; }
+                        .prose code { font-family: 'Geist Mono', monospace; background: #1e1e1e; border: 1px solid #282828; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.85em; color: #e4e4e7; }
+                        .prose pre { background: #141414; border: 1px solid #282828; border-radius: 10px; padding: 1.25rem; overflow-x: auto; margin-bottom: 1.25rem; }
+                        .prose pre code { background: none; border: none; padding: 0; font-size: 0.875rem; }
+                        .prose table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; font-size: 0.9rem; }
+                        .prose th { text-align: left; padding: 0.6rem 0.75rem; border-bottom: 1px solid #282828; color: #e4e4e7; font-weight: 600; }
+                        .prose td { padding: 0.6rem 0.75rem; border-bottom: 1px solid #1e1e1e; color: #a1a1aa; }
+                        .prose blockquote { border-left: 3px solid #3b82f6; padding-left: 1rem; color: #a1a1aa; margin: 1.5rem 0; font-style: italic; }
+                        .prose hr { border-color: #282828; margin: 2rem 0; }
   </style>
 
   <script type="application/ld+json">
@@ -99,7 +99,7 @@
       <div class="flex items-center gap-3">
         <a href="/auth" class="text-sm text-zinc-400 hover:text-white transition-colors hidden sm:block">Log in</a>
         <a href="/pricing.html" class="text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-colors hidden sm:inline-flex">Get Started</a>
-        <button id="nav-toggle" class="md:hidden p-3 text-zinc-400 hover:text-white" aria-label="Toggle navigation" aria-expanded="false" aria-controls="mobile-nav">
+        <button type="button" id="nav-toggle" class="md:hidden p-3 text-zinc-400 hover:text-white" aria-label="Toggle navigation" aria-expanded="false" aria-controls="mobile-nav">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
       </div>
@@ -330,6 +330,6 @@
     </div>
   </footer>
 
-  <script>(function(){var t=document.getElementById("nav-toggle"),n=document.getElementById("mobile-nav");if(t&&n){t.addEventListener("click",function(){var open=n.classList.toggle("hidden");t.setAttribute("aria-expanded",open?"false":"true");});}})();</script>
+  <script>(()=> {var t=document.getElementById("nav-toggle"),n=document.getElementById("mobile-nav");if(t&&n){t.addEventListener("click",()=> {var open=n.classList.toggle("hidden");t.setAttribute("aria-expanded",open?"false":"true");});}})();</script>
 </body>
 </html>

@@ -1,4 +1,22 @@
+import { buildAgentMentionHref, buildProjectMentionHref } from "@ironworksai/shared";
 import {
+  codeBlockPlugin,
+  codeMirrorPlugin,
+  headingsPlugin,
+  imagePlugin,
+  linkDialogPlugin,
+  linkPlugin,
+  listsPlugin,
+  MDXEditor,
+  type MDXEditorMethods,
+  markdownShortcutPlugin,
+  quotePlugin,
+  type RealmPlugin,
+  tablePlugin,
+  thematicBreakPlugin,
+} from "@mdxeditor/editor";
+import {
+  type DragEvent,
   forwardRef,
   useCallback,
   useEffect,
@@ -6,51 +24,31 @@ import {
   useMemo,
   useRef,
   useState,
-  type DragEvent,
 } from "react";
-import {
-  MDXEditor,
-  codeBlockPlugin,
-  codeMirrorPlugin,
-  type MDXEditorMethods,
-  headingsPlugin,
-  imagePlugin,
-  linkDialogPlugin,
-  linkPlugin,
-  listsPlugin,
-  markdownShortcutPlugin,
-  quotePlugin,
-  tablePlugin,
-  thematicBreakPlugin,
-  type RealmPlugin,
-} from "@mdxeditor/editor";
-import { buildAgentMentionHref, buildProjectMentionHref } from "@ironworksai/shared";
-import { applyMentionChipDecoration, clearMentionChipDecoration, parseMentionChipHref } from "../../lib/mention-chips";
 import { MentionAwareLinkNode, mentionAwareLinkNodeReplacement } from "../../lib/mention-aware-link-node";
+import { applyMentionChipDecoration, clearMentionChipDecoration, parseMentionChipHref } from "../../lib/mention-chips";
 import { mentionDeletionPlugin } from "../../lib/mention-deletion";
 import { cn } from "../../lib/utils";
-import type { MarkdownEditorProps, MarkdownEditorRef, MentionOption } from "./types";
-import { detectMention, applyMention, type MentionState } from "./mention-helpers";
-import {
-  CODE_BLOCK_LANGUAGES,
-  FALLBACK_CODE_BLOCK_DESCRIPTOR,
-  escapeRegExp,
-  isSafeMarkdownLinkUrl,
-} from "./constants";
+import { CODE_BLOCK_LANGUAGES, escapeRegExp, FALLBACK_CODE_BLOCK_DESCRIPTOR, isSafeMarkdownLinkUrl } from "./constants";
 import { MentionDropdown } from "./MentionDropdown";
+import { applyMention, detectMention, type MentionState } from "./mention-helpers";
+import type { MarkdownEditorProps, MarkdownEditorRef, MentionOption } from "./types";
 
-export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(function MarkdownEditor({
-  value,
-  onChange,
-  placeholder,
-  className,
-  contentClassName,
-  onBlur,
-  imageUploadHandler,
-  bordered = true,
-  mentions,
-  onSubmit,
-}: MarkdownEditorProps, forwardedRef) {
+export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>(function MarkdownEditor(
+  {
+    value,
+    onChange,
+    placeholder,
+    className,
+    contentClassName,
+    onBlur,
+    imageUploadHandler,
+    bordered = true,
+    mentions,
+    onSubmit,
+  }: MarkdownEditorProps,
+  forwardedRef,
+) {
   const containerRef = useRef<HTMLDivElement>(null);
   const ref = useRef<MDXEditorMethods>(null);
   const latestValueRef = useRef(value);
@@ -85,11 +83,15 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
     return mentions.filter((m) => m.name.toLowerCase().includes(q)).slice(0, 8);
   }, [mentionState?.query, mentions]);
 
-  useImperativeHandle(forwardedRef, () => ({
-    focus: () => {
-      ref.current?.focus(undefined, { defaultSelection: "rootEnd" });
-    },
-  }), []);
+  useImperativeHandle(
+    forwardedRef,
+    () => ({
+      focus: () => {
+        ref.current?.focus(undefined, { defaultSelection: "rootEnd" });
+      },
+    }),
+    [],
+  );
 
   const hasImageUpload = Boolean(imageUploadHandler);
 
@@ -243,12 +245,10 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
           decorateProjectMentions();
           editable.focus();
 
-          const mentionHref = option.kind === "project" && option.projectId
-            ? buildProjectMentionHref(option.projectId, option.projectColor ?? null)
-            : buildAgentMentionHref(
-                option.agentId ?? option.id.replace(/^agent:/, ""),
-                option.agentIcon ?? null,
-              );
+          const mentionHref =
+            option.kind === "project" && option.projectId
+              ? buildProjectMentionHref(option.projectId, option.projectColor ?? null)
+              : buildAgentMentionHref(option.agentId ?? option.id.replace(/^agent:/, ""), option.agentIcon ?? null);
           const matchingMentions = Array.from(editable.querySelectorAll("a"))
             .filter((node): node is HTMLAnchorElement => node instanceof HTMLAnchorElement)
             .filter((link) => {
@@ -256,17 +256,18 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
               return href === mentionHref && link.textContent === `@${option.name}`;
             });
           const containerRect = containerRef.current?.getBoundingClientRect();
-          const target = matchingMentions.sort((a, b) => {
-            const rectA = a.getBoundingClientRect();
-            const rectB = b.getBoundingClientRect();
-            const leftA = containerRect ? rectA.left - containerRect.left : rectA.left;
-            const topA = containerRect ? rectA.top - containerRect.top : rectA.top;
-            const leftB = containerRect ? rectB.left - containerRect.left : rectB.left;
-            const topB = containerRect ? rectB.top - containerRect.top : rectB.top;
-            const distA = Math.hypot(leftA - state.left, topA - state.top);
-            const distB = Math.hypot(leftB - state.left, topB - state.top);
-            return distA - distB;
-          })[0] ?? null;
+          const target =
+            matchingMentions.sort((a, b) => {
+              const rectA = a.getBoundingClientRect();
+              const rectB = b.getBoundingClientRect();
+              const leftA = containerRect ? rectA.left - containerRect.left : rectA.left;
+              const topA = containerRect ? rectA.top - containerRect.top : rectA.top;
+              const leftB = containerRect ? rectB.left - containerRect.left : rectB.left;
+              const topB = containerRect ? rectB.top - containerRect.top : rectB.top;
+              const distA = Math.hypot(leftA - state.left, topA - state.top);
+              const distB = Math.hypot(leftB - state.left, topB - state.top);
+              return distA - distB;
+            })[0] ?? null;
           if (!target) return;
 
           const selection = window.getSelection();
@@ -304,6 +305,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
   const canDropImage = Boolean(imageUploadHandler);
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: editor container handles keyboard shortcuts and drag-drop, not click interaction
     <div
       ref={containerRef}
       className={cn(
@@ -413,9 +415,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
           Drop image to upload
         </div>
       )}
-      {uploadError && (
-        <p className="px-3 pb-2 text-xs text-destructive">{uploadError}</p>
-      )}
+      {uploadError && <p className="px-3 pb-2 text-xs text-destructive">{uploadError}</p>}
     </div>
   );
 });

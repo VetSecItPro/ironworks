@@ -1,6 +1,6 @@
+import { Maximize2, Minimize2, Palette, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Palette, Minimize2, Maximize2, RotateCcw } from "lucide-react";
 import { cn } from "../../lib/utils";
 
 const PREFIX = "ironworks:prefs";
@@ -25,7 +25,9 @@ export function loadViewPrefs(): Record<string, ViewPreference> {
   try {
     const raw = localStorage.getItem(VIEW_PREFS_KEY);
     if (raw) return JSON.parse(raw) as Record<string, ViewPreference>;
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return {};
 }
 
@@ -34,7 +36,9 @@ export function saveViewPref(page: string, pref: Partial<ViewPreference>) {
   prefs[page] = { ...prefs[page], page, ...pref };
   try {
     localStorage.setItem(VIEW_PREFS_KEY, JSON.stringify(prefs));
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 export function getViewPref(page: string): ViewPreference | null {
@@ -57,12 +61,18 @@ const ACCENT_COLORS = [
 ];
 
 export function loadAccentColor(): string | null {
-  try { return localStorage.getItem(ACCENT_KEY); }
-  catch { return null; }
+  try {
+    return localStorage.getItem(ACCENT_KEY);
+  } catch {
+    return null;
+  }
 }
 
 export function applyAccentColor(hsl: string | null) {
-  if (!hsl) { document.documentElement.style.removeProperty("--primary"); return; }
+  if (!hsl) {
+    document.documentElement.style.removeProperty("--primary");
+    return;
+  }
   document.documentElement.style.setProperty("--primary", hsl);
 }
 
@@ -75,7 +85,9 @@ export function AccentColorPicker() {
     try {
       if (hsl) localStorage.setItem(ACCENT_KEY, hsl);
       else localStorage.removeItem(ACCENT_KEY);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 
   return (
@@ -119,13 +131,19 @@ export function AccentColorPicker() {
 // ---------------------------------------------------------------------------
 
 export function isCompactMode(): boolean {
-  try { return localStorage.getItem(COMPACT_KEY) === "1"; }
-  catch { return false; }
+  try {
+    return localStorage.getItem(COMPACT_KEY) === "1";
+  } catch {
+    return false;
+  }
 }
 
 export function setCompactMode(enabled: boolean) {
-  try { localStorage.setItem(COMPACT_KEY, enabled ? "1" : "0"); }
-  catch { /* ignore */ }
+  try {
+    localStorage.setItem(COMPACT_KEY, enabled ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
   if (enabled) document.documentElement.classList.add("compact");
   else document.documentElement.classList.remove("compact");
 }
@@ -155,11 +173,16 @@ export function loadSidebarWidth(): number {
   try {
     const raw = localStorage.getItem(SIDEBAR_WIDTH_KEY);
     if (raw) return Number(raw);
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return 240;
 }
 
 export function saveSidebarWidth(width: number) {
-  try { localStorage.setItem(SIDEBAR_WIDTH_KEY, String(width)); }
-  catch { /* ignore */ }
+  try {
+    localStorage.setItem(SIDEBAR_WIDTH_KEY, String(width));
+  } catch {
+    /* ignore */
+  }
 }

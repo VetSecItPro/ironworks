@@ -1,15 +1,8 @@
-import type {
-  ModelStrategy,
-  TaskImportance,
-} from "@ironworksai/shared";
-import {
-  CRITICAL_TASK_LABELS,
-  IMPORTANT_TASK_LABELS,
-  WESTERN_COUNCIL_MODELS,
-} from "@ironworksai/shared";
+import type { ModelStrategy, TaskImportance } from "@ironworksai/shared";
+import { CRITICAL_TASK_LABELS, IMPORTANT_TASK_LABELS, WESTERN_COUNCIL_MODELS } from "@ironworksai/shared";
 import type { AdapterExecutionResult } from "../adapters/types.js";
-import { reviewOutputQuality } from "./agent-reflection.js";
 import { logger } from "../middleware/logger.js";
+import { reviewOutputQuality } from "./agent-reflection.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -65,7 +58,7 @@ export const ROLE_COUNCIL_DEFAULTS: Record<string, Partial<CouncilConfig>> = {
 // Task Importance Classification
 // ---------------------------------------------------------------------------
 
-const C_SUITE_ROLES = new Set(["ceo", "cto", "cfo", "cmo", "coo", "ciso"]);
+const _C_SUITE_ROLES = new Set(["ceo", "cto", "cfo", "cmo", "coo", "ciso"]);
 
 /**
  * Classify task importance from issue context.
@@ -82,40 +75,63 @@ export function classifyTaskImportance(context: {
   originKind?: string;
 }): TaskImportance {
   const {
-    labels = [], issueTitle = "", agentRole = "",
-    isApprovalRelated = false, assignedByRole = "",
-    assignedByHuman = false, isRetry = false, originKind = "",
+    labels = [],
+    issueTitle = "",
+    agentRole = "",
+    isApprovalRelated = false,
+    assignedByRole = "",
+    assignedByHuman = false,
+    isRetry = false,
+    originKind = "",
   } = context;
   const lowerLabels = labels.map((l) => l.toLowerCase());
   const lowerTitle = issueTitle.toLowerCase();
-  const normalizedRole = agentRole.toLowerCase().replace(/[\s_-]+/g, "");
-  const normalizedAssigner = assignedByRole.toLowerCase().replace(/[\s_-]+/g, "");
+  const _normalizedRole = agentRole.toLowerCase().replace(/[\s_-]+/g, "");
+  const _normalizedAssigner = assignedByRole.toLowerCase().replace(/[\s_-]+/g, "");
 
   // Classification is based on TASK CONTENT, not who assigned it.
   // The CEO delegates everything - that alone doesn't make tasks important.
   // What matters is what the task actually asks for.
 
   // CRITICAL: task content contains critical keywords (strategy, legal, compliance, etc.)
-  const hasCriticalLabel = CRITICAL_TASK_LABELS.some((cl) =>
-    lowerLabels.some((ll) => ll.includes(cl)),
-  );
+  const hasCriticalLabel = CRITICAL_TASK_LABELS.some((cl) => lowerLabels.some((ll) => ll.includes(cl)));
   if (hasCriticalLabel) return "critical";
 
-  const criticalKeywords = ["strategy", "acquisition", "compliance", "legal review", "financial report",
-    "client deliverable", "contract", "liability", "regulation", "audit", "memo to board"];
+  const criticalKeywords = [
+    "strategy",
+    "acquisition",
+    "compliance",
+    "legal review",
+    "financial report",
+    "client deliverable",
+    "contract",
+    "liability",
+    "regulation",
+    "audit",
+    "memo to board",
+  ];
   if (criticalKeywords.some((kw) => lowerTitle.includes(kw))) return "critical";
 
   // CRITICAL: retry after rejection = escalate (previous output wasn't good enough)
   if (isRetry) return "critical";
 
   // IMPORTANT: task content contains important keywords
-  const hasImportantLabel = IMPORTANT_TASK_LABELS.some((il) =>
-    lowerLabels.some((ll) => ll.includes(il)),
-  );
+  const hasImportantLabel = IMPORTANT_TASK_LABELS.some((il) => lowerLabels.some((ll) => ll.includes(il)));
   if (hasImportantLabel) return "important";
 
-  const importantKeywords = ["report", "analysis", "proposal", "budget", "review", "plan",
-    "architecture", "hiring", "termination", "performance review", "deliverable"];
+  const importantKeywords = [
+    "report",
+    "analysis",
+    "proposal",
+    "budget",
+    "review",
+    "plan",
+    "architecture",
+    "hiring",
+    "termination",
+    "performance review",
+    "deliverable",
+  ];
   if (importantKeywords.some((kw) => lowerTitle.includes(kw))) return "important";
 
   // IMPORTANT: approval-related tasks need quality
@@ -147,10 +163,7 @@ export function resolveModelStrategy(
   let strategy = agentConfig.strategy;
   const primary = agentConfig.primaryModel;
   const fallback = agentConfig.cascadeFallback ?? WESTERN_COUNCIL_MODELS.heavy;
-  const councilModels = agentConfig.councilModels ?? [
-    WESTERN_COUNCIL_MODELS.heavy,
-    WESTERN_COUNCIL_MODELS.light,
-  ];
+  const councilModels = agentConfig.councilModels ?? [WESTERN_COUNCIL_MODELS.heavy, WESTERN_COUNCIL_MODELS.light];
 
   // Auto-upgrade: critical importance forces council
   if (importance === "critical" && strategy !== "council") {
@@ -171,7 +184,6 @@ export function resolveModelStrategy(
     }
     case "cascade":
       return { strategy: "cascade", models: [primary, fallback] };
-    case "single":
     default:
       return { strategy: "single", models: [primary] };
   }
@@ -195,10 +207,7 @@ function extractTokenCount(result: AdapterExecutionResult): number {
 /**
  * Execute with a single model (existing behavior, wrapped in CouncilResult).
  */
-export async function executeSingle(
-  executeAdapter: AdapterExecutor,
-  model: string,
-): Promise<CouncilResult> {
+export async function executeSingle(executeAdapter: AdapterExecutor, model: string): Promise<CouncilResult> {
   const start = Date.now();
   const result = await executeAdapter(model);
   const latencyMs = Date.now() - start;
@@ -280,10 +289,7 @@ export async function executeCascade(
     latencyMs: fallbackLatency,
   });
 
-  logger.info(
-    { model: fallback, score: fallbackQuality.score },
-    "[model-council] Cascade fallback result",
-  );
+  logger.info({ model: fallback, score: fallbackQuality.score }, "[model-council] Cascade fallback result");
 
   // Return whichever scored higher
   const winner = fallbackQuality.score > primaryQuality.score ? fallback : primary;
@@ -314,10 +320,7 @@ export async function executeCouncil(
   let totalTokens = 0;
   const primaryModel = models[0];
 
-  logger.info(
-    { models, count: models.length },
-    "[model-council] Council deliberation started",
-  );
+  logger.info({ models, count: models.length }, "[model-council] Council deliberation started");
 
   // Run all models in parallel
   const settled = await Promise.allSettled(
@@ -337,17 +340,11 @@ export async function executeCouncil(
       totalTokens += extractTokenCount(result);
       responses.push({ model, response, qualityScore, latencyMs });
 
-      logger.info(
-        { model, score: qualityScore, latencyMs },
-        "[model-council] Council member result",
-      );
+      logger.info({ model, score: qualityScore, latencyMs }, "[model-council] Council member result");
     } else {
       const idx = settled.indexOf(outcome);
       const failedModel = models[idx] ?? "unknown";
-      logger.warn(
-        { model: failedModel, error: String(outcome.reason) },
-        "[model-council] Council member failed",
-      );
+      logger.warn({ model: failedModel, error: String(outcome.reason) }, "[model-council] Council member failed");
     }
   }
 

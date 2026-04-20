@@ -1,23 +1,19 @@
+import type { Company } from "@ironworksai/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Database, Shield, Trash2 } from "lucide-react";
+import { AlertTriangle, Database, Settings, Shield, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/lib/router";
-import { Settings } from "lucide-react";
 import { privacyApi } from "../../api/privacy";
-import { queryKeys } from "../../lib/queryKeys";
 import { useToast } from "../../context/ToastContext";
-import type { Company } from "@ironworksai/shared";
+import { queryKeys } from "../../lib/queryKeys";
 
 interface DataPrivacySectionProps {
   selectedCompany: Company;
   selectedCompanyId: string;
 }
 
-export function DataPrivacySection({
-  selectedCompany,
-  selectedCompanyId,
-}: DataPrivacySectionProps) {
+export function DataPrivacySection({ selectedCompany, selectedCompanyId }: DataPrivacySectionProps) {
   const queryClient = useQueryClient();
   const { pushToast } = useToast();
   const [erasureConfirm, setErasureConfirm] = useState(false);
@@ -60,21 +56,12 @@ export function DataPrivacySection({
             </div>
             {privacySummaryQuery.data ? (
               <div className="space-y-1">
-                {Object.entries(
-                  privacySummaryQuery.data.retentionPolicies,
-                ).map(([key, value]) => (
-                  <div
-                    key={key}
-                    className="flex items-center justify-between text-xs"
-                  >
+                {Object.entries(privacySummaryQuery.data.retentionPolicies).map(([key, value]) => (
+                  <div key={key} className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">
-                      {key
-                        .replace(/([A-Z])/g, " $1")
-                        .replace(/^./, (s) => s.toUpperCase())}
+                      {key.replace(/([A-Z])/g, " $1").replace(/^./, (s) => s.toUpperCase())}
                     </span>
-                    <span className="font-mono text-muted-foreground">
-                      {value as string}
-                    </span>
+                    <span className="font-mono text-muted-foreground">{value as string}</span>
                   </div>
                 ))}
               </div>
@@ -82,21 +69,15 @@ export function DataPrivacySection({
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">Activity log</span>
-                  <span className="font-mono text-muted-foreground">
-                    365 days
-                  </span>
+                  <span className="font-mono text-muted-foreground">365 days</span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">Cost events</span>
-                  <span className="font-mono text-muted-foreground">
-                    365 days
-                  </span>
+                  <span className="font-mono text-muted-foreground">365 days</span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">Execution logs</span>
-                  <span className="font-mono text-muted-foreground">
-                    90 days
-                  </span>
+                  <span className="font-mono text-muted-foreground">90 days</span>
                 </div>
               </div>
             )}
@@ -107,20 +88,16 @@ export function DataPrivacySection({
             <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-3">
               <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-destructive">
-                  Deletion scheduled
-                </p>
+                <p className="text-sm font-medium text-destructive">Deletion scheduled</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  All data is scheduled for permanent deletion in 30 days.
-                  Contact support to cancel.
+                  All data is scheduled for permanent deletion in 30 days. Contact support to cancel.
                 </p>
               </div>
             </div>
           ) : (
             <div className="space-y-2">
               <p className="text-xs text-muted-foreground">
-                You can request permanent deletion of all company data. Data
-                will be removed 30 days after the request.
+                You can request permanent deletion of all company data. Data will be removed 30 days after the request.
               </p>
               {erasureConfirm ? (
                 <div className="flex items-center gap-2">
@@ -136,11 +113,7 @@ export function DataPrivacySection({
                   >
                     {erasureMutation.isPending ? "Requesting..." : "Confirm"}
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setErasureConfirm(false)}
-                  >
+                  <Button variant="outline" size="sm" onClick={() => setErasureConfirm(false)}>
                     Cancel
                   </Button>
                 </div>
@@ -168,9 +141,7 @@ export function DataPrivacySection({
         >
           <Settings className="h-4 w-4" />
           Privacy & Data Settings
-          <span className="text-xs text-muted-foreground ml-1">
-            - Full data export, erasure, and GDPR rights
-          </span>
+          <span className="text-xs text-muted-foreground ml-1">- Full data export, erasure, and GDPR rights</span>
         </Link>
       </div>
     </>

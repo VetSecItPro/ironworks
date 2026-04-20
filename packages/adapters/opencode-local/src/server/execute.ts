@@ -2,27 +2,31 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { inferOpenAiCompatibleBiller, type AdapterExecutionContext, type AdapterExecutionResult } from "@ironworksai/adapter-utils";
 import {
-  asString,
+  type AdapterExecutionContext,
+  type AdapterExecutionResult,
+  inferOpenAiCompatibleBiller,
+} from "@ironworksai/adapter-utils";
+import {
   asNumber,
+  asString,
   asStringArray,
-  parseObject,
   buildIronworksEnv,
-  joinPromptSections,
-  redactEnvForLogs,
   ensureAbsoluteDirectory,
   ensureCommandResolvable,
   ensureIronworksSkillSymlink,
   ensurePathInEnv,
-  renderTemplate,
-  runChildProcess,
+  joinPromptSections,
+  parseObject,
   readIronworksRuntimeSkillEntries,
+  redactEnvForLogs,
+  removeMaintainerOnlySkillSymlinks,
+  renderTemplate,
   resolveIronworksDesiredSkillNames,
+  runChildProcess,
 } from "@ironworksai/adapter-utils/server-utils";
-import { isOpenCodeUnknownSessionError, parseOpenCodeJsonl } from "./parse.js";
 import { ensureOpenCodeModelConfiguredAndAvailable } from "./models.js";
-import { removeMaintainerOnlySkillSymlinks } from "@ironworksai/adapter-utils/server-utils";
+import { isOpenCodeUnknownSessionError, parseOpenCodeJsonl } from "./parse.js";
 import { prepareOpenCodeRuntimeConfig } from "./runtime-config.js";
 
 const __moduleDir = path.dirname(fileURLToPath(import.meta.url));
@@ -65,10 +69,7 @@ async function ensureOpenCodeSkillsInjected(
     selectedEntries.map((entry) => entry.runtimeName),
   );
   for (const skillName of removedSkills) {
-    await onLog(
-      "stderr",
-      `[ironworks] Removed maintainer-only OpenCode skill "${skillName}" from ${skillsHome}\n`,
-    );
+    await onLog("stderr", `[ironworks] Removed maintainer-only OpenCode skill "${skillName}" from ${skillsHome}\n`);
   }
   for (const entry of selectedEntries) {
     const target = path.join(skillsHome, entry.runtimeName);
@@ -119,11 +120,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   await ensureAbsoluteDirectory(cwd, { createIfMissing: true });
   const openCodeSkillEntries = await readIronworksRuntimeSkillEntries(config, __moduleDir);
   const desiredOpenCodeSkillNames = resolveIronworksDesiredSkillNames(config, openCodeSkillEntries);
-  await ensureOpenCodeSkillsInjected(
-    onLog,
-    openCodeSkillEntries,
-    desiredOpenCodeSkillNames,
-  );
+  await ensureOpenCodeSkillsInjected(onLog, openCodeSkillEntries, desiredOpenCodeSkillNames);
 
   const envConfig = parseObject(config.env);
   const hasExplicitApiKey =
@@ -135,17 +132,15 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     (typeof context.issueId === "string" && context.issueId.trim().length > 0 && context.issueId.trim()) ||
     null;
   const wakeReason =
-    typeof context.wakeReason === "string" && context.wakeReason.trim().length > 0
-      ? context.wakeReason.trim()
-      : null;
+    typeof context.wakeReason === "string" && context.wakeReason.trim().length > 0 ? context.wakeReason.trim() : null;
   const wakeCommentId =
-    (typeof context.wakeCommentId === "string" && context.wakeCommentId.trim().length > 0 && context.wakeCommentId.trim()) ||
+    (typeof context.wakeCommentId === "string" &&
+      context.wakeCommentId.trim().length > 0 &&
+      context.wakeCommentId.trim()) ||
     (typeof context.commentId === "string" && context.commentId.trim().length > 0 && context.commentId.trim()) ||
     null;
   const approvalId =
-    typeof context.approvalId === "string" && context.approvalId.trim().length > 0
-      ? context.approvalId.trim()
-      : null;
+    typeof context.approvalId === "string" && context.approvalId.trim().length > 0 ? context.approvalId.trim() : null;
   const approvalStatus =
     typeof context.approvalStatus === "string" && context.approvalStatus.trim().length > 0
       ? context.approvalStatus.trim()
@@ -217,9 +212,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     }
 
     const instructionsFilePath = asString(config.instructionsFilePath, "").trim();
-    const resolvedInstructionsFilePath = instructionsFilePath
-      ? path.resolve(cwd, instructionsFilePath)
-      : "";
+    const resolvedInstructionsFilePath = instructionsFilePath ? path.resolve(cwd, instructionsFilePath) : "";
     const instructionsDir = resolvedInstructionsFilePath ? `${path.dirname(resolvedInstructionsFilePath)}/` : "";
     let instructionsPrefix = "";
     if (resolvedInstructionsFilePath) {
@@ -345,7 +338,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
 
       const resolvedSessionId =
         attempt.parsed.sessionId ??
-        (clearSessionOnMissingSession ? null : runtimeSessionId ?? runtime.sessionId ?? null);
+        (clearSessionOnMissingSession ? null : (runtimeSessionId ?? runtime.sessionId ?? null));
       const resolvedSessionParams = resolvedSessionId
         ? ({
             sessionId: resolvedSessionId,
@@ -361,9 +354,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       const rawExitCode = attempt.proc.exitCode;
       const synthesizedExitCode = parsedError && (rawExitCode ?? 0) === 0 ? 1 : rawExitCode;
       const fallbackErrorMessage =
-        parsedError ||
-        stderrLine ||
-        `OpenCode exited with code ${synthesizedExitCode ?? -1}`;
+        parsedError || stderrLine || `OpenCode exited with code ${synthesizedExitCode ?? -1}`;
       const modelId = model || null;
 
       return {
@@ -396,11 +387,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     const initial = await runAttempt(sessionId);
     const initialFailed =
       !initial.proc.timedOut && ((initial.proc.exitCode ?? 0) !== 0 || Boolean(initial.parsed.errorMessage));
-    if (
-      sessionId &&
-      initialFailed &&
-      isOpenCodeUnknownSessionError(initial.proc.stdout, initial.rawStderr)
-    ) {
+    if (sessionId && initialFailed && isOpenCodeUnknownSessionError(initial.proc.stdout, initial.rawStderr)) {
       await onLog(
         "stdout",
         `[ironworks] OpenCode session "${sessionId}" is unavailable; retrying with a fresh session.\n`,

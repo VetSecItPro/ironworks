@@ -1,20 +1,10 @@
+import type { CompanySkillCreateRequest, CompanySkillDetail, CompanySkillFileDetail } from "@ironworksai/shared";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Boxes } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "@/lib/router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { CompanySkillCreateRequest, CompanySkillDetail, CompanySkillFileDetail } from "@ironworksai/shared";
-import { Boxes } from "lucide-react";
 import { companySkillsApi } from "../api/companySkills";
-import { useCompany } from "../context/CompanyContext";
-import { useBreadcrumbs } from "../context/BreadcrumbContext";
-import { useToast } from "../context/ToastContext";
-import { queryKeys } from "../lib/queryKeys";
-import { EmptyState } from "../components/EmptyState";
-import {
-  EmptySourceHelpDialog,
-  SkillPane,
-  SkillsPageHeader,
-  SkillsSidebar,
-} from "../components/company-skills";
+import { EmptySourceHelpDialog, SkillPane, SkillsPageHeader, SkillsSidebar } from "../components/company-skills";
 import {
   formatProjectScanSummary,
   mergeFrontmatter,
@@ -24,6 +14,11 @@ import {
   skillRoute,
   splitFrontmatter,
 } from "../components/company-skills/utils";
+import { EmptyState } from "../components/EmptyState";
+import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { useCompany } from "../context/CompanyContext";
+import { useToast } from "../context/ToastContext";
+import { queryKeys } from "../lib/queryKeys";
 
 export function CompanySkills() {
   const { "*": routePath } = useParams<{ "*": string }>();
@@ -49,10 +44,7 @@ export function CompanySkills() {
   const selectedPath = parsedRoute.filePath;
 
   useEffect(() => {
-    setBreadcrumbs([
-      { label: "Skills", href: "/skills" },
-      ...(routeSkillId ? [{ label: "Detail" }] : []),
-    ]);
+    setBreadcrumbs([{ label: "Skills", href: "/skills" }, ...(routeSkillId ? [{ label: "Detail" }] : [])]);
   }, [routeSkillId, setBreadcrumbs]);
 
   /* ------------------------------------------------------------------ */
@@ -91,9 +83,9 @@ export function CompanySkills() {
     queryKey: queryKeys.companySkills.updateStatus(selectedCompanyId ?? "", selectedSkillId ?? ""),
     queryFn: () => companySkillsApi.updateStatus(selectedCompanyId!, selectedSkillId!),
     enabled: Boolean(
-      selectedCompanyId
-      && selectedSkillId
-      && (detailQuery.data?.sourceType === "github" || displayedDetail?.sourceType === "github"),
+      selectedCompanyId &&
+        selectedSkillId &&
+        (detailQuery.data?.sourceType === "github" || displayedDetail?.sourceType === "github"),
     ),
     staleTime: 60_000,
   });
@@ -224,17 +216,22 @@ export function CompanySkills() {
   });
 
   const saveFile = useMutation({
-    mutationFn: () => companySkillsApi.updateFile(
-      selectedCompanyId!,
-      selectedSkillId!,
-      selectedPath,
-      activeFile?.markdown ? mergeFrontmatter(activeFile.content, draft) : draft,
-    ),
+    mutationFn: () =>
+      companySkillsApi.updateFile(
+        selectedCompanyId!,
+        selectedSkillId!,
+        selectedPath,
+        activeFile?.markdown ? mergeFrontmatter(activeFile.content, draft) : draft,
+      ),
     onSuccess: async (result) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.companySkills.list(selectedCompanyId!) }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.companySkills.detail(selectedCompanyId!, selectedSkillId!) }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.companySkills.file(selectedCompanyId!, selectedSkillId!, selectedPath) }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.companySkills.detail(selectedCompanyId!, selectedSkillId!),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.companySkills.file(selectedCompanyId!, selectedSkillId!, selectedPath),
+        }),
       ]);
       setDraft(result.markdown ? splitFrontmatter(result.content).body : result.content);
       setEditMode(false);
@@ -254,9 +251,15 @@ export function CompanySkills() {
     onSuccess: async (skill) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.companySkills.list(selectedCompanyId!) }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.companySkills.detail(selectedCompanyId!, selectedSkillId!) }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.companySkills.updateStatus(selectedCompanyId!, selectedSkillId!) }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.companySkills.file(selectedCompanyId!, selectedSkillId!, selectedPath) }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.companySkills.detail(selectedCompanyId!, selectedSkillId!),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.companySkills.updateStatus(selectedCompanyId!, selectedSkillId!),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.companySkills.file(selectedCompanyId!, selectedSkillId!, selectedPath),
+        }),
       ]);
       navigate(skillRoute(skill.id, selectedPath));
       pushToast({
@@ -326,7 +329,7 @@ export function CompanySkills() {
           expandedSkillId={expandedSkillId}
           expandedDirs={expandedDirs}
           onToggleSkill={(currentSkillId) =>
-            setExpandedSkillId((current) => current === currentSkillId ? null : currentSkillId)
+            setExpandedSkillId((current) => (current === currentSkillId ? null : currentSkillId))
           }
           onToggleDir={(currentSkillId, path) => {
             setExpandedDirs((current) => {

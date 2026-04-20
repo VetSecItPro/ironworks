@@ -1,5 +1,5 @@
-import { useRef, useCallback, useEffect } from "react";
 import { ListTodo, Plus, X } from "lucide-react";
+import { useCallback, useEffect, useRef } from "react";
 import { TASK_TEMPLATES } from "./constants";
 
 interface StepTaskProps {
@@ -25,7 +25,7 @@ export function StepTask({
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = el.scrollHeight + "px";
+    el.style.height = `${el.scrollHeight}px`;
   }, []);
 
   useEffect(() => {
@@ -41,18 +41,18 @@ export function StepTask({
         <div>
           <h3 className="font-medium">Give it something to do</h3>
           <p className="text-xs text-muted-foreground">
-            Give your agent a small task to start with - a bug fix,
-            a research question, writing a script.
+            Give your agent a small task to start with - a bug fix, a research question, writing a script.
           </p>
         </div>
       </div>
 
       {/* Task template dropdown */}
       <div>
-        <label className="text-xs text-muted-foreground mb-1 block">
+        <label htmlFor="onboarding-task-template" className="text-xs text-muted-foreground mb-1 block">
           Quick start template
         </label>
         <select
+          id="onboarding-task-template"
           className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 text-foreground"
           value=""
           onChange={(e) => {
@@ -63,30 +63,35 @@ export function StepTask({
             }
           }}
         >
-          <option value="" disabled>Choose a common first task...</option>
+          <option value="" disabled>
+            Choose a common first task...
+          </option>
           {TASK_TEMPLATES.map((tpl) => (
-            <option key={tpl.title} value={tpl.title}>{tpl.label}</option>
+            <option key={tpl.title} value={tpl.title}>
+              {tpl.label}
+            </option>
           ))}
         </select>
       </div>
 
       <div>
-        <label className="text-xs text-muted-foreground mb-1 block">
+        <label htmlFor="onboarding-task-title" className="text-xs text-muted-foreground mb-1 block">
           Task title
         </label>
         <input
+          id="onboarding-task-title"
           className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/70"
           placeholder="e.g. Research competitor pricing"
           value={taskTitle}
           onChange={(e) => onTaskTitleChange(e.target.value)}
-          autoFocus
         />
       </div>
       <div>
-        <label className="text-xs text-muted-foreground mb-1 block">
+        <label htmlFor="onboarding-task-description" className="text-xs text-muted-foreground mb-1 block">
           Description (optional)
         </label>
         <textarea
+          id="onboarding-task-description"
           ref={textareaRef}
           className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/70 resize-none min-h-[120px] max-h-[300px] overflow-y-auto"
           placeholder="Add more detail about what the agent should do..."
@@ -97,6 +102,7 @@ export function StepTask({
 
       {/* Extra tasks */}
       {extraTasks.map((extra, idx) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: editable task items have no stable id; content is mutable during editing
         <div key={idx} className="space-y-2 rounded-md border border-border p-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-muted-foreground">Task {idx + 2}</span>
@@ -112,13 +118,17 @@ export function StepTask({
             className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/70"
             placeholder="Task title"
             value={extra.title}
-            onChange={(e) => onExtraTasksChange(extraTasks.map((t, i) => i === idx ? { ...t, title: e.target.value } : t))}
+            onChange={(e) =>
+              onExtraTasksChange(extraTasks.map((t, i) => (i === idx ? { ...t, title: e.target.value } : t)))
+            }
           />
           <textarea
             className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/70 resize-none min-h-[60px]"
             placeholder="Description (optional)"
             value={extra.description}
-            onChange={(e) => onExtraTasksChange(extraTasks.map((t, i) => i === idx ? { ...t, description: e.target.value } : t))}
+            onChange={(e) =>
+              onExtraTasksChange(extraTasks.map((t, i) => (i === idx ? { ...t, description: e.target.value } : t)))
+            }
           />
         </div>
       ))}

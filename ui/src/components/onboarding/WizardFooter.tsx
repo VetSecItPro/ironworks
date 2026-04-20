@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, Loader2, Rocket } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { Step } from "./types";
 
 interface WizardFooterProps {
@@ -57,12 +57,7 @@ export function WizardFooter({
     <div className="flex items-center justify-between mt-8">
       <div>
         {step > 1 && step > initialStep && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onBack}
-            disabled={loading}
-          >
+          <Button variant="ghost" size="sm" onClick={onBack} disabled={loading}>
             <ArrowLeft className="h-3.5 w-3.5 mr-1" />
             Back
           </Button>
@@ -70,11 +65,7 @@ export function WizardFooter({
       </div>
       <div className="flex items-center gap-2">
         {step === 1 && (
-          <Button
-            size="sm"
-            disabled={!companyNameValid || loading}
-            onClick={onStep1Next}
-          >
+          <Button size="sm" disabled={!companyNameValid || loading} onClick={onStep1Next}>
             {loading ? (
               <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
             ) : (
@@ -97,11 +88,7 @@ export function WizardFooter({
                 You can add this later, but agents can't run without it
               </span>
             </div>
-            <Button
-              size="sm"
-              disabled={!llmApiKeyValid || loading}
-              onClick={onStep2LlmNext}
-            >
+            <Button size="sm" disabled={!llmApiKeyValid || loading} onClick={onStep2LlmNext}>
               {loading ? (
                 <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
               ) : (
@@ -112,13 +99,7 @@ export function WizardFooter({
           </div>
         )}
         {step === 3 && step2Mode === "manual" && (
-          <Button
-            size="sm"
-            disabled={
-              !agentNameValid || loading || adapterEnvLoading
-            }
-            onClick={onStep2Next}
-          >
+          <Button size="sm" disabled={!agentNameValid || loading || adapterEnvLoading} onClick={onStep2Next}>
             {loading ? (
               <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
             ) : (
@@ -142,11 +123,7 @@ export function WizardFooter({
           </Button>
         )}
         {step === 4 && (
-          <Button
-            size="sm"
-            disabled={!taskTitleValid || loading}
-            onClick={onStep3Next}
-          >
+          <Button size="sm" disabled={!taskTitleValid || loading} onClick={onStep3Next}>
             {loading ? (
               <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
             ) : (

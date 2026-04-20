@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -63,17 +63,20 @@ const mockKnowledgeService = vi.hoisted(() => ({
 const mockLogActivity = vi.hoisted(() => vi.fn());
 const mockSeedSystemRoleTemplates = vi.hoisted(() => vi.fn());
 
-vi.mock("../services/index.js", () => ({
-  companyService: () => mockCompanyService,
-  agentService: () => mockAgentService,
-  accessService: () => mockAccessService,
-  budgetService: () => mockBudgetService,
-  companyPortabilityService: () => mockPortabilityService,
-  playbookService: () => mockPlaybookService,
-  routineService: () => mockRoutineService,
-  logActivity: mockLogActivity,
-  seedSystemRoleTemplates: mockSeedSystemRoleTemplates,
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    companyService: () => mockCompanyService,
+    agentService: () => mockAgentService,
+    accessService: () => mockAccessService,
+    budgetService: () => mockBudgetService,
+    companyPortabilityService: () => mockPortabilityService,
+    playbookService: () => mockPlaybookService,
+    routineService: () => mockRoutineService,
+    logActivity: mockLogActivity,
+    seedSystemRoleTemplates: mockSeedSystemRoleTemplates,
+  });
+});
 
 vi.mock("../services/knowledge.js", () => ({
   knowledgeService: () => mockKnowledgeService,
@@ -110,6 +113,7 @@ async function createApp(actor: Record<string, unknown>) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });
@@ -117,9 +121,11 @@ async function createApp(actor: Record<string, unknown>) {
     select: vi.fn().mockReturnThis(),
     from: vi.fn().mockReturnThis(),
     where: vi.fn().mockReturnThis(),
+    // biome-ignore lint/suspicious/noThenProperty: test mock drizzle thenable contract
     then: vi.fn().mockResolvedValue([{ membershipRole: "owner" }]),
     update: vi.fn().mockReturnThis(),
     set: vi.fn().mockReturnThis(),
+    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
   app.use("/api/companies", companyRoutes(fakeDb));
   app.use(errorHandler);
@@ -218,9 +224,7 @@ describe("company routes", () => {
   describe("POST /api/companies", () => {
     it("creates a company for instance admin", async () => {
       const app = await createApp(instanceAdmin(USER_ID));
-      const res = await request(app)
-        .post("/api/companies")
-        .send({ name: "Acme Corp" });
+      const res = await request(app).post("/api/companies").send({ name: "Acme Corp" });
 
       expect(res.status).toBe(201);
       expect(res.body).toMatchObject({ name: "Acme Corp" });
@@ -229,9 +233,7 @@ describe("company routes", () => {
 
     it("rejects non-admin board user with 403", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post("/api/companies")
-        .send({ name: "New Corp" });
+      const res = await request(app).post("/api/companies").send({ name: "New Corp" });
       expect(res.status).toBe(403);
     });
   });

@@ -1,19 +1,14 @@
-import { useEffect, useState, useRef } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { agentsApi, type AgentPermissionUpdate } from "../../api/agents";
+import type { AgentDetail as AgentDetailRecord } from "@ironworksai/shared";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ChevronDown, ChevronRight } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { type AgentPermissionUpdate, agentsApi } from "../../api/agents";
 import { ApiError } from "../../api/client";
 import { useToast } from "../../context/ToastContext";
 import { queryKeys } from "../../lib/queryKeys";
+import { cn, formatDate } from "../../lib/utils";
 import { AgentConfigForm } from "../AgentConfigForm";
-import { formatDate, cn } from "../../lib/utils";
-import { Button } from "@/components/ui/button";
-import {
-  ChevronRight,
-  ChevronDown,
-} from "lucide-react";
-import type {
-  AgentDetail as AgentDetailRecord,
-} from "@ironworksai/shared";
 import { KeysTab } from "./KeysTab";
 
 /* ---- Configuration Tab (form + permissions) ---- */
@@ -45,10 +40,9 @@ export function ConfigurationTab({
   const lastAgentRef = useRef(agent);
 
   const { data: adapterModels } = useQuery({
-    queryKey:
-      companyId
-        ? queryKeys.agents.adapterModels(companyId, agent.adapterType)
-        : ["agents", "none", "adapter-models", agent.adapterType],
+    queryKey: companyId
+      ? queryKeys.agents.adapterModels(companyId, agent.adapterType)
+      : ["agents", "none", "adapter-models", agent.adapterType],
     queryFn: () => agentsApi.adapterModels(companyId!, agent.adapterType),
     enabled: Boolean(companyId),
   });
@@ -67,11 +61,7 @@ export function ConfigurationTab({
     onError: (err) => {
       setAwaitingRefreshAfterSave(false);
       const message =
-        err instanceof ApiError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : "Could not save agent";
+        err instanceof ApiError ? err.message : err instanceof Error ? err.message : "Could not save agent";
       pushToast({ title: "Save failed", body: message, tone: "error" });
     },
   });
@@ -157,9 +147,7 @@ export function ConfigurationTab({
           <div className="flex items-center justify-between gap-4 text-sm">
             <div className="space-y-1">
               <div>Can assign tasks</div>
-              <p className="text-xs text-muted-foreground">
-                {taskAssignHint}
-              </p>
+              <p className="text-xs text-muted-foreground">{taskAssignHint}</p>
             </div>
             <button
               type="button"
@@ -252,13 +240,15 @@ export function AgentConfigurePage({
       {/* Configuration Revisions -- collapsible at the bottom */}
       <div>
         <button
+          type="button"
           className="flex items-center gap-2 text-sm font-medium hover:text-foreground transition-colors"
           onClick={() => setRevisionsOpen((v) => !v)}
         >
-          {revisionsOpen
-            ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-            : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-          }
+          {revisionsOpen ? (
+            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+          )}
           Configuration Revisions
           <span className="text-xs font-normal text-muted-foreground">{configRevisions?.length ?? 0}</span>
         </button>

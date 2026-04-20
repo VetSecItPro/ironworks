@@ -1,7 +1,7 @@
-import type { ReactNode, DragEvent } from "react";
-import { cn } from "@/lib/utils";
-import { Trash2 } from "lucide-react";
 import type { IssueAttachment } from "@ironworksai/shared";
+import { Trash2 } from "lucide-react";
+import type { DragEvent, ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 interface IssueAttachmentsSectionProps {
   attachments: IssueAttachment[];
@@ -35,6 +35,7 @@ export function IssueAttachmentsSection({
   if (attachments.length === 0) return null;
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: drop zone container handles drag events only, not click interaction
     <div
       className={cn("space-y-3 rounded-lg transition-colors")}
       onDragEnter={onDragEnter}
@@ -47,9 +48,7 @@ export function IssueAttachmentsSection({
         {attachmentUploadButton}
       </div>
 
-      {attachmentError && (
-        <p className="text-xs text-destructive">{attachmentError}</p>
-      )}
+      {attachmentError && <p className="text-xs text-destructive">{attachmentError}</p>}
 
       <div className="space-y-2">
         {attachments.map((attachment) => (

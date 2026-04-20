@@ -1,9 +1,9 @@
-import { Router } from "express";
 import type { Db } from "@ironworksai/db";
-import { assertCanWrite, assertCompanyAccess, getActorInfo } from "./authz.js";
+import { Router } from "express";
 import { badRequest, notFound } from "../errors.js";
-import { playbookService } from "../services/playbooks.js";
 import { playbookExecutionService } from "../services/playbook-execution.js";
+import { playbookService } from "../services/playbooks.js";
+import { assertCanWrite, assertCompanyAccess, getActorInfo } from "./authz.js";
 
 export function playbookRoutes(db: Db) {
   const router = Router();

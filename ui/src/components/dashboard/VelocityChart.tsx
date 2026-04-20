@@ -1,7 +1,13 @@
 import { useState } from "react";
 import type { VelocityWeek } from "../../api/velocity";
 
-export function VelocityChart({ weeks, onWeekClick }: { weeks: VelocityWeek[]; onWeekClick?: (weekStart: string) => void }) {
+export function VelocityChart({
+  weeks,
+  onWeekClick,
+}: {
+  weeks: VelocityWeek[];
+  onWeekClick?: (weekStart: string) => void;
+}) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const maxVal = Math.max(...weeks.map((w) => w.issuesCompleted + w.issuesCancelled), 1);
   const chartW = 400;
@@ -13,6 +19,7 @@ export function VelocityChart({ weeks, onWeekClick }: { weeks: VelocityWeek[]; o
   return (
     <div>
       <svg viewBox={`0 0 ${chartW} ${chartH + 24}`} className="w-full" preserveAspectRatio="xMidYMid meet">
+        <title>Velocity chart</title>
         {/* Subtle gridlines */}
         {[0.25, 0.5, 0.75, 1].map((frac) => (
           <line
@@ -41,23 +48,17 @@ export function VelocityChart({ weeks, onWeekClick }: { weeks: VelocityWeek[]; o
           const isHovered = hoveredIdx === i;
 
           return (
+            // biome-ignore lint/a11y/noStaticElementInteractions: SVG <g> with conditional role; when onWeekClick is undefined the group is purely presentational
             <g
               key={w.weekStart}
+              role={onWeekClick ? "button" : undefined}
+              aria-label={onWeekClick ? `Week of ${label}` : undefined}
               style={{ cursor: onWeekClick ? "pointer" : "default" }}
               onMouseEnter={() => setHoveredIdx(i)}
               onMouseLeave={() => setHoveredIdx(null)}
               onClick={() => onWeekClick?.(w.weekStart)}
             >
-              {isHovered && (
-                <rect
-                  x={x - 1}
-                  y={0}
-                  width={barW + 2}
-                  height={chartH}
-                  className="fill-accent/30"
-                  rx={2}
-                />
-              )}
+              {isHovered && <rect x={x - 1} y={0} width={barW + 2} height={chartH} className="fill-accent/30" rx={2} />}
               {completedH > 0 && (
                 <rect
                   x={x}
@@ -78,23 +79,9 @@ export function VelocityChart({ weeks, onWeekClick }: { weeks: VelocityWeek[]; o
                   className="fill-muted-foreground/30"
                 />
               )}
-              {total === 0 && (
-                <rect
-                  x={x}
-                  y={chartH - 2}
-                  width={barW}
-                  height={2}
-                  rx={1}
-                  className="fill-muted/30"
-                />
-              )}
+              {total === 0 && <rect x={x} y={chartH - 2} width={barW} height={2} rx={1} className="fill-muted/30" />}
               {showLabel && (
-                <text
-                  x={x + barW / 2}
-                  y={labelY}
-                  textAnchor="middle"
-                  className="fill-muted-foreground text-[10px]"
-                >
+                <text x={x + barW / 2} y={labelY} textAnchor="middle" className="fill-muted-foreground text-[10px]">
                   {label}
                 </text>
               )}

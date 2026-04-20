@@ -1,8 +1,8 @@
+import type { FinanceEvent } from "@ironworksai/shared";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FinanceBillerCard } from "../FinanceBillerCard";
 import { FinanceKindCard } from "../FinanceKindCard";
 import { FinanceTimelineCard } from "../FinanceTimelineCard";
-import type { FinanceEvent } from "@ironworksai/shared";
 
 interface FinanceBreakdownData {
   byBiller: Array<{ biller: string }>;
@@ -28,7 +28,9 @@ export function FinanceBreakdownSection({
             {(financeData.byBiller.length ?? 0) === 0 ? (
               <p className="text-sm text-muted-foreground">No finance events yet.</p>
             ) : (
-              financeData.byBiller.map((row) => <FinanceBillerCard key={row.biller} row={row as Parameters<typeof FinanceBillerCard>[0]["row"]} />)
+              financeData.byBiller.map((row) => (
+                <FinanceBillerCard key={row.biller} row={row as Parameters<typeof FinanceBillerCard>[0]["row"]} />
+              ))
             )}
           </CardContent>
         </Card>

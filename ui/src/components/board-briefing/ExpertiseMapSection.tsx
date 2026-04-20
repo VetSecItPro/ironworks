@@ -13,7 +13,8 @@ export function ExpertiseMapSection({ expertiseMap }: ExpertiseMapSectionProps) 
         Expertise Map
       </h3>
       <p className="text-[12px] text-muted-foreground">
-        Agent topic strengths derived from channel message analysis. Higher scores indicate more decisions and discussion on that topic.
+        Agent topic strengths derived from channel message analysis. Higher scores indicate more decisions and
+        discussion on that topic.
       </p>
       <div className="space-y-3">
         {expertiseMap.slice(0, 8).map((agent) => (
@@ -27,9 +28,7 @@ export function ExpertiseMapSection({ expertiseMap }: ExpertiseMapSectionProps) 
                   title={`${t.messageCount} messages, ${t.decisionCount} decisions`}
                 >
                   <span className="capitalize">{t.topic}</span>
-                  <span className="text-muted-foreground/80">
-                    {t.messageCount + t.decisionCount * 2}
-                  </span>
+                  <span className="text-muted-foreground/80">{t.messageCount + t.decisionCount * 2}</span>
                 </span>
               ))}
             </div>

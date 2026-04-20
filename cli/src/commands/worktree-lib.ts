@@ -1,7 +1,7 @@
 import { randomInt } from "node:crypto";
 import path from "node:path";
-import type { IronworksConfig } from "../config/schema.js";
 import { expandHomePrefix } from "../config/home.js";
+import type { IronworksConfig } from "../config/schema.js";
 
 export const DEFAULT_WORKTREE_HOME = "~/.ironworks-worktrees";
 export const WORKTREE_SEED_MODES = ["minimal", "full"] as const;
@@ -102,10 +102,10 @@ function hslComponentToHex(n: number): string {
 function hslToHex(hue: number, saturation: number, lightness: number): string {
   const s = Math.max(0, Math.min(100, saturation)) / 100;
   const l = Math.max(0, Math.min(100, lightness)) / 100;
-  const c = (1 - Math.abs((2 * l) - 1)) * s;
+  const c = (1 - Math.abs(2 * l - 1)) * s;
   const h = ((hue % 360) + 360) % 360;
   const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-  const m = l - (c / 2);
+  const m = l - c / 2;
 
   let r = 0;
   let g = 0;
@@ -263,7 +263,7 @@ export function buildWorktreeEnvEntries(
 }
 
 function shellEscape(value: string): string {
-  return `'${value.replaceAll("'", `'\"'\"'`)}'`;
+  return `'${value.replaceAll("'", `'"'"'`)}'`;
 }
 
 export function formatShellExports(entries: Record<string, string>): string {

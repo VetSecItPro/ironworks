@@ -1,5 +1,5 @@
-import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 
 type IdentitySize = "xs" | "sm" | "default" | "lg";
 
@@ -28,7 +28,14 @@ export function Identity({ name, avatarUrl, initials, size = "default", classNam
   const displayInitials = initials ?? deriveInitials(name);
 
   return (
-    <span className={cn("inline-flex gap-1.5", size === "xs" ? "items-baseline gap-1" : "items-center", size === "lg" && "gap-2", className)}>
+    <span
+      className={cn(
+        "inline-flex gap-1.5",
+        size === "xs" ? "items-baseline gap-1" : "items-center",
+        size === "lg" && "gap-2",
+        className,
+      )}
+    >
       <Avatar size={size} className={size === "xs" ? "relative -top-px" : undefined}>
         {avatarUrl && <AvatarImage src={avatarUrl} alt={name} />}
         <AvatarFallback>{displayInitials}</AvatarFallback>

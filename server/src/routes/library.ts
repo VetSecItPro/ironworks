@@ -1,14 +1,15 @@
-import { Router } from "express";
-import path from "node:path";
+import type { Dirent, Stats } from "node:fs";
 import fs from "node:fs/promises";
+import path from "node:path";
 import type { Db } from "@ironworksai/db";
-import { eq } from "drizzle-orm";
 import { agents } from "@ironworksai/db";
-import { assertCompanyAccess, getActorInfo } from "./authz.js";
+import { eq } from "drizzle-orm";
+import { Router } from "express";
 import { badRequest, notFound } from "../errors.js";
 import { resolveIronworksInstanceRoot } from "../home-paths.js";
 import { libraryService } from "../services/library.js";
-import { resolveVisibleOwnerAgentIds, getAgentProjectIds } from "../services/org-visibility.js";
+import { getAgentProjectIds, resolveVisibleOwnerAgentIds } from "../services/org-visibility.js";
+import { assertCompanyAccess, getActorInfo } from "./authz.js";
 
 /** Characters allowed in library path segments to prevent traversal. */
 const SAFE_SEGMENT = /^[a-zA-Z0-9._-]+$/;
@@ -99,13 +100,7 @@ async function ensureLibraryRoot(libraryRoot: string): Promise<void> {
  * Seed the library directory structure and naming policy on first boot.
  */
 async function seedLibrary(libraryRoot: string): Promise<void> {
-  const dirs = [
-    "shared/policies",
-    "shared/reports",
-    "shared/guides",
-    "projects",
-    "agents",
-  ];
+  const dirs = ["shared/policies", "shared/reports", "shared/guides", "projects", "agents"];
 
   for (const dir of dirs) {
     await fs.mkdir(path.join(libraryRoot, dir), { recursive: true });
@@ -153,9 +148,7 @@ export function libraryRoutes(db: Db) {
       companyId,
     );
     // Get project access for project-visibility filtering
-    const agentProjectIds = actor.agentId
-      ? await getAgentProjectIds(db, actor.agentId)
-      : [];
+    const agentProjectIds = actor.agentId ? await getAgentProjectIds(db, actor.agentId) : [];
     // Load agents list for folder-name matching in ACL filtering
     const companyAgentsList = visibility.seeAll
       ? null
@@ -166,7 +159,7 @@ export function libraryRoutes(db: Db) {
     const relativePath = (req.query.path as string) || "";
     const targetDir = resolveSecure(libraryRoot, relativePath);
 
-    let stat;
+    let stat: Stats;
     try {
       stat = await fs.stat(targetDir);
     } catch {
@@ -184,9 +177,7 @@ export function libraryRoutes(db: Db) {
       if (dirent.name.startsWith(".")) continue;
 
       const entryPath = path.join(targetDir, dirent.name);
-      const entryRelPath = relativePath
-        ? `${relativePath}/${dirent.name}`
-        : dirent.name;
+      const entryRelPath = relativePath ? `${relativePath}/${dirent.name}` : dirent.name;
 
       try {
         const entryStat = await fs.stat(entryPath);
@@ -212,9 +203,7 @@ export function libraryRoutes(db: Db) {
         }
 
         entries.push(entry);
-      } catch {
-        continue;
-      }
+      } catch {}
     }
 
     // ACL filtering: apply org-chart-based visibility rules
@@ -243,7 +232,8 @@ export function libraryRoutes(db: Db) {
               // Look up agent by folder name
               const folderAgentName = entry.name.toLowerCase();
               const matchedAgent = companyAgentsList?.find(
-                (a: { id: string; name: string }) => a.name.toLowerCase().replace(/[\s_-]/g, "") === folderAgentName.replace(/[\s_-]/g, ""),
+                (a: { id: string; name: string }) =>
+                  a.name.toLowerCase().replace(/[\s_-]/g, "") === folderAgentName.replace(/[\s_-]/g, ""),
               );
               if (matchedAgent) {
                 return visibility.visibleOwnerAgentIds.includes(matchedAgent.id);
@@ -275,7 +265,7 @@ export function libraryRoutes(db: Db) {
 
     const filePath = resolveSecure(libraryRoot, relativePath);
 
-    let stat;
+    let stat: Stats;
     try {
       stat = await fs.stat(filePath);
     } catch {
@@ -356,7 +346,7 @@ export function libraryRoutes(db: Db) {
     async function walk(dir: string, relativeBase: string, depth: number) {
       if (depth > MAX_DEPTH || results.length >= MAX_RESULTS) return;
 
-      let dirents;
+      let dirents: Dirent[];
       try {
         dirents = await fs.readdir(dir, { withFileTypes: true });
       } catch {
@@ -367,9 +357,7 @@ export function libraryRoutes(db: Db) {
         if (results.length >= MAX_RESULTS) break;
         if (dirent.name.startsWith(".")) continue;
 
-        const entryRelPath = relativeBase
-          ? `${relativeBase}/${dirent.name}`
-          : dirent.name;
+        const entryRelPath = relativeBase ? `${relativeBase}/${dirent.name}` : dirent.name;
         const fullPath = path.join(dir, dirent.name);
 
         const nameMatches = dirent.name.toLowerCase().includes(query);
@@ -387,7 +375,8 @@ export function libraryRoutes(db: Db) {
                 // Extract surrounding context (80 chars around match)
                 const start = Math.max(0, idx - 40);
                 const end = Math.min(content.length, idx + query.length + 40);
-                contentMatch = (start > 0 ? "..." : "") +
+                contentMatch =
+                  (start > 0 ? "..." : "") +
                   content.slice(start, end).replace(/\n/g, " ") +
                   (end < content.length ? "..." : "");
               }
@@ -436,7 +425,7 @@ export function libraryRoutes(db: Db) {
     async function walk(dir: string, relativeBase: string, depth: number) {
       if (depth > MAX_DEPTH) return;
 
-      let dirents;
+      let dirents: Dirent[];
       try {
         dirents = await fs.readdir(dir, { withFileTypes: true });
       } catch {
@@ -446,9 +435,7 @@ export function libraryRoutes(db: Db) {
       for (const dirent of dirents) {
         if (dirent.name.startsWith(".")) continue;
 
-        const entryRelPath = relativeBase
-          ? `${relativeBase}/${dirent.name}`
-          : dirent.name;
+        const entryRelPath = relativeBase ? `${relativeBase}/${dirent.name}` : dirent.name;
 
         if (dirent.isDirectory()) {
           await walk(path.join(dir, dirent.name), entryRelPath, depth + 1);
@@ -466,7 +453,9 @@ export function libraryRoutes(db: Db) {
                 if (headingMatch) {
                   title = headingMatch[1].trim();
                 }
-              } catch { /* skip */ }
+              } catch {
+                /* skip */
+              }
             }
 
             await svc.registerFile({
@@ -476,9 +465,7 @@ export function libraryRoutes(db: Db) {
               sizeBytes: fileStat.size,
             });
             registered++;
-          } catch {
-            continue;
-          }
+          } catch {}
         }
       }
     }
@@ -529,7 +516,7 @@ export function libraryRoutes(db: Db) {
 
     // Verify file exists on disk
     const absPath = resolveSecure(libraryRoot, filePath);
-    let stat;
+    let stat: Stats;
     try {
       stat = await fs.stat(absPath);
     } catch {
@@ -545,9 +532,9 @@ export function libraryRoutes(db: Db) {
       filePath,
       title: title ?? null,
       sizeBytes: stat.size,
-      ownerAgentId: actor.agentId ?? (existing?.ownerAgentId ?? null),
+      ownerAgentId: actor.agentId ?? existing?.ownerAgentId ?? null,
       ownerUserId: actor.actorType === "user" ? actor.actorId : (existing?.ownerUserId ?? null),
-      projectId: projectId ?? (existing?.projectId ?? null),
+      projectId: projectId ?? existing?.projectId ?? null,
       action,
       issueId: issueId ?? null,
       changeSummary: changeSummary ?? null,

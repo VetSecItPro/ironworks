@@ -1,8 +1,8 @@
+import { Check, ChevronDown, ChevronRight, Code, Copy } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { cn } from "../lib/utils";
-import { Code, Copy, Check, ChevronDown, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 /* ── Endpoint definitions ── */
 interface ApiEndpoint {
@@ -26,7 +26,8 @@ const API_CATEGORIES: ApiCategory[] = [
       {
         method: "GET",
         path: "/companies/:companyId/issues",
-        description: "List all issues for a company. Supports filters: status, projectId, assigneeAgentId, labelId, q (search).",
+        description:
+          "List all issues for a company. Supports filters: status, projectId, assigneeAgentId, labelId, q (search).",
         exampleResponse: `[
   {
     "id": "iss_abc123",
@@ -43,7 +44,8 @@ const API_CATEGORIES: ApiCategory[] = [
       {
         method: "POST",
         path: "/companies/:companyId/issues",
-        description: "Create a new issue. Required fields: title. Optional: description, status, priority, projectId, assigneeAgentId.",
+        description:
+          "Create a new issue. Required fields: title. Optional: description, status, priority, projectId, assigneeAgentId.",
         exampleResponse: `{
   "id": "iss_new456",
   "identifier": "PAP-43",
@@ -55,7 +57,8 @@ const API_CATEGORIES: ApiCategory[] = [
       {
         method: "PATCH",
         path: "/issues/:id",
-        description: "Update an issue. Supports partial updates for title, description, status, priority, assigneeAgentId, and more.",
+        description:
+          "Update an issue. Supports partial updates for title, description, status, priority, assigneeAgentId, and more.",
         exampleResponse: `{
   "id": "iss_abc123",
   "title": "Updated title",
@@ -107,7 +110,8 @@ const API_CATEGORIES: ApiCategory[] = [
       {
         method: "GET",
         path: "/companies/:companyId/goals",
-        description: "List all goals for a company. Returns goal title, status, progress, target date, and linked issues count.",
+        description:
+          "List all goals for a company. Returns goal title, status, progress, target date, and linked issues count.",
         exampleResponse: `[
   {
     "id": "goal_001",
@@ -171,7 +175,8 @@ const API_CATEGORIES: ApiCategory[] = [
       {
         method: "GET",
         path: "/companies/:companyId/approvals",
-        description: "List approvals. Filter by status (pending, approved, rejected). Returns approval details and linked issue.",
+        description:
+          "List approvals. Filter by status (pending, approved, rejected). Returns approval details and linked issue.",
         exampleResponse: `[
   {
     "id": "apr_001",
@@ -187,7 +192,8 @@ const API_CATEGORIES: ApiCategory[] = [
       {
         method: "POST",
         path: "/approvals/:id/resolve",
-        description: "Approve or reject an approval. Send { \"decision\": \"approved\" } or { \"decision\": \"rejected\" } with optional feedback.",
+        description:
+          'Approve or reject an approval. Send { "decision": "approved" } or { "decision": "rejected" } with optional feedback.',
         exampleResponse: `{
   "id": "apr_001",
   "status": "approved",
@@ -317,17 +323,21 @@ function EndpointCard({ endpoint }: { endpoint: ApiEndpoint }) {
   const [copied, setCopied] = useState(false);
 
   function handleCopy() {
-    navigator.clipboard.writeText(endpoint.exampleResponse).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    }).catch((err: unknown) => {
-      console.error("Clipboard write failed", err instanceof Error ? err.message : err);
-    });
+    navigator.clipboard
+      .writeText(endpoint.exampleResponse)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      })
+      .catch((err: unknown) => {
+        console.error("Clipboard write failed", err instanceof Error ? err.message : err);
+      });
   }
 
   return (
     <div className="rounded-lg border border-border overflow-hidden">
       <button
+        type="button"
         className="flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-accent/30 transition-colors"
         onClick={() => setExpanded(!expanded)}
       >
@@ -339,9 +349,7 @@ function EndpointCard({ endpoint }: { endpoint: ApiEndpoint }) {
         >
           {endpoint.method}
         </span>
-        <code className="text-sm font-mono text-foreground/90 flex-1 truncate">
-          {endpoint.path}
-        </code>
+        <code className="text-sm font-mono text-foreground/90 flex-1 truncate">{endpoint.path}</code>
         {expanded ? (
           <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
         ) : (
@@ -354,16 +362,17 @@ function EndpointCard({ endpoint }: { endpoint: ApiEndpoint }) {
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-xs font-medium text-muted-foreground">Example Response</span>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-6 text-[10px] px-2"
-                onClick={handleCopy}
-              >
+              <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={handleCopy}>
                 {copied ? (
-                  <><Check className="h-3 w-3 mr-1" />Copied</>
+                  <>
+                    <Check className="h-3 w-3 mr-1" />
+                    Copied
+                  </>
                 ) : (
-                  <><Copy className="h-3 w-3 mr-1" />Copy</>
+                  <>
+                    <Copy className="h-3 w-3 mr-1" />
+                    Copy
+                  </>
                 )}
               </Button>
             </div>

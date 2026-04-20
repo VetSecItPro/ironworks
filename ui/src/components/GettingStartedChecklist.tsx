@@ -1,6 +1,6 @@
+import { Bot, Building2, Check, ChevronRight, FileCheck, Key, ListTodo, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "@/lib/router";
-import { Check, ChevronRight, X, Building2, Key, Bot, ListTodo, FileCheck } from "lucide-react";
 import { cn } from "../lib/utils";
 
 const STORAGE_KEY = "ironworks.gettingStarted";
@@ -26,14 +26,18 @@ function loadState(): ChecklistState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return { ...DEFAULT_STATE, ...JSON.parse(raw) };
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return DEFAULT_STATE;
 }
 
 function saveState(state: ChecklistState) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 function isDismissed(): boolean {
@@ -110,7 +114,13 @@ interface GettingStartedChecklistProps {
   hasTasks?: boolean;
 }
 
-export function GettingStartedChecklist({ className, hasCompany, hasProvider, hasAgents, hasTasks }: GettingStartedChecklistProps) {
+export function GettingStartedChecklist({
+  className,
+  hasCompany,
+  hasProvider,
+  hasAgents,
+  hasTasks,
+}: GettingStartedChecklistProps) {
   const [state, setState] = useState<ChecklistState>(loadState);
   const [dismissed, setDismissed] = useState(isDismissed);
 
@@ -118,11 +128,26 @@ export function GettingStartedChecklist({ className, hasCompany, hasProvider, ha
   useEffect(() => {
     let changed = false;
     const next = { ...state };
-    if (hasCompany && !next.companyCreated) { next.companyCreated = true; changed = true; }
-    if (hasProvider && !next.providerConnected) { next.providerConnected = true; changed = true; }
-    if (hasAgents && !next.agentCreated) { next.agentCreated = true; changed = true; }
-    if (hasTasks && !next.taskAssigned) { next.taskAssigned = true; changed = true; }
-    if (changed) { setState(next); saveState(next); }
+    if (hasCompany && !next.companyCreated) {
+      next.companyCreated = true;
+      changed = true;
+    }
+    if (hasProvider && !next.providerConnected) {
+      next.providerConnected = true;
+      changed = true;
+    }
+    if (hasAgents && !next.agentCreated) {
+      next.agentCreated = true;
+      changed = true;
+    }
+    if (hasTasks && !next.taskAssigned) {
+      next.taskAssigned = true;
+      changed = true;
+    }
+    if (changed) {
+      setState(next);
+      saveState(next);
+    }
   }, [hasCompany, hasProvider, hasAgents, hasTasks]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Listen for cross-component updates
@@ -172,7 +197,11 @@ export function GettingStartedChecklist({ className, hasCompany, hasProvider, ha
             type="button"
             onClick={() => {
               setDismissed(true);
-              try { localStorage.setItem(DISMISSED_KEY, "true"); } catch { /* ignore */ }
+              try {
+                localStorage.setItem(DISMISSED_KEY, "true");
+              } catch {
+                /* ignore */
+              }
             }}
             className="text-muted-foreground hover:text-foreground transition-colors p-0.5"
             aria-label="Dismiss getting started checklist"
@@ -184,7 +213,7 @@ export function GettingStartedChecklist({ className, hasCompany, hasProvider, ha
       <div className="divide-y divide-border">
         {CHECKLIST_ITEMS.map((item) => {
           const isComplete = state[item.key];
-          const Icon = item.icon;
+          const _Icon = item.icon;
           return (
             <div key={item.key} className="flex items-center gap-3 px-4 py-3">
               <button
@@ -192,9 +221,7 @@ export function GettingStartedChecklist({ className, hasCompany, hasProvider, ha
                 onClick={() => toggleItem(item.key)}
                 className={cn(
                   "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors",
-                  isComplete
-                    ? "border-green-500 bg-green-500 text-white"
-                    : "border-border hover:border-foreground/40"
+                  isComplete ? "border-green-500 bg-green-500 text-white" : "border-border hover:border-foreground/40",
                 )}
                 aria-label={isComplete ? `Mark "${item.label}" incomplete` : `Mark "${item.label}" complete`}
               >
@@ -207,10 +234,7 @@ export function GettingStartedChecklist({ className, hasCompany, hasProvider, ha
                 <p className="text-xs text-muted-foreground">{item.description}</p>
               </div>
               {item.href && !isComplete && (
-                <Link
-                  to={item.href}
-                  className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-                >
+                <Link to={item.href} className="shrink-0 text-muted-foreground hover:text-foreground transition-colors">
                   <ChevronRight className="h-4 w-4" />
                 </Link>
               )}

@@ -1,13 +1,13 @@
-import { useState } from "react";
+import type { MembershipRole } from "@ironworksai/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { userInvitesApi, type UserInviteCreated, type UserInviteRecord } from "../api/userInvites";
+import { Check, Clock, Copy, RotateCcw, UserPlus, X } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { type UserInviteCreated, type UserInviteRecord, userInvitesApi } from "../api/userInvites";
 import { useCompany } from "../context/CompanyContext";
 import { useToast } from "../context/ToastContext";
 import { queryKeys } from "../lib/queryKeys";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Copy, Check, UserPlus, X, Clock, RotateCcw } from "lucide-react";
-import type { MembershipRole } from "@ironworksai/shared";
 
 const ROLE_OPTIONS: { value: MembershipRole; label: string; description: string }[] = [
   { value: "owner", label: "Owner", description: "Full access including billing" },
@@ -27,13 +27,7 @@ function dateTimeRelative(value: string) {
   return `${hours}h`;
 }
 
-export function InviteUserDialog({
-  open,
-  onOpenChange,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
+export function InviteUserDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { selectedCompanyId } = useCompany();
   const { pushToast } = useToast();
   const queryClient = useQueryClient();
@@ -54,8 +48,7 @@ export function InviteUserDialog({
   });
 
   const createMutation = useMutation({
-    mutationFn: () =>
-      userInvitesApi.create(selectedCompanyId!, { email: email.trim(), role }),
+    mutationFn: () => userInvitesApi.create(selectedCompanyId!, { email: email.trim(), role }),
     onSuccess: (created) => {
       setError(null);
       setLastCreated(created);
@@ -82,8 +75,7 @@ export function InviteUserDialog({
   });
 
   const revokeMutation = useMutation({
-    mutationFn: (inviteId: string) =>
-      userInvitesApi.revoke(selectedCompanyId!, inviteId),
+    mutationFn: (inviteId: string) => userInvitesApi.revoke(selectedCompanyId!, inviteId),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.userInvites.list(selectedCompanyId!),
@@ -166,7 +158,10 @@ export function InviteUserDialog({
             </label>
             <button
               type="button"
-              onClick={() => { setMultiMode(!multiMode); setMultiResults([]); }}
+              onClick={() => {
+                setMultiMode(!multiMode);
+                setMultiResults([]);
+              }}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               {multiMode ? "Single invite" : "Invite multiple"}
@@ -199,7 +194,7 @@ export function InviteUserDialog({
           </div>
 
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Role</label>
+            <span className="text-xs text-muted-foreground mb-1 block">Role</span>
             <div className="grid grid-cols-2 gap-2">
               {ROLE_OPTIONS.map((opt) => (
                 <button
@@ -223,11 +218,7 @@ export function InviteUserDialog({
 
           <Button
             type="submit"
-            disabled={
-              multiMode
-                ? isSendingMulti || !multiEmails.trim()
-                : !email.trim() || createMutation.isPending
-            }
+            disabled={multiMode ? isSendingMulti || !multiEmails.trim() : !email.trim() || createMutation.isPending}
             className="w-full"
           >
             {multiMode

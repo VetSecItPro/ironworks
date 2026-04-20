@@ -24,6 +24,7 @@ export function PlaybookCard({
 }) {
   return (
     <button
+      type="button"
       onClick={onSelect}
       className={cn(
         "w-full text-left p-3 border-b border-border transition-colors",
@@ -51,9 +52,7 @@ export function PlaybookCard({
         )}
       </div>
       {playbook.description && (
-        <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2">
-          {playbook.description}
-        </p>
+        <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2">{playbook.description}</p>
       )}
     </button>
   );

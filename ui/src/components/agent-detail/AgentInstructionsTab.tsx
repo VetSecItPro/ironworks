@@ -1,28 +1,22 @@
-import { useCallback, useEffect, useMemo, useState, useRef } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { Agent } from "@ironworksai/shared";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ChevronRight, Copy, FolderOpen, HelpCircle } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { agentsApi } from "../../api/agents";
 import { assetsApi } from "../../api/assets";
 import { useCompany } from "../../context/CompanyContext";
 import { useSidebar } from "../../context/SidebarContext";
 import { queryKeys } from "../../lib/queryKeys";
-import { MarkdownEditor } from "../MarkdownEditor";
-import { CopyText } from "../CopyText";
-import { PackageFileTree, buildFileTree } from "../PackageFileTree";
 import { cn } from "../../lib/utils";
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { Input } from "@/components/ui/input";
-import {
-  ChevronRight,
-  HelpCircle,
-  Copy,
-  FolderOpen,
-} from "lucide-react";
-import type { Agent } from "@ironworksai/shared";
+import { CopyText } from "../CopyText";
+import { MarkdownEditor } from "../MarkdownEditor";
+import { buildFileTree, PackageFileTree } from "../PackageFileTree";
 import { isMarkdown, setsEqual } from "./agent-detail-utils";
-import { CloudInstructionsEditor, PromptsTabSkeleton, PromptEditorSkeleton } from "./CloudInstructionsEditor";
+import { CloudInstructionsEditor, PromptEditorSkeleton, PromptsTabSkeleton } from "./CloudInstructionsEditor";
 
 export function PromptsTab({
   agent,
@@ -93,26 +87,23 @@ export function PromptsTab({
   });
 
   const persistedMode = bundle?.mode ?? "managed";
-  const persistedRootPath = persistedMode === "managed"
-    ? (bundle?.managedRootPath ?? bundle?.rootPath ?? "")
-    : (bundle?.rootPath ?? "");
+  const persistedRootPath =
+    persistedMode === "managed" ? (bundle?.managedRootPath ?? bundle?.rootPath ?? "") : (bundle?.rootPath ?? "");
   const currentMode = bundleDraft?.mode ?? persistedMode;
   const currentEntryFile = bundleDraft?.entryFile ?? bundle?.entryFile ?? "AGENTS.md";
   const currentRootPath = bundleDraft?.rootPath ?? persistedRootPath;
-  const fileOptions = useMemo(
-    () => bundle?.files.map((file) => file.path) ?? [],
-    [bundle],
-  );
+  const fileOptions = useMemo(() => bundle?.files.map((file) => file.path) ?? [], [bundle]);
   const bundleMatchesDraft = Boolean(
     bundle &&
-    currentMode === persistedMode &&
-    currentEntryFile === bundle.entryFile &&
-    currentRootPath === persistedRootPath,
+      currentMode === persistedMode &&
+      currentEntryFile === bundle.entryFile &&
+      currentRootPath === persistedRootPath,
   );
   const visibleFilePaths = useMemo(
-    () => bundleMatchesDraft
-      ? [...new Set([currentEntryFile, ...fileOptions, ...pendingFiles])]
-      : [currentEntryFile, ...pendingFiles],
+    () =>
+      bundleMatchesDraft
+        ? [...new Set([currentEntryFile, ...fileOptions, ...pendingFiles])]
+        : [currentEntryFile, ...pendingFiles],
     [bundleMatchesDraft, currentEntryFile, fileOptions, pendingFiles],
   );
   const fileTree = useMemo(
@@ -189,7 +180,11 @@ export function PromptsTab({
       if (selectedFile !== bundle.entryFile) setSelectedFile(bundle.entryFile);
       return;
     }
-    if (!availablePaths.includes(selectedFile) && selectedFile !== currentEntryFile && !pendingFiles.includes(selectedFile)) {
+    if (
+      !availablePaths.includes(selectedFile) &&
+      selectedFile !== currentEntryFile &&
+      !pendingFiles.includes(selectedFile)
+    ) {
       setSelectedFile(availablePaths.includes(bundle.entryFile) ? bundle.entryFile : availablePaths[0]!);
     }
   }, [bundle, bundleMatchesDraft, currentEntryFile, pendingFiles, selectedFile]);
@@ -208,9 +203,10 @@ export function PromptsTab({
   }, [visibleFilePaths]);
 
   useEffect(() => {
-    const versionKey = selectedFileExists && selectedFileDetail
-      ? `${selectedFileDetail.path}:${selectedFileDetail.content}`
-      : `draft:${currentMode}:${currentRootPath}:${selectedOrEntryFile}`;
+    const versionKey =
+      selectedFileExists && selectedFileDetail
+        ? `${selectedFileDetail.path}:${selectedFileDetail.content}`
+        : `draft:${currentMode}:${currentRootPath}:${selectedOrEntryFile}`;
     if (awaitingRefresh) {
       setAwaitingRefresh(false);
       setBundleDraft(null);
@@ -249,43 +245,49 @@ export function PromptsTab({
   const displayValue = draft ?? currentContent;
   const bundleDirty = Boolean(
     bundleDraft &&
-      (
-        bundleDraft.mode !== persistedMode ||
+      (bundleDraft.mode !== persistedMode ||
         bundleDraft.rootPath !== persistedRootPath ||
-        bundleDraft.entryFile !== (bundle?.entryFile ?? "AGENTS.md")
-      ),
+        bundleDraft.entryFile !== (bundle?.entryFile ?? "AGENTS.md")),
   );
   const fileDirty = draft !== null && draft !== currentContent;
   const isDirty = bundleDirty || fileDirty;
   const isSaving = updateBundle.isPending || saveFile.isPending || deleteFile.isPending || awaitingRefresh;
 
-  useEffect(() => { onSavingChange(isSaving); }, [onSavingChange, isSaving]);
-  useEffect(() => { onDirtyChange(isDirty); }, [onDirtyChange, isDirty]);
+  useEffect(() => {
+    onSavingChange(isSaving);
+  }, [onSavingChange, isSaving]);
+  useEffect(() => {
+    onDirtyChange(isDirty);
+  }, [onDirtyChange, isDirty]);
 
   useEffect(() => {
-    onSaveActionChange(isDirty ? () => {
-      const save = async () => {
-        const shouldClearLegacy =
-          Boolean(bundle?.legacyPromptTemplateActive) || Boolean(bundle?.legacyBootstrapPromptTemplateActive);
-        if (bundleDirty && bundleDraft) {
-          await updateBundle.mutateAsync({
-            mode: bundleDraft.mode,
-            rootPath: bundleDraft.mode === "external" ? bundleDraft.rootPath : null,
-            entryFile: bundleDraft.entryFile,
-          });
-        }
-        if (fileDirty) {
-          await saveFile.mutateAsync({
-            path: selectedOrEntryFile,
-            content: displayValue,
-            clearLegacyPromptTemplate: shouldClearLegacy,
-          });
-        }
-      };
-      void save().catch((err: unknown) => {
-        console.error("Failed to autosave agent instructions", err instanceof Error ? err.message : err);
-      });
-    } : null);
+    onSaveActionChange(
+      isDirty
+        ? () => {
+            const save = async () => {
+              const shouldClearLegacy =
+                Boolean(bundle?.legacyPromptTemplateActive) || Boolean(bundle?.legacyBootstrapPromptTemplateActive);
+              if (bundleDirty && bundleDraft) {
+                await updateBundle.mutateAsync({
+                  mode: bundleDraft.mode,
+                  rootPath: bundleDraft.mode === "external" ? bundleDraft.rootPath : null,
+                  entryFile: bundleDraft.entryFile,
+                });
+              }
+              if (fileDirty) {
+                await saveFile.mutateAsync({
+                  path: selectedOrEntryFile,
+                  content: displayValue,
+                  clearLegacyPromptTemplate: shouldClearLegacy,
+                });
+              }
+            };
+            void save().catch((err: unknown) => {
+              console.error("Failed to autosave agent instructions", err instanceof Error ? err.message : err);
+            });
+          }
+        : null,
+    );
   }, [
     bundle,
     bundleDirty,
@@ -300,38 +302,45 @@ export function PromptsTab({
   ]);
 
   useEffect(() => {
-    onCancelActionChange(isDirty ? () => {
-      setDraft(null);
-      if (bundle) {
-        setBundleDraft({
-          mode: persistedMode,
-          rootPath: persistedRootPath,
-          entryFile: bundle.entryFile,
-        });
-      }
-    } : null);
+    onCancelActionChange(
+      isDirty
+        ? () => {
+            setDraft(null);
+            if (bundle) {
+              setBundleDraft({
+                mode: persistedMode,
+                rootPath: persistedRootPath,
+                entryFile: bundle.entryFile,
+              });
+            }
+          }
+        : null,
+    );
   }, [bundle, isDirty, onCancelActionChange, persistedMode, persistedRootPath]);
 
-  const handleSeparatorDrag = useCallback((event: React.MouseEvent) => {
-    event.preventDefault();
-    const startX = event.clientX;
-    const startWidth = filePanelWidth;
-    const onMouseMove = (moveEvent: MouseEvent) => {
-      const delta = moveEvent.clientX - startX;
-      const next = Math.max(180, Math.min(500, startWidth + delta));
-      setFilePanelWidth(next);
-    };
-    const onMouseUp = () => {
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-    };
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
-  }, [filePanelWidth]);
+  const handleSeparatorDrag = useCallback(
+    (event: React.MouseEvent) => {
+      event.preventDefault();
+      const startX = event.clientX;
+      const startWidth = filePanelWidth;
+      const onMouseMove = (moveEvent: MouseEvent) => {
+        const delta = moveEvent.clientX - startX;
+        const next = Math.max(180, Math.min(500, startWidth + delta));
+        setFilePanelWidth(next);
+      };
+      const onMouseUp = () => {
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", onMouseUp);
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+      };
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+    },
+    [filePanelWidth],
+  );
 
   if (!isLocal) {
     return (
@@ -355,7 +364,10 @@ export function PromptsTab({
       {(bundle?.warnings ?? []).length > 0 && (
         <div className="space-y-2">
           {(bundle?.warnings ?? []).map((warning) => (
-            <div key={warning} className="rounded-md border border-sky-500/25 bg-sky-500/10 px-3 py-2 text-xs text-sky-100">
+            <div
+              key={warning}
+              className="rounded-md border border-sky-500/25 bg-sky-500/10 px-3 py-2 text-xs text-sky-100"
+            >
               {warning}
             </div>
           ))}
@@ -370,7 +382,7 @@ export function PromptsTab({
         <CollapsibleContent className="pt-4 pb-6">
           <TooltipProvider>
             <div className="grid gap-x-6 gap-y-4 sm:grid-cols-[auto_1fr_1fr]">
-              <label className="space-y-1.5">
+              <div className="space-y-1.5">
                 <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                   Mode
                   <Tooltip>
@@ -378,7 +390,8 @@ export function PromptsTab({
                       <HelpCircle className="h-3 w-3 text-muted-foreground cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent side="right" sideOffset={4}>
-                      Managed: Ironworks stores and serves the instructions bundle. External: you provide a path on disk where the instructions live.
+                      Managed: Ironworks stores and serves the instructions bundle. External: you provide a path on disk
+                      where the instructions live.
                     </TooltipContent>
                   </Tooltip>
                 </span>
@@ -415,7 +428,8 @@ export function PromptsTab({
                       const nextEntryFile = externalBundle?.entryFile ?? currentEntryFile ?? "AGENTS.md";
                       setBundleDraft({
                         mode: "external",
-                        rootPath: externalBundle?.rootPath ?? (bundle?.mode === "external" ? (bundle.rootPath ?? "") : ""),
+                        rootPath:
+                          externalBundle?.rootPath ?? (bundle?.mode === "external" ? (bundle.rootPath ?? "") : ""),
                         entryFile: nextEntryFile,
                       });
                       setSelectedFile(externalBundle?.selectedFile ?? nextEntryFile);
@@ -424,8 +438,8 @@ export function PromptsTab({
                     External
                   </Button>
                 </div>
-              </label>
-              <label className="space-y-1.5 min-w-0">
+              </div>
+              <div className="space-y-1.5 min-w-0">
                 <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                   Root path
                   <Tooltip>
@@ -433,13 +447,16 @@ export function PromptsTab({
                       <HelpCircle className="h-3 w-3 text-muted-foreground cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent side="right" sideOffset={4}>
-                      The absolute directory on disk where the instructions bundle lives. In managed mode this is set by Ironworks automatically.
+                      The absolute directory on disk where the instructions bundle lives. In managed mode this is set by
+                      Ironworks automatically.
                     </TooltipContent>
                   </Tooltip>
                 </span>
                 {currentMode === "managed" ? (
                   <div className="flex items-center gap-1.5 font-mono text-xs text-muted-foreground pt-1.5">
-                    <span className="min-w-0 truncate" title={currentRootPath || undefined}>{currentRootPath || "(managed)"}</span>
+                    <span className="min-w-0 truncate" title={currentRootPath || undefined}>
+                      {currentRootPath || "(managed)"}
+                    </span>
                     {currentRootPath && (
                       <CopyText text={currentRootPath} className="shrink-0">
                         <Copy className="h-3.5 w-3.5" />
@@ -473,8 +490,8 @@ export function PromptsTab({
                     )}
                   </div>
                 )}
-              </label>
-              <label className="space-y-1.5">
+              </div>
+              <div className="space-y-1.5">
                 <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">
                   Entry file
                   <Tooltip>
@@ -490,9 +507,8 @@ export function PromptsTab({
                   value={currentEntryFile}
                   onChange={(event) => {
                     const nextEntryFile = event.target.value || "AGENTS.md";
-                    const nextSelectedFile = selectedOrEntryFile === currentEntryFile
-                      ? nextEntryFile
-                      : selectedOrEntryFile;
+                    const nextSelectedFile =
+                      selectedOrEntryFile === currentEntryFile ? nextEntryFile : selectedOrEntryFile;
                     if (currentMode === "external") {
                       externalBundleRef.current = {
                         rootPath: currentRootPath,
@@ -509,18 +525,21 @@ export function PromptsTab({
                   }}
                   className="font-mono text-sm"
                 />
-              </label>
+              </div>
             </div>
           </TooltipProvider>
         </CollapsibleContent>
       </Collapsible>
 
       <div ref={containerRef} className={cn("flex gap-0", isMobile && "flex-col gap-3")}>
-        <div className={cn(
-          "border border-border rounded-lg p-3 space-y-3 shrink-0",
-          isMobile && showFilePanel && "block",
-          isMobile && !showFilePanel && "hidden",
-        )} style={isMobile ? undefined : { width: filePanelWidth }}>
+        <div
+          className={cn(
+            "border border-border rounded-lg p-3 space-y-3 shrink-0",
+            isMobile && showFilePanel && "block",
+            isMobile && !showFilePanel && "hidden",
+          )}
+          style={isMobile ? undefined : { width: filePanelWidth }}
+        >
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-medium">Files</h4>
             <div className="flex items-center gap-1">
@@ -573,7 +592,7 @@ export function PromptsTab({
                   onClick={() => {
                     const candidate = newFilePath.trim();
                     if (!candidate || candidate.includes("..")) return;
-                    setPendingFiles((prev) => prev.includes(candidate) ? prev : [...prev, candidate]);
+                    setPendingFiles((prev) => (prev.includes(candidate) ? prev : [...prev, candidate]));
                     setSelectedFile(candidate);
                     setDraft("");
                     setNewFilePath("");
@@ -602,12 +621,14 @@ export function PromptsTab({
             selectedFile={selectedOrEntryFile}
             expandedDirs={expandedDirs}
             checkedFiles={new Set()}
-            onToggleDir={(dirPath) => setExpandedDirs((current) => {
-              const next = new Set(current);
-              if (next.has(dirPath)) next.delete(dirPath);
-              else next.add(dirPath);
-              return next;
-            })}
+            onToggleDir={(dirPath) =>
+              setExpandedDirs((current) => {
+                const next = new Set(current);
+                if (next.has(dirPath)) next.delete(dirPath);
+                else next.add(dirPath);
+                return next;
+              })
+            }
             onSelectFile={(filePath) => {
               setSelectedFile(filePath);
               if (!fileOptions.includes(filePath)) setDraft("");
@@ -641,15 +662,26 @@ export function PromptsTab({
           />
         </div>
 
-        {/* Draggable separator */}
+        {/* Draggable separator. resize splitter; aria-valuenow not applicable for a non-slider resize handle */}
         {!isMobile && (
+          // biome-ignore lint/a11y/useSemanticElements: resize splitter uses role="separator" on div; <hr> doesn't support onMouseDown
           <div
+            // biome-ignore lint/a11y/useAriaPropsForRole: aria-valuenow is required by spec but not meaningful for a resize splitter handle
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize panels"
+            tabIndex={0}
             className="w-1 shrink-0 cursor-col-resize hover:bg-border active:bg-primary/50 rounded transition-colors mx-1"
             onMouseDown={handleSeparatorDrag}
           />
         )}
 
-        <div className={cn("border border-border rounded-lg p-4 space-y-3 min-w-0 flex-1", isMobile && showFilePanel && "hidden")}>
+        <div
+          className={cn(
+            "border border-border rounded-lg p-4 space-y-3 min-w-0 flex-1",
+            isMobile && showFilePanel && "hidden",
+          )}
+        >
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 min-w-0">
               {isMobile && (
@@ -721,7 +753,6 @@ export function PromptsTab({
           )}
         </div>
       </div>
-
     </div>
   );
 }

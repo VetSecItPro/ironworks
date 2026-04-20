@@ -1,7 +1,7 @@
-import { memo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Bug, Moon, Sun } from "lucide-react";
+import { memo } from "react";
 import { Link } from "@/lib/router";
-import { Bug, Moon, Settings, Sun } from "lucide-react";
 import { dashboardApi } from "../api/dashboard";
 import { heartbeatsApi } from "../api/heartbeats";
 import { useCompany } from "../context/CompanyContext";
@@ -56,12 +56,13 @@ export const StatusBar = memo(function StatusBar({
       {/* System metrics - left side */}
       <div className="flex items-center gap-3">
         {agentCount !== null && (
-          <Link to="/agents" className="inline-flex items-center gap-1 hover:text-foreground transition-colors no-underline">
+          <Link
+            to="/agents"
+            className="inline-flex items-center gap-1 hover:text-foreground transition-colors no-underline"
+          >
             <span className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
             <span>{agentCount} agents</span>
-            {runningCount > 0 && (
-              <span className="text-emerald-500">({runningCount} running)</span>
-            )}
+            {runningCount > 0 && <span className="text-emerald-500">({runningCount} running)</span>}
           </Link>
         )}
         {activeRuns > 0 && (
@@ -82,23 +83,43 @@ export const StatusBar = memo(function StatusBar({
       <div className="flex items-center gap-3">
         <span className="opacity-60">IronWorks</span>
         <span className="text-border/50">|</span>
-        <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>
-        <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
-        <Link to="/aup" className="hover:text-foreground transition-colors">AUP</Link>
+        <Link to="/terms" className="hover:text-foreground transition-colors">
+          Terms
+        </Link>
+        <Link to="/privacy" className="hover:text-foreground transition-colors">
+          Privacy
+        </Link>
+        <Link to="/aup" className="hover:text-foreground transition-colors">
+          AUP
+        </Link>
         <span className="text-border/50">|</span>
-        <button type="button" onClick={onBugReport} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
-          <Bug className="h-3 w-3" />Report a Bug
+        <button
+          type="button"
+          onClick={onBugReport}
+          className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+        >
+          <Bug className="h-3 w-3" />
+          Report a Bug
         </button>
         {changelogTrigger}
         {isInstanceAdmin && (
           <>
             <span className="text-border/50">|</span>
-            <Link to={instanceSettingsTarget} className="hover:text-foreground transition-colors" title="Settings">Settings</Link>
-            <Link to="/manage" className="hover:text-foreground transition-colors" title="Admin">Admin</Link>
+            <Link to={instanceSettingsTarget} className="hover:text-foreground transition-colors" title="Settings">
+              Settings
+            </Link>
+            <Link to="/manage" className="hover:text-foreground transition-colors" title="Admin">
+              Admin
+            </Link>
           </>
         )}
         <span className="text-border/50">|</span>
-        <button type="button" onClick={toggleTheme} className="hover:text-foreground transition-colors" aria-label={`Switch to ${nextTheme} mode`}>
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="hover:text-foreground transition-colors"
+          aria-label={`Switch to ${nextTheme} mode`}
+        >
           {theme === "dark" ? <Sun className="h-3 w-3" /> : <Moon className="h-3 w-3" />}
         </button>
       </div>

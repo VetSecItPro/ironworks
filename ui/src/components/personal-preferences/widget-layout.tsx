@@ -1,6 +1,6 @@
+import { Eye, EyeOff, GripVertical, LayoutGrid, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { GripVertical, LayoutGrid, Eye, EyeOff, RotateCcw } from "lucide-react";
 import { cn } from "../../lib/utils";
 
 const PREFIX = "ironworks:prefs";
@@ -30,17 +30,20 @@ export function loadWidgetLayout(): WidgetConfig[] {
     if (raw) {
       const saved = JSON.parse(raw) as WidgetConfig[];
       const savedMap = new Map(saved.map((w) => [w.id, w]));
-      return DEFAULT_WIDGETS.map((def) => savedMap.get(def.id) ?? def)
-        .sort((a, b) => a.order - b.order);
+      return DEFAULT_WIDGETS.map((def) => savedMap.get(def.id) ?? def).sort((a, b) => a.order - b.order);
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return DEFAULT_WIDGETS;
 }
 
 export function saveWidgetLayout(widgets: WidgetConfig[]) {
   try {
     localStorage.setItem(LAYOUT_KEY, JSON.stringify(widgets));
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 interface WidgetLayoutEditorProps {
@@ -80,6 +83,7 @@ export function WidgetLayoutEditor({ widgets, onChange }: WidgetLayoutEditorProp
       </div>
       <div className="space-y-1">
         {widgets.map((widget, index) => (
+          // biome-ignore lint/a11y/noStaticElementInteractions: draggable widget row handles drag events for reordering, not click interaction
           <div
             key={widget.id}
             draggable
@@ -106,11 +110,7 @@ export function WidgetLayoutEditor({ widgets, onChange }: WidgetLayoutEditorProp
               className="text-muted-foreground hover:text-foreground transition-colors"
               title={widget.visible ? "Hide widget" : "Show widget"}
             >
-              {widget.visible ? (
-                <Eye className="h-3.5 w-3.5" />
-              ) : (
-                <EyeOff className="h-3.5 w-3.5" />
-              )}
+              {widget.visible ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
             </button>
           </div>
         ))}

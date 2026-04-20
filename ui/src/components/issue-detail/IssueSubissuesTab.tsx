@@ -1,8 +1,8 @@
-import { Link } from "@/lib/router";
-import { StatusIcon } from "@/components/StatusIcon";
-import { PriorityIcon } from "@/components/PriorityIcon";
-import { Identity } from "@/components/Identity";
 import type { Agent } from "@ironworksai/shared";
+import { Identity } from "@/components/Identity";
+import { PriorityIcon } from "@/components/PriorityIcon";
+import { StatusIcon } from "@/components/StatusIcon";
+import { Link } from "@/lib/router";
 
 interface ChildIssue {
   id: string;
@@ -36,17 +36,18 @@ export function IssueSubissuesTab({ childIssues, agentMap, locationState }: Issu
           <div className="flex items-center gap-2 min-w-0">
             <StatusIcon status={child.status} />
             <PriorityIcon priority={child.priority} />
-            <span className="font-mono text-muted-foreground shrink-0">
-              {child.identifier ?? child.id.slice(0, 8)}
-            </span>
+            <span className="font-mono text-muted-foreground shrink-0">{child.identifier ?? child.id.slice(0, 8)}</span>
             <span className="truncate">{child.title}</span>
           </div>
-          {child.assigneeAgentId && (() => {
-            const name = agentMap.get(child.assigneeAgentId)?.name;
-            return name
-              ? <Identity name={name} size="sm" />
-              : <span className="text-muted-foreground font-mono">{child.assigneeAgentId.slice(0, 8)}</span>;
-          })()}
+          {child.assigneeAgentId &&
+            (() => {
+              const name = agentMap.get(child.assigneeAgentId)?.name;
+              return name ? (
+                <Identity name={name} size="sm" />
+              ) : (
+                <span className="text-muted-foreground font-mono">{child.assigneeAgentId.slice(0, 8)}</span>
+              );
+            })()}
         </Link>
       ))}
     </div>

@@ -14,9 +14,7 @@ export const sessionCodec: AdapterSessionCodec = {
       readNonEmptyString(record.sessionID);
     if (!sessionId) return null;
     const cwd =
-      readNonEmptyString(record.cwd) ??
-      readNonEmptyString(record.workdir) ??
-      readNonEmptyString(record.folder);
+      readNonEmptyString(record.cwd) ?? readNonEmptyString(record.workdir) ?? readNonEmptyString(record.folder);
     const workspaceId = readNonEmptyString(record.workspaceId) ?? readNonEmptyString(record.workspace_id);
     const repoUrl = readNonEmptyString(record.repoUrl) ?? readNonEmptyString(record.repo_url);
     const repoRef = readNonEmptyString(record.repoRef) ?? readNonEmptyString(record.repo_ref);
@@ -36,9 +34,7 @@ export const sessionCodec: AdapterSessionCodec = {
       readNonEmptyString(params.sessionID);
     if (!sessionId) return null;
     const cwd =
-      readNonEmptyString(params.cwd) ??
-      readNonEmptyString(params.workdir) ??
-      readNonEmptyString(params.folder);
+      readNonEmptyString(params.cwd) ?? readNonEmptyString(params.workdir) ?? readNonEmptyString(params.folder);
     const workspaceId = readNonEmptyString(params.workspaceId) ?? readNonEmptyString(params.workspace_id);
     const repoUrl = readNonEmptyString(params.repoUrl) ?? readNonEmptyString(params.repo_url);
     const repoRef = readNonEmptyString(params.repoRef) ?? readNonEmptyString(params.repo_ref);
@@ -61,12 +57,12 @@ export const sessionCodec: AdapterSessionCodec = {
 };
 
 export { execute } from "./execute.js";
-export { listOpenCodeSkills, syncOpenCodeSkills } from "./skills.js";
-export { testEnvironment } from "./test.js";
 export {
-  listOpenCodeModels,
   discoverOpenCodeModels,
   ensureOpenCodeModelConfiguredAndAvailable,
+  listOpenCodeModels,
   resetOpenCodeModelsCacheForTests,
 } from "./models.js";
-export { parseOpenCodeJsonl, isOpenCodeUnknownSessionError } from "./parse.js";
+export { isOpenCodeUnknownSessionError, parseOpenCodeJsonl } from "./parse.js";
+export { listOpenCodeSkills, syncOpenCodeSkills } from "./skills.js";
+export { testEnvironment } from "./test.js";

@@ -1,19 +1,11 @@
+import { Check, Copy, EyeOff, Hexagon, MoreHorizontal, Repeat, SlidersHorizontal } from "lucide-react";
+import { PriorityIcon } from "@/components/PriorityIcon";
+import { StatusIcon } from "@/components/StatusIcon";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { pickTextColorForPillBg } from "@/lib/color-contrast";
 import { Link } from "@/lib/router";
 import { cn } from "@/lib/utils";
-import { StatusIcon } from "@/components/StatusIcon";
-import { PriorityIcon } from "@/components/PriorityIcon";
-import { Button } from "@/components/ui/button";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import {
-  Check,
-  Copy,
-  EyeOff,
-  Hexagon,
-  MoreHorizontal,
-  Repeat,
-  SlidersHorizontal,
-} from "lucide-react";
 
 interface Label {
   id: string;
@@ -73,14 +65,8 @@ export function IssueHeaderBar({
 }: IssueHeaderBarProps) {
   return (
     <div className="flex items-center gap-2 min-w-0 flex-wrap">
-      <StatusIcon
-        status={status}
-        onChange={onStatusChange}
-      />
-      <PriorityIcon
-        priority={priority}
-        onChange={onPriorityChange}
-      />
+      <StatusIcon status={status} onChange={onStatusChange} />
+      <PriorityIcon priority={priority} onChange={onPriorityChange} />
       <span className="text-sm font-mono text-muted-foreground shrink-0">{identifier ?? issueId.slice(0, 8)}</span>
 
       {hasLiveRuns && (
@@ -133,38 +119,21 @@ export function IssueHeaderBar({
               {label.name}
             </span>
           ))}
-          {labels.length > 4 && (
-            <span className="text-[10px] text-muted-foreground">+{labels.length - 4}</span>
-          )}
+          {labels.length > 4 && <span className="text-[10px] text-muted-foreground">+{labels.length - 4}</span>}
         </div>
       )}
 
       <div className="ml-auto flex items-center gap-0.5 md:hidden shrink-0">
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          onClick={onCopy}
-          title="Copy mission as markdown"
-        >
+        <Button variant="ghost" size="icon-xs" onClick={onCopy} title="Copy mission as markdown">
           {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
         </Button>
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          onClick={onMobilePropsOpen}
-          title="Properties"
-        >
+        <Button variant="ghost" size="icon-xs" onClick={onMobilePropsOpen} title="Properties">
           <SlidersHorizontal className="h-4 w-4" />
         </Button>
       </div>
 
       <div className="hidden md:flex items-center md:ml-auto shrink-0">
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          onClick={onCopy}
-          title="Copy mission as markdown"
-        >
+        <Button variant="ghost" size="icon-xs" onClick={onCopy} title="Copy mission as markdown">
           {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
         </Button>
         <Button
@@ -188,6 +157,7 @@ export function IssueHeaderBar({
           </PopoverTrigger>
           <PopoverContent className="w-44 p-1" align="end">
             <button
+              type="button"
               className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50 text-destructive"
               onClick={onHide}
             >

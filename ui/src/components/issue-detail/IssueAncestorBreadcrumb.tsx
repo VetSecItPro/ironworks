@@ -1,5 +1,5 @@
-import { Link } from "@/lib/router";
 import { ChevronRight } from "lucide-react";
+import { Link } from "@/lib/router";
 
 interface Ancestor {
   id: string;

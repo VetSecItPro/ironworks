@@ -1,10 +1,9 @@
-import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { heartbeatsApi } from "../../api/heartbeats";
-import { cn } from "../../lib/utils";
-import { relativeTime } from "../../lib/utils";
 import type { WorkspaceOperation } from "@ironworksai/shared";
-import { redactPathText, asNonEmptyString, asRecord, parseStoredLogContent } from "./agent-detail-utils";
+import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { heartbeatsApi } from "../../api/heartbeats";
+import { cn, relativeTime } from "../../lib/utils";
+import { asNonEmptyString, asRecord, parseStoredLogContent, redactPathText } from "./agent-detail-utils";
 
 function workspaceOperationPhaseLabel(phase: WorkspaceOperation["phase"]) {
   switch (phase) {
@@ -57,17 +56,18 @@ function WorkspaceOperationLogViewer({
   censorUsernameInLogs: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const { data: logData, isLoading, error } = useQuery({
+  const {
+    data: logData,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["workspace-operation-log", operation.id],
     queryFn: () => heartbeatsApi.workspaceOperationLog(operation.id),
     enabled: open && Boolean(operation.logRef),
     refetchInterval: open && operation.status === "running" ? 2000 : false,
   });
 
-  const chunks = useMemo(
-    () => (logData?.content ? parseStoredLogContent(logData.content) : []),
-    [logData?.content],
-  );
+  const chunks = useMemo(() => (logData?.content ? parseStoredLogContent(logData.content) : []), [logData?.content]);
 
   return (
     <div className="space-y-2">
@@ -91,8 +91,8 @@ function WorkspaceOperationLogViewer({
           )}
           {chunks.length > 0 && (
             <div className="max-h-64 overflow-y-auto rounded bg-neutral-100 p-2 font-mono text-xs dark:bg-neutral-950">
-              {chunks.map((chunk, index) => (
-                <div key={`${chunk.ts}-${index}`} className="flex gap-2">
+              {chunks.map((chunk) => (
+                <div key={chunk.ts} className="flex gap-2">
                   <span className="shrink-0 text-neutral-500">
                     {new Date(chunk.ts).toLocaleTimeString("en-US", { hour12: false })}
                   </span>
@@ -108,7 +108,9 @@ function WorkspaceOperationLogViewer({
                   >
                     [{chunk.stream}]
                   </span>
-                  <span className="whitespace-pre-wrap break-all">{redactPathText(chunk.chunk, censorUsernameInLogs)}</span>
+                  <span className="whitespace-pre-wrap break-all">
+                    {redactPathText(chunk.chunk, censorUsernameInLogs)}
+                  </span>
                 </div>
               ))}
             </div>
@@ -130,9 +132,7 @@ export function WorkspaceOperationsSection({
 
   return (
     <div className="rounded-lg border border-border bg-background/60 p-3 space-y-3">
-      <div className="text-xs font-medium text-muted-foreground">
-        Workspace ({operations.length})
-      </div>
+      <div className="text-xs font-medium text-muted-foreground">Workspace ({operations.length})</div>
       <div className="space-y-3">
         {operations.map((operation) => {
           const metadata = asRecord(operation.metadata);
@@ -158,26 +158,41 @@ export function WorkspaceOperationsSection({
                   <span className="font-mono">{operation.cwd}</span>
                 </div>
               )}
-              {(asNonEmptyString(metadata?.branchName)
-                || asNonEmptyString(metadata?.baseRef)
-                || asNonEmptyString(metadata?.worktreePath)
-                || asNonEmptyString(metadata?.repoRoot)
-                || asNonEmptyString(metadata?.cleanupAction)) && (
+              {(asNonEmptyString(metadata?.branchName) ||
+                asNonEmptyString(metadata?.baseRef) ||
+                asNonEmptyString(metadata?.worktreePath) ||
+                asNonEmptyString(metadata?.repoRoot) ||
+                asNonEmptyString(metadata?.cleanupAction)) && (
                 <div className="grid gap-1 text-xs sm:grid-cols-2">
                   {asNonEmptyString(metadata?.branchName) && (
-                    <div><span className="text-muted-foreground">Branch: </span><span className="font-mono">{metadata?.branchName as string}</span></div>
+                    <div>
+                      <span className="text-muted-foreground">Branch: </span>
+                      <span className="font-mono">{metadata?.branchName as string}</span>
+                    </div>
                   )}
                   {asNonEmptyString(metadata?.baseRef) && (
-                    <div><span className="text-muted-foreground">Base ref: </span><span className="font-mono">{metadata?.baseRef as string}</span></div>
+                    <div>
+                      <span className="text-muted-foreground">Base ref: </span>
+                      <span className="font-mono">{metadata?.baseRef as string}</span>
+                    </div>
                   )}
                   {asNonEmptyString(metadata?.worktreePath) && (
-                    <div className="break-all"><span className="text-muted-foreground">Worktree: </span><span className="font-mono">{metadata?.worktreePath as string}</span></div>
+                    <div className="break-all">
+                      <span className="text-muted-foreground">Worktree: </span>
+                      <span className="font-mono">{metadata?.worktreePath as string}</span>
+                    </div>
                   )}
                   {asNonEmptyString(metadata?.repoRoot) && (
-                    <div className="break-all"><span className="text-muted-foreground">Repo root: </span><span className="font-mono">{metadata?.repoRoot as string}</span></div>
+                    <div className="break-all">
+                      <span className="text-muted-foreground">Repo root: </span>
+                      <span className="font-mono">{metadata?.repoRoot as string}</span>
+                    </div>
                   )}
                   {asNonEmptyString(metadata?.cleanupAction) && (
-                    <div><span className="text-muted-foreground">Cleanup: </span><span className="font-mono">{metadata?.cleanupAction as string}</span></div>
+                    <div>
+                      <span className="text-muted-foreground">Cleanup: </span>
+                      <span className="font-mono">{metadata?.cleanupAction as string}</span>
+                    </div>
                   )}
                 </div>
               )}
@@ -186,7 +201,7 @@ export function WorkspaceOperationsSection({
                   {metadata.created ? "Created by this run" : "Reused existing workspace"}
                 </div>
               )}
-              {operation.stderrExcerpt && operation.stderrExcerpt.trim() && (
+              {operation.stderrExcerpt?.trim() && (
                 <div>
                   <div className="mb-1 text-xs text-red-700 dark:text-red-300">stderr excerpt</div>
                   <pre className="rounded-md bg-red-50 p-2 text-xs whitespace-pre-wrap break-all text-red-800 dark:bg-neutral-950 dark:text-red-100">
@@ -194,7 +209,7 @@ export function WorkspaceOperationsSection({
                   </pre>
                 </div>
               )}
-              {operation.stdoutExcerpt && operation.stdoutExcerpt.trim() && (
+              {operation.stdoutExcerpt?.trim() && (
                 <div>
                   <div className="mb-1 text-xs text-muted-foreground">stdout excerpt</div>
                   <pre className="rounded-md bg-neutral-100 p-2 text-xs whitespace-pre-wrap break-all dark:bg-neutral-950">
@@ -203,10 +218,7 @@ export function WorkspaceOperationsSection({
                 </div>
               )}
               {operation.logRef && (
-                <WorkspaceOperationLogViewer
-                  operation={operation}
-                  censorUsernameInLogs={censorUsernameInLogs}
-                />
+                <WorkspaceOperationLogViewer operation={operation} censorUsernameInLogs={censorUsernameInLogs} />
               )}
             </div>
           );

@@ -1,6 +1,6 @@
 import * as p from "@clack/prompts";
-import type { StorageConfig } from "../config/schema.js";
 import { resolveDefaultStorageDir, resolveIronworksInstanceId } from "../config/home.js";
+import type { StorageConfig } from "../config/schema.js";
 
 function defaultStorageBaseDir(): string {
   return resolveDefaultStorageDir(resolveIronworksInstanceId());
@@ -143,4 +143,3 @@ export async function promptStorage(current?: StorageConfig): Promise<StorageCon
     },
   };
 }
-

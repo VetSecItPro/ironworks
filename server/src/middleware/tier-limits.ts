@@ -5,14 +5,10 @@
  * and rejects requests that exceed plan limits.
  */
 
-import type { Request, Response, NextFunction } from "express";
 import type { Db } from "@ironworksai/db";
-import {
-  billingService,
-  PLAN_DEFINITIONS,
-  type PlanTier,
-} from "../services/billing.js";
+import type { NextFunction, Request, Response } from "express";
 import { HttpError } from "../errors.js";
+import { billingService, PLAN_DEFINITIONS, type PlanTier } from "../services/billing.js";
 
 interface TierLimitErrorBody {
   error: string;
@@ -105,7 +101,11 @@ export function enforceStorageLimit(db: Db) {
 
       next();
     } catch (err) {
-      if (err instanceof HttpError) { next(err); } else { next(); }
+      if (err instanceof HttpError) {
+        next(err);
+      } else {
+        next();
+      }
     }
   };
 }
@@ -114,10 +114,7 @@ export function enforceStorageLimit(db: Db) {
  * Utility function (not middleware) to check tier limits programmatically.
  * Returns null if within limits, or an error body if limit exceeded.
  */
-export async function checkProjectLimit(
-  db: Db,
-  companyId: string,
-): Promise<TierLimitErrorBody | null> {
+export async function checkProjectLimit(db: Db, companyId: string): Promise<TierLimitErrorBody | null> {
   const billing = billingService(db);
   const sub = await billing.getOrCreateSubscription(companyId);
   const plan = PLAN_DEFINITIONS[sub.planTier];
@@ -168,15 +165,16 @@ export function enforcePlaybookRunLimit(db: Db) {
 
       next();
     } catch (err) {
-      if (err instanceof HttpError) { next(err); } else { next(); }
+      if (err instanceof HttpError) {
+        next(err);
+      } else {
+        next();
+      }
     }
   };
 }
 
-export async function checkStorageLimit(
-  db: Db,
-  companyId: string,
-): Promise<TierLimitErrorBody | null> {
+export async function checkStorageLimit(db: Db, companyId: string): Promise<TierLimitErrorBody | null> {
   const billing = billingService(db);
   const sub = await billing.getOrCreateSubscription(companyId);
   const plan = PLAN_DEFINITIONS[sub.planTier];

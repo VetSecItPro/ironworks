@@ -1,47 +1,44 @@
-import { useCallback, useEffect, useMemo, useState, useRef } from "react";
-import { useParams, useNavigate, Navigate, useBeforeUnload } from "@/lib/router";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { trackFeatureUsed } from "../lib/analytics";
-import {
-  agentsApi,
-  type AgentPermissionUpdate,
-} from "../api/agents";
+import { type BudgetPolicySummary, type HeartbeatRun, isUuidLike } from "@ironworksai/shared";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Tabs } from "@/components/ui/tabs";
+import { Navigate, useBeforeUnload, useNavigate, useParams } from "@/lib/router";
+import { type AgentPermissionUpdate, agentsApi } from "../api/agents";
 import { budgetsApi } from "../api/budgets";
 import { heartbeatsApi } from "../api/heartbeats";
 import { issuesApi } from "../api/issues";
-import { usePanel } from "../context/PanelContext";
-import { useSidebar } from "../context/SidebarContext";
+import { AgentChat } from "../components/AgentChat";
+import {
+  AgentChatSlideOut,
+  AgentConfigurePage,
+  AgentDashboard,
+  AgentDetailHeader,
+  AgentMemoryTab,
+  AgentSkillsTab,
+  ConfigActionBar,
+  PromptsTab,
+  RunsTab,
+} from "../components/agent-detail";
+import { parseAgentDetailView } from "../components/agent-detail/agent-detail-utils";
+import { BudgetPolicyCard } from "../components/BudgetPolicyCard";
+import { PageSkeleton } from "../components/PageSkeleton";
+import { PageTabBar } from "../components/PageTabBar";
+import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { useCompany } from "../context/CompanyContext";
 import { useDialog } from "../context/DialogContext";
-import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { usePanel } from "../context/PanelContext";
+import { useSidebar } from "../context/SidebarContext";
+import { trackFeatureUsed } from "../lib/analytics";
 import { queryKeys } from "../lib/queryKeys";
-import { PageTabBar } from "../components/PageTabBar";
-import { PageSkeleton } from "../components/PageSkeleton";
-import { BudgetPolicyCard } from "../components/BudgetPolicyCard";
-import { cn } from "../lib/utils";
-import { Tabs } from "@/components/ui/tabs";
-import {
-  isUuidLike,
-  type BudgetPolicySummary,
-  type HeartbeatRun,
-} from "@ironworksai/shared";
-import { agentRouteRef } from "../lib/utils";
-import { parseAgentDetailView } from "../components/agent-detail/agent-detail-utils";
-import {
-  AgentDashboard,
-  AgentConfigurePage,
-  PromptsTab,
-  AgentSkillsTab,
-  AgentMemoryTab,
-  RunsTab,
-  AgentDetailHeader,
-  AgentChatSlideOut,
-  ConfigActionBar,
-} from "../components/agent-detail";
-import { AgentChat } from "../components/AgentChat";
+import { agentRouteRef, cn } from "../lib/utils";
 
 export function AgentDetail() {
-  const { companyPrefix, agentId, tab: urlTab, runId: urlRunId } = useParams<{
+  const {
+    companyPrefix,
+    agentId,
+    tab: urlTab,
+    runId: urlRunId,
+  } = useParams<{
     companyPrefix?: string;
     agentId: string;
     tab?: string;
@@ -54,7 +51,7 @@ export function AgentDetail() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [actionError, setActionError] = useState<string | null>(null);
-  const activeView = urlRunId ? "runs" as const : parseAgentDetailView(urlTab ?? null);
+  const activeView = urlRunId ? ("runs" as const) : parseAgentDetailView(urlTab ?? null);
   const needsDashboardData = activeView === "dashboard";
   const needsRunData = activeView === "runs" || Boolean(urlRunId);
   const shouldLoadHeartbeats = needsDashboardData || needsRunData;
@@ -71,12 +68,20 @@ export function AgentDetail() {
   }, [companies, companyPrefix]);
   const lookupCompanyId = routeCompanyId ?? selectedCompanyId ?? undefined;
   const canFetchAgent = routeAgentRef.length > 0 && (isUuidLike(routeAgentRef) || Boolean(lookupCompanyId));
-  const setSaveConfigAction = useCallback((fn: (() => void) | null) => { saveConfigActionRef.current = fn; }, []);
-  const setCancelConfigAction = useCallback((fn: (() => void) | null) => { cancelConfigActionRef.current = fn; }, []);
+  const setSaveConfigAction = useCallback((fn: (() => void) | null) => {
+    saveConfigActionRef.current = fn;
+  }, []);
+  const setCancelConfigAction = useCallback((fn: (() => void) | null) => {
+    cancelConfigActionRef.current = fn;
+  }, []);
 
   // ---- Data queries ----
 
-  const { data: agent, isLoading, error } = useQuery({
+  const {
+    data: agent,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: [...queryKeys.agents.detail(routeAgentRef), lookupCompanyId ?? null],
     queryFn: () => agentsApi.get(routeAgentRef, lookupCompanyId),
     enabled: canFetchAgent,
@@ -114,8 +119,9 @@ export function AgentDetail() {
 
   // ---- Derived data ----
 
-  const assignedIssues = (allIssues ?? [])
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+  const assignedIssues = (allIssues ?? []).sort(
+    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+  );
 
   const agentBudgetSummary = useMemo(() => {
     const matched = budgetOverview?.policies.find(
@@ -160,10 +166,14 @@ export function AgentDetail() {
     mutationFn: async (action: "invoke" | "pause" | "resume" | "terminate") => {
       if (!agentLookupRef) return Promise.reject(new Error("No agent reference"));
       switch (action) {
-        case "invoke": return agentsApi.invoke(agentLookupRef, resolvedCompanyId ?? undefined);
-        case "pause": return agentsApi.pause(agentLookupRef, resolvedCompanyId ?? undefined);
-        case "resume": return agentsApi.resume(agentLookupRef, resolvedCompanyId ?? undefined);
-        case "terminate": return agentsApi.terminate(agentLookupRef, resolvedCompanyId ?? undefined);
+        case "invoke":
+          return agentsApi.invoke(agentLookupRef, resolvedCompanyId ?? undefined);
+        case "pause":
+          return agentsApi.pause(agentLookupRef, resolvedCompanyId ?? undefined);
+        case "resume":
+          return agentsApi.resume(agentLookupRef, resolvedCompanyId ?? undefined);
+        case "terminate":
+          return agentsApi.terminate(agentLookupRef, resolvedCompanyId ?? undefined);
       }
     },
     onSuccess: (data, action) => {
@@ -200,11 +210,15 @@ export function AgentDetail() {
         adapterConfig: agent.adapterConfig ?? {},
         runtimeConfig: agent.runtimeConfig ?? {},
       });
-      const skillSync = (agent.adapterConfig as Record<string, unknown> | null)?.ironworksSkillSync as { desiredSkills?: string[] } | undefined;
+      const skillSync = (agent.adapterConfig as Record<string, unknown> | null)?.ironworksSkillSync as
+        | { desiredSkills?: string[] }
+        | undefined;
       if (skillSync?.desiredSkills?.length) {
         try {
           await agentsApi.syncSkills(cloned.id, skillSync.desiredSkills, resolvedCompanyId);
-        } catch { /* non-fatal */ }
+        } catch {
+          /* non-fatal */
+        }
       }
       return cloned;
     },
@@ -316,9 +330,7 @@ export function AgentDetail() {
   }, [agent?.companyId, selectedCompanyId, setSelectedCompanyId]);
 
   useEffect(() => {
-    const crumbs: { label: string; href?: string }[] = [
-      { label: "Agents", href: "/agents" },
-    ];
+    const crumbs: { label: string; href?: string }[] = [{ label: "Agents", href: "/agents" }];
     const agentName = agent?.name ?? routeAgentRef ?? "Agent";
     if (activeView === "dashboard" && !urlRunId) {
       crumbs.push({ label: agentName });
@@ -352,11 +364,14 @@ export function AgentDetail() {
   }, [closePanel]);
 
   useBeforeUnload(
-    useCallback((event) => {
-      if (!configDirty) return;
-      event.preventDefault();
-      event.returnValue = "";
-    }, [configDirty]),
+    useCallback(
+      (event) => {
+        if (!configDirty) return;
+        event.preventDefault();
+        event.returnValue = "";
+      },
+      [configDirty],
+    ),
   );
 
   // ---- Early returns ----
@@ -369,7 +384,8 @@ export function AgentDetail() {
   }
 
   const isPendingApproval = agent.status === "pending_approval";
-  const showConfigActionBar = (activeView === "configuration" || activeView === "instructions") && (configDirty || configSaving);
+  const showConfigActionBar =
+    (activeView === "configuration" || activeView === "instructions") && (configDirty || configSaving);
 
   // ---- Render ----
 
@@ -390,10 +406,7 @@ export function AgentDetail() {
       />
 
       {!urlRunId && (
-        <Tabs
-          value={activeView}
-          onValueChange={(value) => navigate(`/agents/${canonicalAgentRef}/${value}`)}
-        >
+        <Tabs value={activeView} onValueChange={(value) => navigate(`/agents/${canonicalAgentRef}/${value}`)}>
           <PageTabBar
             items={[
               { value: "dashboard", label: "Dashboard" },
@@ -413,9 +426,7 @@ export function AgentDetail() {
 
       {actionError && <p className="text-sm text-destructive">{actionError}</p>}
       {isPendingApproval && (
-        <p className="text-sm text-amber-500">
-          This agent is pending board approval and cannot be invoked yet.
-        </p>
+        <p className="text-sm text-amber-500">This agent is pending board approval and cannot be invoked yet.</p>
       )}
 
       <ConfigActionBar
@@ -462,18 +473,10 @@ export function AgentDetail() {
         />
       )}
 
-      {activeView === "skills" && (
-        <AgentSkillsTab
-          agent={agent}
-          companyId={resolvedCompanyId ?? undefined}
-        />
-      )}
+      {activeView === "skills" && <AgentSkillsTab agent={agent} companyId={resolvedCompanyId ?? undefined} />}
 
       {activeView === "memory" && resolvedCompanyId && (
-        <AgentMemoryTab
-          companyId={resolvedCompanyId}
-          agentId={agent.id}
-        />
+        <AgentMemoryTab companyId={resolvedCompanyId} agentId={agent.id} />
       )}
 
       {activeView === "runs" && (
@@ -487,12 +490,7 @@ export function AgentDetail() {
         />
       )}
 
-      {activeView === "chat" && resolvedCompanyId && (
-        <AgentChat
-          agent={agent}
-          companyId={resolvedCompanyId}
-        />
-      )}
+      {activeView === "chat" && resolvedCompanyId && <AgentChat agent={agent} companyId={resolvedCompanyId} />}
 
       {activeView === "budget" && resolvedCompanyId ? (
         <div className="max-w-3xl">
@@ -506,9 +504,7 @@ export function AgentDetail() {
       ) : null}
 
       {/* Persistent Chat slide-out (not tab switch) */}
-      {activeView !== "chat" && resolvedCompanyId && (
-        <AgentChatSlideOut agent={agent} companyId={resolvedCompanyId} />
-      )}
+      {activeView !== "chat" && resolvedCompanyId && <AgentChatSlideOut agent={agent} companyId={resolvedCompanyId} />}
     </div>
   );
 }

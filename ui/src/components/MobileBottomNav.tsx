@@ -1,16 +1,10 @@
+import { CircleDot, House, Inbox, SquarePen, Users } from "lucide-react";
 import { useMemo } from "react";
 import { NavLink, useLocation } from "@/lib/router";
-import {
-  House,
-  CircleDot,
-  SquarePen,
-  Users,
-  Inbox,
-} from "lucide-react";
 import { useCompany } from "../context/CompanyContext";
 import { useDialog } from "../context/DialogContext";
-import { cn } from "../lib/utils";
 import { useInboxBadge } from "../hooks/useInboxBadge";
+import { cn } from "../lib/utils";
 
 interface MobileBottomNavProps {
   visible: boolean;
@@ -76,9 +70,7 @@ export function MobileBottomNav({ visible }: MobileBottomNavProps) {
                 onClick={item.onClick}
                 className={cn(
                   "relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-md text-[10px] font-medium transition-colors",
-                  active
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground",
+                  active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 <Icon className="h-[18px] w-[18px]" />
@@ -95,9 +87,7 @@ export function MobileBottomNav({ visible }: MobileBottomNavProps) {
               className={({ isActive }) =>
                 cn(
                   "relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-md text-[10px] font-medium transition-colors",
-                  isActive
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground",
+                  isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground",
                 )
               }
             >

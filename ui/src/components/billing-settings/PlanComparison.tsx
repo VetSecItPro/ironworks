@@ -20,7 +20,12 @@ export function PlanComparison() {
               { feature: "Companies", starter: "1", growth: "2", business: "5" },
               { feature: "Playbook runs/mo", starter: "50", growth: "Unlimited", business: "Unlimited" },
               { feature: "KB Pages", starter: "50", growth: "Unlimited", business: "Unlimited" },
-              { feature: "Messaging", starter: "Email + Telegram", growth: "All 4 platforms", business: "All platforms" },
+              {
+                feature: "Messaging",
+                starter: "Email + Telegram",
+                growth: "All 4 platforms",
+                business: "All platforms",
+              },
               { feature: "Support", starter: "Email", growth: "Email", business: "Email" },
             ].map((row) => (
               <tr key={row.feature} className="hover:bg-muted/20 transition-colors">

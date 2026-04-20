@@ -1,6 +1,6 @@
-import { and, desc, eq } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { activityLog } from "@ironworksai/db";
+import { and, desc, eq } from "drizzle-orm";
 import { logActivity } from "./activity-log.js";
 
 export type AlertSeverity = "low" | "medium" | "high" | "critical";
@@ -33,10 +33,7 @@ const SEVERITY_ORDER: Record<AlertSeverity, number> = {
  * Medium:   budget at 80% threshold, agent performance below 40
  * Low:      routine status updates, successful completions, minor config changes
  */
-export function classifyAlertSeverity(
-  action: string,
-  details: Record<string, unknown>,
-): AlertSeverity {
+export function classifyAlertSeverity(action: string, details: Record<string, unknown>): AlertSeverity {
   // Critical triggers
   const spendCents = Number(details.costCents ?? details.spendCents ?? 0);
   if (spendCents > 5000) return "critical"; // > $50
@@ -110,12 +107,7 @@ export async function getPendingAlerts(
   const rows = await db
     .select()
     .from(activityLog)
-    .where(
-      and(
-        eq(activityLog.companyId, companyId),
-        eq(activityLog.action, ALERT_ACTION),
-      ),
-    )
+    .where(and(eq(activityLog.companyId, companyId), eq(activityLog.action, ALERT_ACTION)))
     .orderBy(desc(activityLog.createdAt))
     .limit(200);
 
@@ -123,12 +115,7 @@ export async function getPendingAlerts(
   const resolvedRows = await db
     .select({ entityId: activityLog.entityId, createdAt: activityLog.createdAt })
     .from(activityLog)
-    .where(
-      and(
-        eq(activityLog.companyId, companyId),
-        eq(activityLog.action, ALERT_RESOLVE_ACTION),
-      ),
-    );
+    .where(and(eq(activityLog.companyId, companyId), eq(activityLog.action, ALERT_RESOLVE_ACTION)));
 
   // Build a set of resolved alert row IDs (we store the original row id in entityId when resolving)
   const resolvedIds = new Set(resolvedRows.map((r) => r.entityId));
@@ -136,12 +123,7 @@ export async function getPendingAlerts(
   const autoResolvedRows = await db
     .select({ entityId: activityLog.entityId })
     .from(activityLog)
-    .where(
-      and(
-        eq(activityLog.companyId, companyId),
-        eq(activityLog.action, AUTO_RESOLVE_ACTION),
-      ),
-    );
+    .where(and(eq(activityLog.companyId, companyId), eq(activityLog.action, AUTO_RESOLVE_ACTION)));
   const autoResolvedIds = new Set(autoResolvedRows.map((r) => r.entityId));
 
   const alerts: SmartAlert[] = [];
@@ -173,12 +155,7 @@ export async function getPendingAlerts(
 /**
  * Manually resolve an alert by its activity_log row ID.
  */
-export async function resolveAlert(
-  db: Db,
-  companyId: string,
-  alertId: string,
-  actorId = "system",
-): Promise<void> {
+export async function resolveAlert(db: Db, companyId: string, alertId: string, actorId = "system"): Promise<void> {
   await logActivity(db, {
     companyId,
     actorType: "system",
@@ -194,36 +171,20 @@ export async function resolveAlert(
  * Auto-resolve low-risk alerts after 24 hours.
  * Returns the number of alerts resolved.
  */
-export async function autoResolveLowRiskAlerts(
-  db: Db,
-  companyId: string,
-): Promise<number> {
+export async function autoResolveLowRiskAlerts(db: Db, companyId: string): Promise<number> {
   const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
   // Get existing resolved IDs so we don't double-log
   const resolvedRows = await db
     .select({ entityId: activityLog.entityId })
     .from(activityLog)
-    .where(
-      and(
-        eq(activityLog.companyId, companyId),
-        eq(activityLog.action, ALERT_RESOLVE_ACTION),
-      ),
-    );
+    .where(and(eq(activityLog.companyId, companyId), eq(activityLog.action, ALERT_RESOLVE_ACTION)));
   const autoResolvedRows = await db
     .select({ entityId: activityLog.entityId })
     .from(activityLog)
-    .where(
-      and(
-        eq(activityLog.companyId, companyId),
-        eq(activityLog.action, AUTO_RESOLVE_ACTION),
-      ),
-    );
+    .where(and(eq(activityLog.companyId, companyId), eq(activityLog.action, AUTO_RESOLVE_ACTION)));
 
-  const alreadyResolved = new Set([
-    ...resolvedRows.map((r) => r.entityId),
-    ...autoResolvedRows.map((r) => r.entityId),
-  ]);
+  const alreadyResolved = new Set([...resolvedRows.map((r) => r.entityId), ...autoResolvedRows.map((r) => r.entityId)]);
 
   // Find low-risk alerts older than 24h
   const oldAlerts = await db

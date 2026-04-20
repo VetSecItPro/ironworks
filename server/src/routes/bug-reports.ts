@@ -1,9 +1,9 @@
-import { Router } from "express";
-import { eq, desc, and, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import { bugReports, authUsers } from "@ironworksai/db";
-import { assertBoard, assertInstanceAdmin } from "./authz.js";
+import { authUsers, bugReports } from "@ironworksai/db";
+import { and, desc, eq } from "drizzle-orm";
+import { Router } from "express";
 import { badRequest, notFound } from "../errors.js";
+import { assertBoard, assertInstanceAdmin } from "./authz.js";
 
 const VALID_TYPES = ["bug", "feature_request"] as const;
 const VALID_SEVERITIES = ["low", "medium", "high", "critical"] as const;
@@ -24,17 +24,14 @@ export function bugReportRoutes(db: Db) {
       severity?: string;
     };
 
-    if (!title || !title.trim()) {
+    if (!title?.trim()) {
       throw badRequest("Title is required");
     }
 
-    const reportType = type && VALID_TYPES.includes(type as (typeof VALID_TYPES)[number])
-      ? type
-      : "bug";
+    const reportType = type && VALID_TYPES.includes(type as (typeof VALID_TYPES)[number]) ? type : "bug";
 
-    const reportSeverity = severity && VALID_SEVERITIES.includes(severity as (typeof VALID_SEVERITIES)[number])
-      ? severity
-      : "medium";
+    const reportSeverity =
+      severity && VALID_SEVERITIES.includes(severity as (typeof VALID_SEVERITIES)[number]) ? severity : "medium";
 
     const companyId = req.actor.companyIds?.[0] ?? null;
     const userId = req.actor.userId ?? null;
@@ -124,11 +121,7 @@ export function bugReportRoutes(db: Db) {
       updates.adminNotes = adminNotes;
     }
 
-    const [updated] = await db
-      .update(bugReports)
-      .set(updates)
-      .where(eq(bugReports.id, id))
-      .returning();
+    const [updated] = await db.update(bugReports).set(updates).where(eq(bugReports.id, id)).returning();
 
     if (!updated) {
       throw notFound("Bug report not found");

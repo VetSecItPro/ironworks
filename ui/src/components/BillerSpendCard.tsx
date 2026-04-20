@@ -1,8 +1,8 @@
+import type { BillingType, CostByBiller, CostByProviderModel } from "@ironworksai/shared";
 import { memo, useMemo } from "react";
-import type { CostByBiller, CostByProviderModel } from "@ironworksai/shared";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { QuotaBar } from "./QuotaBar";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { billingTypeDisplayName, formatCents, formatTokens, providerDisplayName } from "@/lib/utils";
+import { QuotaBar } from "./QuotaBar";
 
 interface BillerSpendCardProps {
   row: CostByBiller;
@@ -48,19 +48,14 @@ export const BillerSpendCard = memo(function BillerSpendCard({
     budgetMonthlyCents > 0 && totalCompanySpendCents > 0
       ? (row.costCents / totalCompanySpendCents) * budgetMonthlyCents
       : budgetMonthlyCents;
-  const budgetPct =
-    providerBudgetShare > 0
-      ? Math.min(100, (row.costCents / providerBudgetShare) * 100)
-      : 0;
+  const budgetPct = providerBudgetShare > 0 ? Math.min(100, (row.costCents / providerBudgetShare) * 100) : 0;
 
   return (
     <Card>
       <CardHeader className="px-4 pt-4 pb-0 gap-1">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <CardTitle className="text-sm font-semibold">
-              {providerDisplayName(row.biller)}
-            </CardTitle>
+            <CardTitle className="text-sm font-semibold">{providerDisplayName(row.biller)}</CardTitle>
             <CardDescription className="text-xs mt-0.5">
               <span className="font-mono">{formatTokens(row.inputTokens + row.cachedInputTokens)}</span> in
               {" · "}
@@ -71,9 +66,7 @@ export const BillerSpendCard = memo(function BillerSpendCard({
               {row.modelCount} model{row.modelCount === 1 ? "" : "s"}
             </CardDescription>
           </div>
-          <span className="text-xl font-bold tabular-nums shrink-0">
-            {formatCents(row.costCents)}
-          </span>
+          <span className="text-xl font-bold tabular-nums shrink-0">{formatCents(row.costCents)}</span>
         </div>
       </CardHeader>
 
@@ -101,13 +94,11 @@ export const BillerSpendCard = memo(function BillerSpendCard({
           <>
             <div className="border-t border-border" />
             <div className="space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                Billing types
-              </p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Billing types</p>
               <div className="space-y-1.5">
                 {billingTypeBreakdown.map(([billingType, costCents]) => (
                   <div key={billingType} className="flex items-center justify-between gap-2 text-xs">
-                    <span className="text-muted-foreground">{billingTypeDisplayName(billingType as any)}</span>
+                    <span className="text-muted-foreground">{billingTypeDisplayName(billingType as BillingType)}</span>
                     <span className="font-medium tabular-nums">{formatCents(costCents)}</span>
                   </div>
                 ))}
@@ -120,9 +111,7 @@ export const BillerSpendCard = memo(function BillerSpendCard({
           <>
             <div className="border-t border-border" />
             <div className="space-y-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                Upstream providers
-              </p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Upstream providers</p>
               <div className="space-y-1.5">
                 {providerBreakdown.map((entry) => (
                   <div key={entry.provider} className="flex items-center justify-between gap-2 text-xs">

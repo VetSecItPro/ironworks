@@ -1,10 +1,10 @@
-import pc from "picocolors";
 import type { Command } from "commander";
+import pc from "picocolors";
 import { getStoredBoardCredential, loginBoardCli } from "../../client/board-auth.js";
 import { buildCliCommandLabel } from "../../client/command-label.js";
-import { readConfig } from "../../config/store.js";
-import { readContext, resolveProfile, type ClientContextProfile } from "../../client/context.js";
+import { type ClientContextProfile, readContext, resolveProfile } from "../../client/context.js";
 import { ApiRequestError, IronworksApiClient } from "../../client/http.js";
+import { readConfig } from "../../config/store.js";
 
 export interface BaseClientOptions {
   config?: string;
@@ -56,16 +56,11 @@ export function resolveCommandContext(
     inferApiBaseFromConfig(options.config);
 
   const explicitApiKey =
-    options.apiKey?.trim() ||
-    process.env.IRONWORKS_API_KEY?.trim() ||
-    readKeyFromProfileEnv(profile);
+    options.apiKey?.trim() || process.env.IRONWORKS_API_KEY?.trim() || readKeyFromProfileEnv(profile);
   const storedBoardCredential = explicitApiKey ? null : getStoredBoardCredential(apiBase);
   const apiKey = explicitApiKey || storedBoardCredential?.token;
 
-  const companyId =
-    options.companyId?.trim() ||
-    process.env.IRONWORKS_COMPANY_ID?.trim() ||
-    profile.companyId;
+  const companyId = options.companyId?.trim() || process.env.IRONWORKS_COMPANY_ID?.trim() || profile.companyId;
 
   if (opts?.requireCompany && !companyId) {
     throw new Error(
@@ -76,23 +71,24 @@ export function resolveCommandContext(
   const api = new IronworksApiClient({
     apiBase,
     apiKey,
-    recoverAuth: explicitApiKey || !canAttemptInteractiveBoardAuth()
-      ? undefined
-      : async ({ error }) => {
-          const requestedAccess = error.message.includes("Instance admin required")
-            ? "instance_admin_required"
-            : "board";
-          if (!shouldRecoverBoardAuth(error)) {
-            return null;
-          }
-          const login = await loginBoardCli({
-            apiBase,
-            requestedAccess,
-            requestedCompanyId: companyId ?? null,
-            command: buildCliCommandLabel(),
-          });
-          return login.token;
-        },
+    recoverAuth:
+      explicitApiKey || !canAttemptInteractiveBoardAuth()
+        ? undefined
+        : async ({ error }) => {
+            const requestedAccess = error.message.includes("Instance admin required")
+              ? "instance_admin_required"
+              : "board";
+            if (!shouldRecoverBoardAuth(error)) {
+              return null;
+            }
+            const login = await loginBoardCli({
+              apiBase,
+              requestedAccess,
+              requestedCompanyId: companyId ?? null,
+              command: buildCliCommandLabel(),
+            });
+            return login.token;
+          },
   });
   return {
     api,

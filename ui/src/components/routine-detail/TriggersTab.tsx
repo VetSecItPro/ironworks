@@ -1,17 +1,10 @@
-import { Clock3, Webhook } from "lucide-react";
+import type { RoutineTrigger } from "@ironworksai/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScheduleEditor } from "../ScheduleEditor";
 import { TriggerEditor } from "./TriggerEditor";
-import type { RoutineTrigger } from "@ironworksai/shared";
 
 const triggerKinds = ["schedule", "webhook"];
 const signingModes = ["bearer", "hmac_sha256"];
@@ -37,12 +30,14 @@ export function TriggersTab({
     signingMode: string;
     replayWindowSec: string;
   };
-  onNewTriggerChange: (patch: Partial<{
-    kind: string;
-    cronExpression: string;
-    signingMode: string;
-    replayWindowSec: string;
-  }>) => void;
+  onNewTriggerChange: (
+    patch: Partial<{
+      kind: string;
+      cronExpression: string;
+      signingMode: string;
+      replayWindowSec: string;
+    }>,
+  ) => void;
   onCreateTrigger: () => void;
   createPending: boolean;
   onSaveTrigger: (id: string, patch: Record<string, unknown>) => void;
@@ -64,7 +59,8 @@ export function TriggersTab({
               <SelectContent>
                 {triggerKinds.map((kind) => (
                   <SelectItem key={kind} value={kind} disabled={kind === "webhook"}>
-                    {kind}{kind === "webhook" ? " (not yet available)" : ""}
+                    {kind}
+                    {kind === "webhook" ? " (not yet available)" : ""}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -83,13 +79,18 @@ export function TriggersTab({
             <>
               <div className="space-y-1.5">
                 <Label className="text-xs">Signing mode</Label>
-                <Select value={newTrigger.signingMode} onValueChange={(signingMode) => onNewTriggerChange({ signingMode })}>
+                <Select
+                  value={newTrigger.signingMode}
+                  onValueChange={(signingMode) => onNewTriggerChange({ signingMode })}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {signingModes.map((mode) => (
-                      <SelectItem key={mode} value={mode}>{mode}</SelectItem>
+                      <SelectItem key={mode} value={mode}>
+                        {mode}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -97,7 +98,10 @@ export function TriggersTab({
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Replay window (seconds)</Label>
-                <Input value={newTrigger.replayWindowSec} onChange={(event) => onNewTriggerChange({ replayWindowSec: event.target.value })} />
+                <Input
+                  value={newTrigger.replayWindowSec}
+                  onChange={(event) => onNewTriggerChange({ replayWindowSec: event.target.value })}
+                />
               </div>
             </>
           )}

@@ -1,7 +1,7 @@
-import { Link } from "../../lib/router";
+import type { ActivityEvent, Agent } from "@ironworksai/shared";
 import { History } from "lucide-react";
+import { Link } from "../../lib/router";
 import { ActivityRow } from "../ActivityRow";
-import type { Agent, ActivityEvent } from "@ironworksai/shared";
 
 interface RecentActivitySectionProps {
   recentActivity: ActivityEvent[];

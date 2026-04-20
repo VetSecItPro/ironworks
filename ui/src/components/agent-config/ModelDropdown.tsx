@@ -1,12 +1,8 @@
-import { useState, useMemo } from "react";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { ChevronDown } from "lucide-react";
-import { cn } from "../../lib/utils";
+import { useMemo, useState } from "react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { extractModelName, extractProviderId } from "../../lib/model-utils";
+import { cn } from "../../lib/utils";
 import { Field, help } from "../agent-config-primitives";
 import type { AdapterModel } from "./types";
 
@@ -36,11 +32,7 @@ export function ModelDropdown({
       if (!modelSearch.trim()) return true;
       const q = modelSearch.toLowerCase();
       const provider = extractProviderId(m.id) ?? "";
-      return (
-        m.id.toLowerCase().includes(q) ||
-        m.label.toLowerCase().includes(q) ||
-        provider.toLowerCase().includes(q)
-      );
+      return m.id.toLowerCase().includes(q) || m.label.toLowerCase().includes(q) || provider.toLowerCase().includes(q);
     });
   }, [models, modelSearch]);
   const groupedModels = useMemo(() => {
@@ -77,7 +69,10 @@ export function ModelDropdown({
         }}
       >
         <PopoverTrigger asChild>
-          <button className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-sm hover:bg-accent/50 transition-colors w-full justify-between">
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-sm hover:bg-accent/50 transition-colors w-full justify-between"
+          >
             <span className={cn(!value && "text-muted-foreground")}>
               {selected
                 ? selected.label
@@ -92,11 +87,11 @@ export function ModelDropdown({
             placeholder="Search models..."
             value={modelSearch}
             onChange={(e) => setModelSearch(e.target.value)}
-            autoFocus
           />
           <div className="max-h-[240px] overflow-y-auto">
             {allowDefault && (
               <button
+                type="button"
                 className={cn(
                   "flex items-center gap-2 w-full px-2 py-1.5 text-sm rounded hover:bg-accent/50",
                   !value && "bg-accent",
@@ -118,6 +113,7 @@ export function ModelDropdown({
                 )}
                 {group.entries.map((m) => (
                   <button
+                    type="button"
                     key={m.id}
                     className={cn(
                       "flex items-center w-full px-2 py-1.5 text-sm rounded hover:bg-accent/50",

@@ -1,6 +1,6 @@
-import { and, eq, gte, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { issues } from "@ironworksai/db";
+import { and, eq, gte, sql } from "drizzle-orm";
 
 // ── Velocity Data ──────────────────────────────────────────────────────────
 
@@ -18,11 +18,7 @@ export interface VelocityWeek {
  * @param companyId - Company to query
  * @param weeks    - Number of weeks to look back (default 12)
  */
-export async function getVelocityData(
-  db: Db,
-  companyId: string,
-  weeks: number = 12,
-): Promise<VelocityWeek[]> {
+export async function getVelocityData(db: Db, companyId: string, weeks: number = 12): Promise<VelocityWeek[]> {
   const cutoff = new Date(Date.now() - weeks * 7 * 24 * 60 * 60 * 1000);
 
   // Query completed issues grouped by week
@@ -32,13 +28,7 @@ export async function getVelocityData(
       count: sql<number>`count(*)::int`,
     })
     .from(issues)
-    .where(
-      and(
-        eq(issues.companyId, companyId),
-        eq(issues.status, "done"),
-        gte(issues.completedAt, cutoff),
-      ),
-    )
+    .where(and(eq(issues.companyId, companyId), eq(issues.status, "done"), gte(issues.completedAt, cutoff)))
     .groupBy(sql`date_trunc('week', ${issues.completedAt})`)
     .orderBy(sql`date_trunc('week', ${issues.completedAt})`);
 
@@ -49,13 +39,7 @@ export async function getVelocityData(
       count: sql<number>`count(*)::int`,
     })
     .from(issues)
-    .where(
-      and(
-        eq(issues.companyId, companyId),
-        eq(issues.status, "cancelled"),
-        gte(issues.cancelledAt, cutoff),
-      ),
-    )
+    .where(and(eq(issues.companyId, companyId), eq(issues.status, "cancelled"), gte(issues.cancelledAt, cutoff)))
     .groupBy(sql`date_trunc('week', ${issues.cancelledAt})`)
     .orderBy(sql`date_trunc('week', ${issues.cancelledAt})`);
 

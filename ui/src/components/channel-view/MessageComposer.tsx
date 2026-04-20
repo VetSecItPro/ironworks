@@ -1,9 +1,9 @@
+import { MessageSquare, Send, X } from "lucide-react";
 import React from "react";
-import { Send, MessageSquare, X } from "lucide-react";
-import type { ChannelMessage } from "../../api/channels";
-import { cn } from "../../lib/utils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import type { ChannelMessage } from "../../api/channels";
+import { cn } from "../../lib/utils";
 
 export interface MessageComposerProps {
   draftBody: string;
@@ -41,6 +41,7 @@ export function MessageComposer({
             {(replyMap.get(replyToId)?.body?.length ?? 0) > 80 ? "..." : ""}
           </span>
           <button
+            type="button"
             onClick={onCancelReply}
             className="ml-auto shrink-0 text-muted-foreground hover:text-foreground"
           >
@@ -58,12 +59,7 @@ export function MessageComposer({
           rows={1}
           className="flex-1 min-h-[36px] max-h-[160px] resize-none text-[13px] leading-snug py-2"
         />
-        <Button
-          size="sm"
-          onClick={onSend}
-          disabled={!draftBody.trim() || isSending}
-          className="shrink-0 h-9 px-3"
-        >
+        <Button size="sm" onClick={onSend} disabled={!draftBody.trim() || isSending} className="shrink-0 h-9 px-3">
           <Send className="h-3.5 w-3.5" />
         </Button>
       </div>

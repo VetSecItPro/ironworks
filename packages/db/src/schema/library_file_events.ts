@@ -1,6 +1,6 @@
-import { pgTable, uuid, text, timestamp, index } from "drizzle-orm/pg-core";
-import { companies } from "./companies.js";
+import { index, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { agents } from "./agents.js";
+import { companies } from "./companies.js";
 import { issues } from "./issues.js";
 import { libraryFiles } from "./library_files.js";
 
@@ -8,8 +8,12 @@ export const libraryFileEvents = pgTable(
   "library_file_events",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    companyId: uuid("company_id").notNull().references(() => companies.id),
-    fileId: uuid("file_id").notNull().references(() => libraryFiles.id, { onDelete: "cascade" }),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id),
+    fileId: uuid("file_id")
+      .notNull()
+      .references(() => libraryFiles.id, { onDelete: "cascade" }),
     /** Action type: created, modified, renamed, deleted. */
     action: text("action").notNull(),
     /** Agent who performed this action. */

@@ -1,6 +1,6 @@
-import { and, desc, eq, like, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import { libraryFiles, libraryFileEvents, agents } from "@ironworksai/db";
+import { agents, libraryFileEvents, libraryFiles } from "@ironworksai/db";
+import { and, desc, eq, like, sql } from "drizzle-orm";
 
 export interface RegisterFileInput {
   companyId: string;
@@ -189,12 +189,7 @@ export function libraryService(db: Db) {
         })
         .from(libraryFileEvents)
         .leftJoin(agents, eq(libraryFileEvents.agentId, agents.id))
-        .where(
-          and(
-            eq(libraryFileEvents.fileId, fileId),
-            sql`${libraryFileEvents.agentId} IS NOT NULL`,
-          ),
-        );
+        .where(and(eq(libraryFileEvents.fileId, fileId), sql`${libraryFileEvents.agentId} IS NOT NULL`));
 
       return rows;
     },
@@ -206,12 +201,7 @@ export function libraryService(db: Db) {
       return db
         .select()
         .from(libraryFiles)
-        .where(
-          and(
-            eq(libraryFiles.companyId, companyId),
-            like(libraryFiles.filePath, `%${query}%`),
-          ),
-        )
+        .where(and(eq(libraryFiles.companyId, companyId), like(libraryFiles.filePath, `%${query}%`)))
         .orderBy(desc(libraryFiles.lastModifiedAt))
         .limit(limit);
     },

@@ -1,14 +1,18 @@
-import { pgTable, uuid, text, timestamp, jsonb, index, uniqueIndex } from "drizzle-orm/pg-core";
-import { companies } from "./companies.js";
+import { index, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { agents } from "./agents.js";
+import { companies } from "./companies.js";
 import { heartbeatRuns } from "./heartbeat_runs.js";
 
 export const agentTaskSessions = pgTable(
   "agent_task_sessions",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    companyId: uuid("company_id").notNull().references(() => companies.id),
-    agentId: uuid("agent_id").notNull().references(() => agents.id),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id),
+    agentId: uuid("agent_id")
+      .notNull()
+      .references(() => agents.id),
     adapterType: text("adapter_type").notNull(),
     taskKey: text("task_key").notNull(),
     sessionParamsJson: jsonb("session_params_json").$type<Record<string, unknown>>(),

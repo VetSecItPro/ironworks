@@ -1,25 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useBreadcrumbs } from "@/context/BreadcrumbContext";
-import { adminApi, type AdminAuditEntry } from "@/api/admin";
-import { cn } from "@/lib/utils";
-import {
-  ChevronDown,
-  ChevronRight,
-  Download,
-  RefreshCw,
-  ScrollText,
-  Search,
-} from "lucide-react";
+import { ChevronDown, ChevronRight, Download, RefreshCw, ScrollText, Search } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { type AdminAuditEntry, adminApi } from "@/api/admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useBreadcrumbs } from "@/context/BreadcrumbContext";
+import { cn } from "@/lib/utils";
 
 const ACTION_COLORS: Record<string, string> = {
   "company.paused": "text-amber-400",
@@ -50,27 +37,15 @@ const TARGET_TYPE_LABELS: Record<string, string> = {
 const ACTION_CATEGORIES: Record<string, { label: string; actions: string[] }> = {
   agent_actions: {
     label: "Agent Actions",
-    actions: [
-      "agent.force_paused",
-      "agent.force_terminated",
-      "agent.hired",
-      "agent.terminated",
-    ],
+    actions: ["agent.force_paused", "agent.force_terminated", "agent.hired", "agent.terminated"],
   },
   hiring: {
     label: "Hiring",
-    actions: [
-      "agent.hired",
-      "agent.terminated",
-      "agent.force_terminated",
-    ],
+    actions: ["agent.hired", "agent.terminated", "agent.force_terminated"],
   },
   approvals: {
     label: "Approvals",
-    actions: [
-      "approval.approved",
-      "approval.rejected",
-    ],
+    actions: ["approval.approved", "approval.rejected"],
   },
   system: {
     label: "System",
@@ -90,9 +65,7 @@ const ACTION_CATEGORIES: Record<string, { label: string; actions: string[] }> = 
 
 function ActionBadge({ action }: { action: string }) {
   const color = ACTION_COLORS[action] ?? "text-muted-foreground";
-  return (
-    <span className={cn("font-mono text-xs", color)}>{action}</span>
-  );
+  return <span className={cn("font-mono text-xs", color)}>{action}</span>;
 }
 
 function AuditRow({ entry }: { entry: AdminAuditEntry }) {
@@ -219,11 +192,8 @@ export default function AdminAuditLog() {
         e.targetId.toLowerCase().includes(search.toLowerCase());
       const matchAction = actionFilter === "all" || e.action === actionFilter;
       const matchCategory =
-        categoryFilter === "all" ||
-        (ACTION_CATEGORIES[categoryFilter]?.actions.includes(e.action) ?? false);
-      const matchAgent =
-        agentFilter === "all" ||
-        (e.targetType === "agent" && e.targetId === agentFilter);
+        categoryFilter === "all" || (ACTION_CATEGORIES[categoryFilter]?.actions.includes(e.action) ?? false);
+      const matchAgent = agentFilter === "all" || (e.targetType === "agent" && e.targetId === agentFilter);
       return matchSearch && matchAction && matchCategory && matchAgent;
     });
   }, [data, search, actionFilter, categoryFilter, agentFilter]);
@@ -246,15 +216,17 @@ export default function AdminAuditLog() {
     const rows = ["timestamp,user_email,action,target_type,target_id,ip_address,details"];
     for (const e of filtered) {
       const detailsStr = e.details ? JSON.stringify(e.details).replace(/"/g, '""') : "";
-      rows.push([
-        new Date(e.createdAt).toISOString(),
-        e.userEmail,
-        e.action,
-        e.targetType,
-        e.targetId,
-        e.ipAddress ?? "",
-        `"${detailsStr}"`,
-      ].join(","));
+      rows.push(
+        [
+          new Date(e.createdAt).toISOString(),
+          e.userEmail,
+          e.action,
+          e.targetType,
+          e.targetId,
+          e.ipAddress ?? "",
+          `"${detailsStr}"`,
+        ].join(","),
+      );
     }
     const blob = new Blob([rows.join("\n")], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -271,18 +243,10 @@ export default function AdminAuditLog() {
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold">Audit Log</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            All admin actions across the platform
-          </p>
+          <p className="text-sm text-muted-foreground mt-0.5">All admin actions across the platform</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportCsv}
-            disabled={!filtered.length}
-            className="gap-1.5"
-          >
+          <Button variant="outline" size="sm" onClick={handleExportCsv} disabled={!filtered.length} className="gap-1.5">
             <Download className="h-3.5 w-3.5" />
             Export CSV
           </Button>
@@ -296,13 +260,7 @@ export default function AdminAuditLog() {
             <Download className="h-3.5 w-3.5" />
             Export JSON
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            disabled={isFetching}
-            className="gap-1.5"
-          >
+          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching} className="gap-1.5">
             <RefreshCw className={cn("h-3.5 w-3.5", isFetching && "animate-spin")} />
             Refresh
           </Button>
@@ -320,7 +278,13 @@ export default function AdminAuditLog() {
             className="pl-8 h-8 text-sm"
           />
         </div>
-        <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); if (v !== "all") setActionFilter("all"); }}>
+        <Select
+          value={categoryFilter}
+          onValueChange={(v) => {
+            setCategoryFilter(v);
+            if (v !== "all") setActionFilter("all");
+          }}
+        >
           <SelectTrigger className="h-8 w-[160px] text-sm">
             <SelectValue placeholder="All categories" />
           </SelectTrigger>
@@ -333,7 +297,13 @@ export default function AdminAuditLog() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={actionFilter} onValueChange={(v) => { setActionFilter(v); if (v !== "all") setCategoryFilter("all"); }}>
+        <Select
+          value={actionFilter}
+          onValueChange={(v) => {
+            setActionFilter(v);
+            if (v !== "all") setCategoryFilter("all");
+          }}
+        >
           <SelectTrigger className="h-8 w-[180px] text-sm">
             <SelectValue placeholder="All actions" />
           </SelectTrigger>
@@ -392,9 +362,7 @@ export default function AdminAuditLog() {
           <div className="p-8 text-center">
             <ScrollText className="h-8 w-8 text-muted-foreground/30 mx-auto mb-3" />
             <p className="text-sm text-muted-foreground">
-              {hasFilters
-                ? "No entries match your filters."
-                : "No audit log entries yet."}
+              {hasFilters ? "No entries match your filters." : "No audit log entries yet."}
             </p>
           </div>
         ) : (

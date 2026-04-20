@@ -1,22 +1,17 @@
-import {
-  pgTable,
-  uuid,
-  numeric,
-  integer,
-  bigint,
-  date,
-  timestamp,
-  index,
-} from "drizzle-orm/pg-core";
-import { goals } from "./goals.js";
+import { bigint, date, index, integer, numeric, pgTable, timestamp, uuid } from "drizzle-orm/pg-core";
 import { companies } from "./companies.js";
+import { goals } from "./goals.js";
 
 export const goalSnapshots = pgTable(
   "goal_snapshots",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    goalId: uuid("goal_id").notNull().references(() => goals.id, { onDelete: "cascade" }),
-    companyId: uuid("company_id").notNull().references(() => companies.id),
+    goalId: uuid("goal_id")
+      .notNull()
+      .references(() => goals.id, { onDelete: "cascade" }),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id),
     snapshotDate: date("snapshot_date").notNull(),
     progressPercent: numeric("progress_percent", { precision: 5, scale: 2 }),
     healthScore: integer("health_score"),

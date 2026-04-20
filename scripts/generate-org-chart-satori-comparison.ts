@@ -10,14 +10,14 @@
  *
  * Output: tmp/org-chart-svg-comparison/
  */
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import {
-  renderOrgChartSvg,
-  renderOrgChartPng,
-  type OrgNode,
-  type OrgChartStyle,
   ORG_CHART_STYLES,
+  type OrgChartStyle,
+  type OrgNode,
+  renderOrgChartPng,
+  renderOrgChartSvg,
 } from "../server/src/routes/org-chart-svg.js";
 
 // ── Sample org data ──────────────────────────────────────────────
@@ -57,9 +57,7 @@ const ORGS: Record<string, OrgNode> = {
         name: "CMO",
         role: "Marketing",
         status: "active",
-        reports: [
-          { id: "des1", name: "Designer", role: "Design", status: "active", reports: [] },
-        ],
+        reports: [{ id: "des1", name: "Designer", role: "Design", status: "active", reports: [] }],
       },
     ],
   },
@@ -96,9 +94,7 @@ const ORGS: Record<string, OrgNode> = {
         name: "CFO",
         role: "Finance",
         status: "active",
-        reports: [
-          { id: "fin1", name: "Analyst", role: "Finance", status: "active", reports: [] },
-        ],
+        reports: [{ id: "fin1", name: "Analyst", role: "Finance", status: "active", reports: [] }],
       },
       {
         id: "coo",
@@ -116,7 +112,11 @@ const ORGS: Record<string, OrgNode> = {
 };
 
 const STYLE_META: Record<OrgChartStyle, { name: string; vibe: string; bestFor: string }> = {
-  monochrome: { name: "Monochrome", vibe: "Vercel — zero color noise, dark", bestFor: "GitHub READMEs, developer docs" },
+  monochrome: {
+    name: "Monochrome",
+    vibe: "Vercel — zero color noise, dark",
+    bestFor: "GitHub READMEs, developer docs",
+  },
   nebula: { name: "Nebula", vibe: "Glassmorphism — cosmic gradient", bestFor: "Hero sections, marketing" },
   circuit: { name: "Circuit", vibe: "Linear/Raycast — indigo traces", bestFor: "Product pages, dev tools" },
   warmth: { name: "Warmth", vibe: "Airbnb — light, colored avatars", bestFor: "Light-mode READMEs, presentations" },

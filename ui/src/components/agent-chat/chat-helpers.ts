@@ -1,10 +1,5 @@
 import type { IssueComment } from "@ironworksai/shared";
-import {
-  FileText,
-  ClipboardList,
-  Share2,
-  PlusCircle,
-} from "lucide-react";
+import { ClipboardList, FileText, PlusCircle, Share2 } from "lucide-react";
 
 export const POLL_INTERVAL_MS = 3_000;
 
@@ -33,7 +28,10 @@ export function normalizeComments(comments: IssueComment[]): ChatMessage[] {
 export const CHAT_TEMPLATES = [
   { label: "Review this code", prompt: "Review this code and provide feedback on quality, bugs, and improvements." },
   { label: "Write a report on...", prompt: "Write a report on " },
-  { label: "Analyze project status", prompt: "Analyze the current project status and provide a summary of progress, blockers, and next steps." },
+  {
+    label: "Analyze project status",
+    prompt: "Analyze the current project status and provide a summary of progress, blockers, and next steps.",
+  },
   { label: "What are you working on?", prompt: "What are you currently working on? Give me a status update." },
 ];
 
@@ -47,7 +45,12 @@ export function getSuggestedActions(lastAgentMessage: string | null): { label: s
     actions.push({ label: "Create issue from this", icon: PlusCircle });
   }
 
-  if (lower.includes("summary") || lower.includes("report") || lower.includes("analysis") || lower.includes("findings")) {
+  if (
+    lower.includes("summary") ||
+    lower.includes("report") ||
+    lower.includes("analysis") ||
+    lower.includes("findings")
+  ) {
     actions.push({ label: "Share to channel", icon: Share2 });
   }
 

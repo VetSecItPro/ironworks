@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -50,11 +50,14 @@ const mockProjectService = vi.hoisted(() => ({
 const mockLogActivity = vi.hoisted(() => vi.fn());
 const mockGenerateClientUpdate = vi.hoisted(() => vi.fn());
 
-vi.mock("../services/index.js", () => ({
-  projectService: () => mockProjectService,
-  logActivity: mockLogActivity,
-  generateClientUpdate: mockGenerateClientUpdate,
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    projectService: () => mockProjectService,
+    logActivity: mockLogActivity,
+    generateClientUpdate: mockGenerateClientUpdate,
+  });
+});
 
 vi.mock("../services/activity-log.js", () => ({
   logActivity: mockLogActivity,
@@ -70,7 +73,8 @@ vi.mock("../middleware/logger.js", () => ({
 }));
 
 vi.mock("../middleware/validate.js", () => ({
-  validate: () => (req: any, _res: any, next: any) => next(),
+  // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
+  validate: () => (_req: any, _res: any, next: any) => next(),
 }));
 
 // ── App builder ─────────────────────────────────────────────────────────────
@@ -82,9 +86,11 @@ async function createApp(actor: Record<string, unknown>) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });
+  // biome-ignore lint/suspicious/noExplicitAny: mock Drizzle DB or storage object for unit tests; real type requires full schema-aware Drizzle instance
   const fakeDb = {} as any;
   app.use("/api", projectRoutes(fakeDb));
   app.use(errorHandler);
@@ -171,9 +177,7 @@ describe("project routes", () => {
 
     it("rejects unauthenticated create with 401", async () => {
       const app = await createApp(noActor());
-      const res = await request(app)
-        .post(`/api/companies/${COMPANY_ID}/projects`)
-        .send({ name: "Test" });
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/projects`).send({ name: "Test" });
       expect(res.status).toBe(401);
     });
   });
@@ -183,9 +187,7 @@ describe("project routes", () => {
       const updated = { ...MOCK_PROJECT, name: "Ironworks Pro" };
       mockProjectService.update.mockResolvedValue(updated);
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .patch(`/api/projects/${PROJECT_ID}`)
-        .send({ name: "Ironworks Pro" });
+      const res = await request(app).patch(`/api/projects/${PROJECT_ID}`).send({ name: "Ironworks Pro" });
 
       expect(res.status).toBe(200);
       expect(res.body.name).toBe("Ironworks Pro");
@@ -206,9 +208,7 @@ describe("project routes", () => {
     it("returns 404 for non-existent project update", async () => {
       mockProjectService.getById.mockResolvedValue(null);
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .patch(`/api/projects/${randomUUID()}`)
-        .send({ name: "Updated" });
+      const res = await request(app).patch(`/api/projects/${randomUUID()}`).send({ name: "Updated" });
       expect(res.status).toBe(404);
     });
   });
@@ -267,8 +267,7 @@ describe("project routes", () => {
     it("generates a client update report", async () => {
       mockGenerateClientUpdate.mockResolvedValue("## Weekly Update\nAll good.");
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post(`/api/companies/${COMPANY_ID}/projects/${PROJECT_ID}/client-update`);
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/projects/${PROJECT_ID}/client-update`);
 
       expect(res.status).toBe(201);
       expect(res.body.markdown).toContain("Weekly Update");

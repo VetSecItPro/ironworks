@@ -1,9 +1,9 @@
 import React from "react";
 import { Link } from "@/lib/router";
-import { cn, formatCents, agentUrl } from "../../lib/utils";
-import { Identity } from "../Identity";
-import { RATING_COLORS, type AgentPerfRow } from "./ratingUtils";
 import { useDialog } from "../../context/DialogContext";
+import { agentUrl, cn, formatCents } from "../../lib/utils";
+import { Identity } from "../Identity";
+import { type AgentPerfRow, RATING_COLORS } from "./ratingUtils";
 
 /* ── Expanded Row Detail ── */
 
@@ -23,7 +23,10 @@ export function ExpandedRowDetail({ row }: { row: AgentPerfRow }) {
               <p className="text-lg font-bold tabular-nums">{row.ratingScore}</p>
               <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden max-w-[80px]">
                 <div
-                  className={cn("h-full rounded-full", row.ratingScore >= 80 ? "bg-emerald-500" : row.ratingScore >= 50 ? "bg-amber-500" : "bg-red-500")}
+                  className={cn(
+                    "h-full rounded-full",
+                    row.ratingScore >= 80 ? "bg-emerald-500" : row.ratingScore >= 50 ? "bg-amber-500" : "bg-red-500",
+                  )}
                   style={{ width: `${row.ratingScore}%` }}
                 />
               </div>
@@ -61,22 +64,51 @@ export function MobileCard({ row }: { row: AgentPerfRow; prevScoreMap: Map<strin
     <div key={row.agentId} className="p-3 space-y-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 min-w-0">
-          <span className={cn("inline-flex items-center justify-center h-6 w-6 rounded border text-xs font-bold shrink-0", RATING_COLORS[row.rating])}>{row.rating}</span>
-          <Link to={agentUrl({ id: row.agentId, urlKey: null, name: null })} className="no-underline text-inherit font-medium truncate">{row.name}</Link>
+          <span
+            className={cn(
+              "inline-flex items-center justify-center h-6 w-6 rounded border text-xs font-bold shrink-0",
+              RATING_COLORS[row.rating],
+            )}
+          >
+            {row.rating}
+          </span>
+          <Link
+            to={agentUrl({ id: row.agentId, urlKey: null, name: null })}
+            className="no-underline text-inherit font-medium truncate"
+          >
+            {row.name}
+          </Link>
         </div>
         <span className="text-sm tabular-nums text-muted-foreground shrink-0">
           {row.tasksDone} done{row.tasksInProgress > 0 && <span> +{row.tasksInProgress}</span>}
         </span>
       </div>
       <div className="grid grid-cols-3 gap-2 text-sm tabular-nums">
-        <div><div className="text-xs text-muted-foreground/80">$/task</div><div className="text-muted-foreground">{row.costPerTask !== null ? formatCents(Math.round(row.costPerTask)) : "-"}</div></div>
-        <div><div className="text-xs text-muted-foreground/80">Avg time</div><div className="text-muted-foreground">{row.avgCloseH !== null ? `${row.avgCloseH.toFixed(1)}h` : "-"}</div></div>
-        <div><div className="text-xs text-muted-foreground/80">Completion</div><div className="text-muted-foreground">{row.completionRate}%</div></div>
+        <div>
+          <div className="text-xs text-muted-foreground/80">$/task</div>
+          <div className="text-muted-foreground">
+            {row.costPerTask !== null ? formatCents(Math.round(row.costPerTask)) : "-"}
+          </div>
+        </div>
+        <div>
+          <div className="text-xs text-muted-foreground/80">Avg time</div>
+          <div className="text-muted-foreground">{row.avgCloseH !== null ? `${row.avgCloseH.toFixed(1)}h` : "-"}</div>
+        </div>
+        <div>
+          <div className="text-xs text-muted-foreground/80">Completion</div>
+          <div className="text-muted-foreground">{row.completionRate}%</div>
+        </div>
       </div>
       {(row.rating === "D" || row.rating === "F") && row.tasksDone > 0 && (
         <button
+          type="button"
           className="text-[10px] text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors"
-          onClick={() => openNewIssue({ title: `Performance Review: ${row.name} - rating ${row.rating}`, description: pipDescription(row) })}
+          onClick={() =>
+            openNewIssue({
+              title: `Performance Review: ${row.name} - rating ${row.rating}`,
+              description: pipDescription(row),
+            })
+          }
         >
           Create PIP
         </button>
@@ -104,24 +136,52 @@ export function DesktopRow({
     <React.Fragment key={row.agentId}>
       <tr className="hover:bg-accent/30 transition-colors cursor-pointer" onClick={() => onToggleExpand(row.agentId)}>
         <td className="px-4 py-3">
-          <Link to={agentUrl({ id: row.agentId, urlKey: null, name: null })} className="no-underline text-inherit" onClick={(e) => e.stopPropagation()}>
+          <Link
+            to={agentUrl({ id: row.agentId, urlKey: null, name: null })}
+            className="no-underline text-inherit"
+            onClick={(e) => e.stopPropagation()}
+          >
             <Identity name={row.name} size="sm" />
           </Link>
         </td>
         <td className="px-4 py-3 text-center">
-          <span className={cn("inline-flex items-center justify-center h-7 w-7 rounded-lg border text-xs font-bold", RATING_COLORS[row.rating])}>{row.rating}</span>
+          <span
+            className={cn(
+              "inline-flex items-center justify-center h-7 w-7 rounded-lg border text-xs font-bold",
+              RATING_COLORS[row.rating],
+            )}
+          >
+            {row.rating}
+          </span>
         </td>
         <td className="px-4 py-3 text-center tabular-nums">
-          {row.tasksDone}{row.tasksInProgress > 0 && <span className="text-muted-foreground ml-1">+{row.tasksInProgress}</span>}
+          {row.tasksDone}
+          {row.tasksInProgress > 0 && <span className="text-muted-foreground ml-1">+{row.tasksInProgress}</span>}
         </td>
-        <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">{row.throughput > 0 ? row.throughput.toFixed(1) : "-"}</td>
-        <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">{row.avgCloseH !== null ? `${row.avgCloseH.toFixed(1)}h` : "-"}</td>
-        <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">{row.costPerTask !== null ? formatCents(Math.round(row.costPerTask)) : "-"}</td>
+        <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
+          {row.throughput > 0 ? row.throughput.toFixed(1) : "-"}
+        </td>
+        <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
+          {row.avgCloseH !== null ? `${row.avgCloseH.toFixed(1)}h` : "-"}
+        </td>
+        <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
+          {row.costPerTask !== null ? formatCents(Math.round(row.costPerTask)) : "-"}
+        </td>
         <td className="px-4 py-3 text-right tabular-nums">{formatCents(row.totalSpendCents)}</td>
         <td className="px-4 py-3 text-right">
           <div className="flex items-center justify-end gap-2">
             <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
-              <div className={cn("h-full rounded-full", row.completionRate >= 80 ? "bg-emerald-500" : row.completionRate >= 50 ? "bg-amber-500" : "bg-red-500")} style={{ width: `${row.completionRate}%` }} />
+              <div
+                className={cn(
+                  "h-full rounded-full",
+                  row.completionRate >= 80
+                    ? "bg-emerald-500"
+                    : row.completionRate >= 50
+                      ? "bg-amber-500"
+                      : "bg-red-500",
+                )}
+                style={{ width: `${row.completionRate}%` }}
+              />
             </div>
             <span className="text-sm text-muted-foreground tabular-nums w-8 text-right">{row.completionRate}%</span>
           </div>
@@ -129,8 +189,15 @@ export function DesktopRow({
         <td className="px-4 py-3 text-right">
           {(row.rating === "D" || row.rating === "F") && row.tasksDone > 0 ? (
             <button
+              type="button"
               className="text-[10px] text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors"
-              onClick={(e) => { e.stopPropagation(); openNewIssue({ title: `Performance Review: ${row.name} - rating ${row.rating}`, description: pipDescription(row) }); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                openNewIssue({
+                  title: `Performance Review: ${row.name} - rating ${row.rating}`,
+                  description: pipDescription(row),
+                });
+              }}
             >
               Create PIP
             </button>

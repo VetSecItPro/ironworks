@@ -1,16 +1,12 @@
-import { Router } from "express";
 import type { Db } from "@ironworksai/db";
 import { agents } from "@ironworksai/db";
 import { eq } from "drizzle-orm";
-import { assertCanWrite } from "./authz.js";
+import { Router } from "express";
 import { badRequest } from "../errors.js";
+import { type GeneratedPlaybook, sanitizeAiInput, validatePlaybookOutput } from "../lib/ai-security.js";
+import { buildAnthropicHeaders, resolveAnthropicAuth } from "../lib/anthropic-auth.js";
 import { logger } from "../middleware/logger.js";
-import {
-  sanitizeAiInput,
-  validatePlaybookOutput,
-  type GeneratedPlaybook,
-} from "../lib/ai-security.js";
-import { resolveAnthropicAuth, buildAnthropicHeaders } from "../lib/anthropic-auth.js";
+import { assertCanWrite } from "./authz.js";
 
 /**
  * AI generation endpoints for playbooks, routines, etc.
@@ -141,16 +137,19 @@ function generateFromTemplate(prompt: string, availableRoles: string[]): Generat
   let category: GeneratedPlaybook["category"] = "custom";
   if (lowerPrompt.includes("security") || lowerPrompt.includes("audit")) category = "security";
   else if (lowerPrompt.includes("onboard") || lowerPrompt.includes("client")) category = "onboarding";
-  else if (lowerPrompt.includes("launch") || lowerPrompt.includes("release") || lowerPrompt.includes("deploy")) category = "engineering";
-  else if (lowerPrompt.includes("content") || lowerPrompt.includes("marketing") || lowerPrompt.includes("campaign")) category = "marketing";
-  else if (lowerPrompt.includes("incident") || lowerPrompt.includes("ops") || lowerPrompt.includes("review")) category = "operations";
+  else if (lowerPrompt.includes("launch") || lowerPrompt.includes("release") || lowerPrompt.includes("deploy"))
+    category = "engineering";
+  else if (lowerPrompt.includes("content") || lowerPrompt.includes("marketing") || lowerPrompt.includes("campaign"))
+    category = "marketing";
+  else if (lowerPrompt.includes("incident") || lowerPrompt.includes("ops") || lowerPrompt.includes("review"))
+    category = "operations";
 
   // Extract a name from the first sentence
   const firstSentence = prompt.split(/[.!?\n]/)[0]?.trim() ?? "Custom Playbook";
-  const name = firstSentence.length > 60 ? firstSentence.slice(0, 57) + "..." : firstSentence;
+  const name = firstSentence.length > 60 ? `${firstSentence.slice(0, 57)}...` : firstSentence;
 
   // Determine roles to use
-  const ceo = availableRoles.includes("ceo") ? "ceo" : availableRoles[0] ?? "ceo";
+  const ceo = availableRoles.includes("ceo") ? "ceo" : (availableRoles[0] ?? "ceo");
   const cto = availableRoles.find((r) => r.includes("cto") || r.includes("engineer")) ?? ceo;
   const executor = availableRoles.find((r) => r.includes("senior") || r.includes("engineer")) ?? cto;
 

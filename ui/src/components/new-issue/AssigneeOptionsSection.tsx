@@ -1,9 +1,6 @@
-import {
-  ChevronRight,
-  ChevronDown,
-} from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "../../lib/utils";
-import { InlineEntitySelector, type InlineEntityOption } from "../InlineEntitySelector";
+import { type InlineEntityOption, InlineEntitySelector } from "../InlineEntitySelector";
 import { ISSUE_THINKING_EFFORT_OPTIONS } from "./constants";
 
 interface AssigneeOptionsSectionProps {
@@ -43,6 +40,7 @@ export function AssigneeOptionsSection({
   return (
     <div className="px-4 pb-2 shrink-0">
       <button
+        type="button"
         className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
         onClick={() => setAssigneeOptionsOpen(!assigneeOptionsOpen)}
       >
@@ -69,10 +67,11 @@ export function AssigneeOptionsSection({
             <div className="flex items-center gap-1.5 flex-wrap">
               {thinkingEffortOptions.map((option) => (
                 <button
+                  type="button"
                   key={option.value || "default"}
                   className={cn(
                     "px-2 py-1 rounded-md text-xs border border-border hover:bg-accent/50 transition-colors",
-                    assigneeThinkingEffort === option.value && "bg-accent"
+                    assigneeThinkingEffort === option.value && "bg-accent",
                   )}
                   onClick={() => setAssigneeThinkingEffort(option.value)}
                 >
@@ -85,17 +84,18 @@ export function AssigneeOptionsSection({
             <div className="flex items-center justify-between rounded-md border border-border px-2 py-1.5">
               <div className="text-xs text-muted-foreground">Enable Chrome (--chrome)</div>
               <button
+                type="button"
                 data-slot="toggle"
                 className={cn(
                   "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
-                  assigneeChrome ? "bg-green-600" : "bg-muted"
+                  assigneeChrome ? "bg-green-600" : "bg-muted",
                 )}
                 onClick={() => setAssigneeChrome(!assigneeChrome)}
               >
                 <span
                   className={cn(
                     "inline-block h-3.5 w-3.5 rounded-full bg-background shadow-sm transition-transform",
-                    assigneeChrome ? "translate-x-4.5" : "translate-x-0.5"
+                    assigneeChrome ? "translate-x-4.5" : "translate-x-0.5",
                   )}
                 />
               </button>

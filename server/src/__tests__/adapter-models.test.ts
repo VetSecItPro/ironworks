@@ -1,10 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import { models as codexFallbackModels } from "@ironworksai/adapter-codex-local";
 import { models as cursorFallbackModels } from "@ironworksai/adapter-cursor-local";
 import { resetOpenCodeModelsCacheForTests } from "@ironworksai/adapter-opencode-local/server";
-import { listAdapterModels } from "../adapters/index.js";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { resetCodexModelsCacheForTests } from "../adapters/codex-models.js";
 import { resetCursorModelsCacheForTests, setCursorModelsRunnerForTests } from "../adapters/cursor-models.js";
+import { listAdapterModels } from "../adapters/index.js";
 
 describe("adapter model listing", () => {
   beforeEach(() => {
@@ -35,10 +35,7 @@ describe("adapter model listing", () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue({
       ok: true,
       json: async () => ({
-        data: [
-          { id: "gpt-5-pro" },
-          { id: "gpt-5" },
-        ],
+        data: [{ id: "gpt-5-pro" }, { id: "gpt-5" }],
       }),
     } as Response);
 
@@ -62,7 +59,6 @@ describe("adapter model listing", () => {
     const models = await listAdapterModels("codex_local");
     expect(models).toEqual(codexFallbackModels);
   });
-
 
   it("returns cursor fallback models when CLI discovery is unavailable", async () => {
     setCursorModelsRunnerForTests(() => ({
@@ -96,9 +92,16 @@ describe("adapter model listing", () => {
   });
 
   it("returns no opencode models when opencode command is unavailable", async () => {
+    // Restore IRONWORKS_OPENCODE_COMMAND in try/finally so a mid-test failure
+    // never leaks the sentinel value into subsequent tests in the same worker.
+    const original = process.env.IRONWORKS_OPENCODE_COMMAND;
     process.env.IRONWORKS_OPENCODE_COMMAND = "__ironworks_missing_opencode_command__";
-
-    const models = await listAdapterModels("opencode_local");
-    expect(models).toEqual([]);
+    try {
+      const models = await listAdapterModels("opencode_local");
+      expect(models).toEqual([]);
+    } finally {
+      if (original === undefined) delete process.env.IRONWORKS_OPENCODE_COMMAND;
+      else process.env.IRONWORKS_OPENCODE_COMMAND = original;
+    }
   });
 });

@@ -1,16 +1,15 @@
+import type { CreateConfigValues } from "@ironworksai/adapter-utils";
 import { ArrowRight, ChevronRight } from "lucide-react";
+import { listUIAdapters } from "../../adapters";
 import { cn } from "../../lib/utils";
 import { AgentConfigForm } from "../AgentConfigForm";
-import { adapterLabels } from "../agent-config-primitives";
 import { defaultCreateValues } from "../agent-config-defaults";
-import { listUIAdapters } from "../../adapters";
-import type { CreateConfigValues } from "@ironworksai/adapter-utils";
+import { adapterLabels } from "../agent-config-primitives";
 
-export const IMPORT_ADAPTER_OPTIONS: { value: string; label: string }[] =
-  listUIAdapters().map((adapter) => ({
-    value: adapter.type,
-    label: adapterLabels[adapter.type] ?? adapter.label,
-  }));
+export const IMPORT_ADAPTER_OPTIONS: { value: string; label: string }[] = listUIAdapters().map((adapter) => ({
+  value: adapter.type,
+  label: adapterLabels[adapter.type] ?? adapter.label,
+}));
 
 export interface AdapterPickerItem {
   slug: string;
@@ -48,8 +47,7 @@ export function AdapterPickerList({
         </div>
         <div className="divide-y divide-border">
           {agents.map((agent) => {
-            const selectedType =
-              adapterOverrides[agent.slug] ?? agent.adapterType;
+            const selectedType = adapterOverrides[agent.slug] ?? agent.adapterType;
             const isExpanded = expandedSlugs.has(agent.slug);
             const vals = configValues[agent.slug] ?? {
               ...defaultCreateValues,
@@ -67,16 +65,12 @@ export function AdapterPickerList({
                   >
                     agent
                   </span>
-                  <span className="shrink-0 font-mono text-xs text-muted-foreground">
-                    {agent.name}
-                  </span>
+                  <span className="shrink-0 font-mono text-xs text-muted-foreground">{agent.name}</span>
                   <ArrowRight className="h-3 w-3 shrink-0 text-muted-foreground" />
                   <select
                     className="min-w-0 flex-1 rounded-md border border-border bg-transparent px-2 py-1 text-xs outline-none focus:border-foreground"
                     value={selectedType}
-                    onChange={(e) =>
-                      onChangeAdapter(agent.slug, e.target.value)
-                    }
+                    onChange={(e) => onChangeAdapter(agent.slug, e.target.value)}
                   >
                     {IMPORT_ADAPTER_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>
@@ -94,12 +88,7 @@ export function AdapterPickerList({
                     )}
                     onClick={() => onToggleExpand(agent.slug)}
                   >
-                    <ChevronRight
-                      className={cn(
-                        "h-3 w-3 transition-transform",
-                        isExpanded && "rotate-90",
-                      )}
-                    />
+                    <ChevronRight className={cn("h-3 w-3 transition-transform", isExpanded && "rotate-90")} />
                     configure adapter
                   </button>
                 </div>

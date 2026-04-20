@@ -1,6 +1,6 @@
 import { Building2, Download } from "lucide-react";
-import { cn } from "../../lib/utils";
 import { exportToCSV } from "../../lib/exportCSV";
+import { cn } from "../../lib/utils";
 import type { AgentPerfRow, TimeRange } from "../performance/ratingUtils";
 
 interface PerformanceHeaderProps {
@@ -22,9 +22,12 @@ export function PerformanceHeader({ range, setRange, showDeptAgg, setShowDeptAgg
       </div>
       <div className="flex items-center gap-2">
         <button
+          type="button"
           className={cn(
             "flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border transition-colors",
-            showDeptAgg ? "bg-accent text-foreground border-foreground/20" : "border-border text-muted-foreground hover:text-foreground",
+            showDeptAgg
+              ? "bg-accent text-foreground border-foreground/20"
+              : "border-border text-muted-foreground hover:text-foreground",
           )}
           onClick={() => setShowDeptAgg(!showDeptAgg)}
         >
@@ -32,6 +35,7 @@ export function PerformanceHeader({ range, setRange, showDeptAgg, setShowDeptAgg
           Departments
         </button>
         <button
+          type="button"
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border border-border text-muted-foreground hover:text-foreground transition-colors"
           onClick={() => {
             exportToCSV(
@@ -66,6 +70,7 @@ export function PerformanceHeader({ range, setRange, showDeptAgg, setShowDeptAgg
           <Download className="h-3.5 w-3.5" />
           Export CSV
         </button>
+        {/* biome-ignore lint/a11y/useSemanticElements: role="group" on a div toolbar is correct ARIA pattern; <fieldset> is for form controls only */}
         <div
           className="flex items-center gap-1 border border-border rounded-md overflow-hidden"
           role="group"
@@ -73,6 +78,7 @@ export function PerformanceHeader({ range, setRange, showDeptAgg, setShowDeptAgg
         >
           {(["7d", "30d", "all"] as const).map((r) => (
             <button
+              type="button"
               key={r}
               className={cn(
                 "px-3 py-1.5 text-xs transition-colors",

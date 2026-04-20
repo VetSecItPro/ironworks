@@ -1,6 +1,6 @@
+import { Clock, Database, FileText, Scale, Shield, ShieldAlert } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Link } from "@/lib/router";
-import { Scale, FileText, ShieldAlert, Shield, Database, Clock } from "lucide-react";
 
 interface LegalDocLink {
   title: string;
@@ -59,8 +59,8 @@ export function LegalIndex() {
 
           <h1 className="text-3xl font-bold tracking-tight mb-2">Legal</h1>
           <p className="text-muted-foreground mb-8">
-            All legal documents governing the use of the IronWorks platform. All documents are
-            currently v0.1 and pending legal review.
+            All legal documents governing the use of the IronWorks platform. All documents are currently v0.1 and
+            pending legal review.
           </p>
 
           <div className="space-y-4">

@@ -1,4 +1,4 @@
-import { Users, Clock } from "lucide-react";
+import { Clock, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type EmploymentType = "full_time" | "contractor";
@@ -12,6 +12,7 @@ export function HireStepType({ employmentType, onSelect }: HireStepTypeProps) {
   return (
     <div className="grid grid-cols-2 gap-3">
       <button
+        type="button"
         className={cn(
           "flex flex-col items-center gap-3 rounded-md border border-border p-5 text-sm transition-colors hover:bg-accent/50",
           employmentType === "full_time" && "border-foreground bg-accent/30",
@@ -25,6 +26,7 @@ export function HireStepType({ employmentType, onSelect }: HireStepTypeProps) {
         </span>
       </button>
       <button
+        type="button"
         className={cn(
           "flex flex-col items-center gap-3 rounded-md border border-border p-5 text-sm transition-colors hover:bg-accent/50",
           employmentType === "contractor" && "border-foreground bg-accent/30",

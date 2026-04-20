@@ -1,17 +1,11 @@
-import { Router } from "express";
-import { and, desc, eq, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import {
-  agents,
-  agentMemoryEntries,
-  approvals,
-  issueApprovals,
-  workflowMaturity,
-} from "@ironworksai/db";
-import { assertCompanyAccess, getActorInfo } from "./authz.js";
+import { agentMemoryEntries, agents, approvals, issueApprovals, workflowMaturity } from "@ironworksai/db";
+import { and, desc, eq, sql } from "drizzle-orm";
+import { Router } from "express";
 import { logger } from "../middleware/logger.js";
-import { checkAllAgentDrift, detectQualityDrift } from "../services/quality-drift.js";
 import { getAgentLessons } from "../services/agent-learning.js";
+import { checkAllAgentDrift, detectQualityDrift } from "../services/quality-drift.js";
+import { assertCompanyAccess } from "./authz.js";
 
 // ── Nolan Integration Points (REQ-12) ─────────────────────────────────────
 //
@@ -41,17 +35,10 @@ export function nolanIntegrationRoutes(db: Db) {
         })
         .from(approvals)
         .innerJoin(issueApprovals, eq(approvals.id, issueApprovals.approvalId))
-        .innerJoin(
-          sql`issues`,
-          sql`issues.id = ${issueApprovals.issueId}`,
-        )
+        .innerJoin(sql`issues`, sql`issues.id = ${issueApprovals.issueId}`)
         .innerJoin(agents, sql`agents.id = issues.assignee_agent_id`)
         .where(
-          and(
-            eq(approvals.companyId, companyId),
-            eq(approvals.type, "quality_gate"),
-            eq(approvals.status, "approved"),
-          ),
+          and(eq(approvals.companyId, companyId), eq(approvals.type, "quality_gate"), eq(approvals.status, "approved")),
         )
         .groupBy(sql`issues.assignee_agent_id`, agents.name);
 
@@ -60,16 +47,11 @@ export function nolanIntegrationRoutes(db: Db) {
         agentName: a.agentName,
         averageScore: Math.round((Number(a.avgScore) || 0) * 100) / 100,
         totalReviews: a.totalReviews,
-        passRate: a.totalReviews > 0
-          ? Math.round((a.passCount / a.totalReviews) * 100)
-          : 0,
+        passRate: a.totalReviews > 0 ? Math.round((a.passCount / a.totalReviews) * 100) : 0,
       }));
 
       // Workflow maturity levels
-      const maturityRows = await db
-        .select()
-        .from(workflowMaturity)
-        .where(eq(workflowMaturity.companyId, companyId));
+      const maturityRows = await db.select().from(workflowMaturity).where(eq(workflowMaturity.companyId, companyId));
 
       // Drifting agents
       const drifting = await checkAllAgentDrift(db, companyId);
@@ -113,11 +95,7 @@ export function nolanIntegrationRoutes(db: Db) {
         })
         .from(approvals)
         .where(
-          and(
-            eq(approvals.companyId, companyId),
-            eq(approvals.type, "quality_gate"),
-            eq(approvals.status, "pending"),
-          ),
+          and(eq(approvals.companyId, companyId), eq(approvals.type, "quality_gate"), eq(approvals.status, "pending")),
         )
         .orderBy(desc(approvals.createdAt))
         .limit(50);
@@ -191,12 +169,7 @@ export function nolanIntegrationRoutes(db: Db) {
       const allAgents = await db
         .select({ id: agents.id, name: agents.name, role: agents.role })
         .from(agents)
-        .where(
-          and(
-            eq(agents.companyId, companyId),
-            sql`${agents.status} != 'terminated'`,
-          ),
-        );
+        .where(and(eq(agents.companyId, companyId), sql`${agents.status} != 'terminated'`));
 
       const healthData = await Promise.all(
         allAgents.map(async (agent) => {
@@ -207,12 +180,7 @@ export function nolanIntegrationRoutes(db: Db) {
           const [memRow] = await db
             .select({ count: sql<number>`count(*)::int` })
             .from(agentMemoryEntries)
-            .where(
-              and(
-                eq(agentMemoryEntries.agentId, agent.id),
-                sql`${agentMemoryEntries.archivedAt} IS NULL`,
-              ),
-            );
+            .where(and(eq(agentMemoryEntries.agentId, agent.id), sql`${agentMemoryEntries.archivedAt} IS NULL`));
 
           // Lesson count
           const lessons = await getAgentLessons(db, agent.id, 100);
@@ -238,10 +206,7 @@ export function nolanIntegrationRoutes(db: Db) {
       );
 
       // Company-level maturity
-      const maturityRows = await db
-        .select()
-        .from(workflowMaturity)
-        .where(eq(workflowMaturity.companyId, companyId));
+      const maturityRows = await db.select().from(workflowMaturity).where(eq(workflowMaturity.companyId, companyId));
 
       res.json({
         agents: healthData,

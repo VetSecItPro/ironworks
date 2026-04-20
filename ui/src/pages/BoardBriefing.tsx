@@ -1,43 +1,43 @@
-import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { agentsApi } from "../api/agents";
-import { channelsApi } from "../api/channels";
-import { issuesApi } from "../api/issues";
-import { costsApi } from "../api/costs";
-import { goalsApi } from "../api/goals";
-import { goalProgressApi } from "../api/goalProgress";
-import { hiringApi } from "../api/hiring";
-import { approvalsApi } from "../api/approvals";
-import { activityApi } from "../api/activity";
-import { executiveApi } from "../api/executive";
-import { useCompany } from "../context/CompanyContext";
-import { useBreadcrumbs } from "../context/BreadcrumbContext";
-import { queryKeys } from "../lib/queryKeys";
-import { EmptyState } from "../components/EmptyState";
-import { PageSkeleton } from "../components/PageSkeleton";
-import { CapacityPlanning } from "../components/CapacityPlanning";
-import { computeAgentPerformance } from "./AgentPerformance";
-import { FileText, BarChart3 } from "lucide-react";
 import type { Agent } from "@ironworksai/shared";
+import { useQuery } from "@tanstack/react-query";
+import { BarChart3, FileText } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { activityApi } from "../api/activity";
+import { agentsApi } from "../api/agents";
+import { approvalsApi } from "../api/approvals";
+import { channelsApi } from "../api/channels";
+import { costsApi } from "../api/costs";
+import { executiveApi } from "../api/executive";
+import { goalProgressApi } from "../api/goalProgress";
+import { goalsApi } from "../api/goals";
+import { hiringApi } from "../api/hiring";
+import { issuesApi } from "../api/issues";
 import {
-  BriefingHeader,
-  ExecutiveSummary,
-  CompanyHealthScoreCard,
-  HeadcountCostCards,
-  GoalsPendingCards,
   AgentPerformanceSection,
+  BriefingHeader,
+  CMOCampaignSection,
+  CompanyHealthScoreCard,
+  DepartmentImpactSection,
+  EngineeringMetricsSection,
+  ExecutiveSummary,
+  ExpertiseMapSection,
+  GoalsPendingCards,
+  HeadcountCostCards,
+  HumanOverrideSection,
+  PermissionMatrixSection,
+  RecentActivitySection,
+  RiskSummarySection,
   SlaComplianceCard,
   TechDebtCard,
-  RiskSummarySection,
-  PermissionMatrixSection,
-  EngineeringMetricsSection,
-  HumanOverrideSection,
-  DepartmentImpactSection,
-  CMOCampaignSection,
   WeeklyTrendsSection,
-  RecentActivitySection,
-  ExpertiseMapSection,
 } from "../components/board-briefing";
+import { CapacityPlanning } from "../components/CapacityPlanning";
+import { EmptyState } from "../components/EmptyState";
+import { PageSkeleton } from "../components/PageSkeleton";
+import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { useCompany } from "../context/CompanyContext";
+import { queryKeys } from "../lib/queryKeys";
+import { computeAgentPerformance } from "./AgentPerformance";
 
 type BriefingPeriod = "7d" | "30d" | "this_month";
 
@@ -185,16 +185,12 @@ export function BoardBriefing() {
 
   const weekSpendCents = useMemo(() => {
     if (!windowSpend) return 0;
-    return windowSpend
-      .filter((r) => r.window === "7d")
-      .reduce((sum, r) => sum + r.costCents, 0);
+    return windowSpend.filter((r) => r.window === "7d").reduce((sum, r) => sum + r.costCents, 0);
   }, [windowSpend]);
 
   const monthSpendCents = useMemo(() => {
     if (!windowSpend) return 0;
-    return windowSpend
-      .filter((r) => r.window === "30d")
-      .reduce((sum, r) => sum + r.costCents, 0);
+    return windowSpend.filter((r) => r.window === "30d").reduce((sum, r) => sum + r.costCents, 0);
   }, [windowSpend]);
 
   const lastWeekEstimate = useMemo(() => {
@@ -217,7 +213,13 @@ export function BoardBriefing() {
     let onTrack = 0;
     let healthAtRisk = 0;
     let offTrack = 0;
-    const topAtRisk: Array<{ id: string; title: string; healthScore: number | null; healthStatus: string | null; ownerAgentId: string | null }> = [];
+    const topAtRisk: Array<{
+      id: string;
+      title: string;
+      healthScore: number | null;
+      healthStatus: string | null;
+      ownerAgentId: string | null;
+    }> = [];
 
     for (const g of goalsList) {
       if (g.healthStatus === "on_track") onTrack++;
@@ -282,15 +284,13 @@ export function BoardBriefing() {
     return map;
   }, [issues]);
 
-  const recentActivity = useMemo(
-    () => (activity ?? []).slice(0, 10),
-    [activity],
-  );
+  const recentActivity = useMemo(() => (activity ?? []).slice(0, 10), [activity]);
 
   const marketingDept = useMemo(
-    () => (departmentImpactData ?? []).find(
-      (d) => d.department.toLowerCase().includes("market") || d.department.toLowerCase().includes("cmo"),
-    ),
+    () =>
+      (departmentImpactData ?? []).find(
+        (d) => d.department.toLowerCase().includes("market") || d.department.toLowerCase().includes("cmo"),
+      ),
     [departmentImpactData],
   );
 
@@ -343,12 +343,7 @@ export function BoardBriefing() {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      <BriefingHeader
-        dateStr={dateStr}
-        companyName={companyName}
-        period={period}
-        onPeriodChange={setPeriod}
-      />
+      <BriefingHeader dateStr={dateStr} companyName={companyName} period={period} onPeriodChange={setPeriod} />
 
       <ExecutiveSummary
         companyName={companyName}
@@ -379,11 +374,7 @@ export function BoardBriefing() {
         pendingApprovalsCount={pendingApprovals.length}
       />
 
-      <AgentPerformanceSection
-        perfRows={perfRows}
-        topPerformers={topPerformers}
-        bottomPerformers={bottomPerformers}
-      />
+      <AgentPerformanceSection perfRows={perfRows} topPerformers={topPerformers} bottomPerformers={bottomPerformers} />
 
       {/* SLA Compliance + Tech Debt */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

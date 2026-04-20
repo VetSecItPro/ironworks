@@ -1,13 +1,13 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
 const COMPANY_ID = randomUUID();
 const USER_ID = randomUUID();
-const AGENT_ID = randomUUID();
+const _AGENT_ID = randomUUID();
 const ISSUE_ID = randomUUID();
 
 const MOCK_ISSUE = {
@@ -62,20 +62,36 @@ const mockAccessService = vi.hoisted(() => ({
 
 const mockLogActivity = vi.hoisted(() => vi.fn());
 
-vi.mock("../services/index.js", () => ({
-  accessService: () => mockAccessService,
-  agentService: () => ({ getById: vi.fn().mockResolvedValue(null), list: vi.fn().mockResolvedValue([]) }),
-  executionWorkspaceService: () => ({ getById: vi.fn() }),
-  goalService: () => ({ getById: vi.fn().mockResolvedValue(null), getDefaultCompanyGoal: vi.fn().mockResolvedValue(null) }),
-  heartbeatService: () => ({ wakeup: vi.fn(), getActiveRun: vi.fn(), listRuns: vi.fn().mockResolvedValue([]) }),
-  issueApprovalService: () => ({ list: vi.fn().mockResolvedValue([]), listApprovalsForIssue: vi.fn().mockResolvedValue([]), link: vi.fn(), unlink: vi.fn() }),
-  issueService: () => mockIssueService,
-  documentService: () => ({ getIssueDocumentPayload: vi.fn().mockResolvedValue({}) }),
-  logActivity: mockLogActivity,
-  projectService: () => ({ getById: vi.fn().mockResolvedValue(null), listByIds: vi.fn().mockResolvedValue([]) }),
-  routineService: () => ({ list: vi.fn().mockResolvedValue([]) }),
-  workProductService: () => ({ listForIssue: vi.fn().mockResolvedValue([]), create: vi.fn(), update: vi.fn(), remove: vi.fn() }),
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    accessService: () => mockAccessService,
+    agentService: () => ({ getById: vi.fn().mockResolvedValue(null), list: vi.fn().mockResolvedValue([]) }),
+    executionWorkspaceService: () => ({ getById: vi.fn() }),
+    goalService: () => ({
+      getById: vi.fn().mockResolvedValue(null),
+      getDefaultCompanyGoal: vi.fn().mockResolvedValue(null),
+    }),
+    heartbeatService: () => ({ wakeup: vi.fn(), getActiveRun: vi.fn(), listRuns: vi.fn().mockResolvedValue([]) }),
+    issueApprovalService: () => ({
+      list: vi.fn().mockResolvedValue([]),
+      listApprovalsForIssue: vi.fn().mockResolvedValue([]),
+      link: vi.fn(),
+      unlink: vi.fn(),
+    }),
+    issueService: () => mockIssueService,
+    documentService: () => ({ getIssueDocumentPayload: vi.fn().mockResolvedValue({}) }),
+    logActivity: mockLogActivity,
+    projectService: () => ({ getById: vi.fn().mockResolvedValue(null), listByIds: vi.fn().mockResolvedValue([]) }),
+    routineService: () => ({ list: vi.fn().mockResolvedValue([]) }),
+    workProductService: () => ({
+      listForIssue: vi.fn().mockResolvedValue([]),
+      create: vi.fn(),
+      update: vi.fn(),
+      remove: vi.fn(),
+    }),
+  });
+});
 
 vi.mock("../services/activity-log.js", () => ({
   logActivity: mockLogActivity,
@@ -129,6 +145,7 @@ async function createApp(actor: Record<string, unknown>) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });
@@ -136,7 +153,9 @@ async function createApp(actor: Record<string, unknown>) {
     select: vi.fn().mockReturnThis(),
     from: vi.fn().mockReturnThis(),
     where: vi.fn().mockReturnThis(),
+    // biome-ignore lint/suspicious/noThenProperty: test mock drizzle thenable contract
     then: vi.fn().mockResolvedValue([]),
+    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
   const fakeStorage = {
     putFile: vi.fn(),
@@ -144,6 +163,7 @@ async function createApp(actor: Record<string, unknown>) {
     deleteFile: vi.fn(),
     listFiles: vi.fn().mockResolvedValue([]),
     getSignedUrl: vi.fn(),
+    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
   app.use("/api", issueRoutes(fakeDb, fakeStorage));
   app.use(errorHandler);
@@ -165,6 +185,7 @@ describe("issue routes", () => {
     vi.clearAllMocks();
     mockIssueService.list.mockResolvedValue([MOCK_ISSUE]);
     mockIssueService.getById.mockResolvedValue(MOCK_ISSUE);
+    // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
     mockIssueService.create.mockImplementation((_companyId: string, data: any) => ({
       id: randomUUID(),
       companyId: COMPANY_ID,
@@ -210,23 +231,16 @@ describe("issue routes", () => {
   describe("POST /api/companies/:companyId/issues", () => {
     it("creates an issue with required fields", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post(`/api/companies/${COMPANY_ID}/issues`)
-        .send({ title: "New bug" });
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/issues`).send({ title: "New bug" });
 
       expect(res.status).toBe(201);
       expect(res.body).toMatchObject({ title: "New bug", status: "backlog" });
-      expect(mockIssueService.create).toHaveBeenCalledWith(
-        COMPANY_ID,
-        expect.objectContaining({ title: "New bug" }),
-      );
+      expect(mockIssueService.create).toHaveBeenCalledWith(COMPANY_ID, expect.objectContaining({ title: "New bug" }));
     });
 
     it("rejects issue creation without title (validation error)", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post(`/api/companies/${COMPANY_ID}/issues`)
-        .send({});
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/issues`).send({});
 
       // Zod validation should catch missing title
       expect(res.status).toBe(400);
@@ -235,9 +249,7 @@ describe("issue routes", () => {
     it("enforces company access on issue creation", async () => {
       const otherCompany = randomUUID();
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post(`/api/companies/${otherCompany}/issues`)
-        .send({ title: "Exploit" });
+      const res = await request(app).post(`/api/companies/${otherCompany}/issues`).send({ title: "Exploit" });
 
       expect(res.status).toBe(403);
     });

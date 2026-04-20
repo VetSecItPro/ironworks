@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { execute } from "@ironworksai/adapter-cursor-local/server";
+import { describe, expect, it } from "vitest";
 
 async function writeFakeCursorCommand(commandPath: string): Promise<void> {
   const script = `#!/usr/bin/env node

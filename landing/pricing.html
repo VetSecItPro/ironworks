@@ -32,7 +32,7 @@
   <link rel="stylesheet" href="/design-system.css">
   <style>
     .check { color: #10b981; }
-    .dash { color: #3f3f46; }
+                        .dash { color: #3f3f46; }
   </style>
 
   <script type="application/ld+json">
@@ -105,7 +105,7 @@
       <div class="flex items-center gap-3">
         <a href="/auth" class="text-sm text-zinc-400 hover:text-white transition-colors hidden sm:block">Log in</a>
         <a href="/setup" class="text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-colors hidden sm:inline-flex">Get Started</a>
-        <button id="nav-toggle" class="md:hidden p-3 text-zinc-400 hover:text-white" aria-label="Toggle navigation" aria-expanded="false" aria-controls="mobile-nav">
+        <button type="button" id="nav-toggle" class="md:hidden p-3 text-zinc-400 hover:text-white" aria-label="Toggle navigation" aria-expanded="false" aria-controls="mobile-nav">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
       </div>
@@ -139,8 +139,8 @@
 
       <!-- Billing toggle -->
       <div class="inline-flex items-center gap-1 bg-surface-1 border border-white/[0.06] rounded-xl p-1 mb-2">
-        <button id="btn-monthly" class="toggle-btn active text-sm font-medium px-5 py-2 rounded-lg">Monthly</button>
-        <button id="btn-annual" class="toggle-btn text-sm font-medium px-5 py-2 rounded-lg">Annual</button>
+        <button type="button" id="btn-monthly" class="toggle-btn active text-sm font-medium px-5 py-2 rounded-lg">Monthly</button>
+        <button type="button" id="btn-annual" class="toggle-btn text-sm font-medium px-5 py-2 rounded-lg">Annual</button>
       </div>
       <p id="annual-note" class="text-xs text-emerald-400 mt-2 hidden">Save 20% — equivalent to getting over 2 months free</p>
     </div>
@@ -405,7 +405,7 @@
         <details class="border-b border-white/[0.06] group">
           <summary class="flex items-center justify-between gap-4 py-5 cursor-pointer">
             <span class="summary-text font-medium text-zinc-300 group-open:text-white transition-colors">What does "bring your own API keys" mean?</span>
-            <svg class="chevron w-4 h-4 text-zinc-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            <svg aria-hidden="true" class="chevron w-4 h-4 text-zinc-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
           </summary>
           <div class="pb-5 text-zinc-400 text-sm leading-relaxed">
             IronWorks connects to LLM providers like OpenAI, Anthropic, and Google on your behalf, but uses the API key you supply. You pay those providers directly at their published rates. IronWorks does not mark up token costs or take a cut of LLM spend. Your monthly IronWorks subscription covers only the platform itself.
@@ -415,7 +415,7 @@
         <details class="border-b border-white/[0.06] group">
           <summary class="flex items-center justify-between gap-4 py-5 cursor-pointer">
             <span class="summary-text font-medium text-zinc-300 group-open:text-white transition-colors">How does the 20% annual discount work?</span>
-            <svg class="chevron w-4 h-4 text-zinc-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            <svg aria-hidden="true" class="chevron w-4 h-4 text-zinc-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
           </summary>
           <div class="pb-5 text-zinc-400 text-sm leading-relaxed">
             When you choose annual billing, you pay 12 months upfront at a 20% discount. The effective monthly rate is $63 for Starter, $159 for Growth, and $479 for Business. The full annual amount is charged on the day you subscribe and renews on the same date each year.
@@ -425,7 +425,7 @@
         <details class="border-b border-white/[0.06] group">
           <summary class="flex items-center justify-between gap-4 py-5 cursor-pointer">
             <span class="summary-text font-medium text-zinc-300 group-open:text-white transition-colors">Can I change plans at any time?</span>
-            <svg class="chevron w-4 h-4 text-zinc-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            <svg aria-hidden="true" class="chevron w-4 h-4 text-zinc-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
           </summary>
           <div class="pb-5 text-zinc-400 text-sm leading-relaxed">
             Yes. Upgrades take effect immediately and are prorated. Downgrades take effect at the end of your current billing period. If you downgrade from Business or Growth to a plan with fewer companies or projects, you will need to archive the excess before the transition date.
@@ -435,7 +435,7 @@
         <details class="border-b border-white/[0.06] group">
           <summary class="flex items-center justify-between gap-4 py-5 cursor-pointer">
             <span class="summary-text font-medium text-zinc-300 group-open:text-white transition-colors">What happens if I exceed my playbook run limit?</span>
-            <svg class="chevron w-4 h-4 text-zinc-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            <svg aria-hidden="true" class="chevron w-4 h-4 text-zinc-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
           </summary>
           <div class="pb-5 text-zinc-400 text-sm leading-relaxed">
             On the Starter plan, playbook runs are capped at 50 per calendar month. Once you reach the limit, new runs are queued until the next billing cycle or until you upgrade. You will receive an in-app warning at 80% usage. Growth and Business plans have no run limit.
@@ -445,7 +445,7 @@
         <details class="border-b border-white/[0.06] group">
           <summary class="flex items-center justify-between gap-4 py-5 cursor-pointer">
             <span class="summary-text font-medium text-zinc-300 group-open:text-white transition-colors">Is there a free trial?</span>
-            <svg class="chevron w-4 h-4 text-zinc-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            <svg aria-hidden="true" class="chevron w-4 h-4 text-zinc-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
           </summary>
           <div class="pb-5 text-zinc-400 text-sm leading-relaxed">
             Yes. Every new account gets a 14-day trial on the Growth plan with no credit card required. At the end of the trial, you choose a plan or your account is downgraded to read-only until you subscribe.
@@ -455,7 +455,7 @@
         <details class="border-b border-white/[0.06] group">
           <summary class="flex items-center justify-between gap-4 py-5 cursor-pointer">
             <span class="summary-text font-medium text-zinc-300 group-open:text-white transition-colors">What happens to my data if I cancel?</span>
-            <svg class="chevron w-4 h-4 text-zinc-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            <svg aria-hidden="true" class="chevron w-4 h-4 text-zinc-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
           </summary>
           <div class="pb-5 text-zinc-400 text-sm leading-relaxed">
             When you cancel, your account enters a 30-day grace period during which you can export all data. After 30 days, your data is permanently deleted from our servers. We do not retain any customer data after the deletion window unless required by law. See our <a href="/privacy" class="text-blue-400 hover:text-blue-300 transition-colors">Privacy Policy</a> for details.
@@ -512,39 +512,39 @@
   </footer>
 
   <script>
-    (function () {
-      'use strict';
-      var monthly = { starter: '$79', growth: '$199', business: '$599' };
-      var annual  = { starter: '$63', growth: '$159', business: '$479' };
+    ((() => {
+                          'use strict';
+                          var monthly = { starter: '$79', growth: '$199', business: '$599' };
+                          var annual  = { starter: '$63', growth: '$159', business: '$479' };
 
-      function setBilling(mode) {
-        var prices = mode === 'annual' ? annual : monthly;
-        document.getElementById('starter-price').textContent  = prices.starter;
-        document.getElementById('growth-price').textContent   = prices.growth;
-        document.getElementById('business-price').textContent = prices.business;
+                          function setBilling(mode) {
+                            var prices = mode === 'annual' ? annual : monthly;
+                            document.getElementById('starter-price').textContent  = prices.starter;
+                            document.getElementById('growth-price').textContent   = prices.growth;
+                            document.getElementById('business-price').textContent = prices.business;
 
-        var showAnnual = mode === 'annual';
-        ['starter-annual-note', 'growth-annual-note', 'business-annual-note'].forEach(function (id) {
-          document.getElementById(id).classList.toggle('hidden', !showAnnual);
-        });
-        document.getElementById('annual-note').classList.toggle('hidden', !showAnnual);
-        document.getElementById('btn-monthly').classList.toggle('active', mode === 'monthly');
-        document.getElementById('btn-annual').classList.toggle('active', mode === 'annual');
-      }
+                            var showAnnual = mode === 'annual';
+                            ['starter-annual-note', 'growth-annual-note', 'business-annual-note'].forEach((id) => {
+                              document.getElementById(id).classList.toggle('hidden', !showAnnual);
+                            });
+                            document.getElementById('annual-note').classList.toggle('hidden', !showAnnual);
+                            document.getElementById('btn-monthly').classList.toggle('active', mode === 'monthly');
+                            document.getElementById('btn-annual').classList.toggle('active', mode === 'annual');
+                          }
 
-      document.getElementById('btn-monthly').addEventListener('click', function () {
-        setBilling('monthly');
-        document.getElementById('btn-monthly').setAttribute('aria-pressed', 'true');
-        document.getElementById('btn-annual').setAttribute('aria-pressed', 'false');
-      });
-      document.getElementById('btn-annual').addEventListener('click', function () {
-        setBilling('annual');
-        document.getElementById('btn-monthly').setAttribute('aria-pressed', 'false');
-        document.getElementById('btn-annual').setAttribute('aria-pressed', 'true');
-      });
-    }());
+                          document.getElementById('btn-monthly').addEventListener('click', () => {
+                            setBilling('monthly');
+                            document.getElementById('btn-monthly').setAttribute('aria-pressed', 'true');
+                            document.getElementById('btn-annual').setAttribute('aria-pressed', 'false');
+                          });
+                          document.getElementById('btn-annual').addEventListener('click', () => {
+                            setBilling('annual');
+                            document.getElementById('btn-monthly').setAttribute('aria-pressed', 'false');
+                            document.getElementById('btn-annual').setAttribute('aria-pressed', 'true');
+                          });
+                        })());
   </script>
 
-  <script>(function(){var t=document.getElementById("nav-toggle"),n=document.getElementById("mobile-nav");if(t&&n){t.addEventListener("click",function(){var open=n.classList.toggle("hidden");t.setAttribute("aria-expanded",open?"false":"true");});}})();</script>
+  <script>(()=> {var t=document.getElementById("nav-toggle"),n=document.getElementById("mobile-nav");if(t&&n){t.addEventListener("click",()=> {var open=n.classList.toggle("hidden");t.setAttribute("aria-expanded",open?"false":"true");});}})();</script>
 </body>
 </html>

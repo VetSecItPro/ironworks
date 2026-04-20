@@ -1,25 +1,19 @@
-import { ChangeEvent, useEffect, useState } from "react";
+import type { AutonomyLevel, CompanySecret, MembershipRole } from "@ironworksai/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCompany } from "../../context/CompanyContext";
-import { useBreadcrumbs } from "../../context/BreadcrumbContext";
-import { useToast } from "../../context/ToastContext";
-import { companiesApi } from "../../api/companies";
+import { ChangeEvent, useEffect, useState } from "react";
 import { accessApi } from "../../api/access";
 import { assetsApi } from "../../api/assets";
+import { companiesApi } from "../../api/companies";
 import { secretsApi } from "../../api/secrets";
-import { queryKeys } from "../../lib/queryKeys";
+import { useBreadcrumbs } from "../../context/BreadcrumbContext";
+import { useCompany } from "../../context/CompanyContext";
+import { useToast } from "../../context/ToastContext";
 import { useMeAccess } from "../../hooks/useMeAccess";
-import type { MembershipRole, CompanySecret } from "@ironworksai/shared";
-import type { AutonomyLevel } from "@ironworksai/shared";
+import { queryKeys } from "../../lib/queryKeys";
 import { buildAgentSnippet } from "../settings/agentSnippetUtils";
 
 export function useCompanySettingsState() {
-  const {
-    companies,
-    selectedCompany,
-    selectedCompanyId,
-    setSelectedCompanyId,
-  } = useCompany();
+  const { companies, selectedCompany, selectedCompanyId, setSelectedCompanyId } = useCompany();
   const { setBreadcrumbs } = useBreadcrumbs();
   const { pushToast } = useToast();
   const queryClient = useQueryClient();
@@ -32,9 +26,7 @@ export function useCompanySettingsState() {
   const [logoUploadError, setLogoUploadError] = useState<string | null>(null);
 
   // Branding state (stored in localStorage per company)
-  const brandingStorageKey = selectedCompanyId
-    ? `ironworks:branding:${selectedCompanyId}`
-    : null;
+  const brandingStorageKey = selectedCompanyId ? `ironworks:branding:${selectedCompanyId}` : null;
   const [accentColor, setAccentColor] = useState(() => {
     if (!brandingStorageKey) return "";
     return localStorage.getItem(`${brandingStorageKey}:accent`) ?? "";
@@ -43,36 +35,25 @@ export function useCompanySettingsState() {
     if (!brandingStorageKey) return "";
     return localStorage.getItem(`${brandingStorageKey}:favicon`) ?? "";
   });
-  const [removeIronWorksBranding, setRemoveIronWorksBranding] = useState(
-    () => {
-      if (!brandingStorageKey) return false;
-      return (
-        localStorage.getItem(`${brandingStorageKey}:removeBranding`) === "true"
-      );
-    },
-  );
+  const [removeIronWorksBranding, setRemoveIronWorksBranding] = useState(() => {
+    if (!brandingStorageKey) return false;
+    return localStorage.getItem(`${brandingStorageKey}:removeBranding`) === "true";
+  });
 
   // Persist branding settings
   useEffect(() => {
     if (!brandingStorageKey) return;
-    if (accentColor)
-      localStorage.setItem(`${brandingStorageKey}:accent`, accentColor);
+    if (accentColor) localStorage.setItem(`${brandingStorageKey}:accent`, accentColor);
     else localStorage.removeItem(`${brandingStorageKey}:accent`);
-    if (customFavicon)
-      localStorage.setItem(`${brandingStorageKey}:favicon`, customFavicon);
+    if (customFavicon) localStorage.setItem(`${brandingStorageKey}:favicon`, customFavicon);
     else localStorage.removeItem(`${brandingStorageKey}:favicon`);
-    localStorage.setItem(
-      `${brandingStorageKey}:removeBranding`,
-      String(removeIronWorksBranding),
-    );
+    localStorage.setItem(`${brandingStorageKey}:removeBranding`, String(removeIronWorksBranding));
   }, [brandingStorageKey, accentColor, customFavicon, removeIronWorksBranding]);
 
   // Apply custom favicon when set
   useEffect(() => {
     if (!customFavicon) return;
-    const link = document.querySelector(
-      "link[rel~='icon']",
-    ) as HTMLLinkElement | null;
+    const link = document.querySelector("link[rel~='icon']") as HTMLLinkElement | null;
     if (link) {
       link.href = customFavicon;
     }
@@ -88,17 +69,13 @@ export function useCompanySettingsState() {
     const bKey = `ironworks:branding:${selectedCompany.id}`;
     setAccentColor(localStorage.getItem(`${bKey}:accent`) ?? "");
     setCustomFavicon(localStorage.getItem(`${bKey}:favicon`) ?? "");
-    setRemoveIronWorksBranding(
-      localStorage.getItem(`${bKey}:removeBranding`) === "true",
-    );
+    setRemoveIronWorksBranding(localStorage.getItem(`${bKey}:removeBranding`) === "true");
   }, [selectedCompany]);
 
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
 
   // Default autonomy level - persisted per-company in localStorage
-  const autonomyStorageKey = selectedCompanyId
-    ? `ironworks:autonomy:${selectedCompanyId}`
-    : null;
+  const autonomyStorageKey = selectedCompanyId ? `ironworks:autonomy:${selectedCompanyId}` : null;
   const [defaultAutonomy, setDefaultAutonomy] = useState<AutonomyLevel>(() => {
     if (!autonomyStorageKey) return "h3";
     return (localStorage.getItem(autonomyStorageKey) as AutonomyLevel) ?? "h3";
@@ -111,11 +88,8 @@ export function useCompanySettingsState() {
   }
 
   const { isInstanceAdmin, getRoleForCompany } = useMeAccess();
-  const myRole = selectedCompanyId
-    ? getRoleForCompany(selectedCompanyId)
-    : ("member" as MembershipRole);
-  const canManageMembers =
-    myRole === "owner" || myRole === "admin" || isInstanceAdmin;
+  const myRole = selectedCompanyId ? getRoleForCompany(selectedCompanyId) : ("member" as MembershipRole);
+  const canManageMembers = myRole === "owner" || myRole === "admin" || isInstanceAdmin;
 
   const membersQuery = useQuery({
     queryKey: ["access", "members", selectedCompanyId],
@@ -131,10 +105,7 @@ export function useCompanySettingsState() {
 
   const configuredKeys = new Set(
     (secretsQuery.data ?? [])
-      .filter(
-        (s: CompanySecret) =>
-          s.name === "ANTHROPIC_API_KEY" || s.name === "OPENAI_API_KEY",
-      )
+      .filter((s: CompanySecret) => s.name === "ANTHROPIC_API_KEY" || s.name === "OPENAI_API_KEY")
       .map((s: CompanySecret) => s.name),
   );
 
@@ -151,11 +122,8 @@ export function useCompanySettingsState() {
       brandColor !== (selectedCompany.brandColor ?? ""));
 
   const generalMutation = useMutation({
-    mutationFn: (data: {
-      name: string;
-      description: string | null;
-      brandColor: string | null;
-    }) => companiesApi.update(selectedCompanyId!, data),
+    mutationFn: (data: { name: string; description: string | null; brandColor: string | null }) =>
+      companiesApi.update(selectedCompanyId!, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.companies.all });
     },
@@ -177,12 +145,8 @@ export function useCompanySettingsState() {
       setInviteError(null);
       const base = window.location.origin.replace(/\/+$/, "");
       const onboardingTextLink =
-        invite.onboardingTextUrl ??
-        invite.onboardingTextPath ??
-        `/api/invites/${invite.token}/onboarding.txt`;
-      const absoluteUrl = onboardingTextLink.startsWith("http")
-        ? onboardingTextLink
-        : `${base}${onboardingTextLink}`;
+        invite.onboardingTextUrl ?? invite.onboardingTextPath ?? `/api/invites/${invite.token}/onboarding.txt`;
+      const absoluteUrl = onboardingTextLink.startsWith("http") ? onboardingTextLink : `${base}${onboardingTextLink}`;
       setSnippetCopied(false);
       setSnippetCopyDelightId(0);
       let snippet: string;
@@ -190,11 +154,8 @@ export function useCompanySettingsState() {
         const manifest = await accessApi.getInviteOnboarding(invite.token);
         snippet = buildAgentSnippet({
           onboardingTextUrl: absoluteUrl,
-          connectionCandidates:
-            manifest.onboarding.connectivity?.connectionCandidates ?? null,
-          testResolutionUrl:
-            manifest.onboarding.connectivity?.testResolutionEndpoint?.url ??
-            null,
+          connectionCandidates: manifest.onboarding.connectivity?.connectionCandidates ?? null,
+          testResolutionUrl: manifest.onboarding.connectivity?.testResolutionEndpoint?.url ?? null,
         });
       } catch {
         snippet = buildAgentSnippet({
@@ -217,9 +178,7 @@ export function useCompanySettingsState() {
       });
     },
     onError: (err) => {
-      setInviteError(
-        err instanceof Error ? err.message : "Failed to create invite",
-      );
+      setInviteError(err instanceof Error ? err.message : "Failed to create invite");
     },
   });
 
@@ -230,13 +189,11 @@ export function useCompanySettingsState() {
 
   const logoUploadMutation = useMutation({
     mutationFn: (file: File) =>
-      assetsApi
-        .uploadCompanyLogo(selectedCompanyId!, file)
-        .then((asset) =>
-          companiesApi.update(selectedCompanyId!, {
-            logoAssetId: asset.assetId,
-          }),
-        ),
+      assetsApi.uploadCompanyLogo(selectedCompanyId!, file).then((asset) =>
+        companiesApi.update(selectedCompanyId!, {
+          logoAssetId: asset.assetId,
+        }),
+      ),
     onSuccess: (company) => {
       syncLogoState(company.logoUrl);
       setLogoUploadError(null);
@@ -244,8 +201,7 @@ export function useCompanySettingsState() {
   });
 
   const clearLogoMutation = useMutation({
-    mutationFn: () =>
-      companiesApi.update(selectedCompanyId!, { logoAssetId: null }),
+    mutationFn: () => companiesApi.update(selectedCompanyId!, { logoAssetId: null }),
     onSuccess: (company) => {
       setLogoUploadError(null);
       syncLogoState(company.logoUrl);
@@ -292,13 +248,7 @@ export function useCompanySettingsState() {
   }
 
   const archiveMutation = useMutation({
-    mutationFn: ({
-      companyId,
-      nextCompanyId,
-    }: {
-      companyId: string;
-      nextCompanyId: string | null;
-    }) =>
+    mutationFn: ({ companyId, nextCompanyId }: { companyId: string; nextCompanyId: string | null }) =>
       companiesApi.archive(companyId).then(() => ({ nextCompanyId })),
     onSuccess: async ({ nextCompanyId }) => {
       if (nextCompanyId) {
@@ -314,10 +264,7 @@ export function useCompanySettingsState() {
   });
 
   useEffect(() => {
-    setBreadcrumbs([
-      { label: selectedCompany?.name ?? "Company", href: "/dashboard" },
-      { label: "Settings" },
-    ]);
+    setBreadcrumbs([{ label: selectedCompany?.name ?? "Company", href: "/dashboard" }, { label: "Settings" }]);
   }, [setBreadcrumbs, selectedCompany?.name]);
 
   function handleSaveGeneral() {
@@ -330,15 +277,10 @@ export function useCompanySettingsState() {
 
   function handleArchive() {
     if (!selectedCompanyId || !selectedCompany) return;
-    const confirmed = window.confirm(
-      `Archive company "${selectedCompany.name}"? It will be hidden from the sidebar.`,
-    );
+    const confirmed = window.confirm(`Archive company "${selectedCompany.name}"? It will be hidden from the sidebar.`);
     if (!confirmed) return;
     const nextCompanyId =
-      companies.find(
-        (company) =>
-          company.id !== selectedCompanyId && company.status !== "archived",
-      )?.id ?? null;
+      companies.find((company) => company.id !== selectedCompanyId && company.status !== "archived")?.id ?? null;
     archiveMutation.mutate({ companyId: selectedCompanyId, nextCompanyId });
   }
 

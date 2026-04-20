@@ -1,55 +1,52 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "@/lib/router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { dashboardApi } from "../api/dashboard";
-import { activityApi } from "../api/activity";
-import { issuesApi } from "../api/issues";
-import { agentsApi } from "../api/agents";
-import { projectsApi } from "../api/projects";
-import { heartbeatsApi } from "../api/heartbeats";
-import { costsApi } from "../api/costs";
-import { goalProgressApi } from "../api/goalProgress";
-import { hiringApi } from "../api/hiring";
-import { approvalsApi } from "../api/approvals";
-import { announcementsApi } from "../api/announcements";
-import { velocityApi } from "../api/velocity";
-import { executiveApi } from "../api/executive";
-import { useCompany } from "../context/CompanyContext";
-import { useDialog } from "../context/DialogContext";
-import { useBreadcrumbs } from "../context/BreadcrumbContext";
-import { queryKeys } from "../lib/queryKeys";
-import { EmptyState } from "../components/EmptyState";
-import { Button } from "@/components/ui/button";
-import { formatCents } from "../lib/utils";
-import { Bot, DollarSign, PauseCircle, Swords, UserPlus, Users, CircleDot, ShieldCheck } from "lucide-react";
-import { ActiveAgentsPanel } from "../components/ActiveAgentsPanel";
-import { MetricCard } from "../components/MetricCard";
-import { Link } from "@/lib/router";
-import { PageSkeleton } from "../components/PageSkeleton";
 import type { Agent, LiveEvent } from "@ironworksai/shared";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Bot, CircleDot, DollarSign, PauseCircle, ShieldCheck, Swords, UserPlus, Users } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link, useNavigate } from "@/lib/router";
 import { PluginSlotOutlet } from "@/plugins/slots";
-import { computeAgentPerformance } from "./AgentPerformance";
-import { WelcomeBanner } from "../components/WelcomeBanner";
+import { activityApi } from "../api/activity";
+import { agentsApi } from "../api/agents";
+import { announcementsApi } from "../api/announcements";
+import { approvalsApi } from "../api/approvals";
+import { costsApi } from "../api/costs";
+import { dashboardApi } from "../api/dashboard";
+import { executiveApi } from "../api/executive";
+import { goalProgressApi } from "../api/goalProgress";
+import { heartbeatsApi } from "../api/heartbeats";
+import { hiringApi } from "../api/hiring";
+import { issuesApi } from "../api/issues";
+import { projectsApi } from "../api/projects";
+import { velocityApi } from "../api/velocity";
+import { ActiveAgentsPanel } from "../components/ActiveAgentsPanel";
 import { ApiKeyOnboardingBanner } from "../components/ApiKeyOnboardingBanner";
-import { GettingStartedChecklist } from "../components/GettingStartedChecklist";
-import { usePageTitle } from "../hooks/usePageTitle";
-
+import { ActivitySection } from "../components/dashboard/ActivitySection";
+import { AlertsSection } from "../components/dashboard/AlertsSection";
+import { AnnouncementsSection } from "../components/dashboard/AnnouncementsSection";
+import { AttentionRequiredSection } from "../components/dashboard/AttentionRequiredSection";
+import { aggregateActivityEvents, isActivityEventMeaningful } from "../components/dashboard/activityAggregation";
+import { DecisionsNeededSection } from "../components/dashboard/DecisionsNeededSection";
+import { type LiveFeedEvent, LiveFeedPanel } from "../components/dashboard/LiveFeedPanel";
+import { ProgressSection } from "../components/dashboard/ProgressSection";
 /* ── Dashboard sub-components ── */
 import { QuickActionFAB } from "../components/dashboard/QuickActionFAB";
 import { QuickActionsGrid } from "../components/dashboard/QuickActionsGrid";
-import { AnnouncementsSection } from "../components/dashboard/AnnouncementsSection";
-import { AttentionRequiredSection } from "../components/dashboard/AttentionRequiredSection";
-import { AlertsSection } from "../components/dashboard/AlertsSection";
-import { SpendMetricsSection } from "../components/dashboard/SpendMetricsSection";
-import { WorkforceImpactSection } from "../components/dashboard/WorkforceImpactSection";
-import { DecisionsNeededSection } from "../components/dashboard/DecisionsNeededSection";
-import { ProgressSection } from "../components/dashboard/ProgressSection";
-import { VelocityDepartmentSection } from "../components/dashboard/VelocityDepartmentSection";
-import { ActivitySection } from "../components/dashboard/ActivitySection";
-import { LiveFeedPanel, type LiveFeedEvent } from "../components/dashboard/LiveFeedPanel";
 import { QuickLinksWidget } from "../components/dashboard/QuickLinksWidget";
 import { RecentDeliverablesWidget } from "../components/dashboard/RecentDeliverablesWidget";
-import { isActivityEventMeaningful, aggregateActivityEvents } from "../components/dashboard/activityAggregation";
+import { SpendMetricsSection } from "../components/dashboard/SpendMetricsSection";
+import { VelocityDepartmentSection } from "../components/dashboard/VelocityDepartmentSection";
+import { WorkforceImpactSection } from "../components/dashboard/WorkforceImpactSection";
+import { EmptyState } from "../components/EmptyState";
+import { GettingStartedChecklist } from "../components/GettingStartedChecklist";
+import { MetricCard } from "../components/MetricCard";
+import { PageSkeleton } from "../components/PageSkeleton";
+import { WelcomeBanner } from "../components/WelcomeBanner";
+import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { useCompany } from "../context/CompanyContext";
+import { useDialog } from "../context/DialogContext";
+import { usePageTitle } from "../hooks/usePageTitle";
+import { queryKeys } from "../lib/queryKeys";
+import { formatCents } from "../lib/utils";
+import { computeAgentPerformance } from "./AgentPerformance";
 
 const MAX_LIVE_EVENTS = 50;
 
@@ -86,29 +83,47 @@ export function Dashboard() {
 
     const es = new EventSource(`/api/companies/${selectedCompanyId}/events`);
     eventSourceRef.current = es;
-    es.onopen = () => { setLiveConnected(true); };
-    es.onerror = () => { setLiveConnected(false); };
+    es.onopen = () => {
+      setLiveConnected(true);
+    };
+    es.onerror = () => {
+      setLiveConnected(false);
+    };
 
     function handleLiveEvent(sseType: string) {
       return (e: MessageEvent) => {
         try {
           const event = JSON.parse(e.data as string) as LiveEvent;
-          const feedEntry: LiveFeedEvent = { id: `${Date.now()}-${Math.random()}`, sseType, receivedAt: new Date(), event };
+          const feedEntry: LiveFeedEvent = {
+            id: `${Date.now()}-${Math.random()}`,
+            sseType,
+            receivedAt: new Date(),
+            event,
+          };
           setLiveEvents((prev) => [...prev.slice(-(MAX_LIVE_EVENTS - 1)), feedEntry]);
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
       };
     }
     es.addEventListener("activity", handleLiveEvent("activity"));
     es.addEventListener("agent_run", handleLiveEvent("agent_run"));
     es.addEventListener("heartbeat_run_event", handleLiveEvent("heartbeat_run_event"));
 
-    return () => { es.close(); eventSourceRef.current = null; setLiveConnected(false); };
+    return () => {
+      es.close();
+      eventSourceRef.current = null;
+      setLiveConnected(false);
+    };
   }, [liveMode, selectedCompanyId]);
 
   useEffect(() => {
     if (liveEvents.length > 0 && liveFeedBottomRef.current) {
       const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      liveFeedBottomRef.current.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "nearest" });
+      liveFeedBottomRef.current.scrollIntoView({
+        behavior: prefersReducedMotion ? "auto" : "smooth",
+        block: "nearest",
+      });
     }
   }, [liveEvents]);
 
@@ -118,7 +133,9 @@ export function Dashboard() {
     enabled: !!selectedCompanyId,
   });
 
-  useEffect(() => { setBreadcrumbs([{ label: "War Room" }]); }, [setBreadcrumbs]);
+  useEffect(() => {
+    setBreadcrumbs([{ label: "War Room" }]);
+  }, [setBreadcrumbs]);
 
   const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.dashboard(selectedCompanyId!),
@@ -217,7 +234,9 @@ export function Dashboard() {
 
   const resolveAlertMutation = useMutation({
     mutationFn: (alertId: string) => executiveApi.resolveAlert(selectedCompanyId!, alertId),
-    onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ["alerts", selectedCompanyId!] }); },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["alerts", selectedCompanyId!] });
+    },
   });
 
   /* ── Maps ── */
@@ -242,20 +261,14 @@ export function Dashboard() {
   }, [issues]);
 
   /* ── Derived data ── */
-  const filteredActivity = useMemo(
-    () => (activity ?? []).filter(isActivityEventMeaningful).slice(0, 20),
-    [activity],
-  );
+  const filteredActivity = useMemo(() => (activity ?? []).filter(isActivityEventMeaningful).slice(0, 20), [activity]);
 
   const aggregatedActivity = useMemo(
     () => aggregateActivityEvents(filteredActivity, agentMap).slice(0, 12),
     [filteredActivity, agentMap],
   );
 
-  const blockedIssues = useMemo(
-    () => (issues ?? []).filter((i) => i.status === "blocked"),
-    [issues],
-  );
+  const blockedIssues = useMemo(() => (issues ?? []).filter((i) => i.status === "blocked"), [issues]);
 
   const failedRuns = useMemo(() => {
     const cutoff = Date.now() - 24 * 60 * 60 * 1000;
@@ -280,9 +293,8 @@ export function Dashboard() {
   }, [windowSpend]);
 
   const dailyAvgCents = weekSpendCents > 0 ? Math.round(weekSpendCents / 7) : 0;
-  const spendDeltaPercent = dailyAvgCents > 0
-    ? Math.round(((todaySpendCents - dailyAvgCents) / dailyAvgCents) * 100)
-    : 0;
+  const spendDeltaPercent =
+    dailyAvgCents > 0 ? Math.round(((todaySpendCents - dailyAvgCents) / dailyAvgCents) * 100) : 0;
 
   const agentPerfRows = useMemo(
     () => computeAgentPerformance(agents ?? [], issues ?? [], costsByAgent ?? [], "30d"),
@@ -315,7 +327,13 @@ export function Dashboard() {
     if (total === 0) return [];
     return projects
       .filter((p) => countByProject.has(p.id))
-      .map((p) => ({ id: p.id, name: p.name, color: p.color ?? "#6366f1", count: countByProject.get(p.id)!, percent: Math.round((countByProject.get(p.id)! / total) * 100) }))
+      .map((p) => ({
+        id: p.id,
+        name: p.name,
+        color: p.color ?? "#6366f1",
+        count: countByProject.get(p.id)!,
+        percent: Math.round((countByProject.get(p.id)! / total) * 100),
+      }))
       .sort((a, b) => b.count - a.count);
   }, [issues, projects]);
 
@@ -339,7 +357,9 @@ export function Dashboard() {
 
   const impactMetrics = useMemo(() => {
     const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    const doneThisWeek = (issues ?? []).filter((i) => i.status === "done" && i.completedAt && new Date(i.completedAt).getTime() > weekAgo).length;
+    const doneThisWeek = (issues ?? []).filter(
+      (i) => i.status === "done" && i.completedAt && new Date(i.completedAt).getTime() > weekAgo,
+    ).length;
     const humanHoursEquiv = doneThisWeek * 2;
     const costPerTask = doneThisWeek > 0 ? weekSpendCents / doneThisWeek : 0;
     const costPerHumanHour = humanHoursEquiv > 0 ? weekSpendCents / humanHoursEquiv : 0;
@@ -371,17 +391,33 @@ export function Dashboard() {
       return;
     }
     const newIds = currentIds.filter((id) => !seen.has(id));
-    if (newIds.length === 0) { for (const id of currentIds) seen.add(id); return; }
-    setAnimatedActivityIds((prev) => { const next = new Set(prev); for (const id of newIds) next.add(id); return next; });
+    if (newIds.length === 0) {
+      for (const id of currentIds) seen.add(id);
+      return;
+    }
+    setAnimatedActivityIds((prev) => {
+      const next = new Set(prev);
+      for (const id of newIds) next.add(id);
+      return next;
+    });
     for (const id of newIds) seen.add(id);
     const timer = window.setTimeout(() => {
-      setAnimatedActivityIds((prev) => { const next = new Set(prev); for (const id of newIds) next.delete(id); return next; });
+      setAnimatedActivityIds((prev) => {
+        const next = new Set(prev);
+        for (const id of newIds) next.delete(id);
+        return next;
+      });
       activityAnimationTimersRef.current = activityAnimationTimersRef.current.filter((t) => t !== timer);
     }, 980);
     activityAnimationTimersRef.current.push(timer);
   }, [filteredActivity]);
 
-  useEffect(() => () => { for (const t of activityAnimationTimersRef.current) window.clearTimeout(t); }, []);
+  useEffect(
+    () => () => {
+      for (const t of activityAnimationTimersRef.current) window.clearTimeout(t);
+    },
+    [],
+  );
 
   /* ── Empty states ── */
   if (!selectedCompanyId) {
@@ -417,7 +453,11 @@ export function Dashboard() {
         hasAgents={!!(agents && agents.length > 0)}
         hasTasks={!!(issues && issues.length > 0)}
       />
-      {error && <p role="alert" className="text-sm text-destructive">{error.message}</p>}
+      {error && (
+        <p role="alert" className="text-sm text-destructive">
+          {error.message}
+        </p>
+      )}
 
       <AnnouncementsSection announcements={announcements ?? []} />
 
@@ -428,6 +468,7 @@ export function Dashboard() {
             <p className="text-sm text-amber-900 dark:text-amber-100">You have no agents.</p>
           </div>
           <button
+            type="button"
             onClick={() => openOnboarding({ initialStep: 3, companyId: selectedCompanyId! })}
             className="text-sm font-medium text-amber-700 hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-100 underline underline-offset-2 shrink-0"
           >
@@ -451,11 +492,14 @@ export function Dashboard() {
                     {data.budgets.activeIncidents} active budget incident{data.budgets.activeIncidents === 1 ? "" : "s"}
                   </p>
                   <p className="text-sm text-red-100/70">
-                    {data.budgets.pausedAgents} agents paused - {data.budgets.pausedProjects} projects paused - {data.budgets.pendingApprovals} pending budget approvals
+                    {data.budgets.pausedAgents} agents paused - {data.budgets.pausedProjects} projects paused -{" "}
+                    {data.budgets.pendingApprovals} pending budget approvals
                   </p>
                 </div>
               </div>
-              <Link to="/costs" className="text-sm underline underline-offset-2 text-red-100">Open budgets</Link>
+              <Link to="/costs" className="text-sm underline underline-offset-2 text-red-100">
+                Open budgets
+              </Link>
             </div>
           )}
 
@@ -470,10 +514,17 @@ export function Dashboard() {
                 accentColor="violet"
                 description={
                   <span className="flex items-center gap-2">
-                    <span>{headcount.fte} Full-Time, {headcount.contractor} Contractors</span>
+                    <span>
+                      {headcount.fte} Full-Time, {headcount.contractor} Contractors
+                    </span>
                     <button
+                      type="button"
                       className="text-[10px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-0.5"
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); openHireAgent(); }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        openHireAgent();
+                      }}
                       title="Hire agent"
                     >
                       <UserPlus className="h-3 w-3" /> Hire
@@ -488,7 +539,11 @@ export function Dashboard() {
               label="Agents Enabled"
               to="/agents"
               accentColor="emerald"
-              description={<span>{data.agents.running} running, {data.agents.paused} paused, {data.agents.error} errors</span>}
+              description={
+                <span>
+                  {data.agents.running} running, {data.agents.paused} paused, {data.agents.error} errors
+                </span>
+              }
             />
             <MetricCard
               icon={CircleDot}
@@ -496,7 +551,11 @@ export function Dashboard() {
               label="Tasks Active"
               to="/issues"
               accentColor="blue"
-              description={<span>{data.tasks.open} open, {data.tasks.blocked} blocked</span>}
+              description={
+                <span>
+                  {data.tasks.open} open, {data.tasks.blocked} blocked
+                </span>
+              }
             />
             <MetricCard
               icon={DollarSign}
@@ -504,7 +563,13 @@ export function Dashboard() {
               label="Month Spend"
               to="/costs"
               accentColor="amber"
-              description={<span>{data.costs.monthBudgetCents > 0 ? `${data.costs.monthUtilizationPercent}% of ${formatCents(data.costs.monthBudgetCents)} budget` : "Unlimited budget"}</span>}
+              description={
+                <span>
+                  {data.costs.monthBudgetCents > 0
+                    ? `${data.costs.monthUtilizationPercent}% of ${formatCents(data.costs.monthBudgetCents)} budget`
+                    : "Unlimited budget"}
+                </span>
+              }
             />
             <MetricCard
               icon={ShieldCheck}
@@ -512,16 +577,18 @@ export function Dashboard() {
               label="Pending Approvals"
               to="/approvals"
               accentColor="red"
-              description={<span>{data.budgets.pendingApprovals > 0 ? `${data.budgets.pendingApprovals} budget overrides awaiting board review` : "Awaiting board review"}</span>}
+              description={
+                <span>
+                  {data.budgets.pendingApprovals > 0
+                    ? `${data.budgets.pendingApprovals} budget overrides awaiting board review`
+                    : "Awaiting board review"}
+                </span>
+              }
             />
           </div>
 
           {/* QUICK ACTIONS */}
-          <QuickActionsGrid
-            onCreateIssue={openNewIssue}
-            onCreateGoal={openNewGoal}
-            onCreateProject={openNewProject}
-          />
+          <QuickActionsGrid onCreateIssue={openNewIssue} onCreateGoal={openNewGoal} onCreateProject={openNewProject} />
 
           {/* 3. ATTENTION REQUIRED */}
           <AttentionRequiredSection
@@ -556,7 +623,7 @@ export function Dashboard() {
           <WorkforceImpactSection
             impactMetrics={impactMetrics}
             weekSpendCents={weekSpendCents}
-            agentCount={headcount ? headcount.fte + headcount.contractor : agents?.length ?? 0}
+            agentCount={headcount ? headcount.fte + headcount.contractor : (agents?.length ?? 0)}
           />
 
           {/* 4c. DECISIONS NEEDED */}
@@ -566,16 +633,10 @@ export function Dashboard() {
           />
 
           {/* 5. PROGRESS ROW */}
-          <ProgressSection
-            activeGoals={activeGoals}
-            issues={issues ?? []}
-          />
+          <ProgressSection activeGoals={activeGoals} issues={issues ?? []} />
 
           {/* 5b. VELOCITY + DEPARTMENT */}
-          <VelocityDepartmentSection
-            velocity={velocity}
-            departmentBreakdown={departmentBreakdown}
-          />
+          <VelocityDepartmentSection velocity={velocity} departmentBreakdown={departmentBreakdown} />
 
           <PluginSlotOutlet
             slotTypes={["dashboardWidget"]}

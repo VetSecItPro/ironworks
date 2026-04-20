@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -26,7 +26,7 @@ const MOCK_ANNOUNCEMENT = {
 // ── DB mock ─────────────────────────────────────────────────────────────────
 
 function buildChainableQuery(defaultResult: unknown = []) {
-  const chain: Record<string, any> = {};
+  const chain: Record<string, unknown> = {};
   chain.select = vi.fn().mockReturnValue(chain);
   chain.from = vi.fn().mockReturnValue(chain);
   chain.where = vi.fn().mockReturnValue(chain);
@@ -38,15 +38,20 @@ function buildChainableQuery(defaultResult: unknown = []) {
   chain.set = vi.fn().mockReturnValue(chain);
   chain.returning = vi.fn().mockReturnValue(chain);
   chain.and = vi.fn().mockReturnValue(chain);
+  // biome-ignore lint/suspicious/noThenProperty: test mock drizzle thenable contract
+  // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
   chain.then = vi.fn().mockImplementation((resolve: any) => resolve(defaultResult));
   return chain;
 }
 
 const mockLogActivity = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 
-vi.mock("../services/index.js", () => ({
-  logActivity: mockLogActivity,
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    logActivity: mockLogActivity,
+  });
+});
 
 vi.mock("../services/activity-log.js", () => ({
   logActivity: mockLogActivity,
@@ -59,13 +64,14 @@ vi.mock("../middleware/logger.js", () => ({
 
 // ── App builder ─────────────────────────────────────────────────────────────
 
-async function createApp(actor: Record<string, unknown>, dbOverrides?: Record<string, any>) {
+async function createApp(actor: Record<string, unknown>, dbOverrides?: Record<string, unknown>) {
   const { announcementRoutes } = await import("../routes/announcements.js");
   const { errorHandler } = await import("../middleware/error-handler.js");
 
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });
@@ -84,6 +90,7 @@ async function createApp(actor: Record<string, unknown>, dbOverrides?: Record<st
       return chain;
     }),
     ...dbOverrides,
+    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
 
   app.use("/api", announcementRoutes(fakeDb));
@@ -132,7 +139,7 @@ describe("announcement routes", () => {
   describe("POST /api/companies/:companyId/announcements", () => {
     it("creates an announcement with valid data", async () => {
       // Need to mock select for slug uniqueness check to return empty (no conflict)
-      const selectChain = buildChainableQuery([]);
+      const _selectChain = buildChainableQuery([]);
       const insertChain = buildChainableQuery([MOCK_ANNOUNCEMENT]);
       let selectCallCount = 0;
 
@@ -200,9 +207,7 @@ describe("announcement routes", () => {
       };
 
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]), fakeDb);
-      const res = await request(app).delete(
-        `/api/companies/${COMPANY_ID}/announcements/${ANNOUNCEMENT_ID}`,
-      );
+      const res = await request(app).delete(`/api/companies/${COMPANY_ID}/announcements/${ANNOUNCEMENT_ID}`);
 
       expect(res.status).toBe(200);
       expect(res.body.ok).toBe(true);
@@ -217,18 +222,14 @@ describe("announcement routes", () => {
       };
 
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]), fakeDb);
-      const res = await request(app).delete(
-        `/api/companies/${COMPANY_ID}/announcements/${randomUUID()}`,
-      );
+      const res = await request(app).delete(`/api/companies/${COMPANY_ID}/announcements/${randomUUID()}`);
 
       expect(res.status).toBe(404);
     });
 
     it("rejects unauthenticated delete with 401", async () => {
       const app = await createApp(noActor());
-      const res = await request(app).delete(
-        `/api/companies/${COMPANY_ID}/announcements/${ANNOUNCEMENT_ID}`,
-      );
+      const res = await request(app).delete(`/api/companies/${COMPANY_ID}/announcements/${ANNOUNCEMENT_ID}`);
       expect(res.status).toBe(401);
     });
   });

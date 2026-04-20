@@ -1,7 +1,7 @@
 import { User } from "lucide-react";
+import { trackRecentAssignee } from "../../lib/recent-assignees";
 import { cn } from "../../lib/utils";
 import { AgentIcon } from "../AgentIconPicker";
-import { trackRecentAssignee } from "../../lib/recent-assignees";
 
 interface AssigneePickerContentProps {
   assigneeSearch: string;
@@ -18,10 +18,17 @@ interface AssigneePickerContentProps {
 }
 
 export function AssigneePickerContent({
-  assigneeSearch, setAssigneeSearch, inline,
-  issueAssigneeAgentId, issueAssigneeUserId, issueCreatedByUserId,
-  currentUserId, creatorUserLabel, sortedAgents,
-  onUpdate, onClose,
+  assigneeSearch,
+  setAssigneeSearch,
+  inline,
+  issueAssigneeAgentId,
+  issueAssigneeUserId,
+  issueCreatedByUserId,
+  currentUserId,
+  creatorUserLabel,
+  sortedAgents,
+  onUpdate,
+  onClose,
 }: AssigneePickerContentProps) {
   return (
     <>
@@ -30,25 +37,32 @@ export function AssigneePickerContent({
         placeholder="Search assignees..."
         value={assigneeSearch}
         onChange={(e) => setAssigneeSearch(e.target.value)}
-        autoFocus={!inline}
       />
       <div className="max-h-48 overflow-y-auto overscroll-contain">
         <button
+          type="button"
           className={cn(
             "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",
-            !issueAssigneeAgentId && !issueAssigneeUserId && "bg-accent"
+            !issueAssigneeAgentId && !issueAssigneeUserId && "bg-accent",
           )}
-          onClick={() => { onUpdate({ assigneeAgentId: null, assigneeUserId: null }); onClose(); }}
+          onClick={() => {
+            onUpdate({ assigneeAgentId: null, assigneeUserId: null });
+            onClose();
+          }}
         >
           No assignee
         </button>
         {currentUserId && (
           <button
+            type="button"
             className={cn(
               "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",
               issueAssigneeUserId === currentUserId && "bg-accent",
             )}
-            onClick={() => { onUpdate({ assigneeAgentId: null, assigneeUserId: currentUserId }); onClose(); }}
+            onClick={() => {
+              onUpdate({ assigneeAgentId: null, assigneeUserId: currentUserId });
+              onClose();
+            }}
           >
             <User className="h-3 w-3 shrink-0 text-muted-foreground" />
             Assign to me
@@ -56,11 +70,15 @@ export function AssigneePickerContent({
         )}
         {issueCreatedByUserId && issueCreatedByUserId !== currentUserId && (
           <button
+            type="button"
             className={cn(
               "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",
               issueAssigneeUserId === issueCreatedByUserId && "bg-accent",
             )}
-            onClick={() => { onUpdate({ assigneeAgentId: null, assigneeUserId: issueCreatedByUserId }); onClose(); }}
+            onClick={() => {
+              onUpdate({ assigneeAgentId: null, assigneeUserId: issueCreatedByUserId });
+              onClose();
+            }}
           >
             <User className="h-3 w-3 shrink-0 text-muted-foreground" />
             {creatorUserLabel ? `Assign to ${creatorUserLabel}` : "Assign to requester"}
@@ -72,18 +90,23 @@ export function AssigneePickerContent({
             return a.name.toLowerCase().includes(assigneeSearch.toLowerCase());
           })
           .map((a) => (
-          <button
-            key={a.id}
-            className={cn(
-              "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",
-              a.id === issueAssigneeAgentId && "bg-accent"
-            )}
-            onClick={() => { trackRecentAssignee(a.id); onUpdate({ assigneeAgentId: a.id, assigneeUserId: null }); onClose(); }}
-          >
-            <AgentIcon icon={a.icon} className="shrink-0 h-3 w-3 text-muted-foreground" />
-            {a.name}
-          </button>
-        ))}
+            <button
+              type="button"
+              key={a.id}
+              className={cn(
+                "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",
+                a.id === issueAssigneeAgentId && "bg-accent",
+              )}
+              onClick={() => {
+                trackRecentAssignee(a.id);
+                onUpdate({ assigneeAgentId: a.id, assigneeUserId: null });
+                onClose();
+              }}
+            >
+              <AgentIcon icon={a.icon} className="shrink-0 h-3 w-3 text-muted-foreground" />
+              {a.name}
+            </button>
+          ))}
       </div>
     </>
   );

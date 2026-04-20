@@ -1,23 +1,23 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "@/lib/router";
-import { usePageTitle } from "../hooks/usePageTitle";
-import { useCompany } from "../context/CompanyContext";
-import { useBreadcrumbs } from "../context/BreadcrumbContext";
-import { createIssueDetailLocationState } from "../lib/issueDetailBreadcrumb";
-import { saveLastInboxTab, shouldShowInboxSection, type InboxApprovalFilter, type InboxTab } from "../lib/inbox";
-import { useDismissedInboxItems, useReadInboxItems } from "../hooks/useInboxBadge";
-import { loadSnoozed, snoozeItem, type SnoozeEntry } from "../components/inbox/inboxSnoozeUtils";
-import { EmptyState } from "../components/EmptyState";
-import { PageSkeleton } from "../components/PageSkeleton";
-import { Separator } from "@/components/ui/separator";
 import { Inbox as InboxIcon } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Separator } from "@/components/ui/separator";
+import { useLocation, useNavigate } from "@/lib/router";
+import { EmptyState } from "../components/EmptyState";
+import { InboxAlerts } from "../components/inbox/InboxAlerts";
 import { InboxToolbar } from "../components/inbox/InboxToolbar";
 import { InboxWorkItemList } from "../components/inbox/InboxWorkItemList";
-import { InboxAlerts } from "../components/inbox/InboxAlerts";
+import { loadSnoozed, type SnoozeEntry, snoozeItem } from "../components/inbox/inboxSnoozeUtils";
+import type { InboxCategoryFilter, SectionKey } from "../components/inbox/inboxTypes";
 import { SmartSuggestionsBanner } from "../components/inbox/SmartSuggestionsBanner";
 import { useInboxData } from "../components/inbox/useInboxData";
 import { useInboxMutations } from "../components/inbox/useInboxMutations";
-import type { InboxCategoryFilter, SectionKey } from "../components/inbox/inboxTypes";
+import { PageSkeleton } from "../components/PageSkeleton";
+import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { useCompany } from "../context/CompanyContext";
+import { useDismissedInboxItems, useReadInboxItems } from "../hooks/useInboxBadge";
+import { usePageTitle } from "../hooks/usePageTitle";
+import { type InboxApprovalFilter, type InboxTab, saveLastInboxTab, shouldShowInboxSection } from "../lib/inbox";
+import { createIssueDetailLocationState } from "../lib/issueDetailBreadcrumb";
 
 export function Inbox() {
   usePageTitle("Inbox");
@@ -43,11 +43,7 @@ export function Inbox() {
       ? pathSegment
       : "mine";
   const issueLinkState = useMemo(
-    () =>
-      createIssueDetailLocationState(
-        "Inbox",
-        `${location.pathname}${location.search}${location.hash}`,
-      ),
+    () => createIssueDetailLocationState("Inbox", `${location.pathname}${location.search}${location.hash}`),
     [location.pathname, location.search, location.hash],
   );
 
@@ -80,12 +76,21 @@ export function Inbox() {
     return "hidden" as const;
   };
 
+  const selectableIssueIds = useMemo(
+    () =>
+      tab === "mine"
+        ? data.issuesToRender.filter((issue) => !mutations.archivingIssueIds.has(issue.id)).map((issue) => issue.id)
+        : [],
+    [tab, data.issuesToRender, mutations.archivingIssueIds],
+  );
+
   if (!selectedCompanyId) {
     return <EmptyState icon={InboxIcon} message="Select a company to view inbox." />;
   }
 
   const hasRunFailures = data.failedRuns.length > 0;
-  const showAggregateAgentError = !!data.dashboard && data.dashboard.agents.error > 0 && !hasRunFailures && !dismissed.has("alert:agent-errors");
+  const showAggregateAgentError =
+    !!data.dashboard && data.dashboard.agents.error > 0 && !hasRunFailures && !dismissed.has("alert:agent-errors");
   const showBudgetAlert =
     !!data.dashboard &&
     data.dashboard.costs.monthBudgetCents > 0 &&
@@ -102,26 +107,18 @@ export function Inbox() {
     showOnAll: data.showAlertsCategory && hasAlerts,
   });
 
-  const visibleSections = [
-    showAlertsSection ? "alerts" : null,
-    showWorkItemsSection ? "work_items" : null,
-  ].filter((key): key is SectionKey => key !== null);
+  const visibleSections = [showAlertsSection ? "alerts" : null, showWorkItemsSection ? "work_items" : null].filter(
+    (key): key is SectionKey => key !== null,
+  );
 
   const showSeparatorBefore = (key: SectionKey) => visibleSections.indexOf(key) > 0;
-  const markAllReadIssues = (tab === "mine" ? data.mineIssues : data.unreadTouchedIssues)
-    .filter((issue) => issue.isUnreadForMe && !mutations.fadingOutIssues.has(issue.id) && !mutations.archivingIssueIds.has(issue.id));
+  const markAllReadIssues = (tab === "mine" ? data.mineIssues : data.unreadTouchedIssues).filter(
+    (issue) =>
+      issue.isUnreadForMe && !mutations.fadingOutIssues.has(issue.id) && !mutations.archivingIssueIds.has(issue.id),
+  );
   const unreadIssueIds = markAllReadIssues.map((issue) => issue.id);
   const canMarkAllRead = unreadIssueIds.length > 0;
 
-  const selectableIssueIds = useMemo(
-    () =>
-      tab === "mine"
-        ? data.issuesToRender
-            .filter((issue) => !mutations.archivingIssueIds.has(issue.id))
-            .map((issue) => issue.id)
-        : [],
-    [tab, data.issuesToRender, mutations.archivingIssueIds],
-  );
   const allSelected =
     selectableIssueIds.length > 0 && selectableIssueIds.every((id) => mutations.selectedIssueIds.has(id));
   const someSelected = mutations.selectedIssueIds.size > 0;
@@ -167,31 +164,42 @@ export function Inbox() {
       />
 
       {/* Smart Suggestions Banner */}
-      {tab === "mine" && (() => {
-        const doneIssues = data.issuesToRender.filter((i) => i.status === "done" && !mutations.archivingIssueIds.has(i.id));
-        const resolvedApprovals = data.approvalsToRender.filter((a) => a.status === "approved" || a.status === "rejected");
-        const autoResolvableCount = doneIssues.length + resolvedApprovals.length;
-        return (
-          <SmartSuggestionsBanner
-            autoResolvableCount={autoResolvableCount}
-            isPending={mutations.bulkArchiveMutation.isPending}
-            onAutoResolve={() => {
-              const ids = doneIssues.map((i) => i.id);
-              if (ids.length > 0) mutations.bulkArchiveMutation.mutate(ids);
-              for (const a of resolvedApprovals) {
-                dismiss(`approval:${a.id}`);
-              }
-            }}
-          />
-        );
-      })()}
+      {tab === "mine" &&
+        (() => {
+          const doneIssues = data.issuesToRender.filter(
+            (i) => i.status === "done" && !mutations.archivingIssueIds.has(i.id),
+          );
+          const resolvedApprovals = data.approvalsToRender.filter(
+            (a) => a.status === "approved" || a.status === "rejected",
+          );
+          const autoResolvableCount = doneIssues.length + resolvedApprovals.length;
+          return (
+            <SmartSuggestionsBanner
+              autoResolvableCount={autoResolvableCount}
+              isPending={mutations.bulkArchiveMutation.isPending}
+              onAutoResolve={() => {
+                const ids = doneIssues.map((i) => i.id);
+                if (ids.length > 0) mutations.bulkArchiveMutation.mutate(ids);
+                for (const a of resolvedApprovals) {
+                  dismiss(`approval:${a.id}`);
+                }
+              }}
+            />
+          );
+        })()}
 
-      {data.approvalsError && <p role="alert" className="text-sm text-destructive">{data.approvalsError.message}</p>}
-      {mutations.actionError && <p role="alert" className="text-sm text-destructive">{mutations.actionError}</p>}
-
-      {!data.allLoaded && visibleSections.length === 0 && (
-        <PageSkeleton variant="inbox" />
+      {data.approvalsError && (
+        <p role="alert" className="text-sm text-destructive">
+          {data.approvalsError.message}
+        </p>
       )}
+      {mutations.actionError && (
+        <p role="alert" className="text-sm text-destructive">
+          {mutations.actionError}
+        </p>
+      )}
+
+      {!data.allLoaded && visibleSections.length === 0 && <PageSkeleton variant="inbox" />}
 
       {data.allLoaded && visibleSections.length === 0 && (
         <EmptyState
@@ -200,10 +208,10 @@ export function Inbox() {
             tab === "mine"
               ? "Inbox zero."
               : tab === "unread"
-              ? "No new inbox items."
-              : tab === "recent"
-                ? "No recent inbox items."
-                : "No inbox items match these filters."
+                ? "No new inbox items."
+                : tab === "recent"
+                  ? "No recent inbox items."
+                  : "No inbox items match these filters."
           }
         />
       )}

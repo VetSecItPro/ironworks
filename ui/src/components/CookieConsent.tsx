@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
 import { Cookie, Settings, Shield } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -70,6 +70,7 @@ function CategoryToggle({
   return (
     <div className="flex items-start gap-3 py-3">
       <button
+        type="button"
         onClick={() => onChange?.(!checked)}
         disabled={disabled}
         className={cn(
@@ -89,9 +90,7 @@ function CategoryToggle({
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">{label}</span>
           {disabled && (
-            <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
-              Required
-            </span>
+            <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">Required</span>
           )}
         </div>
         <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
@@ -234,42 +233,31 @@ export function CookieConsentBanner() {
             <div>
               <p className="text-sm font-medium">We respect your privacy</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Ironworks uses cookies to ensure the application works properly. Optional cookies help us improve your experience.
-                Read our <a href="/privacy" className="underline hover:text-foreground">Privacy Policy</a>.
+                Ironworks uses cookies to ensure the application works properly. Optional cookies help us improve your
+                experience. Read our{" "}
+                <a href="/privacy" className="underline hover:text-foreground">
+                  Privacy Policy
+                </a>
+                .
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setManageOpen(true)}
-            >
+            <Button variant="outline" size="sm" onClick={() => setManageOpen(true)}>
               <Settings className="h-3.5 w-3.5 mr-1.5" />
               Manage
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRejectOptional}
-            >
+            <Button variant="outline" size="sm" onClick={handleRejectOptional}>
               Reject Optional
             </Button>
-            <Button
-              size="sm"
-              onClick={handleAcceptAll}
-            >
+            <Button size="sm" onClick={handleAcceptAll}>
               Accept All
             </Button>
           </div>
         </div>
       </div>
 
-      <ManageCookiesDialog
-        open={manageOpen}
-        onOpenChange={setManageOpen}
-        onSave={handleSaveCustom}
-      />
+      <ManageCookiesDialog open={manageOpen} onOpenChange={setManageOpen} onSave={handleSaveCustom} />
     </>
   );
 }
@@ -285,6 +273,7 @@ export function CookieSettingsLink() {
   return (
     <>
       <button
+        type="button"
         onClick={() => setManageOpen(true)}
         className="text-xs text-muted-foreground hover:text-foreground transition-colors"
       >

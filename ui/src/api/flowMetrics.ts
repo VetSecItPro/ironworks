@@ -12,6 +12,5 @@ export interface FlowMetrics {
 }
 
 export const flowMetricsApi = {
-  get: (companyId: string) =>
-    api.get<FlowMetrics>(`/companies/${companyId}/flow-metrics`),
+  get: (companyId: string) => api.get<FlowMetrics>(`/companies/${companyId}/flow-metrics`),
 };

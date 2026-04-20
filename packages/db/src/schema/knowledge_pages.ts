@@ -1,13 +1,4 @@
-import {
-  boolean,
-  index,
-  integer,
-  pgTable,
-  text,
-  timestamp,
-  uniqueIndex,
-  uuid,
-} from "drizzle-orm/pg-core";
+import { boolean, index, integer, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { agents } from "./agents.js";
 import { companies } from "./companies.js";
 import { projects } from "./projects.js";
@@ -16,7 +7,9 @@ export const knowledgePages = pgTable(
   "knowledge_pages",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    companyId: uuid("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
     /** URL-safe slug, unique per company. */
     slug: text("slug").notNull(),
     title: text("title").notNull(),
@@ -57,7 +50,10 @@ export const knowledgePages = pgTable(
     companyVisibilityIdx: index("knowledge_pages_company_visibility_idx").on(table.companyId, table.visibility),
     agentIdx: index("knowledge_pages_agent_id_idx").on(table.agentId),
     companyDocTypeIdx: index("knowledge_pages_company_document_type_idx").on(table.companyId, table.documentType),
-    companyDeliverableIdx: index("knowledge_pages_company_deliverable_idx").on(table.companyId, table.deliverableStatus),
+    companyDeliverableIdx: index("knowledge_pages_company_deliverable_idx").on(
+      table.companyId,
+      table.deliverableStatus,
+    ),
   }),
 );
 
@@ -65,8 +61,12 @@ export const knowledgePageRevisions = pgTable(
   "knowledge_page_revisions",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    pageId: uuid("page_id").notNull().references(() => knowledgePages.id, { onDelete: "cascade" }),
-    companyId: uuid("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+    pageId: uuid("page_id")
+      .notNull()
+      .references(() => knowledgePages.id, { onDelete: "cascade" }),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
     revisionNumber: integer("revision_number").notNull(),
     title: text("title").notNull(),
     body: text("body").notNull(),

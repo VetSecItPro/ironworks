@@ -8,9 +8,9 @@
  * @module server/services/plugin-config-validator
  */
 
+import type { JsonSchema } from "@ironworksai/shared";
 import Ajv, { type ErrorObject } from "ajv";
 import addFormats from "ajv-formats";
-import type { JsonSchema } from "@ironworksai/shared";
 
 export interface ConfigValidationResult {
   valid: boolean;
@@ -28,10 +28,11 @@ export function validateInstanceConfig(
   configJson: Record<string, unknown>,
   schema: JsonSchema,
 ): ConfigValidationResult {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: Ajv ESM/CJS interop — .default exists when bundled as CommonJS
   const AjvCtor = (Ajv as any).default ?? Ajv;
   const ajv = new AjvCtor({ allErrors: true });
   // ajv-formats v3 default export is a FormatsPlugin object; call it as a plugin.
+  // biome-ignore lint/suspicious/noExplicitAny: ajv-formats ESM/CJS interop — .default exists when bundled as CommonJS
   const applyFormats = (addFormats as any).default ?? addFormats;
   applyFormats(ajv);
   // Register the secret-ref format used by plugin manifests to mark fields that

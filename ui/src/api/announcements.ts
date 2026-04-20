@@ -15,12 +15,10 @@ export interface Announcement {
 }
 
 export const announcementsApi = {
-  list: (companyId: string) =>
-    api.get<Announcement[]>(`/companies/${companyId}/announcements`),
+  list: (companyId: string) => api.get<Announcement[]>(`/companies/${companyId}/announcements`),
 
   create: (companyId: string, data: { title: string; body?: string }) =>
     api.post<Announcement>(`/companies/${companyId}/announcements`, data),
 
-  remove: (companyId: string, id: string) =>
-    api.delete<{ ok: boolean }>(`/companies/${companyId}/announcements/${id}`),
+  remove: (companyId: string, id: string) => api.delete<{ ok: boolean }>(`/companies/${companyId}/announcements/${id}`),
 };

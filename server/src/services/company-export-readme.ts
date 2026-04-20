@@ -96,7 +96,9 @@ export function generateReadme(
   // What's Inside table
   lines.push("## What's Inside");
   lines.push("");
-  lines.push("> This is an [Agent Company](https://agentcompanies.io) package from [Ironworks](https://PLACEHOLDER_IRONWORKS_DOT_ING)");
+  lines.push(
+    "> This is an [Agent Company](https://agentcompanies.io) package from [Ironworks](https://PLACEHOLDER_IRONWORKS_DOT_ING)",
+  );
   lines.push("");
 
   const counts: Array<[string, number]> = [];
@@ -165,7 +167,9 @@ export function generateReadme(
 
   // Footer
   lines.push("---");
-  lines.push(`Exported from [Ironworks](https://PLACEHOLDER_IRONWORKS_DOT_ING) on ${new Date().toISOString().split("T")[0]}`);
+  lines.push(
+    `Exported from [Ironworks](https://PLACEHOLDER_IRONWORKS_DOT_ING) on ${new Date().toISOString().split("T")[0]}`,
+  );
   lines.push("");
 
   return lines.join("\n");

@@ -1,18 +1,11 @@
+import { Eye, FileText, GitBranch, Link as LinkIcon, MessageSquare, X } from "lucide-react";
 import { useState } from "react";
-import {
-  Eye,
-  FileText,
-  GitBranch,
-  Link as LinkIcon,
-  MessageSquare,
-  X,
-} from "lucide-react";
-import { MarkdownBody } from "../MarkdownBody";
+import { Link } from "@/lib/router";
 import type { Deliverable } from "../../api/deliverables";
 import { cn } from "../../lib/utils";
-import { Link } from "@/lib/router";
-import { StatusBadge } from "./StatusBadge";
+import { MarkdownBody } from "../MarkdownBody";
 import { formatDeliverableDate } from "./deliverableHelpers";
+import { StatusBadge } from "./StatusBadge";
 
 interface DeliverablePreviewProps {
   deliverable: Deliverable;
@@ -24,8 +17,18 @@ export function DeliverablePreview({ deliverable, onClose }: DeliverablePreviewP
 
   const versions = [
     { version: "v3", date: deliverable.updatedAt, author: deliverable.agentName ?? "Agent", current: true },
-    { version: "v2", date: new Date(new Date(deliverable.updatedAt).getTime() - 86400000 * 2).toISOString(), author: deliverable.agentName ?? "Agent", current: false },
-    { version: "v1", date: new Date(new Date(deliverable.updatedAt).getTime() - 86400000 * 5).toISOString(), author: deliverable.agentName ?? "Agent", current: false },
+    {
+      version: "v2",
+      date: new Date(new Date(deliverable.updatedAt).getTime() - 86400000 * 2).toISOString(),
+      author: deliverable.agentName ?? "Agent",
+      current: false,
+    },
+    {
+      version: "v1",
+      date: new Date(new Date(deliverable.updatedAt).getTime() - 86400000 * 5).toISOString(),
+      author: deliverable.agentName ?? "Agent",
+      current: false,
+    },
   ];
 
   const [annotations, setAnnotations] = useState<Array<{ line: number; text: string; author: string }>>([
@@ -47,14 +50,22 @@ export function DeliverablePreview({ deliverable, onClose }: DeliverablePreviewP
           <div className="flex items-center gap-2 mt-0.5">
             <StatusBadge status={deliverable.deliverableStatus} />
             {linkedIssue && (
-              <Link to={`/issues/${linkedIssue.id}`} className="inline-flex items-center gap-1 text-[10px] text-blue-400 hover:underline">
+              <Link
+                to={`/issues/${linkedIssue.id}`}
+                className="inline-flex items-center gap-1 text-[10px] text-blue-400 hover:underline"
+              >
                 <LinkIcon className="h-2.5 w-2.5" />
                 {linkedIssue.id}
               </Link>
             )}
           </div>
         </div>
-        <button onClick={onClose} className="text-muted-foreground hover:text-foreground p-1" aria-label="Close">
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-muted-foreground hover:text-foreground p-1"
+          aria-label="Close"
+        >
           <X className="h-4 w-4" />
         </button>
       </div>
@@ -62,6 +73,7 @@ export function DeliverablePreview({ deliverable, onClose }: DeliverablePreviewP
       <div className="flex items-center gap-0 border-b border-border shrink-0">
         {(["preview", "versions", "annotations"] as const).map((tab) => (
           <button
+            type="button"
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={cn(
@@ -97,15 +109,32 @@ export function DeliverablePreview({ deliverable, onClose }: DeliverablePreviewP
           <div className="p-4 space-y-2">
             <p className="text-xs text-muted-foreground mb-3">Deliverable version timeline</p>
             {versions.map((v, i) => (
-              <div key={v.version} className={cn("flex items-center gap-3 p-3 rounded-lg border transition-colors", v.current ? "border-primary/30 bg-primary/5" : "border-border hover:bg-accent/20")}>
+              <div
+                key={v.version}
+                className={cn(
+                  "flex items-center gap-3 p-3 rounded-lg border transition-colors",
+                  v.current ? "border-primary/30 bg-primary/5" : "border-border hover:bg-accent/20",
+                )}
+              >
                 <div className="flex flex-col items-center">
-                  <span className={cn("text-xs font-bold px-2 py-0.5 rounded", v.current ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>{v.version}</span>
+                  <span
+                    className={cn(
+                      "text-xs font-bold px-2 py-0.5 rounded",
+                      v.current ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+                    )}
+                  >
+                    {v.version}
+                  </span>
                   {i < versions.length - 1 && <div className="w-px h-4 bg-border mt-1" />}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">{v.author}</span>
-                    {v.current && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-medium">Current</span>}
+                    {v.current && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-medium">
+                        Current
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground">{formatDeliverableDate(v.date)}</p>
                 </div>
@@ -117,9 +146,14 @@ export function DeliverablePreview({ deliverable, onClose }: DeliverablePreviewP
         {activeTab === "annotations" && (
           <div className="p-4 space-y-3">
             <p className="text-xs text-muted-foreground">Click-to-comment annotations on specific lines</p>
-            {annotations.map((ann, i) => (
-              <div key={i} className="flex gap-2 p-2 rounded-md border border-border bg-muted/10">
-                <div className="flex items-center justify-center h-5 w-5 rounded bg-muted text-[10px] font-mono font-bold text-muted-foreground shrink-0 mt-0.5">L{ann.line}</div>
+            {annotations.map((ann) => (
+              <div
+                key={`${ann.line}-${ann.author}`}
+                className="flex gap-2 p-2 rounded-md border border-border bg-muted/10"
+              >
+                <div className="flex items-center justify-center h-5 w-5 rounded bg-muted text-[10px] font-mono font-bold text-muted-foreground shrink-0 mt-0.5">
+                  L{ann.line}
+                </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs">{ann.text}</p>
                   <p className="text-[10px] text-muted-foreground mt-0.5">by {ann.author}</p>
@@ -127,7 +161,14 @@ export function DeliverablePreview({ deliverable, onClose }: DeliverablePreviewP
               </div>
             ))}
             <div className="flex gap-2 mt-2">
-              <input type="number" min={1} className="w-14 rounded border border-border bg-transparent px-2 py-1.5 text-xs" placeholder="Line" value={annotatingLine ?? ""} onChange={(e) => setAnnotatingLine(e.target.value ? Number(e.target.value) : null)} />
+              <input
+                type="number"
+                min={1}
+                className="w-14 rounded border border-border bg-transparent px-2 py-1.5 text-xs"
+                placeholder="Line"
+                value={annotatingLine ?? ""}
+                onChange={(e) => setAnnotatingLine(e.target.value ? Number(e.target.value) : null)}
+              />
               <input
                 className="flex-1 rounded border border-border bg-transparent px-2 py-1.5 text-xs"
                 placeholder="Add comment..."
@@ -135,7 +176,10 @@ export function DeliverablePreview({ deliverable, onClose }: DeliverablePreviewP
                 onChange={(e) => setNewAnnotation(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && newAnnotation.trim() && annotatingLine) {
-                    setAnnotations([...annotations, { line: annotatingLine, text: newAnnotation.trim(), author: "You" }]);
+                    setAnnotations([
+                      ...annotations,
+                      { line: annotatingLine, text: newAnnotation.trim(), author: "You" },
+                    ]);
                     setNewAnnotation("");
                     setAnnotatingLine(null);
                   }

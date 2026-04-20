@@ -1,13 +1,13 @@
-import { Router } from "express";
-import { z } from "zod";
 import type { Db } from "@ironworksai/db";
-import { validate } from "../middleware/validate.js";
-import { activityService } from "../services/activity.js";
-import { assertBoard, assertCompanyAccess } from "./authz.js";
-import { issueService } from "../services/index.js";
 import { heartbeatRuns } from "@ironworksai/db";
 import { eq } from "drizzle-orm";
+import { Router } from "express";
+import { z } from "zod";
+import { validate } from "../middleware/validate.js";
 import { sanitizeRecord } from "../redaction.js";
+import { activityService } from "../services/activity.js";
+import { issueService } from "../services/index.js";
+import { assertBoard, assertCompanyAccess } from "./authz.js";
 
 const createActivitySchema = z.object({
   actorType: z.enum(["agent", "user", "system"]).optional().default("system"),
@@ -88,7 +88,11 @@ export function activityRoutes(db: Db) {
     const runId = req.params.runId as string;
     // Verify the run belongs to a company the user can access
     // SEC-LOGIC-003: Always verify ownership — return 404 if run not found
-    const [run] = await db.select({ companyId: heartbeatRuns.companyId }).from(heartbeatRuns).where(eq(heartbeatRuns.id, runId)).limit(1);
+    const [run] = await db
+      .select({ companyId: heartbeatRuns.companyId })
+      .from(heartbeatRuns)
+      .where(eq(heartbeatRuns.id, runId))
+      .limit(1);
     if (!run) {
       res.status(404).json({ error: "Run not found" });
       return;

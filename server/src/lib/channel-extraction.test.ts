@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { extractChannelMessages } from "./channel-extraction.js";
 
 describe("extractChannelMessages", () => {

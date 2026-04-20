@@ -107,7 +107,6 @@ export function pruneBackupsWithPolicy(
       if (!seenMonths.has(mk)) {
         seenMonths.add(mk);
         keep.add(entry.fullPath);
-        continue;
       }
     }
   }

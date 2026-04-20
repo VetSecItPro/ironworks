@@ -7,10 +7,7 @@ import { logger } from "../middleware/logger.js";
  * Use these keys to pick a model when constructing one-shot prompts
  * rather than going through the full routing cascade.
  */
-export const OLLAMA_CLOUD_MODEL_TABLE: Record<
-  string,
-  { primary: string; description: string }
-> = {
+export const OLLAMA_CLOUD_MODEL_TABLE: Record<string, { primary: string; description: string }> = {
   // C-Suite strategic decisions
   ceo_strategy: { primary: "kimi-k2.5", description: "Best agentic reasoning" },
   cto_architecture: { primary: "deepseek-v3.2", description: "Strongest technical reasoning" },

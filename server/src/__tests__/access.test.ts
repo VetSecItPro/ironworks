@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -53,17 +53,23 @@ const mockBudgetService = vi.hoisted(() => ({
 
 const mockLogActivity = vi.hoisted(() => vi.fn());
 const mockNotifyHireApproved = vi.hoisted(() => vi.fn());
-const mockDeduplicateAgentName = vi.hoisted(() => vi.fn().mockImplementation((_db: any, _cid: any, name: string) => name));
+const mockDeduplicateAgentName = vi.hoisted(() =>
+  // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
+  vi.fn().mockImplementation((_db: any, _cid: any, name: string) => name),
+);
 
-vi.mock("../services/index.js", () => ({
-  accessService: () => mockAccessService,
-  agentService: () => mockAgentService,
-  boardAuthService: () => mockBoardAuthService,
-  budgetService: () => mockBudgetService,
-  logActivity: mockLogActivity,
-  notifyHireApproved: mockNotifyHireApproved,
-  deduplicateAgentName: mockDeduplicateAgentName,
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    accessService: () => mockAccessService,
+    agentService: () => mockAgentService,
+    boardAuthService: () => mockBoardAuthService,
+    budgetService: () => mockBudgetService,
+    logActivity: mockLogActivity,
+    notifyHireApproved: mockNotifyHireApproved,
+    deduplicateAgentName: mockDeduplicateAgentName,
+  });
+});
 
 vi.mock("../services/user-invites.js", () => ({
   userInviteService: () => ({
@@ -98,9 +104,11 @@ async function createApp(actor: Record<string, unknown>) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });
+  // biome-ignore lint/suspicious/noExplicitAny: mock Drizzle DB or storage object for unit tests; real type requires full schema-aware Drizzle instance
   const fakeDb = {} as any;
   app.use("/api", accessRoutes(fakeDb));
   app.use(errorHandler);
@@ -151,9 +159,7 @@ describe("access routes", () => {
     it("rejects invite creation without board access (agent actor)", async () => {
       const agentActor = { type: "agent", agentId: randomUUID(), companyId: COMPANY_ID, source: "agent_key" };
       const app = await createApp(agentActor);
-      const res = await request(app)
-        .post(`/api/companies/${COMPANY_ID}/invites`)
-        .send({});
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/invites`).send({});
 
       // Agent actors should be blocked from board-only actions
       expect(res.status).toBeGreaterThanOrEqual(400);
@@ -162,9 +168,7 @@ describe("access routes", () => {
     it("rejects invite without permission", async () => {
       mockAccessService.hasPermission.mockResolvedValue(false);
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post(`/api/companies/${COMPANY_ID}/invites`)
-        .send({ role: "engineer" });
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/invites`).send({ role: "engineer" });
 
       // Should fail because body is validated via Zod schema
       expect(res.status).toBeGreaterThanOrEqual(400);

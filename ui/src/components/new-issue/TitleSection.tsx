@@ -1,8 +1,5 @@
+import { AlertTriangle, Wand2 } from "lucide-react";
 import type { RefObject } from "react";
-import {
-  Wand2,
-  AlertTriangle,
-} from "lucide-react";
 import type { MarkdownEditorRef } from "../MarkdownEditor";
 import type { SimilarIssue } from "./constants";
 
@@ -37,8 +34,11 @@ export function TitleSection({
 }: TitleSectionProps) {
   return (
     <div className="px-4 pt-4 pb-2 shrink-0">
-      <label className="block text-xs text-muted-foreground mb-1 required-asterisk">Title</label>
+      <label htmlFor="new-issue-title" className="block text-xs text-muted-foreground mb-1 required-asterisk">
+        Title
+      </label>
       <textarea
+        id="new-issue-title"
         className="w-full text-lg font-semibold bg-transparent outline-none resize-none overflow-hidden placeholder:text-muted-foreground/70"
         placeholder="Mission title"
         required
@@ -51,12 +51,7 @@ export function TitleSection({
         }}
         readOnly={isPending}
         onKeyDown={(e) => {
-          if (
-            e.key === "Enter" &&
-            !e.metaKey &&
-            !e.ctrlKey &&
-            !e.nativeEvent.isComposing
-          ) {
+          if (e.key === "Enter" && !e.metaKey && !e.ctrlKey && !e.nativeEvent.isComposing) {
             e.preventDefault();
             descriptionEditorRef.current?.focus();
           }
@@ -73,7 +68,6 @@ export function TitleSection({
             }
           }
         }}
-        autoFocus
       />
 
       {/* Smart priority suggestion */}

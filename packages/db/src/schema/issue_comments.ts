@@ -1,14 +1,18 @@
-import { pgTable, uuid, text, timestamp, index, type AnyPgColumn } from "drizzle-orm/pg-core";
+import { type AnyPgColumn, index, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { agents } from "./agents.js";
 import { companies } from "./companies.js";
 import { issues } from "./issues.js";
-import { agents } from "./agents.js";
 
 export const issueComments = pgTable(
   "issue_comments",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    companyId: uuid("company_id").notNull().references(() => companies.id),
-    issueId: uuid("issue_id").notNull().references(() => issues.id),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id),
+    issueId: uuid("issue_id")
+      .notNull()
+      .references(() => issues.id),
     authorAgentId: uuid("author_agent_id").references(() => agents.id),
     authorUserId: text("author_user_id"),
     body: text("body").notNull(),

@@ -9,11 +9,7 @@ const TREND_PAD = { top: 16, right: 24, bottom: 36, left: 44 };
 const TREND_INNER_W = TREND_W - TREND_PAD.left - TREND_PAD.right;
 const TREND_INNER_H = TREND_H - TREND_PAD.top - TREND_PAD.bottom;
 
-export function PerformanceTrendChart({
-  snapshots,
-}: {
-  snapshots: Array<{ date: Date; score: number }>;
-}) {
+export function PerformanceTrendChart({ snapshots }: { snapshots: Array<{ date: Date; score: number }> }) {
   const scores = snapshots.map((s) => s.score);
   const minScore = Math.max(0, Math.min(...scores) - 10);
   const maxScore = Math.min(100, Math.max(...scores) + 10);
@@ -22,41 +18,25 @@ export function PerformanceTrendChart({
   const yTicks = 4;
 
   function xPos(i: number) {
-    return (
-      TREND_PAD.left +
-      (i / Math.max(snapshots.length - 1, 1)) * TREND_INNER_W
-    );
+    return TREND_PAD.left + (i / Math.max(snapshots.length - 1, 1)) * TREND_INNER_W;
   }
 
   function yPos(score: number) {
-    return (
-      TREND_PAD.top +
-      TREND_INNER_H -
-      ((score - minScore) / range) * TREND_INNER_H
-    );
+    return TREND_PAD.top + TREND_INNER_H - ((score - minScore) / range) * TREND_INNER_H;
   }
 
-  const polyline = snapshots
-    .map((s, i) => `${xPos(i)},${yPos(s.score)}`)
-    .join(" ");
+  const polyline = snapshots.map((s, i) => `${xPos(i)},${yPos(s.score)}`).join(" ");
 
   const areaPath = [
     `M ${xPos(0)} ${yPos(snapshots[0]!.score)}`,
-    ...snapshots
-      .slice(1)
-      .map((s, i) => `L ${xPos(i + 1)} ${yPos(s.score)}`),
+    ...snapshots.slice(1).map((s, i) => `L ${xPos(i + 1)} ${yPos(s.score)}`),
     `L ${xPos(snapshots.length - 1)} ${TREND_PAD.top + TREND_INNER_H}`,
     `L ${xPos(0)} ${TREND_PAD.top + TREND_INNER_H}`,
     "Z",
   ].join(" ");
 
   return (
-    <svg
-      viewBox={`0 0 ${TREND_W} ${TREND_H}`}
-      className="w-full"
-      style={{ height: TREND_H }}
-      aria-hidden="true"
-    >
+    <svg viewBox={`0 0 ${TREND_W} ${TREND_H}`} className="w-full" style={{ height: TREND_H }} aria-hidden="true">
       <defs>
         <linearGradient id="trend-fill" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#6366f1" stopOpacity={0.25} />
@@ -69,7 +49,7 @@ export function PerformanceTrendChart({
         const val = minScore + (range / yTicks) * i;
         const y = yPos(val);
         return (
-          <g key={i}>
+          <g key={val}>
             <line
               x1={TREND_PAD.left}
               y1={y}
@@ -108,23 +88,17 @@ export function PerformanceTrendChart({
 
       {/* Data points */}
       {snapshots.map((s, i) => (
-        <circle key={i} cx={xPos(i)} cy={yPos(s.score)} r={3} fill="#6366f1" />
+        <circle key={s.date.toISOString()} cx={xPos(i)} cy={yPos(s.score)} r={3} fill="#6366f1" />
       ))}
 
       {/* X-axis labels */}
       {snapshots.map((s, i) => {
-        if (
-          snapshots.length > 6 &&
-          i !== 0 &&
-          i !== snapshots.length - 1 &&
-          i % 3 !== 0
-        )
-          return null;
+        if (snapshots.length > 6 && i !== 0 && i !== snapshots.length - 1 && i % 3 !== 0) return null;
         const d = s.date;
         const label = `${d.getMonth() + 1}/${d.getDate()}`;
         return (
           <text
-            key={i}
+            key={s.date.toISOString()}
             x={xPos(i)}
             y={TREND_H - 6}
             textAnchor="middle"
@@ -152,27 +126,19 @@ export function VelocityChart({ data }: { data: VelocityWeek[] }) {
   const maxVal = Math.max(...data.map((d) => d.issuesCompleted), 1);
   const barCount = data.length;
   const barGap = 4;
-  const barW = Math.max(
-    8,
-    (VEL_INNER_W - barGap * (barCount - 1)) / barCount,
-  );
+  const barW = Math.max(8, (VEL_INNER_W - barGap * (barCount - 1)) / barCount);
 
   const yTicks = 4;
   const yStep = maxVal / yTicks;
 
   return (
-    <svg
-      viewBox={`0 0 ${VEL_W} ${VEL_H}`}
-      className="w-full"
-      style={{ height: VEL_H }}
-      aria-hidden="true"
-    >
+    <svg viewBox={`0 0 ${VEL_W} ${VEL_H}`} className="w-full" style={{ height: VEL_H }} aria-hidden="true">
       {/* Y grid lines */}
       {Array.from({ length: yTicks + 1 }, (_, i) => {
         const val = yStep * i;
         const y = VEL_PAD.top + VEL_INNER_H - (val / maxVal) * VEL_INNER_H;
         return (
-          <g key={i}>
+          <g key={val}>
             <line
               x1={VEL_PAD.left}
               y1={y}
@@ -199,23 +165,14 @@ export function VelocityChart({ data }: { data: VelocityWeek[] }) {
       {/* Bars */}
       {data.map((d, i) => {
         const x = VEL_PAD.left + i * (barW + barGap);
-        const barH =
-          maxVal > 0 ? (d.issuesCompleted / maxVal) * VEL_INNER_H : 0;
+        const barH = maxVal > 0 ? (d.issuesCompleted / maxVal) * VEL_INNER_H : 0;
         const y = VEL_PAD.top + VEL_INNER_H - barH;
-        const labelDate = new Date(d.weekStart + "T12:00:00");
+        const labelDate = new Date(`${d.weekStart}T12:00:00`);
         const label = `${labelDate.getMonth() + 1}/${labelDate.getDate()}`;
 
         return (
-          <g key={i}>
-            <rect
-              x={x}
-              y={y}
-              width={barW}
-              height={barH}
-              fill="#3b82f6"
-              fillOpacity={0.75}
-              rx={2}
-            />
+          <g key={d.weekStart}>
+            <rect x={x} y={y} width={barW} height={barH} fill="#3b82f6" fillOpacity={0.75} rx={2} />
             {(i === 0 || i === barCount - 1 || i % 2 === 0) && (
               <text
                 x={x + barW / 2}
@@ -237,20 +194,10 @@ export function VelocityChart({ data }: { data: VelocityWeek[] }) {
 
 /* ── KPI Card ── */
 
-export function KpiCard({
-  label,
-  value,
-  color,
-}: {
-  label: string;
-  value: string;
-  color?: string;
-}) {
+export function KpiCard({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <div className="rounded-xl border border-border p-4 space-y-1">
-      <p className="text-xs text-muted-foreground uppercase tracking-wider">
-        {label}
-      </p>
+      <p className="text-xs text-muted-foreground uppercase tracking-wider">{label}</p>
       <p className={cn("text-2xl font-bold tabular-nums", color)}>{value}</p>
     </div>
   );

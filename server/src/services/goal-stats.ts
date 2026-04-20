@@ -1,6 +1,6 @@
-import { eq, inArray, sql, and } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import { issues, agents, projects } from "@ironworksai/db";
+import { agents, issues, projects } from "@ironworksai/db";
+import { and, eq, inArray, sql } from "drizzle-orm";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -171,12 +171,7 @@ export function goalStatsService(db: Db) {
           })
           .from(issues)
           .innerJoin(agents, eq(issues.assigneeAgentId, agents.id))
-          .where(
-            and(
-              inArray(issues.goalId, goalIds),
-              sql`${issues.assigneeAgentId} is not null`,
-            ),
-          )
+          .where(and(inArray(issues.goalId, goalIds), sql`${issues.assigneeAgentId} is not null`))
           .groupBy(issues.goalId, agents.id, agents.name),
 
         // Distinct (goalId, project) pairs
@@ -188,12 +183,7 @@ export function goalStatsService(db: Db) {
           })
           .from(issues)
           .innerJoin(projects, eq(issues.projectId, projects.id))
-          .where(
-            and(
-              inArray(issues.goalId, goalIds),
-              sql`${issues.projectId} is not null`,
-            ),
-          )
+          .where(and(inArray(issues.goalId, goalIds), sql`${issues.projectId} is not null`))
           .groupBy(issues.goalId, projects.id, projects.name),
       ]);
 

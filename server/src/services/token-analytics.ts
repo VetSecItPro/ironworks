@@ -1,7 +1,7 @@
-import { and, desc, eq, gte, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { agents, costEvents, heartbeatRuns } from "@ironworksai/db";
 import { DEFAULT_OUTPUT_TOKEN_LIMITS } from "@ironworksai/shared";
+import { and, desc, eq, gte, sql } from "drizzle-orm";
 // heartbeatRuns is used in tokenUsageByPromptTemplate (Task 7)
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -54,10 +54,7 @@ export function tokenAnalyticsService(db: Db) {
   /**
    * Get per-agent token usage summary for a period (default 30 days).
    */
-  async function getAgentTokenSummary(
-    agentId: string,
-    periodDays = 30,
-  ): Promise<AgentTokenSummary> {
+  async function getAgentTokenSummary(agentId: string, periodDays = 30): Promise<AgentTokenSummary> {
     const since = new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000);
 
     const [row] = await db
@@ -109,11 +106,7 @@ export function tokenAnalyticsService(db: Db) {
   /**
    * Analyze an agent's recent runs for token waste patterns.
    */
-  async function analyzeTokenWaste(
-    agentId: string,
-    companyId: string,
-    periodDays = 30,
-  ): Promise<TokenWasteAnalysis> {
+  async function analyzeTokenWaste(agentId: string, companyId: string, periodDays = 30): Promise<TokenWasteAnalysis> {
     const since = new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000);
 
     // Get per-run token data
@@ -126,11 +119,7 @@ export function tokenAnalyticsService(db: Db) {
       })
       .from(costEvents)
       .where(
-        and(
-          eq(costEvents.agentId, agentId),
-          eq(costEvents.companyId, companyId),
-          gte(costEvents.occurredAt, since),
-        ),
+        and(eq(costEvents.agentId, agentId), eq(costEvents.companyId, companyId), gte(costEvents.occurredAt, since)),
       )
       .groupBy(costEvents.heartbeatRunId)
       .orderBy(desc(costEvents.heartbeatRunId))
@@ -148,11 +137,7 @@ export function tokenAnalyticsService(db: Db) {
     }
 
     // Fetch agent name for structured recommendations
-    const [agentRow] = await db
-      .select({ name: agents.name })
-      .from(agents)
-      .where(eq(agents.id, agentId))
-      .limit(1);
+    const [agentRow] = await db.select({ name: agents.name }).from(agents).where(eq(agents.id, agentId)).limit(1);
     const agentName = agentRow?.name ?? null;
 
     const totalInput = runs.reduce((sum, r) => sum + Number(r.inputTokens), 0);
@@ -162,9 +147,8 @@ export function tokenAnalyticsService(db: Db) {
     const avgOutput = Math.round(totalOutput / runs.length);
 
     // Cache hit rate: cached tokens / (cached + non-cached input)
-    const cacheHitRate = totalInput + totalCached > 0
-      ? Number(((totalCached / (totalInput + totalCached)) * 100).toFixed(1))
-      : 0;
+    const cacheHitRate =
+      totalInput + totalCached > 0 ? Number(((totalCached / (totalInput + totalCached)) * 100).toFixed(1)) : 0;
 
     // Waste detection
     const recommendations: string[] = [];
@@ -175,7 +159,9 @@ export function tokenAnalyticsService(db: Db) {
     const [costRow] = await db
       .select({ totalCents: sql<number>`coalesce(sum(${costEvents.costCents}), 0)::int` })
       .from(costEvents)
-      .where(and(eq(costEvents.agentId, agentId), eq(costEvents.companyId, companyId), gte(costEvents.occurredAt, since)));
+      .where(
+        and(eq(costEvents.agentId, agentId), eq(costEvents.companyId, companyId), gte(costEvents.occurredAt, since)),
+      );
     const monthlyCostCents = Number(costRow?.totalCents ?? 0);
 
     // Check: output tokens consistently near max (verbose agent) - model downgrade candidate
@@ -277,10 +263,7 @@ export function tokenAnalyticsService(db: Db) {
   /**
    * Get company-wide token summary aggregating all agents.
    */
-  async function getCompanyTokenSummary(
-    companyId: string,
-    periodDays = 30,
-  ): Promise<CompanyTokenSummary> {
+  async function getCompanyTokenSummary(companyId: string, periodDays = 30): Promise<CompanyTokenSummary> {
     const since = new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000);
 
     const agentRows = await db
@@ -376,12 +359,14 @@ export async function tokenUsageByPromptTemplate(
   db: Db,
   companyId: string,
   periodDays = 30,
-): Promise<Array<{
-  templateType: string;
-  avgInputTokens: number;
-  avgOutputTokens: number;
-  runCount: number;
-}>> {
+): Promise<
+  Array<{
+    templateType: string;
+    avgInputTokens: number;
+    avgOutputTokens: number;
+    runCount: number;
+  }>
+> {
   const since = new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000);
 
   // Join heartbeat_runs (for the task type stored in contextSnapshot) with
@@ -395,12 +380,7 @@ export async function tokenUsageByPromptTemplate(
     })
     .from(costEvents)
     .innerJoin(heartbeatRuns, eq(costEvents.heartbeatRunId, heartbeatRuns.id))
-    .where(
-      and(
-        eq(costEvents.companyId, companyId),
-        gte(costEvents.occurredAt, since),
-      ),
-    )
+    .where(and(eq(costEvents.companyId, companyId), gte(costEvents.occurredAt, since)))
     .groupBy(costEvents.heartbeatRunId, heartbeatRuns.contextSnapshot);
 
   // Aggregate by task type in JS (small data set after grouping)
@@ -469,10 +449,7 @@ export interface ContextWindowUtilization {
  * Uses the last 30 days of cost_events to derive an average input token count,
  * then maps the agent's most-used model to a known context size.
  */
-export async function contextWindowUtilization(
-  db: Db,
-  agentId: string,
-): Promise<ContextWindowUtilization> {
+export async function contextWindowUtilization(db: Db, agentId: string): Promise<ContextWindowUtilization> {
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
   const [row] = await db
@@ -486,9 +463,7 @@ export async function contextWindowUtilization(
   const avgInput = Math.round(Number(row?.avgInputTokens ?? 0));
   const primaryModel = (row?.primaryModel ?? "").toLowerCase();
   const modelContextSize = resolveContextSize(primaryModel);
-  const utilizationPct = modelContextSize > 0
-    ? Math.round((avgInput / modelContextSize) * 100 * 10) / 10
-    : 0;
+  const utilizationPct = modelContextSize > 0 ? Math.round((avgInput / modelContextSize) * 100 * 10) / 10 : 0;
 
   return {
     modelContextSize,

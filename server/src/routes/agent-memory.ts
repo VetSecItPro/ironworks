@@ -1,11 +1,11 @@
-import { Router } from "express";
 import type { Db } from "@ironworksai/db";
 import { agentMemoryEntries, agents as agentsTable } from "@ironworksai/db";
-import { and, desc, eq, isNull, ne } from "drizzle-orm";
 import { MEMORY_TYPES, type MemoryType } from "@ironworksai/shared";
+import { and, desc, eq, isNull, ne } from "drizzle-orm";
+import { Router } from "express";
 import { badRequest, notFound } from "../errors.js";
+import { createAgentDocument, logActivity } from "../services/index.js";
 import { assertCanWrite, assertCompanyAccess, getActorInfo } from "./authz.js";
-import { logActivity, createAgentDocument } from "../services/index.js";
 
 // Select all columns except `embedding` (pgvector column may not exist on all deployments)
 const memoryColumns = {
@@ -69,23 +69,19 @@ export function agentMemoryRoutes(db: Db) {
     await assertCanWrite(req, companyId, db);
     await resolveAgent(companyId, agentId);
 
-    const {
-      memoryType,
-      category,
-      content,
-      sourceIssueId,
-      sourceProjectId,
-      confidence,
-      expiresAt,
-    } = req.body as Record<string, unknown>;
+    const { memoryType, category, content, sourceIssueId, sourceProjectId, confidence, expiresAt } = req.body as Record<
+      string,
+      unknown
+    >;
 
     if (!content || typeof content !== "string") {
       throw badRequest("content is required");
     }
 
-    const resolvedType = (typeof memoryType === "string" && MEMORY_TYPES.includes(memoryType as MemoryType))
-      ? memoryType as string
-      : "semantic";
+    const resolvedType =
+      typeof memoryType === "string" && MEMORY_TYPES.includes(memoryType as MemoryType)
+        ? (memoryType as string)
+        : "semantic";
 
     const row = await db
       .insert(agentMemoryEntries)
@@ -196,10 +192,7 @@ export function agentMemoryRoutes(db: Db) {
       throw notFound("Memory entry not found");
     }
 
-    await db
-      .update(agentMemoryEntries)
-      .set({ archivedAt: new Date() })
-      .where(eq(agentMemoryEntries.id, entryId));
+    await db.update(agentMemoryEntries).set({ archivedAt: new Date() }).where(eq(agentMemoryEntries.id, entryId));
 
     res.json({ ok: true });
   });
@@ -269,10 +262,7 @@ export function agentMemoryRoutes(db: Db) {
     });
 
     // 3. Archive the original memory entry
-    await db
-      .update(agentMemoryEntries)
-      .set({ archivedAt: new Date() })
-      .where(eq(agentMemoryEntries.id, entryId));
+    await db.update(agentMemoryEntries).set({ archivedAt: new Date() }).where(eq(agentMemoryEntries.id, entryId));
 
     const actor = getActorInfo(req);
     await logActivity(db, {

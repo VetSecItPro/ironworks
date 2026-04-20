@@ -89,6 +89,27 @@ Think of it as the operating system for an AI-powered company.
 - **Multi-company isolation** with complete data separation
 - **Unlimited agents** on all pricing tiers
 
+### HTTP Adapter Family
+
+Four production-ready HTTP adapters let agents call external LLM APIs directly, without
+a local CLI installed. Each adapter is a fully self-contained package with its own test
+suite and README.
+
+| Adapter | Provider | Package |
+|---|---|---|
+| `poe-api` | Poe (multi-model) | `packages/adapters/poe-api` |
+| `anthropic-api` | Anthropic (Claude) | `packages/adapters/anthropic-api` |
+| `openai-api` | OpenAI (GPT, o-series) | `packages/adapters/openai-api` |
+| `openrouter-api` | OpenRouter (200+ models) | `packages/adapters/openrouter-api` |
+
+All four share a common HTTP substrate in `packages/adapter-utils/src/http/` covering
+retry, rate limiting, streaming, tool-call normalization, and secret-aware redaction.
+Provider API keys are stored per-workspace under **Settings - Providers** using
+AES-256-GCM envelope encryption.
+
+Full architecture: [docs/HTTP-ADAPTER-FAMILY.md](docs/HTTP-ADAPTER-FAMILY.md)
+Key configuration guide: [docs/adapters/provider-settings.md](docs/adapters/provider-settings.md)
+
 <br/>
 
 ## Quickstart

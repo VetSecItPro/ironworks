@@ -1,12 +1,14 @@
-import { pgTable, uuid, text, integer, timestamp, index } from "drizzle-orm/pg-core";
-import { companies } from "./companies.js";
+import { index, integer, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { agents } from "./agents.js";
+import { companies } from "./companies.js";
 
 export const documents = pgTable(
   "documents",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    companyId: uuid("company_id").notNull().references(() => companies.id),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id),
     title: text("title"),
     format: text("format").notNull().default("markdown"),
     latestBody: text("latest_body").notNull(),

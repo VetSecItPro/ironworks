@@ -1,8 +1,8 @@
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { routineRoutes } from "../routes/routines.js";
 import { errorHandler } from "../middleware/index.js";
+import { routineRoutes } from "../routes/routines.js";
 
 const companyId = "22222222-2222-4222-8222-222222222222";
 const agentId = "11111111-1111-4111-8111-111111111111";
@@ -83,37 +83,33 @@ const mockAccessService = vi.hoisted(() => ({
 
 const mockLogActivity = vi.hoisted(() => vi.fn());
 
-vi.mock("../services/index.js", () => ({
-  accessService: () => mockAccessService,
-  logActivity: mockLogActivity,
-  companyPortabilityService: () => ({}),
-  instanceSettingsService: () => ({}),
-  companySkillService: () => ({}),
-  workProductService: () => ({}),
-  workspaceOperationService: () => ({}),
-  executionWorkspaceService: () => ({}),
-  issueApprovalService: () => ({}),
-  secretService: () => ({}),
-  sidebarBadgeService: () => ({}),
-  dashboardService: () => ({}),
-  heartbeatService: () => ({}),
-  goalService: () => ({}),
-  financeService: () => ({}),
-  costService: () => ({}),
-  companyService: () => ({}),
-  playbookService: () => ({ seedDefaults: vi.fn() }),
-  budgetService: () => ({ upsertPolicy: vi.fn() }),
-  userInviteService: () => ({ create: vi.fn(), getByToken: vi.fn(), accept: vi.fn(), listForCompany: vi.fn(), revoke: vi.fn() }),
-  routineService: () => mockRoutineService,
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    accessService: () => mockAccessService,
+    logActivity: mockLogActivity,
+    playbookService: () => ({ seedDefaults: vi.fn() }),
+    budgetService: () => ({ upsertPolicy: vi.fn() }),
+    userInviteService: () => ({
+      create: vi.fn(),
+      getByToken: vi.fn(),
+      accept: vi.fn(),
+      listForCompany: vi.fn(),
+      revoke: vi.fn(),
+    }),
+    routineService: () => mockRoutineService,
+  });
+});
 
 function createApp(actor: Record<string, unknown>) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });
+  // biome-ignore lint/suspicious/noExplicitAny: mock Drizzle DB or storage object for unit tests; real type requires full schema-aware Drizzle instance
   app.use("/api", routineRoutes({} as any));
   app.use(errorHandler);
   return app;
@@ -144,13 +140,11 @@ describe("routine routes", () => {
       companyIds: [companyId],
     });
 
-    const res = await request(app)
-      .post(`/api/companies/${companyId}/routines`)
-      .send({
-        projectId,
-        title: "Daily routine",
-        assigneeAgentId: agentId,
-      });
+    const res = await request(app).post(`/api/companies/${companyId}/routines`).send({
+      projectId,
+      title: "Daily routine",
+      assigneeAgentId: agentId,
+    });
 
     expect(res.status).toBe(403);
     expect(res.body.error).toContain("tasks:assign");
@@ -166,11 +160,9 @@ describe("routine routes", () => {
       companyIds: [companyId],
     });
 
-    const res = await request(app)
-      .patch(`/api/routines/${routineId}`)
-      .send({
-        assigneeAgentId: otherAgentId,
-      });
+    const res = await request(app).patch(`/api/routines/${routineId}`).send({
+      assigneeAgentId: otherAgentId,
+    });
 
     expect(res.status).toBe(403);
     expect(res.body.error).toContain("tasks:assign");
@@ -187,11 +179,9 @@ describe("routine routes", () => {
       companyIds: [companyId],
     });
 
-    const res = await request(app)
-      .patch(`/api/routines/${routineId}`)
-      .send({
-        status: "active",
-      });
+    const res = await request(app).patch(`/api/routines/${routineId}`).send({
+      status: "active",
+    });
 
     expect(res.status).toBe(403);
     expect(res.body.error).toContain("tasks:assign");
@@ -207,13 +197,11 @@ describe("routine routes", () => {
       companyIds: [companyId],
     });
 
-    const res = await request(app)
-      .post(`/api/routines/${routineId}/triggers`)
-      .send({
-        kind: "schedule",
-        cronExpression: "0 10 * * *",
-        timezone: "UTC",
-      });
+    const res = await request(app).post(`/api/routines/${routineId}/triggers`).send({
+      kind: "schedule",
+      cronExpression: "0 10 * * *",
+      timezone: "UTC",
+    });
 
     expect(res.status).toBe(403);
     expect(res.body.error).toContain("tasks:assign");
@@ -229,11 +217,9 @@ describe("routine routes", () => {
       companyIds: [companyId],
     });
 
-    const res = await request(app)
-      .patch(`/api/routine-triggers/${trigger.id}`)
-      .send({
-        enabled: true,
-      });
+    const res = await request(app).patch(`/api/routine-triggers/${trigger.id}`).send({
+      enabled: true,
+    });
 
     expect(res.status).toBe(403);
     expect(res.body.error).toContain("tasks:assign");
@@ -249,9 +235,7 @@ describe("routine routes", () => {
       companyIds: [companyId],
     });
 
-    const res = await request(app)
-      .post(`/api/routines/${routineId}/run`)
-      .send({});
+    const res = await request(app).post(`/api/routines/${routineId}/run`).send({});
 
     expect(res.status).toBe(403);
     expect(res.body.error).toContain("tasks:assign");
@@ -268,22 +252,24 @@ describe("routine routes", () => {
       companyIds: [companyId],
     });
 
-    const res = await request(app)
-      .post(`/api/companies/${companyId}/routines`)
-      .send({
-        projectId,
-        title: "Daily routine",
-        assigneeAgentId: agentId,
-      });
-
-    expect(res.status).toBe(201);
-    expect(mockRoutineService.create).toHaveBeenCalledWith(companyId, expect.objectContaining({
+    const res = await request(app).post(`/api/companies/${companyId}/routines`).send({
       projectId,
       title: "Daily routine",
       assigneeAgentId: agentId,
-    }), {
-      agentId: null,
-      userId: "board-user",
     });
+
+    expect(res.status).toBe(201);
+    expect(mockRoutineService.create).toHaveBeenCalledWith(
+      companyId,
+      expect.objectContaining({
+        projectId,
+        title: "Daily routine",
+        assigneeAgentId: agentId,
+      }),
+      {
+        agentId: null,
+        userId: "board-user",
+      },
+    );
   });
 });

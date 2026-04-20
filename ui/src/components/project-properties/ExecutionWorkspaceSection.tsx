@@ -1,8 +1,8 @@
-import { cn } from "../../lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "../../lib/utils";
 import { DraftInput } from "../agent-config-primitives";
 import { SaveIndicator } from "./PropertyHelpers";
-import type { ProjectFieldSaveState, ProjectConfigFieldKey } from "./types";
+import type { ProjectConfigFieldKey, ProjectFieldSaveState } from "./types";
 
 export interface ExecutionWorkspaceSectionProps {
   executionWorkspacesEnabled: boolean;
@@ -77,7 +77,8 @@ export function ExecutionWorkspaceSection({
                 commitField(
                   "execution_workspace_enabled",
                   updateExecutionWorkspacePolicy({ enabled: !executionWorkspacesEnabled })!,
-                )}
+                )
+              }
             >
               <span
                 className={cn(
@@ -87,9 +88,7 @@ export function ExecutionWorkspaceSection({
               />
             </button>
           ) : (
-            <span className="text-xs text-muted-foreground">
-              {executionWorkspacesEnabled ? "Enabled" : "Disabled"}
-            </span>
+            <span className="text-xs text-muted-foreground">{executionWorkspacesEnabled ? "Enabled" : "Disabled"}</span>
           )}
         </div>
 
@@ -121,14 +120,13 @@ export function ExecutionWorkspaceSection({
                           ? "shared_workspace"
                           : "isolated_workspace",
                     })!,
-                  )}
+                  )
+                }
               >
                 <span
                   className={cn(
                     "inline-block h-3.5 w-3.5 rounded-full bg-background shadow-sm transition-transform",
-                    executionWorkspaceDefaultMode === "isolated_workspace"
-                      ? "translate-x-4.5"
-                      : "translate-x-0.5",
+                    executionWorkspaceDefaultMode === "isolated_workspace" ? "translate-x-4.5" : "translate-x-0.5",
                   )}
                 />
               </button>
@@ -140,9 +138,7 @@ export function ExecutionWorkspaceSection({
                 className="flex w-full items-center gap-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
                 onClick={onToggleAdvanced}
               >
-                {executionWorkspaceAdvancedOpen
-                  ? "Hide advanced checkout settings"
-                  : "Show advanced checkout settings"}
+                {executionWorkspaceAdvancedOpen ? "Hide advanced checkout settings" : "Show advanced checkout settings"}
               </button>
             </div>
 
@@ -153,19 +149,24 @@ export function ExecutionWorkspaceSection({
                 </div>
                 <div>
                   <div className="mb-1 flex items-center gap-1.5">
-                    <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span>Base ref</span>
                       <SaveIndicator state={fieldState("execution_workspace_base_ref")} />
-                    </label>
+                    </div>
                   </div>
                   <DraftInput
                     value={executionWorkspaceStrategy.baseRef ?? ""}
                     onCommit={(value) =>
                       commitField("execution_workspace_base_ref", {
                         ...updateExecutionWorkspacePolicy({
-                          workspaceStrategy: { ...executionWorkspaceStrategy, type: "git_worktree", baseRef: value || null },
+                          workspaceStrategy: {
+                            ...executionWorkspaceStrategy,
+                            type: "git_worktree",
+                            baseRef: value || null,
+                          },
                         })!,
-                      })}
+                      })
+                    }
                     immediate
                     className="w-full rounded border border-border bg-transparent px-2 py-1 text-xs font-mono outline-none"
                     placeholder="origin/main"
@@ -173,19 +174,24 @@ export function ExecutionWorkspaceSection({
                 </div>
                 <div>
                   <div className="mb-1 flex items-center gap-1.5">
-                    <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span>Branch template</span>
                       <SaveIndicator state={fieldState("execution_workspace_branch_template")} />
-                    </label>
+                    </div>
                   </div>
                   <DraftInput
                     value={executionWorkspaceStrategy.branchTemplate ?? ""}
                     onCommit={(value) =>
                       commitField("execution_workspace_branch_template", {
                         ...updateExecutionWorkspacePolicy({
-                          workspaceStrategy: { ...executionWorkspaceStrategy, type: "git_worktree", branchTemplate: value || null },
+                          workspaceStrategy: {
+                            ...executionWorkspaceStrategy,
+                            type: "git_worktree",
+                            branchTemplate: value || null,
+                          },
                         })!,
-                      })}
+                      })
+                    }
                     immediate
                     className="w-full rounded border border-border bg-transparent px-2 py-1 text-xs font-mono outline-none"
                     placeholder="{{issue.identifier}}-{{slug}}"
@@ -193,19 +199,24 @@ export function ExecutionWorkspaceSection({
                 </div>
                 <div>
                   <div className="mb-1 flex items-center gap-1.5">
-                    <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span>Worktree parent dir</span>
                       <SaveIndicator state={fieldState("execution_workspace_worktree_parent_dir")} />
-                    </label>
+                    </div>
                   </div>
                   <DraftInput
                     value={executionWorkspaceStrategy.worktreeParentDir ?? ""}
                     onCommit={(value) =>
                       commitField("execution_workspace_worktree_parent_dir", {
                         ...updateExecutionWorkspacePolicy({
-                          workspaceStrategy: { ...executionWorkspaceStrategy, type: "git_worktree", worktreeParentDir: value || null },
+                          workspaceStrategy: {
+                            ...executionWorkspaceStrategy,
+                            type: "git_worktree",
+                            worktreeParentDir: value || null,
+                          },
                         })!,
-                      })}
+                      })
+                    }
                     immediate
                     className="w-full rounded border border-border bg-transparent px-2 py-1 text-xs font-mono outline-none"
                     placeholder=".ironworks/worktrees"
@@ -213,19 +224,24 @@ export function ExecutionWorkspaceSection({
                 </div>
                 <div>
                   <div className="mb-1 flex items-center gap-1.5">
-                    <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span>Provision command</span>
                       <SaveIndicator state={fieldState("execution_workspace_provision_command")} />
-                    </label>
+                    </div>
                   </div>
                   <DraftInput
                     value={executionWorkspaceStrategy.provisionCommand ?? ""}
                     onCommit={(value) =>
                       commitField("execution_workspace_provision_command", {
                         ...updateExecutionWorkspacePolicy({
-                          workspaceStrategy: { ...executionWorkspaceStrategy, type: "git_worktree", provisionCommand: value || null },
+                          workspaceStrategy: {
+                            ...executionWorkspaceStrategy,
+                            type: "git_worktree",
+                            provisionCommand: value || null,
+                          },
                         })!,
-                      })}
+                      })
+                    }
                     immediate
                     className="w-full rounded border border-border bg-transparent px-2 py-1 text-xs font-mono outline-none"
                     placeholder="bash ./scripts/provision-worktree.sh"
@@ -233,27 +249,32 @@ export function ExecutionWorkspaceSection({
                 </div>
                 <div>
                   <div className="mb-1 flex items-center gap-1.5">
-                    <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span>Teardown command</span>
                       <SaveIndicator state={fieldState("execution_workspace_teardown_command")} />
-                    </label>
+                    </div>
                   </div>
                   <DraftInput
                     value={executionWorkspaceStrategy.teardownCommand ?? ""}
                     onCommit={(value) =>
                       commitField("execution_workspace_teardown_command", {
                         ...updateExecutionWorkspacePolicy({
-                          workspaceStrategy: { ...executionWorkspaceStrategy, type: "git_worktree", teardownCommand: value || null },
+                          workspaceStrategy: {
+                            ...executionWorkspaceStrategy,
+                            type: "git_worktree",
+                            teardownCommand: value || null,
+                          },
                         })!,
-                      })}
+                      })
+                    }
                     immediate
                     className="w-full rounded border border-border bg-transparent px-2 py-1 text-xs font-mono outline-none"
                     placeholder="bash ./scripts/teardown-worktree.sh"
                   />
                 </div>
                 <p className="text-[11px] text-muted-foreground">
-                  Provision runs inside the derived worktree before agent execution. Teardown is stored here for
-                  future cleanup flows.
+                  Provision runs inside the derived worktree before agent execution. Teardown is stored here for future
+                  cleanup flows.
                 </p>
               </div>
             ) : null}

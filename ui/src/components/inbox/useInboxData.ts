@@ -1,13 +1,13 @@
-import { useMemo } from "react";
+import type { Issue } from "@ironworksai/shared";
 import { useQuery } from "@tanstack/react-query";
-import { approvalsApi } from "../../api/approvals";
+import { useMemo } from "react";
 import { accessApi } from "../../api/access";
+import { agentsApi } from "../../api/agents";
+import { approvalsApi } from "../../api/approvals";
 import { ApiError } from "../../api/client";
 import { dashboardApi } from "../../api/dashboard";
-import { issuesApi } from "../../api/issues";
-import { agentsApi } from "../../api/agents";
 import { heartbeatsApi } from "../../api/heartbeats";
-import { queryKeys } from "../../lib/queryKeys";
+import { issuesApi } from "../../api/issues";
 import {
   getApprovalsForTab,
   getInboxWorkItems,
@@ -16,10 +16,10 @@ import {
   type InboxApprovalFilter,
   type InboxTab,
 } from "../../lib/inbox";
+import { queryKeys } from "../../lib/queryKeys";
+import { INBOX_ISSUE_STATUSES, readIssueIdFromRun } from "./inboxHelpers";
 import { isSnoozed, type SnoozeEntry } from "./inboxSnoozeUtils";
-import { readIssueIdFromRun, INBOX_ISSUE_STATUSES } from "./inboxHelpers";
 import type { InboxCategoryFilter } from "./inboxTypes";
-import type { Issue } from "@ironworksai/shared";
 
 interface UseInboxDataParams {
   selectedCompanyId: string | null;
@@ -54,10 +54,7 @@ export function useInboxData({
     enabled: !!selectedCompanyId,
   });
 
-  const {
-    data: joinRequests = [],
-    isLoading: isJoinRequestsLoading,
-  } = useQuery({
+  const { data: joinRequests = [], isLoading: isJoinRequestsLoading } = useQuery({
     queryKey: queryKeys.access.joinRequests(selectedCompanyId!),
     queryFn: async () => {
       try {
@@ -85,10 +82,7 @@ export function useInboxData({
     enabled: !!selectedCompanyId,
   });
 
-  const {
-    data: mineIssuesRaw = [],
-    isLoading: isMineIssuesLoading,
-  } = useQuery({
+  const { data: mineIssuesRaw = [], isLoading: isMineIssuesLoading } = useQuery({
     queryKey: queryKeys.issues.listMineByMe(selectedCompanyId!),
     queryFn: () =>
       issuesApi.list(selectedCompanyId!, {
@@ -99,10 +93,7 @@ export function useInboxData({
     enabled: !!selectedCompanyId,
   });
 
-  const {
-    data: touchedIssuesRaw = [],
-    isLoading: isTouchedIssuesLoading,
-  } = useQuery({
+  const { data: touchedIssuesRaw = [], isLoading: isTouchedIssuesLoading } = useQuery({
     queryKey: queryKeys.issues.listTouchedByMe(selectedCompanyId!),
     queryFn: () =>
       issuesApi.list(selectedCompanyId!, {
@@ -120,18 +111,12 @@ export function useInboxData({
 
   const mineIssues = useMemo(() => getRecentTouchedIssues(mineIssuesRaw), [mineIssuesRaw]);
   const touchedIssues = useMemo(() => getRecentTouchedIssues(touchedIssuesRaw), [touchedIssuesRaw]);
-  const unreadTouchedIssues = useMemo(
-    () => touchedIssues.filter((issue) => issue.isUnreadForMe),
-    [touchedIssues],
-  );
-  const issuesToRender = useMemo(
-    () => {
-      if (tab === "mine") return mineIssues;
-      if (tab === "unread") return unreadTouchedIssues;
-      return touchedIssues;
-    },
-    [tab, mineIssues, touchedIssues, unreadTouchedIssues],
-  );
+  const unreadTouchedIssues = useMemo(() => touchedIssues.filter((issue) => issue.isUnreadForMe), [touchedIssues]);
+  const issuesToRender = useMemo(() => {
+    if (tab === "mine") return mineIssues;
+    if (tab === "unread") return unreadTouchedIssues;
+    return touchedIssues;
+  }, [tab, mineIssues, touchedIssues, unreadTouchedIssues]);
 
   const agentById = useMemo(() => {
     const map = new Map<string, string>();
@@ -168,14 +153,10 @@ export function useInboxData({
     return filtered;
   }, [approvals, tab, allApprovalFilter, dismissed]);
 
-  const showJoinRequestsCategory =
-    allCategoryFilter === "everything" || allCategoryFilter === "join_requests";
-  const showTouchedCategory =
-    allCategoryFilter === "everything" || allCategoryFilter === "issues_i_touched";
-  const showApprovalsCategory =
-    allCategoryFilter === "everything" || allCategoryFilter === "approvals";
-  const showFailedRunsCategory =
-    allCategoryFilter === "everything" || allCategoryFilter === "failed_runs";
+  const showJoinRequestsCategory = allCategoryFilter === "everything" || allCategoryFilter === "join_requests";
+  const showTouchedCategory = allCategoryFilter === "everything" || allCategoryFilter === "issues_i_touched";
+  const showApprovalsCategory = allCategoryFilter === "everything" || allCategoryFilter === "approvals";
+  const showFailedRunsCategory = allCategoryFilter === "everything" || allCategoryFilter === "failed_runs";
   const showAlertsCategory = allCategoryFilter === "everything" || allCategoryFilter === "alerts";
 
   const failedRunsForTab = useMemo(() => {
@@ -197,7 +178,15 @@ export function useInboxData({
         failedRuns: failedRunsForTab,
         joinRequests: joinRequestsForTab,
       }),
-    [approvalsToRender, issuesToRender, showApprovalsCategory, showTouchedCategory, tab, failedRunsForTab, joinRequestsForTab],
+    [
+      approvalsToRender,
+      issuesToRender,
+      showApprovalsCategory,
+      showTouchedCategory,
+      tab,
+      failedRunsForTab,
+      joinRequestsForTab,
+    ],
   );
 
   const workItemsToRender = useMemo(() => {

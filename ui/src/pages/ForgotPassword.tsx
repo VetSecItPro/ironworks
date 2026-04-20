@@ -1,8 +1,8 @@
+import { ArrowLeft, Hammer, Mail } from "lucide-react";
 import { useState } from "react";
-import { Link } from "@/lib/router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Hammer, ArrowLeft, Mail } from "lucide-react";
+import { Link } from "@/lib/router";
 import { usePageTitle } from "../hooks/usePageTitle";
 
 export function ForgotPasswordPage() {
@@ -72,14 +72,15 @@ export function ForgotPasswordPage() {
                 autoFocus
               />
             </div>
-            {error && (
-              <p className="text-sm text-destructive">{error}</p>
-            )}
+            {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" className="w-full" disabled={loading || !email.trim()}>
               {loading ? "Sending..." : "Send reset link"}
             </Button>
             <div className="text-center">
-              <Link to="/auth" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+              <Link
+                to="/auth"
+                className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+              >
                 <ArrowLeft className="h-3 w-3" /> Back to sign in
               </Link>
             </div>

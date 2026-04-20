@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import type { BackupRetentionPolicy, SchedulerSettings } from "@ironworksai/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { LogOut, SlidersHorizontal } from "lucide-react";
-import type { BackupRetentionPolicy, SchedulerSettings } from "@ironworksai/shared";
+import { useEffect, useState } from "react";
 import { authApi } from "@/api/auth";
 import { instanceSettingsApi } from "@/api/instanceSettings";
 import { Button } from "../components/ui/button";
@@ -24,10 +24,7 @@ export function InstanceGeneralSettings() {
   const [showSignOutDialog, setShowSignOutDialog] = useState(false);
 
   useEffect(() => {
-    setBreadcrumbs([
-      { label: "Instance Settings" },
-      { label: "General" },
-    ]);
+    setBreadcrumbs([{ label: "Instance Settings" }, { label: "General" }]);
   }, [setBreadcrumbs]);
 
   const generalQuery = useQuery({
@@ -46,8 +43,7 @@ export function InstanceGeneralSettings() {
   });
 
   const toggleMutation = useMutation({
-    mutationFn: async (enabled: boolean) =>
-      instanceSettingsApi.updateGeneral({ censorUsernameInLogs: enabled }),
+    mutationFn: async (enabled: boolean) => instanceSettingsApi.updateGeneral({ censorUsernameInLogs: enabled }),
     onSuccess: async () => {
       setActionError(null);
       await queryClient.invalidateQueries({ queryKey: queryKeys.instance.generalSettings });
@@ -58,8 +54,7 @@ export function InstanceGeneralSettings() {
   });
 
   const retentionMutation = useMutation({
-    mutationFn: async (policy: BackupRetentionPolicy) =>
-      instanceSettingsApi.updateGeneral({ backupRetention: policy }),
+    mutationFn: async (policy: BackupRetentionPolicy) => instanceSettingsApi.updateGeneral({ backupRetention: policy }),
     onSuccess: async () => {
       setActionError(null);
       await queryClient.invalidateQueries({ queryKey: queryKeys.instance.generalSettings });
@@ -70,8 +65,7 @@ export function InstanceGeneralSettings() {
   });
 
   const schedulerMutation = useMutation({
-    mutationFn: async (settings: SchedulerSettings) =>
-      instanceSettingsApi.updateGeneral({ scheduler: settings }),
+    mutationFn: async (settings: SchedulerSettings) => instanceSettingsApi.updateGeneral({ scheduler: settings }),
     onSuccess: async () => {
       setActionError(null);
       await queryClient.invalidateQueries({ queryKey: queryKeys.instance.generalSettings });
@@ -88,9 +82,7 @@ export function InstanceGeneralSettings() {
   if (generalQuery.error) {
     return (
       <div className="text-sm text-destructive">
-        {generalQuery.error instanceof Error
-          ? generalQuery.error.message
-          : "Failed to load general settings."}
+        {generalQuery.error instanceof Error ? generalQuery.error.message : "Failed to load general settings."}
       </div>
     );
   }
@@ -121,8 +113,7 @@ export function InstanceGeneralSettings() {
             <h2 className="text-sm font-semibold">Censor username in logs</h2>
             <p className="max-w-2xl text-sm text-muted-foreground">
               Hide the username segment in home-directory paths and similar operator-visible log output. Standalone
-              username mentions outside of paths are not yet masked in the live transcript view. This is off by
-              default.
+              username mentions outside of paths are not yet masked in the live transcript view. This is off by default.
             </p>
           </div>
           <button
@@ -166,7 +157,11 @@ export function InstanceGeneralSettings() {
                 className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
                 value={generalQuery.data?.backupRetention?.dailyDays ?? 7}
                 onChange={(e) => {
-                  const current = generalQuery.data?.backupRetention ?? { dailyDays: 7, weeklyWeeks: 4, monthlyMonths: 1 };
+                  const current = generalQuery.data?.backupRetention ?? {
+                    dailyDays: 7,
+                    weeklyWeeks: 4,
+                    monthlyMonths: 1,
+                  };
                   retentionMutation.mutate({ ...current, dailyDays: Number(e.target.value) });
                 }}
               >
@@ -185,7 +180,11 @@ export function InstanceGeneralSettings() {
                 className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
                 value={generalQuery.data?.backupRetention?.weeklyWeeks ?? 4}
                 onChange={(e) => {
-                  const current = generalQuery.data?.backupRetention ?? { dailyDays: 7, weeklyWeeks: 4, monthlyMonths: 1 };
+                  const current = generalQuery.data?.backupRetention ?? {
+                    dailyDays: 7,
+                    weeklyWeeks: 4,
+                    monthlyMonths: 1,
+                  };
                   retentionMutation.mutate({ ...current, weeklyWeeks: Number(e.target.value) });
                 }}
               >
@@ -204,7 +203,11 @@ export function InstanceGeneralSettings() {
                 className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
                 value={generalQuery.data?.backupRetention?.monthlyMonths ?? 1}
                 onChange={(e) => {
-                  const current = generalQuery.data?.backupRetention ?? { dailyDays: 7, weeklyWeeks: 4, monthlyMonths: 1 };
+                  const current = generalQuery.data?.backupRetention ?? {
+                    dailyDays: 7,
+                    weeklyWeeks: 4,
+                    monthlyMonths: 1,
+                  };
                   retentionMutation.mutate({ ...current, monthlyMonths: Number(e.target.value) });
                 }}
               >
@@ -222,7 +225,8 @@ export function InstanceGeneralSettings() {
           <div className="space-y-1.5">
             <h2 className="text-sm font-semibold">Scheduler settings</h2>
             <p className="max-w-2xl text-sm text-muted-foreground">
-              Control agent iteration limits, anomaly detection thresholds, and idle-skip behavior for the heartbeat scheduler.
+              Control agent iteration limits, anomaly detection thresholds, and idle-skip behavior for the heartbeat
+              scheduler.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -239,7 +243,14 @@ export function InstanceGeneralSettings() {
                 className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
                 value={generalQuery.data?.scheduler?.iterationLimitPerDay ?? 100}
                 onChange={(e) => {
-                  const current = generalQuery.data?.scheduler ?? { iterationLimitPerDay: 100, iterationLimitPerTask: 20, costAnomalyMultiplier: 5, consecutiveFailureLimit: 5, idleSkipEnabled: true, heartbeatSafetyNetMinutes: 30 };
+                  const current = generalQuery.data?.scheduler ?? {
+                    iterationLimitPerDay: 100,
+                    iterationLimitPerTask: 20,
+                    costAnomalyMultiplier: 5,
+                    consecutiveFailureLimit: 5,
+                    idleSkipEnabled: true,
+                    heartbeatSafetyNetMinutes: 30,
+                  };
                   schedulerMutation.mutate({ ...current, iterationLimitPerDay: Number(e.target.value) });
                 }}
               />
@@ -257,7 +268,14 @@ export function InstanceGeneralSettings() {
                 className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
                 value={generalQuery.data?.scheduler?.iterationLimitPerTask ?? 20}
                 onChange={(e) => {
-                  const current = generalQuery.data?.scheduler ?? { iterationLimitPerDay: 100, iterationLimitPerTask: 20, costAnomalyMultiplier: 5, consecutiveFailureLimit: 5, idleSkipEnabled: true, heartbeatSafetyNetMinutes: 30 };
+                  const current = generalQuery.data?.scheduler ?? {
+                    iterationLimitPerDay: 100,
+                    iterationLimitPerTask: 20,
+                    costAnomalyMultiplier: 5,
+                    consecutiveFailureLimit: 5,
+                    idleSkipEnabled: true,
+                    heartbeatSafetyNetMinutes: 30,
+                  };
                   schedulerMutation.mutate({ ...current, iterationLimitPerTask: Number(e.target.value) });
                 }}
               />
@@ -272,7 +290,14 @@ export function InstanceGeneralSettings() {
                 className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
                 value={generalQuery.data?.scheduler?.costAnomalyMultiplier ?? 5}
                 onChange={(e) => {
-                  const current = generalQuery.data?.scheduler ?? { iterationLimitPerDay: 100, iterationLimitPerTask: 20, costAnomalyMultiplier: 5, consecutiveFailureLimit: 5, idleSkipEnabled: true, heartbeatSafetyNetMinutes: 30 };
+                  const current = generalQuery.data?.scheduler ?? {
+                    iterationLimitPerDay: 100,
+                    iterationLimitPerTask: 20,
+                    costAnomalyMultiplier: 5,
+                    consecutiveFailureLimit: 5,
+                    idleSkipEnabled: true,
+                    heartbeatSafetyNetMinutes: 30,
+                  };
                   schedulerMutation.mutate({ ...current, costAnomalyMultiplier: Number(e.target.value) });
                 }}
               >
@@ -292,7 +317,14 @@ export function InstanceGeneralSettings() {
                 className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
                 value={generalQuery.data?.scheduler?.consecutiveFailureLimit ?? 5}
                 onChange={(e) => {
-                  const current = generalQuery.data?.scheduler ?? { iterationLimitPerDay: 100, iterationLimitPerTask: 20, costAnomalyMultiplier: 5, consecutiveFailureLimit: 5, idleSkipEnabled: true, heartbeatSafetyNetMinutes: 30 };
+                  const current = generalQuery.data?.scheduler ?? {
+                    iterationLimitPerDay: 100,
+                    iterationLimitPerTask: 20,
+                    costAnomalyMultiplier: 5,
+                    consecutiveFailureLimit: 5,
+                    idleSkipEnabled: true,
+                    heartbeatSafetyNetMinutes: 30,
+                  };
                   schedulerMutation.mutate({ ...current, consecutiveFailureLimit: Number(e.target.value) });
                 }}
               >
@@ -312,7 +344,14 @@ export function InstanceGeneralSettings() {
                 className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
                 value={generalQuery.data?.scheduler?.heartbeatSafetyNetMinutes ?? 30}
                 onChange={(e) => {
-                  const current = generalQuery.data?.scheduler ?? { iterationLimitPerDay: 100, iterationLimitPerTask: 20, costAnomalyMultiplier: 5, consecutiveFailureLimit: 5, idleSkipEnabled: true, heartbeatSafetyNetMinutes: 30 };
+                  const current = generalQuery.data?.scheduler ?? {
+                    iterationLimitPerDay: 100,
+                    iterationLimitPerTask: 20,
+                    costAnomalyMultiplier: 5,
+                    consecutiveFailureLimit: 5,
+                    idleSkipEnabled: true,
+                    heartbeatSafetyNetMinutes: 30,
+                  };
                   schedulerMutation.mutate({ ...current, heartbeatSafetyNetMinutes: Number(e.target.value) });
                 }}
               >
@@ -340,7 +379,14 @@ export function InstanceGeneralSettings() {
                 (generalQuery.data?.scheduler?.idleSkipEnabled ?? true) ? "bg-green-600" : "bg-muted",
               )}
               onClick={() => {
-                const current = generalQuery.data?.scheduler ?? { iterationLimitPerDay: 100, iterationLimitPerTask: 20, costAnomalyMultiplier: 5, consecutiveFailureLimit: 5, idleSkipEnabled: true, heartbeatSafetyNetMinutes: 30 };
+                const current = generalQuery.data?.scheduler ?? {
+                  iterationLimitPerDay: 100,
+                  iterationLimitPerTask: 20,
+                  costAnomalyMultiplier: 5,
+                  consecutiveFailureLimit: 5,
+                  idleSkipEnabled: true,
+                  heartbeatSafetyNetMinutes: 30,
+                };
                 schedulerMutation.mutate({ ...current, idleSkipEnabled: !(current.idleSkipEnabled ?? true) });
               }}
             >
@@ -363,12 +409,7 @@ export function InstanceGeneralSettings() {
               Sign out of this IronWorks instance. You will need to sign back in to continue using the app.
             </p>
           </div>
-          <Button
-            variant="destructive"
-            size="sm"
-            className="shrink-0"
-            onClick={() => setShowSignOutDialog(true)}
-          >
+          <Button variant="destructive" size="sm" className="shrink-0" onClick={() => setShowSignOutDialog(true)}>
             <LogOut className="mr-1.5 h-4 w-4" />
             Sign out
           </Button>

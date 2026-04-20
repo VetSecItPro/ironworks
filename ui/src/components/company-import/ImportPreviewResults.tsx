@@ -1,27 +1,17 @@
-import type { CompanyPortabilityPreviewResult } from "@ironworksai/shared";
-import { Button } from "@/components/ui/button";
-import { cn } from "../../lib/utils";
-import { Download } from "lucide-react";
-import {
-  type FileTreeNode,
-  PackageFileTree,
-} from "../../components/PackageFileTree";
-import { ImportPreviewPane } from "../../components/import/ImportPreviewPane";
-import { ConflictResolutionList } from "../../components/import/ConflictResolutionList";
-import {
-  AdapterPickerList,
-  type AdapterPickerItem,
-} from "../../components/import/AdapterPickerList";
-import { ACTION_COLORS, type ConflictItem } from "../../components/import/ImportHelpers";
 import type { CreateConfigValues } from "@ironworksai/adapter-utils";
+import type { CompanyPortabilityPreviewResult } from "@ironworksai/shared";
+import { Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { type AdapterPickerItem, AdapterPickerList } from "../../components/import/AdapterPickerList";
+import { ConflictResolutionList } from "../../components/import/ConflictResolutionList";
+import { ACTION_COLORS, type ConflictItem } from "../../components/import/ImportHelpers";
+import { ImportPreviewPane } from "../../components/import/ImportPreviewPane";
+import { type FileTreeNode, PackageFileTree } from "../../components/PackageFileTree";
+import { cn } from "../../lib/utils";
 
 // ── Import file tree customization ───────────────────────────────────
 
-function renderImportFileExtra(
-  node: FileTreeNode,
-  checked: boolean,
-  renameMap: Map<string, string>,
-) {
+function renderImportFileExtra(node: FileTreeNode, checked: boolean, renameMap: Map<string, string>) {
   const renamedTo = node.kind === "dir" ? renameMap.get(node.path) : undefined;
   const actionBadge = node.action ? (
     <span
@@ -39,10 +29,7 @@ function renderImportFileExtra(
   return (
     <span className="inline-flex items-center gap-1.5 shrink-0">
       {renamedTo && checked && (
-        <span
-          className="text-[10px] text-cyan-500 font-mono truncate max-w-[7rem]"
-          title={renamedTo}
-        >
+        <span className="text-[10px] text-cyan-500 font-mono truncate max-w-[7rem]" title={renamedTo}>
           &rarr; {renamedTo}
         </span>
       )}
@@ -123,8 +110,7 @@ export function ImportPreviewResults({
   importPending,
   hasErrors,
 }: ImportPreviewResultsProps) {
-  const previewContent =
-    selectedFile ? importPreview.files[selectedFile] ?? null : null;
+  const previewContent = selectedFile ? (importPreview.files[selectedFile] ?? null) : null;
   const selectedAction = selectedFile ? (actionMap.get(selectedFile) ?? null) : null;
 
   return (
@@ -170,22 +156,18 @@ export function ImportPreviewResults({
       />
 
       <div className="mx-5 mt-3 flex justify-end">
-        <Button
-          size="sm"
-          onClick={onImport}
-          disabled={importPending || hasErrors || selectedCount === 0}
-        >
+        <Button size="sm" onClick={onImport} disabled={importPending || hasErrors || selectedCount === 0}>
           <Download className="mr-1.5 h-3.5 w-3.5" />
-          {importPending
-            ? "Importing..."
-            : `Import ${selectedCount} file${selectedCount === 1 ? "" : "s"}`}
+          {importPending ? "Importing..." : `Import ${selectedCount} file${selectedCount === 1 ? "" : "s"}`}
         </Button>
       </div>
 
       {importPreview.warnings.length > 0 && (
         <div className="mx-5 mt-3 rounded-md border border-amber-500/30 bg-amber-500/5 px-4 py-3">
           {importPreview.warnings.map((w) => (
-            <div key={w} className="text-xs text-amber-500">{w}</div>
+            <div key={w} className="text-xs text-amber-500">
+              {w}
+            </div>
           ))}
         </div>
       )}
@@ -193,7 +175,9 @@ export function ImportPreviewResults({
       {importPreview.errors.length > 0 && (
         <div className="mx-5 mt-3 rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3">
           {importPreview.errors.map((e) => (
-            <div key={e} className="text-xs text-destructive">{e}</div>
+            <div key={e} className="text-xs text-destructive">
+              {e}
+            </div>
           ))}
         </div>
       )}
@@ -213,9 +197,7 @@ export function ImportPreviewResults({
               onToggleDir={onToggleDir}
               onSelectFile={onSelectFile}
               onToggleCheck={onToggleCheck}
-              renderFileExtra={(node, checked) =>
-                renderImportFileExtra(node, checked, renameMap)
-              }
+              renderFileExtra={(node, checked) => renderImportFileExtra(node, checked, renameMap)}
               fileRowClassName={importFileRowClassName}
             />
           </div>

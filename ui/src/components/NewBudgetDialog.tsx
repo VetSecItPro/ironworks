@@ -1,8 +1,7 @@
-import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DollarSign } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -11,10 +10,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { cn } from "../lib/utils";
+import { Input } from "@/components/ui/input";
+import { api } from "../api/client";
 import { useCompany } from "../context/CompanyContext";
 import { queryKeys } from "../lib/queryKeys";
-import { api } from "../api/client";
+import { cn } from "../lib/utils";
 
 type ScopeType = "company" | "agent" | "project";
 
@@ -37,12 +37,7 @@ interface NewBudgetDialogProps {
   isPending?: boolean;
 }
 
-export function NewBudgetDialog({
-  open,
-  onOpenChange,
-  onSubmit,
-  isPending,
-}: NewBudgetDialogProps) {
+export function NewBudgetDialog({ open, onOpenChange, onSubmit, isPending }: NewBudgetDialogProps) {
   const { selectedCompanyId } = useCompany();
   const [scopeType, setScopeType] = useState<ScopeType>("agent");
   const [scopeId, setScopeId] = useState("");
@@ -102,7 +97,7 @@ export function NewBudgetDialog({
       scopeType,
       scopeId,
       amount: Math.round(amountNum * 100), // Convert to cents
-      windowKind: scopeType === "project" ? "lifetime" as const : "calendar_month_utc" as const,
+      windowKind: scopeType === "project" ? ("lifetime" as const) : ("calendar_month_utc" as const),
       hardStopEnabled: hardStop,
       warnPercent: parseInt(warnPercent, 10) || 80,
     });
@@ -118,17 +113,19 @@ export function NewBudgetDialog({
             Set Budget Policy
           </DialogTitle>
           <DialogDescription>
-            Create a spend limit for an agent, project, or the entire company. Hard stops pause execution when the budget is exceeded.
+            Create a spend limit for an agent, project, or the entire company. Hard stops pause execution when the
+            budget is exceeded.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           {/* Scope Type */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Scope</label>
+            <span className="text-xs font-medium text-muted-foreground">Scope</span>
             <div className="grid grid-cols-3 gap-2 mt-1">
               {(["agent", "project", "company"] as const).map((s) => (
                 <button
+                  type="button"
                   key={s}
                   onClick={() => setScopeType(s)}
                   className={cn(
@@ -147,10 +144,11 @@ export function NewBudgetDialog({
           {/* Scope Target */}
           {scopeType !== "company" && (
             <div>
-              <label className="text-xs font-medium text-muted-foreground">
+              <label htmlFor="new-budget-scope-id" className="text-xs font-medium text-muted-foreground">
                 {scopeType === "agent" ? "Agent" : "Project"}
               </label>
               <select
+                id="new-budget-scope-id"
                 value={scopeId}
                 onChange={(e) => setScopeId(e.target.value)}
                 className="mt-1 w-full h-9 rounded-full border border-border bg-background px-3 text-sm"
@@ -167,11 +165,12 @@ export function NewBudgetDialog({
 
           {/* Amount */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground">
+            <label htmlFor="new-budget-amount" className="text-xs font-medium text-muted-foreground">
               Monthly Budget (USD)
-              {scopeType === "project" && " — lifetime limit"}
+              {scopeType === "project" && " - lifetime limit"}
             </label>
             <Input
+              id="new-budget-amount"
               type="number"
               inputMode="numeric"
               step="1"
@@ -185,10 +184,11 @@ export function NewBudgetDialog({
 
           {/* Warning Threshold */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground">
+            <label htmlFor="new-budget-warn-percent" className="text-xs font-medium text-muted-foreground">
               Warning threshold (%)
             </label>
             <Input
+              id="new-budget-warn-percent"
               type="number"
               inputMode="numeric"
               min="50"
@@ -205,12 +205,11 @@ export function NewBudgetDialog({
           {/* Hard Stop */}
           <div className="flex items-center justify-between">
             <div>
-              <label className="text-sm font-medium">Hard stop</label>
-              <p className="text-xs text-muted-foreground">
-                Pause agent execution when budget is exceeded
-              </p>
+              <span className="text-sm font-medium">Hard stop</span>
+              <p className="text-xs text-muted-foreground">Pause agent execution when budget is exceeded</p>
             </div>
             <button
+              type="button"
               onClick={() => setHardStop(!hardStop)}
               className={cn(
                 "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors",
@@ -231,10 +230,7 @@ export function NewBudgetDialog({
           <Button variant="outline" onClick={() => handleClose(false)}>
             Cancel
           </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={!amount || !scopeId || isPending}
-          >
+          <Button onClick={handleSubmit} disabled={!amount || !scopeId || isPending}>
             {isPending ? "Saving..." : "Set Budget"}
           </Button>
         </DialogFooter>

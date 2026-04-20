@@ -1,13 +1,13 @@
-import type { CLIAdapterModule } from "@ironworksai/adapter-utils";
 import { printClaudeStreamEvent } from "@ironworksai/adapter-claude-local/cli";
 import { printCodexStreamEvent } from "@ironworksai/adapter-codex-local/cli";
 import { printCursorStreamEvent } from "@ironworksai/adapter-cursor-local/cli";
 import { printGeminiStreamEvent } from "@ironworksai/adapter-gemini-local/cli";
+import { printOpenClawGatewayStreamEvent } from "@ironworksai/adapter-openclaw-gateway/cli";
 import { printOpenCodeStreamEvent } from "@ironworksai/adapter-opencode-local/cli";
 import { printPiStreamEvent } from "@ironworksai/adapter-pi-local/cli";
-import { printOpenClawGatewayStreamEvent } from "@ironworksai/adapter-openclaw-gateway/cli";
-import { processCLIAdapter } from "./process/index.js";
+import type { CLIAdapterModule } from "@ironworksai/adapter-utils";
 import { httpCLIAdapter } from "./http/index.js";
+import { processCLIAdapter } from "./process/index.js";
 
 const claudeLocalCLIAdapter: CLIAdapterModule = {
   type: "claude_local",

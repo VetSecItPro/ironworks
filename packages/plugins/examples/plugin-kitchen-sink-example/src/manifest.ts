@@ -16,7 +16,8 @@ const manifest: IronworksPluginManifestV1 = {
   apiVersion: 1,
   version: PLUGIN_VERSION,
   displayName: "Kitchen Sink (Example)",
-  description: "Reference plugin that demonstrates the current Ironworks plugin API surface, UI surfaces, bridge actions, events, jobs, webhooks, tools, local workspace access, and runtime diagnostics in one place.",
+  description:
+    "Reference plugin that demonstrates the current Ironworks plugin API surface, UI surfaces, bridge actions, events, jobs, webhooks, tools, local workspace access, and runtime diagnostics in one place.",
   author: "Ironworks",
   categories: ["ui", "automation", "workspace", "connector"],
   capabilities: [

@@ -48,37 +48,85 @@ const SECRET_B_ID = randomUUID();
 
 // ─── Mock data stores ────────────────────────────────────────────────────────
 
-const AGENTS: Record<string, any> = {
-  [AGENT_A_ID]: { id: AGENT_A_ID, companyId: COMPANY_A_ID, name: "Agent A", role: "engineer", status: "active", adapterType: "claude_local", adapterConfig: {}, runtimeConfig: {}, permissions: {} },
-  [AGENT_B_ID]: { id: AGENT_B_ID, companyId: COMPANY_B_ID, name: "Agent B", role: "engineer", status: "active", adapterType: "claude_local", adapterConfig: {}, runtimeConfig: {}, permissions: {} },
+const AGENTS: Record<string, unknown> = {
+  [AGENT_A_ID]: {
+    id: AGENT_A_ID,
+    companyId: COMPANY_A_ID,
+    name: "Agent A",
+    role: "engineer",
+    status: "active",
+    adapterType: "claude_local",
+    adapterConfig: {},
+    runtimeConfig: {},
+    permissions: {},
+  },
+  [AGENT_B_ID]: {
+    id: AGENT_B_ID,
+    companyId: COMPANY_B_ID,
+    name: "Agent B",
+    role: "engineer",
+    status: "active",
+    adapterType: "claude_local",
+    adapterConfig: {},
+    runtimeConfig: {},
+    permissions: {},
+  },
 };
 
-const PROJECTS: Record<string, any> = {
+const PROJECTS: Record<string, unknown> = {
   [PROJECT_A_ID]: { id: PROJECT_A_ID, companyId: COMPANY_A_ID, name: "Project A", status: "in_progress" },
   [PROJECT_B_ID]: { id: PROJECT_B_ID, companyId: COMPANY_B_ID, name: "Project B", status: "in_progress" },
 };
 
-const ISSUES: Record<string, any> = {
-  [ISSUE_A_ID]: { id: ISSUE_A_ID, companyId: COMPANY_A_ID, identifier: "CA-1", title: "Issue A", status: "backlog", goalId: null },
-  [ISSUE_B_ID]: { id: ISSUE_B_ID, companyId: COMPANY_B_ID, identifier: "CB-1", title: "Issue B", status: "backlog", goalId: null },
+const ISSUES: Record<string, unknown> = {
+  [ISSUE_A_ID]: {
+    id: ISSUE_A_ID,
+    companyId: COMPANY_A_ID,
+    identifier: "CA-1",
+    title: "Issue A",
+    status: "backlog",
+    goalId: null,
+  },
+  [ISSUE_B_ID]: {
+    id: ISSUE_B_ID,
+    companyId: COMPANY_B_ID,
+    identifier: "CB-1",
+    title: "Issue B",
+    status: "backlog",
+    goalId: null,
+  },
 };
 
-const GOALS: Record<string, any> = {
+const GOALS: Record<string, unknown> = {
   [GOAL_A_ID]: { id: GOAL_A_ID, companyId: COMPANY_A_ID, title: "Goal A", status: "active" },
   [GOAL_B_ID]: { id: GOAL_B_ID, companyId: COMPANY_B_ID, title: "Goal B", status: "active" },
 };
 
-const KB_PAGES: Record<string, any> = {
+const KB_PAGES: Record<string, unknown> = {
   [KB_PAGE_A_ID]: { id: KB_PAGE_A_ID, companyId: COMPANY_A_ID, title: "KB A", slug: "kb-a", body: "Page A" },
   [KB_PAGE_B_ID]: { id: KB_PAGE_B_ID, companyId: COMPANY_B_ID, title: "KB B", slug: "kb-b", body: "Page B" },
 };
 
-const ROUTINES: Record<string, any> = {
-  [ROUTINE_A_ID]: { id: ROUTINE_A_ID, companyId: COMPANY_A_ID, title: "Routine A", assigneeAgentId: AGENT_A_ID, triggers: [], recentRuns: [] },
-  [ROUTINE_B_ID]: { id: ROUTINE_B_ID, companyId: COMPANY_B_ID, title: "Routine B", assigneeAgentId: AGENT_B_ID, triggers: [], recentRuns: [] },
+const ROUTINES: Record<string, unknown> = {
+  [ROUTINE_A_ID]: {
+    id: ROUTINE_A_ID,
+    companyId: COMPANY_A_ID,
+    title: "Routine A",
+    assigneeAgentId: AGENT_A_ID,
+    triggers: [],
+    recentRuns: [],
+  },
+  [ROUTINE_B_ID]: {
+    id: ROUTINE_B_ID,
+    companyId: COMPANY_B_ID,
+    title: "Routine B",
+    assigneeAgentId: AGENT_B_ID,
+    triggers: [],
+    recentRuns: [],
+  },
 };
 
-const SECRETS: Record<string, any> = {
+const SECRETS: Record<string, unknown> = {
   [SECRET_A_ID]: { id: SECRET_A_ID, companyId: COMPANY_A_ID, name: "API_KEY_A", provider: "local_encrypted" },
   [SECRET_B_ID]: { id: SECRET_B_ID, companyId: COMPANY_B_ID, name: "API_KEY_B", provider: "local_encrypted" },
 };
@@ -86,9 +134,10 @@ const SECRETS: Record<string, any> = {
 // ─── Service mocks ───────────────────────────────────────────────────────────
 
 const mockAgentService = vi.hoisted(() => ({
-  list: vi.fn().mockImplementation((companyId: string) =>
-    Object.values(AGENTS).filter((a: any) => a.companyId === companyId),
-  ),
+  list: vi
+    .fn()
+    // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
+    .mockImplementation((companyId: string) => Object.values(AGENTS).filter((a: any) => a.companyId === companyId)),
   getById: vi.fn().mockImplementation((id: string) => AGENTS[id] ?? null),
   create: vi.fn(),
   update: vi.fn(),
@@ -98,9 +147,10 @@ const mockAgentService = vi.hoisted(() => ({
 }));
 
 const mockProjectService = vi.hoisted(() => ({
-  list: vi.fn().mockImplementation((companyId: string) =>
-    Object.values(PROJECTS).filter((p: any) => p.companyId === companyId),
-  ),
+  list: vi
+    .fn()
+    // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
+    .mockImplementation((companyId: string) => Object.values(PROJECTS).filter((p: any) => p.companyId === companyId)),
   getById: vi.fn().mockImplementation((id: string) => PROJECTS[id] ?? null),
   create: vi.fn(),
   update: vi.fn(),
@@ -114,11 +164,13 @@ const mockProjectService = vi.hoisted(() => ({
 }));
 
 const mockIssueService = vi.hoisted(() => ({
-  list: vi.fn().mockImplementation((companyId: string) =>
-    Object.values(ISSUES).filter((i: any) => i.companyId === companyId),
-  ),
+  list: vi
+    .fn()
+    // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
+    .mockImplementation((companyId: string) => Object.values(ISSUES).filter((i: any) => i.companyId === companyId)),
   getById: vi.fn().mockImplementation((id: string) => ISSUES[id] ?? null),
   getByIdentifier: vi.fn().mockResolvedValue(null),
+  // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
   create: vi.fn().mockImplementation((_companyId: string, data: any) => ({
     id: randomUUID(),
     ...data,
@@ -132,9 +184,10 @@ const mockIssueService = vi.hoisted(() => ({
 }));
 
 const mockGoalService = vi.hoisted(() => ({
-  list: vi.fn().mockImplementation((companyId: string) =>
-    Object.values(GOALS).filter((g: any) => g.companyId === companyId),
-  ),
+  list: vi
+    .fn()
+    // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
+    .mockImplementation((companyId: string) => Object.values(GOALS).filter((g: any) => g.companyId === companyId)),
   getById: vi.fn().mockImplementation((id: string) => GOALS[id] ?? null),
   create: vi.fn(),
   update: vi.fn(),
@@ -143,11 +196,13 @@ const mockGoalService = vi.hoisted(() => ({
 }));
 
 const mockKnowledgeService = vi.hoisted(() => ({
-  list: vi.fn().mockImplementation((companyId: string) =>
-    Object.values(KB_PAGES).filter((p: any) => p.companyId === companyId),
-  ),
+  list: vi
+    .fn()
+    // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
+    .mockImplementation((companyId: string) => Object.values(KB_PAGES).filter((p: any) => p.companyId === companyId)),
   getById: vi.fn().mockImplementation((id: string) => KB_PAGES[id] ?? null),
   getBySlug: vi.fn(),
+  // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
   create: vi.fn().mockImplementation((companyId: string, data: any) => ({
     id: randomUUID(),
     companyId,
@@ -163,9 +218,10 @@ const mockKnowledgeService = vi.hoisted(() => ({
 }));
 
 const mockRoutineService = vi.hoisted(() => ({
-  list: vi.fn().mockImplementation((companyId: string) =>
-    Object.values(ROUTINES).filter((r: any) => r.companyId === companyId),
-  ),
+  list: vi
+    .fn()
+    // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
+    .mockImplementation((companyId: string) => Object.values(ROUTINES).filter((r: any) => r.companyId === companyId)),
   getDetail: vi.fn().mockImplementation((id: string) => ROUTINES[id] ?? null),
   create: vi.fn(),
   update: vi.fn(),
@@ -173,9 +229,10 @@ const mockRoutineService = vi.hoisted(() => ({
 }));
 
 const mockSecretService = vi.hoisted(() => ({
-  list: vi.fn().mockImplementation((companyId: string) =>
-    Object.values(SECRETS).filter((s: any) => s.companyId === companyId),
-  ),
+  list: vi
+    .fn()
+    // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
+    .mockImplementation((companyId: string) => Object.values(SECRETS).filter((s: any) => s.companyId === companyId)),
   getById: vi.fn().mockImplementation((id: string) => SECRETS[id] ?? null),
   create: vi.fn(),
   update: vi.fn(),
@@ -201,7 +258,8 @@ const mockFinanceService = vi.hoisted(() => ({
 }));
 
 const mockActivityService = vi.hoisted(() => ({
-  list: vi.fn().mockImplementation((filters: any) => []),
+  // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
+  list: vi.fn().mockImplementation((_filters: any) => []),
   create: vi.fn(),
   forIssue: vi.fn().mockResolvedValue([]),
   runsForIssue: vi.fn().mockResolvedValue([]),
@@ -232,7 +290,7 @@ const mockCompanyService = vi.hoisted(() => ({
 }));
 
 const mockCompanySkillService = vi.hoisted(() => ({
-  list: vi.fn().mockImplementation((companyId: string) => []),
+  list: vi.fn().mockImplementation((_companyId: string) => []),
   getById: vi.fn(),
   create: vi.fn(),
   update: vi.fn(),
@@ -245,62 +303,71 @@ const mockCompanySkillService = vi.hoisted(() => ({
 
 const mockLogActivity = vi.hoisted(() => vi.fn());
 
-vi.mock("../services/index.js", () => ({
-  accessService: () => mockAccessService,
-  agentService: () => mockAgentService,
-  agentInstructionsService: () => ({}),
-  approvalService: () => ({
-    list: vi.fn().mockResolvedValue([]),
-    getById: vi.fn(),
-    create: vi.fn(),
-    update: vi.fn(),
-    addComment: vi.fn(),
-    listComments: vi.fn().mockResolvedValue([]),
-  }),
-  assetService: () => ({}),
-  budgetService: () => ({ upsertPolicy: vi.fn(), getPolicy: vi.fn(), listPolicies: vi.fn().mockResolvedValue([]), listIncidents: vi.fn().mockResolvedValue([]), resolveIncident: vi.fn() }),
-  companyPortabilityService: () => ({
-    exportBundle: vi.fn(),
-    previewExport: vi.fn(),
-    previewImport: vi.fn(),
-    importBundle: vi.fn(),
-  }),
-  companyService: () => mockCompanyService,
-  companySkillService: () => mockCompanySkillService,
-  costService: () => mockCostService,
-  dashboardService: () => ({ getSummary: vi.fn().mockResolvedValue({}) }),
-  documentService: () => ({ getIssueDocumentPayload: vi.fn().mockResolvedValue({}) }),
-  executionWorkspaceService: () => ({ getById: vi.fn() }),
-  financeService: () => mockFinanceService,
-  goalService: () => mockGoalService,
-  heartbeatService: () => ({
-    cancelBudgetScopeWork: vi.fn(),
-    wakeup: vi.fn(),
-    getActiveRun: vi.fn(),
-    listRuns: vi.fn().mockResolvedValue([]),
-  }),
-  instanceSettingsService: () => ({ get: vi.fn().mockResolvedValue(null), set: vi.fn() }),
-  issueApprovalService: () => ({
-    list: vi.fn().mockResolvedValue([]),
-    link: vi.fn(),
-    unlink: vi.fn(),
-  }),
-  issueService: () => mockIssueService,
-  logActivity: mockLogActivity,
-  playbookService: () => ({ seedDefaults: vi.fn(), list: vi.fn().mockResolvedValue([]) }),
-  projectService: () => mockProjectService,
-  routineService: () => mockRoutineService,
-  secretService: () => mockSecretService,
-  sidebarBadgeService: () => ({ getBadges: vi.fn().mockResolvedValue({}) }),
-  syncInstructionsBundleConfigFromFilePath: vi.fn(),
-  workProductService: () => ({
-    listForIssue: vi.fn().mockResolvedValue([]),
-    create: vi.fn(),
-    update: vi.fn(),
-    remove: vi.fn(),
-  }),
-  workspaceOperationService: () => ({}),
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    accessService: () => mockAccessService,
+    agentService: () => mockAgentService,
+    agentInstructionsService: () => ({}),
+    approvalService: () => ({
+      list: vi.fn().mockResolvedValue([]),
+      getById: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      addComment: vi.fn(),
+      listComments: vi.fn().mockResolvedValue([]),
+    }),
+    assetService: () => ({}),
+    budgetService: () => ({
+      upsertPolicy: vi.fn(),
+      getPolicy: vi.fn(),
+      listPolicies: vi.fn().mockResolvedValue([]),
+      listIncidents: vi.fn().mockResolvedValue([]),
+      resolveIncident: vi.fn(),
+    }),
+    companyPortabilityService: () => ({
+      exportBundle: vi.fn(),
+      previewExport: vi.fn(),
+      previewImport: vi.fn(),
+      importBundle: vi.fn(),
+    }),
+    companyService: () => mockCompanyService,
+    companySkillService: () => mockCompanySkillService,
+    costService: () => mockCostService,
+    dashboardService: () => ({ getSummary: vi.fn().mockResolvedValue({}) }),
+    documentService: () => ({ getIssueDocumentPayload: vi.fn().mockResolvedValue({}) }),
+    executionWorkspaceService: () => ({ getById: vi.fn() }),
+    financeService: () => mockFinanceService,
+    goalService: () => mockGoalService,
+    heartbeatService: () => ({
+      cancelBudgetScopeWork: vi.fn(),
+      wakeup: vi.fn(),
+      getActiveRun: vi.fn(),
+      listRuns: vi.fn().mockResolvedValue([]),
+    }),
+    instanceSettingsService: () => ({ get: vi.fn().mockResolvedValue(null), set: vi.fn() }),
+    issueApprovalService: () => ({
+      list: vi.fn().mockResolvedValue([]),
+      link: vi.fn(),
+      unlink: vi.fn(),
+    }),
+    issueService: () => mockIssueService,
+    logActivity: mockLogActivity,
+    playbookService: () => ({ seedDefaults: vi.fn(), list: vi.fn().mockResolvedValue([]) }),
+    projectService: () => mockProjectService,
+    routineService: () => mockRoutineService,
+    secretService: () => mockSecretService,
+    sidebarBadgeService: () => ({ getBadges: vi.fn().mockResolvedValue({}) }),
+    syncInstructionsBundleConfigFromFilePath: vi.fn(),
+    workProductService: () => ({
+      listForIssue: vi.fn().mockResolvedValue([]),
+      create: vi.fn(),
+      update: vi.fn(),
+      remove: vi.fn(),
+    }),
+    workspaceOperationService: () => ({}),
+  });
+});
 
 vi.mock("../services/knowledge.js", () => ({
   knowledgeService: () => mockKnowledgeService,
@@ -343,11 +410,14 @@ vi.mock("../adapters/index.js", () => ({
 }));
 
 vi.mock("../redaction.js", () => ({
+  // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
   redactEventPayload: vi.fn((x: any) => x),
+  // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
   sanitizeRecord: vi.fn((x: any) => x),
 }));
 
 vi.mock("../log-redaction.js", () => ({
+  // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
   redactCurrentUserValue: vi.fn((x: any) => x),
 }));
 
@@ -407,10 +477,12 @@ async function createApp(actor: ActorOverrides) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });
 
+  // biome-ignore lint/suspicious/noExplicitAny: mock Drizzle DB or storage object for unit tests; real type requires full schema-aware Drizzle instance
   const fakeDb = {} as any;
   const fakeStorage = {
     putFile: vi.fn(),
@@ -418,6 +490,7 @@ async function createApp(actor: ActorOverrides) {
     deleteFile: vi.fn(),
     listFiles: vi.fn().mockResolvedValue([]),
     getSignedUrl: vi.fn(),
+    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
 
   app.use("/api/companies", companyRoutes(fakeDb, fakeStorage));
@@ -526,63 +599,56 @@ describe("Tenant Isolation — HTTP-level cross-company access", () => {
     }
 
     it("User A CAN list Company A agents", async () => {
-      const res = await request(appA)
-        .get(`/api/companies/${COMPANY_A_ID}/agents`)
-        .expect(200);
+      const res = await request(appA).get(`/api/companies/${COMPANY_A_ID}/agents`).expect(200);
+      // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
       const ids = res.body.map((a: any) => a.id);
       expect(ids).toContain(AGENT_A_ID);
       expect(ids).not.toContain(AGENT_B_ID);
     });
 
     it("User A CAN list Company A issues", async () => {
-      const res = await request(appA)
-        .get(`/api/companies/${COMPANY_A_ID}/issues`)
-        .expect(200);
+      const res = await request(appA).get(`/api/companies/${COMPANY_A_ID}/issues`).expect(200);
+      // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
       const ids = res.body.map((i: any) => i.id);
       expect(ids).toContain(ISSUE_A_ID);
       expect(ids).not.toContain(ISSUE_B_ID);
     });
 
     it("User A CAN list Company A projects", async () => {
-      const res = await request(appA)
-        .get(`/api/companies/${COMPANY_A_ID}/projects`)
-        .expect(200);
+      const res = await request(appA).get(`/api/companies/${COMPANY_A_ID}/projects`).expect(200);
+      // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
       const ids = res.body.map((p: any) => p.id);
       expect(ids).toContain(PROJECT_A_ID);
       expect(ids).not.toContain(PROJECT_B_ID);
     });
 
     it("User A CAN list Company A goals", async () => {
-      const res = await request(appA)
-        .get(`/api/companies/${COMPANY_A_ID}/goals`)
-        .expect(200);
+      const res = await request(appA).get(`/api/companies/${COMPANY_A_ID}/goals`).expect(200);
+      // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
       const ids = res.body.map((g: any) => g.id);
       expect(ids).toContain(GOAL_A_ID);
       expect(ids).not.toContain(GOAL_B_ID);
     });
 
     it("User A CAN list Company A knowledge pages", async () => {
-      const res = await request(appA)
-        .get(`/api/companies/${COMPANY_A_ID}/knowledge`)
-        .expect(200);
+      const res = await request(appA).get(`/api/companies/${COMPANY_A_ID}/knowledge`).expect(200);
+      // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
       const ids = res.body.map((p: any) => p.id);
       expect(ids).toContain(KB_PAGE_A_ID);
       expect(ids).not.toContain(KB_PAGE_B_ID);
     });
 
     it("User A CAN list Company A routines", async () => {
-      const res = await request(appA)
-        .get(`/api/companies/${COMPANY_A_ID}/routines`)
-        .expect(200);
+      const res = await request(appA).get(`/api/companies/${COMPANY_A_ID}/routines`).expect(200);
+      // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
       const ids = res.body.map((r: any) => r.id);
       expect(ids).toContain(ROUTINE_A_ID);
       expect(ids).not.toContain(ROUTINE_B_ID);
     });
 
     it("User A CAN list Company A secrets", async () => {
-      const res = await request(appA)
-        .get(`/api/companies/${COMPANY_A_ID}/secrets`)
-        .expect(200);
+      const res = await request(appA).get(`/api/companies/${COMPANY_A_ID}/secrets`).expect(200);
+      // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
       const ids = res.body.map((s: any) => s.id);
       expect(ids).toContain(SECRET_A_ID);
       expect(ids).not.toContain(SECRET_B_ID);
@@ -697,9 +763,7 @@ describe("Tenant Isolation — HTTP-level cross-company access", () => {
     });
 
     it("User A cannot create a goal in Company B", async () => {
-      const res = await request(appA)
-        .post(`/api/companies/${COMPANY_B_ID}/goals`)
-        .send({ title: "Cross-tenant goal" });
+      const res = await request(appA).post(`/api/companies/${COMPANY_B_ID}/goals`).send({ title: "Cross-tenant goal" });
       expect([401, 403]).toContain(res.status);
     });
 
@@ -718,74 +782,57 @@ describe("Tenant Isolation — HTTP-level cross-company access", () => {
     });
 
     it("User A cannot update Company B's agent", async () => {
-      const res = await request(appA)
-        .patch(`/api/agents/${AGENT_B_ID}`)
-        .send({ name: "Hijacked Agent" });
+      const res = await request(appA).patch(`/api/agents/${AGENT_B_ID}`).send({ name: "Hijacked Agent" });
       expect([403, 404]).toContain(res.status);
     });
 
     it("User A cannot update Company B's issue", async () => {
-      const res = await request(appA)
-        .patch(`/api/issues/${ISSUE_B_ID}`)
-        .send({ title: "Hijacked Issue" });
+      const res = await request(appA).patch(`/api/issues/${ISSUE_B_ID}`).send({ title: "Hijacked Issue" });
       expect([403, 404]).toContain(res.status);
     });
 
     it("User A cannot update Company B's project", async () => {
-      const res = await request(appA)
-        .patch(`/api/projects/${PROJECT_B_ID}`)
-        .send({ name: "Hijacked Project" });
+      const res = await request(appA).patch(`/api/projects/${PROJECT_B_ID}`).send({ name: "Hijacked Project" });
       expect([403, 404]).toContain(res.status);
     });
 
     it("User A cannot update Company B's goal", async () => {
-      const res = await request(appA)
-        .patch(`/api/goals/${GOAL_B_ID}`)
-        .send({ title: "Hijacked Goal" });
+      const res = await request(appA).patch(`/api/goals/${GOAL_B_ID}`).send({ title: "Hijacked Goal" });
       expect([403, 404]).toContain(res.status);
     });
 
     it("User A cannot update Company B's KB page", async () => {
-      const res = await request(appA)
-        .patch(`/api/knowledge/${KB_PAGE_B_ID}`)
-        .send({ title: "Hijacked KB" });
+      const res = await request(appA).patch(`/api/knowledge/${KB_PAGE_B_ID}`).send({ title: "Hijacked KB" });
       expect([403, 404]).toContain(res.status);
     });
 
     it("User A cannot delete Company B's issue", async () => {
-      const res = await request(appA)
-        .delete(`/api/issues/${ISSUE_B_ID}`);
+      const res = await request(appA).delete(`/api/issues/${ISSUE_B_ID}`);
       expect([403, 404]).toContain(res.status);
     });
 
     it("User A cannot delete Company B's project", async () => {
-      const res = await request(appA)
-        .delete(`/api/projects/${PROJECT_B_ID}`);
+      const res = await request(appA).delete(`/api/projects/${PROJECT_B_ID}`);
       expect([403, 404]).toContain(res.status);
     });
 
     it("User A cannot delete Company B's goal", async () => {
-      const res = await request(appA)
-        .delete(`/api/goals/${GOAL_B_ID}`);
+      const res = await request(appA).delete(`/api/goals/${GOAL_B_ID}`);
       expect([403, 404]).toContain(res.status);
     });
 
     it("User A cannot delete Company B's KB page", async () => {
-      const res = await request(appA)
-        .delete(`/api/knowledge/${KB_PAGE_B_ID}`);
+      const res = await request(appA).delete(`/api/knowledge/${KB_PAGE_B_ID}`);
       expect([403, 404]).toContain(res.status);
     });
 
     it("User A cannot delete Company B's secret", async () => {
-      const res = await request(appA)
-        .delete(`/api/secrets/${SECRET_B_ID}`);
+      const res = await request(appA).delete(`/api/secrets/${SECRET_B_ID}`);
       expect([403, 404]).toContain(res.status);
     });
 
     it("User A cannot rotate Company B's secret", async () => {
-      const res = await request(appA)
-        .post(`/api/secrets/${SECRET_B_ID}/rotate`)
-        .send({ value: "new-secret-value" });
+      const res = await request(appA).post(`/api/secrets/${SECRET_B_ID}/rotate`).send({ value: "new-secret-value" });
       expect([403, 404]).toContain(res.status);
     });
   });
@@ -796,63 +843,53 @@ describe("Tenant Isolation — HTTP-level cross-company access", () => {
 
   describe("Agent API key cross-company isolation", () => {
     it("Agent A key cannot list Company B agents", async () => {
-      const res = await request(appAgentA)
-        .get(`/api/companies/${COMPANY_B_ID}/agents`);
+      const res = await request(appAgentA).get(`/api/companies/${COMPANY_B_ID}/agents`);
       expect([401, 403]).toContain(res.status);
       expect(res.body.error).toMatch(/agent key cannot access another company/i);
     });
 
     it("Agent A key cannot list Company B issues", async () => {
-      const res = await request(appAgentA)
-        .get(`/api/companies/${COMPANY_B_ID}/issues`);
+      const res = await request(appAgentA).get(`/api/companies/${COMPANY_B_ID}/issues`);
       expect([401, 403]).toContain(res.status);
     });
 
     it("Agent A key cannot list Company B projects", async () => {
-      const res = await request(appAgentA)
-        .get(`/api/companies/${COMPANY_B_ID}/projects`);
+      const res = await request(appAgentA).get(`/api/companies/${COMPANY_B_ID}/projects`);
       expect([401, 403]).toContain(res.status);
     });
 
     it("Agent A key cannot list Company B goals", async () => {
-      const res = await request(appAgentA)
-        .get(`/api/companies/${COMPANY_B_ID}/goals`);
+      const res = await request(appAgentA).get(`/api/companies/${COMPANY_B_ID}/goals`);
       expect([401, 403]).toContain(res.status);
     });
 
     it("Agent A key cannot list Company B knowledge", async () => {
-      const res = await request(appAgentA)
-        .get(`/api/companies/${COMPANY_B_ID}/knowledge`);
+      const res = await request(appAgentA).get(`/api/companies/${COMPANY_B_ID}/knowledge`);
       expect([401, 403]).toContain(res.status);
     });
 
     it("Agent A key cannot access Company B agent by ID", async () => {
-      const res = await request(appAgentA)
-        .get(`/api/agents/${AGENT_B_ID}`);
+      const res = await request(appAgentA).get(`/api/agents/${AGENT_B_ID}`);
       expect([403, 404]).toContain(res.status);
     });
 
     it("Agent A key cannot access Company B issue by ID", async () => {
-      const res = await request(appAgentA)
-        .get(`/api/issues/${ISSUE_B_ID}`);
+      const res = await request(appAgentA).get(`/api/issues/${ISSUE_B_ID}`);
       expect([403, 404]).toContain(res.status);
     });
 
     it("Agent A key CAN access its own company's agents", async () => {
-      const res = await request(appAgentA)
-        .get(`/api/companies/${COMPANY_A_ID}/agents`);
+      const res = await request(appAgentA).get(`/api/companies/${COMPANY_A_ID}/agents`);
       expect(res.status).toBe(200);
     });
 
     it("Agent A key CAN access its own company's issues", async () => {
-      const res = await request(appAgentA)
-        .get(`/api/companies/${COMPANY_A_ID}/issues`);
+      const res = await request(appAgentA).get(`/api/companies/${COMPANY_A_ID}/issues`);
       expect(res.status).toBe(200);
     });
 
     it("Agent B key cannot access Company A resources", async () => {
-      const res = await request(appAgentB)
-        .get(`/api/companies/${COMPANY_A_ID}/agents`);
+      const res = await request(appAgentB).get(`/api/companies/${COMPANY_A_ID}/agents`);
       expect([401, 403]).toContain(res.status);
     });
   });
@@ -863,36 +900,29 @@ describe("Tenant Isolation — HTTP-level cross-company access", () => {
 
   describe("Multi-company user valid access", () => {
     it("Multi-company user CAN list Company A agents", async () => {
-      const res = await request(appMulti)
-        .get(`/api/companies/${COMPANY_A_ID}/agents`)
-        .expect(200);
+      const res = await request(appMulti).get(`/api/companies/${COMPANY_A_ID}/agents`).expect(200);
+      // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
       expect(res.body.map((a: any) => a.id)).toContain(AGENT_A_ID);
     });
 
     it("Multi-company user CAN list Company B agents", async () => {
-      const res = await request(appMulti)
-        .get(`/api/companies/${COMPANY_B_ID}/agents`)
-        .expect(200);
+      const res = await request(appMulti).get(`/api/companies/${COMPANY_B_ID}/agents`).expect(200);
+      // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
       expect(res.body.map((a: any) => a.id)).toContain(AGENT_B_ID);
     });
 
     it("Multi-company user CAN access Company A agent by ID", async () => {
-      const res = await request(appMulti)
-        .get(`/api/agents/${AGENT_A_ID}`)
-        .expect(200);
+      const res = await request(appMulti).get(`/api/agents/${AGENT_A_ID}`).expect(200);
       expect(res.body.id).toBe(AGENT_A_ID);
     });
 
     it("Multi-company user CAN access Company B agent by ID", async () => {
-      const res = await request(appMulti)
-        .get(`/api/agents/${AGENT_B_ID}`)
-        .expect(200);
+      const res = await request(appMulti).get(`/api/agents/${AGENT_B_ID}`).expect(200);
       expect(res.body.id).toBe(AGENT_B_ID);
     });
 
     it("Multi-company user CANNOT access Company C (not a member)", async () => {
-      const res = await request(appMulti)
-        .get(`/api/companies/${COMPANY_C_ID}/agents`);
+      const res = await request(appMulti).get(`/api/companies/${COMPANY_C_ID}/agents`);
       expect([401, 403]).toContain(res.status);
     });
   });
@@ -903,36 +933,28 @@ describe("Tenant Isolation — HTTP-level cross-company access", () => {
 
   describe("Instance admin bypasses company scoping", () => {
     it("Instance admin CAN list Company A agents", async () => {
-      const res = await request(appAdmin)
-        .get(`/api/companies/${COMPANY_A_ID}/agents`)
-        .expect(200);
+      const res = await request(appAdmin).get(`/api/companies/${COMPANY_A_ID}/agents`).expect(200);
+      // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
       expect(res.body.map((a: any) => a.id)).toContain(AGENT_A_ID);
     });
 
     it("Instance admin CAN list Company B agents", async () => {
-      const res = await request(appAdmin)
-        .get(`/api/companies/${COMPANY_B_ID}/agents`)
-        .expect(200);
+      const res = await request(appAdmin).get(`/api/companies/${COMPANY_B_ID}/agents`).expect(200);
+      // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
       expect(res.body.map((a: any) => a.id)).toContain(AGENT_B_ID);
     });
 
     it("Instance admin CAN access Company B agent by ID", async () => {
-      const res = await request(appAdmin)
-        .get(`/api/agents/${AGENT_B_ID}`)
-        .expect(200);
+      const res = await request(appAdmin).get(`/api/agents/${AGENT_B_ID}`).expect(200);
       expect(res.body.id).toBe(AGENT_B_ID);
     });
 
     it("Instance admin CAN list Company A issues", async () => {
-      const res = await request(appAdmin)
-        .get(`/api/companies/${COMPANY_A_ID}/issues`)
-        .expect(200);
+      const _res = await request(appAdmin).get(`/api/companies/${COMPANY_A_ID}/issues`).expect(200);
     });
 
     it("Instance admin CAN list Company B goals", async () => {
-      const res = await request(appAdmin)
-        .get(`/api/companies/${COMPANY_B_ID}/goals`)
-        .expect(200);
+      const _res = await request(appAdmin).get(`/api/companies/${COMPANY_B_ID}/goals`).expect(200);
     });
   });
 
@@ -943,24 +965,21 @@ describe("Tenant Isolation — HTTP-level cross-company access", () => {
   describe("Empty or revoked membership", () => {
     it("User with empty companyIds cannot access any company", async () => {
       const appEmpty = await createApp(boardUser(randomUUID(), []));
-      const res = await request(appEmpty)
-        .get(`/api/companies/${COMPANY_A_ID}/agents`);
+      const res = await request(appEmpty).get(`/api/companies/${COMPANY_A_ID}/agents`);
       expect([401, 403]).toContain(res.status);
     });
 
     it("User with no matching companyId cannot access Company A", async () => {
       const otherCompanyId = randomUUID();
       const appOther = await createApp(boardUser(randomUUID(), [otherCompanyId]));
-      const res = await request(appOther)
-        .get(`/api/companies/${COMPANY_A_ID}/agents`);
+      const res = await request(appOther).get(`/api/companies/${COMPANY_A_ID}/agents`);
       expect([401, 403]).toContain(res.status);
     });
 
     it("User with no matching companyId cannot access Company B", async () => {
       const otherCompanyId = randomUUID();
       const appOther = await createApp(boardUser(randomUUID(), [otherCompanyId]));
-      const res = await request(appOther)
-        .get(`/api/companies/${COMPANY_B_ID}/issues`);
+      const res = await request(appOther).get(`/api/companies/${COMPANY_B_ID}/issues`);
       expect([401, 403]).toContain(res.status);
     });
   });
@@ -971,81 +990,63 @@ describe("Tenant Isolation — HTTP-level cross-company access", () => {
 
   describe("Data leak detection — response only contains authorized data", () => {
     it("Company A agents list contains zero Company B agent IDs", async () => {
-      const res = await request(appA)
-        .get(`/api/companies/${COMPANY_A_ID}/agents`)
-        .expect(200);
+      const res = await request(appA).get(`/api/companies/${COMPANY_A_ID}/agents`).expect(200);
       const body = JSON.stringify(res.body);
       expect(body).not.toContain(AGENT_B_ID);
       expect(body).not.toContain(COMPANY_B_ID);
     });
 
     it("Company A issues list contains zero Company B issue IDs", async () => {
-      const res = await request(appA)
-        .get(`/api/companies/${COMPANY_A_ID}/issues`)
-        .expect(200);
+      const res = await request(appA).get(`/api/companies/${COMPANY_A_ID}/issues`).expect(200);
       const body = JSON.stringify(res.body);
       expect(body).not.toContain(ISSUE_B_ID);
       expect(body).not.toContain(COMPANY_B_ID);
     });
 
     it("Company A projects list contains zero Company B project IDs", async () => {
-      const res = await request(appA)
-        .get(`/api/companies/${COMPANY_A_ID}/projects`)
-        .expect(200);
+      const res = await request(appA).get(`/api/companies/${COMPANY_A_ID}/projects`).expect(200);
       const body = JSON.stringify(res.body);
       expect(body).not.toContain(PROJECT_B_ID);
       expect(body).not.toContain(COMPANY_B_ID);
     });
 
     it("Company A goals list contains zero Company B goal IDs", async () => {
-      const res = await request(appA)
-        .get(`/api/companies/${COMPANY_A_ID}/goals`)
-        .expect(200);
+      const res = await request(appA).get(`/api/companies/${COMPANY_A_ID}/goals`).expect(200);
       const body = JSON.stringify(res.body);
       expect(body).not.toContain(GOAL_B_ID);
       expect(body).not.toContain(COMPANY_B_ID);
     });
 
     it("Company A KB list contains zero Company B KB IDs", async () => {
-      const res = await request(appA)
-        .get(`/api/companies/${COMPANY_A_ID}/knowledge`)
-        .expect(200);
+      const res = await request(appA).get(`/api/companies/${COMPANY_A_ID}/knowledge`).expect(200);
       const body = JSON.stringify(res.body);
       expect(body).not.toContain(KB_PAGE_B_ID);
       expect(body).not.toContain(COMPANY_B_ID);
     });
 
     it("Company A routines list contains zero Company B routine IDs", async () => {
-      const res = await request(appA)
-        .get(`/api/companies/${COMPANY_A_ID}/routines`)
-        .expect(200);
+      const res = await request(appA).get(`/api/companies/${COMPANY_A_ID}/routines`).expect(200);
       const body = JSON.stringify(res.body);
       expect(body).not.toContain(ROUTINE_B_ID);
       expect(body).not.toContain(COMPANY_B_ID);
     });
 
     it("Company A secrets list contains zero Company B secret IDs", async () => {
-      const res = await request(appA)
-        .get(`/api/companies/${COMPANY_A_ID}/secrets`)
-        .expect(200);
+      const res = await request(appA).get(`/api/companies/${COMPANY_A_ID}/secrets`).expect(200);
       const body = JSON.stringify(res.body);
       expect(body).not.toContain(SECRET_B_ID);
       expect(body).not.toContain(COMPANY_B_ID);
     });
 
     it("Agent detail for Company A agent does not leak Company B data", async () => {
-      const res = await request(appA)
-        .get(`/api/agents/${AGENT_A_ID}`)
-        .expect(200);
+      const res = await request(appA).get(`/api/agents/${AGENT_A_ID}`).expect(200);
       const body = JSON.stringify(res.body);
       expect(body).not.toContain(COMPANY_B_ID);
       expect(body).not.toContain(AGENT_B_ID);
     });
 
     it("Issue detail for Company A issue does not leak Company B data", async () => {
-      const res = await request(appA)
-        .get(`/api/issues/${ISSUE_A_ID}`)
-        .expect(200);
+      const res = await request(appA).get(`/api/issues/${ISSUE_A_ID}`).expect(200);
       const body = JSON.stringify(res.body);
       expect(body).not.toContain(COMPANY_B_ID);
       expect(body).not.toContain(ISSUE_B_ID);
@@ -1070,24 +1071,21 @@ describe("Tenant Isolation — HTTP-level cross-company access", () => {
 
     for (const path of costPaths) {
       it(`User A cannot access Company B ${path}`, async () => {
-        const res = await request(appA)
-          .get(`/api/companies/${COMPANY_B_ID}/${path}`);
+        const res = await request(appA).get(`/api/companies/${COMPANY_B_ID}/${path}`);
         expect([401, 403]).toContain(res.status);
       });
     }
 
     it("User A cannot post cost events to Company B", async () => {
-      const res = await request(appA)
-        .post(`/api/companies/${COMPANY_B_ID}/cost-events`)
-        .send({
-          agentId: AGENT_B_ID,
-          model: "gpt-4",
-          provider: "openai",
-          inputTokens: 100,
-          outputTokens: 50,
-          cost: 0.01,
-          occurredAt: new Date().toISOString(),
-        });
+      const res = await request(appA).post(`/api/companies/${COMPANY_B_ID}/cost-events`).send({
+        agentId: AGENT_B_ID,
+        model: "gpt-4",
+        provider: "openai",
+        inputTokens: 100,
+        outputTokens: 50,
+        cost: 0.01,
+        occurredAt: new Date().toISOString(),
+      });
       // 400 (validation before authz) or 403 both prevent data access
       expect([400, 401, 403]).toContain(res.status);
     });
@@ -1099,20 +1097,17 @@ describe("Tenant Isolation — HTTP-level cross-company access", () => {
 
   describe("Activity log cross-tenant isolation", () => {
     it("User A cannot read Company B activity", async () => {
-      const res = await request(appA)
-        .get(`/api/companies/${COMPANY_B_ID}/activity`);
+      const res = await request(appA).get(`/api/companies/${COMPANY_B_ID}/activity`);
       expect([401, 403]).toContain(res.status);
     });
 
     it("User A cannot access Company B issue activity by ID", async () => {
-      const res = await request(appA)
-        .get(`/api/issues/${ISSUE_B_ID}/activity`);
+      const res = await request(appA).get(`/api/issues/${ISSUE_B_ID}/activity`);
       expect([403, 404]).toContain(res.status);
     });
 
     it("User A cannot access Company B issue runs by ID", async () => {
-      const res = await request(appA)
-        .get(`/api/issues/${ISSUE_B_ID}/runs`);
+      const res = await request(appA).get(`/api/issues/${ISSUE_B_ID}/runs`);
       expect([403, 404]).toContain(res.status);
     });
   });
@@ -1123,21 +1118,17 @@ describe("Tenant Isolation — HTTP-level cross-company access", () => {
 
   describe("Secret management cross-tenant isolation", () => {
     it("User A cannot list Company B secret providers", async () => {
-      const res = await request(appA)
-        .get(`/api/companies/${COMPANY_B_ID}/secret-providers`);
+      const res = await request(appA).get(`/api/companies/${COMPANY_B_ID}/secret-providers`);
       expect([401, 403]).toContain(res.status);
     });
 
     it("User A cannot update Company B's secret", async () => {
-      const res = await request(appA)
-        .patch(`/api/secrets/${SECRET_B_ID}`)
-        .send({ name: "HIJACKED_KEY" });
+      const res = await request(appA).patch(`/api/secrets/${SECRET_B_ID}`).send({ name: "HIJACKED_KEY" });
       expect([403, 404]).toContain(res.status);
     });
 
     it("Agent A cannot list Company B secrets (agents blocked from secrets)", async () => {
-      const res = await request(appAgentA)
-        .get(`/api/companies/${COMPANY_B_ID}/secrets`);
+      const res = await request(appAgentA).get(`/api/companies/${COMPANY_B_ID}/secrets`);
       // Agents should hit either the agent-company check (403) or the board-only check (403)
       expect([401, 403]).toContain(res.status);
     });
@@ -1149,40 +1140,32 @@ describe("Tenant Isolation — HTTP-level cross-company access", () => {
 
   describe("Issue sub-resource cross-tenant isolation", () => {
     it("User A cannot list Company B issue comments", async () => {
-      const res = await request(appA)
-        .get(`/api/issues/${ISSUE_B_ID}/comments`);
+      const res = await request(appA).get(`/api/issues/${ISSUE_B_ID}/comments`);
       expect([403, 404]).toContain(res.status);
     });
 
     it("User A cannot post comments on Company B issue", async () => {
-      const res = await request(appA)
-        .post(`/api/issues/${ISSUE_B_ID}/comments`)
-        .send({ body: "Cross-tenant comment" });
+      const res = await request(appA).post(`/api/issues/${ISSUE_B_ID}/comments`).send({ body: "Cross-tenant comment" });
       expect([403, 404]).toContain(res.status);
     });
 
     it("User A cannot list Company B issue work products", async () => {
-      const res = await request(appA)
-        .get(`/api/issues/${ISSUE_B_ID}/work-products`);
+      const res = await request(appA).get(`/api/issues/${ISSUE_B_ID}/work-products`);
       expect([403, 404]).toContain(res.status);
     });
 
     it("User A cannot list Company B issue documents", async () => {
-      const res = await request(appA)
-        .get(`/api/issues/${ISSUE_B_ID}/documents`);
+      const res = await request(appA).get(`/api/issues/${ISSUE_B_ID}/documents`);
       expect([403, 404]).toContain(res.status);
     });
 
     it("User A cannot list Company B issue approvals", async () => {
-      const res = await request(appA)
-        .get(`/api/issues/${ISSUE_B_ID}/approvals`);
+      const res = await request(appA).get(`/api/issues/${ISSUE_B_ID}/approvals`);
       expect([403, 404]).toContain(res.status);
     });
 
     it("User A cannot checkout Company B issue", async () => {
-      const res = await request(appA)
-        .post(`/api/issues/${ISSUE_B_ID}/checkout`)
-        .send({ agentId: AGENT_A_ID });
+      const res = await request(appA).post(`/api/issues/${ISSUE_B_ID}/checkout`).send({ agentId: AGENT_A_ID });
       // 400 (validation before authz) or 403/404 all prevent cross-tenant access
       expect([400, 403, 404]).toContain(res.status);
     });
@@ -1194,20 +1177,17 @@ describe("Tenant Isolation — HTTP-level cross-company access", () => {
 
   describe("Knowledge sub-resource cross-tenant isolation", () => {
     it("User A cannot list Company B KB page revisions", async () => {
-      const res = await request(appA)
-        .get(`/api/knowledge/${KB_PAGE_B_ID}/revisions`);
+      const res = await request(appA).get(`/api/knowledge/${KB_PAGE_B_ID}/revisions`);
       expect([403, 404]).toContain(res.status);
     });
 
     it("User A cannot revert Company B KB page revision", async () => {
-      const res = await request(appA)
-        .post(`/api/knowledge/${KB_PAGE_B_ID}/revisions/1/revert`);
+      const res = await request(appA).post(`/api/knowledge/${KB_PAGE_B_ID}/revisions/1/revert`);
       expect([403, 404]).toContain(res.status);
     });
 
     it("User A cannot seed KB in Company B", async () => {
-      const res = await request(appA)
-        .post(`/api/companies/${COMPANY_B_ID}/knowledge/seed`);
+      const res = await request(appA).post(`/api/companies/${COMPANY_B_ID}/knowledge/seed`);
       expect([401, 403]).toContain(res.status);
     });
   });
@@ -1218,8 +1198,7 @@ describe("Tenant Isolation — HTTP-level cross-company access", () => {
 
   describe("Routine sub-resource cross-tenant isolation", () => {
     it("User A cannot seed routines in Company B", async () => {
-      const res = await request(appA)
-        .post(`/api/companies/${COMPANY_B_ID}/routines/seed`);
+      const res = await request(appA).post(`/api/companies/${COMPANY_B_ID}/routines/seed`);
       expect([401, 403]).toContain(res.status);
     });
   });
@@ -1230,8 +1209,7 @@ describe("Tenant Isolation — HTTP-level cross-company access", () => {
 
   describe("Company detail endpoint isolation", () => {
     it("User A cannot read Company B detail", async () => {
-      const res = await request(appA)
-        .get(`/api/companies/${COMPANY_B_ID}`);
+      const res = await request(appA).get(`/api/companies/${COMPANY_B_ID}`);
       expect([401, 403]).toContain(res.status);
     });
 
@@ -1240,8 +1218,7 @@ describe("Tenant Isolation — HTTP-level cross-company access", () => {
         id: COMPANY_A_ID,
         name: "Company A",
       });
-      const res = await request(appA)
-        .get(`/api/companies/${COMPANY_A_ID}`);
+      const res = await request(appA).get(`/api/companies/${COMPANY_A_ID}`);
       expect(res.status).toBe(200);
     });
   });
@@ -1284,8 +1261,7 @@ describe("Tenant Isolation — HTTP-level cross-company access", () => {
     });
 
     it("User B cannot delete Company A's goal", async () => {
-      const res = await request(appB)
-        .delete(`/api/goals/${GOAL_A_ID}`);
+      const res = await request(appB).delete(`/api/goals/${GOAL_A_ID}`);
       expect([403, 404]).toContain(res.status);
     });
   });

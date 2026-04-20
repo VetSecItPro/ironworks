@@ -1,6 +1,6 @@
+import type { DashboardSummary } from "@ironworksai/shared";
 import { AlertTriangle, X } from "lucide-react";
 import { Link } from "@/lib/router";
-import type { DashboardSummary } from "@ironworksai/shared";
 
 export function InboxAlerts({
   dashboard,
@@ -15,16 +15,11 @@ export function InboxAlerts({
 }) {
   return (
     <div>
-      <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-        Alerts
-      </h3>
+      <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Alerts</h3>
       <div className="divide-y divide-border border border-border">
         {showAggregateAgentError && (
           <div className="group/alert relative flex items-center gap-3 px-4 py-3 transition-colors hover:bg-accent/50">
-            <Link
-              to="/agents"
-              className="flex flex-1 cursor-pointer items-center gap-3 no-underline text-inherit"
-            >
+            <Link to="/agents" className="flex flex-1 cursor-pointer items-center gap-3 no-underline text-inherit">
               <AlertTriangle className="h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
               <span className="text-sm">
                 <span className="font-medium">{dashboard.agents.error}</span>{" "}
@@ -43,15 +38,11 @@ export function InboxAlerts({
         )}
         {showBudgetAlert && (
           <div className="group/alert relative flex items-center gap-3 px-4 py-3 transition-colors hover:bg-accent/50">
-            <Link
-              to="/costs"
-              className="flex flex-1 cursor-pointer items-center gap-3 no-underline text-inherit"
-            >
+            <Link to="/costs" className="flex flex-1 cursor-pointer items-center gap-3 no-underline text-inherit">
               <AlertTriangle className="h-4 w-4 shrink-0 text-yellow-400" />
               <span className="text-sm">
-                Budget at{" "}
-                <span className="font-medium">{dashboard.costs.monthUtilizationPercent}%</span>{" "}
-                utilization this month
+                Budget at <span className="font-medium">{dashboard.costs.monthUtilizationPercent}%</span> utilization
+                this month
               </span>
             </Link>
             <button

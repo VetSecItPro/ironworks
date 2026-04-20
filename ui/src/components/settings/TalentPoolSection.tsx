@@ -1,19 +1,19 @@
-import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Users, Plus, Pencil, Trash2, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Field } from "../agent-config-primitives";
 import {
-  AGENT_ROLES,
   AGENT_ROLE_LABELS,
-  DEPARTMENTS,
+  AGENT_ROLES,
   DEPARTMENT_LABELS,
-  EMPLOYMENT_TYPES,
+  DEPARTMENTS,
   EMPLOYMENT_TYPE_LABELS,
+  EMPLOYMENT_TYPES,
 } from "@ironworksai/shared";
-import { roleTemplatesApi, type RoleTemplate } from "../../api/roleTemplates";
-import { queryKeys } from "../../lib/queryKeys";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Pencil, Plus, Trash2, Users, X } from "lucide-react";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { type RoleTemplate, roleTemplatesApi } from "../../api/roleTemplates";
 import { useToast } from "../../context/ToastContext";
+import { queryKeys } from "../../lib/queryKeys";
+import { Field } from "../agent-config-primitives";
 
 export function TalentPoolSection({ companyId }: { companyId: string }) {
   const queryClient = useQueryClient();
@@ -24,8 +24,7 @@ export function TalentPoolSection({ companyId }: { companyId: string }) {
   const [formTitle, setFormTitle] = useState("");
   const [formRole, setFormRole] = useState<string>("engineer");
   const [formDepartment, setFormDepartment] = useState<string>("engineering");
-  const [formEmploymentType, setFormEmploymentType] =
-    useState<string>("full_time");
+  const [formEmploymentType, setFormEmploymentType] = useState<string>("full_time");
   const [formDescription, setFormDescription] = useState("");
 
   const templatesQuery = useQuery({
@@ -35,8 +34,7 @@ export function TalentPoolSection({ companyId }: { companyId: string }) {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: Record<string, unknown>) =>
-      roleTemplatesApi.create(companyId, data),
+    mutationFn: (data: Record<string, unknown>) => roleTemplatesApi.create(companyId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.roleTemplates.list(companyId),
@@ -54,13 +52,8 @@ export function TalentPoolSection({ companyId }: { companyId: string }) {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({
-      id,
-      data,
-    }: {
-      id: string;
-      data: Record<string, unknown>;
-    }) => roleTemplatesApi.update(companyId, id, data),
+    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
+      roleTemplatesApi.update(companyId, id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.roleTemplates.list(companyId),
@@ -160,6 +153,7 @@ export function TalentPoolSection({ companyId }: { companyId: string }) {
               {editingId ? "Edit Template" : "New Template"}
             </span>
             <button
+              type="button"
               className="text-muted-foreground hover:text-foreground transition-colors"
               onClick={resetForm}
               aria-label="Close form"
@@ -211,9 +205,7 @@ export function TalentPoolSection({ companyId }: { companyId: string }) {
                 >
                   {EMPLOYMENT_TYPES.map((et) => (
                     <option key={et} value={et}>
-                      {(EMPLOYMENT_TYPE_LABELS as Record<string, string>)[
-                        et
-                      ] ?? et}
+                      {(EMPLOYMENT_TYPE_LABELS as Record<string, string>)[et] ?? et}
                     </option>
                   ))}
                 </select>
@@ -229,11 +221,7 @@ export function TalentPoolSection({ companyId }: { companyId: string }) {
             </Field>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              onClick={handleSave}
-              disabled={!formTitle.trim() || isSaving}
-            >
+            <Button size="sm" onClick={handleSave} disabled={!formTitle.trim() || isSaving}>
               {isSaving ? "Saving..." : editingId ? "Update" : "Create"}
             </Button>
             <Button size="sm" variant="ghost" onClick={resetForm}>
@@ -245,19 +233,14 @@ export function TalentPoolSection({ companyId }: { companyId: string }) {
 
       {templates.length === 0 && !showForm && (
         <div className="rounded-md border border-border px-4 py-6 text-center">
-          <p className="text-xs text-muted-foreground">
-            No role templates yet. Create one to speed up hiring.
-          </p>
+          <p className="text-xs text-muted-foreground">No role templates yet. Create one to speed up hiring.</p>
         </div>
       )}
 
       {templates.length > 0 && (
         <div className="space-y-2">
           {templates.map((t) => (
-            <div
-              key={t.id}
-              className="rounded-md border border-border px-4 py-3 flex items-center justify-between"
-            >
+            <div key={t.id} className="rounded-md border border-border px-4 py-3 flex items-center justify-between">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">{t.title}</span>
@@ -269,40 +252,26 @@ export function TalentPoolSection({ companyId }: { companyId: string }) {
                 </div>
                 <div className="flex items-center gap-2 mt-0.5">
                   <span className="text-xs text-muted-foreground">
-                    {(AGENT_ROLE_LABELS as Record<string, string>)[t.role] ??
-                      t.role}
+                    {(AGENT_ROLE_LABELS as Record<string, string>)[t.role] ?? t.role}
                   </span>
                   {t.department && (
                     <>
                       <span className="text-border">|</span>
                       <span className="text-xs text-muted-foreground">
-                        {(DEPARTMENT_LABELS as Record<string, string>)[
-                          t.department
-                        ] ?? t.department}
+                        {(DEPARTMENT_LABELS as Record<string, string>)[t.department] ?? t.department}
                       </span>
                     </>
                   )}
                   <span className="text-border">|</span>
                   <span className="text-xs text-muted-foreground">
-                    {(EMPLOYMENT_TYPE_LABELS as Record<string, string>)[
-                      t.employmentType
-                    ] ?? t.employmentType}
+                    {(EMPLOYMENT_TYPE_LABELS as Record<string, string>)[t.employmentType] ?? t.employmentType}
                   </span>
                 </div>
-                {t.capabilities && (
-                  <p className="text-xs text-muted-foreground/70 mt-0.5">
-                    {t.capabilities}
-                  </p>
-                )}
+                {t.capabilities && <p className="text-xs text-muted-foreground/70 mt-0.5">{t.capabilities}</p>}
               </div>
               {!isSystemTemplate(t) && (
                 <div className="flex items-center gap-1 shrink-0 ml-3">
-                  <Button
-                    variant="ghost"
-                    size="icon-xs"
-                    onClick={() => startEdit(t)}
-                    title="Edit template"
-                  >
+                  <Button variant="ghost" size="icon-xs" onClick={() => startEdit(t)} title="Edit template">
                     <Pencil className="h-3.5 w-3.5" />
                   </Button>
                   <Button

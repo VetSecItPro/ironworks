@@ -1,28 +1,24 @@
-import { useState, useEffect, useRef, useCallback, useMemo, type ChangeEvent, type DragEvent } from "react";
-import { useDialog } from "../../context/DialogContext";
+import { type ChangeEvent, type DragEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useCompany } from "../../context/CompanyContext";
-import {
-  assigneeValueFromSelection,
-  parseAssigneeValue,
-} from "../../lib/assignees";
-import { trackRecentAssignee } from "../../lib/recent-assignees";
+import { useDialog } from "../../context/DialogContext";
+import { assigneeValueFromSelection } from "../../lib/assignees";
 import type { MarkdownEditorRef } from "../MarkdownEditor";
 import {
-  type StagedIssueFile,
-  ISSUE_THINKING_EFFORT_OPTIONS,
-  loadDraft,
-  saveDraft,
+  buildAssigneeAdapterOverrides,
   clearDraft,
-  isTextDocumentFile,
+  createUniqueDocumentKey,
+  DEBOUNCE_MS,
+  defaultExecutionWorkspaceModeForProject,
+  defaultProjectWorkspaceIdForProject,
   fileBaseName,
+  ISSUE_THINKING_EFFORT_OPTIONS,
+  issueExecutionWorkspaceModeForExistingWorkspace,
+  isTextDocumentFile,
+  loadDraft,
+  type StagedIssueFile,
+  saveDraft,
   slugifyDocumentKey,
   titleizeFilename,
-  createUniqueDocumentKey,
-  defaultProjectWorkspaceIdForProject,
-  defaultExecutionWorkspaceModeForProject,
-  issueExecutionWorkspaceModeForExistingWorkspace,
-  buildAssigneeAdapterOverrides,
-  DEBOUNCE_MS,
 } from "./constants";
 import { useNewIssueQueries } from "./useNewIssueQueries";
 
@@ -68,12 +64,25 @@ export function useNewIssueForm() {
   const dialogCompany = companies.find((c) => c.id === effectiveCompanyId) ?? selectedCompany;
 
   function reset() {
-    setTitle(""); setDescription(""); setStatus("todo"); setPriority("");
-    setAssigneeValue(""); setProjectId(""); setGoalId(""); setProjectWorkspaceId("");
-    setAssigneeOptionsOpen(false); setAssigneeModelOverride(""); setAssigneeThinkingEffort("");
-    setAssigneeChrome(false); setExecutionWorkspaceMode("shared_workspace");
-    setSelectedExecutionWorkspaceId(""); setExpanded(false); setDialogCompanyId(null);
-    setStagedFiles([]); setIsFileDragOver(false); setCompanyOpen(false);
+    setTitle("");
+    setDescription("");
+    setStatus("todo");
+    setPriority("");
+    setAssigneeValue("");
+    setProjectId("");
+    setGoalId("");
+    setProjectWorkspaceId("");
+    setAssigneeOptionsOpen(false);
+    setAssigneeModelOverride("");
+    setAssigneeThinkingEffort("");
+    setAssigneeChrome(false);
+    setExecutionWorkspaceMode("shared_workspace");
+    setSelectedExecutionWorkspaceId("");
+    setExpanded(false);
+    setDialogCompanyId(null);
+    setStagedFiles([]);
+    setIsFileDragOver(false);
+    setCompanyOpen(false);
     executionWorkspaceDefaultProjectId.current = null;
   }
 
@@ -92,36 +101,59 @@ export function useNewIssueForm() {
   });
 
   const {
-    agents, orderedProjects, experimentalSettings,
-    selectedAssigneeAgentId, selectedAssigneeUserId,
-    assigneeAdapterType, supportsAssigneeOverrides,
+    agents,
+    orderedProjects,
+    experimentalSettings,
+    selectedAssigneeAgentId,
+    selectedAssigneeUserId,
+    assigneeAdapterType,
+    supportsAssigneeOverrides,
     deduplicatedReusableWorkspaces,
-    createIssue, uploadDescriptionImage,
+    createIssue,
+    uploadDescriptionImage,
   } = queries;
 
   // Debounced draft saving
-  const scheduleSave = useCallback(
-    (draft: Parameters<typeof saveDraft>[0]) => {
-      if (draftTimer.current) clearTimeout(draftTimer.current);
-      draftTimer.current = setTimeout(() => {
-        if (draft.title.trim()) saveDraft(draft);
-      }, DEBOUNCE_MS);
-    },
-    [],
-  );
+  const scheduleSave = useCallback((draft: Parameters<typeof saveDraft>[0]) => {
+    if (draftTimer.current) clearTimeout(draftTimer.current);
+    draftTimer.current = setTimeout(() => {
+      if (draft.title.trim()) saveDraft(draft);
+    }, DEBOUNCE_MS);
+  }, []);
 
   useEffect(() => {
     if (!newIssueOpen) return;
     scheduleSave({
-      title, description, status, priority, assigneeValue, projectId, goalId,
-      projectWorkspaceId, assigneeModelOverride, assigneeThinkingEffort, assigneeChrome,
-      executionWorkspaceMode, selectedExecutionWorkspaceId,
+      title,
+      description,
+      status,
+      priority,
+      assigneeValue,
+      projectId,
+      goalId,
+      projectWorkspaceId,
+      assigneeModelOverride,
+      assigneeThinkingEffort,
+      assigneeChrome,
+      executionWorkspaceMode,
+      selectedExecutionWorkspaceId,
     });
   }, [
-    title, description, status, priority, assigneeValue, projectId, goalId,
-    projectWorkspaceId, assigneeModelOverride, assigneeThinkingEffort,
-    assigneeChrome, executionWorkspaceMode, selectedExecutionWorkspaceId,
-    newIssueOpen, scheduleSave,
+    title,
+    description,
+    status,
+    priority,
+    assigneeValue,
+    projectId,
+    goalId,
+    projectWorkspaceId,
+    assigneeModelOverride,
+    assigneeThinkingEffort,
+    assigneeChrome,
+    executionWorkspaceMode,
+    selectedExecutionWorkspaceId,
+    newIssueOpen,
+    scheduleSave,
   ]);
 
   // Restore draft or apply defaults when dialog opens
@@ -142,15 +174,19 @@ export function useNewIssueForm() {
       setGoalId(newIssueDefaults.goalId ?? "");
       setProjectWorkspaceId(defaultProjectWorkspaceIdForProject(defaultProject));
       setAssigneeValue(assigneeValueFromSelection(newIssueDefaults));
-      setAssigneeModelOverride(""); setAssigneeThinkingEffort(""); setAssigneeChrome(false);
+      setAssigneeModelOverride("");
+      setAssigneeThinkingEffort("");
+      setAssigneeChrome(false);
       setExecutionWorkspaceMode(defaultExecutionWorkspaceModeForProject(defaultProject));
       setSelectedExecutionWorkspaceId("");
       executionWorkspaceDefaultProjectId.current = defaultProjectId || null;
-    } else if (draft && draft.title.trim()) {
+    } else if (draft?.title.trim()) {
       const restoredProjectId = newIssueDefaults.projectId ?? draft.projectId;
       const restoredProject = orderedProjects.find((project) => project.id === restoredProjectId);
-      setTitle(draft.title); setDescription(draft.description);
-      setStatus(draft.status || "todo"); setPriority(draft.priority);
+      setTitle(draft.title);
+      setDescription(draft.description);
+      setStatus(draft.status || "todo");
+      setPriority(draft.priority);
       setAssigneeValue(
         newIssueDefaults.assigneeAgentId || newIssueDefaults.assigneeUserId
           ? assigneeValueFromSelection(newIssueDefaults)
@@ -163,19 +199,25 @@ export function useNewIssueForm() {
       setAssigneeThinkingEffort(draft.assigneeThinkingEffort ?? "");
       setAssigneeChrome(draft.assigneeChrome ?? false);
       setExecutionWorkspaceMode(
-        draft.executionWorkspaceMode
-          ?? (draft.useIsolatedExecutionWorkspace ? "isolated_workspace" : defaultExecutionWorkspaceModeForProject(restoredProject)),
+        draft.executionWorkspaceMode ??
+          (draft.useIsolatedExecutionWorkspace
+            ? "isolated_workspace"
+            : defaultExecutionWorkspaceModeForProject(restoredProject)),
       );
       setSelectedExecutionWorkspaceId(draft.selectedExecutionWorkspaceId ?? "");
       executionWorkspaceDefaultProjectId.current = restoredProjectId || null;
     } else {
       const defaultProjectId = newIssueDefaults.projectId ?? "";
       const defaultProject = orderedProjects.find((project) => project.id === defaultProjectId);
-      setStatus(newIssueDefaults.status ?? "todo"); setPriority(newIssueDefaults.priority ?? "");
-      setProjectId(defaultProjectId); setGoalId(newIssueDefaults.goalId ?? "");
+      setStatus(newIssueDefaults.status ?? "todo");
+      setPriority(newIssueDefaults.priority ?? "");
+      setProjectId(defaultProjectId);
+      setGoalId(newIssueDefaults.goalId ?? "");
       setProjectWorkspaceId(defaultProjectWorkspaceIdForProject(defaultProject));
       setAssigneeValue(assigneeValueFromSelection(newIssueDefaults));
-      setAssigneeModelOverride(""); setAssigneeThinkingEffort(""); setAssigneeChrome(false);
+      setAssigneeModelOverride("");
+      setAssigneeThinkingEffort("");
+      setAssigneeChrome(false);
       setExecutionWorkspaceMode(defaultExecutionWorkspaceModeForProject(defaultProject));
       setSelectedExecutionWorkspaceId("");
       executionWorkspaceDefaultProjectId.current = defaultProjectId || null;
@@ -184,8 +226,10 @@ export function useNewIssueForm() {
 
   useEffect(() => {
     if (!supportsAssigneeOverrides) {
-      setAssigneeOptionsOpen(false); setAssigneeModelOverride("");
-      setAssigneeThinkingEffort(""); setAssigneeChrome(false);
+      setAssigneeOptionsOpen(false);
+      setAssigneeModelOverride("");
+      setAssigneeThinkingEffort("");
+      setAssigneeChrome(false);
       return;
     }
     const validThinkingValues =
@@ -200,25 +244,35 @@ export function useNewIssueForm() {
   }, [supportsAssigneeOverrides, assigneeAdapterType, assigneeThinkingEffort]);
 
   useEffect(() => {
-    return () => { if (draftTimer.current) clearTimeout(draftTimer.current); };
+    return () => {
+      if (draftTimer.current) clearTimeout(draftTimer.current);
+    };
   }, []);
 
   function handleCompanyChange(companyId: string) {
     if (companyId === effectiveCompanyId) return;
-    setDialogCompanyId(companyId); setAssigneeValue(""); setProjectId("");
-    setGoalId(""); setProjectWorkspaceId(""); setAssigneeModelOverride("");
-    setAssigneeThinkingEffort(""); setAssigneeChrome(false);
-    setExecutionWorkspaceMode("shared_workspace"); setSelectedExecutionWorkspaceId("");
+    setDialogCompanyId(companyId);
+    setAssigneeValue("");
+    setProjectId("");
+    setGoalId("");
+    setProjectWorkspaceId("");
+    setAssigneeModelOverride("");
+    setAssigneeThinkingEffort("");
+    setAssigneeChrome(false);
+    setExecutionWorkspaceMode("shared_workspace");
+    setSelectedExecutionWorkspaceId("");
   }
 
-  function discardDraft() { clearDraft(); reset(); closeNewIssue(); }
+  function discardDraft() {
+    clearDraft();
+    reset();
+    closeNewIssue();
+  }
 
   // Derived values
   const currentProject = orderedProjects.find((project) => project.id === projectId);
   const currentProjectExecutionWorkspacePolicy =
-    experimentalSettings?.enableIsolatedWorkspaces === true
-      ? currentProject?.executionWorkspacePolicy ?? null
-      : null;
+    experimentalSettings?.enableIsolatedWorkspaces === true ? (currentProject?.executionWorkspacePolicy ?? null) : null;
   const currentProjectSupportsExecutionWorkspace = Boolean(currentProjectExecutionWorkspacePolicy?.enabled);
   const selectedReusableExecutionWorkspace = deduplicatedReusableWorkspaces.find(
     (workspace) => workspace.id === selectedExecutionWorkspaceId,
@@ -231,14 +285,17 @@ export function useNewIssueForm() {
   const createIssueErrorMessage =
     createIssue.error instanceof Error ? createIssue.error.message : "Failed to create mission. Try again.";
 
-  const handleProjectChange = useCallback((nextProjectId: string) => {
-    setProjectId(nextProjectId);
-    const nextProject = orderedProjects.find((project) => project.id === nextProjectId);
-    executionWorkspaceDefaultProjectId.current = nextProjectId || null;
-    setProjectWorkspaceId(defaultProjectWorkspaceIdForProject(nextProject));
-    setExecutionWorkspaceMode(defaultExecutionWorkspaceModeForProject(nextProject));
-    setSelectedExecutionWorkspaceId("");
-  }, [orderedProjects]);
+  const handleProjectChange = useCallback(
+    (nextProjectId: string) => {
+      setProjectId(nextProjectId);
+      const nextProject = orderedProjects.find((project) => project.id === nextProjectId);
+      executionWorkspaceDefaultProjectId.current = nextProjectId || null;
+      setProjectWorkspaceId(defaultProjectWorkspaceIdForProject(nextProject));
+      setExecutionWorkspaceMode(defaultExecutionWorkspaceModeForProject(nextProject));
+      setSelectedExecutionWorkspaceId("");
+    },
+    [orderedProjects],
+  );
 
   useEffect(() => {
     if (!newIssueOpen || !projectId || executionWorkspaceDefaultProjectId.current === projectId) return;
@@ -259,7 +316,13 @@ export function useNewIssueForm() {
         if (isTextDocumentFile(file)) {
           const baseName = fileBaseName(file.name);
           const documentKey = createUniqueDocumentKey(slugifyDocumentKey(baseName), next);
-          next.push({ id: `${file.name}:${file.size}:${file.lastModified}:${documentKey}`, file, kind: "document", documentKey, title: titleizeFilename(baseName) });
+          next.push({
+            id: `${file.name}:${file.size}:${file.lastModified}:${documentKey}`,
+            file,
+            kind: "document",
+            documentKey,
+            title: titleizeFilename(baseName),
+          });
           continue;
         }
         next.push({ id: `${file.name}:${file.size}:${file.lastModified}`, file, kind: "attachment" });
@@ -275,11 +338,14 @@ export function useNewIssueForm() {
 
   function handleFileDragEnter(evt: DragEvent<HTMLDivElement>) {
     if (!evt.dataTransfer.types.includes("Files")) return;
-    evt.preventDefault(); setIsFileDragOver(true);
+    evt.preventDefault();
+    setIsFileDragOver(true);
   }
   function handleFileDragOver(evt: DragEvent<HTMLDivElement>) {
     if (!evt.dataTransfer.types.includes("Files")) return;
-    evt.preventDefault(); evt.dataTransfer.dropEffect = "copy"; setIsFileDragOver(true);
+    evt.preventDefault();
+    evt.dataTransfer.dropEffect = "copy";
+    setIsFileDragOver(true);
   }
   function handleFileDragLeave(evt: DragEvent<HTMLDivElement>) {
     if (evt.currentTarget.contains(evt.relatedTarget as Node | null)) return;
@@ -287,7 +353,8 @@ export function useNewIssueForm() {
   }
   function handleFileDrop(evt: DragEvent<HTMLDivElement>) {
     if (!evt.dataTransfer.files.length) return;
-    evt.preventDefault(); setIsFileDragOver(false);
+    evt.preventDefault();
+    setIsFileDragOver(false);
     stageFiles(Array.from(evt.dataTransfer.files));
   }
 
@@ -298,13 +365,15 @@ export function useNewIssueForm() {
   function handleSubmit() {
     if (!effectiveCompanyId || !title.trim() || createIssue.isPending) return;
     const assigneeAdapterOverrides = buildAssigneeAdapterOverrides({
-      adapterType: assigneeAdapterType, modelOverride: assigneeModelOverride,
-      thinkingEffortOverride: assigneeThinkingEffort, chrome: assigneeChrome,
+      adapterType: assigneeAdapterType,
+      modelOverride: assigneeModelOverride,
+      thinkingEffortOverride: assigneeThinkingEffort,
+      chrome: assigneeChrome,
     });
     const selectedProject = orderedProjects.find((project) => project.id === projectId);
     const executionWorkspacePolicy =
       experimentalSettings?.enableIsolatedWorkspaces === true
-        ? selectedProject?.executionWorkspacePolicy ?? null
+        ? (selectedProject?.executionWorkspacePolicy ?? null)
         : null;
     const selReusableWs = deduplicatedReusableWorkspaces.find(
       (workspace) => workspace.id === selectedExecutionWorkspaceId,
@@ -317,8 +386,11 @@ export function useNewIssueForm() {
       ? { mode: requestedExecutionWorkspaceMode }
       : null;
     createIssue.mutate({
-      companyId: effectiveCompanyId, stagedFiles,
-      title: title.trim(), description: description.trim() || undefined, status,
+      companyId: effectiveCompanyId,
+      stagedFiles,
+      title: title.trim(),
+      description: description.trim() || undefined,
+      status,
       priority: priority || "medium",
       ...(selectedAssigneeAgentId ? { assigneeAgentId: selectedAssigneeAgentId } : {}),
       ...(selectedAssigneeUserId ? { assigneeUserId: selectedAssigneeUserId } : {}),
@@ -328,36 +400,64 @@ export function useNewIssueForm() {
       ...(assigneeAdapterOverrides ? { assigneeAdapterOverrides } : {}),
       ...(executionWorkspacePolicy?.enabled ? { executionWorkspacePreference: executionWorkspaceMode } : {}),
       ...(executionWorkspaceMode === "reuse_existing" && selectedExecutionWorkspaceId
-        ? { executionWorkspaceId: selectedExecutionWorkspaceId } : {}),
+        ? { executionWorkspaceId: selectedExecutionWorkspaceId }
+        : {}),
       ...(executionWorkspaceSettings ? { executionWorkspaceSettings } : {}),
     });
   }
 
   return {
     // Dialog state
-    newIssueOpen, closeNewIssue, companies, effectiveCompanyId, dialogCompany,
-    expanded, setExpanded, companyOpen, setCompanyOpen, handleCompanyChange,
+    newIssueOpen,
+    closeNewIssue,
+    companies,
+    effectiveCompanyId,
+    dialogCompany,
+    expanded,
+    setExpanded,
+    companyOpen,
+    setCompanyOpen,
+    handleCompanyChange,
 
     // Form fields
-    title, setTitle, description, setDescription,
-    status, setStatus, priority, setPriority,
-    assigneeValue, setAssigneeValue, projectId, goalId, setGoalId, handleProjectChange,
+    title,
+    setTitle,
+    description,
+    setDescription,
+    status,
+    setStatus,
+    priority,
+    setPriority,
+    assigneeValue,
+    setAssigneeValue,
+    projectId,
+    goalId,
+    setGoalId,
+    handleProjectChange,
 
     // Assignee options
-    assigneeOptionsOpen, setAssigneeOptionsOpen,
-    assigneeModelOverride, setAssigneeModelOverride,
-    assigneeThinkingEffort, setAssigneeThinkingEffort,
-    assigneeChrome, setAssigneeChrome,
+    assigneeOptionsOpen,
+    setAssigneeOptionsOpen,
+    assigneeModelOverride,
+    setAssigneeModelOverride,
+    assigneeThinkingEffort,
+    setAssigneeThinkingEffort,
+    assigneeChrome,
+    setAssigneeChrome,
     supportsAssigneeOverrides,
     assigneeOptionsTitle: queries.assigneeOptionsTitle,
     assigneeAdapterType,
     modelOverrideOptions: queries.modelOverrideOptions,
 
     // Execution workspace
-    executionWorkspaceMode, setExecutionWorkspaceMode,
-    selectedExecutionWorkspaceId, setSelectedExecutionWorkspaceId,
-    currentProject, currentProjectSupportsExecutionWorkspace,
-    deduplicatedReusableWorkspaces, selectedReusableExecutionWorkspace,
+    executionWorkspaceMode,
+    setExecutionWorkspaceMode,
+    selectedExecutionWorkspaceId,
+    setSelectedExecutionWorkspaceId,
+    currentProject,
+    currentProjectSupportsExecutionWorkspace,
+    deduplicatedReusableWorkspaces,
+    selectedReusableExecutionWorkspace,
 
     // Options
     assigneeOptions: queries.assigneeOptions,
@@ -367,23 +467,41 @@ export function useNewIssueForm() {
 
     // Computed
     currentAssignee: queries.currentAssignee,
-    orderedProjects, agents,
+    orderedProjects,
+    agents,
     suggestedPriority: queries.suggestedPriority,
     similarIssues: queries.similarIssues,
-    canDiscardDraft, createIssueErrorMessage,
+    canDiscardDraft,
+    createIssueErrorMessage,
 
     // File staging
-    stagedFiles, isFileDragOver,
-    handleFileDragEnter, handleFileDragOver, handleFileDragLeave, handleFileDrop,
-    removeStagedFile, handleStageFilesPicked,
+    stagedFiles,
+    isFileDragOver,
+    handleFileDragEnter,
+    handleFileDragOver,
+    handleFileDragLeave,
+    handleFileDrop,
+    removeStagedFile,
+    handleStageFilesPicked,
 
     // Popover states
-    statusOpen, setStatusOpen, priorityOpen, setPriorityOpen, moreOpen, setMoreOpen,
+    statusOpen,
+    setStatusOpen,
+    priorityOpen,
+    setPriorityOpen,
+    moreOpen,
+    setMoreOpen,
 
     // Refs
-    descriptionEditorRef, stageFileInputRef, assigneeSelectorRef, projectSelectorRef,
+    descriptionEditorRef,
+    stageFileInputRef,
+    assigneeSelectorRef,
+    projectSelectorRef,
 
     // Actions
-    discardDraft, handleSubmit, createIssue, uploadDescriptionImage,
+    discardDraft,
+    handleSubmit,
+    createIssue,
+    uploadDescriptionImage,
   };
 }

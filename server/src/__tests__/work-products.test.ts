@@ -45,6 +45,7 @@ describe("workProductService", () => {
     };
     const transaction = vi.fn(async (callback: (input: typeof tx) => Promise<unknown>) => await callback(tx));
 
+    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
     const svc = workProductService({ transaction } as any);
     const result = await svc.createForIssue("issue-1", "company-1", {
       type: "pull_request",
@@ -68,9 +69,7 @@ describe("workProductService", () => {
     const selectFrom = vi.fn(() => ({ where: selectWhere }));
     const txSelect = vi.fn(() => ({ from: selectFrom }));
 
-    const updateReturning = vi
-      .fn()
-      .mockResolvedValue([createWorkProductRow({ reviewState: "ready_for_review" })]);
+    const updateReturning = vi.fn().mockResolvedValue([createWorkProductRow({ reviewState: "ready_for_review" })]);
     const updateWhere = vi.fn(() => ({ returning: updateReturning }));
     const updateSet = vi.fn(() => ({ where: updateWhere }));
     const txUpdate = vi.fn(() => ({ set: updateSet }));
@@ -81,6 +80,7 @@ describe("workProductService", () => {
     };
     const transaction = vi.fn(async (callback: (input: typeof tx) => Promise<unknown>) => await callback(tx));
 
+    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
     const svc = workProductService({ transaction } as any);
     const result = await svc.update("work-product-1", {
       isPrimary: true,

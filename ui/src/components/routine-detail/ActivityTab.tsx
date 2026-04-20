@@ -1,11 +1,12 @@
-import { timeAgo } from "../../lib/timeAgo";
 import type { ActivityEvent } from "@ironworksai/shared";
+import { timeAgo } from "../../lib/timeAgo";
 
 function formatActivityDetailValue(value: unknown): string {
   if (value === null) return "null";
   if (typeof value === "string") return value;
   if (typeof value === "number" || typeof value === "boolean") return String(value);
-  if (Array.isArray(value)) return value.length === 0 ? "[]" : value.map((item) => formatActivityDetailValue(item)).join(", ");
+  if (Array.isArray(value))
+    return value.length === 0 ? "[]" : value.map((item) => formatActivityDetailValue(item)).join(", ");
   try {
     return JSON.stringify(value);
   } catch {
@@ -13,11 +14,7 @@ function formatActivityDetailValue(value: unknown): string {
   }
 }
 
-export function ActivityTab({
-  activity,
-}: {
-  activity: ActivityEvent[];
-}) {
+export function ActivityTab({ activity }: { activity: ActivityEvent[] }) {
   if (activity.length === 0) {
     return <p className="text-xs text-muted-foreground">No activity yet.</p>;
   }
@@ -30,13 +27,15 @@ export function ActivityTab({
             <span className="font-medium text-foreground/90 shrink-0">{event.action.replaceAll(".", " ")}</span>
             {event.details && Object.keys(event.details).length > 0 && (
               <span className="text-muted-foreground truncate">
-                {Object.entries(event.details).slice(0, 3).map(([key, value], i) => (
-                  <span key={key}>
-                    {i > 0 && <span className="mx-1 text-border">·</span>}
-                    <span className="text-muted-foreground/70">{key.replaceAll("_", " ")}:</span>{" "}
-                    {formatActivityDetailValue(value)}
-                  </span>
-                ))}
+                {Object.entries(event.details)
+                  .slice(0, 3)
+                  .map(([key, value], i) => (
+                    <span key={key}>
+                      {i > 0 && <span className="mx-1 text-border">·</span>}
+                      <span className="text-muted-foreground/70">{key.replaceAll("_", " ")}:</span>{" "}
+                      {formatActivityDetailValue(value)}
+                    </span>
+                  ))}
               </span>
             )}
           </div>

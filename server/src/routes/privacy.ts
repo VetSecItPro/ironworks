@@ -1,86 +1,89 @@
-import { Router } from "express";
-import { and, eq, inArray, lt, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import { captureAnalyticsSnapshot } from "../services/analytics.js";
-import { checkContractorLifecycles } from "../services/contractor-lifecycle.js";
-import { decayStaleMemories } from "../services/agent-memory.js";
-import { generatePromptOptimizationSuggestion } from "../services/agent-reflection.js";
-import { runAllWeeklyReports, runAllMonthlyCostSummaries, runAllTeamRetrospectives } from "../services/weekly-reports.js";
-import { postStandingAgendas } from "../services/standing-agendas.js";
-import { runAllDailyStandups } from "../services/daily-standup.js";
-import { captureAllPerformanceSnapshots } from "../services/performance-score.js";
-import { runAllAchievementChecks } from "../services/achievements.js";
 import {
-  companies,
-  agents,
-  issues,
-  issueComments,
-  issueApprovals,
-  issueAttachments,
-  issueLabels,
-  issueDocuments,
-  issueWorkProducts,
-  issueReadStates,
-  issueInboxArchives,
-  goals,
-  projects,
-  projectGoals,
-  projectWorkspaces,
-  executionWorkspaces,
-  workspaceOperations,
-  workspaceRuntimeServices,
-  heartbeatRuns,
-  heartbeatRunEvents,
-  costEvents,
-  financeEvents,
   activityLog,
-  approvals,
-  approvalComments,
-  companySkills,
-  companySecrets,
-  companyMemberships,
-  companySubscriptions,
-  companyLogos,
-  libraryFiles,
-  libraryFileEvents,
-  playbooks,
-  playbookRuns,
-  knowledgePages,
-  knowledgePageRevisions,
-  messagingBridges,
-  budgetPolicies,
-  budgetIncidents,
-  labels,
-  documents,
-  documentRevisions,
-  assets,
-  agentConfigRevisions,
   agentApiKeys,
+  agentConfigRevisions,
   agentRuntimeState,
+  agents,
   agentTaskSessions,
   agentWakeupRequests,
+  approvalComments,
+  approvals,
+  assets,
+  authSessions,
+  budgetIncidents,
+  budgetPolicies,
+  companies,
+  companyLogos,
+  companyMemberships,
+  companySecrets,
+  companySkills,
+  companySubscriptions,
+  costEvents,
+  documentRevisions,
+  documents,
+  executionWorkspaces,
+  financeEvents,
+  goals,
+  heartbeatRunEvents,
+  heartbeatRuns,
+  invites,
+  issueApprovals,
+  issueAttachments,
+  issueComments,
+  issueDocuments,
+  issueInboxArchives,
+  issueLabels,
+  issueReadStates,
+  issues,
+  issueWorkProducts,
+  joinRequests,
+  knowledgePageRevisions,
+  knowledgePages,
+  labels,
+  libraryFileEvents,
+  libraryFiles,
+  messagingBridges,
+  playbookRuns,
+  playbooks,
+  pluginCompanySettings,
+  principalPermissionGrants,
+  projectGoals,
+  projects,
+  projectWorkspaces,
+  routineRuns,
   routines,
   routineTriggers,
-  routineRuns,
-  principalPermissionGrants,
-  invites,
-  joinRequests,
-  pluginCompanySettings,
-  authSessions,
+  workspaceOperations,
+  workspaceRuntimeServices,
 } from "@ironworksai/db";
-import { assertCompanyAccess, getActorInfo } from "./authz.js";
-import { assertBoard } from "./authz.js";
+import { and, eq, lt, sql } from "drizzle-orm";
+import { Router } from "express";
 import { badRequest } from "../errors.js";
 import { logger } from "../middleware/logger.js";
+import { runAllAchievementChecks } from "../services/achievements.js";
+import { decayStaleMemories } from "../services/agent-memory.js";
+import { generatePromptOptimizationSuggestion } from "../services/agent-reflection.js";
+import { captureAnalyticsSnapshot } from "../services/analytics.js";
+import { checkContractorLifecycles } from "../services/contractor-lifecycle.js";
+import { runAllDailyStandups } from "../services/daily-standup.js";
+import { captureAllPerformanceSnapshots } from "../services/performance-score.js";
+import { postStandingAgendas } from "../services/standing-agendas.js";
+import {
+  runAllMonthlyCostSummaries,
+  runAllTeamRetrospectives,
+  runAllWeeklyReports,
+} from "../services/weekly-reports.js";
+import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
 
 /* ─── Data Retention Defaults (configurable) ──────────────────────── */
 
 const DEFAULT_RETENTION = {
-  heartbeatRunEvents: 90,   // days
-  activityLog: 365,         // days
-  costEvents: 365,          // days
-  financeEvents: 365,       // days
-  expiredSessions: 30,      // days after session expiry
+  heartbeatRunEvents: 90, // days
+  activityLog: 365, // days
+  costEvents: 365, // days
+  financeEvents: 365, // days
+  expiredSessions: 30, // days after session expiry
 };
 
 export function privacyRoutes(db: Db) {
@@ -324,13 +327,41 @@ export function privacyRoutes(db: Db) {
 
     res.json({
       dataCategories: [
-        { category: "Agents", description: "AI agent profiles and configurations", count: Number(counts[0][0]?.count ?? 0) },
-        { category: "Issues", description: "Tasks, descriptions, and assignments", count: Number(counts[1][0]?.count ?? 0) },
-        { category: "Comments", description: "Issue comments and discussions", count: Number(counts[2][0]?.count ?? 0) },
-        { category: "Execution Logs", description: "Agent heartbeat run records", count: Number(counts[3][0]?.count ?? 0) },
-        { category: "Cost Events", description: "Token usage and billing records", count: Number(counts[4][0]?.count ?? 0) },
-        { category: "Activity Log", description: "Audit trail of actions taken", count: Number(counts[5][0]?.count ?? 0) },
-        { category: "Library Files", description: "Document metadata and ownership records", count: Number(counts[6][0]?.count ?? 0) },
+        {
+          category: "Agents",
+          description: "AI agent profiles and configurations",
+          count: Number(counts[0][0]?.count ?? 0),
+        },
+        {
+          category: "Issues",
+          description: "Tasks, descriptions, and assignments",
+          count: Number(counts[1][0]?.count ?? 0),
+        },
+        {
+          category: "Comments",
+          description: "Issue comments and discussions",
+          count: Number(counts[2][0]?.count ?? 0),
+        },
+        {
+          category: "Execution Logs",
+          description: "Agent heartbeat run records",
+          count: Number(counts[3][0]?.count ?? 0),
+        },
+        {
+          category: "Cost Events",
+          description: "Token usage and billing records",
+          count: Number(counts[4][0]?.count ?? 0),
+        },
+        {
+          category: "Activity Log",
+          description: "Audit trail of actions taken",
+          count: Number(counts[5][0]?.count ?? 0),
+        },
+        {
+          category: "Library Files",
+          description: "Document metadata and ownership records",
+          count: Number(counts[6][0]?.count ?? 0),
+        },
       ],
       retentionPolicies: {
         executionLogs: `${DEFAULT_RETENTION.heartbeatRunEvents} days`,
@@ -499,18 +530,11 @@ export async function runRetentionCleanup(db: Db): Promise<{
   const now = new Date();
 
   // ── GDPR erasure: permanently delete companies past their grace period ───
-  const erasureThreshold = new Date(
-    now.getTime() - ERASURE_GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000,
-  );
+  const erasureThreshold = new Date(now.getTime() - ERASURE_GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000);
   const pendingErasures = await db
     .select({ id: companies.id })
     .from(companies)
-    .where(
-      and(
-        eq(companies.status, "pending_erasure"),
-        lt(companies.updatedAt, erasureThreshold),
-      ),
-    );
+    .where(and(eq(companies.status, "pending_erasure"), lt(companies.updatedAt, erasureThreshold)));
 
   for (const { id: companyId } of pendingErasures) {
     try {
@@ -523,37 +547,27 @@ export async function runRetentionCleanup(db: Db): Promise<{
 
   // Heartbeat run events older than retention period
   const hreThreshold = new Date(now.getTime() - DEFAULT_RETENTION.heartbeatRunEvents * 24 * 60 * 60 * 1000);
-  const hreResult = await db
-    .delete(heartbeatRunEvents)
-    .where(lt(heartbeatRunEvents.createdAt, hreThreshold));
+  const hreResult = await db.delete(heartbeatRunEvents).where(lt(heartbeatRunEvents.createdAt, hreThreshold));
   results.heartbeatRunEvents = (hreResult as unknown as { rowCount?: number }).rowCount ?? 0;
 
   // Activity log older than retention period
   const alThreshold = new Date(now.getTime() - DEFAULT_RETENTION.activityLog * 24 * 60 * 60 * 1000);
-  const alResult = await db
-    .delete(activityLog)
-    .where(lt(activityLog.createdAt, alThreshold));
+  const alResult = await db.delete(activityLog).where(lt(activityLog.createdAt, alThreshold));
   results.activityLog = (alResult as unknown as { rowCount?: number }).rowCount ?? 0;
 
   // Cost events older than retention period
   const ceThreshold = new Date(now.getTime() - DEFAULT_RETENTION.costEvents * 24 * 60 * 60 * 1000);
-  const ceResult = await db
-    .delete(costEvents)
-    .where(lt(costEvents.occurredAt, ceThreshold));
+  const ceResult = await db.delete(costEvents).where(lt(costEvents.occurredAt, ceThreshold));
   results.costEvents = (ceResult as unknown as { rowCount?: number }).rowCount ?? 0;
 
   // Finance events older than retention period
   const feThreshold = new Date(now.getTime() - DEFAULT_RETENTION.financeEvents * 24 * 60 * 60 * 1000);
-  const feResult = await db
-    .delete(financeEvents)
-    .where(lt(financeEvents.occurredAt, feThreshold));
+  const feResult = await db.delete(financeEvents).where(lt(financeEvents.occurredAt, feThreshold));
   results.financeEvents = (feResult as unknown as { rowCount?: number }).rowCount ?? 0;
 
   // Expired auth sessions older than grace period
   const sessionThreshold = new Date(now.getTime() - DEFAULT_RETENTION.expiredSessions * 24 * 60 * 60 * 1000);
-  const sessionResult = await db
-    .delete(authSessions)
-    .where(lt(authSessions.expiresAt, sessionThreshold));
+  const sessionResult = await db.delete(authSessions).where(lt(authSessions.expiresAt, sessionThreshold));
   results.expiredSessions = (sessionResult as unknown as { rowCount?: number }).rowCount ?? 0;
 
   // Auto-archive done issues older than 7 days from all users' inboxes
@@ -640,32 +654,18 @@ export function startRetentionScheduler(db: Db): NodeJS.Timeout {
   const HOURLY_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 
   // Run once on startup (delayed 60s to avoid slowing boot)
-  const initialTimeout = setTimeout(() => {
-    runRetentionCleanup(db).catch((err) =>
-      logger.error({ err }, "initial retention cleanup failed"),
-    );
-    captureAnalyticsSnapshot(db).catch((err) =>
-      logger.error({ err }, "initial analytics snapshot failed"),
-    );
-    checkContractorLifecycles(db).catch((err) =>
-      logger.error({ err }, "initial contractor lifecycle check failed"),
-    );
-    decayStaleMemories(db).catch((err) =>
-      logger.error({ err }, "initial memory decay failed"),
-    );
+  const _initialTimeout = setTimeout(() => {
+    runRetentionCleanup(db).catch((err) => logger.error({ err }, "initial retention cleanup failed"));
+    captureAnalyticsSnapshot(db).catch((err) => logger.error({ err }, "initial analytics snapshot failed"));
+    checkContractorLifecycles(db).catch((err) => logger.error({ err }, "initial contractor lifecycle check failed"));
+    decayStaleMemories(db).catch((err) => logger.error({ err }, "initial memory decay failed"));
   }, 60_000);
 
   // Then run daily
   const interval = setInterval(() => {
-    runRetentionCleanup(db).catch((err) =>
-      logger.error({ err }, "scheduled retention cleanup failed"),
-    );
-    captureAnalyticsSnapshot(db).catch((err) =>
-      logger.error({ err }, "scheduled analytics snapshot failed"),
-    );
-    decayStaleMemories(db).catch((err) =>
-      logger.error({ err }, "scheduled memory decay failed"),
-    );
+    runRetentionCleanup(db).catch((err) => logger.error({ err }, "scheduled retention cleanup failed"));
+    captureAnalyticsSnapshot(db).catch((err) => logger.error({ err }, "scheduled analytics snapshot failed"));
+    decayStaleMemories(db).catch((err) => logger.error({ err }, "scheduled memory decay failed"));
   }, CLEANUP_INTERVAL_MS);
 
   // Hourly: contractor lifecycle checks
@@ -717,21 +717,15 @@ export function startRetentionScheduler(db: Db): NodeJS.Timeout {
     // Daily standups at 08:00 CT (run once per day)
     if (ctHour === 8 && ctMinute === 0 && lastStandupDate !== dateKey) {
       lastStandupDate = dateKey;
-      runAllDailyStandups(db).catch((err) =>
-        logger.error({ err }, "scheduled daily standups failed"),
-      );
+      runAllDailyStandups(db).catch((err) => logger.error({ err }, "scheduled daily standups failed"));
       // Achievement checks run daily alongside standups
-      runAllAchievementChecks(db).catch((err) =>
-        logger.error({ err }, "scheduled achievement checks failed"),
-      );
+      runAllAchievementChecks(db).catch((err) => logger.error({ err }, "scheduled achievement checks failed"));
     }
 
     // Weekly reports on Sunday at 18:00 CT (run once per week)
     if (isSunday && ctHour === 18 && ctMinute === 0 && lastWeeklyDate !== dateKey) {
       lastWeeklyDate = dateKey;
-      runAllWeeklyReports(db).catch((err) =>
-        logger.error({ err }, "scheduled weekly reports failed"),
-      );
+      runAllWeeklyReports(db).catch((err) => logger.error({ err }, "scheduled weekly reports failed"));
       // Performance snapshots captured alongside weekly reports
       captureAllPerformanceSnapshots(db).catch((err) =>
         logger.error({ err }, "scheduled performance snapshots failed"),
@@ -741,26 +735,20 @@ export function startRetentionScheduler(db: Db): NodeJS.Timeout {
         logger.error({ err }, "scheduled prompt optimization suggestions failed"),
       );
       // Team retrospectives generated weekly on Sunday at 18:00 CT
-      runAllTeamRetrospectives(db).catch((err) =>
-        logger.error({ err }, "scheduled team retrospectives failed"),
-      );
+      runAllTeamRetrospectives(db).catch((err) => logger.error({ err }, "scheduled team retrospectives failed"));
     }
 
     // Monthly cost summaries on the 1st of each month at 06:00 CT
     const ctDay = parseInt(dateKey.slice(-2), 10);
     if (ctDay === 1 && ctHour === 6 && ctMinute === 0 && lastMonthlyDate !== dateKey) {
       lastMonthlyDate = dateKey;
-      runAllMonthlyCostSummaries(db).catch((err) =>
-        logger.error({ err }, "scheduled monthly cost summaries failed"),
-      );
+      runAllMonthlyCostSummaries(db).catch((err) => logger.error({ err }, "scheduled monthly cost summaries failed"));
     }
 
     // Standing agendas on Monday at 09:00 CT
     if (isMonday && ctHour === 9 && ctMinute === 0 && lastAgendaDate !== dateKey) {
       lastAgendaDate = dateKey;
-      postStandingAgendas(db).catch((err) =>
-        logger.error({ err }, "scheduled standing agendas failed"),
-      );
+      postStandingAgendas(db).catch((err) => logger.error({ err }, "scheduled standing agendas failed"));
     }
   }, MINUTE_MS);
 

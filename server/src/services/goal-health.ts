@@ -1,9 +1,9 @@
-import { eq, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import { goals, issues, agents } from "@ironworksai/db";
+import { agents, goals, issues } from "@ironworksai/db";
 import type { GoalHealthStatus } from "@ironworksai/shared";
-import { ensureCompanyChannel, ensureDepartmentChannel, postMessage } from "./channels.js";
+import { eq, sql } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
+import { ensureCompanyChannel, ensureDepartmentChannel, postMessage } from "./channels.js";
 
 export interface HealthResult {
   score: number;
@@ -28,11 +28,7 @@ export interface HealthResult {
  *  - recency of check-in: 15%
  */
 export async function computeGoalHealth(db: Db, goalId: string): Promise<HealthResult> {
-  const [goal] = await db
-    .select()
-    .from(goals)
-    .where(eq(goals.id, goalId))
-    .limit(1);
+  const [goal] = await db.select().from(goals).where(eq(goals.id, goalId)).limit(1);
 
   if (!goal) {
     return { score: 0, status: "no_data" };
@@ -99,12 +95,7 @@ export async function computeGoalHealth(db: Db, goalId: string): Promise<HealthR
   const recencyScore = daysSinceUpdate <= 7 ? 100 : daysSinceUpdate <= 14 ? 70 : daysSinceUpdate <= 30 ? 40 : 10;
 
   // Weighted composite
-  const score = Math.round(
-    paceScore * 0.4 +
-    confidenceScore * 0.25 +
-    blockerScore * 0.2 +
-    recencyScore * 0.15,
-  );
+  const score = Math.round(paceScore * 0.4 + confidenceScore * 0.25 + blockerScore * 0.2 + recencyScore * 0.15);
 
   const clampedScore = Math.min(100, Math.max(0, score));
 
@@ -119,8 +110,7 @@ export async function computeGoalHealth(db: Db, goalId: string): Promise<HealthR
 
   // Check for health transition before persisting
   const previousStatus = goal.healthStatus as GoalHealthStatus | null;
-  const transitionedToWorse =
-    previousStatus === "on_track" && (status === "at_risk" || status === "off_track");
+  const transitionedToWorse = previousStatus === "on_track" && (status === "at_risk" || status === "off_track");
 
   // Persist to goals table
   await db
@@ -174,11 +164,7 @@ async function escalateGoalHealthChange(
       .limit(1);
 
     if (ownerAgent?.department) {
-      const deptChannelId = await ensureDepartmentChannel(
-        db,
-        goal.companyId,
-        ownerAgent.department,
-      );
+      const deptChannelId = await ensureDepartmentChannel(db, goal.companyId, ownerAgent.department);
       await postMessage(db, {
         channelId: deptChannelId,
         companyId: goal.companyId,

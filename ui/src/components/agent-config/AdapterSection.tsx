@@ -1,18 +1,28 @@
 import type { UseMutationResult } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
 import { FolderOpen } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { cn } from "../../lib/utils";
-import {
-  Field,
-  help,
-  DraftInput,
-} from "../agent-config-primitives";
-import { MarkdownEditor } from "../MarkdownEditor";
+import type { HttpAdapterProviderType } from "../../types/providers";
+import { AdapterPicker } from "../AdapterPicker";
+import { DraftInput, Field, help } from "../agent-config-primitives";
 import { HelpBeacon } from "../HelpBeacon";
+import { MarkdownEditor } from "../MarkdownEditor";
 import { ChoosePathButton } from "../PathInstructionsModal";
-import { AdapterTypeDropdown } from "./AdapterTypeDropdown";
 import { AdapterEnvironmentResult } from "./AdapterEnvironmentResult";
-import type { SectionCommonProps, CreateConfigValues, AdapterEnvironmentTestResult } from "./types";
+import { AdapterTypeDropdown } from "./AdapterTypeDropdown";
+import type { AdapterEnvironmentTestResult, CreateConfigValues, SectionCommonProps } from "./types";
+
+/** HTTP adapter type strings — match server-side AGENT_ADAPTER_TYPES. */
+const HTTP_ADAPTER_TYPES: readonly HttpAdapterProviderType[] = [
+  "poe_api",
+  "anthropic_api",
+  "openai_api",
+  "openrouter_api",
+] as const;
+
+function isHttpAdapterType(adapterType: string): adapterType is HttpAdapterProviderType {
+  return (HTTP_ADAPTER_TYPES as readonly string[]).includes(adapterType);
+}
 
 interface AdapterSectionProps extends SectionCommonProps {
   adapterType: string;
@@ -50,16 +60,21 @@ export function AdapterSection({
   uploadMarkdownImage,
   uiAdapterConfigFields,
 }: AdapterSectionProps) {
-  const inputClass =
+  const _inputClass =
     "w-full rounded-md border border-border px-2.5 py-1.5 bg-transparent outline-none text-sm font-mono placeholder:text-muted-foreground/40";
 
   return (
     <div className={cn(!cards && (isCreate ? "border-t border-border" : "border-b border-border"))}>
-      <div className={cn(cards ? "flex items-center justify-between mb-3" : "px-4 py-2 flex items-center justify-between gap-2")}>
-        {cards
-          ? <h3 className="text-sm font-medium">Adapter</h3>
-          : <span className="text-xs font-medium text-muted-foreground">Adapter</span>
-        }
+      <div
+        className={cn(
+          cards ? "flex items-center justify-between mb-3" : "px-4 py-2 flex items-center justify-between gap-2",
+        )}
+      >
+        {cards ? (
+          <h3 className="text-sm font-medium">Adapter</h3>
+        ) : (
+          <span className="text-xs font-medium text-muted-foreground">Adapter</span>
+        )}
         {showAdapterTestEnvironmentButton && (
           <Button
             type="button"
@@ -77,27 +92,29 @@ export function AdapterSection({
         {showAdapterTypeField && (
           <div>
             <div className="flex items-center gap-1.5 mb-1">
-              <label className="text-xs text-muted-foreground">Adapter type</label>
+              <span className="text-xs text-muted-foreground">Adapter type</span>
               <HelpBeacon text="The adapter type determines which AI coding tool powers this agent. Claude Code, Codex, Gemini CLI, and others each have different capabilities, pricing, and model access. Choose based on the LLM provider you want to use." />
             </div>
-            <AdapterTypeDropdown
-              value={adapterType}
-              onChange={onAdapterTypeChange}
-            />
+            <AdapterTypeDropdown value={adapterType} onChange={onAdapterTypeChange} />
           </div>
+        )}
+
+        {/* HTTP adapter picker cards — shown when current adapter type is an HTTP provider */}
+        {showAdapterTypeField && isHttpAdapterType(adapterType) && (
+          <AdapterPicker
+            companyId={selectedCompanyId}
+            selected={adapterType}
+            onSelect={(provider) => onAdapterTypeChange(provider)}
+          />
         )}
 
         {testEnvironment.error && (
           <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-            {testEnvironment.error instanceof Error
-              ? testEnvironment.error.message
-              : "Environment test failed"}
+            {testEnvironment.error instanceof Error ? testEnvironment.error.message : "Environment test failed"}
           </div>
         )}
 
-        {testEnvironment.data && (
-          <AdapterEnvironmentResult result={testEnvironment.data} />
-        )}
+        {testEnvironment.data && <AdapterEnvironmentResult result={testEnvironment.data} />}
 
         {/* Working directory */}
         {showLegacyWorkingDirectoryField && (
@@ -105,16 +122,8 @@ export function AdapterSection({
             <div className="flex items-center gap-2 rounded-md border border-border px-2.5 py-1.5">
               <FolderOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               <DraftInput
-                value={
-                  isCreate
-                    ? val!.cwd
-                    : eff("adapterConfig", "cwd", String(config.cwd ?? ""))
-                }
-                onCommit={(v) =>
-                  isCreate
-                    ? set!({ cwd: v })
-                    : mark("adapterConfig", "cwd", v || undefined)
-                }
+                value={isCreate ? val!.cwd : eff("adapterConfig", "cwd", String(config.cwd ?? ""))}
+                onCommit={(v) => (isCreate ? set!({ cwd: v }) : mark("adapterConfig", "cwd", v || undefined))}
                 immediate
                 className="w-full bg-transparent outline-none text-sm font-mono placeholder:text-muted-foreground/40"
                 placeholder="/path/to/project"
@@ -139,7 +148,9 @@ export function AdapterSection({
               />
             </Field>
             <div className="rounded-md border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
-              Prompt template is replayed on every heartbeat. Prefer small task framing and variables like <code>{"{{ context.* }}"}</code> or <code>{"{{ run.* }}"}</code>; avoid repeating stable instructions here.
+              Prompt template is replayed on every heartbeat. Prefer small task framing and variables like{" "}
+              <code>{"{{ context.* }}"}</code> or <code>{"{{ run.* }}"}</code>; avoid repeating stable instructions
+              here.
             </div>
           </>
         )}

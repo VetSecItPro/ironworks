@@ -1,20 +1,18 @@
-import {
-  pgTable,
-  uuid,
-  text,
-  timestamp,
-  index,
-} from "drizzle-orm/pg-core";
-import { companies } from "./companies.js";
+import { index, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { agentChannels } from "./agent_channels.js";
 import { agents } from "./agents.js";
+import { companies } from "./companies.js";
 
 export const channelDeliberations = pgTable(
   "channel_deliberations",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    companyId: uuid("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
-    channelId: uuid("channel_id").notNull().references(() => agentChannels.id, { onDelete: "cascade" }),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, { onDelete: "cascade" }),
+    channelId: uuid("channel_id")
+      .notNull()
+      .references(() => agentChannels.id, { onDelete: "cascade" }),
     topic: text("topic").notNull(),
     /** open | synthesized | closed */
     status: text("status").notNull().default("open"),
@@ -33,8 +31,12 @@ export const channelDeliberationPositions = pgTable(
   "channel_deliberation_positions",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    deliberationId: uuid("deliberation_id").notNull().references(() => channelDeliberations.id, { onDelete: "cascade" }),
-    agentId: uuid("agent_id").notNull().references(() => agents.id, { onDelete: "cascade" }),
+    deliberationId: uuid("deliberation_id")
+      .notNull()
+      .references(() => channelDeliberations.id, { onDelete: "cascade" }),
+    agentId: uuid("agent_id")
+      .notNull()
+      .references(() => agents.id, { onDelete: "cascade" }),
     positionText: text("position_text").notNull(),
     evidenceText: text("evidence_text"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -48,9 +50,15 @@ export const channelDeliberationRebuttals = pgTable(
   "channel_deliberation_rebuttals",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    deliberationId: uuid("deliberation_id").notNull().references(() => channelDeliberations.id, { onDelete: "cascade" }),
-    agentId: uuid("agent_id").notNull().references(() => agents.id, { onDelete: "cascade" }),
-    targetPositionId: uuid("target_position_id").notNull().references(() => channelDeliberationPositions.id, { onDelete: "cascade" }),
+    deliberationId: uuid("deliberation_id")
+      .notNull()
+      .references(() => channelDeliberations.id, { onDelete: "cascade" }),
+    agentId: uuid("agent_id")
+      .notNull()
+      .references(() => agents.id, { onDelete: "cascade" }),
+    targetPositionId: uuid("target_position_id")
+      .notNull()
+      .references(() => channelDeliberationPositions.id, { onDelete: "cascade" }),
     rebuttalText: text("rebuttal_text").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },

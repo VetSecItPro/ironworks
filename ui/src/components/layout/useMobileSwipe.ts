@@ -3,11 +3,7 @@ import { useEffect } from "react";
 /**
  * Handles swipe-to-open / swipe-to-close sidebar on mobile.
  */
-export function useMobileSwipe(
-  isMobile: boolean,
-  sidebarOpen: boolean,
-  setSidebarOpen: (open: boolean) => void,
-) {
+export function useMobileSwipe(isMobile: boolean, sidebarOpen: boolean, setSidebarOpen: (open: boolean) => void) {
   useEffect(() => {
     if (!isMobile) return;
 

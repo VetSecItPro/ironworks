@@ -1,6 +1,6 @@
 export { CompanyKpiCards } from "./CompanyKpiCards";
-export { PerformanceTrendChart, VelocityChart, KpiCard } from "./PerformanceCharts";
-export { PerformanceInsights } from "./PerformanceInsights";
-export { SortHeader, PerformanceTable } from "./PerformanceTable";
-export { WorkloadDistribution, AgentPipeline } from "./WorkloadCharts";
 export { PerformanceByProject } from "./PerformanceByProject";
+export { KpiCard, PerformanceTrendChart, VelocityChart } from "./PerformanceCharts";
+export { PerformanceInsights } from "./PerformanceInsights";
+export { PerformanceTable, SortHeader } from "./PerformanceTable";
+export { AgentPipeline, WorkloadDistribution } from "./WorkloadCharts";

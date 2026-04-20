@@ -1,12 +1,12 @@
-import { Command } from "commander";
 import type { ActivityEvent } from "@ironworksai/shared";
+import { Command } from "commander";
 import {
   addCommonClientOptions,
+  type BaseClientOptions,
   formatInlineRecord,
   handleCommandError,
   printOutput,
   resolveCommandContext,
-  type BaseClientOptions,
 } from "./common.js";
 
 interface ActivityListOptions extends BaseClientOptions {

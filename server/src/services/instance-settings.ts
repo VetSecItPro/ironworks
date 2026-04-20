@@ -1,13 +1,13 @@
 import type { Db } from "@ironworksai/db";
 import { companies, instanceSettings } from "@ironworksai/db";
 import {
-  instanceGeneralSettingsSchema,
-  type InstanceGeneralSettings,
-  instanceExperimentalSettingsSchema,
   type InstanceExperimentalSettings,
-  type PatchInstanceGeneralSettings,
+  type InstanceGeneralSettings,
   type InstanceSettings,
+  instanceExperimentalSettingsSchema,
+  instanceGeneralSettingsSchema,
   type PatchInstanceExperimentalSettings,
+  type PatchInstanceGeneralSettings,
 } from "@ironworksai/shared";
 import { eq } from "drizzle-orm";
 

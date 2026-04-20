@@ -1,6 +1,6 @@
-import { and, eq, gte, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { issues } from "@ironworksai/db";
+import { and, eq, gte, sql } from "drizzle-orm";
 
 export type FlowMetrics = {
   avgCycleTimeMinutes: number;
@@ -50,37 +50,19 @@ export async function computeFlowMetrics(db: Db, companyId: string): Promise<Flo
       `,
     })
     .from(issues)
-    .where(
-      and(
-        eq(issues.companyId, companyId),
-        eq(issues.status, "done"),
-        gte(issues.completedAt, thirtyDaysAgo),
-      ),
-    );
+    .where(and(eq(issues.companyId, companyId), eq(issues.status, "done"), gte(issues.completedAt, thirtyDaysAgo)));
 
   // Throughput: completed in rolling 4 weeks
   const [throughput4wRow] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(issues)
-    .where(
-      and(
-        eq(issues.companyId, companyId),
-        eq(issues.status, "done"),
-        gte(issues.completedAt, fourWeeksAgo),
-      ),
-    );
+    .where(and(eq(issues.companyId, companyId), eq(issues.status, "done"), gte(issues.completedAt, fourWeeksAgo)));
 
   // Throughput: completed this week (for trend)
   const [throughputWeekRow] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(issues)
-    .where(
-      and(
-        eq(issues.companyId, companyId),
-        eq(issues.status, "done"),
-        gte(issues.completedAt, oneWeekAgo),
-      ),
-    );
+    .where(and(eq(issues.companyId, companyId), eq(issues.status, "done"), gte(issues.completedAt, oneWeekAgo)));
 
   const total4w = Number(throughput4wRow?.count ?? 0);
   const totalThisWeek = Number(throughputWeekRow?.count ?? 0);
@@ -100,12 +82,7 @@ export async function computeFlowMetrics(db: Db, companyId: string): Promise<Flo
   const statusCounts = await db
     .select({ status: issues.status, count: sql<number>`count(*)::int` })
     .from(issues)
-    .where(
-      and(
-        eq(issues.companyId, companyId),
-        sql`${issues.status} NOT IN ('done', 'cancelled')`,
-      ),
-    )
+    .where(and(eq(issues.companyId, companyId), sql`${issues.status} NOT IN ('done', 'cancelled')`))
     .groupBy(issues.status);
 
   let bottleneckColumn: string | null = null;
@@ -130,12 +107,7 @@ export async function computeFlowMetrics(db: Db, companyId: string): Promise<Flo
       `,
     })
     .from(issues)
-    .where(
-      and(
-        eq(issues.companyId, companyId),
-        eq(issues.status, "blocked"),
-      ),
-    );
+    .where(and(eq(issues.companyId, companyId), eq(issues.status, "blocked")));
 
   return {
     avgCycleTimeMinutes: Math.round(Number(cycleLeadRow?.avgCycleMinutes ?? 0)),

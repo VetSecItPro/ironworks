@@ -1,5 +1,5 @@
-import esbuild from "esbuild";
 import { createPluginBundlerPresets } from "@ironworksai/plugin-sdk/bundlers";
+import esbuild from "esbuild";
 
 const presets = createPluginBundlerPresets({ uiEntry: "src/ui/index.tsx" });
 const watch = process.argv.includes("--watch");

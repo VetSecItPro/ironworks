@@ -14,10 +14,7 @@ export function defaultPermissionsForRole(role: string): NormalizedAgentPermissi
   };
 }
 
-export function normalizeAgentPermissions(
-  permissions: unknown,
-  role: string,
-): NormalizedAgentPermissions {
+export function normalizeAgentPermissions(permissions: unknown, role: string): NormalizedAgentPermissions {
   const defaults = defaultPermissionsForRole(role);
   if (typeof permissions !== "object" || permissions === null || Array.isArray(permissions)) {
     return defaults;

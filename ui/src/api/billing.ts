@@ -38,15 +38,9 @@ export interface SubscriptionResponse {
 }
 
 export const billingApi = {
-  getSubscription: (companyId: string) =>
-    api.get<SubscriptionResponse>(`/companies/${companyId}/billing/subscription`),
+  getSubscription: (companyId: string) => api.get<SubscriptionResponse>(`/companies/${companyId}/billing/subscription`),
 
-  createCheckoutSession: (
-    companyId: string,
-    planTier: string,
-    successUrl: string,
-    cancelUrl: string,
-  ) =>
+  createCheckoutSession: (companyId: string, planTier: string, successUrl: string, cancelUrl: string) =>
     api.post<{ url: string }>(`/companies/${companyId}/billing/checkout`, {
       planTier,
       successUrl,

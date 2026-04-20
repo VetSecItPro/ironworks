@@ -1,6 +1,6 @@
-import { and, desc, eq, isNull, or, sql } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
 import { activityLog, heartbeatRuns, issues } from "@ironworksai/db";
+import { and, desc, eq, isNull, or, sql } from "drizzle-orm";
 
 export interface ActivityFilters {
   companyId: string;
@@ -33,22 +33,8 @@ export function activityService(db: Db) {
       return db
         .select({ activityLog })
         .from(activityLog)
-        .leftJoin(
-          issues,
-          and(
-            eq(activityLog.entityType, sql`'issue'`),
-            eq(activityLog.entityId, issueIdAsText),
-          ),
-        )
-        .where(
-          and(
-            ...conditions,
-            or(
-              sql`${activityLog.entityType} != 'issue'`,
-              isNull(issues.hiddenAt),
-            ),
-          ),
-        )
+        .leftJoin(issues, and(eq(activityLog.entityType, sql`'issue'`), eq(activityLog.entityId, issueIdAsText)))
+        .where(and(...conditions, or(sql`${activityLog.entityType} != 'issue'`, isNull(issues.hiddenAt))))
         .orderBy(desc(activityLog.createdAt))
         .limit(filters.limit ?? 200)
         .then((rows) => rows.map((r) => r.activityLog));
@@ -58,12 +44,7 @@ export function activityService(db: Db) {
       db
         .select()
         .from(activityLog)
-        .where(
-          and(
-            eq(activityLog.entityType, "issue"),
-            eq(activityLog.entityId, issueId),
-          ),
-        )
+        .where(and(eq(activityLog.entityType, "issue"), eq(activityLog.entityId, issueId)))
         .orderBy(desc(activityLog.createdAt))
         .limit(100),
 
@@ -148,13 +129,7 @@ export function activityService(db: Db) {
           priority: issues.priority,
         })
         .from(issues)
-        .where(
-          and(
-            eq(issues.companyId, run.companyId),
-            eq(issues.id, contextIssueId),
-            isNull(issues.hiddenAt),
-          ),
-        )
+        .where(and(eq(issues.companyId, run.companyId), eq(issues.id, contextIssueId), isNull(issues.hiddenAt)))
         .then((rows) => rows[0] ?? null);
 
       if (!fromContext) return fromActivity;

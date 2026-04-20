@@ -1,7 +1,7 @@
+import { DEPARTMENT_LABELS } from "@ironworksai/shared";
 import { Building2 } from "lucide-react";
 import { cn, formatCents } from "../../lib/utils";
 import { computeRating, RATING_COLORS } from "../performance/ratingUtils";
-import { DEPARTMENT_LABELS } from "@ironworksai/shared";
 
 interface DeptAggRow {
   dept: string;
@@ -35,10 +35,14 @@ export function DepartmentAggregation({ deptAggRows }: DepartmentAggregationProp
               <th className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground uppercase">Department</th>
               <th className="px-4 py-2.5 text-center text-xs font-medium text-muted-foreground uppercase">Agents</th>
               <th className="px-4 py-2.5 text-center text-xs font-medium text-muted-foreground uppercase">Avg Score</th>
-              <th className="px-4 py-2.5 text-center text-xs font-medium text-muted-foreground uppercase">Tasks Done</th>
+              <th className="px-4 py-2.5 text-center text-xs font-medium text-muted-foreground uppercase">
+                Tasks Done
+              </th>
               <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground uppercase">Tasks/Day</th>
               <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground uppercase">Completion</th>
-              <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground uppercase">Total Spend</th>
+              <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground uppercase">
+                Total Spend
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -49,10 +53,12 @@ export function DepartmentAggregation({ deptAggRows }: DepartmentAggregationProp
                   <td className="px-4 py-2.5 font-medium">{deptLabel}</td>
                   <td className="px-4 py-2.5 text-center tabular-nums">{d.agentCount}</td>
                   <td className="px-4 py-2.5 text-center">
-                    <span className={cn(
-                      "inline-flex items-center justify-center h-6 w-6 rounded text-xs font-bold",
-                      RATING_COLORS[computeRating(d.avgScore)],
-                    )}>
+                    <span
+                      className={cn(
+                        "inline-flex items-center justify-center h-6 w-6 rounded text-xs font-bold",
+                        RATING_COLORS[computeRating(d.avgScore)],
+                      )}
+                    >
                       {computeRating(d.avgScore)}
                     </span>
                   </td>

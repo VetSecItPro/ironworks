@@ -1,14 +1,7 @@
-import { useState, useMemo } from "react";
-import {
-  type LucideIcon,
-} from "lucide-react";
 import { AGENT_ICON_NAMES, type AgentIconName } from "@ironworksai/shared";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { AGENT_ICONS, getAgentIcon } from "../lib/agent-icons";
 
@@ -55,6 +48,7 @@ export function AgentIconPicker({ value, onChange, children }: AgentIconPickerPr
         <div className="grid grid-cols-7 gap-1 max-h-48 overflow-y-auto">
           {filtered.map(([name, Icon]) => (
             <button
+              type="button"
               key={name}
               onClick={() => {
                 onChange(name);
@@ -63,7 +57,7 @@ export function AgentIconPicker({ value, onChange, children }: AgentIconPickerPr
               }}
               className={cn(
                 "flex items-center justify-center h-8 w-8 rounded hover:bg-accent transition-colors",
-                (value ?? DEFAULT_ICON) === name && "bg-accent ring-1 ring-primary"
+                (value ?? DEFAULT_ICON) === name && "bg-accent ring-1 ring-primary",
               )}
               title={name}
             >

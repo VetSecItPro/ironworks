@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { companyService } from "../services/companies.ts";
 import { agentService } from "../services/agents.ts";
+import { companyService } from "../services/companies.ts";
 
 function createSelectSequenceDb(results: unknown[]) {
   const pending = [...results];
@@ -9,6 +9,7 @@ function createSelectSequenceDb(results: unknown[]) {
     where: vi.fn(() => chain),
     leftJoin: vi.fn(() => chain),
     groupBy: vi.fn(() => chain),
+    // biome-ignore lint/suspicious/noThenProperty: test mock drizzle thenable contract
     then: vi.fn((resolve: (value: unknown[]) => unknown) => Promise.resolve(resolve(pending.shift() ?? []))),
   };
 
@@ -26,27 +27,32 @@ describe("monthly spend hydration", () => {
 
   it("recomputes company spentMonthlyCents from the current utc month instead of returning stale stored values", async () => {
     const dbStub = createSelectSequenceDb([
-      [{
-        id: "company-1",
-        name: "Ironworks",
-        description: null,
-        status: "active",
-        issuePrefix: "PAP",
-        issueCounter: 1,
-        budgetMonthlyCents: 5000,
-        spentMonthlyCents: 999999,
-        requireBoardApprovalForNewAgents: false,
-        brandColor: null,
-        logoAssetId: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }],
-      [{
-        companyId: "company-1",
-        spentMonthlyCents: 420,
-      }],
+      [
+        {
+          id: "company-1",
+          name: "Ironworks",
+          description: null,
+          status: "active",
+          issuePrefix: "PAP",
+          issueCounter: 1,
+          budgetMonthlyCents: 5000,
+          spentMonthlyCents: 999999,
+          requireBoardApprovalForNewAgents: false,
+          brandColor: null,
+          logoAssetId: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ],
+      [
+        {
+          companyId: "company-1",
+          spentMonthlyCents: 420,
+        },
+      ],
     ]);
 
+    // biome-ignore lint/suspicious/noExplicitAny: test-only type cast to satisfy service/function signature in unit test context
     const companies = companyService(dbStub.db as any);
     const [company] = await companies.list();
 
@@ -55,33 +61,38 @@ describe("monthly spend hydration", () => {
 
   it("recomputes agent spentMonthlyCents from the current utc month instead of returning stale stored values", async () => {
     const dbStub = createSelectSequenceDb([
-      [{
-        id: "agent-1",
-        companyId: "company-1",
-        name: "Budget Agent",
-        role: "general",
-        title: null,
-        reportsTo: null,
-        capabilities: null,
-        adapterType: "claude-local",
-        adapterConfig: {},
-        runtimeConfig: {},
-        budgetMonthlyCents: 5000,
-        spentMonthlyCents: 999999,
-        metadata: null,
-        permissions: null,
-        status: "idle",
-        pauseReason: null,
-        pausedAt: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }],
-      [{
-        agentId: "agent-1",
-        spentMonthlyCents: 175,
-      }],
+      [
+        {
+          id: "agent-1",
+          companyId: "company-1",
+          name: "Budget Agent",
+          role: "general",
+          title: null,
+          reportsTo: null,
+          capabilities: null,
+          adapterType: "claude-local",
+          adapterConfig: {},
+          runtimeConfig: {},
+          budgetMonthlyCents: 5000,
+          spentMonthlyCents: 999999,
+          metadata: null,
+          permissions: null,
+          status: "idle",
+          pauseReason: null,
+          pausedAt: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ],
+      [
+        {
+          agentId: "agent-1",
+          spentMonthlyCents: 175,
+        },
+      ],
     ]);
 
+    // biome-ignore lint/suspicious/noExplicitAny: test-only type cast to satisfy service/function signature in unit test context
     const agents = agentService(dbStub.db as any);
     const agent = await agents.getById("agent-1");
 

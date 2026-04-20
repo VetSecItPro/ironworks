@@ -1,7 +1,7 @@
 import type { Goal } from "@ironworksai/shared";
+import { Link } from "@/lib/router";
 import type { GoalProgressItem } from "../../api/goalProgress";
 import { cn } from "../../lib/utils";
-import { Link } from "@/lib/router";
 import { resolveGoalHealth } from "./goal-health";
 
 export function GoalGanttView({
@@ -43,9 +43,9 @@ export function GoalGanttView({
     <div className="space-y-1">
       {/* Month header */}
       <div className="relative h-6 border-b border-border mb-2">
-        {months.map((m, i) => (
+        {months.map((m) => (
           <span
-            key={i}
+            key={m.label}
             className="absolute text-[10px] text-muted-foreground/80 -translate-x-1/2"
             style={{ left: `${m.pct}%`, top: 0 }}
           >
@@ -53,11 +53,7 @@ export function GoalGanttView({
           </span>
         ))}
         {/* Today marker */}
-        <div
-          className="absolute top-0 bottom-0 w-px bg-blue-500/50"
-          style={{ left: `${nowPct}%` }}
-          title="Today"
-        />
+        <div className="absolute top-0 bottom-0 w-px bg-blue-500/50" style={{ left: `${nowPct}%` }} title="Today" />
       </div>
 
       {/* Goal bars */}
@@ -70,7 +66,14 @@ export function GoalGanttView({
         const progress = progressMap.get(goal.id);
         const percent = progress?.progressPercent ?? 0;
         const health = resolveGoalHealth(goal, progress);
-        const barColor = health === "on_track" ? "bg-emerald-500" : health === "at_risk" ? "bg-amber-500" : health === "off_track" ? "bg-red-500" : "bg-muted-foreground/30";
+        const barColor =
+          health === "on_track"
+            ? "bg-emerald-500"
+            : health === "at_risk"
+              ? "bg-amber-500"
+              : health === "off_track"
+                ? "bg-red-500"
+                : "bg-muted-foreground/30";
         const children = childrenMap.get(goal.id);
 
         return (
@@ -104,7 +107,9 @@ export function GoalGanttView({
                   />
                 )}
               </div>
-              <span className="w-10 text-right text-[10px] text-muted-foreground tabular-nums shrink-0">{Math.round(percent)}%</span>
+              <span className="w-10 text-right text-[10px] text-muted-foreground tabular-nums shrink-0">
+                {Math.round(percent)}%
+              </span>
             </div>
           </div>
         );

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -66,11 +66,14 @@ const mockAccessService = vi.hoisted(() => ({
 
 const mockLogActivity = vi.hoisted(() => vi.fn());
 
-vi.mock("../services/index.js", () => ({
-  routineService: () => mockRoutineService,
-  accessService: () => mockAccessService,
-  logActivity: mockLogActivity,
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    routineService: () => mockRoutineService,
+    accessService: () => mockAccessService,
+    logActivity: mockLogActivity,
+  });
+});
 
 vi.mock("../services/activity-log.js", () => ({
   logActivity: mockLogActivity,
@@ -82,7 +85,8 @@ vi.mock("../middleware/logger.js", () => ({
 }));
 
 vi.mock("../middleware/validate.js", () => ({
-  validate: () => (req: any, _res: any, next: any) => next(),
+  // biome-ignore lint/suspicious/noExplicitAny: unused or loosely typed parameter in vi.fn mock implementation
+  validate: () => (_req: any, _res: any, next: any) => next(),
 }));
 
 // ── App builder ─────────────────────────────────────────────────────────────
@@ -94,9 +98,11 @@ async function createApp(actor: Record<string, unknown>) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });
+  // biome-ignore lint/suspicious/noExplicitAny: mock Drizzle DB or storage object for unit tests; real type requires full schema-aware Drizzle instance
   const fakeDb = {} as any;
   app.use("/api", routineRoutes(fakeDb));
   app.use(errorHandler);
@@ -171,9 +177,7 @@ describe("routine routes", () => {
 
     it("rejects unauthenticated create with 401", async () => {
       const app = await createApp(noActor());
-      const res = await request(app)
-        .post(`/api/companies/${COMPANY_ID}/routines`)
-        .send({ title: "Test" });
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/routines`).send({ title: "Test" });
       expect(res.status).toBe(401);
     });
   });
@@ -210,9 +214,7 @@ describe("routine routes", () => {
       const updated = { ...MOCK_ROUTINE, title: "Weekly Report" };
       mockRoutineService.update.mockResolvedValue(updated);
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .patch(`/api/routines/${ROUTINE_ID}`)
-        .send({ title: "Weekly Report" });
+      const res = await request(app).patch(`/api/routines/${ROUTINE_ID}`).send({ title: "Weekly Report" });
 
       expect(res.status).toBe(200);
       expect(res.body.title).toBe("Weekly Report");
@@ -221,9 +223,7 @@ describe("routine routes", () => {
     it("returns 404 for non-existent routine update", async () => {
       mockRoutineService.get.mockResolvedValue(null);
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .patch(`/api/routines/${randomUUID()}`)
-        .send({ title: "Updated" });
+      const res = await request(app).patch(`/api/routines/${randomUUID()}`).send({ title: "Updated" });
       expect(res.status).toBe(404);
     });
   });
@@ -278,9 +278,7 @@ describe("routine routes", () => {
   describe("POST /api/routines/:id/run", () => {
     it("manually runs a routine", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post(`/api/routines/${ROUTINE_ID}/run`)
-        .send({});
+      const res = await request(app).post(`/api/routines/${ROUTINE_ID}/run`).send({});
 
       expect(res.status).toBe(202);
       expect(mockRoutineService.runRoutine).toHaveBeenCalled();

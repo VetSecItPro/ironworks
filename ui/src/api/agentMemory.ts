@@ -22,25 +22,15 @@ export const agentMemoryApi = {
     const params = new URLSearchParams();
     if (filters?.memoryType) params.set("memoryType", filters.memoryType);
     const qs = params.toString();
-    return api.get<AgentMemoryEntry[]>(
-      `/companies/${companyId}/agents/${agentId}/memory${qs ? `?${qs}` : ""}`,
-    );
+    return api.get<AgentMemoryEntry[]>(`/companies/${companyId}/agents/${agentId}/memory${qs ? `?${qs}` : ""}`);
   },
 
   create: (companyId: string, agentId: string, data: Record<string, unknown>) =>
-    api.post<AgentMemoryEntry>(
-      `/companies/${companyId}/agents/${agentId}/memory`,
-      data,
-    ),
+    api.post<AgentMemoryEntry>(`/companies/${companyId}/agents/${agentId}/memory`, data),
 
   update: (companyId: string, agentId: string, entryId: string, data: Record<string, unknown>) =>
-    api.patch<AgentMemoryEntry>(
-      `/companies/${companyId}/agents/${agentId}/memory/${entryId}`,
-      data,
-    ),
+    api.patch<AgentMemoryEntry>(`/companies/${companyId}/agents/${agentId}/memory/${entryId}`, data),
 
   remove: (companyId: string, agentId: string, entryId: string) =>
-    api.delete<{ ok: true }>(
-      `/companies/${companyId}/agents/${agentId}/memory/${entryId}`,
-    ),
+    api.delete<{ ok: true }>(`/companies/${companyId}/agents/${agentId}/memory/${entryId}`),
 };

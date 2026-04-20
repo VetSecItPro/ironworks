@@ -1,5 +1,5 @@
-import { cn } from "../../lib/utils";
 import { Building2 } from "lucide-react";
+import { cn } from "../../lib/utils";
 
 interface StepCompanyProps {
   companyName: string;
@@ -8,12 +8,7 @@ interface StepCompanyProps {
   onCompanyGoalChange: (value: string) => void;
 }
 
-export function StepCompany({
-  companyName,
-  companyGoal,
-  onCompanyNameChange,
-  onCompanyGoalChange,
-}: StepCompanyProps) {
+export function StepCompany({ companyName, companyGoal, onCompanyNameChange, onCompanyGoalChange }: StepCompanyProps) {
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-3 mb-1">
@@ -22,38 +17,45 @@ export function StepCompany({
         </div>
         <div>
           <h2 className="text-lg font-semibold tracking-tight">Name your company</h2>
-          <p className="text-sm text-muted-foreground">
-            This is the organization your agents will work for.
-          </p>
+          <p className="text-sm text-muted-foreground">This is the organization your agents will work for.</p>
         </div>
       </div>
       <div className="mt-3 group">
         <label
+          htmlFor="onboarding-company-name"
           className={cn(
             "text-xs mb-1 block transition-colors",
-            companyName.trim()
-              ? "text-foreground"
-              : "text-muted-foreground group-focus-within:text-foreground"
+            companyName.trim() ? "text-foreground" : "text-muted-foreground group-focus-within:text-foreground",
           )}
         >
           Company name
         </label>
         <input
+          id="onboarding-company-name"
           className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/70"
           placeholder="e.g., Acme Corp"
           value={companyName}
           onChange={(e) => onCompanyNameChange(e.target.value)}
-          autoFocus
         />
         {companyName.trim().length > 0 && (
           <p className="mt-1.5 text-xs text-muted-foreground">
             Your issues will be{" "}
             <span className="font-mono font-medium text-foreground/80">
-              {companyName.trim().substring(0, 4).toUpperCase().replace(/[^A-Z0-9]/g, "")}-1
+              {companyName
+                .trim()
+                .substring(0, 4)
+                .toUpperCase()
+                .replace(/[^A-Z0-9]/g, "")}
+              -1
             </span>
             ,{" "}
             <span className="font-mono font-medium text-foreground/80">
-              {companyName.trim().substring(0, 4).toUpperCase().replace(/[^A-Z0-9]/g, "")}-2
+              {companyName
+                .trim()
+                .substring(0, 4)
+                .toUpperCase()
+                .replace(/[^A-Z0-9]/g, "")}
+              -2
             </span>
             ...
           </p>
@@ -61,16 +63,16 @@ export function StepCompany({
       </div>
       <div className="group">
         <label
+          htmlFor="onboarding-company-goal"
           className={cn(
             "text-xs mb-1 block transition-colors",
-            companyGoal.trim()
-              ? "text-foreground"
-              : "text-muted-foreground group-focus-within:text-foreground"
+            companyGoal.trim() ? "text-foreground" : "text-muted-foreground group-focus-within:text-foreground",
           )}
         >
           Mission / goal (optional)
         </label>
         <textarea
+          id="onboarding-company-goal"
           className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/70 resize-none min-h-[60px]"
           placeholder="What is this company trying to achieve?"
           value={companyGoal}

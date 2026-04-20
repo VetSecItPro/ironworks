@@ -1,14 +1,8 @@
-import { BarChart3, LineChart, AreaChart } from "lucide-react";
+import { AreaChart, BarChart3, LineChart } from "lucide-react";
 import { cn } from "../../lib/utils";
 import type { ChartType } from "./chart-types";
 
-export function ChartTypeSwitcher({
-  active,
-  onChange,
-}: {
-  active: ChartType;
-  onChange: (t: ChartType) => void;
-}) {
+export function ChartTypeSwitcher({ active, onChange }: { active: ChartType; onChange: (t: ChartType) => void }) {
   const types: { type: ChartType; icon: typeof BarChart3; label: string }[] = [
     { type: "bar", icon: BarChart3, label: "Bar" },
     { type: "line", icon: LineChart, label: "Line" },
@@ -16,9 +10,15 @@ export function ChartTypeSwitcher({
   ];
 
   return (
-    <div className="flex items-center gap-0.5 rounded-md border border-border p-0.5" role="group" aria-label="Chart type">
+    // biome-ignore lint/a11y/useSemanticElements: role="group" is correct ARIA pattern for a button toolbar; <fieldset> is for form controls only
+    <div
+      className="flex items-center gap-0.5 rounded-md border border-border p-0.5"
+      role="group"
+      aria-label="Chart type"
+    >
       {types.map(({ type, icon: Icon, label }) => (
         <button
+          type="button"
           key={type}
           onClick={() => onChange(type)}
           className={cn(

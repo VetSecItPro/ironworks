@@ -1,29 +1,29 @@
-import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { usePageTitle } from "../hooks/usePageTitle";
-import { Plus, Target } from "lucide-react";
 import type { Goal } from "@ironworksai/shared";
-import { goalsApi } from "../api/goals";
-import { goalProgressApi, type GoalProgressItem } from "../api/goalProgress";
-import { issuesApi } from "../api/issues";
-import { useCompany } from "../context/CompanyContext";
-import { useDialog } from "../context/DialogContext";
-import { useBreadcrumbs } from "../context/BreadcrumbContext";
-import { queryKeys } from "../lib/queryKeys";
-import { EmptyState } from "../components/EmptyState";
-import { PageSkeleton } from "../components/PageSkeleton";
+import { useQuery } from "@tanstack/react-query";
+import { Plus, Target } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { type GoalProgressItem, goalProgressApi } from "../api/goalProgress";
+import { goalsApi } from "../api/goals";
+import { issuesApi } from "../api/issues";
+import { EmptyState } from "../components/EmptyState";
 import {
   CascadeSummaryBanner,
   GoalCard,
-  GoalTreeNode,
-  GoalGanttView,
-  QuarterEndBanner,
   GoalFilterBar,
+  GoalGanttView,
   type GoalSortField,
   type GoalStatusFilter,
+  GoalTreeNode,
+  QuarterEndBanner,
   type ViewMode,
 } from "../components/goals";
+import { PageSkeleton } from "../components/PageSkeleton";
+import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { useCompany } from "../context/CompanyContext";
+import { useDialog } from "../context/DialogContext";
+import { usePageTitle } from "../hooks/usePageTitle";
+import { queryKeys } from "../lib/queryKeys";
 
 export function Goals() {
   usePageTitle("Goals");
@@ -39,7 +39,11 @@ export function Goals() {
     setBreadcrumbs([{ label: "Goals" }]);
   }, [setBreadcrumbs]);
 
-  const { data: goals, isLoading, error } = useQuery({
+  const {
+    data: goals,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: queryKeys.goals.list(selectedCompanyId!),
     queryFn: () => goalsApi.list(selectedCompanyId!),
     enabled: !!selectedCompanyId,
@@ -156,14 +160,10 @@ export function Goals() {
       </div>
 
       {/* Quarterly OKR cycle hint */}
-      {totalGoals > 0 && (
-        <QuarterEndBanner inProgressCount={activeGoals} />
-      )}
+      {totalGoals > 0 && <QuarterEndBanner inProgressCount={activeGoals} />}
 
       {/* Cascade summary banner */}
-      {totalGoals > 0 && progressData && (
-        <CascadeSummaryBanner goals={goals ?? []} progressMap={progressMap} />
-      )}
+      {totalGoals > 0 && progressData && <CascadeSummaryBanner goals={goals ?? []} progressMap={progressMap} />}
 
       {/* Toolbar */}
       {totalGoals > 0 && (
@@ -197,7 +197,7 @@ export function Goals() {
               key={goal.id}
               goal={goal}
               progress={progressMap.get(goal.id)}
-              children={childrenMap.get(goal.id)}
+              subGoals={childrenMap.get(goal.id)}
             />
           ))}
         </div>
@@ -222,11 +222,7 @@ export function Goals() {
 
       {rootGoals.length > 0 && viewMode === "timeline" && (
         <div className="rounded-lg border border-border p-4 overflow-x-auto">
-          <GoalGanttView
-            goals={rootGoals}
-            progressMap={progressMap}
-            childrenMap={childrenMap}
-          />
+          <GoalGanttView goals={rootGoals} progressMap={progressMap} childrenMap={childrenMap} />
         </div>
       )}
     </div>

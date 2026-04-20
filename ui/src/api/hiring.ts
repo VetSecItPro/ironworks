@@ -17,8 +17,7 @@ export interface HiringRequest {
 }
 
 export const hiringApi = {
-  list: (companyId: string) =>
-    api.get<HiringRequest[]>(`/companies/${companyId}/hiring-requests`),
+  list: (companyId: string) => api.get<HiringRequest[]>(`/companies/${companyId}/hiring-requests`),
 
   create: (companyId: string, data: Record<string, unknown>) =>
     api.post<HiringRequest>(`/companies/${companyId}/hiring-requests`, data),

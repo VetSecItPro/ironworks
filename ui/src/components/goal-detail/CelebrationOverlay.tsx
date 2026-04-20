@@ -11,17 +11,18 @@ export function CelebrationOverlay({ show }: { show: boolean }) {
       </div>
       {/* Confetti particles */}
       {Array.from({ length: 12 }).map((_, i) => {
-        const angle = (i * 30) * (Math.PI / 180);
+        const angle = i * 30 * (Math.PI / 180);
         const distance = 80 + Math.random() * 60;
         const colors = ["bg-emerald-500", "bg-blue-500", "bg-amber-500", "bg-violet-500", "bg-rose-500"];
         return (
           <div
+            // biome-ignore lint/suspicious/noArrayIndexKey: confetti particles are anonymous; position/angle is computed from index which is the semantic identity
             key={i}
             className={cn("absolute h-2 w-2 rounded-full", colors[i % colors.length])}
             style={{
               left: `calc(50% + ${Math.cos(angle) * distance}px)`,
               top: `calc(50% + ${Math.sin(angle) * distance}px)`,
-              animation: `confetti-burst 0.7s ease-out forwards`,
+              animation: "confetti-burst 0.7s ease-out forwards",
               animationDelay: `${i * 30}ms`,
               opacity: 0,
             }}

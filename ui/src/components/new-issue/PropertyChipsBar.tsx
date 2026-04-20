@@ -1,22 +1,18 @@
-import type { RefObject, ChangeEvent } from "react";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
+  AlertTriangle,
+  ArrowDown,
+  ArrowUp,
+  Calendar,
   CircleDot,
   Minus,
-  ArrowUp,
-  ArrowDown,
-  AlertTriangle,
-  Tag,
-  Calendar,
-  Paperclip,
   MoreHorizontal,
+  Paperclip,
+  Tag,
 } from "lucide-react";
+import type { ChangeEvent, RefObject } from "react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "../../lib/utils";
-import { statuses, priorities, STAGED_FILE_ACCEPT } from "./constants";
+import { priorities, STAGED_FILE_ACCEPT, statuses } from "./constants";
 
 const PRIORITY_ICONS = {
   AlertTriangle,
@@ -64,7 +60,10 @@ export function PropertyChipsBar({
       {/* Status chip */}
       <Popover open={statusOpen} onOpenChange={setStatusOpen}>
         <PopoverTrigger asChild>
-          <button className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/50 transition-colors">
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/50 transition-colors"
+          >
             <CircleDot className={cn("h-3 w-3", currentStatus.color)} />
             {currentStatus.label}
           </button>
@@ -72,12 +71,16 @@ export function PropertyChipsBar({
         <PopoverContent className="w-36 p-1" align="start">
           {statuses.map((s) => (
             <button
+              type="button"
               key={s.value}
               className={cn(
                 "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",
-                s.value === status && "bg-accent"
+                s.value === status && "bg-accent",
               )}
-              onClick={() => { setStatus(s.value); setStatusOpen(false); }}
+              onClick={() => {
+                setStatus(s.value);
+                setStatusOpen(false);
+              }}
             >
               <CircleDot className={cn("h-3 w-3", s.color)} />
               {s.label}
@@ -89,7 +92,10 @@ export function PropertyChipsBar({
       {/* Priority chip */}
       <Popover open={priorityOpen} onOpenChange={setPriorityOpen}>
         <PopoverTrigger asChild>
-          <button className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/50 transition-colors">
+          <button
+            type="button"
+            className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/50 transition-colors"
+          >
             {currentPriority ? (
               <>
                 {(() => {
@@ -111,12 +117,16 @@ export function PropertyChipsBar({
             const Icon = PRIORITY_ICONS[p.icon];
             return (
               <button
+                type="button"
                 key={p.value}
                 className={cn(
                   "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",
-                  p.value === priority && "bg-accent"
+                  p.value === priority && "bg-accent",
                 )}
-                onClick={() => { setPriority(p.value); setPriorityOpen(false); }}
+                onClick={() => {
+                  setPriority(p.value);
+                  setPriorityOpen(false);
+                }}
               >
                 <Icon className={cn("h-3 w-3", p.color)} />
                 {p.label}
@@ -127,7 +137,10 @@ export function PropertyChipsBar({
       </Popover>
 
       {/* Labels chip (placeholder) */}
-      <button className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/50 transition-colors text-muted-foreground">
+      <button
+        type="button"
+        className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/50 transition-colors text-muted-foreground"
+      >
         <Tag className="h-3 w-3" />
         Labels
       </button>
@@ -141,6 +154,7 @@ export function PropertyChipsBar({
         multiple
       />
       <button
+        type="button"
         className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/50 transition-colors text-muted-foreground"
         onClick={() => stageFileInputRef.current?.click()}
         disabled={isPending}
@@ -152,16 +166,25 @@ export function PropertyChipsBar({
       {/* More (dates) */}
       <Popover open={moreOpen} onOpenChange={setMoreOpen}>
         <PopoverTrigger asChild>
-          <button className="inline-flex items-center justify-center rounded-md border border-border p-1 text-xs hover:bg-accent/50 transition-colors text-muted-foreground">
+          <button
+            type="button"
+            className="inline-flex items-center justify-center rounded-md border border-border p-1 text-xs hover:bg-accent/50 transition-colors text-muted-foreground"
+          >
             <MoreHorizontal className="h-3 w-3" />
           </button>
         </PopoverTrigger>
         <PopoverContent className="w-44 p-1" align="start">
-          <button className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50 text-muted-foreground">
+          <button
+            type="button"
+            className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50 text-muted-foreground"
+          >
             <Calendar className="h-3 w-3" />
             Start date
           </button>
-          <button className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50 text-muted-foreground">
+          <button
+            type="button"
+            className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50 text-muted-foreground"
+          >
             <Calendar className="h-3 w-3" />
             Due date
           </button>

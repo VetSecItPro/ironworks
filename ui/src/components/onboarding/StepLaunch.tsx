@@ -1,16 +1,7 @@
+import { Bot, Building2, Check, Key, ListTodo, Pencil, Rocket } from "lucide-react";
 import { getUIAdapter } from "../../adapters";
 import { LLM_PROVIDERS } from "./constants";
-import type { AdapterType } from "./types";
-import {
-  Building2,
-  Bot,
-  Key,
-  ListTodo,
-  Rocket,
-  Pencil,
-  Check,
-} from "lucide-react";
-import type { Step } from "./types";
+import type { AdapterType, Step } from "./types";
 
 interface StepLaunchProps {
   companyName: string;
@@ -40,8 +31,7 @@ export function StepLaunch({
         <div>
           <h3 className="font-medium">Ready to launch</h3>
           <p className="text-xs text-muted-foreground">
-            Everything is set up. Launching now will create the
-            starter task, wake the agent, and open the issue.
+            Everything is set up. Launching now will create the starter task, wake the agent, and open the issue.
           </p>
         </div>
       </div>
@@ -50,9 +40,7 @@ export function StepLaunch({
           <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Company</p>
-            <p className="text-sm font-medium truncate">
-              {companyName}
-            </p>
+            <p className="text-sm font-medium truncate">{companyName}</p>
           </div>
           <button
             type="button"
@@ -90,12 +78,8 @@ export function StepLaunch({
           <Bot className="h-4 w-4 text-muted-foreground shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-[10px] uppercase tracking-wide text-muted-foreground">Agent</p>
-            <p className="text-sm font-medium truncate">
-              {agentName}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {getUIAdapter(adapterType).label}
-            </p>
+            <p className="text-sm font-medium truncate">{agentName}</p>
+            <p className="text-xs text-muted-foreground">{getUIAdapter(adapterType).label}</p>
           </div>
           <button
             type="button"
@@ -111,9 +95,7 @@ export function StepLaunch({
           <ListTodo className="h-4 w-4 text-muted-foreground shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-[10px] uppercase tracking-wide text-muted-foreground">First Task</p>
-            <p className="text-sm font-medium truncate">
-              {taskTitle}
-            </p>
+            <p className="text-sm font-medium truncate">{taskTitle}</p>
           </div>
           <button
             type="button"
@@ -131,7 +113,8 @@ export function StepLaunch({
       <div className="rounded-md border border-border bg-muted/20 px-3 py-2.5">
         <p className="text-xs font-medium text-foreground/80">What happens next</p>
         <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-          Your agent will start working on the task. Check the dashboard in a few minutes to see progress, review deliverables, and follow activity.
+          Your agent will start working on the task. Check the dashboard in a few minutes to see progress, review
+          deliverables, and follow activity.
         </p>
       </div>
     </div>

@@ -1,15 +1,15 @@
-import { memo } from "react";
-import { Link } from "@/lib/router";
-import { Button } from "@/components/ui/button";
+import type { Approval } from "@ironworksai/shared";
 import { X } from "lucide-react";
+import { memo } from "react";
+import { Button } from "@/components/ui/button";
+import { Link } from "@/lib/router";
+import { ACTIONABLE_APPROVAL_STATUSES } from "../../lib/inbox";
 import { timeAgo } from "../../lib/timeAgo";
 import { cn } from "../../lib/utils";
 import { approvalLabel, defaultTypeIcon, typeIcon } from "../ApprovalPayload";
-import { SnoozeButton } from "./SnoozeButton";
-import { getSeverityBorderClass, approvalStatusLabel } from "./inboxHelpers";
-import { ACTIONABLE_APPROVAL_STATUSES } from "../../lib/inbox";
+import { approvalStatusLabel, getSeverityBorderClass } from "./inboxHelpers";
 import type { NonIssueUnreadState } from "./inboxTypes";
-import type { Approval } from "@ironworksai/shared";
+import { SnoozeButton } from "./SnoozeButton";
 
 export const ApprovalInboxRow = memo(function ApprovalInboxRow({
   approval,
@@ -41,17 +41,18 @@ export const ApprovalInboxRow = memo(function ApprovalInboxRow({
   const Icon = typeIcon[approval.type] ?? defaultTypeIcon;
   const label = approvalLabel(approval.type, approval.payload as Record<string, unknown> | null);
   const showResolutionButtons =
-    approval.type !== "budget_override_required" &&
-    ACTIONABLE_APPROVAL_STATUSES.has(approval.status);
+    approval.type !== "budget_override_required" && ACTIONABLE_APPROVAL_STATUSES.has(approval.status);
   const showUnreadSlot = unreadState !== null;
   const showUnreadDot = unreadState === "visible" || unreadState === "fading";
 
   return (
-    <div className={cn(
-      "group border-b border-border px-2 py-2.5 last:border-b-0 sm:px-1 sm:pr-3 sm:py-2",
-      getSeverityBorderClass({ kind: "approval" }),
-      className,
-    )}>
+    <div
+      className={cn(
+        "group border-b border-border px-2 py-2.5 last:border-b-0 sm:px-1 sm:pr-3 sm:py-2",
+        getSeverityBorderClass({ kind: "approval" }),
+        className,
+      )}
+    >
       <div className="flex items-start gap-2 sm:items-center">
         {showUnreadSlot ? (
           <span className="hidden sm:inline-flex h-4 w-4 shrink-0 items-center justify-center self-center">
@@ -62,10 +63,12 @@ export const ApprovalInboxRow = memo(function ApprovalInboxRow({
                 className="inline-flex h-4 w-4 items-center justify-center rounded-full transition-colors hover:bg-blue-500/20"
                 aria-label="Mark as read"
               >
-                <span className={cn(
-                  "block h-2 w-2 rounded-full bg-blue-600 transition-opacity duration-300 dark:bg-blue-400",
-                  unreadState === "fading" ? "opacity-0" : "opacity-100",
-                )} />
+                <span
+                  className={cn(
+                    "block h-2 w-2 rounded-full bg-blue-600 transition-opacity duration-300 dark:bg-blue-400",
+                    unreadState === "fading" ? "opacity-0" : "opacity-100",
+                  )}
+                />
               </button>
             ) : onArchive ? (
               <button
@@ -92,9 +95,7 @@ export const ApprovalInboxRow = memo(function ApprovalInboxRow({
             <Icon className="h-4 w-4 text-muted-foreground" />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="line-clamp-2 text-sm font-medium sm:truncate sm:line-clamp-none">
-              {label}
-            </span>
+            <span className="line-clamp-2 text-sm font-medium sm:truncate sm:line-clamp-none">{label}</span>
             <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
               <span className="capitalize">{approvalStatusLabel(approval.status)}</span>
               {requesterName ? <span>requested by {requesterName}</span> : null}
@@ -113,20 +114,12 @@ export const ApprovalInboxRow = memo(function ApprovalInboxRow({
               >
                 Approve
               </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                className="h-8 px-3"
-                onClick={onReject}
-                disabled={isPending}
-              >
+              <Button variant="destructive" size="sm" className="h-8 px-3" onClick={onReject} disabled={isPending}>
                 Reject
               </Button>
             </>
           ) : null}
-          {onSnooze && snoozeKey && (
-            <SnoozeButton itemKey={snoozeKey} onSnooze={onSnooze} />
-          )}
+          {onSnooze && snoozeKey && <SnoozeButton itemKey={snoozeKey} onSnooze={onSnooze} />}
         </div>
       </div>
       {showResolutionButtons ? (
@@ -139,13 +132,7 @@ export const ApprovalInboxRow = memo(function ApprovalInboxRow({
           >
             Approve
           </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            className="h-8 px-3"
-            onClick={onReject}
-            disabled={isPending}
-          >
+          <Button variant="destructive" size="sm" className="h-8 px-3" onClick={onReject} disabled={isPending}>
             Reject
           </Button>
         </div>

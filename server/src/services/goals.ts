@@ -1,6 +1,6 @@
-import { and, asc, eq, isNull } from "drizzle-orm";
 import type { Db } from "@ironworksai/db";
-import { goals, goalKeyResults } from "@ironworksai/db";
+import { goalKeyResults, goals } from "@ironworksai/db";
+import { and, asc, eq, isNull } from "drizzle-orm";
 
 type GoalReader = Pick<Db, "select">;
 
@@ -23,13 +23,7 @@ export async function getDefaultCompanyGoal(db: GoalReader, companyId: string) {
   const anyRootGoal = await db
     .select()
     .from(goals)
-    .where(
-      and(
-        eq(goals.companyId, companyId),
-        eq(goals.level, "company"),
-        isNull(goals.parentId),
-      ),
-    )
+    .where(and(eq(goals.companyId, companyId), eq(goals.level, "company"), isNull(goals.parentId)))
     .orderBy(asc(goals.createdAt))
     .then((rows) => rows[0] ?? null);
   if (anyRootGoal) return anyRootGoal;
@@ -78,13 +72,13 @@ export function goalService(db: Db) {
         .then((rows) => rows[0] ?? null),
 
     // Key Results
-    listKeyResults: (goalId: string) =>
-      db
-        .select()
-        .from(goalKeyResults)
-        .where(eq(goalKeyResults.goalId, goalId)),
+    listKeyResults: (goalId: string) => db.select().from(goalKeyResults).where(eq(goalKeyResults.goalId, goalId)),
 
-    createKeyResult: (goalId: string, companyId: string, data: { description: string; targetValue?: string; unit?: string }) =>
+    createKeyResult: (
+      goalId: string,
+      companyId: string,
+      data: { description: string; targetValue?: string; unit?: string },
+    ) =>
       db
         .insert(goalKeyResults)
         .values({
@@ -97,7 +91,10 @@ export function goalService(db: Db) {
         .returning()
         .then((rows) => rows[0]),
 
-    updateKeyResult: (krId: string, data: { description?: string; targetValue?: string; currentValue?: string; unit?: string }) =>
+    updateKeyResult: (
+      krId: string,
+      data: { description?: string; targetValue?: string; currentValue?: string; unit?: string },
+    ) =>
       db
         .update(goalKeyResults)
         .set({ ...data, updatedAt: new Date() })

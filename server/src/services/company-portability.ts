@@ -11,22 +11,16 @@ import type {
 } from "@ironworksai/shared";
 import type { StorageService } from "../storage/types.js";
 import { accessService } from "./access.js";
-import { agentService } from "./agents.js";
 import { agentInstructionsService } from "./agent-instructions.js";
+import { agentService } from "./agents.js";
 import { assetService } from "./assets.js";
-import { companySkillService } from "./company-skills.js";
 import { companyService } from "./companies.js";
+import { exportBundle as _exportBundle, previewExport as _previewExport } from "./company-portability-export.js";
+import { importBundle as _importBundle, previewImport as _previewImport } from "./company-portability-import.js";
+import type { CompanyPortabilityServiceDeps, ImportBehaviorOptions } from "./company-portability-shared.js";
+import { companySkillService } from "./company-skills.js";
 import { issueService } from "./issues.js";
 import { projectService } from "./projects.js";
-import {
-  exportBundle as _exportBundle,
-  previewExport as _previewExport,
-} from "./company-portability-export.js";
-import {
-  previewImport as _previewImport,
-  importBundle as _importBundle,
-} from "./company-portability-import.js";
-import type { ImportBehaviorOptions, CompanyPortabilityServiceDeps } from "./company-portability-shared.js";
 
 export type { ImportBehaviorOptions } from "./company-portability-shared.js";
 export { parseGitHubSourceUrl } from "./company-portability-shared.js";
@@ -46,10 +40,8 @@ export function companyPortabilityService(db: Db, storage?: StorageService) {
   };
 
   return {
-    exportBundle: (companyId: string, input: CompanyPortabilityExport) =>
-      _exportBundle(deps, companyId, input),
-    previewExport: (companyId: string, input: CompanyPortabilityExport) =>
-      _previewExport(deps, companyId, input),
+    exportBundle: (companyId: string, input: CompanyPortabilityExport) => _exportBundle(deps, companyId, input),
+    previewExport: (companyId: string, input: CompanyPortabilityExport) => _previewExport(deps, companyId, input),
     previewImport: (input: CompanyPortabilityPreview, options?: ImportBehaviorOptions) =>
       _previewImport(deps, input, options),
     importBundle: (

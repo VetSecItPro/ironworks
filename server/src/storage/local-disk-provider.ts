@@ -1,7 +1,7 @@
 import { createReadStream, promises as fs } from "node:fs";
 import path from "node:path";
-import type { StorageProvider, GetObjectResult, HeadObjectResult } from "./types.js";
-import { notFound, badRequest } from "../errors.js";
+import { badRequest, notFound } from "../errors.js";
+import type { GetObjectResult, HeadObjectResult, StorageProvider } from "./types.js";
 
 function normalizeObjectKey(objectKey: string): string {
   const normalized = objectKey.replace(/\\/g, "/").trim();
@@ -54,7 +54,7 @@ export function createLocalDiskStorageProvider(baseDir: string): StorageProvider
     async getObject(input): Promise<GetObjectResult> {
       const filePath = resolveWithin(root, input.objectKey);
       const stat = await statOrNull(filePath);
-      if (!stat || !stat.isFile()) {
+      if (!stat?.isFile()) {
         throw notFound("Object not found");
       }
       return {
@@ -67,7 +67,7 @@ export function createLocalDiskStorageProvider(baseDir: string): StorageProvider
     async headObject(input): Promise<HeadObjectResult> {
       const filePath = resolveWithin(root, input.objectKey);
       const stat = await statOrNull(filePath);
-      if (!stat || !stat.isFile()) {
+      if (!stat?.isFile()) {
         return { exists: false };
       }
       return {

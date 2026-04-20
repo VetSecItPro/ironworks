@@ -1,19 +1,15 @@
 import * as React from "react";
-import * as RouterDom from "react-router-dom";
 import type { NavigateOptions, To } from "react-router-dom";
+import * as RouterDom from "react-router-dom";
 import { useCompany } from "@/context/CompanyContext";
-import {
-  applyCompanyPrefix,
-  extractCompanyPrefixFromPath,
-  normalizeCompanyPrefix,
-} from "@/lib/company-routes";
+import { applyCompanyPrefix, extractCompanyPrefixFromPath, normalizeCompanyPrefix } from "@/lib/company-routes";
 
 function resolveTo(to: To, companyPrefix: string | null): To {
   if (typeof to === "string") {
     return applyCompanyPrefix(to, companyPrefix);
   }
 
-  if (to.pathname && to.pathname.startsWith("/")) {
+  if (to.pathname?.startsWith("/")) {
     const pathname = applyCompanyPrefix(to.pathname, companyPrefix);
     if (pathname !== to.pathname) {
       return { ...to, pathname };

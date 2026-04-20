@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -12,7 +12,15 @@ const AGENT_ID = randomUUID();
 const MOCK_SUMMARY = { totalCents: 1500, eventCount: 10 };
 const MOCK_BY_AGENT = [{ agentId: AGENT_ID, agentName: "Test Agent", costCents: 750 }];
 const MOCK_BY_AGENT_MODEL = [
-  { agentId: AGENT_ID, model: "claude-sonnet", costCents: 500, inputTokens: 1000, cachedInputTokens: 0, outputTokens: 500, billingType: "metered_api" },
+  {
+    agentId: AGENT_ID,
+    model: "claude-sonnet",
+    costCents: 500,
+    inputTokens: 1000,
+    cachedInputTokens: 0,
+    outputTokens: 500,
+    billingType: "metered_api",
+  },
 ];
 const MOCK_BY_PROVIDER = [{ provider: "anthropic", costCents: 1500 }];
 const MOCK_BY_BILLER = [{ biller: "anthropic", costCents: 1500 }];
@@ -63,15 +71,18 @@ const mockHeartbeatService = vi.hoisted(() => ({
 
 const mockLogActivity = vi.hoisted(() => vi.fn());
 
-vi.mock("../services/index.js", () => ({
-  costService: () => mockCostService,
-  financeService: () => mockFinanceService,
-  budgetService: () => mockBudgetService,
-  companyService: () => mockCompanyService,
-  agentService: () => mockAgentService,
-  heartbeatService: () => mockHeartbeatService,
-  logActivity: mockLogActivity,
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    costService: () => mockCostService,
+    financeService: () => mockFinanceService,
+    budgetService: () => mockBudgetService,
+    companyService: () => mockCompanyService,
+    agentService: () => mockAgentService,
+    heartbeatService: () => mockHeartbeatService,
+    logActivity: mockLogActivity,
+  });
+});
 
 vi.mock("../services/costs.js", () => ({
   costPerIssue: vi.fn().mockResolvedValue([]),
@@ -104,9 +115,11 @@ async function createApp(actor: Record<string, unknown>) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });
+  // biome-ignore lint/suspicious/noExplicitAny: mock Drizzle DB or storage object for unit tests; real type requires full schema-aware Drizzle instance
   const fakeDb = {} as any;
   app.use("/api", costRoutes(fakeDb));
   app.use(errorHandler);
@@ -238,9 +251,7 @@ describe("cost routes", () => {
   describe("PATCH /api/companies/:companyId/budgets", () => {
     it("requires board access to update company budget", async () => {
       const app = await createApp(agentActor(AGENT_ID, COMPANY_ID));
-      const res = await request(app)
-        .patch(`/api/companies/${COMPANY_ID}/budgets`)
-        .send({ budgetMonthlyCents: 20000 });
+      const res = await request(app).patch(`/api/companies/${COMPANY_ID}/budgets`).send({ budgetMonthlyCents: 20000 });
       expect(res.status).toBe(403);
     });
   });
@@ -249,9 +260,7 @@ describe("cost routes", () => {
     it("returns 404 for non-existent agent", async () => {
       mockAgentService.getById.mockResolvedValue(null);
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .patch(`/api/agents/${randomUUID()}/budgets`)
-        .send({ budgetMonthlyCents: 5000 });
+      const res = await request(app).patch(`/api/agents/${randomUUID()}/budgets`).send({ budgetMonthlyCents: 5000 });
       expect(res.status).toBe(404);
     });
 
@@ -259,9 +268,7 @@ describe("cost routes", () => {
       const otherAgentId = randomUUID();
       mockAgentService.getById.mockResolvedValue({ ...MOCK_AGENT_RECORD, id: otherAgentId });
       const app = await createApp(agentActor(AGENT_ID, COMPANY_ID));
-      const res = await request(app)
-        .patch(`/api/agents/${otherAgentId}/budgets`)
-        .send({ budgetMonthlyCents: 5000 });
+      const res = await request(app).patch(`/api/agents/${otherAgentId}/budgets`).send({ budgetMonthlyCents: 5000 });
       expect(res.status).toBe(403);
     });
   });

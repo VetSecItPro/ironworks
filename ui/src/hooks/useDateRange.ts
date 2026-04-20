@@ -79,10 +79,7 @@ export function useDateRange(): UseDateRangeResult {
     const msToNextMinute = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
     const timeout = setTimeout(() => {
       setMinuteTick(floorToMinute(new Date()));
-      intervalRef.current = setInterval(
-        () => setMinuteTick(floorToMinute(new Date())),
-        60_000,
-      );
+      intervalRef.current = setInterval(() => setMinuteTick(floorToMinute(new Date())), 60_000);
     }, msToNextMinute);
     return () => {
       clearTimeout(timeout);
@@ -94,14 +91,14 @@ export function useDateRange(): UseDateRangeResult {
     if (preset !== "custom") return computeRange(preset);
     // treat custom date strings as local-date boundaries so the full day is included
     // regardless of the user's timezone. "from" starts at local midnight, "to" at 23:59:59.999.
-    const fromDate = customFrom ? new Date(customFrom + "T00:00:00") : null;
-    const toDate = customTo ? new Date(customTo + "T23:59:59.999") : null;
+    const fromDate = customFrom ? new Date(`${customFrom}T00:00:00`) : null;
+    const toDate = customTo ? new Date(`${customTo}T23:59:59.999`) : null;
     return {
       from: fromDate ? fromDate.toISOString() : "",
       to: toDate ? toDate.toISOString() : "",
     };
-  // minuteTick drives re-evaluation of sliding presets once per minute.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // minuteTick drives re-evaluation of sliding presets once per minute.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preset, customFrom, customTo, minuteTick]);
 
   const customReady = preset !== "custom" || (!!customFrom && !!customTo);

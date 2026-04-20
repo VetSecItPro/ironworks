@@ -1,2 +1,2 @@
-export { useMobileSwipe } from "./useMobileSwipe";
 export { useMobileNavVisibility } from "./useMobileNavVisibility";
+export { useMobileSwipe } from "./useMobileSwipe";

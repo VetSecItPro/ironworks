@@ -1,10 +1,10 @@
-import { Link } from "@/lib/router";
 import type { CompanySkillListItem } from "@ironworksai/shared";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Link } from "@/lib/router";
 import { cn } from "../../lib/utils";
-import { buildTree, skillRoute, sourceMeta } from "./utils";
 import { SkillTree } from "./SkillTree";
+import { buildTree, skillRoute, sourceMeta } from "./utils";
 
 export function SkillList({
   skills,
@@ -35,11 +35,7 @@ export function SkillList({
   });
 
   if (filteredSkills.length === 0) {
-    return (
-      <div className="px-4 py-6 text-sm text-muted-foreground">
-        No skills match this filter.
-      </div>
-    );
+    return <div className="px-4 py-6 text-sm text-muted-foreground">No skills match this filter.</div>;
   }
 
   return (

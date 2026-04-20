@@ -7,6 +7,5 @@ export interface CreateTicketInput {
 }
 
 export const supportApi = {
-  createTicket: (input: CreateTicketInput) =>
-    api.post<{ id: string }>("/support/tickets", input),
+  createTicket: (input: CreateTicketInput) => api.post<{ id: string }>("/support/tickets", input),
 };

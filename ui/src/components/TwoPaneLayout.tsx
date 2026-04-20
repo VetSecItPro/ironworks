@@ -28,17 +28,17 @@ export function TwoPaneLayout({
       style={{ display: "grid", gridTemplateColumns: `${listWidth} 1fr` }}
     >
       {/* Left pane - scrollable list */}
-      <div className="overflow-y-auto border-r border-border">
-        {list}
-      </div>
+      <div className="overflow-y-auto border-r border-border">{list}</div>
 
       {/* Right pane - detail view */}
       <div className="overflow-y-auto">
-        {hasSelection ? detail : (emptyDetail ?? (
-          <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-            Select an item to view details
-          </div>
-        ))}
+        {hasSelection
+          ? detail
+          : (emptyDetail ?? (
+              <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                Select an item to view details
+              </div>
+            ))}
       </div>
     </div>
   );

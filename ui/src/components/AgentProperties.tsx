@@ -1,13 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
-import { Link } from "@/lib/router";
 import { AGENT_ROLE_LABELS, type Agent, type AgentRuntimeState } from "@ironworksai/shared";
+import { useQuery } from "@tanstack/react-query";
+import { Separator } from "@/components/ui/separator";
+import { Link } from "@/lib/router";
 import { agentsApi } from "../api/agents";
 import { useCompany } from "../context/CompanyContext";
 import { queryKeys } from "../lib/queryKeys";
-import { StatusBadge } from "./StatusBadge";
+import { agentUrl, formatDate } from "../lib/utils";
 import { Identity } from "./Identity";
-import { formatDate, agentUrl } from "../lib/utils";
-import { Separator } from "@/components/ui/separator";
+import { StatusBadge } from "./StatusBadge";
 
 interface AgentPropertiesProps {
   agent: Agent;
@@ -78,7 +78,9 @@ export function AgentProperties({ agent, runtimeState }: AgentPropertiesProps) {
         )}
         {runtimeState?.lastError && (
           <PropertyRow label="Last error">
-            <span className="text-xs text-red-600 dark:text-red-400 truncate max-w-[160px]">{runtimeState.lastError}</span>
+            <span className="text-xs text-red-600 dark:text-red-400 truncate max-w-[160px]">
+              {runtimeState.lastError}
+            </span>
           </PropertyRow>
         )}
         {agent.lastHeartbeatAt && (

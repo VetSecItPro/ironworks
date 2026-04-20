@@ -1,40 +1,52 @@
-import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { usePageTitle } from "../hooks/usePageTitle";
+import { ChevronLeft, ChevronRight, Download, Filter, Search, Shield } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { activityApi } from "../api/activity";
 import { agentsApi } from "../api/agents";
-import { useCompany } from "../context/CompanyContext";
-import { useBreadcrumbs } from "../context/BreadcrumbContext";
-import { queryKeys } from "../lib/queryKeys";
 import { EmptyState } from "../components/EmptyState";
 import { PageSkeleton } from "../components/PageSkeleton";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Shield, Search, Filter, Download, ChevronLeft, ChevronRight } from "lucide-react";
+import { useBreadcrumbs } from "../context/BreadcrumbContext";
+import { useCompany } from "../context/CompanyContext";
+import { usePageTitle } from "../hooks/usePageTitle";
+import { queryKeys } from "../lib/queryKeys";
 import { cn } from "../lib/utils";
-import { Button } from "@/components/ui/button";
-import type { ActivityEvent } from "@ironworksai/shared";
 
 /* ------------------------------------------------------------------ */
 /*  Administrative action types                                        */
 /* ------------------------------------------------------------------ */
 
 const ADMIN_ACTIONS = new Set([
-  "create", "update", "delete", "archive", "restore",
-  "invite", "approve", "reject", "assign", "unassign",
-  "configure", "enable", "disable", "grant", "revoke",
-  "terminate", "activate", "pause", "resume",
-  "deploy", "publish", "unpublish",
-  "pin", "unpin", "escalate",
+  "create",
+  "update",
+  "delete",
+  "archive",
+  "restore",
+  "invite",
+  "approve",
+  "reject",
+  "assign",
+  "unassign",
+  "configure",
+  "enable",
+  "disable",
+  "grant",
+  "revoke",
+  "terminate",
+  "activate",
+  "pause",
+  "resume",
+  "deploy",
+  "publish",
+  "unpublish",
+  "pin",
+  "unpin",
+  "escalate",
 ]);
 
-function isAdminAction(action: string): boolean {
+function _isAdminAction(action: string): boolean {
   // Match exact or prefix-based admin actions
   for (const a of ADMIN_ACTIONS) {
     if (action === a || action.startsWith(`${a}_`) || action.endsWith(`_${a}`)) return true;
@@ -69,8 +81,10 @@ function formatEntityType(type: string): string {
 
 function actionColor(action: string): string {
   if (action.startsWith("create") || action.startsWith("add")) return "text-emerald-600 dark:text-emerald-400";
-  if (action.startsWith("delete") || action.startsWith("remove") || action.startsWith("terminate")) return "text-red-600 dark:text-red-400";
-  if (action.startsWith("update") || action.startsWith("edit") || action.startsWith("configure")) return "text-blue-600 dark:text-blue-400";
+  if (action.startsWith("delete") || action.startsWith("remove") || action.startsWith("terminate"))
+    return "text-red-600 dark:text-red-400";
+  if (action.startsWith("update") || action.startsWith("edit") || action.startsWith("configure"))
+    return "text-blue-600 dark:text-blue-400";
   return "text-foreground";
 }
 
@@ -93,7 +107,11 @@ export function AuditLog() {
     setBreadcrumbs([{ label: "Audit Log" }]);
   }, [setBreadcrumbs]);
 
-  const { data: events, isLoading, error } = useQuery({
+  const {
+    data: events,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: [...queryKeys.activity(selectedCompanyId!), "audit"],
     queryFn: () => activityApi.list(selectedCompanyId!),
     enabled: !!selectedCompanyId,
@@ -116,11 +134,12 @@ export function AuditLog() {
     const actors = new Map<string, string>();
     const actions = new Set<string>();
     for (const e of events ?? []) {
-      const name = e.actorType === "agent"
-        ? agentNameMap.get(e.actorId) ?? "Agent"
-        : e.actorType === "system"
-          ? "System"
-          : "User";
+      const name =
+        e.actorType === "agent"
+          ? (agentNameMap.get(e.actorId) ?? "Agent")
+          : e.actorType === "system"
+            ? "System"
+            : "User";
       actors.set(e.actorId, name);
       actions.add(e.action);
     }
@@ -142,7 +161,9 @@ export function AuditLog() {
           e.action.toLowerCase().includes(q) ||
           e.entityType.toLowerCase().includes(q) ||
           (agentNameMap.get(e.actorId) ?? "").toLowerCase().includes(q) ||
-          JSON.stringify(e.details ?? {}).toLowerCase().includes(q),
+          JSON.stringify(e.details ?? {})
+            .toLowerCase()
+            .includes(q),
       );
     }
     return list;
@@ -154,7 +175,7 @@ export function AuditLog() {
   const handleExport = () => {
     const rows = filtered.map((e) => ({
       timestamp: formatTimestamp(e.createdAt),
-      actor: e.actorType === "agent" ? agentNameMap.get(e.actorId) ?? e.actorId : e.actorType,
+      actor: e.actorType === "agent" ? (agentNameMap.get(e.actorId) ?? e.actorId) : e.actorType,
       actorType: e.actorType,
       action: e.action,
       entityType: e.entityType,
@@ -201,9 +222,7 @@ export function AuditLog() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Audit Log</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Company-wide record of who did what, and when.
-          </p>
+          <p className="text-sm text-muted-foreground mt-0.5">Company-wide record of who did what, and when.</p>
         </div>
         <Button size="sm" variant="outline" onClick={handleExport} disabled={filtered.length === 0}>
           <Download className="h-3.5 w-3.5 mr-1.5" />
@@ -217,12 +236,21 @@ export function AuditLog() {
           <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(0);
+            }}
             placeholder="Search audit log..."
             className="pl-7 text-xs h-8"
           />
         </div>
-        <Select value={actorFilter} onValueChange={(v) => { setActorFilter(v); setPage(0); }}>
+        <Select
+          value={actorFilter}
+          onValueChange={(v) => {
+            setActorFilter(v);
+            setPage(0);
+          }}
+        >
           <SelectTrigger className="h-8 w-auto min-w-[140px] text-xs">
             <Filter className="h-3 w-3 mr-1" />
             <SelectValue placeholder="All actors" />
@@ -230,11 +258,19 @@ export function AuditLog() {
           <SelectContent>
             <SelectItem value="all">All actors</SelectItem>
             {uniqueActors.map(([id, name]) => (
-              <SelectItem key={id} value={id}>{name}</SelectItem>
+              <SelectItem key={id} value={id}>
+                {name}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <Select value={actionFilter} onValueChange={(v) => { setActionFilter(v); setPage(0); }}>
+        <Select
+          value={actionFilter}
+          onValueChange={(v) => {
+            setActionFilter(v);
+            setPage(0);
+          }}
+        >
           <SelectTrigger className="h-8 w-auto min-w-[140px] text-xs">
             <Filter className="h-3 w-3 mr-1" />
             <SelectValue placeholder="All actions" />
@@ -242,7 +278,9 @@ export function AuditLog() {
           <SelectContent>
             <SelectItem value="all">All actions</SelectItem>
             {uniqueActions.map((a) => (
-              <SelectItem key={a} value={a}>{formatAction(a)}</SelectItem>
+              <SelectItem key={a} value={a}>
+                {formatAction(a)}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -269,11 +307,12 @@ export function AuditLog() {
               </thead>
               <tbody>
                 {pageEvents.map((event) => {
-                  const actorName = event.actorType === "agent"
-                    ? agentNameMap.get(event.actorId) ?? "Agent"
-                    : event.actorType === "system"
-                      ? "System"
-                      : "User";
+                  const actorName =
+                    event.actorType === "agent"
+                      ? (agentNameMap.get(event.actorId) ?? "Agent")
+                      : event.actorType === "system"
+                        ? "System"
+                        : "User";
                   const detailStr = event.details
                     ? Object.entries(event.details)
                         .filter(([, v]) => v !== null && v !== undefined)
@@ -288,12 +327,16 @@ export function AuditLog() {
                       </td>
                       <td className="px-4 py-2">
                         <div className="flex items-center gap-1.5">
-                          <span className={cn(
-                            "text-[10px] font-medium px-1 py-0 rounded-full leading-tight shrink-0",
-                            event.actorType === "agent" ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
-                              : event.actorType === "system" ? "bg-muted text-muted-foreground"
-                              : "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-                          )}>
+                          <span
+                            className={cn(
+                              "text-[10px] font-medium px-1 py-0 rounded-full leading-tight shrink-0",
+                              event.actorType === "agent"
+                                ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+                                : event.actorType === "system"
+                                  ? "bg-muted text-muted-foreground"
+                                  : "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+                            )}
+                          >
                             {event.actorType === "agent" ? "AGT" : event.actorType === "system" ? "SYS" : "USR"}
                           </span>
                           <span className="truncate">{actorName}</span>
@@ -302,9 +345,7 @@ export function AuditLog() {
                       <td className={cn("px-4 py-2 font-medium", actionColor(event.action))}>
                         {formatAction(event.action)}
                       </td>
-                      <td className="px-4 py-2 text-muted-foreground">
-                        {formatEntityType(event.entityType)}
-                      </td>
+                      <td className="px-4 py-2 text-muted-foreground">{formatEntityType(event.entityType)}</td>
                       <td className="px-4 py-2 text-muted-foreground truncate max-w-[300px]" title={detailStr}>
                         {detailStr || "-"}
                       </td>
@@ -329,12 +370,7 @@ export function AuditLog() {
               <span className="text-xs text-muted-foreground">
                 Page {page + 1} of {totalPages}
               </span>
-              <Button
-                size="sm"
-                variant="ghost"
-                disabled={page >= totalPages - 1}
-                onClick={() => setPage((p) => p + 1)}
-              >
+              <Button size="sm" variant="ghost" disabled={page >= totalPages - 1} onClick={() => setPage((p) => p + 1)}>
                 Next
                 <ChevronRight className="h-3.5 w-3.5 ml-1" />
               </Button>

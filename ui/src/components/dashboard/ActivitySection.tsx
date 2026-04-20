@@ -1,11 +1,10 @@
+import type { ActivityEvent, Agent } from "@ironworksai/shared";
+import { ChevronDown, ChevronRight, Radio } from "lucide-react";
 import { useState } from "react";
 import { Link } from "@/lib/router";
-import { ChevronDown, ChevronRight, Radio } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { ActivityRow } from "../ActivityRow";
-import type { Agent } from "@ironworksai/shared";
-import { isAggregated, ACTION_LABELS, type AggregatedGroup } from "./activityAggregation";
-import type { ActivityEvent } from "@ironworksai/shared";
+import { ACTION_LABELS, type AggregatedGroup, isAggregated } from "./activityAggregation";
 
 export function ActivitySection({
   aggregatedActivity,
@@ -34,10 +33,14 @@ export function ActivitySection({
     <div>
       <div className="flex items-center justify-between border-b border-border/50 pb-2 mb-4">
         <div className="flex items-center gap-3">
-          <Link to="/activity" className="text-sm font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors no-underline">
+          <Link
+            to="/activity"
+            className="text-sm font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors no-underline"
+          >
             Recent Activity
           </Link>
           <button
+            type="button"
             onClick={onToggleLiveMode}
             className={cn(
               "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
@@ -68,11 +71,15 @@ export function ActivitySection({
           isAggregated(item) ? (
             <div key={item.key}>
               <button
-                onClick={() => setExpandedAgg((prev) => {
-                  const next = new Set(prev);
-                  if (next.has(item.key)) next.delete(item.key); else next.add(item.key);
-                  return next;
-                })}
+                type="button"
+                onClick={() =>
+                  setExpandedAgg((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(item.key)) next.delete(item.key);
+                    else next.add(item.key);
+                    return next;
+                  })
+                }
                 className={cn(
                   "w-full px-4 py-3 text-sm flex items-center justify-between hover:bg-accent/30 transition-all text-left",
                   expandedAgg.has(item.key) && "bg-accent/10",
@@ -93,14 +100,15 @@ export function ActivitySection({
                       logged {item.count} {ACTION_LABELS[item.action] ?? item.action.replace(/[._]/g, " ")}
                     </span>
                     {item.models.length > 0 && (
-                      <span className="text-muted-foreground ml-1">
-                        - {item.models.slice(0, 3).join(", ")}
-                      </span>
+                      <span className="text-muted-foreground ml-1">- {item.models.slice(0, 3).join(", ")}</span>
                     )}
                   </span>
                 </div>
                 <span className="text-xs text-muted-foreground/80 shrink-0 ml-2 tabular-nums font-mono min-w-[60px] text-right">
-                  {new Date(item.latestEvent.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                  {new Date(item.latestEvent.createdAt).toLocaleTimeString("en-US", {
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
                 </span>
               </button>
               {expandedAgg.has(item.key) && (

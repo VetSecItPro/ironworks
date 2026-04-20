@@ -4,8 +4,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: 'Geist', system-ui, -apple-system, sans-serif;
-  --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, monospace;
+  --font-sans: "Geist", system-ui, -apple-system, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -153,15 +153,22 @@
 /* ── Global Transition Defaults ── */
 @layer base {
   /* Smooth transitions on all interactive elements */
-  a, button, [role="button"], input, select, textarea,
-  [data-slot="card"], [data-slot="select-trigger"] {
+  a,
+  button,
+  [role="button"],
+  input,
+  select,
+  textarea,
+  [data-slot="card"],
+  [data-slot="select-trigger"] {
     transition-property: color, background-color, border-color, box-shadow, opacity, transform;
     transition-duration: 200ms;
     transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   /* Active press feedback on all clickable elements */
-  button:active:not(:disabled), [role="button"]:active:not(:disabled),
+  button:active:not(:disabled),
+  [role="button"]:active:not(:disabled),
   a:active {
     transform: scale(0.98);
   }
@@ -206,15 +213,24 @@
 }
 
 @keyframes feature-dot-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(0.8); }
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
 }
 
 /* Password strength meter */
 .password-strength-bar {
   height: 4px;
   border-radius: 2px;
-  transition: width 0.3s ease, background-color 0.3s ease;
+  transition:
+    width 0.3s ease,
+    background-color 0.3s ease;
 }
 
 /* Dark mode scrollbars */
@@ -238,7 +254,7 @@
 
 /* Compact mode - reduces padding globally */
 .compact main {
-  padding: 0.5rem !important;
+  padding: 0.5rem;
 }
 .compact .p-4 {
   padding: 0.5rem;
@@ -275,16 +291,34 @@
 
 /* Setup celebration animations */
 @keyframes scaleIn {
-  from { transform: scale(0); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 @keyframes fadeInCheck {
-  from { opacity: 0; transform: scale(0.5); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ARIA live regions */
@@ -312,23 +346,23 @@
 
 /* Auto-hide scrollbar: always reserves space, thumb visible only on hover */
 .scrollbar-auto-hide::-webkit-scrollbar {
-  width: 8px !important;
-  background: transparent !important;
+  width: 8px;
+  background: transparent;
 }
 .scrollbar-auto-hide::-webkit-scrollbar-track {
-  background: transparent !important;
+  background: transparent;
 }
 .scrollbar-auto-hide::-webkit-scrollbar-thumb {
-  background: transparent !important;
+  background: transparent;
 }
 .scrollbar-auto-hide:hover::-webkit-scrollbar-track {
-  background: oklch(0.205 0 0) !important;
+  background: oklch(0.205 0 0);
 }
 .scrollbar-auto-hide:hover::-webkit-scrollbar-thumb {
-  background: oklch(0.4 0 0) !important;
+  background: oklch(0.4 0 0);
 }
 .scrollbar-auto-hide:hover::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.5 0 0) !important;
+  background: oklch(0.5 0 0);
 }
 
 /* Expandable dialog transition for max-width changes */
@@ -404,8 +438,12 @@
    shimmer gradients in the same viewport coordinate space so they move
    in perfect unison regardless of where each element sits on the page. */
 @keyframes skeleton-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .skeleton {
@@ -429,8 +467,14 @@
 
 /* Page entry animation — subtle fade + lift on route transitions */
 @keyframes page-enter {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 #root > * {
@@ -438,7 +482,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #root > * { animation: none; }
+  #root > * {
+    animation: none;
+  }
 }
 
 /* MDXEditor theme integration */
@@ -491,11 +537,11 @@
 }
 
 .ironworks-mdxeditor [class*="_contentEditable_"] {
-  padding: 0.375rem 0.625rem !important;
+  padding: 0.375rem 0.625rem;
 }
 
 .ironworks-mdxeditor--borderless [class*="_contentEditable_"] {
-  padding: 0 !important;
+  padding: 0;
 }
 
 .ironworks-mdxeditor [class*="_placeholder_"] {
@@ -656,36 +702,36 @@ a.ironworks-mention-chip[data-mention-kind="agent"]::before {
 /* Dark theme for CodeMirror code blocks inside the MDXEditor.
    Overrides the default cm6-theme-basic-light that MDXEditor bundles. */
 .ironworks-mdxeditor .cm-editor {
-  background-color: #1e1e2e !important;
-  color: #cdd6f4 !important;
+  background-color: #1e1e2e;
+  color: #cdd6f4;
   font-size: 1em;
 }
 
 .ironworks-mdxeditor .cm-gutters {
-  background-color: #181825 !important;
-  color: #585b70 !important;
-  border-right: 1px solid #313244 !important;
+  background-color: #181825;
+  color: #585b70;
+  border-right: 1px solid #313244;
 }
 
 .ironworks-mdxeditor .cm-activeLineGutter {
-  background-color: #1e1e2e !important;
+  background-color: #1e1e2e;
 }
 
 .ironworks-mdxeditor .cm-activeLine {
-  background-color: color-mix(in oklab, #cdd6f4 5%, transparent) !important;
+  background-color: color-mix(in oklab, #cdd6f4 5%, transparent);
 }
 
 .ironworks-mdxeditor .cm-cursor,
 .ironworks-mdxeditor .cm-dropCursor {
-  border-left-color: #cdd6f4 !important;
+  border-left-color: #cdd6f4;
 }
 
 .ironworks-mdxeditor .cm-selectionBackground {
-  background-color: color-mix(in oklab, #89b4fa 25%, transparent) !important;
+  background-color: color-mix(in oklab, #89b4fa 25%, transparent);
 }
 
 .ironworks-mdxeditor .cm-focused .cm-selectionBackground {
-  background-color: color-mix(in oklab, #89b4fa 30%, transparent) !important;
+  background-color: color-mix(in oklab, #89b4fa 30%, transparent);
 }
 
 .ironworks-mdxeditor .cm-content {
@@ -732,13 +778,13 @@ a.ironworks-mention-chip[data-mention-kind="agent"]::before {
 }
 
 .ironworks-markdown pre {
-  border: 1px solid color-mix(in oklab, var(--foreground) 12%, transparent) !important;
-  border-radius: calc(var(--radius) - 3px) !important;
-  background-color: #1e1e2e !important;
-  color: #cdd6f4 !important;
-  padding: 0.5rem 0.65rem !important;
-  margin: 0.4rem 0 !important;
-  font-size: 1em !important;
+  border: 1px solid color-mix(in oklab, var(--foreground) 12%, transparent);
+  border-radius: calc(var(--radius) - 3px);
+  background-color: #1e1e2e;
+  color: #cdd6f4;
+  padding: 0.5rem 0.65rem;
+  margin: 0.4rem 0;
+  font-size: 1em;
   overflow-x: auto;
   white-space: pre;
 }
@@ -969,7 +1015,7 @@ a.ironworks-project-mention-chip {
 
 /* Keep MDXEditor popups above app dialogs, even when they portal to <body>. */
 [class*="_popupContainer_"] {
-  z-index: 81 !important;
+  z-index: 81;
 }
 
 [class*="_dialogOverlay_"] {
@@ -983,7 +1029,7 @@ a.ironworks-project-mention-chip {
 [class*="_tableColumnEditorPopoverContent_"],
 [class*="_toolbarButtonDropdownContainer_"],
 [class*="_toolbarNodeKindSelectContainer_"] {
-  z-index: 81 !important;
+  z-index: 81;
 }
 
 /* ── Print Stylesheet ── */
@@ -998,37 +1044,38 @@ a.ironworks-project-mention-chip {
   [data-slot="breadcrumb-bar"],
   [data-slot="mobile-bottom-nav"],
   [data-slot="toast-viewport"],
-  .print\\:hidden {
-    display: none !important;
+  /* biome-ignore lint/correctness/noUnknownPseudoClass: Tailwind responsive prefix escaped for print media query */
+    .print\\:hidden {
+    display: none;
   }
 
   /* Expand content to full width */
   body {
-    overflow: visible !important;
-    height: auto !important;
+    overflow: visible;
+    height: auto;
   }
 
   html {
-    height: auto !important;
+    height: auto;
   }
 
   #root,
   #root > *,
   main {
-    overflow: visible !important;
-    height: auto !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    padding: 0 !important;
-    margin: 0 !important;
+    overflow: visible;
+    height: auto;
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+    margin: 0;
   }
 
   /* Remove flex layout constraints for print */
   .flex.h-dvh,
   .flex.overflow-hidden {
-    display: block !important;
-    overflow: visible !important;
-    height: auto !important;
+    display: block;
+    overflow: visible;
+    height: auto;
   }
 
   /* Page breaks at section boundaries */
@@ -1037,27 +1084,31 @@ a.ironworks-project-mention-chip {
     page-break-inside: avoid;
   }
 
-  h1, h2, h3 {
+  h1,
+  h2,
+  h3 {
     page-break-after: avoid;
   }
 
-  table, figure, img {
+  table,
+  figure,
+  img {
     page-break-inside: avoid;
   }
 
   /* Ensure readable colors in print */
   * {
-    color: black !important;
-    background: white !important;
-    border-color: #ccc !important;
-    box-shadow: none !important;
+    color: black;
+    background: white;
+    border-color: #ccc;
+    box-shadow: none;
   }
 
   /* Show link URLs in print */
   a[href]::after {
     content: " (" attr(href) ")";
     font-size: 0.75em;
-    color: #666 !important;
+    color: #666;
   }
 
   a[href^="#"]::after,
@@ -1068,8 +1119,8 @@ a.ironworks-project-mention-chip {
 
   /* Remove animations */
   * {
-    animation: none !important;
-    transition: none !important;
+    animation: none;
+    transition: none;
   }
 }
 
@@ -1086,12 +1137,14 @@ a.ironworks-project-mention-chip {
 @media (max-width: 768px) {
   /* Sidebar collapses (handled by SidebarContext / Layout isMobile) */
   /* Content goes full width */
+  /* biome-ignore lint/correctness/noUnknownPseudoClass: Tailwind responsive prefix escaped for mobile media query */
   .md\\:grid-cols-2 {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: 1fr;
   }
 
+  /* biome-ignore lint/correctness/noUnknownPseudoClass: Tailwind responsive prefix escaped for mobile media query */
   .md\\:grid-cols-3 {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: 1fr;
   }
 
   /* Compact table cells */
@@ -1106,13 +1159,13 @@ a.ironworks-project-mention-chip {
 @media (max-width: 375px) {
   /* Reduce padding */
   main {
-    padding: 0.5rem !important;
+    padding: 0.5rem;
   }
 
   /* Stack horizontal layouts vertically */
   .flex-wrap-mobile {
-    flex-direction: column !important;
-    align-items: stretch !important;
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .flex.items-center.justify-between {
@@ -1122,17 +1175,17 @@ a.ironworks-project-mention-chip {
 
   /* Smaller text on very small screens */
   h1 {
-    font-size: 1.25rem !important;
+    font-size: 1.25rem;
   }
 
   h2 {
-    font-size: 1.125rem !important;
+    font-size: 1.125rem;
   }
 
   /* Compact cards */
   .p-4,
   .p-5 {
-    padding: 0.625rem !important;
+    padding: 0.625rem;
   }
 }
 
@@ -1140,12 +1193,24 @@ a.ironworks-project-mention-chip {
 
 /* Smooth number transitions (rolling counter) */
 @keyframes number-roll-up {
-  from { transform: translateY(100%); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 @keyframes number-roll-down {
-  from { transform: translateY(-100%); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 .number-roll-up {
   animation: number-roll-up 250ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -1156,8 +1221,14 @@ a.ironworks-project-mention-chip {
 
 /* Staggered list item entry */
 @keyframes list-item-enter {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .list-item-enter {
   animation: list-item-enter 200ms ease-out both;
@@ -1165,8 +1236,14 @@ a.ironworks-project-mention-chip {
 
 /* Status change confetti - small particle burst */
 @keyframes confetti-particle {
-  0% { opacity: 1; transform: translate(0, 0) scale(1); }
-  100% { opacity: 0; transform: translate(var(--confetti-x), var(--confetti-y)) scale(0); }
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--confetti-x), var(--confetti-y)) scale(0);
+  }
 }
 .confetti-particle {
   position: absolute;
@@ -1179,9 +1256,18 @@ a.ironworks-project-mention-chip {
 
 /* Goal celebration confetti burst */
 @keyframes confetti-burst {
-  0% { opacity: 0; transform: scale(0); }
-  30% { opacity: 1; transform: scale(1.2); }
-  100% { opacity: 0; transform: scale(0.5); }
+  0% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
 }
 
 /* Progress bar smooth fill */
@@ -1191,8 +1277,12 @@ a.ironworks-project-mention-chip {
 
 /* Tab switch cross-fade */
 @keyframes tab-content-enter {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 .tab-content-enter {
   animation: tab-content-enter 150ms ease-out;
@@ -1200,8 +1290,14 @@ a.ironworks-project-mention-chip {
 
 /* Scroll-triggered fade-in */
 @keyframes scroll-fade-in {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .scroll-fade-in {
   animation: scroll-fade-in 400ms ease-out both;
@@ -1209,7 +1305,9 @@ a.ironworks-project-mention-chip {
 
 /* Inline cell editing highlight */
 .inline-edit-cell {
-  transition: background-color 150ms ease, box-shadow 150ms ease;
+  transition:
+    background-color 150ms ease,
+    box-shadow 150ms ease;
 }
 .inline-edit-cell:hover {
   background-color: color-mix(in oklab, var(--accent) 30%, transparent);

@@ -10,7 +10,10 @@ export function AutoTableOfContents({ body }: { body: string }) {
       if (match) {
         const level = match[1].length;
         const text = match[2].replace(/[*_`]/g, "").trim();
-        const id = text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+        const id = text
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, "");
         result.push({ level, text, id });
       }
     }
@@ -23,9 +26,9 @@ export function AutoTableOfContents({ body }: { body: string }) {
     <div className="rounded-lg border border-border bg-muted/10 p-3 mb-4">
       <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">Table of Contents</p>
       <nav className="space-y-0.5">
-        {headings.map((h, i) => (
+        {headings.map((h) => (
           <a
-            key={i}
+            key={h.id}
             href={`#${h.id}`}
             className={cn(
               "block text-xs text-muted-foreground hover:text-foreground transition-colors py-0.5",

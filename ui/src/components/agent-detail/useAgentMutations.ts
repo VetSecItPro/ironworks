@@ -1,11 +1,11 @@
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@/lib/router";
-import { trackFeatureUsed } from "../../lib/analytics";
-import { agentsApi, type AgentPermissionUpdate } from "../../api/agents";
-import { budgetsApi } from "../../api/budgets";
-import { queryKeys } from "../../lib/queryKeys";
 import type { HeartbeatRun } from "@ironworksai/shared";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { useNavigate } from "@/lib/router";
+import { type AgentPermissionUpdate, agentsApi } from "../../api/agents";
+import { budgetsApi } from "../../api/budgets";
+import { trackFeatureUsed } from "../../lib/analytics";
+import { queryKeys } from "../../lib/queryKeys";
 
 interface UseAgentMutationsArgs {
   routeAgentRef: string;
@@ -40,10 +40,14 @@ export function useAgentMutations({
     mutationFn: async (action: "invoke" | "pause" | "resume" | "terminate") => {
       if (!agentLookupRef) return Promise.reject(new Error("No agent reference"));
       switch (action) {
-        case "invoke": return agentsApi.invoke(agentLookupRef, resolvedCompanyId ?? undefined);
-        case "pause": return agentsApi.pause(agentLookupRef, resolvedCompanyId ?? undefined);
-        case "resume": return agentsApi.resume(agentLookupRef, resolvedCompanyId ?? undefined);
-        case "terminate": return agentsApi.terminate(agentLookupRef, resolvedCompanyId ?? undefined);
+        case "invoke":
+          return agentsApi.invoke(agentLookupRef, resolvedCompanyId ?? undefined);
+        case "pause":
+          return agentsApi.pause(agentLookupRef, resolvedCompanyId ?? undefined);
+        case "resume":
+          return agentsApi.resume(agentLookupRef, resolvedCompanyId ?? undefined);
+        case "terminate":
+          return agentsApi.terminate(agentLookupRef, resolvedCompanyId ?? undefined);
       }
     },
     onSuccess: (data, action) => {
@@ -80,11 +84,15 @@ export function useAgentMutations({
         adapterConfig: agent.adapterConfig ?? {},
         runtimeConfig: agent.runtimeConfig ?? {},
       });
-      const skillSync = (agent.adapterConfig as Record<string, unknown> | null)?.ironworksSkillSync as { desiredSkills?: string[] } | undefined;
+      const skillSync = (agent.adapterConfig as Record<string, unknown> | null)?.ironworksSkillSync as
+        | { desiredSkills?: string[] }
+        | undefined;
       if (skillSync?.desiredSkills?.length) {
         try {
           await agentsApi.syncSkills(cloned.id, skillSync.desiredSkills, resolvedCompanyId);
-        } catch { /* non-fatal */ }
+        } catch {
+          /* non-fatal */
+        }
       }
       return cloned;
     },

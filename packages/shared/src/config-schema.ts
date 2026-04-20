@@ -26,7 +26,12 @@ export const backupRetentionPolicyConfigSchema = z.object({
 
 export const databaseBackupConfigSchema = z.object({
   enabled: z.boolean().default(true),
-  intervalMinutes: z.number().int().min(1).max(7 * 24 * 60).default(60),
+  intervalMinutes: z
+    .number()
+    .int()
+    .min(1)
+    .max(7 * 24 * 60)
+    .default(60),
   /** @deprecated Use retentionPolicy instead. Kept for backward compatibility. */
   retentionDays: z.number().int().min(1).max(3650).default(30),
   retentionPolicy: backupRetentionPolicyConfigSchema.optional(),

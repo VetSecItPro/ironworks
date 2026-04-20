@@ -1,12 +1,12 @@
 import { useCallback, useMemo, useState } from "react";
-import type { AppNotification } from "./notification-types";
 import {
-  loadNotifications,
-  saveNotifications,
   loadMutedEntities,
+  loadNotifications,
   saveMutedEntities,
+  saveNotifications,
   sendMockPushNotification,
 } from "./notification-storage";
+import type { AppNotification } from "./notification-types";
 
 export function useNotifications() {
   const [notifications, setNotifications] = useState<AppNotification[]>(loadNotifications);
@@ -17,26 +17,29 @@ export function useNotifications() {
     [notifications, mutedEntities],
   );
 
-  const addNotification = useCallback((notification: Omit<AppNotification, "id" | "read" | "createdAt">) => {
-    const newNotif: AppNotification = {
-      ...notification,
-      id: crypto.randomUUID(),
-      read: false,
-      createdAt: new Date().toISOString(),
-    };
+  const addNotification = useCallback(
+    (notification: Omit<AppNotification, "id" | "read" | "createdAt">) => {
+      const newNotif: AppNotification = {
+        ...notification,
+        id: crypto.randomUUID(),
+        read: false,
+        createdAt: new Date().toISOString(),
+      };
 
-    if (notification.entityId && mutedEntities.has(notification.entityId)) return;
+      if (notification.entityId && mutedEntities.has(notification.entityId)) return;
 
-    setNotifications((prev) => {
-      const next = [newNotif, ...prev].slice(0, 200);
-      saveNotifications(next);
-      return next;
-    });
+      setNotifications((prev) => {
+        const next = [newNotif, ...prev].slice(0, 200);
+        saveNotifications(next);
+        return next;
+      });
 
-    if (notification.type === "agent_failure" || notification.type === "approval") {
-      sendMockPushNotification(notification.title, notification.body);
-    }
-  }, [mutedEntities]);
+      if (notification.type === "agent_failure" || notification.type === "approval") {
+        sendMockPushNotification(notification.title, notification.body);
+      }
+    },
+    [mutedEntities],
+  );
 
   const markRead = useCallback((id: string) => {
     setNotifications((prev) => {
@@ -85,10 +88,7 @@ export function useNotifications() {
     });
   }, []);
 
-  const isEntityMuted = useCallback(
-    (entityId: string) => mutedEntities.has(entityId),
-    [mutedEntities],
-  );
+  const isEntityMuted = useCallback((entityId: string) => mutedEntities.has(entityId), [mutedEntities]);
 
   return {
     notifications,

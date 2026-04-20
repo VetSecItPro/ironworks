@@ -33,29 +33,18 @@ const mockCompanyPortabilityService = vi.hoisted(() => ({
 
 const mockLogActivity = vi.hoisted(() => vi.fn());
 
-vi.mock("../services/index.js", () => ({
-  accessService: () => mockAccessService,
-  agentService: () => mockAgentService,
-  budgetService: () => mockBudgetService,
-  companyPortabilityService: () => mockCompanyPortabilityService,
-  companyService: () => mockCompanyService,
-  logActivity: mockLogActivity,
-  instanceSettingsService: () => ({}),
-  companySkillService: () => ({}),
-  workProductService: () => ({}),
-  workspaceOperationService: () => ({}),
-  executionWorkspaceService: () => ({}),
-  issueApprovalService: () => ({}),
-  secretService: () => ({}),
-  sidebarBadgeService: () => ({}),
-  dashboardService: () => ({}),
-  heartbeatService: () => ({}),
-  goalService: () => ({}),
-  financeService: () => ({}),
-  costService: () => ({}),
-  routineService: () => ({}),
-  playbookService: () => ({ seedDefaults: vi.fn() }),
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    accessService: () => mockAccessService,
+    agentService: () => mockAgentService,
+    budgetService: () => mockBudgetService,
+    companyPortabilityService: () => mockCompanyPortabilityService,
+    companyService: () => mockCompanyService,
+    logActivity: mockLogActivity,
+    playbookService: () => ({ seedDefaults: vi.fn() }),
+  });
+});
 
 async function createApp(actor: Record<string, unknown>) {
   const { companyRoutes } = await import("../routes/companies.js");
@@ -63,9 +52,11 @@ async function createApp(actor: Record<string, unknown>) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });
+  // biome-ignore lint/suspicious/noExplicitAny: mock Drizzle DB or storage object for unit tests; real type requires full schema-aware Drizzle instance
   app.use("/api/companies", companyRoutes({} as any));
   app.use(errorHandler);
   return app;
@@ -113,7 +104,18 @@ describe("company portability routes", () => {
     });
     mockCompanyPortabilityService.previewExport.mockResolvedValue({
       rootPath: "ironworks",
-      manifest: { agents: [], skills: [], projects: [], issues: [], envInputs: [], includes: { company: true, agents: true, projects: true, issues: false, skills: false }, company: null, schemaVersion: 1, generatedAt: new Date().toISOString(), source: null },
+      manifest: {
+        agents: [],
+        skills: [],
+        projects: [],
+        issues: [],
+        envInputs: [],
+        includes: { company: true, agents: true, projects: true, issues: false, skills: false },
+        company: null,
+        schemaVersion: 1,
+        generatedAt: new Date().toISOString(),
+        source: null,
+      },
       files: {},
       fileInventory: [],
       counts: { files: 0, agents: 0, skills: 0, projects: 0, issues: 0 },

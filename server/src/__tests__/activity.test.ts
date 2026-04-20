@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -9,7 +9,7 @@ const COMPANY_ID = randomUUID();
 const USER_ID = randomUUID();
 const AGENT_ID = randomUUID();
 const ISSUE_ID = randomUUID();
-const RUN_ID = randomUUID();
+const _RUN_ID = randomUUID();
 
 const MOCK_ACTIVITY = {
   id: randomUUID(),
@@ -50,9 +50,12 @@ vi.mock("../services/activity.js", () => ({
   activityService: () => mockActivityService,
 }));
 
-vi.mock("../services/index.js", () => ({
-  issueService: () => mockIssueService,
-}));
+vi.mock("../services/index.js", async () => {
+  const { makeFullServicesMock } = await import("./helpers/mock-services.js");
+  return makeFullServicesMock({
+    issueService: () => mockIssueService,
+  });
+});
 
 vi.mock("../services/activity-log.js", () => ({
   logActivity: vi.fn(),
@@ -60,6 +63,7 @@ vi.mock("../services/activity-log.js", () => ({
 }));
 
 vi.mock("../redaction.js", () => ({
+  // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
   sanitizeRecord: vi.fn((x: any) => x),
 }));
 
@@ -76,6 +80,7 @@ async function createApp(actor: Record<string, unknown>) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => {
+    // biome-ignore lint/suspicious/noExplicitAny: actor prop is attached to Express Request by middleware but not declared in its TypeScript type
     (req as any).actor = actor;
     next();
   });
@@ -87,6 +92,7 @@ async function createApp(actor: Record<string, unknown>) {
         }),
       }),
     }),
+    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
   app.use("/api", activityRoutes(fakeDb));
   app.use(errorHandler);
@@ -142,42 +148,34 @@ describe("activity routes", () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
       await request(app).get(`/api/companies/${COMPANY_ID}/activity?agentId=${AGENT_ID}`);
 
-      expect(mockActivityService.list).toHaveBeenCalledWith(
-        expect.objectContaining({ agentId: AGENT_ID }),
-      );
+      expect(mockActivityService.list).toHaveBeenCalledWith(expect.objectContaining({ agentId: AGENT_ID }));
     });
 
     it("passes entityType filter to service", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
       await request(app).get(`/api/companies/${COMPANY_ID}/activity?entityType=issue`);
 
-      expect(mockActivityService.list).toHaveBeenCalledWith(
-        expect.objectContaining({ entityType: "issue" }),
-      );
+      expect(mockActivityService.list).toHaveBeenCalledWith(expect.objectContaining({ entityType: "issue" }));
     });
 
     it("clamps limit to valid range", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
       await request(app).get(`/api/companies/${COMPANY_ID}/activity?limit=9999`);
 
-      expect(mockActivityService.list).toHaveBeenCalledWith(
-        expect.objectContaining({ limit: 500 }),
-      );
+      expect(mockActivityService.list).toHaveBeenCalledWith(expect.objectContaining({ limit: 500 }));
     });
   });
 
   describe("POST /api/companies/:companyId/activity", () => {
     it("creates activity event for board user", async () => {
       const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
-      const res = await request(app)
-        .post(`/api/companies/${COMPANY_ID}/activity`)
-        .send({
-          actorType: "system",
-          actorId: "test",
-          action: "test.action",
-          entityType: "test",
-          entityId: randomUUID(),
-        });
+      const res = await request(app).post(`/api/companies/${COMPANY_ID}/activity`).send({
+        actorType: "system",
+        actorId: "test",
+        action: "test.action",
+        entityType: "test",
+        entityId: randomUUID(),
+      });
 
       expect(res.status).toBe(201);
       expect(mockActivityService.create).toHaveBeenCalled();

@@ -1,8 +1,5 @@
 import { useState } from "react";
-import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +8,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "../lib/utils";
 
 const EVENT_KINDS = [
@@ -38,21 +37,14 @@ interface NewFinanceEventDialogProps {
   isPending?: boolean;
 }
 
-export function NewFinanceEventDialog({
-  open,
-  onOpenChange,
-  onSubmit,
-  isPending,
-}: NewFinanceEventDialogProps) {
+export function NewFinanceEventDialog({ open, onOpenChange, onSubmit, isPending }: NewFinanceEventDialogProps) {
   const [eventKind, setEventKind] = useState("top_up");
   const [direction, setDirection] = useState<"debit" | "credit">("credit");
   const [biller, setBiller] = useState("");
   const [provider, setProvider] = useState("");
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
-  const [occurredAt, setOccurredAt] = useState(
-    new Date().toISOString().split("T")[0],
-  );
+  const [occurredAt, setOccurredAt] = useState(new Date().toISOString().split("T")[0]);
 
   function reset() {
     setEventKind("top_up");
@@ -81,7 +73,7 @@ export function NewFinanceEventDialog({
       amountCents: Math.round(amountNum * 100),
       currency: "USD",
       description: description.trim(),
-      occurredAt: new Date(occurredAt + "T12:00:00Z").toISOString(),
+      occurredAt: new Date(`${occurredAt}T12:00:00Z`).toISOString(),
     });
     reset();
   }
@@ -91,18 +83,17 @@ export function NewFinanceEventDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>New Finance Event</DialogTitle>
-          <DialogDescription>
-            Record a payment, charge, credit, or adjustment to the finance ledger.
-          </DialogDescription>
+          <DialogDescription>Record a payment, charge, credit, or adjustment to the finance ledger.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           {/* Direction */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Direction</label>
+            <span className="text-xs font-medium text-muted-foreground">Direction</span>
             <div className="grid grid-cols-2 gap-2 mt-1">
               {(["credit", "debit"] as const).map((d) => (
                 <button
+                  type="button"
                   key={d}
                   onClick={() => setDirection(d)}
                   className={cn(
@@ -122,10 +113,11 @@ export function NewFinanceEventDialog({
 
           {/* Event Kind */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Type</label>
+            <span className="text-xs font-medium text-muted-foreground">Type</span>
             <div className="flex flex-wrap gap-1.5 mt-1">
               {EVENT_KINDS.map((kind) => (
                 <button
+                  type="button"
                   key={kind.value}
                   onClick={() => setEventKind(kind.value)}
                   className={cn(
@@ -144,8 +136,11 @@ export function NewFinanceEventDialog({
           {/* Amount + Biller */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Amount (USD)</label>
+              <label htmlFor="finance-event-amount" className="text-xs font-medium text-muted-foreground">
+                Amount (USD)
+              </label>
               <Input
+                id="finance-event-amount"
                 type="number"
                 inputMode="decimal"
                 step="0.01"
@@ -157,8 +152,11 @@ export function NewFinanceEventDialog({
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Biller</label>
+              <label htmlFor="finance-event-biller" className="text-xs font-medium text-muted-foreground">
+                Biller
+              </label>
               <Input
+                id="finance-event-biller"
                 value={biller}
                 onChange={(e) => setBiller(e.target.value)}
                 placeholder="e.g. Anthropic"
@@ -170,8 +168,11 @@ export function NewFinanceEventDialog({
           {/* Provider + Date */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Provider (optional)</label>
+              <label htmlFor="finance-event-provider" className="text-xs font-medium text-muted-foreground">
+                Provider (optional)
+              </label>
               <Input
+                id="finance-event-provider"
                 value={provider}
                 onChange={(e) => setProvider(e.target.value)}
                 placeholder="e.g. anthropic"
@@ -179,8 +180,11 @@ export function NewFinanceEventDialog({
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Date</label>
+              <label htmlFor="finance-event-date" className="text-xs font-medium text-muted-foreground">
+                Date
+              </label>
               <Input
+                id="finance-event-date"
                 type="date"
                 value={occurredAt}
                 onChange={(e) => setOccurredAt(e.target.value)}
@@ -191,8 +195,11 @@ export function NewFinanceEventDialog({
 
           {/* Description */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Description</label>
+            <label htmlFor="finance-event-description" className="text-xs font-medium text-muted-foreground">
+              Description
+            </label>
             <Textarea
+              id="finance-event-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Monthly subscription credit, API usage charge, etc."
@@ -205,10 +212,7 @@ export function NewFinanceEventDialog({
           <Button variant="outline" onClick={() => handleClose(false)}>
             Cancel
           </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={!amount || !biller.trim() || isPending}
-          >
+          <Button onClick={handleSubmit} disabled={!amount || !biller.trim() || isPending}>
             {isPending ? "Recording..." : "Record Event"}
           </Button>
         </DialogFooter>
