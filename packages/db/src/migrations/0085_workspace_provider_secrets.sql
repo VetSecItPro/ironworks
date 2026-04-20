@@ -41,26 +41,11 @@ CREATE TABLE workspace_provider_secrets (
 
 CREATE INDEX idx_wps_company ON workspace_provider_secrets(company_id);
 
--- RLS: only company members may read; only owners/admins may write.
-ALTER TABLE workspace_provider_secrets ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY wps_select ON workspace_provider_secrets
-  FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM company_memberships cm
-      WHERE cm.company_id = workspace_provider_secrets.company_id
-        AND cm.user_id = current_user
-    )
-  );
-
-CREATE POLICY wps_write ON workspace_provider_secrets
-  FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM company_memberships cm
-      WHERE cm.company_id = workspace_provider_secrets.company_id
-        AND cm.user_id = current_user
-        AND cm.membership_role IN ('owner','admin')
-    )
-  );
+-- Authorization is enforced at the application layer (routes/providers.ts uses
+-- assertBoard + assertCompanyAccess + assertOwnerOrOperator per verb). This
+-- follows IronWorks convention — no other production table in this codebase
+-- uses PostgreSQL RLS, and the company_memberships schema uses
+-- (principal_type, principal_id) rather than a user_id column, which makes
+-- a RLS policy subtle to get right. If RLS is added later as defense-in-depth,
+-- it should key on principal_type='user' AND principal_id = current_setting(...)
+-- populated from the app session, not current_user (which is the DB role).

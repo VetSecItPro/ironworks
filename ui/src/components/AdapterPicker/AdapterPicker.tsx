@@ -12,29 +12,29 @@ interface ProviderMeta {
   Icon: React.ComponentType<{ className?: string }>;
 }
 
-/** Static metadata per HTTP adapter provider. */
+/** Static metadata per HTTP adapter provider. Types match AGENT_ADAPTER_TYPES on the server. */
 const PROVIDERS: ProviderMeta[] = [
   {
-    type: "poe",
+    type: "poe_api",
     name: "Poe",
     valueProp: "Multi-model access via single Poe subscription",
     Icon: Zap,
   },
   {
-    type: "anthropic",
+    type: "anthropic_api",
     name: "Anthropic",
     // Prompt cache is the key native-API differentiator — surfaces in the value prop
     valueProp: "Direct Claude API with prompt cache + extended thinking",
     Icon: Atom,
   },
   {
-    type: "openai",
+    type: "openai_api",
     name: "OpenAI",
     valueProp: "GPT-5 and o4 reasoning models with structured outputs",
     Icon: Bot,
   },
   {
-    type: "openrouter",
+    type: "openrouter_api",
     name: "OpenRouter",
     valueProp: "200+ models from 20+ providers through a single gateway",
     Icon: Globe,
@@ -42,6 +42,8 @@ const PROVIDERS: ProviderMeta[] = [
 ];
 
 interface AdapterPickerProps {
+  /** Company UUID — required to scope the provider-status query. */
+  companyId: string | null | undefined;
   /** Currently selected provider, highlighted with a ring. */
   selected?: HttpAdapterProviderType;
   onSelect: (provider: HttpAdapterProviderType) => void;
@@ -49,15 +51,17 @@ interface AdapterPickerProps {
 }
 
 function ProviderCard({
+  companyId,
   meta,
   selected,
   onSelect,
 }: {
+  companyId: string | null | undefined;
   meta: ProviderMeta;
   selected: boolean;
   onSelect: (provider: HttpAdapterProviderType) => void;
 }) {
-  const { status, isLoading } = useProviderStatus(meta.type);
+  const { status, isLoading } = useProviderStatus(companyId, meta.type);
   const configured = status?.configured ?? false;
 
   return (
@@ -97,12 +101,13 @@ function ProviderCard({
  * Each card reads its "Configured" status from the workspace-level provider secrets
  * via useProviderStatus — a proxy for whether an API key has been stored.
  */
-export function AdapterPicker({ selected, onSelect, className }: AdapterPickerProps) {
+export function AdapterPicker({ companyId, selected, onSelect, className }: AdapterPickerProps) {
   return (
     <div className={cn("grid grid-cols-1 sm:grid-cols-2 gap-3", className)}>
       {PROVIDERS.map((meta) => (
         <ProviderCard
           key={meta.type}
+          companyId={companyId}
           meta={meta}
           selected={selected === meta.type}
           onSelect={onSelect}

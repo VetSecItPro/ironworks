@@ -12,16 +12,16 @@ import { AdapterTypeDropdown } from "./AdapterTypeDropdown";
 import type { AdapterEnvironmentTestResult, CreateConfigValues, SectionCommonProps } from "./types";
 import type { HttpAdapterProviderType } from "../../types/providers";
 
-/** Map from HTTP adapter type strings to the provider type used by AdapterPicker. */
-const HTTP_ADAPTER_TYPE_TO_PROVIDER: Record<string, HttpAdapterProviderType> = {
-  poe_api: "poe",
-  anthropic_api: "anthropic",
-  openai_api: "openai",
-  openrouter_api: "openrouter",
-};
+/** HTTP adapter type strings — match server-side AGENT_ADAPTER_TYPES. */
+const HTTP_ADAPTER_TYPES: readonly HttpAdapterProviderType[] = [
+  "poe_api",
+  "anthropic_api",
+  "openai_api",
+  "openrouter_api",
+] as const;
 
-function isHttpAdapterType(adapterType: string): boolean {
-  return adapterType in HTTP_ADAPTER_TYPE_TO_PROVIDER;
+function isHttpAdapterType(adapterType: string): adapterType is HttpAdapterProviderType {
+  return (HTTP_ADAPTER_TYPES as readonly string[]).includes(adapterType);
 }
 
 interface AdapterSectionProps extends SectionCommonProps {
@@ -102,14 +102,9 @@ export function AdapterSection({
         {/* HTTP adapter picker cards — shown when current adapter type is an HTTP provider */}
         {showAdapterTypeField && isHttpAdapterType(adapterType) && (
           <AdapterPicker
-            selected={HTTP_ADAPTER_TYPE_TO_PROVIDER[adapterType]}
-            onSelect={(provider) => {
-              // Map provider back to adapter type string and delegate to the existing handler
-              const adapterTypeForProvider = Object.entries(HTTP_ADAPTER_TYPE_TO_PROVIDER).find(
-                ([, p]) => p === provider,
-              )?.[0];
-              if (adapterTypeForProvider) onAdapterTypeChange(adapterTypeForProvider);
-            }}
+            companyId={selectedCompanyId}
+            selected={adapterType}
+            onSelect={(provider) => onAdapterTypeChange(provider)}
           />
         )}
 

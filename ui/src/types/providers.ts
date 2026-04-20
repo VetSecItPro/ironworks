@@ -1,36 +1,34 @@
 /**
- * Shared types for the Providers API contract.
- * The server-side Secrets subagent builds the endpoints; we define the shape here
- * so both sides can evolve toward the same contract.
+ * Shared types for the Providers API contract — mirrors server/src/routes/providers.ts.
  *
- * If the Secrets subagent diverges, see TODO flags below.
+ * Endpoints:
+ *   GET    /companies/:companyId/providers/:provider/status
+ *   PUT    /companies/:companyId/providers/:provider/secret   (body: { apiKey })
+ *   POST   /companies/:companyId/providers/:provider/test
+ *   DELETE /companies/:companyId/providers/:provider/secret
  */
 
-/** The four HTTP adapter provider types. */
-export type HttpAdapterProviderType = "poe" | "anthropic" | "openai" | "openrouter";
+/** The four HTTP adapter provider types. Matches AGENT_ADAPTER_TYPES on the server. */
+export type HttpAdapterProviderType = "poe_api" | "anthropic_api" | "openai_api" | "openrouter_api";
 
-/**
- * Status response from GET /api/providers/{provider}/status.
- * TODO(contract): confirm `keyLastFour` field name with Secrets subagent.
- */
+/** GET /.../providers/:provider/status */
 export interface ProviderStatusResponse {
   configured: boolean;
-  lastTestedAt: string | null;
-  /** "pass" | "fail" | "pending" | null when never tested */
-  lastTestStatus: "pass" | "fail" | "pending" | null;
-  /** Last four chars of the stored key — undefined when not configured */
+  source: "workspace" | "env" | "none";
+  /** Last four chars of the stored key — present when configured */
   keyLastFour?: string;
+  lastTestedAt?: string;
+  lastTestStatus?: "pass" | "fail" | "pending";
 }
 
-/** Response from POST /api/providers/{provider}/test */
+/** POST /.../providers/:provider/test */
 export interface ProviderTestResponse {
-  ok: boolean;
-  /** Human-readable message, e.g. "Connection successful" */
-  message: string;
+  passed: boolean;
+  error?: string;
   testedAt: string;
 }
 
-/** PUT body for storing a key — value is never returned by the server */
-export interface ProviderKeyPutBody {
-  key: string;
+/** PUT body — value is never returned by the server */
+export interface ProviderSecretPutBody {
+  apiKey: string;
 }

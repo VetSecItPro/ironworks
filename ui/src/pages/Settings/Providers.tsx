@@ -38,10 +38,10 @@ interface ProviderMeta {
 }
 
 const PROVIDERS: ProviderMeta[] = [
-  { type: "poe", name: "Poe", keyHint: "Starts with sk-poe-" },
-  { type: "anthropic", name: "Anthropic", keyHint: "Starts with sk-ant-" },
-  { type: "openai", name: "OpenAI", keyHint: "Starts with sk-" },
-  { type: "openrouter", name: "OpenRouter", keyHint: "Starts with sk-or-v1-" },
+  { type: "poe_api", name: "Poe", keyHint: "Starts with sk-poe-" },
+  { type: "anthropic_api", name: "Anthropic", keyHint: "Starts with sk-ant-" },
+  { type: "openai_api", name: "OpenAI", keyHint: "Starts with sk-" },
+  { type: "openrouter_api", name: "OpenRouter", keyHint: "Starts with sk-or-v1-" },
 ];
 
 // ─── Helper: masked key display ───────────────────────────────────────────────
@@ -80,12 +80,13 @@ function TestStatusLine({ status }: { status: ProviderStatusResponse }) {
 // ─── Per-provider card ────────────────────────────────────────────────────────
 
 interface ProviderCardProps {
+  companyId: string;
   meta: ProviderMeta;
 }
 
-function ProviderCard({ meta }: ProviderCardProps) {
+function ProviderCard({ companyId, meta }: ProviderCardProps) {
   const queryClient = useQueryClient();
-  const { status, isLoading, refetch } = useProviderStatus(meta.type);
+  const { status, isLoading, refetch } = useProviderStatus(companyId, meta.type);
 
   // Key entry state — only held in React state (never persisted locally)
   const [keyInput, setKeyInput] = useState("");
@@ -94,51 +95,53 @@ function ProviderCard({ meta }: ProviderCardProps) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
+  const basePath = `/companies/${companyId}/providers/${meta.type}`;
+  const statusKey = ["providers", companyId, meta.type, "status"];
+
   const saveMutation = useMutation({
-    mutationFn: async (key: string) => {
-      // PUT key — server stores it in the vault, never returns it
-      await api.put(`/providers/${meta.type}/key`, { key });
+    mutationFn: async (apiKey: string) => {
+      // PUT secret — server stores it in the vault, never returns the plaintext
+      await api.put(`${basePath}/secret`, { apiKey });
     },
     onSuccess: () => {
       setKeyInput("");
       setActionError(null);
-      // Invalidate status so the "Configured" chip updates
-      void queryClient.invalidateQueries({ queryKey: ["providers", meta.type, "status"] });
+      void queryClient.invalidateQueries({ queryKey: statusKey });
       refetch();
     },
     onError: (e) => setActionError(e instanceof Error ? e.message : "Save failed"),
   });
 
   const rotateMutation = useMutation({
-    mutationFn: async (key: string) => {
-      await api.put(`/providers/${meta.type}/key`, { key });
+    mutationFn: async (apiKey: string) => {
+      await api.put(`${basePath}/secret`, { apiKey });
     },
     onSuccess: () => {
       setRotateInput("");
       setRotateOpen(false);
       setActionError(null);
-      void queryClient.invalidateQueries({ queryKey: ["providers", meta.type, "status"] });
+      void queryClient.invalidateQueries({ queryKey: statusKey });
       refetch();
     },
     onError: (e) => setActionError(e instanceof Error ? e.message : "Rotate failed"),
   });
 
   const testMutation = useMutation({
-    mutationFn: () => api.post<ProviderTestResponse>(`/providers/${meta.type}/test`, {}),
+    mutationFn: () => api.post<ProviderTestResponse>(`${basePath}/test`, {}),
     onSuccess: () => {
       setActionError(null);
-      void queryClient.invalidateQueries({ queryKey: ["providers", meta.type, "status"] });
+      void queryClient.invalidateQueries({ queryKey: statusKey });
       refetch();
     },
     onError: (e) => setActionError(e instanceof Error ? e.message : "Test failed"),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: () => api.delete<{ ok: true }>(`/providers/${meta.type}/key`),
+    mutationFn: () => api.delete<{ ok: true }>(`${basePath}/secret`),
     onSuccess: () => {
       setDeleteOpen(false);
       setActionError(null);
-      void queryClient.invalidateQueries({ queryKey: ["providers", meta.type, "status"] });
+      void queryClient.invalidateQueries({ queryKey: statusKey });
       refetch();
     },
     onError: (e) => setActionError(e instanceof Error ? e.message : "Remove failed"),
@@ -302,7 +305,12 @@ function ProviderCard({ meta }: ProviderCardProps) {
  * Settings > Provider API Keys.
  * One card per HTTP adapter provider with zero-knowledge key entry and test/rotate/delete.
  */
-export function ProvidersPage() {
+interface ProvidersPageProps {
+  /** Company UUID, threaded from the route scope. */
+  companyId: string;
+}
+
+export function ProvidersPage({ companyId }: ProvidersPageProps) {
   return (
     <div className="max-w-2xl mx-auto py-6 px-4 space-y-6">
       <div>
@@ -314,7 +322,7 @@ export function ProvidersPage() {
 
       <div className="space-y-4">
         {PROVIDERS.map((meta) => (
-          <ProviderCard key={meta.type} meta={meta} />
+          <ProviderCard key={meta.type} companyId={companyId} meta={meta} />
         ))}
       </div>
     </div>

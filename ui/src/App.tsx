@@ -308,7 +308,7 @@ function boardRoutes() {
         path="settings/providers"
         element={
           <LazyPage>
-            <SettingsProviders />
+            <ProvidersRoute />
           </LazyPage>
         }
       />
@@ -743,6 +743,20 @@ function InboxRootRedirect() {
 function LegacySettingsRedirect() {
   const location = useLocation();
   return <Navigate to={`/instance/settings/general${location.search}${location.hash}`} replace />;
+}
+
+/**
+ * Resolves :companyPrefix from the route to a real company UUID via useCompany(),
+ * then renders ProvidersPage. Returns null while loading (matches existing app pattern).
+ */
+function ProvidersRoute() {
+  const { companies } = useCompany();
+  const { companyPrefix } = useParams<{ companyPrefix?: string }>();
+  const matchedCompany = companyPrefix
+    ? (companies.find((company) => company.issuePrefix.toUpperCase() === companyPrefix.toUpperCase()) ?? null)
+    : null;
+  if (!matchedCompany) return null;
+  return <SettingsProviders companyId={matchedCompany.id} />;
 }
 
 function OnboardingRoutePage() {
