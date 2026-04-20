@@ -24,13 +24,14 @@ export default defineConfig({
       },
     },
     fileParallelism: false,
-    // Retry flaky tests up to 2 times. The server suite has pre-existing
-    // test-fixture pollution (process.env mutations, shared-mock drizzle
-    // chainables, inline mock overrides) across ~120 files that occasionally
-    // races under full-suite execution. A proper fix requires a dedicated
-    // test-refactor phase auditing every vi.mock() + beforeEach(). Until
-    // then, retries catch intermittent authorization-assertion flakes
-    // without masking genuine bugs (a real bug fails all 3 attempts).
+    // Retain retry: 2. Tier 1 fixture refactor landed (37 files → makeFullServicesMock,
+    // 3 files → makeChainableDb, env-scope + route-app helpers extracted), but 3× runs
+    // without retries exposed residual non-deterministic module-graph pollution —
+    // different cross-company/authz tests flake each run (dashboard, agent-memory,
+    // tenant-isolation, library) with no single file reproducing. Full determinism
+    // needs a systemic audit of every vi.mock() + beforeEach() + shared module state,
+    // deferred to a future test-hygiene phase. Retries mask transient pollution
+    // without hiding real bugs (genuine failures repeat all 3 attempts).
     retry: 2,
     // Deterministic hook execution order across nested describe blocks.
     sequence: {
