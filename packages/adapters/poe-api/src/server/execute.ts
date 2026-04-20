@@ -9,12 +9,14 @@
 import type { AdapterExecutionContext, AdapterExecutionResult } from "@ironworksai/adapter-utils";
 import { computeCost } from "@ironworksai/adapter-utils/http/cost";
 import { HttpAdapterAuthError, HttpAdapterError, HttpAdapterStreamBreak } from "@ironworksai/adapter-utils/http/errors";
+import type { RateLimiter } from "@ironworksai/adapter-utils/http/rate-limiter";
 import { DEFAULT_RETRY_POLICY, runWithRetry } from "@ironworksai/adapter-utils/http/retry";
 import { appendTurn, buildTranscript, deserializeSession } from "@ironworksai/adapter-utils/http/session-replay";
 import type { UsageSummary } from "@ironworksai/adapter-utils/http/sse-parser";
 import { parseSseStream } from "@ironworksai/adapter-utils/http/sse-parser";
 import type { Transport } from "@ironworksai/adapter-utils/http/transport";
 import { validatePoeConfig } from "../shared/config.js";
+import { adapterRateLimiter } from "./rate-limit-config.js";
 
 const POE_API_URL = "https://api.poe.com/v1/chat/completions";
 const ADAPTER_TYPE = "poe_api";
@@ -65,6 +67,8 @@ export async function execute(
   ctx: AdapterExecutionContext,
   /** Injectable transport for testing — production uses createTransport() from transport.ts */
   transport: Transport,
+  /** Injectable rate limiter for testing — production uses the module-level adapterRateLimiter */
+  rateLimiter: RateLimiter = adapterRateLimiter,
 ): Promise<AdapterExecutionResult> {
   // Validate config before any network activity
   const validation = validatePoeConfig(ctx.config);
@@ -92,6 +96,12 @@ export async function execute(
       errorCode: "poe_api_config_error",
     };
   }
+
+  // Acquire a rate-limit token before any network I/O.
+  // This is the primary throttle guard — if the bucket is depleted the call queues here
+  // until a token is available. The limiter key is the adapter type so all poe_api calls
+  // share a single bucket regardless of agent or workspace.
+  await rateLimiter.acquire(ADAPTER_TYPE);
 
   // Emit meta before network I/O so IronWorks can record invocation start
   if (ctx.onMeta) {
