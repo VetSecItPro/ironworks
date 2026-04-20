@@ -152,6 +152,7 @@ export function InteractiveChart({
       </div>
 
       <svg ref={svgRef} width={containerWidth} height={height} className="select-none" onWheel={handleWheel}>
+        <title>Interactive chart</title>
         {yTicks.map((tick, i) => (
           <g key={i}>
             <line

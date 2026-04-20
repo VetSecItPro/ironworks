@@ -19,6 +19,7 @@ export function VelocityChart({
   return (
     <div>
       <svg viewBox={`0 0 ${chartW} ${chartH + 24}`} className="w-full" preserveAspectRatio="xMidYMid meet">
+        <title>Velocity chart</title>
         {/* Subtle gridlines */}
         {[0.25, 0.5, 0.75, 1].map((frac) => (
           <line

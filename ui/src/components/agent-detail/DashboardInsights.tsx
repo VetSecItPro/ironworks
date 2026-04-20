@@ -123,6 +123,7 @@ export function PerformanceHistoryChart({
     <div className="rounded-lg border border-border p-4 space-y-2">
       <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">30-Day Performance</h4>
       <svg viewBox={`0 0 ${w} ${h + 16}`} className="w-full" preserveAspectRatio="xMidYMid meet">
+        <title>30-day performance chart</title>
         <polyline points={taskPoints} fill="none" className="stroke-emerald-500" strokeWidth="1.5" />
         <polyline points={errorPoints} fill="none" className="stroke-red-500" strokeWidth="1.5" strokeDasharray="3 2" />
       </svg>

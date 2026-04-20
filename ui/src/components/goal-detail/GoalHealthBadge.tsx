@@ -78,6 +78,7 @@ export function HealthTrendChart({ snapshots }: { snapshots: GoalSnapshotDTO[] }
         Health Trend (last 30 days)
       </h4>
       <svg viewBox={`0 0 ${svgWidth} ${svgHeight + 16}`} className="w-full" preserveAspectRatio="xMidYMid meet">
+        <title>Goal health trend chart</title>
         {/* Grid */}
         <line
           x1={padding}

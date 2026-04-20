@@ -84,6 +84,7 @@ function BacklogBurnUpChart({ issues }: { issues: Issue[] }) {
         <h3 className="text-sm font-semibold">Backlog Burn-up</h3>
       </div>
       <svg width="100%" viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="overflow-visible">
+        <title>Backlog burn-up chart</title>
         {/* Y-axis labels */}
         {[0, Math.round(maxVal / 2), maxVal].map((v) => (
           <g key={v}>

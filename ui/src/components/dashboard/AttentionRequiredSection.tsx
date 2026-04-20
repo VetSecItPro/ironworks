@@ -42,7 +42,7 @@ export function AttentionRequiredSection({
                   className="inline-flex h-4 w-4 shrink-0 items-center justify-center text-red-500"
                   aria-hidden="true"
                 >
-                  <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
+                  <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
                     <polygon points="5,1 9,9 1,9" />
                   </svg>
                 </span>
@@ -80,7 +80,7 @@ export function AttentionRequiredSection({
                   className="inline-flex h-4 w-4 shrink-0 items-center justify-center text-amber-500"
                   aria-hidden="true"
                 >
-                  <svg
+                  <svg aria-hidden="true"
                     width="10"
                     height="10"
                     viewBox="0 0 10 10"

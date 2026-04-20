@@ -125,7 +125,7 @@ export function CloudInstructionsEditor({
                   : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
               }`}
             >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" className="shrink-0 opacity-60">
+              <svg aria-hidden="true" width="14" height="14" viewBox="0 0 16 16" fill="currentColor" className="shrink-0 opacity-60">
                 <path d="M3.5 2A1.5 1.5 0 0 0 2 3.5v9A1.5 1.5 0 0 0 3.5 14h9a1.5 1.5 0 0 0 1.5-1.5V6.621a1.5 1.5 0 0 0-.44-1.06L10.94 2.94A1.5 1.5 0 0 0 9.878 2.5H9.5V5a1 1 0 0 1-1 1H5.5V3.5A1.5 1.5 0 0 0 4 2H3.5z" />
               </svg>
               <span className="truncate">{file.name}</span>

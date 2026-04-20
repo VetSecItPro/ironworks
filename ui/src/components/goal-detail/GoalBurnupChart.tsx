@@ -76,6 +76,7 @@ export function GoalBurnupChart({
         Burnup
       </h4>
       <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-full" preserveAspectRatio="xMidYMid meet">
+        <title>Goal burn-up chart</title>
         {/* Grid */}
         <line x1="0" y1={svgH - 20} x2={svgW} y2={svgH - 20} className="stroke-muted/30" strokeWidth="0.5" />
         <line

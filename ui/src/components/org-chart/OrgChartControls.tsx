@@ -125,7 +125,7 @@ export function OrgChartVacantPositions({
         <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1">
           <span className="h-3 w-3 inline-block">
             {/* UserPlus inline to avoid import bloat */}
-            <svg
+            <svg aria-hidden="true"
               xmlns="http://www.w3.org/2000/svg"
               width="12"
               height="12"
@@ -147,7 +147,7 @@ export function OrgChartVacantPositions({
         {openPositions.slice(0, 4).map((h) => (
           <div key={h.id} className="flex items-center gap-2 text-xs">
             <div className="h-6 w-6 rounded-full border-2 border-dashed border-amber-400/50 flex items-center justify-center">
-              <svg
+              <svg aria-hidden="true"
                 xmlns="http://www.w3.org/2000/svg"
                 width="12"
                 height="12"

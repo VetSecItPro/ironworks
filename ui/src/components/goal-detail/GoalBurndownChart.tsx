@@ -50,6 +50,7 @@ export function GoalBurndownChart({ issues, targetDate }: { issues: Issue[]; tar
     <div className="rounded-xl border border-border p-4 space-y-2">
       <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Burndown</h4>
       <svg viewBox="0 0 360 110" className="w-full" preserveAspectRatio="xMidYMid meet">
+        <title>Goal burndown chart</title>
         {/* Grid lines */}
         <line x1="0" y1="10" x2="360" y2="10" className="stroke-muted/30" strokeWidth="0.5" />
         <line x1="0" y1="50" x2="360" y2="50" className="stroke-muted/30" strokeWidth="0.5" />
