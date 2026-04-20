@@ -577,11 +577,14 @@ export function IssuesList({
                         desktopLeadingSpacer
                         mobileLeading={
                           <span
+                            role="button"
+                            tabIndex={0}
                             className="flex items-center gap-1.5"
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
                             }}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); } }}
                           >
                             {selectionCount > 0 && (
                               <Checkbox
@@ -599,11 +602,14 @@ export function IssuesList({
                         desktopMetaLeading={
                           <>
                             <span
+                              role="button"
+                              tabIndex={0}
                               className="hidden shrink-0 items-center gap-1.5 sm:inline-flex"
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
                               }}
+                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); } }}
                             >
                               <Checkbox
                                 checked={selectedIds.has(issue.id)}
@@ -635,6 +641,8 @@ export function IssuesList({
                         desktopTrailing={
                           <>
                             <span
+                              role="button"
+                              tabIndex={0}
                               className="hidden items-center md:flex inline-edit-cell rounded px-1 py-0.5 cursor-pointer"
                               onDoubleClick={(e) => {
                                 e.preventDefault();
@@ -645,6 +653,7 @@ export function IssuesList({
                                 e.preventDefault();
                                 e.stopPropagation();
                               }}
+                              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); setEditingCell({ issueId: issue.id, field: "priority" }); } }}
                               title="Double-click to change priority"
                             >
                               <PriorityIcon

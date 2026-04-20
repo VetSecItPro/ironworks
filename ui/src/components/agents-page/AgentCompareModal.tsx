@@ -26,8 +26,11 @@ export function AgentCompareModal({
   if (agents.length === 0) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" role="button" tabIndex={0} aria-label="Close modal" onClick={onClose} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') { e.preventDefault(); onClose(); } }}>
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Agent Comparison"
         className="relative w-full max-w-3xl mx-4 bg-background border border-border rounded-lg shadow-lg max-h-[80vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >

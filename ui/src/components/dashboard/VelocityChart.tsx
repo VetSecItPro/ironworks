@@ -47,9 +47,12 @@ export function VelocityChart({
           const showLabel = i === 0 || i === weeks.length - 1 || i % 3 === 0;
           const isHovered = hoveredIdx === i;
 
+          // biome-ignore lint/a11y/noStaticElementInteractions: SVG chart group - keyboard navigation not applicable for chart column click
           return (
             <g
               key={w.weekStart}
+              role={onWeekClick ? "button" : undefined}
+              aria-label={onWeekClick ? `Week of ${label}` : undefined}
               style={{ cursor: onWeekClick ? "pointer" : "default" }}
               onMouseEnter={() => setHoveredIdx(i)}
               onMouseLeave={() => setHoveredIdx(null)}

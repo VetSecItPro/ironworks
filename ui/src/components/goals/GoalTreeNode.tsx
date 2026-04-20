@@ -60,7 +60,10 @@ export function GoalTreeNode({
           hasChildren && "cursor-pointer hover:bg-accent/30",
           !expanded && "rounded-b-lg",
         )}
+        role={hasChildren ? "button" : undefined}
+        tabIndex={hasChildren ? 0 : undefined}
         onClick={() => hasChildren && setExpanded((e) => !e)}
+        onKeyDown={hasChildren ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpanded((v) => !v); } } : undefined}
       >
         {hasChildren ? (
           expanded ? (

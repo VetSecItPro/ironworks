@@ -382,6 +382,7 @@ export function OrgChart() {
       style={{ height: "calc(100vh - 40px)", width: "calc(100% + 2rem)" }}
     >
       <OrgChartToolbar containerRef={containerRef} />
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: org chart canvas handles pan/zoom via mouse and wheel events */}
       <div
         ref={containerRef}
         className="w-full flex-1 overflow-hidden relative bg-muted/20 border border-border rounded-lg"

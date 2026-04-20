@@ -217,6 +217,8 @@ export function InteractiveChart({
           visibleData.map((d, i) => (
             <g key={i}>
               <rect
+                role="button"
+                aria-label={`Data point: ${d.label} ${d.value}`}
                 x={getX(i) - barWidth / 2}
                 y={getY(d.value)}
                 width={barWidth}
@@ -248,6 +250,8 @@ export function InteractiveChart({
             {visibleData.map((d, i) => (
               <circle
                 key={i}
+                role="button"
+                aria-label={`Data point: ${d.label} ${d.value}`}
                 cx={getX(i)}
                 cy={getY(d.value)}
                 r={hoveredIndex === i ? 5 : 3}

@@ -665,6 +665,9 @@ export function PromptsTab({
         {/* Draggable separator */}
         {!isMobile && (
           <div
+            role="separator"
+            aria-label="Resize panels"
+            tabIndex={0}
             className="w-1 shrink-0 cursor-col-resize hover:bg-border active:bg-primary/50 rounded transition-colors mx-1"
             onMouseDown={handleSeparatorDrag}
           />

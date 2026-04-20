@@ -138,6 +138,7 @@ export function InlineEditor({
 
   if (multiline) {
     return (
+      // biome-ignore lint/a11y/noStaticElementInteractions: wrapper div tracks focus state for visual autosave affordance, not click interaction
       <div
         className={cn(
           markdownPad,

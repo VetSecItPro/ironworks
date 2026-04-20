@@ -200,8 +200,11 @@ export function Hiring() {
                   pipeline[stage].map((req) => (
                     <div
                       key={req.id}
+                      role="button"
+                      tabIndex={0}
                       className="bg-card rounded-md border border-border/50 px-2.5 py-2 cursor-pointer hover:border-foreground/20 transition-colors"
                       onClick={() => setExpandedId(expandedId === req.id ? null : req.id)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedId(expandedId === req.id ? null : req.id); } }}
                     >
                       <div className="text-sm font-medium truncate">{req.title}</div>
                       <div className="flex items-center gap-1.5 mt-0.5">

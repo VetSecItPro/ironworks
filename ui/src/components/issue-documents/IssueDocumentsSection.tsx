@@ -447,6 +447,7 @@ export function IssueDocumentsSection({
       {error && <p className="text-xs text-destructive">{error}</p>}
 
       {draft?.isNew && (
+        // biome-ignore lint/a11y/noStaticElementInteractions: new document draft container captures keyboard for save/cancel shortcuts
         <div
           className="space-y-3 rounded-lg border border-border bg-accent/10 p-3"
           onBlurCapture={handleDraftBlur}

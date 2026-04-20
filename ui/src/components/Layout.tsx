@@ -281,6 +281,9 @@ export function Layout() {
                 {isInstanceSettingsRoute ? <InstanceSidebar /> : <Sidebar />}
                 {/* Resize drag zone - right edge of sidebar */}
                 <div
+                  role="separator"
+                  aria-label="Resize sidebar"
+                  tabIndex={0}
                   className="absolute top-0 right-0 w-2 h-full cursor-col-resize z-30 hover:bg-blue-500/30 active:bg-blue-500/50 transition-colors border-r border-border/50 hover:border-blue-500/50"
                   onMouseDown={(e) => {
                     e.preventDefault();

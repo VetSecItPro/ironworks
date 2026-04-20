@@ -34,6 +34,7 @@ export function IssueAttachmentsSection({
 }: IssueAttachmentsSectionProps) {
   if (attachments.length === 0) return null;
 
+  // biome-ignore lint/a11y/noStaticElementInteractions: drop zone container handles drag events, not click interaction
   return (
     <div
       className={cn("space-y-3 rounded-lg transition-colors")}

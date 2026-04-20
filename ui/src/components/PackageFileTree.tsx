@@ -266,6 +266,8 @@ export function PackageFileTree({
         return (
           <div
             key={node.path}
+            role="button"
+            tabIndex={0}
             className={cn(
               "flex w-full items-center gap-1 pr-3 text-left text-sm text-muted-foreground hover:bg-accent/30 hover:text-foreground cursor-pointer",
               TREE_ROW_HEIGHT_CLASS,
@@ -276,6 +278,7 @@ export function PackageFileTree({
               paddingInlineStart: `${TREE_BASE_INDENT + depth * TREE_STEP_INDENT - 8}px`,
             }}
             onClick={() => onSelectFile(node.path)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectFile(node.path); } }}
           >
             {showCheckboxes && (
               <label className="flex items-center pl-2">

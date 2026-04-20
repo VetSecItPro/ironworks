@@ -49,7 +49,10 @@ export function ByAgentCard({
                     "flex items-start justify-between gap-3",
                     hasBreakdown ? "cursor-pointer select-none" : "",
                   )}
+                  role={hasBreakdown ? "button" : undefined}
+                  tabIndex={hasBreakdown ? 0 : undefined}
                   onClick={() => hasBreakdown && toggleAgent(row.agentId)}
+                  onKeyDown={hasBreakdown ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleAgent(row.agentId); } } : undefined}
                 >
                   <div className="flex min-w-0 items-center gap-2">
                     {hasBreakdown ? (

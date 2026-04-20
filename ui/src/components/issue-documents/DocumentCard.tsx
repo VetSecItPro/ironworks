@@ -161,6 +161,7 @@ export function DocumentCard({
       </div>
 
       {!isFolded ? (
+        // biome-ignore lint/a11y/noStaticElementInteractions: editor container tracks focus state for auto-save, not click interaction
         <div
           className="mt-3 space-y-3"
           onFocusCapture={() => {

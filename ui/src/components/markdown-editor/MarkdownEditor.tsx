@@ -304,6 +304,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
 
   const canDropImage = Boolean(imageUploadHandler);
 
+  // biome-ignore lint/a11y/noStaticElementInteractions: editor container handles keyboard shortcuts and drag-drop, not click interaction
   return (
     <div
       ref={containerRef}

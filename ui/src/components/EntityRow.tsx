@@ -58,6 +58,7 @@ export const EntityRow = memo(function EntityRow({
   }
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: role/tabIndex/onKeyDown are conditionally set when onClick is provided
     <div
       className={classes}
       onClick={onClick}

@@ -116,7 +116,7 @@ export function Companies() {
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   {isEditing ? (
-                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                       <Input
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
@@ -174,7 +174,7 @@ export function Companies() {
                 </div>
 
                 {/* Three-dot menu */}
-                <div onClick={(e) => e.stopPropagation()}>
+                <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
@@ -240,6 +240,7 @@ export function Companies() {
                 <div
                   className="mt-4 flex items-center justify-between bg-destructive/5 border border-destructive/20 rounded-md px-4 py-3"
                   onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
                 >
                   <p className="text-sm text-destructive font-medium">
                     Delete this company and all its data? This cannot be undone.

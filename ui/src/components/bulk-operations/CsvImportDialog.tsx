@@ -107,8 +107,11 @@ export function CsvImportDialog({ open, onClose, onImport, existingTitles = [] }
   }, [csvData, mapping.title, existingTitles]);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50" role="button" tabIndex={0} aria-label="Close dialog" onClick={onClose} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') { e.preventDefault(); onClose(); } }}>
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Import Missions from CSV"
         className="w-full max-w-3xl max-h-[80vh] overflow-hidden rounded-xl border border-border bg-card shadow-2xl animate-in fade-in-0 zoom-in-95 flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >

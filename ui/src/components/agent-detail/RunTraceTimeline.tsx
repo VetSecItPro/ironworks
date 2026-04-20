@@ -178,7 +178,10 @@ function TimelineEvent({ event }: { event: HeartbeatRunEvent }) {
     <div className={cn("border-l-2 pl-3 py-1.5 group", borderColor, isError && "bg-red-500/5")}>
       <div
         className={cn("flex items-center gap-2 text-xs", hasPayload && "cursor-pointer")}
+        role={hasPayload ? "button" : undefined}
+        tabIndex={hasPayload ? 0 : undefined}
         onClick={() => hasPayload && setExpanded((v) => !v)}
+        onKeyDown={hasPayload ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpanded((v) => !v); } } : undefined}
       >
         {hasPayload ? (
           expanded ? (

@@ -170,7 +170,7 @@ export function RoutineListTable({
                       );
                     })()}
                   </td>
-                  <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
+                  <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                     <div className="flex items-center gap-3">
                       <button
                         type="button"
@@ -195,7 +195,7 @@ export function RoutineListTable({
                       </span>
                     </div>
                   </td>
-                  <td className="px-3 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
+                  <td className="px-3 py-2.5 text-right" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon-sm" aria-label={`More actions for ${routine.title}`}>

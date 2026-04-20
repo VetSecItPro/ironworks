@@ -43,6 +43,7 @@ export function OnboardingWizard() {
     >
       <DialogPortal>
         <div className="fixed inset-0 z-50 bg-background" />
+        {/* biome-ignore lint/a11y/noStaticElementInteractions: wizard container traps keyboard for step navigation, not click interaction */}
         <div className="fixed inset-0 z-50 flex" onKeyDown={handleKeyDown}>
           <button type="button"
             onClick={w.handleClose}

@@ -27,8 +27,11 @@ export function BulkAgentConfigDialog({ open, onClose, selectedAgentIds, onApply
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50" role="button" tabIndex={0} aria-label="Close dialog" onClick={onClose} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') { e.preventDefault(); onClose(); } }}>
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Bulk Agent Configuration"
         className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >

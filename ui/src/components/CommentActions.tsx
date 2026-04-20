@@ -186,7 +186,7 @@ export const CommentActionMenu = memo(function CommentActionMenu({
       </button>
       {open && (
         <>
-          <div className="fixed inset-0 z-40" onClick={close} />
+          <div className="fixed inset-0 z-40" role="button" tabIndex={0} aria-label="Close menu" onClick={close} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); close(); } }} />
           <div className="absolute right-0 top-full z-50 mt-1 w-44 rounded-md border border-border bg-popover p-1 shadow-md">
             <button
               type="button"
