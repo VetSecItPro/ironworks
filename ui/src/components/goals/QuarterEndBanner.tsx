@@ -65,7 +65,7 @@ export function QuarterEndBanner({ inProgressCount }: { inProgressCount: number 
           </>
         )}
       </p>
-      <button onClick={dismiss} className="text-xs text-amber-600 dark:text-amber-400 hover:underline shrink-0">
+      <button type="button" onClick={dismiss} className="text-xs text-amber-600 dark:text-amber-400 hover:underline shrink-0">
         Dismiss
       </button>
     </div>

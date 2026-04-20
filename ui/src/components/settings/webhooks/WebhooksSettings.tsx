@@ -122,7 +122,7 @@ export function WebhooksSettings() {
                         ? wh.secret
                         : "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"}
                     </code>
-                    <button
+                    <button type="button"
                       className="text-muted-foreground hover:text-foreground"
                       onClick={() => setShowSecret((prev) => ({ ...prev, [wh.id]: !prev[wh.id] }))}
                     >
@@ -182,7 +182,7 @@ export function WebhooksSettings() {
               <label className="text-xs font-medium text-muted-foreground mb-2 block">Events</label>
               <div className="grid grid-cols-2 gap-1.5 max-h-48 overflow-y-auto">
                 {AVAILABLE_EVENTS.map((evt) => (
-                  <button
+                  <button type="button"
                     key={evt.id}
                     onClick={() => toggleEvent(evt.id)}
                     className={cn(

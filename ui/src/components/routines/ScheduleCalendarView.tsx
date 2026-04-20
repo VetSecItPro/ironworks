@@ -91,7 +91,7 @@ export function ScheduleCalendarView({
                 return (
                   <div key={dayIdx} className="bg-background p-0.5 min-h-[28px]">
                     {cellSlots.map((slot, si) => (
-                      <button
+                      <button type="button"
                         key={si}
                         onClick={() => onRoutineClick(slot.routineId)}
                         className="block w-full text-left text-[10px] rounded px-1 py-0.5 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors truncate"

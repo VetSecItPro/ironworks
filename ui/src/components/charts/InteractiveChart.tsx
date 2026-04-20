@@ -118,7 +118,7 @@ export function InteractiveChart({
         {showSwitcher && <ChartTypeSwitcher active={chartType} onChange={setChartType} />}
         <div className="flex items-center gap-1.5 ml-auto">
           {comparisonData && (
-            <button
+            <button type="button"
               onClick={() => setShowComparison(!showComparison)}
               className={cn(
                 "flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded border transition-colors",

@@ -23,7 +23,7 @@ export function LibrarySearchResults({ results, onSelectFile, onClearSearch }: L
       {results.map((entry) => {
         const Icon = entry.kind === "directory" ? Folder : fileIcon(entry.name);
         return (
-          <button
+          <button type="button"
             key={entry.path}
             onClick={() => {
               if (entry.kind === "file") {

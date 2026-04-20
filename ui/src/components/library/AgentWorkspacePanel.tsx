@@ -29,7 +29,7 @@ export function AgentWorkspacePanel({ companyId, agents, selectedAgentId, onSele
         Agent Workspaces
       </div>
       <div className="pb-1">
-        <button
+        <button type="button"
           onClick={() => onSelectAgent(null)}
           className={cn(
             "flex items-center gap-2 w-full text-left px-3 py-1.5 text-[13px] hover:bg-accent/50 transition-colors",
@@ -46,7 +46,7 @@ export function AgentWorkspacePanel({ companyId, agents, selectedAgentId, onSele
           const docCount = pages.filter((p) => p.documentType !== "folder").length;
 
           return (
-            <button
+            <button type="button"
               key={agent.id}
               onClick={() => onSelectAgent(agent.id)}
               className={cn(

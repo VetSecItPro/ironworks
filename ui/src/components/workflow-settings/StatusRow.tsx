@@ -80,7 +80,7 @@ export function StatusRow({ status, onUpdate, onDelete, onMoveUp, onMoveDown, is
       </select>
 
       {/* Category toggle */}
-      <button
+      <button type="button"
         className="text-[10px] text-muted-foreground hover:text-foreground"
         onClick={() => onUpdate({ ...status, category: status.category === "open" ? "closed" : "open" })}
       >

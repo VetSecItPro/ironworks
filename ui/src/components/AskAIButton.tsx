@@ -56,7 +56,7 @@ function generateMockResponse(pageContext: string, userMessage: string): string 
 /** Header bar trigger button - renders inline in the header */
 export function AskAIHeaderButton({ onClick }: { onClick: () => void }) {
   return (
-    <button
+    <button type="button"
       onClick={onClick}
       className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
       title="Chat with Iris"
@@ -174,7 +174,7 @@ export function AskAIPanel({ open, onClose }: { open: boolean; onClose: () => vo
         </div>
         <div className="flex items-center gap-1 shrink-0">
           {messages.length > 1 && (
-            <button
+            <button type="button"
               onClick={() => setMessages([])}
               className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors"
               title="Clear chat"
@@ -183,7 +183,7 @@ export function AskAIPanel({ open, onClose }: { open: boolean; onClose: () => vo
               <Trash2 className="h-3 w-3" />
             </button>
           )}
-          <button
+          <button type="button"
             onClick={onClose}
             className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors"
             title="Close"
@@ -243,7 +243,7 @@ export function AskAIPanel({ open, onClose }: { open: boolean; onClose: () => vo
           placeholder="Ask anything..."
           className="h-8 text-xs"
         />
-        <button
+        <button type="button"
           onClick={handleSend}
           disabled={!input.trim() || isTyping}
           className="shrink-0 w-8 h-8 flex items-center justify-center rounded-md bg-primary text-primary-foreground disabled:opacity-50 transition-opacity"

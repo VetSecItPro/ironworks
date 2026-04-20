@@ -394,7 +394,7 @@ export function IssuesList({
             <div className="flex items-center gap-2 border-b border-border px-2 py-1.5 text-xs text-muted-foreground select-none">
               <div className="w-[60px] shrink-0" />
               <div className="flex-1 min-w-0 flex items-center gap-1">
-                <button
+                <button type="button"
                   className="flex items-center gap-1 hover:text-foreground transition-colors"
                   onClick={(e) => handleColumnHeaderClick("title", e.shiftKey)}
                   title="Click to sort, Shift+click for secondary sort"
@@ -418,7 +418,7 @@ export function IssuesList({
                 />
               </div>
               <div className="w-[100px] shrink-0 flex items-center gap-1">
-                <button
+                <button type="button"
                   className="flex items-center gap-1 hover:text-foreground transition-colors"
                   onClick={(e) => handleColumnHeaderClick("status", e.shiftKey)}
                   title="Click to sort, Shift+click for secondary sort"
@@ -433,7 +433,7 @@ export function IssuesList({
                 </button>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <button className="p-0.5 rounded hover:bg-accent/50" title="Filter by status">
+                    <button type="button" className="p-0.5 rounded hover:bg-accent/50" title="Filter by status">
                       <Filter className="h-3 w-3" />
                     </button>
                   </PopoverTrigger>
@@ -459,7 +459,7 @@ export function IssuesList({
                         </label>
                       ))}
                       {(viewState.columnFilters?.status ?? []).length > 0 && (
-                        <button
+                        <button type="button"
                           className="w-full text-xs text-muted-foreground hover:text-foreground px-2 py-1"
                           onClick={() => updateColumnFilter("status", [])}
                         >
@@ -471,7 +471,7 @@ export function IssuesList({
                 </Popover>
               </div>
               <div className="w-[100px] shrink-0 flex items-center gap-1">
-                <button
+                <button type="button"
                   className="flex items-center gap-1 hover:text-foreground transition-colors"
                   onClick={(e) => handleColumnHeaderClick("priority", e.shiftKey)}
                   title="Click to sort, Shift+click for secondary sort"
@@ -486,7 +486,7 @@ export function IssuesList({
                 </button>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <button className="p-0.5 rounded hover:bg-accent/50" title="Filter by priority">
+                    <button type="button" className="p-0.5 rounded hover:bg-accent/50" title="Filter by priority">
                       <Filter className="h-3 w-3" />
                     </button>
                   </PopoverTrigger>
@@ -512,7 +512,7 @@ export function IssuesList({
                         </label>
                       ))}
                       {(viewState.columnFilters?.priority ?? []).length > 0 && (
-                        <button
+                        <button type="button"
                           className="w-full text-xs text-muted-foreground hover:text-foreground px-2 py-1"
                           onClick={() => updateColumnFilter("priority", [])}
                         >
@@ -524,7 +524,7 @@ export function IssuesList({
                 </Popover>
               </div>
               <div className="w-[180px] shrink-0">
-                <button
+                <button type="button"
                   className="flex items-center gap-1 hover:text-foreground transition-colors"
                   onClick={(e) => handleColumnHeaderClick("updated", e.shiftKey)}
                 >
@@ -727,7 +727,7 @@ export function IssuesList({
                               }}
                             >
                               <PopoverTrigger asChild>
-                                <button
+                                <button type="button"
                                   className="flex w-[180px] shrink-0 items-center rounded-md px-2 py-1 transition-colors hover:bg-accent/50"
                                   onClick={(e) => {
                                     e.preventDefault();
@@ -766,7 +766,7 @@ export function IssuesList({
                                   onChange={(e) => setAssigneeSearch(e.target.value)}
                                 />
                                 <div className="max-h-48 overflow-y-auto overscroll-contain">
-                                  <button
+                                  <button type="button"
                                     className={cn(
                                       "flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs hover:bg-accent/50",
                                       !issue.assigneeAgentId && !issue.assigneeUserId && "bg-accent",
@@ -780,7 +780,7 @@ export function IssuesList({
                                     No assignee
                                   </button>
                                   {currentUserId && (
-                                    <button
+                                    <button type="button"
                                       className={cn(
                                         "flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-accent/50",
                                         issue.assigneeUserId === currentUserId && "bg-accent",
@@ -801,7 +801,7 @@ export function IssuesList({
                                       return agent.name.toLowerCase().includes(assigneeSearch.toLowerCase());
                                     })
                                     .map((agent) => (
-                                      <button
+                                      <button type="button"
                                         key={agent.id}
                                         className={cn(
                                           "flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-accent/50",
@@ -832,7 +832,7 @@ export function IssuesList({
         )}
       </div>
 
-      <button
+      <button type="button"
         className="md:hidden fixed bottom-6 right-6 z-40 flex items-center justify-center h-12 w-12 rounded-full bg-foreground text-background shadow-lg hover:scale-105 transition-transform"
         onClick={() => openNewIssue(newIssueDefaults())}
         aria-label="Create mission"

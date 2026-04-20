@@ -116,7 +116,7 @@ export function CloudInstructionsEditor({
         </div>
         <div className="flex-1 py-1">
           {files.map((file) => (
-            <button
+            <button type="button"
               key={file.key}
               onClick={() => setSelectedFile(file.key)}
               className={`w-full flex items-center gap-2 px-3 py-1.5 text-left text-sm transition-colors ${

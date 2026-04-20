@@ -39,7 +39,7 @@ export function AssigneePickerContent({
         onChange={(e) => setAssigneeSearch(e.target.value)}
       />
       <div className="max-h-48 overflow-y-auto overscroll-contain">
-        <button
+        <button type="button"
           className={cn(
             "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",
             !issueAssigneeAgentId && !issueAssigneeUserId && "bg-accent",
@@ -52,7 +52,7 @@ export function AssigneePickerContent({
           No assignee
         </button>
         {currentUserId && (
-          <button
+          <button type="button"
             className={cn(
               "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",
               issueAssigneeUserId === currentUserId && "bg-accent",
@@ -67,7 +67,7 @@ export function AssigneePickerContent({
           </button>
         )}
         {issueCreatedByUserId && issueCreatedByUserId !== currentUserId && (
-          <button
+          <button type="button"
             className={cn(
               "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",
               issueAssigneeUserId === issueCreatedByUserId && "bg-accent",
@@ -87,7 +87,7 @@ export function AssigneePickerContent({
             return a.name.toLowerCase().includes(assigneeSearch.toLowerCase());
           })
           .map((a) => (
-            <button
+            <button type="button"
               key={a.id}
               className={cn(
                 "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",

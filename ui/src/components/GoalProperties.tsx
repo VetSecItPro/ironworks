@@ -47,7 +47,7 @@ function PickerButton({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button className="cursor-pointer hover:opacity-80 transition-opacity">{children}</button>
+        <button type="button" className="cursor-pointer hover:opacity-80 transition-opacity">{children}</button>
       </PopoverTrigger>
       <PopoverContent className="w-40 p-1" align="end">
         {options.map((opt) => (
@@ -97,7 +97,7 @@ function AgentPickerButton({
       }}
     >
       <PopoverTrigger asChild>
-        <button className="cursor-pointer">{children}</button>
+        <button type="button" className="cursor-pointer">{children}</button>
       </PopoverTrigger>
       <PopoverContent className="w-52 p-1" align="end">
         <input

@@ -33,7 +33,7 @@ export function AgentCompareModal({
       >
         <div className="flex items-center justify-between px-5 py-3 border-b border-border">
           <h2 className="text-sm font-semibold">Agent Comparison</h2>
-          <button
+          <button type="button"
             onClick={onClose}
             className="text-muted-foreground hover:text-foreground"
             aria-label="Close comparison"

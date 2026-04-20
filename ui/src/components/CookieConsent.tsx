@@ -69,7 +69,7 @@ function CategoryToggle({
 }) {
   return (
     <div className="flex items-start gap-3 py-3">
-      <button
+      <button type="button"
         onClick={() => onChange?.(!checked)}
         disabled={disabled}
         className={cn(
@@ -271,7 +271,7 @@ export function CookieSettingsLink() {
 
   return (
     <>
-      <button
+      <button type="button"
         onClick={() => setManageOpen(true)}
         className="text-xs text-muted-foreground hover:text-foreground transition-colors"
       >

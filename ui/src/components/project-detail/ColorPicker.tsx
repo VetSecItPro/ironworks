@@ -18,7 +18,7 @@ export function ColorPicker({ currentColor, onSelect }: { currentColor: string; 
 
   return (
     <div className="relative" ref={ref}>
-      <button
+      <button type="button"
         onClick={() => setOpen(!open)}
         className="shrink-0 h-5 w-5 rounded-md cursor-pointer hover:ring-2 hover:ring-foreground/20 transition-[box-shadow]"
         style={{ backgroundColor: currentColor }}
@@ -28,7 +28,7 @@ export function ColorPicker({ currentColor, onSelect }: { currentColor: string; 
         <div className="absolute top-full left-0 mt-2 p-2 bg-popover border border-border rounded-lg shadow-lg z-50 w-max">
           <div className="grid grid-cols-5 gap-1.5">
             {PROJECT_COLORS.map((color) => (
-              <button
+              <button type="button"
                 key={color}
                 onClick={() => {
                   onSelect(color);

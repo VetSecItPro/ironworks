@@ -29,7 +29,7 @@ export function QuickActionFAB({
     <div ref={ref} className="fixed bottom-6 right-6 z-40">
       {open && (
         <div className="absolute bottom-16 right-0 flex flex-col gap-2.5 items-end animate-in fade-in slide-in-from-bottom-3 duration-200">
-          <button
+          <button type="button"
             onClick={() => {
               onCreateIssue();
               setOpen(false);
@@ -39,7 +39,7 @@ export function QuickActionFAB({
             <CircleDot className="h-3.5 w-3.5" />
             Create Issue
           </button>
-          <button
+          <button type="button"
             onClick={() => {
               onInvokeAgent();
               setOpen(false);
@@ -49,7 +49,7 @@ export function QuickActionFAB({
             <Play className="h-3.5 w-3.5" />
             Invoke Agent
           </button>
-          <button
+          <button type="button"
             onClick={() => {
               onRunPlaybook();
               setOpen(false);
@@ -61,7 +61,7 @@ export function QuickActionFAB({
           </button>
         </div>
       )}
-      <button
+      <button type="button"
         onClick={() => setOpen(!open)}
         className={cn(
           "flex items-center justify-center h-12 w-12 rounded-full shadow-xl transition-all duration-200",

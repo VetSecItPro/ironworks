@@ -33,7 +33,7 @@ function OrgTreeNode({ node, depth, hrefFn }: { node: OrgNode; depth: number; hr
         style={{ paddingLeft: `${depth * 16 + 12}px` }}
       >
         {hasChildren ? (
-          <button
+          <button type="button"
             className="p-0.5"
             onClick={(e) => {
               e.preventDefault();

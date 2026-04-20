@@ -92,7 +92,7 @@ export function NewFinanceEventDialog({ open, onOpenChange, onSubmit, isPending 
             <label className="text-xs font-medium text-muted-foreground">Direction</label>
             <div className="grid grid-cols-2 gap-2 mt-1">
               {(["credit", "debit"] as const).map((d) => (
-                <button
+                <button type="button"
                   key={d}
                   onClick={() => setDirection(d)}
                   className={cn(
@@ -115,7 +115,7 @@ export function NewFinanceEventDialog({ open, onOpenChange, onSubmit, isPending 
             <label className="text-xs font-medium text-muted-foreground">Type</label>
             <div className="flex flex-wrap gap-1.5 mt-1">
               {EVENT_KINDS.map((kind) => (
-                <button
+                <button type="button"
                   key={kind.value}
                   onClick={() => setEventKind(kind.value)}
                   className={cn(

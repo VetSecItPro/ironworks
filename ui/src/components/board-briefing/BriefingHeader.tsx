@@ -27,7 +27,7 @@ export function BriefingHeader({ dateStr, companyName, period, onPeriodChange }:
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <button
+          <button type="button"
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border border-border text-muted-foreground hover:text-foreground transition-colors print:hidden"
             onClick={() => window.print()}
             aria-label="Print briefing"
@@ -35,7 +35,7 @@ export function BriefingHeader({ dateStr, companyName, period, onPeriodChange }:
             <Printer className="h-3.5 w-3.5" />
             Print
           </button>
-          <button
+          <button type="button"
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 transition-colors print:hidden"
             onClick={() => {
               const style = document.createElement("style");
@@ -55,7 +55,7 @@ export function BriefingHeader({ dateStr, companyName, period, onPeriodChange }:
             aria-label="Briefing period"
           >
             {(["7d", "30d", "this_month"] as const).map((p) => (
-              <button
+              <button type="button"
                 key={p}
                 className={cn(
                   "px-3 py-1.5 text-xs transition-colors",

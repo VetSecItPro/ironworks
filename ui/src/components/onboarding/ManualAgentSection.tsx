@@ -126,7 +126,7 @@ export function ManualAgentSection({
             },
             { value: "codex_local" as const, label: "Codex", icon: Code, desc: "Local Codex agent", recommended: true },
           ].map((opt) => (
-            <button
+            <button type="button"
               key={opt.value}
               className={cn(
                 "flex flex-col items-center gap-1.5 rounded-md border p-3 text-xs transition-colors relative",
@@ -151,7 +151,7 @@ export function ManualAgentSection({
           ))}
         </div>
 
-        <button
+        <button type="button"
           className="flex items-center gap-1.5 mt-3 text-xs text-muted-foreground hover:text-foreground transition-colors"
           onClick={() => onShowMoreAdaptersChange(!showMoreAdapters)}
         >
@@ -180,7 +180,7 @@ export function ManualAgentSection({
                 disabledLabel: "Configure OpenClaw within the App",
               },
             ].map((opt) => (
-              <button
+              <button type="button"
                 key={opt.value}
                 disabled={!!opt.comingSoon}
                 className={cn(
@@ -239,7 +239,7 @@ export function ManualAgentSection({
               }}
             >
               <PopoverTrigger asChild>
-                <button className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-sm hover:bg-accent/50 transition-colors w-full justify-between">
+                <button type="button" className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-sm hover:bg-accent/50 transition-colors w-full justify-between">
                   <span className={cn(!model && "text-muted-foreground")}>
                     {selectedModel
                       ? selectedModel.label
@@ -256,7 +256,7 @@ export function ManualAgentSection({
                   onChange={(e) => onModelSearchChange(e.target.value)}
                 />
                 {adapterType !== "opencode_local" && (
-                  <button
+                  <button type="button"
                     className={cn(
                       "flex items-center gap-2 w-full px-2 py-1.5 text-sm rounded hover:bg-accent/50",
                       !model && "bg-accent",
@@ -278,7 +278,7 @@ export function ManualAgentSection({
                         </div>
                       )}
                       {group.entries.map((m) => (
-                        <button
+                        <button type="button"
                           key={m.id}
                           className={cn(
                             "flex items-center w-full px-2 py-1.5 text-sm rounded hover:bg-accent/50",

@@ -47,7 +47,7 @@ export const KanbanColumn = memo(function KanbanColumn({
           atLimit && !overLimit && "bg-amber-500/10",
         )}
       >
-        <button
+        <button type="button"
           onClick={onToggleCollapse}
           className="flex items-center gap-2 min-w-0 hover:opacity-80 transition-opacity"
         >
@@ -83,7 +83,7 @@ export const KanbanColumn = memo(function KanbanColumn({
 
         <ColumnHealthIndicator issues={issues} />
 
-        <button
+        <button type="button"
           onClick={onQuickCreate}
           className="ml-auto p-0.5 rounded hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors"
           title={`Create issue in ${statusLabel(status)}`}

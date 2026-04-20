@@ -35,7 +35,7 @@ export function QuickLinksWidget() {
     <div className="rounded-xl border border-border p-4 space-y-3">
       <div className="flex items-center justify-between">
         <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Quick Links</h4>
-        <button
+        <button type="button"
           className="text-xs text-muted-foreground hover:text-foreground transition-colors"
           onClick={() => setAdding(true)}
         >
@@ -56,7 +56,7 @@ export function QuickLinksWidget() {
             value={newUrl}
             onChange={(e) => setNewUrl(e.target.value)}
           />
-          <button
+          <button type="button"
             className="text-xs px-2 py-1 rounded bg-primary text-primary-foreground"
             onClick={() => {
               if (newLabel.trim() && newUrl.trim()) {
@@ -69,7 +69,7 @@ export function QuickLinksWidget() {
           >
             Save
           </button>
-          <button
+          <button type="button"
             className="text-xs text-muted-foreground"
             onClick={() => {
               setAdding(false);
@@ -87,13 +87,13 @@ export function QuickLinksWidget() {
         <div className="flex flex-wrap gap-2">
           {links.map((link) => (
             <div key={link.id} className="group inline-flex items-center gap-1">
-              <button
+              <button type="button"
                 className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent transition-colors"
                 onClick={() => navigate(link.url)}
               >
                 {link.label}
               </button>
-              <button
+              <button type="button"
                 className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity"
                 onClick={() => save(links.filter((l) => l.id !== link.id))}
                 aria-label={`Remove ${link.label}`}

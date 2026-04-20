@@ -346,7 +346,7 @@ export function ProjectProperties({
                   <div className="px-2 py-1.5 text-xs text-muted-foreground">All goals linked.</div>
                 ) : (
                   availableGoals.map((goal) => (
-                    <button
+                    <button type="button"
                       key={goal.id}
                       className="flex items-center w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50"
                       onClick={() => addGoal(goal.id)}

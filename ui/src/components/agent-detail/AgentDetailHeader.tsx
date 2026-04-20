@@ -47,7 +47,7 @@ export function AgentDetailHeader({
     <div className="flex items-center justify-between gap-2">
       <div className="flex items-center gap-3 min-w-0">
         <AgentIconPicker value={agent.icon} onChange={(icon) => updateIcon.mutate(icon)}>
-          <button
+          <button type="button"
             className={cn(
               "shrink-0 flex items-center justify-center h-12 w-12 rounded-lg transition-colors",
               getRoleLevel(agent.role) === "executive"
@@ -121,7 +121,7 @@ export function AgentDetailHeader({
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-44 p-1" align="end">
-            <button
+            <button type="button"
               className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50"
               onClick={() => {
                 navigator.clipboard.writeText(agent.id);
@@ -131,7 +131,7 @@ export function AgentDetailHeader({
               <Copy className="h-3 w-3" />
               Copy Agent ID
             </button>
-            <button
+            <button type="button"
               className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50"
               onClick={() => {
                 resetTaskSession.mutate(null);
@@ -141,7 +141,7 @@ export function AgentDetailHeader({
               <RotateCcw className="h-3 w-3" />
               Reset Sessions
             </button>
-            <button
+            <button type="button"
               className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50"
               onClick={() => {
                 cloneAgent.mutate();
@@ -152,7 +152,7 @@ export function AgentDetailHeader({
               <CopyPlus className="h-3 w-3" />
               {cloneAgent.isPending ? "Cloning..." : "Clone Agent"}
             </button>
-            <button
+            <button type="button"
               className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50 text-destructive"
               onClick={() => {
                 const openIssueCount = assignedIssues.filter(

@@ -53,7 +53,7 @@ export function AttentionRequiredSection({
               </div>
               <span className="text-xs text-red-400 font-medium shrink-0">Blocked</span>
             </Link>
-            <button
+            <button type="button"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -97,7 +97,7 @@ export function AttentionRequiredSection({
               </div>
               <span className="text-xs text-amber-400 font-medium shrink-0">View run</span>
             </Link>
-            <button
+            <button type="button"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();

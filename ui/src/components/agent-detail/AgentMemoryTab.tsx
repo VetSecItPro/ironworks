@@ -64,7 +64,7 @@ function MemoryCard({
         {isLong && !expanded ? (
           <>
             <p className="text-foreground/90">{content.slice(0, 200)}...</p>
-            <button
+            <button type="button"
               onClick={() => setExpanded(true)}
               className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mt-1"
             >
@@ -76,7 +76,7 @@ function MemoryCard({
           <>
             <p className="text-foreground/90 whitespace-pre-wrap">{content}</p>
             {isLong && (
-              <button
+              <button type="button"
                 onClick={() => setExpanded(false)}
                 className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mt-1"
               >

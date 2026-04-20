@@ -87,7 +87,7 @@ export function ManualModeDialog({
               <label className="text-xs font-medium text-muted-foreground">Category</label>
               <div className="flex flex-wrap gap-1.5 mt-1">
                 {CATEGORIES.map((cat) => (
-                  <button
+                  <button type="button"
                     key={cat.value}
                     onClick={() => setCategory(cat.value)}
                     className={cn(

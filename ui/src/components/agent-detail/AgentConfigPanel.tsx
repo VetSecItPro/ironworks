@@ -239,7 +239,7 @@ export function AgentConfigurePage({
 
       {/* Configuration Revisions -- collapsible at the bottom */}
       <div>
-        <button
+        <button type="button"
           className="flex items-center gap-2 text-sm font-medium hover:text-foreground transition-colors"
           onClick={() => setRevisionsOpen((v) => !v)}
         >

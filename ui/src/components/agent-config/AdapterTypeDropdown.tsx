@@ -27,7 +27,7 @@ export function AdapterTypeDropdown({ value, onChange }: { value: string; onChan
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-sm hover:bg-accent/50 transition-colors w-full justify-between">
+        <button type="button" className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-sm hover:bg-accent/50 transition-colors w-full justify-between">
           <span className="inline-flex items-center gap-1.5">
             {value === "opencode_local" ? <OpenCodeLogoIcon className="h-3.5 w-3.5" /> : null}
             <span>{adapterLabels[value] ?? value}</span>
@@ -37,7 +37,7 @@ export function AdapterTypeDropdown({ value, onChange }: { value: string; onChan
       </PopoverTrigger>
       <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-1" align="start">
         {ADAPTER_DISPLAY_LIST.map((item) => (
-          <button
+          <button type="button"
             key={item.value}
             disabled={item.disabled}
             className={cn(

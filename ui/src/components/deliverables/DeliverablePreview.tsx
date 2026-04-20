@@ -60,14 +60,14 @@ export function DeliverablePreview({ deliverable, onClose }: DeliverablePreviewP
             )}
           </div>
         </div>
-        <button onClick={onClose} className="text-muted-foreground hover:text-foreground p-1" aria-label="Close">
+        <button type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground p-1" aria-label="Close">
           <X className="h-4 w-4" />
         </button>
       </div>
 
       <div className="flex items-center gap-0 border-b border-border shrink-0">
         {(["preview", "versions", "annotations"] as const).map((tab) => (
-          <button
+          <button type="button"
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={cn(

@@ -34,7 +34,7 @@ export function KBPageHeader({
   return (
     <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-border shrink-0">
       <div className="flex items-center gap-2 min-w-0">
-        <button className="md:hidden text-muted-foreground" onClick={onBack}>
+        <button type="button" className="md:hidden text-muted-foreground" onClick={onBack}>
           <ChevronLeft className="h-4 w-4" />
         </button>
         {editing ? (

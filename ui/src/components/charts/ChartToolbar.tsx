@@ -16,7 +16,7 @@ export function ChartTypeSwitcher({ active, onChange }: { active: ChartType; onC
       aria-label="Chart type"
     >
       {types.map(({ type, icon: Icon, label }) => (
-        <button
+        <button type="button"
           key={type}
           onClick={() => onChange(type)}
           className={cn(

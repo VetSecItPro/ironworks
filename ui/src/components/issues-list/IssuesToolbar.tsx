@@ -73,14 +73,14 @@ export function IssuesToolbar({
 
         <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
           <div className="flex items-center border border-border rounded-md overflow-hidden mr-1">
-            <button
+            <button type="button"
               className={`p-1.5 transition-colors ${viewState.viewMode === "list" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
               onClick={() => onUpdateView({ viewMode: "list" })}
               title="List view"
             >
               <List className="h-3.5 w-3.5" />
             </button>
-            <button
+            <button type="button"
               className={`p-1.5 transition-colors ${viewState.viewMode === "board" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
               onClick={() => onUpdateView({ viewMode: "board" })}
               title="Board view"
@@ -119,7 +119,7 @@ export function IssuesToolbar({
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Filters</span>
                   {activeFilterCount > 0 && (
-                    <button
+                    <button type="button"
                       className="text-xs text-muted-foreground hover:text-foreground"
                       onClick={() => onUpdateView({ statuses: [], priorities: [], assignees: [], labels: [] })}
                     >
@@ -133,7 +133,7 @@ export function IssuesToolbar({
                     {quickFilterPresets.map((preset) => {
                       const isActive = arraysEqual(viewState.statuses, preset.statuses);
                       return (
-                        <button
+                        <button type="button"
                           key={preset.label}
                           className={`px-2.5 py-1 text-xs rounded-full border transition-colors ${isActive ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/30"}`}
                           onClick={() => onUpdateView({ statuses: isActive ? [] : [...preset.statuses] })}
@@ -293,7 +293,7 @@ export function IssuesToolbar({
                       ["updated", "Updated"],
                     ] as const
                   ).map(([field, label]) => (
-                    <button
+                    <button type="button"
                       key={field}
                       className={`flex items-center justify-between w-full px-2 py-1.5 text-sm rounded-sm ${viewState.sortField === field ? "bg-accent/50 text-foreground" : "hover:bg-accent/50 text-muted-foreground"}`}
                       onClick={() => {
@@ -333,7 +333,7 @@ export function IssuesToolbar({
                       ["none", "None"],
                     ] as const
                   ).map(([value, label]) => (
-                    <button
+                    <button type="button"
                       key={value}
                       className={`flex items-center justify-between w-full px-2 py-1.5 text-sm rounded-sm ${viewState.groupBy === value ? "bg-accent/50 text-foreground" : "hover:bg-accent/50 text-muted-foreground"}`}
                       onClick={() => onUpdateView({ groupBy: value })}
@@ -362,7 +362,7 @@ export function IssuesToolbar({
               </PopoverTrigger>
               <PopoverContent className="w-44 p-1" align="end">
                 {statusOrder.map((s) => (
-                  <button
+                  <button type="button"
                     key={s}
                     className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs hover:bg-accent/50"
                     onClick={() => onBulkUpdateStatus(s)}
@@ -393,14 +393,14 @@ export function IssuesToolbar({
                   onChange={(e) => onSetBulkAssigneeSearch(e.target.value)}
                 />
                 <div className="max-h-48 overflow-y-auto overscroll-contain">
-                  <button
+                  <button type="button"
                     className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs hover:bg-accent/50"
                     onClick={() => onBulkAssign(null, null)}
                   >
                     No assignee
                   </button>
                   {currentUserId && (
-                    <button
+                    <button type="button"
                       className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs hover:bg-accent/50"
                       onClick={() => onBulkAssign(null, currentUserId)}
                     >
@@ -414,7 +414,7 @@ export function IssuesToolbar({
                         !bulkAssigneeSearch.trim() || a.name.toLowerCase().includes(bulkAssigneeSearch.toLowerCase()),
                     )
                     .map((agent) => (
-                      <button
+                      <button type="button"
                         key={agent.id}
                         className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-accent/50"
                         onClick={() => onBulkAssign(agent.id, null)}

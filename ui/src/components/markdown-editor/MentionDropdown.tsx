@@ -28,7 +28,7 @@ export function MentionDropdown({
       style={{ top: viewportTop + 4, left: viewportLeft }}
     >
       {filteredMentions.map((option, i) => (
-        <button
+        <button type="button"
           key={option.id}
           className={cn(
             "flex items-center gap-2 w-full px-3 py-1.5 text-sm text-left hover:bg-accent/50 transition-colors",

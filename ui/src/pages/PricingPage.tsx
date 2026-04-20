@@ -241,7 +241,7 @@ function FaqAccordion({ item }: { item: FaqItem }) {
 
   return (
     <div className="rounded-lg border border-border">
-      <button
+      <button type="button"
         className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium hover:bg-accent/50 transition-colors"
         onClick={() => setOpen(!open)}
       >

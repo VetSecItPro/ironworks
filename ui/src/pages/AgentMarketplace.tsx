@@ -106,7 +106,7 @@ export function AgentMarketplace() {
 
         <div className="flex items-center gap-1 flex-wrap">
           {CATEGORIES.map((c) => (
-            <button
+            <button type="button"
               key={c.id}
               onClick={() => setCategory(c.id)}
               className={cn(

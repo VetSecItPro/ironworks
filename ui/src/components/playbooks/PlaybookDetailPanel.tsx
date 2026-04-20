@@ -135,7 +135,7 @@ function ParametersEditor({ playbookId }: { playbookId: string }) {
           <span className="font-medium">{p.name}</span>
           <span className="text-[10px] px-1.5 py-0.5 bg-muted rounded">{p.type}</span>
           {p.defaultValue && <span className="text-muted-foreground">default: {p.defaultValue}</span>}
-          <button
+          <button type="button"
             onClick={() => removeParam(p.id)}
             className="ml-auto text-muted-foreground hover:text-destructive"
             aria-label="Remove parameter"

@@ -38,7 +38,7 @@ export function AutomationRuleForm({
     <div className="rounded-lg border border-border p-5 space-y-5">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold">{editingId ? "Edit Rule" : "Create Rule"}</h2>
-        <button
+        <button type="button"
           className="text-muted-foreground hover:text-foreground transition-colors"
           onClick={onCancel}
           aria-label="Close form"

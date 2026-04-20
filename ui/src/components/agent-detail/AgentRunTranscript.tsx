@@ -358,7 +358,7 @@ export function RunDetail({
         {/* Collapsible session row */}
         {hasSession && (
           <div className="border-t border-border">
-            <button
+            <button type="button"
               className="flex items-center gap-1.5 w-full px-4 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
               onClick={() => setSessionOpen((v) => !v)}
             >

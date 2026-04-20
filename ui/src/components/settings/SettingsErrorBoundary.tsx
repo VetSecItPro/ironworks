@@ -19,7 +19,7 @@ export class SettingsErrorBoundary extends Component<{ children: ReactNode }, { 
           <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-4">
             <h2 className="text-sm font-semibold text-red-500 mb-2">Settings page encountered an error</h2>
             <pre className="text-xs text-red-400 whitespace-pre-wrap">{this.state.error.message}</pre>
-            <button
+            <button type="button"
               className="mt-3 px-3 py-1.5 rounded-md bg-red-500/10 text-red-400 text-xs hover:bg-red-500/20 transition-colors"
               onClick={() => this.setState({ error: null })}
             >

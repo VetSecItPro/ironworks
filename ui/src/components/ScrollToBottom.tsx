@@ -68,7 +68,7 @@ export function ScrollToBottom() {
   if (!visible) return null;
 
   return (
-    <button
+    <button type="button"
       onClick={scroll}
       className="fixed bottom-[calc(1.5rem+5rem+env(safe-area-inset-bottom))] right-6 z-40 flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background shadow-md hover:bg-accent transition-colors md:bottom-6"
       aria-label="Scroll to bottom"

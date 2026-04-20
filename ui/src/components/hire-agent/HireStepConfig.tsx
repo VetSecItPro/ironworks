@@ -218,7 +218,7 @@ export function TalentPoolOverlay({ templates, onSelect }: TalentPoolOverlayProp
       )}
       <div className="space-y-2 max-h-64 overflow-y-auto">
         {templates.map((t) => (
-          <button
+          <button type="button"
             key={t.id}
             className="w-full text-left rounded-md border border-border p-3 hover:bg-accent/50 transition-colors"
             onClick={() => onSelect(t)}

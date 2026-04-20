@@ -18,7 +18,7 @@ export function ModeChooser({ open, onOpenChange, onSelectManual, onSelectAuto }
         </DialogHeader>
 
         <div className="grid grid-cols-2 gap-3 py-4">
-          <button
+          <button type="button"
             onClick={onSelectManual}
             className="flex flex-col items-center gap-3 p-6 rounded-lg border border-border hover:border-foreground/30 hover:bg-accent/50 transition-colors"
           >
@@ -29,7 +29,7 @@ export function ModeChooser({ open, onOpenChange, onSelectManual, onSelectAuto }
             </div>
           </button>
 
-          <button
+          <button type="button"
             onClick={onSelectAuto}
             className="flex flex-col items-center gap-3 p-6 rounded-lg border border-border hover:border-foreground/30 hover:bg-accent/50 transition-colors relative"
           >

@@ -69,7 +69,7 @@ export function ModelDropdown({
         }}
       >
         <PopoverTrigger asChild>
-          <button className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-sm hover:bg-accent/50 transition-colors w-full justify-between">
+          <button type="button" className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-sm hover:bg-accent/50 transition-colors w-full justify-between">
             <span className={cn(!value && "text-muted-foreground")}>
               {selected
                 ? selected.label
@@ -87,7 +87,7 @@ export function ModelDropdown({
           />
           <div className="max-h-[240px] overflow-y-auto">
             {allowDefault && (
-              <button
+              <button type="button"
                 className={cn(
                   "flex items-center gap-2 w-full px-2 py-1.5 text-sm rounded hover:bg-accent/50",
                   !value && "bg-accent",
@@ -108,7 +108,7 @@ export function ModelDropdown({
                   </div>
                 )}
                 {group.entries.map((m) => (
-                  <button
+                  <button type="button"
                     key={m.id}
                     className={cn(
                       "flex items-center w-full px-2 py-1.5 text-sm rounded hover:bg-accent/50",

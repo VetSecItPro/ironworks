@@ -70,7 +70,7 @@ export function WorkspaceDocViewer({
             {DOC_TYPE_GROUPS[docType] ?? docType.replace(/-/g, " ")}
           </div>
           {groupPages.map((page) => (
-            <button
+            <button type="button"
               key={page.id}
               onClick={() => onSelectPage(page.id, page.title)}
               className={cn(

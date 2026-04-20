@@ -156,7 +156,7 @@ export function IssueHeaderBar({
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-44 p-1" align="end">
-            <button
+            <button type="button"
               className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50 text-destructive"
               onClick={onHide}
             >

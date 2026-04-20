@@ -44,7 +44,7 @@ export function OnboardingWizard() {
       <DialogPortal>
         <div className="fixed inset-0 z-50 bg-background" />
         <div className="fixed inset-0 z-50 flex" onKeyDown={handleKeyDown}>
-          <button
+          <button type="button"
             onClick={w.handleClose}
             className="absolute top-4 left-4 z-10 rounded-sm p-1.5 text-muted-foreground/80 hover:text-foreground transition-colors"
           >

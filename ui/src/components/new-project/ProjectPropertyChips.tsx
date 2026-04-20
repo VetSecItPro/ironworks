@@ -42,13 +42,13 @@ export function ProjectPropertyChips({
     <div className="flex items-center gap-1.5 px-4 py-2 border-t border-border flex-wrap">
       <Popover open={statusOpen} onOpenChange={setStatusOpen}>
         <PopoverTrigger asChild>
-          <button className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/50 transition-colors">
+          <button type="button" className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/50 transition-colors">
             <StatusBadge status={status} />
           </button>
         </PopoverTrigger>
         <PopoverContent className="w-40 p-1" align="start">
           {projectStatuses.map((s) => (
-            <button
+            <button type="button"
               key={s.value}
               className={cn(
                 "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",
@@ -85,7 +85,7 @@ export function ProjectPropertyChips({
 
       <Popover open={goalOpen} onOpenChange={setGoalOpen}>
         <PopoverTrigger asChild>
-          <button
+          <button type="button"
             className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/50 transition-colors disabled:opacity-60"
             disabled={selectedGoals.length > 0 && availableGoals.length === 0}
           >
@@ -99,7 +99,7 @@ export function ProjectPropertyChips({
         </PopoverTrigger>
         <PopoverContent className="w-56 p-1" align="start">
           {selectedGoals.length === 0 && (
-            <button
+            <button type="button"
               className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50 text-muted-foreground"
               onClick={() => setGoalOpen(false)}
             >
@@ -107,7 +107,7 @@ export function ProjectPropertyChips({
             </button>
           )}
           {availableGoals.map((g) => (
-            <button
+            <button type="button"
               key={g.id}
               className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50 truncate"
               onClick={() => {

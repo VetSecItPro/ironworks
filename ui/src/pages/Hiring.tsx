@@ -244,7 +244,7 @@ export function Hiring() {
                 const isExpanded = expandedId === req.id;
                 return (
                   <div key={req.id} className="rounded-lg border border-border bg-muted/20 overflow-hidden">
-                    <button
+                    <button type="button"
                       className="w-full flex items-center justify-between px-3 py-2.5 text-left hover:bg-accent/10 transition-colors"
                       onClick={() => setExpandedId(isExpanded ? null : req.id)}
                     >

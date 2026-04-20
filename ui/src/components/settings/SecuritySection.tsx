@@ -146,7 +146,7 @@ export function SecuritySection({ companyId: _companyId }: { companyId: string }
                     <span className="font-mono">
                       {revealedKeyId === key.id ? `sk-...${key.lastFour}` : `sk-****${key.lastFour}`}
                     </span>
-                    <button
+                    <button type="button"
                       className="text-muted-foreground hover:text-foreground transition-colors"
                       onClick={() => setRevealedKeyId(revealedKeyId === key.id ? null : key.id)}
                     >

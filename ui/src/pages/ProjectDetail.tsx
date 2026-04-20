@@ -346,7 +346,7 @@ export function ProjectDetail() {
               as="h2"
               className="text-xl font-bold"
             />
-            <button
+            <button type="button"
               className="shrink-0 inline-flex items-center gap-1 px-2 py-1 text-xs rounded-md border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
               onClick={() => cloneProject.mutate()}
               disabled={cloneProject.isPending}

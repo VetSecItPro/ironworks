@@ -123,7 +123,7 @@ export function MilestonesSection({ milestonesHook }: { milestonesHook: ReturnTy
         <div className="space-y-1">
           {milestonesHook.milestones.map((ms) => (
             <div key={ms.id} className="flex items-center gap-2 py-1">
-              <button
+              <button type="button"
                 onClick={() => milestonesHook.toggle(ms.id)}
                 className="text-muted-foreground hover:text-foreground transition-colors"
               >
@@ -137,7 +137,7 @@ export function MilestonesSection({ milestonesHook }: { milestonesHook: ReturnTy
                   {new Date(ms.targetDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                 </span>
               )}
-              <button
+              <button type="button"
                 onClick={() => milestonesHook.remove(ms.id)}
                 className="text-muted-foreground hover:text-destructive transition-colors"
               >

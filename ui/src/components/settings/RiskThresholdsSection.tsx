@@ -95,7 +95,7 @@ export function RiskThresholdsSection({ companyId }: { companyId: string }) {
         </div>
 
         <div className="flex items-center gap-2 pt-1">
-          <button
+          <button type="button"
             className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-60"
             onClick={() => saveMutation.mutate()}
             disabled={saveMutation.isPending}

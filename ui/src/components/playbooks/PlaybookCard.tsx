@@ -23,7 +23,7 @@ export function PlaybookCard({
   onSelect: () => void;
 }) {
   return (
-    <button
+    <button type="button"
       onClick={onSelect}
       className={cn(
         "w-full text-left p-3 border-b border-border transition-colors",

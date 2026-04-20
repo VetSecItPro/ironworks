@@ -84,7 +84,7 @@ export const QuickActionsGrid = memo(function QuickActionsGrid({
   return (
     <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
       {actions.map((action) => (
-        <button
+        <button type="button"
           key={action.label}
           onClick={action.action}
           className="group flex flex-col items-center gap-1.5 rounded-lg border border-border bg-card p-3 text-center hover:bg-accent/50 hover:-translate-y-0.5 hover:shadow-md transition-all"

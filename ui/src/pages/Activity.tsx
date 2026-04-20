@@ -140,7 +140,7 @@ export function Activity() {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <button
+          <button type="button"
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border border-border text-muted-foreground hover:text-foreground transition-colors"
             onClick={() => {
               if (!filtered || filtered.length === 0) return;

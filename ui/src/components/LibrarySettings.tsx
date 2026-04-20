@@ -79,7 +79,7 @@ export function LibrarySettingsDialog({
                 const Icon = opt.icon;
                 const isSelected = settings.defaultVisibility === opt.value;
                 return (
-                  <button
+                  <button type="button"
                     key={opt.value}
                     onClick={() =>
                       setSettings((s) => ({
@@ -144,7 +144,7 @@ export function LibrarySettingsDialog({
               {WRITE_ACCESS_OPTIONS.map((opt) => {
                 const isSelected = settings.sharedFolderWriteAccess === opt.value;
                 return (
-                  <button
+                  <button type="button"
                     key={opt.value}
                     onClick={() =>
                       setSettings((s) => ({

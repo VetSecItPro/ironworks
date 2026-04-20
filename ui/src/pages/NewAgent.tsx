@@ -228,7 +228,7 @@ export function NewAgent() {
         <div className="flex items-center gap-1.5 px-4 py-2 border-t border-border flex-wrap">
           <Popover open={roleOpen} onOpenChange={setRoleOpen}>
             <PopoverTrigger asChild>
-              <button
+              <button type="button"
                 className={cn(
                   "inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-accent/50 transition-colors",
                   isFirstAgent && "opacity-60 cursor-not-allowed",
@@ -241,7 +241,7 @@ export function NewAgent() {
             </PopoverTrigger>
             <PopoverContent className="w-36 p-1" align="start">
               {AGENT_ROLES.map((r) => (
-                <button
+                <button type="button"
                   key={r}
                   className={cn(
                     "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",

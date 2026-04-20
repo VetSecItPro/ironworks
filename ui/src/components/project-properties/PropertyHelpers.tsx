@@ -80,7 +80,7 @@ export function ProjectStatusPicker({ status, onChange }: { status: string; onCh
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button
+        <button type="button"
           className={cn(
             "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap shrink-0 cursor-pointer hover:opacity-80 transition-opacity",
             colorClass,

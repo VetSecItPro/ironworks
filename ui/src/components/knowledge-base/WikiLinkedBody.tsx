@@ -49,7 +49,7 @@ export function WikiLinkedBody({
       {rendered
         .filter((p) => p.type === "link")
         .map((p, i) => (
-          <button
+          <button type="button"
             key={i}
             onClick={() => p.slug && onNavigate(p.slug)}
             className={cn(

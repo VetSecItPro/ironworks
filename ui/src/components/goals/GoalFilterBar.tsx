@@ -66,7 +66,7 @@ export function GoalFilterBar({
         </Select>
         {/* View mode toggle */}
         <div className="flex items-center rounded-md border border-border overflow-hidden">
-          <button
+          <button type="button"
             className={cn(
               "flex items-center justify-center h-8 w-8 transition-colors",
               viewMode === "list" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50",
@@ -76,7 +76,7 @@ export function GoalFilterBar({
           >
             <LayoutList className="h-3.5 w-3.5" />
           </button>
-          <button
+          <button type="button"
             className={cn(
               "flex items-center justify-center h-8 w-8 transition-colors",
               viewMode === "tree" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50",
@@ -86,7 +86,7 @@ export function GoalFilterBar({
           >
             <Network className="h-3.5 w-3.5" />
           </button>
-          <button
+          <button type="button"
             className={cn(
               "flex items-center justify-center h-8 w-8 transition-colors",
               viewMode === "timeline" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50",

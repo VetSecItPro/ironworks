@@ -80,7 +80,7 @@ export function BulkOperationsBar({
           <SelectItem value="low">Low</SelectItem>
         </SelectContent>
       </Select>
-      <button
+      <button type="button"
         onClick={onClear}
         className="ml-1 rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
         aria-label="Clear selection"
@@ -105,7 +105,7 @@ export function SwimlaneHeader({
   onToggle: () => void;
 }) {
   return (
-    <button
+    <button type="button"
       onClick={onToggle}
       className="flex items-center gap-2 px-2 py-2 w-full hover:bg-accent/30 rounded transition-colors"
     >
@@ -133,7 +133,7 @@ export function SwimlaneToggle({ mode, onChange }: { mode: SwimlaneMode; onChang
   return (
     <div className="flex items-center gap-1 border border-border rounded-md overflow-hidden">
       {options.map((opt) => (
-        <button
+        <button type="button"
           key={opt.value}
           className={cn(
             "px-2.5 py-1 text-xs transition-colors",

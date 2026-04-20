@@ -152,7 +152,7 @@ export function TalentPoolSection({ companyId }: { companyId: string }) {
             <span className="text-xs font-medium text-muted-foreground">
               {editingId ? "Edit Template" : "New Template"}
             </span>
-            <button
+            <button type="button"
               className="text-muted-foreground hover:text-foreground transition-colors"
               onClick={resetForm}
               aria-label="Close form"

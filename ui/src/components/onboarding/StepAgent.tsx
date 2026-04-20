@@ -69,7 +69,7 @@ export function StepAgent(props: StepAgentProps) {
       </div>
 
       <div className="flex items-center gap-1 border border-border rounded-md overflow-hidden">
-        <button
+        <button type="button"
           className={cn(
             "flex-1 px-3 py-1.5 text-xs transition-colors",
             step2Mode === "pack" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground",
@@ -78,7 +78,7 @@ export function StepAgent(props: StepAgentProps) {
         >
           Team Pack
         </button>
-        <button
+        <button type="button"
           className={cn(
             "flex-1 px-3 py-1.5 text-xs transition-colors",
             step2Mode === "manual" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground",
@@ -130,7 +130,7 @@ function TeamPackSection({
   return (
     <div className="space-y-3">
       {(teamPacks ?? []).map((pack, packIdx) => (
-        <button
+        <button type="button"
           key={pack.key}
           className={cn(
             "w-full text-left rounded-lg border p-4 transition-colors relative",
@@ -196,7 +196,7 @@ function TeamPackSection({
                 <span className="text-[10px] text-muted-foreground shrink-0 w-16 truncate" title={item.title}>
                   {item.title}
                 </span>
-                <button
+                <button type="button"
                   className="text-muted-foreground hover:text-foreground transition-colors shrink-0 px-1"
                   title={`Duplicate ${item.title}`}
                   onClick={() => {
@@ -210,7 +210,7 @@ function TeamPackSection({
                   +
                 </button>
                 {rosterItems.length > 1 && (
-                  <button
+                  <button type="button"
                     className="text-muted-foreground hover:text-red-400 transition-colors shrink-0 px-1"
                     title={`Remove ${item.name}`}
                     onClick={() => onRosterItemsChange(rosterItems.filter((r) => r.id !== item.id))}
