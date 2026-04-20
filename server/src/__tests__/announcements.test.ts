@@ -90,7 +90,7 @@ async function createApp(actor: Record<string, unknown>, dbOverrides?: Record<st
       return chain;
     }),
     ...dbOverrides,
-  // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
+    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
 
   app.use("/api", announcementRoutes(fakeDb));

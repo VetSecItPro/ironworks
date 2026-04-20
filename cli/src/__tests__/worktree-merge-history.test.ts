@@ -36,7 +36,7 @@ function makeIssue(overrides: Record<string, unknown> = {}) {
     createdAt: new Date("2026-03-20T00:00:00.000Z"),
     updatedAt: new Date("2026-03-20T00:00:00.000Z"),
     ...overrides,
-  // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
+    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
 }
 
@@ -51,7 +51,7 @@ function makeComment(overrides: Record<string, unknown> = {}) {
     createdAt: new Date("2026-03-20T00:00:00.000Z"),
     updatedAt: new Date("2026-03-20T00:00:00.000Z"),
     ...overrides,
-  // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
+    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
 }
 
@@ -76,7 +76,7 @@ function makeIssueDocument(overrides: Record<string, unknown> = {}) {
     documentCreatedAt: new Date("2026-03-20T00:00:00.000Z"),
     documentUpdatedAt: new Date("2026-03-20T00:00:00.000Z"),
     ...overrides,
-  // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
+    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
 }
 
@@ -92,7 +92,7 @@ function makeDocumentRevision(overrides: Record<string, unknown> = {}) {
     createdByUserId: "local-board",
     createdAt: new Date("2026-03-20T00:00:00.000Z"),
     ...overrides,
-  // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
+    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
 }
 
@@ -116,7 +116,7 @@ function makeAttachment(overrides: Record<string, unknown> = {}) {
     attachmentCreatedAt: new Date("2026-03-20T00:00:00.000Z"),
     attachmentUpdatedAt: new Date("2026-03-20T00:00:00.000Z"),
     ...overrides,
-  // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
+    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
 }
 
@@ -138,7 +138,7 @@ function makeProject(overrides: Record<string, unknown> = {}) {
     createdAt: new Date("2026-03-20T00:00:00.000Z"),
     updatedAt: new Date("2026-03-20T00:00:00.000Z"),
     ...overrides,
-  // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
+    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
 }
 
@@ -164,7 +164,7 @@ function makeProjectWorkspace(overrides: Record<string, unknown> = {}) {
     createdAt: new Date("2026-03-20T00:00:00.000Z"),
     updatedAt: new Date("2026-03-20T00:00:00.000Z"),
     ...overrides,
-  // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
+    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
 }
 

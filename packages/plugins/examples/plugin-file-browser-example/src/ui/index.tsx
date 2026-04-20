@@ -573,7 +573,9 @@ export function FilesTab({ context }: PluginDetailTabProps) {
   return (
     <div className="space-y-4">
       <div className="rounded-lg border border-border bg-card p-4">
-        <label htmlFor="workspace-select" className="text-sm font-medium text-muted-foreground">Workspace</label>
+        <label htmlFor="workspace-select" className="text-sm font-medium text-muted-foreground">
+          Workspace
+        </label>
         <select
           id="workspace-select"
           key={workspaceSelectKey}

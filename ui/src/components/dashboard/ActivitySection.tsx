@@ -39,7 +39,8 @@ export function ActivitySection({
           >
             Recent Activity
           </Link>
-          <button type="button"
+          <button
+            type="button"
             onClick={onToggleLiveMode}
             className={cn(
               "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
@@ -69,7 +70,8 @@ export function ActivitySection({
         {aggregatedActivity.map((item) =>
           isAggregated(item) ? (
             <div key={item.key}>
-              <button type="button"
+              <button
+                type="button"
                 onClick={() =>
                   setExpandedAgg((prev) => {
                     const next = new Set(prev);

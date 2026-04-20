@@ -59,7 +59,9 @@ export function PropertyPicker({
     <PropertyRow label={label}>
       <Popover open={open} onOpenChange={onOpenChange}>
         <PopoverTrigger asChild>
-          <button type="button" className={btnCn}>{triggerContent}</button>
+          <button type="button" className={btnCn}>
+            {triggerContent}
+          </button>
         </PopoverTrigger>
         <PopoverContent className={cn("p-1", popoverClassName)} align={popoverAlign} collisionPadding={16}>
           {children}

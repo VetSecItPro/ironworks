@@ -185,7 +185,8 @@ export function SidebarAgents() {
             {runCount > 0 ? (
               <span className="text-[11px] font-medium text-blue-600 dark:text-blue-400">{runCount} live</span>
             ) : null}
-            <button type="button"
+            <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 if (isMobile) setSidebarOpen(false);
@@ -224,7 +225,8 @@ export function SidebarAgents() {
           </CollapsibleTrigger>
           <div className="flex items-center gap-1">
             {hasDepartments && (
-              <button type="button"
+              <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   setGrouped(!grouped);
@@ -241,7 +243,8 @@ export function SidebarAgents() {
                 {grouped ? <List className="h-3 w-3" /> : <LayoutGrid className="h-3 w-3" />}
               </button>
             )}
-            <button type="button"
+            <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 openNewAgent();

@@ -161,7 +161,8 @@ export function NewAgentDialog() {
 
               {/* Advanced link */}
               <div className="text-center">
-                <button type="button"
+                <button
+                  type="button"
                   className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
                   onClick={handleAdvancedConfig}
                 >
@@ -172,7 +173,8 @@ export function NewAgentDialog() {
           ) : (
             <>
               <div className="space-y-2">
-                <button type="button"
+                <button
+                  type="button"
                   className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
                   onClick={() => setShowAdvancedCards(false)}
                 >
@@ -184,7 +186,8 @@ export function NewAgentDialog() {
 
               <div className="grid grid-cols-2 gap-2">
                 {ADVANCED_ADAPTER_OPTIONS.map((opt) => (
-                  <button type="button"
+                  <button
+                    type="button"
                     key={opt.value}
                     className={cn(
                       "flex flex-col items-center gap-1.5 rounded-md border border-border p-3 text-xs transition-colors hover:bg-accent/50 relative",

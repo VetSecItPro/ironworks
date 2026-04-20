@@ -336,7 +336,8 @@ function EndpointCard({ endpoint }: { endpoint: ApiEndpoint }) {
 
   return (
     <div className="rounded-lg border border-border overflow-hidden">
-      <button type="button"
+      <button
+        type="button"
         className="flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-accent/30 transition-colors"
         onClick={() => setExpanded(!expanded)}
       >

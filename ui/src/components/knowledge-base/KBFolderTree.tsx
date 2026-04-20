@@ -53,7 +53,8 @@ function KBPageRow({
   indent?: boolean;
 }) {
   return (
-    <button type="button"
+    <button
+      type="button"
       className={cn(
         "w-full text-left px-3 py-2 transition-colors flex items-start gap-2",
         indent && "pl-6",
@@ -148,7 +149,8 @@ export function KBFolderTree({
     <div className="flex flex-col h-full">
       {/* Select mode toggle + bulk actions */}
       <div className="flex items-center justify-between px-3 py-1 border-b border-border/50">
-        <button type="button"
+        <button
+          type="button"
           className={cn(
             "text-[10px] transition-colors",
             selectMode ? "text-foreground font-medium" : "text-muted-foreground hover:text-foreground",
@@ -161,7 +163,8 @@ export function KBFolderTree({
           {selectMode ? `${checkedIds.size} selected` : "Select"}
         </button>
         {selectMode && checkedIds.size > 0 && (
-          <button type="button"
+          <button
+            type="button"
             className="text-[10px] text-red-400 hover:text-red-300 font-medium transition-colors"
             onClick={async () => {
               if (
@@ -186,7 +189,8 @@ export function KBFolderTree({
             const folderCheckedCount = folder.pages.filter((p) => checkedIds.has(p.id)).length;
             return (
               <div key={name}>
-                <button type="button"
+                <button
+                  type="button"
                   className="w-full flex items-center gap-1.5 px-3 py-1.5 text-left hover:bg-accent/50 transition-colors"
                   onClick={() => (selectMode ? toggleFolderAll(folder.pages) : toggleFolder(name))}
                 >

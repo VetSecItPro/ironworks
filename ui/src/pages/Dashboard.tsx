@@ -467,7 +467,8 @@ export function Dashboard() {
             <Bot className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" aria-hidden="true" />
             <p className="text-sm text-amber-900 dark:text-amber-100">You have no agents.</p>
           </div>
-          <button type="button"
+          <button
+            type="button"
             onClick={() => openOnboarding({ initialStep: 3, companyId: selectedCompanyId! })}
             className="text-sm font-medium text-amber-700 hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-100 underline underline-offset-2 shrink-0"
           >
@@ -516,7 +517,8 @@ export function Dashboard() {
                     <span>
                       {headcount.fte} Full-Time, {headcount.contractor} Contractors
                     </span>
-                    <button type="button"
+                    <button
+                      type="button"
                       className="text-[10px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-0.5"
                       onClick={(e) => {
                         e.preventDefault();

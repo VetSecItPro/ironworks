@@ -39,7 +39,8 @@ export function AssigneeOptionsSection({
 
   return (
     <div className="px-4 pb-2 shrink-0">
-      <button type="button"
+      <button
+        type="button"
         className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
         onClick={() => setAssigneeOptionsOpen(!assigneeOptionsOpen)}
       >
@@ -65,7 +66,8 @@ export function AssigneeOptionsSection({
             <div className="text-xs text-muted-foreground">Thinking effort</div>
             <div className="flex items-center gap-1.5 flex-wrap">
               {thinkingEffortOptions.map((option) => (
-                <button type="button"
+                <button
+                  type="button"
                   key={option.value || "default"}
                   className={cn(
                     "px-2 py-1 rounded-md text-xs border border-border hover:bg-accent/50 transition-colors",
@@ -81,7 +83,8 @@ export function AssigneeOptionsSection({
           {assigneeAdapterType === "claude_local" && (
             <div className="flex items-center justify-between rounded-md border border-border px-2 py-1.5">
               <div className="text-xs text-muted-foreground">Enable Chrome (--chrome)</div>
-              <button type="button"
+              <button
+                type="button"
                 data-slot="toggle"
                 className={cn(
                   "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",

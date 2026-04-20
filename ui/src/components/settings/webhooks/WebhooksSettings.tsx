@@ -122,7 +122,8 @@ export function WebhooksSettings() {
                         ? wh.secret
                         : "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"}
                     </code>
-                    <button type="button"
+                    <button
+                      type="button"
                       className="text-muted-foreground hover:text-foreground"
                       onClick={() => setShowSecret((prev) => ({ ...prev, [wh.id]: !prev[wh.id] }))}
                     >
@@ -161,7 +162,9 @@ export function WebhooksSettings() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label htmlFor="webhook-endpoint-url" className="text-xs font-medium text-muted-foreground mb-1 block">Endpoint URL</label>
+              <label htmlFor="webhook-endpoint-url" className="text-xs font-medium text-muted-foreground mb-1 block">
+                Endpoint URL
+              </label>
               <Input
                 id="webhook-endpoint-url"
                 value={newUrl}
@@ -171,7 +174,9 @@ export function WebhooksSettings() {
               />
             </div>
             <div>
-              <label htmlFor="webhook-signing-secret" className="text-xs font-medium text-muted-foreground mb-1 block">Signing Secret (optional)</label>
+              <label htmlFor="webhook-signing-secret" className="text-xs font-medium text-muted-foreground mb-1 block">
+                Signing Secret (optional)
+              </label>
               <Input
                 id="webhook-signing-secret"
                 value={newSecret}
@@ -184,7 +189,8 @@ export function WebhooksSettings() {
               <span className="text-xs font-medium text-muted-foreground mb-2 block">Events</span>
               <div className="grid grid-cols-2 gap-1.5 max-h-48 overflow-y-auto">
                 {AVAILABLE_EVENTS.map((evt) => (
-                  <button type="button"
+                  <button
+                    type="button"
                     key={evt.id}
                     onClick={() => toggleEvent(evt.id)}
                     className={cn(

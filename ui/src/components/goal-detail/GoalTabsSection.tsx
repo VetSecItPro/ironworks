@@ -203,7 +203,8 @@ export function GoalTabsSection({
                           </span>
                         </div>
                       ) : (
-                        <button type="button"
+                        <button
+                          type="button"
                           className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                           onClick={() => {
                             setEditingKrId(kr.id);
@@ -213,7 +214,8 @@ export function GoalTabsSection({
                           {current} / {kr.targetValue} {kr.unit} ({pct}%)
                         </button>
                       )}
-                      <button type="button"
+                      <button
+                        type="button"
                         className="text-muted-foreground hover:text-destructive transition-colors"
                         onClick={() => onDeleteKr(kr.id)}
                       >

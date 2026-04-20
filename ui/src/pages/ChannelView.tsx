@@ -258,7 +258,8 @@ export function ChannelView() {
             {/* Pinned Messages collapsible section */}
             {pinnedMessages.length > 0 && filter === "all" && (
               <div className="mb-2 border-b border-border">
-                <button type="button"
+                <button
+                  type="button"
                   onClick={() => setPinnedExpanded((v) => !v)}
                   className="flex items-center gap-1.5 w-full px-4 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wide hover:text-foreground transition-colors"
                 >

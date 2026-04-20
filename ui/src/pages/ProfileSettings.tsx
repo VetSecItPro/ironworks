@@ -161,7 +161,9 @@ export function ProfileSettings() {
         <div className="space-y-4">
           {/* Display name */}
           <div className="space-y-1.5">
-            <label htmlFor="profile-display-name" className="text-sm font-medium">Display name</label>
+            <label htmlFor="profile-display-name" className="text-sm font-medium">
+              Display name
+            </label>
             <input
               id="profile-display-name"
               className={`w-full rounded-md border bg-transparent px-2.5 py-1.5 text-sm outline-none ${
@@ -176,7 +178,9 @@ export function ProfileSettings() {
 
           {/* Email (read-only) */}
           <div className="space-y-1.5">
-            <label htmlFor="profile-email" className="text-sm font-medium">Email</label>
+            <label htmlFor="profile-email" className="text-sm font-medium">
+              Email
+            </label>
             <input
               id="profile-email"
               className="w-full rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-sm outline-none text-muted-foreground cursor-not-allowed"
@@ -230,7 +234,9 @@ export function ProfileSettings() {
 
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <label htmlFor="profile-current-password" className="text-sm font-medium">Current password</label>
+            <label htmlFor="profile-current-password" className="text-sm font-medium">
+              Current password
+            </label>
             <input
               id="profile-current-password"
               type="password"
@@ -243,7 +249,9 @@ export function ProfileSettings() {
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="profile-new-password" className="text-sm font-medium">New password</label>
+            <label htmlFor="profile-new-password" className="text-sm font-medium">
+              New password
+            </label>
             <input
               id="profile-new-password"
               type="password"
@@ -269,7 +277,9 @@ export function ProfileSettings() {
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="profile-confirm-password" className="text-sm font-medium">Confirm new password</label>
+            <label htmlFor="profile-confirm-password" className="text-sm font-medium">
+              Confirm new password
+            </label>
             <input
               id="profile-confirm-password"
               type="password"

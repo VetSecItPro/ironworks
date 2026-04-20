@@ -104,7 +104,8 @@ function ReasoningBlock({ reasoning }: { reasoning: string }) {
   const [expanded, setExpanded] = useState(false);
   return (
     <div className="mt-1">
-      <button type="button"
+      <button
+        type="button"
         onClick={() => setExpanded((v) => !v)}
         className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
       >
@@ -273,7 +274,8 @@ export function MessageRow({
       {/* Action buttons shown on hover */}
       <div className="absolute right-3 top-2 hidden group-hover:flex items-center gap-1.5">
         {onReply && (
-          <button type="button"
+          <button
+            type="button"
             onClick={() => onReply(msg.id)}
             className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
             title="Reply to message"
@@ -282,7 +284,8 @@ export function MessageRow({
           </button>
         )}
         {onCreateIssue && !msg.linkedIssueId && msg.messageType === "message" && (
-          <button type="button"
+          <button
+            type="button"
             onClick={() => onCreateIssue(msg.id)}
             className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
             title="Create mission from message"
@@ -291,7 +294,8 @@ export function MessageRow({
           </button>
         )}
         {(onPin || onUnpin) && (
-          <button type="button"
+          <button
+            type="button"
             onClick={() => (isPinned ? onUnpin?.(msg.id) : onPin?.(msg.id))}
             className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
             title={isPinned ? "Unpin message" : "Pin message"}

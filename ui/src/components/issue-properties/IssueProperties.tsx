@@ -184,7 +184,8 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
         onChange={(e) => setProjectSearch(e.target.value)}
       />
       <div className="max-h-48 overflow-y-auto overscroll-contain">
-        <button type="button"
+        <button
+          type="button"
           className={cn(
             "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50 whitespace-nowrap",
             !issue.projectId && "bg-accent",
@@ -208,7 +209,8 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
             return p.name.toLowerCase().includes(projectSearch.toLowerCase());
           })
           .map((p) => (
-            <button type="button"
+            <button
+              type="button"
               key={p.id}
               className={cn(
                 "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50 whitespace-nowrap",

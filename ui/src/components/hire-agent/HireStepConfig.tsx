@@ -76,12 +76,22 @@ export function HireStepConfig({
   return (
     <div className="space-y-4">
       <div className="space-y-1.5">
-        <label htmlFor="hire-agent-name" className="text-xs font-medium text-muted-foreground">Name *</label>
-        <Input id="hire-agent-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Agent name" className="text-sm" />
+        <label htmlFor="hire-agent-name" className="text-xs font-medium text-muted-foreground">
+          Name *
+        </label>
+        <Input
+          id="hire-agent-name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Agent name"
+          className="text-sm"
+        />
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="hire-agent-role" className="text-xs font-medium text-muted-foreground">Role</label>
+        <label htmlFor="hire-agent-role" className="text-xs font-medium text-muted-foreground">
+          Role
+        </label>
         <select
           id="hire-agent-role"
           value={role}
@@ -97,7 +107,9 @@ export function HireStepConfig({
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="hire-agent-department" className="text-xs font-medium text-muted-foreground">Department</label>
+        <label htmlFor="hire-agent-department" className="text-xs font-medium text-muted-foreground">
+          Department
+        </label>
         <select
           id="hire-agent-department"
           value={department}
@@ -113,7 +125,9 @@ export function HireStepConfig({
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="hire-agent-reports-to" className="text-xs font-medium text-muted-foreground">Reports To</label>
+        <label htmlFor="hire-agent-reports-to" className="text-xs font-medium text-muted-foreground">
+          Reports To
+        </label>
         <select
           id="hire-agent-reports-to"
           value={reportsTo}
@@ -139,7 +153,9 @@ export function HireStepConfig({
           <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Contract Details</div>
 
           <div className="space-y-1.5">
-            <label htmlFor="hire-agent-project" className="text-xs font-medium text-muted-foreground">Project *</label>
+            <label htmlFor="hire-agent-project" className="text-xs font-medium text-muted-foreground">
+              Project *
+            </label>
             <select
               id="hire-agent-project"
               value={projectId}
@@ -176,14 +192,24 @@ export function HireStepConfig({
 
           {endCondition === "date" && (
             <div className="space-y-1.5">
-              <label htmlFor="hire-agent-end-date" className="text-xs font-medium text-muted-foreground">End Date</label>
-              <Input id="hire-agent-end-date" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="text-sm" />
+              <label htmlFor="hire-agent-end-date" className="text-xs font-medium text-muted-foreground">
+                End Date
+              </label>
+              <Input
+                id="hire-agent-end-date"
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="text-sm"
+              />
             </div>
           )}
 
           {endCondition === "budget_exhausted" && (
             <div className="space-y-1.5">
-              <label htmlFor="hire-agent-budget" className="text-xs font-medium text-muted-foreground">Budget Amount ($)</label>
+              <label htmlFor="hire-agent-budget" className="text-xs font-medium text-muted-foreground">
+                Budget Amount ($)
+              </label>
               <Input
                 id="hire-agent-budget"
                 type="number"
@@ -223,7 +249,8 @@ export function TalentPoolOverlay({ templates, onSelect }: TalentPoolOverlayProp
       )}
       <div className="space-y-2 max-h-64 overflow-y-auto">
         {templates.map((t) => (
-          <button type="button"
+          <button
+            type="button"
             key={t.id}
             className="w-full text-left rounded-md border border-border p-3 hover:bg-accent/50 transition-colors"
             onClick={() => onSelect(t)}

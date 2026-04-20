@@ -47,7 +47,8 @@ export function AgentIconPicker({ value, onChange, children }: AgentIconPickerPr
         />
         <div className="grid grid-cols-7 gap-1 max-h-48 overflow-y-auto">
           {filtered.map(([name, Icon]) => (
-            <button type="button"
+            <button
+              type="button"
               key={name}
               onClick={() => {
                 onChange(name);

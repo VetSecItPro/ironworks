@@ -104,7 +104,11 @@ export function LiveFeedPanel({
           )}
         </div>
         {liveEvents.length > 0 && (
-          <button type="button" onClick={onClear} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+          <button
+            type="button"
+            onClick={onClear}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
             Clear
           </button>
         )}

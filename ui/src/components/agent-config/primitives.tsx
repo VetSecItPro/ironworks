@@ -62,7 +62,8 @@ export function ToggleField({
         <span className="text-xs text-muted-foreground">{label}</span>
         {hint && <HintIcon text={hint} />}
       </div>
-      <button type="button"
+      <button
+        type="button"
         data-slot="toggle"
         className={cn(
           "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
@@ -111,7 +112,8 @@ export function ToggleWithNumber({
           <span className="text-xs text-muted-foreground">{label}</span>
           {hint && <HintIcon text={hint} />}
         </div>
-        <button type="button"
+        <button
+          type="button"
           data-slot="toggle"
           className={cn(
             "relative inline-flex h-5 w-9 items-center rounded-full transition-colors shrink-0",
@@ -162,7 +164,8 @@ export function CollapsibleSection({
 }) {
   return (
     <div className={cn(bordered && "border-t border-border")}>
-      <button type="button"
+      <button
+        type="button"
         className="flex items-center gap-2 w-full px-4 py-2 text-xs font-medium text-muted-foreground hover:bg-accent/30 transition-colors"
         onClick={onToggle}
       >

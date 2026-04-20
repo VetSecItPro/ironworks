@@ -50,7 +50,8 @@ export function LabelsPickerContent({
             const selected = issueLabelIds.includes(label.id);
             return (
               <div key={label.id} className="flex items-center gap-1">
-                <button type="button"
+                <button
+                  type="button"
                   className={cn(
                     "flex items-center gap-2 flex-1 px-2 py-1.5 text-xs rounded hover:bg-accent/50 text-left",
                     selected && "bg-accent",
@@ -87,7 +88,8 @@ export function LabelsPickerContent({
             onChange={(e) => setNewLabelName(e.target.value)}
           />
         </div>
-        <button type="button"
+        <button
+          type="button"
           className="flex items-center justify-center gap-1.5 w-full px-2 py-1.5 text-xs rounded border border-border hover:bg-accent/50 disabled:opacity-50"
           disabled={!newLabelName.trim() || isCreating}
           onClick={() => onCreateLabel({ name: newLabelName.trim(), color: newLabelColor })}

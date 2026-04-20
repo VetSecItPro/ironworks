@@ -1045,7 +1045,7 @@ a.ironworks-project-mention-chip {
   [data-slot="mobile-bottom-nav"],
   [data-slot="toast-viewport"],
   /* biome-ignore lint/correctness/noUnknownPseudoClass: Tailwind responsive prefix escaped for print media query */
-  .print\\:hidden {
+    .print\\:hidden {
     display: none;
   }
 

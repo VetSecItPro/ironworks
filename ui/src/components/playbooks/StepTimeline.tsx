@@ -99,7 +99,8 @@ export function StepTimeline({ playbook }: { playbook: PlaybookWithSteps }) {
               )}
 
               <div className="flex items-center gap-3 mt-2">
-                <button type="button"
+                <button
+                  type="button"
                   onClick={() => toggleCondition(step.id, "skipOnFailure")}
                   className={cn(
                     "inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full border transition-colors",
@@ -111,7 +112,8 @@ export function StepTimeline({ playbook }: { playbook: PlaybookWithSteps }) {
                   <SkipForward className="h-2.5 w-2.5" />
                   Skip on failure
                 </button>
-                <button type="button"
+                <button
+                  type="button"
                   onClick={() => toggleCondition(step.id, "required")}
                   className={cn(
                     "inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full border transition-colors",

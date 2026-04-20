@@ -31,7 +31,8 @@ export function InvoiceHistory() {
                 </td>
                 <td className="px-4 py-2.5 text-right">
                   {inv.status === "paid" && (
-                    <button type="button"
+                    <button
+                      type="button"
                       className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
                       aria-label={`Download invoice ${inv.id} as PDF`}
                     >

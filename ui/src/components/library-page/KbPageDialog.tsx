@@ -42,7 +42,9 @@ export function KbPageDialog({
         </DialogHeader>
         <div className="space-y-3 py-2">
           <div>
-            <label htmlFor="kb-page-title" className="text-xs text-muted-foreground mb-1 block">Title</label>
+            <label htmlFor="kb-page-title" className="text-xs text-muted-foreground mb-1 block">
+              Title
+            </label>
             <input
               id="kb-page-title"
               className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring"
@@ -67,7 +69,9 @@ export function KbPageDialog({
             </div>
             {!isEdit && (
               <div className="flex-1">
-                <label htmlFor="kb-page-department" className="text-xs text-muted-foreground mb-1 block">Department (optional)</label>
+                <label htmlFor="kb-page-department" className="text-xs text-muted-foreground mb-1 block">
+                  Department (optional)
+                </label>
                 <input
                   id="kb-page-department"
                   className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-xs outline-none h-8 focus:ring-1 focus:ring-ring"
@@ -79,7 +83,9 @@ export function KbPageDialog({
             )}
           </div>
           <div>
-            <label htmlFor="kb-page-body" className="text-xs text-muted-foreground mb-1 block">Body (Markdown)</label>
+            <label htmlFor="kb-page-body" className="text-xs text-muted-foreground mb-1 block">
+              Body (Markdown)
+            </label>
             <textarea
               id="kb-page-body"
               className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm font-mono outline-none resize-none focus:ring-1 focus:ring-ring"

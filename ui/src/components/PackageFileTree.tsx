@@ -277,7 +277,12 @@ export function PackageFileTree({
               paddingInlineStart: `${TREE_BASE_INDENT + depth * TREE_STEP_INDENT - 8}px`,
             }}
             onClick={() => onSelectFile(node.path)}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectFile(node.path); } }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onSelectFile(node.path);
+              }
+            }}
           >
             {showCheckboxes && (
               <label className="flex items-center pl-2">

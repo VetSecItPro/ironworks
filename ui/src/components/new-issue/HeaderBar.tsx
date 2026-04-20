@@ -48,7 +48,8 @@ export function HeaderBar({
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Popover open={companyOpen} onOpenChange={setCompanyOpen}>
           <PopoverTrigger asChild>
-            <button type="button"
+            <button
+              type="button"
               className={cn(
                 "px-1.5 py-0.5 rounded text-xs font-semibold cursor-pointer hover:opacity-80 transition-opacity",
                 !dialogCompany?.brandColor && "bg-muted",
@@ -69,7 +70,8 @@ export function HeaderBar({
             {companies
               .filter((c) => c.status !== "archived")
               .map((c) => (
-                <button type="button"
+                <button
+                  type="button"
                   key={c.id}
                   className={cn(
                     "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",

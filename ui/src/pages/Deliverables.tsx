@@ -98,7 +98,8 @@ export function Deliverables() {
                     onDeliver={(id) => updateMutation.mutate({ id, status: "delivered" })}
                   />
                 </div>
-                <button type="button"
+                <button
+                  type="button"
                   onClick={() => setPreviewDeliverable(d)}
                   className="px-3 py-2 text-muted-foreground hover:text-foreground transition-colors shrink-0"
                   title="Preview deliverable"

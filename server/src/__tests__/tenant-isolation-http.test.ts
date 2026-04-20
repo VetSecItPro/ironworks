@@ -490,7 +490,7 @@ async function createApp(actor: ActorOverrides) {
     deleteFile: vi.fn(),
     listFiles: vi.fn().mockResolvedValue([]),
     getSignedUrl: vi.fn(),
-  // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
+    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
 
   app.use("/api/companies", companyRoutes(fakeDb, fakeStorage));

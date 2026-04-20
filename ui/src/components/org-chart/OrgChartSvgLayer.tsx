@@ -30,7 +30,8 @@ export function OrgChartSvgLayer({
   departmentGroups: Array<{ nodes: LayoutNode[]; dept: string }>;
 }) {
   return (
-    <svg aria-hidden="true"
+    <svg
+      aria-hidden="true"
       className="absolute inset-0 pointer-events-none"
       style={{
         width: "100%",
@@ -132,7 +133,8 @@ export function OrgChartMinimap({
 
   return (
     <div className="absolute bottom-3 left-3 z-10 w-36 h-24 rounded border border-border bg-background/80 backdrop-blur-sm overflow-hidden pointer-events-none">
-      <svg aria-hidden="true"
+      <svg
+        aria-hidden="true"
         width="100%"
         height="100%"
         viewBox={`0 0 ${bounds.width} ${bounds.height}`}

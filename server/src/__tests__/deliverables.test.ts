@@ -47,7 +47,7 @@ function createFakeDb() {
   return {
     select: selectObj,
     update: vi.fn().mockReturnValue({ set }),
-  // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
+    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
 }
 

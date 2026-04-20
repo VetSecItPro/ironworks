@@ -66,7 +66,9 @@ export function ManualModeDialog({
         <div className="space-y-4 py-2">
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
-              <label htmlFor="playbook-name" className="text-xs font-medium text-muted-foreground">Name</label>
+              <label htmlFor="playbook-name" className="text-xs font-medium text-muted-foreground">
+                Name
+              </label>
               <Input
                 id="playbook-name"
                 value={name}
@@ -76,7 +78,9 @@ export function ManualModeDialog({
               />
             </div>
             <div className="col-span-2">
-              <label htmlFor="playbook-description" className="text-xs font-medium text-muted-foreground">Description</label>
+              <label htmlFor="playbook-description" className="text-xs font-medium text-muted-foreground">
+                Description
+              </label>
               <Input
                 id="playbook-description"
                 value={description}
@@ -89,7 +93,8 @@ export function ManualModeDialog({
               <span className="text-xs font-medium text-muted-foreground">Category</span>
               <div className="flex flex-wrap gap-1.5 mt-1">
                 {CATEGORIES.map((cat) => (
-                  <button type="button"
+                  <button
+                    type="button"
                     key={cat.value}
                     onClick={() => setCategory(cat.value)}
                     className={cn(
@@ -148,7 +153,9 @@ export function ManualModeDialog({
                   />
                   <div className="grid grid-cols-3 gap-2">
                     <div>
-                      <label htmlFor={`step-${idx}-assignee-role`} className="text-[10px] text-muted-foreground">Assignee Role</label>
+                      <label htmlFor={`step-${idx}-assignee-role`} className="text-[10px] text-muted-foreground">
+                        Assignee Role
+                      </label>
                       <Input
                         id={`step-${idx}-assignee-role`}
                         value={step.assigneeRole}
@@ -158,7 +165,9 @@ export function ManualModeDialog({
                       />
                     </div>
                     <div>
-                      <label htmlFor={`step-${idx}-depends-on`} className="text-[10px] text-muted-foreground">Depends on steps</label>
+                      <label htmlFor={`step-${idx}-depends-on`} className="text-[10px] text-muted-foreground">
+                        Depends on steps
+                      </label>
                       <Input
                         id={`step-${idx}-depends-on`}
                         value={step.dependsOn}
@@ -168,7 +177,9 @@ export function ManualModeDialog({
                       />
                     </div>
                     <div>
-                      <label htmlFor={`step-${idx}-est-minutes`} className="text-[10px] text-muted-foreground">Est. minutes</label>
+                      <label htmlFor={`step-${idx}-est-minutes`} className="text-[10px] text-muted-foreground">
+                        Est. minutes
+                      </label>
                       <Input
                         id={`step-${idx}-est-minutes`}
                         value={step.estimatedMinutes}

@@ -23,7 +23,9 @@ export function ProjectWorkspaceFields({
     <div className="px-4 pt-3 pb-3 space-y-3 border-t border-border">
       <div>
         <div className="mb-1 flex items-center gap-1.5">
-          <label htmlFor="workspace-repo-url" className="block text-xs text-muted-foreground">Repo URL</label>
+          <label htmlFor="workspace-repo-url" className="block text-xs text-muted-foreground">
+            Repo URL
+          </label>
           <span className="text-xs text-muted-foreground/70">optional</span>
           <Tooltip delayDuration={300}>
             <TooltipTrigger asChild>
@@ -48,7 +50,9 @@ export function ProjectWorkspaceFields({
 
       <div>
         <div className="mb-1 flex items-center gap-1.5">
-          <label htmlFor="workspace-local-path" className="block text-xs text-muted-foreground">Local folder</label>
+          <label htmlFor="workspace-local-path" className="block text-xs text-muted-foreground">
+            Local folder
+          </label>
           <span className="text-xs text-muted-foreground/70">optional</span>
           <Tooltip delayDuration={300}>
             <TooltipTrigger asChild>

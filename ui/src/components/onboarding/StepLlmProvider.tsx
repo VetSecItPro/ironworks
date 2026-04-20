@@ -61,7 +61,9 @@ export function StepLlmProvider({
 
       {/* API Key / URL input */}
       <div className="space-y-2">
-        <label htmlFor="llm-api-key" className="text-sm font-medium">{activeProvider.key === "ollama" ? "Server URL" : "API Key"}</label>
+        <label htmlFor="llm-api-key" className="text-sm font-medium">
+          {activeProvider.key === "ollama" ? "Server URL" : "API Key"}
+        </label>
         <div className="relative">
           <input
             id="llm-api-key"

@@ -121,7 +121,7 @@ describe("budgetService", () => {
       companyId: "company-1",
       agentId: "agent-1",
       projectId: null,
-    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
+      // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
     } as any);
 
     expect(dbStub.insertValues).toHaveBeenCalledWith(

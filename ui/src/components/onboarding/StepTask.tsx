@@ -48,7 +48,9 @@ export function StepTask({
 
       {/* Task template dropdown */}
       <div>
-        <label htmlFor="onboarding-task-template" className="text-xs text-muted-foreground mb-1 block">Quick start template</label>
+        <label htmlFor="onboarding-task-template" className="text-xs text-muted-foreground mb-1 block">
+          Quick start template
+        </label>
         <select
           id="onboarding-task-template"
           className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 text-foreground"
@@ -73,7 +75,9 @@ export function StepTask({
       </div>
 
       <div>
-        <label htmlFor="onboarding-task-title" className="text-xs text-muted-foreground mb-1 block">Task title</label>
+        <label htmlFor="onboarding-task-title" className="text-xs text-muted-foreground mb-1 block">
+          Task title
+        </label>
         <input
           id="onboarding-task-title"
           className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/70"
@@ -83,7 +87,9 @@ export function StepTask({
         />
       </div>
       <div>
-        <label htmlFor="onboarding-task-description" className="text-xs text-muted-foreground mb-1 block">Description (optional)</label>
+        <label htmlFor="onboarding-task-description" className="text-xs text-muted-foreground mb-1 block">
+          Description (optional)
+        </label>
         <textarea
           id="onboarding-task-description"
           ref={textareaRef}

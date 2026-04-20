@@ -162,7 +162,8 @@ export function SidebarProjects() {
             />
             <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Projects</span>
           </CollapsibleTrigger>
-          <button type="button"
+          <button
+            type="button"
             onClick={(e) => {
               e.stopPropagation();
               openNewProject();

@@ -21,7 +21,8 @@ export function PerformanceHeader({ range, setRange, showDeptAgg, setShowDeptAgg
         </p>
       </div>
       <div className="flex items-center gap-2">
-        <button type="button"
+        <button
+          type="button"
           className={cn(
             "flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border transition-colors",
             showDeptAgg
@@ -33,7 +34,8 @@ export function PerformanceHeader({ range, setRange, showDeptAgg, setShowDeptAgg
           <Building2 className="h-3.5 w-3.5" />
           Departments
         </button>
-        <button type="button"
+        <button
+          type="button"
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border border-border text-muted-foreground hover:text-foreground transition-colors"
           onClick={() => {
             exportToCSV(
@@ -75,7 +77,8 @@ export function PerformanceHeader({ range, setRange, showDeptAgg, setShowDeptAgg
           aria-label="Time range"
         >
           {(["7d", "30d", "all"] as const).map((r) => (
-            <button type="button"
+            <button
+              type="button"
               key={r}
               className={cn(
                 "px-3 py-1.5 text-xs transition-colors",

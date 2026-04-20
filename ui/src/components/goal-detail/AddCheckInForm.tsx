@@ -97,7 +97,9 @@ export function AddCheckInForm({
       </div>
 
       <div className="space-y-1">
-        <label htmlFor="checkin-note" className="text-xs text-muted-foreground">Note</label>
+        <label htmlFor="checkin-note" className="text-xs text-muted-foreground">
+          Note
+        </label>
         <Textarea
           id="checkin-note"
           value={note}
@@ -109,7 +111,9 @@ export function AddCheckInForm({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-1">
-          <label htmlFor="checkin-blockers" className="text-xs text-muted-foreground">Blockers (optional)</label>
+          <label htmlFor="checkin-blockers" className="text-xs text-muted-foreground">
+            Blockers (optional)
+          </label>
           <Textarea
             id="checkin-blockers"
             value={blockers}
@@ -119,7 +123,9 @@ export function AddCheckInForm({
           />
         </div>
         <div className="space-y-1">
-          <label htmlFor="checkin-next-steps" className="text-xs text-muted-foreground">Next Steps (optional)</label>
+          <label htmlFor="checkin-next-steps" className="text-xs text-muted-foreground">
+            Next Steps (optional)
+          </label>
           <Textarea
             id="checkin-next-steps"
             value={nextSteps}

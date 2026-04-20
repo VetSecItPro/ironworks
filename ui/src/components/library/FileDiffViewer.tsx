@@ -70,7 +70,13 @@ export function FileDiffViewer({
             </div>
             {oldLines.map((line, i) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: diff lines have no identity beyond position; same text can appear on multiple lines
-              <div key={i} className={cn("px-3 py-0.5 whitespace-pre-wrap", line.type === "removed" ? "bg-red-500/10 text-red-400" : "text-muted-foreground/80")}>
+              <div
+                key={i}
+                className={cn(
+                  "px-3 py-0.5 whitespace-pre-wrap",
+                  line.type === "removed" ? "bg-red-500/10 text-red-400" : "text-muted-foreground/80",
+                )}
+              >
                 <span className="inline-block w-6 text-right mr-2 select-none opacity-40 text-[10px]">{i + 1}</span>
                 {line.text}
               </div>
@@ -82,7 +88,13 @@ export function FileDiffViewer({
             </div>
             {newLines.map((line, i) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: diff lines have no identity beyond position; same text can appear on multiple lines
-              <div key={i} className={cn("px-3 py-0.5 whitespace-pre-wrap", line.type === "added" ? "bg-emerald-500/10 text-emerald-400" : "text-muted-foreground/80")}>
+              <div
+                key={i}
+                className={cn(
+                  "px-3 py-0.5 whitespace-pre-wrap",
+                  line.type === "added" ? "bg-emerald-500/10 text-emerald-400" : "text-muted-foreground/80",
+                )}
+              >
                 <span className="inline-block w-6 text-right mr-2 select-none opacity-40 text-[10px]">{i + 1}</span>
                 {line.text}
               </div>

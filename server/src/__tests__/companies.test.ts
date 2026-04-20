@@ -125,7 +125,7 @@ async function createApp(actor: Record<string, unknown>) {
     then: vi.fn().mockResolvedValue([{ membershipRole: "owner" }]),
     update: vi.fn().mockReturnThis(),
     set: vi.fn().mockReturnThis(),
-  // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
+    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
   app.use("/api/companies", companyRoutes(fakeDb));
   app.use(errorHandler);

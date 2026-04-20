@@ -100,7 +100,9 @@ export function ManualAgentSection({
   return (
     <>
       <div>
-        <label htmlFor="onboarding-agent-name" className="text-xs text-muted-foreground mb-1 block">Agent name</label>
+        <label htmlFor="onboarding-agent-name" className="text-xs text-muted-foreground mb-1 block">
+          Agent name
+        </label>
         <input
           id="onboarding-agent-name"
           className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/70"
@@ -127,7 +129,8 @@ export function ManualAgentSection({
             },
             { value: "codex_local" as const, label: "Codex", icon: Code, desc: "Local Codex agent", recommended: true },
           ].map((opt) => (
-            <button type="button"
+            <button
+              type="button"
               key={opt.value}
               className={cn(
                 "flex flex-col items-center gap-1.5 rounded-md border p-3 text-xs transition-colors relative",
@@ -152,7 +155,8 @@ export function ManualAgentSection({
           ))}
         </div>
 
-        <button type="button"
+        <button
+          type="button"
           className="flex items-center gap-1.5 mt-3 text-xs text-muted-foreground hover:text-foreground transition-colors"
           onClick={() => onShowMoreAdaptersChange(!showMoreAdapters)}
         >
@@ -181,7 +185,8 @@ export function ManualAgentSection({
                 disabledLabel: "Configure OpenClaw within the App",
               },
             ].map((opt) => (
-              <button type="button"
+              <button
+                type="button"
                 key={opt.value}
                 disabled={!!opt.comingSoon}
                 className={cn(
@@ -240,7 +245,10 @@ export function ManualAgentSection({
               }}
             >
               <PopoverTrigger asChild>
-                <button type="button" className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-sm hover:bg-accent/50 transition-colors w-full justify-between">
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-sm hover:bg-accent/50 transition-colors w-full justify-between"
+                >
                   <span className={cn(!model && "text-muted-foreground")}>
                     {selectedModel
                       ? selectedModel.label
@@ -257,7 +265,8 @@ export function ManualAgentSection({
                   onChange={(e) => onModelSearchChange(e.target.value)}
                 />
                 {adapterType !== "opencode_local" && (
-                  <button type="button"
+                  <button
+                    type="button"
                     className={cn(
                       "flex items-center gap-2 w-full px-2 py-1.5 text-sm rounded hover:bg-accent/50",
                       !model && "bg-accent",
@@ -279,7 +288,8 @@ export function ManualAgentSection({
                         </div>
                       )}
                       {group.entries.map((m) => (
-                        <button type="button"
+                        <button
+                          type="button"
                           key={m.id}
                           className={cn(
                             "flex items-center w-full px-2 py-1.5 text-sm rounded hover:bg-accent/50",

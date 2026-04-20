@@ -48,7 +48,7 @@ describe("notifyHireApproved", () => {
     vi.mocked(findServerAdapter).mockReturnValue({
       type: "openclaw_gateway",
       onHireApproved: vi.fn().mockResolvedValue({ ok: true }),
-    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
+      // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
     } as any);
 
     const db = mockDbWithAgent({
@@ -126,7 +126,7 @@ describe("notifyHireApproved", () => {
     vi.mocked(findServerAdapter).mockReturnValue({
       type: "openclaw_gateway",
       onHireApproved: vi.fn().mockResolvedValue({ ok: false, error: "HTTP 500", detail: { status: 500 } }),
-    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
+      // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
     } as any);
 
     const db = mockDbWithAgent({
@@ -159,7 +159,7 @@ describe("notifyHireApproved", () => {
     vi.mocked(findServerAdapter).mockReturnValue({
       type: "openclaw_gateway",
       onHireApproved: vi.fn().mockRejectedValue(new Error("Network error")),
-    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
+      // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
     } as any);
 
     const db = mockDbWithAgent({

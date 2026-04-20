@@ -30,7 +30,8 @@ export function ActivityTimeline({ groupedItems, agentMap, entityNameMap, entity
               isAggregated(item) ? (
                 <div key={item.key} className="relative">
                   <div className="absolute left-[17px] top-4 h-2 w-2 rounded-full bg-muted-foreground/40 border-2 border-background z-10 hidden sm:block" />
-                  <button type="button"
+                  <button
+                    type="button"
                     onClick={() => {
                       setExpandedAgg((prev) => {
                         const next = new Set(prev);

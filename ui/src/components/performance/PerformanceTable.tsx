@@ -29,7 +29,8 @@ export function SortHeader({
         className,
       )}
     >
-      <button type="button"
+      <button
+        type="button"
         className={cn(
           "text-xs font-medium uppercase tracking-wider transition-colors",
           current === field ? "text-foreground" : "text-muted-foreground hover:text-foreground",

@@ -475,7 +475,9 @@ export function EmploymentCard({ agent, companyId }: { agent: AgentDetailRecord;
                 </li>
               </ul>
               <div>
-                <label htmlFor="termination-reason" className="text-xs text-muted-foreground block mb-1">Reason</label>
+                <label htmlFor="termination-reason" className="text-xs text-muted-foreground block mb-1">
+                  Reason
+                </label>
                 <select
                   id="termination-reason"
                   value={terminationReason}

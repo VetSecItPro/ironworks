@@ -38,7 +38,8 @@ export function KBPageContent({
           </h4>
           <div className="flex flex-wrap gap-2">
             {suggestedPages.map((sp) => (
-              <button type="button"
+              <button
+                type="button"
                 key={sp.id}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent/50 transition-colors"
                 onClick={() => onSelectPage(sp.id)}

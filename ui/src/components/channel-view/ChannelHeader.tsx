@@ -45,7 +45,8 @@ export function ChannelHeader({
         </div>
         <div className="flex items-center gap-1">
           {unreadCount > 0 && (
-            <button type="button"
+            <button
+              type="button"
               onClick={onMarkAllRead}
               className="px-2 py-1 text-[11px] font-medium rounded-full text-blue-400 hover:bg-blue-500/10 transition-colors flex items-center gap-1"
             >
@@ -53,7 +54,8 @@ export function ChannelHeader({
               Mark read
             </button>
           )}
-          <button type="button"
+          <button
+            type="button"
             onClick={onSearchToggle}
             className={cn(
               "p-1.5 rounded-full transition-colors",
@@ -64,7 +66,8 @@ export function ChannelHeader({
           >
             <Search className="h-3.5 w-3.5" />
           </button>
-          <button type="button"
+          <button
+            type="button"
             onClick={() => onFilterChange("all")}
             className={cn(
               "px-3 py-1 text-[12px] font-medium rounded-full transition-colors",
@@ -75,7 +78,8 @@ export function ChannelHeader({
           >
             All
           </button>
-          <button type="button"
+          <button
+            type="button"
             onClick={() => onFilterChange("decisions")}
             className={cn(
               "px-3 py-1 text-[12px] font-medium rounded-full transition-colors",
@@ -86,7 +90,8 @@ export function ChannelHeader({
           >
             Decisions &amp; Escalations
           </button>
-          <button type="button"
+          <button
+            type="button"
             onClick={() => onFilterChange("analytics")}
             className={cn(
               "px-3 py-1 text-[12px] font-medium rounded-full transition-colors flex items-center gap-1",
@@ -117,7 +122,8 @@ export function ChannelHeader({
               {filteredCount} result{filteredCount !== 1 ? "s" : ""}
             </span>
           )}
-          <button type="button"
+          <button
+            type="button"
             onClick={() => {
               onSearchToggle();
               onSearchTermChange("");

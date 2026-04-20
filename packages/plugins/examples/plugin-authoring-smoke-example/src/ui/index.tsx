@@ -17,7 +17,9 @@ export function DashboardWidget(_props: PluginWidgetProps) {
       <strong>Plugin Authoring Smoke Example</strong>
       <div>Health: {data?.status ?? "unknown"}</div>
       <div>Checked: {data?.checkedAt ?? "never"}</div>
-      <button type="button" onClick={() => void ping()}>Ping Worker</button>
+      <button type="button" onClick={() => void ping()}>
+        Ping Worker
+      </button>
     </div>
   );
 }

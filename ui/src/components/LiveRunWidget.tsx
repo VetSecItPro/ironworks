@@ -120,7 +120,8 @@ export function LiveRunWidget({ issueId, companyId }: LiveRunWidgetProps) {
 
                 <div className="flex items-center gap-2">
                   {isActive && (
-                    <button type="button"
+                    <button
+                      type="button"
                       onClick={() => handleCancelRun(run.id)}
                       disabled={cancellingRunIds.has(run.id)}
                       className="inline-flex items-center gap-1 rounded-full border border-red-500/20 bg-red-500/[0.06] px-2.5 py-1 text-[11px] font-medium text-red-700 transition-colors hover:bg-red-500/[0.12] dark:text-red-300 disabled:opacity-50"

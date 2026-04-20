@@ -50,7 +50,8 @@ export function GoalDetailHeader({
             <CopyPlus className="h-3.5 w-3.5 mr-1" />
             {cloneIsPending ? "Cloning..." : "Clone Goal"}
           </Button>
-          <button type="button"
+          <button
+            type="button"
             onClick={onToggleTwoPane}
             className="hidden text-muted-foreground hover:text-foreground transition-colors lg:inline-flex"
             title={twoPane ? "Hide properties panel" : "Show properties panel"}

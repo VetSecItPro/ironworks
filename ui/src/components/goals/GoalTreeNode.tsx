@@ -64,7 +64,16 @@ export function GoalTreeNode({
         role={hasChildren ? "button" : undefined}
         tabIndex={hasChildren ? 0 : undefined}
         onClick={() => hasChildren && setExpanded((e) => !e)}
-        onKeyDown={hasChildren ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpanded((v) => !v); } } : undefined}
+        onKeyDown={
+          hasChildren
+            ? (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setExpanded((v) => !v);
+                }
+              }
+            : undefined
+        }
       >
         {hasChildren ? (
           expanded ? (

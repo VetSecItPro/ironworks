@@ -8,46 +8,46 @@
   <title>Agent Failure Alert</title>
   <style>
     body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f4f5; color: #18181b; }
-                    .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
-                    .card { background-color: #ffffff; border-radius: 8px; border: 1px solid #e4e4e7; padding: 32px; }
-                    .alert-badge { display: inline-block; background-color: #fef2f2; color: #dc2626; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; padding: 4px 10px; border-radius: 4px; border: 1px solid #fecaca; margin-bottom: 16px; }
-                    h1 { font-size: 20px; font-weight: 600; margin: 0 0 4px 0; }
-                    .subtitle { font-size: 14px; color: #71717a; margin: 0 0 20px 0; }
-                    .divider { border: none; border-top: 1px solid #e4e4e7; margin: 20px 0; }
+                        .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
+                        .card { background-color: #ffffff; border-radius: 8px; border: 1px solid #e4e4e7; padding: 32px; }
+                        .alert-badge { display: inline-block; background-color: #fef2f2; color: #dc2626; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; padding: 4px 10px; border-radius: 4px; border: 1px solid #fecaca; margin-bottom: 16px; }
+                        h1 { font-size: 20px; font-weight: 600; margin: 0 0 4px 0; }
+                        .subtitle { font-size: 14px; color: #71717a; margin: 0 0 20px 0; }
+                        .divider { border: none; border-top: 1px solid #e4e4e7; margin: 20px 0; }
 
-                    /* Agent details */
-                    .detail-table { width: 100%; border-collapse: collapse; margin: 0 0 16px 0; }
-                    .detail-table td { padding: 8px 0; font-size: 14px; vertical-align: top; }
-                    .detail-label { color: #71717a; width: 120px; font-weight: 500; }
-                    .detail-value { color: #18181b; }
+                        /* Agent details */
+                        .detail-table { width: 100%; border-collapse: collapse; margin: 0 0 16px 0; }
+                        .detail-table td { padding: 8px 0; font-size: 14px; vertical-align: top; }
+                        .detail-label { color: #71717a; width: 120px; font-weight: 500; }
+                        .detail-value { color: #18181b; }
 
-                    /* Error box */
-                    .error-box { background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 14px; margin: 16px 0; }
-                    .error-title { font-size: 12px; font-weight: 600; color: #dc2626; text-transform: uppercase; letter-spacing: 0.03em; margin: 0 0 6px 0; }
-                    .error-message { font-size: 13px; color: #991b1b; font-family: 'SF Mono', 'Fira Code', monospace; word-break: break-word; margin: 0; white-space: pre-wrap; line-height: 1.5; }
+                        /* Error box */
+                        .error-box { background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 14px; margin: 16px 0; }
+                        .error-title { font-size: 12px; font-weight: 600; color: #dc2626; text-transform: uppercase; letter-spacing: 0.03em; margin: 0 0 6px 0; }
+                        .error-message { font-size: 13px; color: #991b1b; font-family: 'SF Mono', 'Fira Code', monospace; word-break: break-word; margin: 0; white-space: pre-wrap; line-height: 1.5; }
 
-                    .actions { margin: 20px 0 0 0; }
-                    .cta { display: inline-block; text-align: center; background-color: #18181b; color: #ffffff; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 13px; margin-right: 8px; }
-                    .cta-secondary { display: inline-block; text-align: center; background-color: #ffffff; color: #18181b; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 13px; border: 1px solid #e4e4e7; }
+                        .actions { margin: 20px 0 0 0; }
+                        .cta { display: inline-block; text-align: center; background-color: #18181b; color: #ffffff; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 13px; margin-right: 8px; }
+                        .cta-secondary { display: inline-block; text-align: center; background-color: #ffffff; color: #18181b; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 500; font-size: 13px; border: 1px solid #e4e4e7; }
 
-                    .timestamp { font-size: 12px; color: #a1a1aa; margin-top: 16px; }
-                    .footer { text-align: center; font-size: 12px; color: #a1a1aa; margin-top: 24px; }
-                    .footer a { color: #71717a; }
+                        .timestamp { font-size: 12px; color: #a1a1aa; margin-top: 16px; }
+                        .footer { text-align: center; font-size: 12px; color: #a1a1aa; margin-top: 24px; }
+                        .footer a { color: #71717a; }
 
-                    @media (prefers-color-scheme: dark) {
-                      body { background-color: #18181b; color: #fafafa; }
-                      .card { background-color: #27272a; border-color: #3f3f46; }
-                      .divider { border-top-color: #3f3f46; }
-                      .alert-badge { background-color: #450a0a; border-color: #7f1d1d; color: #fca5a5; }
-                      .detail-label { color: #a1a1aa; }
-                      .detail-value { color: #fafafa; }
-                      .error-box { background-color: #450a0a; border-color: #7f1d1d; }
-                      .error-title { color: #fca5a5; }
-                      .error-message { color: #fecaca; }
-                      .cta { background-color: #fafafa; color: #18181b; }
-                      .cta-secondary { background-color: #3f3f46; color: #fafafa; border-color: #52525b; }
-                      .subtitle { color: #a1a1aa; }
-                    }
+                        @media (prefers-color-scheme: dark) {
+                          body { background-color: #18181b; color: #fafafa; }
+                          .card { background-color: #27272a; border-color: #3f3f46; }
+                          .divider { border-top-color: #3f3f46; }
+                          .alert-badge { background-color: #450a0a; border-color: #7f1d1d; color: #fca5a5; }
+                          .detail-label { color: #a1a1aa; }
+                          .detail-value { color: #fafafa; }
+                          .error-box { background-color: #450a0a; border-color: #7f1d1d; }
+                          .error-title { color: #fca5a5; }
+                          .error-message { color: #fecaca; }
+                          .cta { background-color: #fafafa; color: #18181b; }
+                          .cta-secondary { background-color: #3f3f46; color: #fafafa; border-color: #52525b; }
+                          .subtitle { color: #a1a1aa; }
+                        }
   </style>
 </head>
 <body>

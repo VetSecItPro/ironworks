@@ -53,7 +53,8 @@ export function AttentionRequiredSection({
               </div>
               <span className="text-xs text-red-400 font-medium shrink-0">Blocked</span>
             </Link>
-            <button type="button"
+            <button
+              type="button"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -80,7 +81,8 @@ export function AttentionRequiredSection({
                   className="inline-flex h-4 w-4 shrink-0 items-center justify-center text-amber-500"
                   aria-hidden="true"
                 >
-                  <svg aria-hidden="true"
+                  <svg
+                    aria-hidden="true"
                     width="10"
                     height="10"
                     viewBox="0 0 10 10"
@@ -97,7 +99,8 @@ export function AttentionRequiredSection({
               </div>
               <span className="text-xs text-amber-400 font-medium shrink-0">View run</span>
             </Link>
-            <button type="button"
+            <button
+              type="button"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();

@@ -36,12 +36,12 @@ describe("boardMutationGuard", () => {
       method: "POST",
       actor: { type: "board", userId: "board", source: "session" },
       header: () => undefined,
-    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
+      // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
     } as any;
     const res = {
       status: vi.fn().mockReturnThis(),
       json: vi.fn(),
-    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
+      // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
     } as any;
     const next = vi.fn();
 
@@ -87,12 +87,12 @@ describe("boardMutationGuard", () => {
       method: "POST",
       actor: { type: "agent", agentId: "agent-1" },
       header: () => undefined,
-    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
+      // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
     } as any;
     const res = {
       status: vi.fn().mockReturnThis(),
       json: vi.fn(),
-    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
+      // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
     } as any;
     const next = vi.fn();
 

@@ -107,7 +107,18 @@ export function CsvImportDialog({ open, onClose, onImport, existingTitles = [] }
   }
 
   return (
-    <button type="button" className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50" aria-label="Close dialog" onClick={onClose} onKeyDown={(e) => { if (e.key === 'Escape') { e.preventDefault(); onClose(); } }}>
+    <button
+      type="button"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50"
+      aria-label="Close dialog"
+      onClick={onClose}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          onClose();
+        }
+      }}
+    >
       <div
         role="dialog"
         aria-modal="true"
@@ -162,7 +173,9 @@ export function CsvImportDialog({ open, onClose, onImport, existingTitles = [] }
                 <div className="grid grid-cols-2 gap-3">
                   {FIELD_KEYS.map(({ key, label }) => (
                     <div key={key} className="flex items-center gap-2">
-                      <label htmlFor={`csv-col-${key}`} className="text-xs text-muted-foreground w-32 shrink-0">{label}</label>
+                      <label htmlFor={`csv-col-${key}`} className="text-xs text-muted-foreground w-32 shrink-0">
+                        {label}
+                      </label>
                       <select
                         id={`csv-col-${key}`}
                         value={mapping[key] ?? "__unmapped__"}
@@ -252,7 +265,10 @@ export function CsvImportDialog({ open, onClose, onImport, existingTitles = [] }
                       const isExisting = existingDupes.has(i);
                       return (
                         // biome-ignore lint/suspicious/noArrayIndexKey: CSV rows have no identity; row position in the parsed file is the only meaningful key
-                        <tr key={i} className={cn("hover:bg-accent/30", isDupe && "bg-amber-500/5", isExisting && "bg-red-500/5")}>
+                        <tr
+                          key={i}
+                          className={cn("hover:bg-accent/30", isDupe && "bg-amber-500/5", isExisting && "bg-red-500/5")}
+                        >
                           <td className="px-3 py-2">
                             <button
                               type="button"

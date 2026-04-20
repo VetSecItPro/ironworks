@@ -75,7 +75,8 @@ export function AgentListView({
               to={agentUrl(agent)}
               leading={
                 <span className="flex items-center gap-2">
-                  <button type="button"
+                  <button
+                    type="button"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -118,7 +119,8 @@ export function AgentListView({
                 <div className="flex items-center gap-3">
                   {/* Quick-invoke button on hover */}
                   {!isTerminated && (
-                    <button type="button"
+                    <button
+                      type="button"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();

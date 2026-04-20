@@ -36,7 +36,18 @@ export function BulkLabelDialog({ open, onClose, selectedCount, availableLabels,
   }
 
   return (
-    <button type="button" className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50" aria-label="Close dialog" onClick={onClose} onKeyDown={(e) => { if (e.key === 'Escape') { e.preventDefault(); onClose(); } }}>
+    <button
+      type="button"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50"
+      aria-label="Close dialog"
+      onClick={onClose}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          onClose();
+        }
+      }}
+    >
       <div
         role="dialog"
         aria-modal="true"

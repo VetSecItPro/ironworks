@@ -64,7 +64,8 @@ function MemoryCard({
         {isLong && !expanded ? (
           <>
             <p className="text-foreground/90">{content.slice(0, 200)}...</p>
-            <button type="button"
+            <button
+              type="button"
               onClick={() => setExpanded(true)}
               className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mt-1"
             >
@@ -76,7 +77,8 @@ function MemoryCard({
           <>
             <p className="text-foreground/90 whitespace-pre-wrap">{content}</p>
             {isLong && (
-              <button type="button"
+              <button
+                type="button"
                 onClick={() => setExpanded(false)}
                 className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mt-1"
               >
@@ -128,7 +130,9 @@ function AddMemoryForm({
       <h4 className="text-sm font-medium">Add Memory Entry</h4>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label htmlFor="memory-type" className="text-xs text-muted-foreground block mb-1">Type</label>
+          <label htmlFor="memory-type" className="text-xs text-muted-foreground block mb-1">
+            Type
+          </label>
           <select
             id="memory-type"
             value={memoryType}
@@ -143,7 +147,9 @@ function AddMemoryForm({
           </select>
         </div>
         <div>
-          <label htmlFor="memory-category" className="text-xs text-muted-foreground block mb-1">Category</label>
+          <label htmlFor="memory-category" className="text-xs text-muted-foreground block mb-1">
+            Category
+          </label>
           <Input
             id="memory-category"
             value={category}
@@ -154,7 +160,9 @@ function AddMemoryForm({
         </div>
       </div>
       <div>
-        <label htmlFor="memory-content" className="text-xs text-muted-foreground block mb-1">Content</label>
+        <label htmlFor="memory-content" className="text-xs text-muted-foreground block mb-1">
+          Content
+        </label>
         <textarea
           id="memory-content"
           value={content}

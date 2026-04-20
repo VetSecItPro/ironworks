@@ -40,7 +40,11 @@ export function MessageComposer({
             Replying to: {replyMap.get(replyToId)?.body?.slice(0, 80) ?? "message"}
             {(replyMap.get(replyToId)?.body?.length ?? 0) > 80 ? "..." : ""}
           </span>
-          <button type="button" onClick={onCancelReply} className="ml-auto shrink-0 text-muted-foreground hover:text-foreground">
+          <button
+            type="button"
+            onClick={onCancelReply}
+            className="ml-auto shrink-0 text-muted-foreground hover:text-foreground"
+          >
             <X className="h-3 w-3" />
           </button>
         </div>

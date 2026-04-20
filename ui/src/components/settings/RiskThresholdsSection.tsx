@@ -51,7 +51,9 @@ export function RiskThresholdsSection({ companyId }: { companyId: string }) {
       </h2>
       <div className="rounded-md border border-border px-4 py-4 space-y-4">
         <div className="space-y-1.5">
-          <label htmlFor="risk-spend-threshold" className="text-sm font-medium">Spending alert threshold (per run)</label>
+          <label htmlFor="risk-spend-threshold" className="text-sm font-medium">
+            Spending alert threshold (per run)
+          </label>
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">$</span>
             <input
@@ -69,7 +71,9 @@ export function RiskThresholdsSection({ companyId }: { companyId: string }) {
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="risk-perf-threshold" className="text-sm font-medium">Performance alert threshold</label>
+          <label htmlFor="risk-perf-threshold" className="text-sm font-medium">
+            Performance alert threshold
+          </label>
           <input
             id="risk-perf-threshold"
             type="number"
@@ -84,7 +88,9 @@ export function RiskThresholdsSection({ companyId }: { companyId: string }) {
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="risk-resolve-hours" className="text-sm font-medium">Auto-resolve timeout (hours)</label>
+          <label htmlFor="risk-resolve-hours" className="text-sm font-medium">
+            Auto-resolve timeout (hours)
+          </label>
           <input
             id="risk-resolve-hours"
             type="number"
@@ -98,7 +104,8 @@ export function RiskThresholdsSection({ companyId }: { companyId: string }) {
         </div>
 
         <div className="flex items-center gap-2 pt-1">
-          <button type="button"
+          <button
+            type="button"
             className="inline-flex items-center justify-center rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-60"
             onClick={() => saveMutation.mutate()}
             disabled={saveMutation.isPending}

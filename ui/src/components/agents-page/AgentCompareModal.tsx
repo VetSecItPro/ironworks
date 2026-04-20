@@ -26,7 +26,18 @@ export function AgentCompareModal({
   if (agents.length === 0) return null;
 
   return (
-    <button type="button" className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" aria-label="Close modal" onClick={onClose} onKeyDown={(e) => { if (e.key === 'Escape') { e.preventDefault(); onClose(); } }}>
+    <button
+      type="button"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      aria-label="Close modal"
+      onClick={onClose}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          onClose();
+        }
+      }}
+    >
       <div
         role="dialog"
         aria-modal="true"
@@ -37,7 +48,8 @@ export function AgentCompareModal({
       >
         <div className="flex items-center justify-between px-5 py-3 border-b border-border">
           <h2 className="text-sm font-semibold">Agent Comparison</h2>
-          <button type="button"
+          <button
+            type="button"
             onClick={onClose}
             className="text-muted-foreground hover:text-foreground"
             aria-label="Close comparison"

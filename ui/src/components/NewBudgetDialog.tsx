@@ -124,7 +124,8 @@ export function NewBudgetDialog({ open, onOpenChange, onSubmit, isPending }: New
             <span className="text-xs font-medium text-muted-foreground">Scope</span>
             <div className="grid grid-cols-3 gap-2 mt-1">
               {(["agent", "project", "company"] as const).map((s) => (
-                <button type="button"
+                <button
+                  type="button"
                   key={s}
                   onClick={() => setScopeType(s)}
                   className={cn(
@@ -183,7 +184,9 @@ export function NewBudgetDialog({ open, onOpenChange, onSubmit, isPending }: New
 
           {/* Warning Threshold */}
           <div>
-            <label htmlFor="new-budget-warn-percent" className="text-xs font-medium text-muted-foreground">Warning threshold (%)</label>
+            <label htmlFor="new-budget-warn-percent" className="text-xs font-medium text-muted-foreground">
+              Warning threshold (%)
+            </label>
             <Input
               id="new-budget-warn-percent"
               type="number"
@@ -205,7 +208,8 @@ export function NewBudgetDialog({ open, onOpenChange, onSubmit, isPending }: New
               <span className="text-sm font-medium">Hard stop</span>
               <p className="text-xs text-muted-foreground">Pause agent execution when budget is exceeded</p>
             </div>
-            <button type="button"
+            <button
+              type="button"
               onClick={() => setHardStop(!hardStop)}
               className={cn(
                 "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors",

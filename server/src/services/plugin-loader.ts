@@ -26,8 +26,8 @@
  */
 
 import { execFile } from "node:child_process";
-import { existsSync } from "node:fs";
 import type { Stats } from "node:fs";
+import { existsSync } from "node:fs";
 import { readdir, readFile, rm, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";

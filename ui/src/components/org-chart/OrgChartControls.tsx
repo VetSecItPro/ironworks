@@ -51,7 +51,8 @@ export function OrgChartZoomControls({
 }) {
   return (
     <div className="absolute top-3 right-3 z-10 flex flex-col gap-1">
-      <button type="button"
+      <button
+        type="button"
         className="w-7 h-7 flex items-center justify-center bg-background border border-border rounded text-sm hover:bg-accent transition-colors"
         onClick={() => {
           const newZoom = Math.min(zoom * 1.2, 2);
@@ -69,7 +70,8 @@ export function OrgChartZoomControls({
       >
         +
       </button>
-      <button type="button"
+      <button
+        type="button"
         className="w-7 h-7 flex items-center justify-center bg-background border border-border rounded text-sm hover:bg-accent transition-colors"
         onClick={() => {
           const newZoom = Math.max(zoom * 0.8, 0.2);
@@ -87,7 +89,8 @@ export function OrgChartZoomControls({
       >
         &minus;
       </button>
-      <button type="button"
+      <button
+        type="button"
         className="w-7 h-7 flex items-center justify-center bg-background border border-border rounded text-[10px] hover:bg-accent transition-colors"
         onClick={() => {
           if (!containerRef.current) return;
@@ -125,7 +128,8 @@ export function OrgChartVacantPositions({
         <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1">
           <span className="h-3 w-3 inline-block">
             {/* UserPlus inline to avoid import bloat */}
-            <svg aria-hidden="true"
+            <svg
+              aria-hidden="true"
               xmlns="http://www.w3.org/2000/svg"
               width="12"
               height="12"
@@ -147,7 +151,8 @@ export function OrgChartVacantPositions({
         {openPositions.slice(0, 4).map((h) => (
           <div key={h.id} className="flex items-center gap-2 text-xs">
             <div className="h-6 w-6 rounded-full border-2 border-dashed border-amber-400/50 flex items-center justify-center">
-              <svg aria-hidden="true"
+              <svg
+                aria-hidden="true"
                 xmlns="http://www.w3.org/2000/svg"
                 width="12"
                 height="12"

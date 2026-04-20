@@ -60,14 +60,20 @@ export function DeliverablePreview({ deliverable, onClose }: DeliverablePreviewP
             )}
           </div>
         </div>
-        <button type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground p-1" aria-label="Close">
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-muted-foreground hover:text-foreground p-1"
+          aria-label="Close"
+        >
           <X className="h-4 w-4" />
         </button>
       </div>
 
       <div className="flex items-center gap-0 border-b border-border shrink-0">
         {(["preview", "versions", "annotations"] as const).map((tab) => (
-          <button type="button"
+          <button
+            type="button"
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={cn(
@@ -141,7 +147,10 @@ export function DeliverablePreview({ deliverable, onClose }: DeliverablePreviewP
           <div className="p-4 space-y-3">
             <p className="text-xs text-muted-foreground">Click-to-comment annotations on specific lines</p>
             {annotations.map((ann) => (
-              <div key={`${ann.line}-${ann.author}`} className="flex gap-2 p-2 rounded-md border border-border bg-muted/10">
+              <div
+                key={`${ann.line}-${ann.author}`}
+                className="flex gap-2 p-2 rounded-md border border-border bg-muted/10"
+              >
                 <div className="flex items-center justify-center h-5 w-5 rounded bg-muted text-[10px] font-mono font-bold text-muted-foreground shrink-0 mt-0.5">
                   L{ann.line}
                 </div>

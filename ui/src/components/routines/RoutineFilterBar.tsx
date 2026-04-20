@@ -71,7 +71,8 @@ export function RoutineFilterBar({
       )}
       {/* View mode toggle */}
       <div className="flex items-center rounded-md border border-border overflow-hidden ml-auto">
-        <button type="button"
+        <button
+          type="button"
           className={cn(
             "flex items-center justify-center h-8 w-8 transition-colors",
             viewMode === "list" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50",
@@ -81,7 +82,8 @@ export function RoutineFilterBar({
         >
           <LayoutList className="h-3.5 w-3.5" />
         </button>
-        <button type="button"
+        <button
+          type="button"
           className={cn(
             "flex items-center justify-center h-8 w-8 transition-colors",
             viewMode === "calendar" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50",

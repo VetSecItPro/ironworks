@@ -31,7 +31,8 @@ export function TreeNode({
 
   return (
     <div>
-      <button type="button"
+      <button
+        type="button"
         onClick={() => (isDir ? onToggleDir(entry.path) : onSelectFile(entry.path))}
         className={cn(
           "flex items-center gap-1.5 w-full text-left px-2 py-1.5 text-[13px] hover:bg-accent/50 transition-colors group",

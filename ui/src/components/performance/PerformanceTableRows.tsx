@@ -100,7 +100,8 @@ export function MobileCard({ row }: { row: AgentPerfRow; prevScoreMap: Map<strin
         </div>
       </div>
       {(row.rating === "D" || row.rating === "F") && row.tasksDone > 0 && (
-        <button type="button"
+        <button
+          type="button"
           className="text-[10px] text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors"
           onClick={() =>
             openNewIssue({
@@ -187,7 +188,8 @@ export function DesktopRow({
         </td>
         <td className="px-4 py-3 text-right">
           {(row.rating === "D" || row.rating === "F") && row.tasksDone > 0 ? (
-            <button type="button"
+            <button
+              type="button"
               className="text-[10px] text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors"
               onClick={(e) => {
                 e.stopPropagation();

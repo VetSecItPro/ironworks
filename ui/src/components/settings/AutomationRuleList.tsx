@@ -37,7 +37,8 @@ export function AutomationRuleList({ rules, showForm, onToggle, onDelete, onEdit
             rule.enabled ? "border-border" : "border-border/50 opacity-60"
           }`}
         >
-          <button type="button"
+          <button
+            type="button"
             className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
             onClick={() => onToggle(rule.id)}
             title={rule.enabled ? "Disable rule" : "Enable rule"}

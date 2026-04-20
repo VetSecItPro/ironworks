@@ -73,7 +73,7 @@ function createFakeDb() {
     insert: insertInto,
     update: updateFrom,
     transaction: vi.fn(),
-  // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
+    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
 }
 

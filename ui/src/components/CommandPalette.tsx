@@ -168,7 +168,8 @@ export function CommandPalette() {
                 <CommandItem key={ss.id} value={`saved-search ${ss.name}`} onSelect={() => go(ss.url)}>
                   <Bookmark className="mr-2 h-4 w-4 text-amber-500" />
                   <span className="flex-1 truncate">{ss.name}</span>
-                  <button type="button"
+                  <button
+                    type="button"
                     className="ml-2 text-muted-foreground hover:text-destructive"
                     onClick={(e) => {
                       e.stopPropagation();

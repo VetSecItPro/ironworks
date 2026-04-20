@@ -3,7 +3,8 @@ import { Link } from "@/lib/router";
 
 function CircleDotIcon({ className }: { className?: string }) {
   return (
-    <svg aria-hidden="true"
+    <svg
+      aria-hidden="true"
       className={className}
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"

@@ -104,7 +104,7 @@ async function createApp(actor: Record<string, unknown>) {
     where: vi.fn().mockReturnThis(),
     // biome-ignore lint/suspicious/noThenProperty: test mock drizzle thenable contract
     then: vi.fn().mockResolvedValue([{ membershipRole: "owner" }]),
-  // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
+    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
   app.use("/api", playbookRoutes(fakeDb));
   app.use(errorHandler);

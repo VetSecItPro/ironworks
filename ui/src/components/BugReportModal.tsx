@@ -163,8 +163,16 @@ export function BugReportModal({ open, onClose }: BugReportModalProps) {
 
           {/* Page URL (read-only) */}
           <div className="space-y-1.5">
-            <label htmlFor="bug-report-page-url" className="text-xs font-medium text-muted-foreground">Page URL</label>
-            <Input id="bug-report-page-url" value={pageUrl} readOnly tabIndex={-1} className="text-xs text-muted-foreground bg-muted/30" />
+            <label htmlFor="bug-report-page-url" className="text-xs font-medium text-muted-foreground">
+              Page URL
+            </label>
+            <Input
+              id="bug-report-page-url"
+              value={pageUrl}
+              readOnly
+              tabIndex={-1}
+              className="text-xs text-muted-foreground bg-muted/30"
+            />
           </div>
 
           {/* Actions */}

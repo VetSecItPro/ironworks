@@ -137,7 +137,9 @@ export function BudgetPolicyCard({
       )}
     >
       <div className="min-w-0 flex-1">
-        <label htmlFor="budget-policy-amount" className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Budget (USD)</label>
+        <label htmlFor="budget-policy-amount" className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+          Budget (USD)
+        </label>
         <Input
           id="budget-policy-amount"
           value={draftBudget}

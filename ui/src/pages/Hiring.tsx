@@ -203,7 +203,12 @@ export function Hiring() {
                       key={req.id}
                       className="w-full text-left bg-card rounded-md border border-border/50 px-2.5 py-2 cursor-pointer hover:border-foreground/20 transition-colors"
                       onClick={() => setExpandedId(expandedId === req.id ? null : req.id)}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedId(expandedId === req.id ? null : req.id); } }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setExpandedId(expandedId === req.id ? null : req.id);
+                        }
+                      }}
                     >
                       <div className="text-sm font-medium truncate">{req.title}</div>
                       <div className="flex items-center gap-1.5 mt-0.5">
@@ -246,7 +251,8 @@ export function Hiring() {
                 const isExpanded = expandedId === req.id;
                 return (
                   <div key={req.id} className="rounded-lg border border-border bg-muted/20 overflow-hidden">
-                    <button type="button"
+                    <button
+                      type="button"
                       className="w-full flex items-center justify-between px-3 py-2.5 text-left hover:bg-accent/10 transition-colors"
                       onClick={() => setExpandedId(isExpanded ? null : req.id)}
                     >

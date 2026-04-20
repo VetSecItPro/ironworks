@@ -57,15 +57,25 @@ export function RunPlaybookDialog({ open, onOpenChange, playbookName, onRun, isP
 
         <div className="space-y-4 py-2">
           <div>
-            <label htmlFor="run-playbook-name" className="text-xs font-medium text-muted-foreground">Project Name</label>
-            <Input id="run-playbook-name" value={name} onChange={(e) => setName(e.target.value)} placeholder={playbookName} className="mt-1" />
+            <label htmlFor="run-playbook-name" className="text-xs font-medium text-muted-foreground">
+              Project Name
+            </label>
+            <Input
+              id="run-playbook-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={playbookName}
+              className="mt-1"
+            />
             <p className="text-[10px] text-muted-foreground mt-1">
               A project and library folder will be created with this name.
             </p>
           </div>
 
           <div>
-            <label htmlFor="run-playbook-repo-url" className="text-xs font-medium text-muted-foreground">Repository URL (optional)</label>
+            <label htmlFor="run-playbook-repo-url" className="text-xs font-medium text-muted-foreground">
+              Repository URL (optional)
+            </label>
             <Input
               id="run-playbook-repo-url"
               value={repoUrl}

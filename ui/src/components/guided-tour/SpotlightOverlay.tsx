@@ -15,7 +15,8 @@ export function SpotlightOverlay({ targetRect }: SpotlightProps) {
   const r = 8;
 
   return (
-    <svg aria-hidden="true"
+    <svg
+      aria-hidden="true"
       className="fixed inset-0 z-[9998] pointer-events-none"
       width="100%"
       height="100%"

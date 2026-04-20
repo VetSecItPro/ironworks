@@ -28,7 +28,8 @@ function GoalNode({ goal, childGoals, allGoals, depth, goalLink, onSelect }: Goa
   const inner = (
     <>
       {hasChildren ? (
-        <button type="button"
+        <button
+          type="button"
           className="p-0.5"
           onClick={(e) => {
             e.preventDefault();
@@ -60,7 +61,18 @@ function GoalNode({ goal, childGoals, allGoals, depth, goalLink, onSelect }: Goa
           {inner}
         </Link>
       ) : (
-        <button type="button" className={classes} style={{ paddingLeft: `${depth * 16 + 12}px` }} onClick={() => onSelect?.(goal)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect?.(goal); } }}>
+        <button
+          type="button"
+          className={classes}
+          style={{ paddingLeft: `${depth * 16 + 12}px` }}
+          onClick={() => onSelect?.(goal)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              onSelect?.(goal);
+            }
+          }}
+        >
           {inner}
         </button>
       )}

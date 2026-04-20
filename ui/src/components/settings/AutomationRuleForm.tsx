@@ -38,7 +38,8 @@ export function AutomationRuleForm({
     <div className="rounded-lg border border-border p-5 space-y-5">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold">{editingId ? "Edit Rule" : "Create Rule"}</h2>
-        <button type="button"
+        <button
+          type="button"
           className="text-muted-foreground hover:text-foreground transition-colors"
           onClick={onCancel}
           aria-label="Close form"
@@ -48,7 +49,9 @@ export function AutomationRuleForm({
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="automation-rule-name" className="text-sm font-medium">Rule name</label>
+        <label htmlFor="automation-rule-name" className="text-sm font-medium">
+          Rule name
+        </label>
         <input
           id="automation-rule-name"
           className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none focus:border-primary"
@@ -66,7 +69,9 @@ export function AutomationRuleForm({
             <span className="text-xs text-muted-foreground">(trigger)</span>
           </div>
           <div className="space-y-1.5">
-            <label htmlFor="automation-trigger-event" className="text-xs text-muted-foreground">Event</label>
+            <label htmlFor="automation-trigger-event" className="text-xs text-muted-foreground">
+              Event
+            </label>
             <div className="relative">
               <select
                 id="automation-trigger-event"
@@ -87,7 +92,9 @@ export function AutomationRuleForm({
             </p>
           </div>
           <div className="space-y-1.5">
-            <label htmlFor="automation-trigger-value" className="text-xs text-muted-foreground">{TRIGGER_VALUE_LABELS[formTrigger]}</label>
+            <label htmlFor="automation-trigger-value" className="text-xs text-muted-foreground">
+              {TRIGGER_VALUE_LABELS[formTrigger]}
+            </label>
             <input
               id="automation-trigger-value"
               className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
@@ -105,7 +112,9 @@ export function AutomationRuleForm({
             <span className="text-xs text-muted-foreground">(action)</span>
           </div>
           <div className="space-y-1.5">
-            <label htmlFor="automation-action-type" className="text-xs text-muted-foreground">Action</label>
+            <label htmlFor="automation-action-type" className="text-xs text-muted-foreground">
+              Action
+            </label>
             <div className="relative">
               <select
                 id="automation-action-type"
@@ -126,7 +135,9 @@ export function AutomationRuleForm({
             </p>
           </div>
           <div className="space-y-1.5">
-            <label htmlFor="automation-action-value" className="text-xs text-muted-foreground">{ACTION_VALUE_LABELS[formAction]}</label>
+            <label htmlFor="automation-action-value" className="text-xs text-muted-foreground">
+              {ACTION_VALUE_LABELS[formAction]}
+            </label>
             <input
               id="automation-action-value"
               className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"

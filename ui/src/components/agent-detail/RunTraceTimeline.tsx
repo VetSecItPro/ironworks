@@ -182,7 +182,16 @@ function TimelineEvent({ event }: { event: HeartbeatRunEvent }) {
         role={hasPayload ? "button" : undefined}
         tabIndex={hasPayload ? 0 : undefined}
         onClick={() => hasPayload && setExpanded((v) => !v)}
-        onKeyDown={hasPayload ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpanded((v) => !v); } } : undefined}
+        onKeyDown={
+          hasPayload
+            ? (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setExpanded((v) => !v);
+                }
+              }
+            : undefined
+        }
       >
         {hasPayload ? (
           expanded ? (

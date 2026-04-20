@@ -78,7 +78,8 @@ export function SkillPane({
             {detail.description && <p className="mt-2 max-w-3xl text-sm text-muted-foreground">{detail.description}</p>}
           </div>
           {detail.editable ? (
-            <button type="button"
+            <button
+              type="button"
               className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
               onClick={() => setEditMode(!editMode)}
             >
@@ -97,7 +98,8 @@ export function SkillPane({
               <span className="flex items-center gap-2">
                 <SourceIcon className="h-3.5 w-3.5 text-muted-foreground" />
                 {detail.sourcePath ? (
-                  <button type="button"
+                  <button
+                    type="button"
                     className="truncate hover:text-foreground text-muted-foreground transition-colors cursor-pointer"
                     onClick={() => {
                       navigator.clipboard.writeText(detail.sourcePath!);
@@ -181,7 +183,8 @@ export function SkillPane({
           <div className="flex items-center gap-2">
             {file?.markdown && !editMode && (
               <div className="flex items-center border border-border">
-                <button type="button"
+                <button
+                  type="button"
                   className={cn(
                     "px-3 py-1.5 text-sm",
                     viewMode === "preview" && "text-foreground",
@@ -194,7 +197,8 @@ export function SkillPane({
                     View
                   </span>
                 </button>
-                <button type="button"
+                <button
+                  type="button"
                   className={cn(
                     "border-l border-border px-3 py-1.5 text-sm",
                     viewMode === "code" && "text-foreground",

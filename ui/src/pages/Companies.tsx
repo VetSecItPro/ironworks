@@ -116,7 +116,11 @@ export function Companies() {
                 <div className="flex-1 min-w-0">
                   {isEditing ? (
                     // biome-ignore lint/a11y/noStaticElementInteractions: stopPropagation container prevents edit input clicks from bubbling to parent button
-                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                    <div
+                      className="flex items-center gap-2"
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => e.stopPropagation()}
+                    >
                       <Input
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}

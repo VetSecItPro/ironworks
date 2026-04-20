@@ -31,24 +31,24 @@
     <link rel="manifest" href="/site.webmanifest" />
     <script>
       (() => {
-                                const key = "ironworks.theme";
-                                const darkThemeColor = "#18181b";
-                                const lightThemeColor = "#ffffff";
-                                try {
-                                  const stored = window.localStorage.getItem(key);
-                                  const theme = stored === "light" || stored === "dark" ? stored : "dark";
-                                  const isDark = theme === "dark";
-                                  document.documentElement.classList.toggle("dark", isDark);
-                                  document.documentElement.style.colorScheme = isDark ? "dark" : "light";
-                                  const themeColorMeta = document.querySelector('meta[name="theme-color"]');
-                                  if (themeColorMeta) {
-                                    themeColorMeta.setAttribute("content", isDark ? darkThemeColor : lightThemeColor);
-                                  }
-                                } catch {
-                                  document.documentElement.classList.add("dark");
-                                  document.documentElement.style.colorScheme = "dark";
-                                }
-                              })();
+                                      const key = "ironworks.theme";
+                                      const darkThemeColor = "#18181b";
+                                      const lightThemeColor = "#ffffff";
+                                      try {
+                                        const stored = window.localStorage.getItem(key);
+                                        const theme = stored === "light" || stored === "dark" ? stored : "dark";
+                                        const isDark = theme === "dark";
+                                        document.documentElement.classList.toggle("dark", isDark);
+                                        document.documentElement.style.colorScheme = isDark ? "dark" : "light";
+                                        const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+                                        if (themeColorMeta) {
+                                          themeColorMeta.setAttribute("content", isDark ? darkThemeColor : lightThemeColor);
+                                        }
+                                      } catch {
+                                        document.documentElement.classList.add("dark");
+                                        document.documentElement.style.colorScheme = "dark";
+                                      }
+                                    })();
     </script>
   </head>
   <body>

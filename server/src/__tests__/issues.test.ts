@@ -155,7 +155,7 @@ async function createApp(actor: Record<string, unknown>) {
     where: vi.fn().mockReturnThis(),
     // biome-ignore lint/suspicious/noThenProperty: test mock drizzle thenable contract
     then: vi.fn().mockResolvedValue([]),
-  // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
+    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
   const fakeStorage = {
     putFile: vi.fn(),
@@ -163,7 +163,7 @@ async function createApp(actor: Record<string, unknown>) {
     deleteFile: vi.fn(),
     listFiles: vi.fn().mockResolvedValue([]),
     getSignedUrl: vi.fn(),
-  // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
+    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
   } as any;
   app.use("/api", issueRoutes(fakeDb, fakeStorage));
   app.use(errorHandler);

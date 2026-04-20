@@ -62,7 +62,12 @@ export function BudgetIncidentCard({
         </div>
 
         <div className="rounded-xl border border-border/60 bg-background/60 p-3">
-          <label htmlFor="budget-incident-amount" className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">New budget (USD)</label>
+          <label
+            htmlFor="budget-incident-amount"
+            className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground"
+          >
+            New budget (USD)
+          </label>
           <div className="mt-2 flex flex-col gap-3 sm:flex-row">
             <Input
               id="budget-incident-amount"

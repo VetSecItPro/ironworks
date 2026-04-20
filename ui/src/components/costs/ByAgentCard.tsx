@@ -53,7 +53,16 @@ export function ByAgentCard({
                   role={hasBreakdown ? "button" : undefined}
                   tabIndex={hasBreakdown ? 0 : undefined}
                   onClick={() => hasBreakdown && toggleAgent(row.agentId)}
-                  onKeyDown={hasBreakdown ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleAgent(row.agentId); } } : undefined}
+                  onKeyDown={
+                    hasBreakdown
+                      ? (e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            toggleAgent(row.agentId);
+                          }
+                        }
+                      : undefined
+                  }
                 >
                   <div className="flex min-w-0 items-center gap-2">
                     {hasBreakdown ? (

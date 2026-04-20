@@ -53,7 +53,8 @@ export function AlertsSection({
                 {alert.description && <p className="text-xs text-muted-foreground truncate">{alert.description}</p>}
               </div>
             </div>
-            <button type="button"
+            <button
+              type="button"
               className="text-xs text-muted-foreground hover:text-foreground shrink-0 transition-colors underline underline-offset-2"
               onClick={() => onResolve(alert.id)}
               disabled={isResolving}
