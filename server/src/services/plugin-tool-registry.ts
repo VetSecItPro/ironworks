@@ -20,9 +20,10 @@
  */
 
 import type { ExecuteToolParams, ToolResult, ToolRunContext } from "@ironworksai/plugin-sdk";
-import type { IronworksPluginManifestV1, PluginToolDeclaration } from "@ironworksai/shared";
+import type { IronworksPluginManifestV1, PluginToolCacheConfig, PluginToolDeclaration } from "@ironworksai/shared";
 import { logger } from "../middleware/logger.js";
 import type { PluginWorkerManager } from "./plugin-worker-manager.js";
+import { cacheGet, cacheSet } from "./tool-cache.js";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -64,6 +65,12 @@ export interface RegisteredTool {
   description: string;
   /** JSON Schema describing the tool's input parameters. */
   parametersSchema: Record<string, unknown>;
+  /**
+   * Optional cache configuration copied from the manifest declaration.
+   * Presence opts this tool into the host-side LRU result cache.
+   * Absent means the tool is always executed live.
+   */
+  cacheConfig?: PluginToolCacheConfig;
 }
 
 /**
@@ -256,6 +263,9 @@ export function createPluginToolRegistry(workerManager?: PluginWorkerManager): P
       displayName: decl.displayName,
       description: decl.description,
       parametersSchema: decl.parametersSchema,
+      // Propagate cache config from manifest so executeTool can read it without
+      // re-fetching the manifest. Undefined means no caching — opt-in only.
+      cacheConfig: decl.cache,
     };
 
     byNamespace.set(namespacedName, entry);
@@ -378,7 +388,27 @@ export function createPluginToolRegistry(workerManager?: PluginWorkerManager): P
         );
       }
 
-      // 3. Verify the worker manager is available
+      // 3. Cache lookup (opt-in: only when the tool declaration carries a cache config).
+      // Tools without `cacheConfig` are always executed live — there is no implicit
+      // default TTL because we cannot know whether an unknown tool is safe to cache.
+      const argsObj =
+        parameters !== null && typeof parameters === "object" && !Array.isArray(parameters)
+          ? (parameters as Record<string, unknown>)
+          : {};
+
+      if (tool.cacheConfig) {
+        const cached = cacheGet<ToolResult>(toolName, pluginId, argsObj, tool.cacheConfig);
+        if (cached.hit) {
+          log.debug(
+            { pluginId, toolName, namespacedName, agentId: runContext.agentId, runId: runContext.runId },
+            "tool result cache hit — skipping worker dispatch",
+          );
+          return { pluginId, toolName, result: cached.value };
+        }
+        log.debug({ pluginId, toolName, namespacedName }, "tool result cache miss — dispatching to worker");
+      }
+
+      // 4. Verify the worker manager is available
       if (!workerManager) {
         throw new Error(
           `Cannot execute tool "${namespacedName}" — no worker manager configured. ` +
@@ -386,7 +416,7 @@ export function createPluginToolRegistry(workerManager?: PluginWorkerManager): P
         );
       }
 
-      // 4. Verify the plugin worker is running (use DB UUID for worker lookup)
+      // 5. Verify the plugin worker is running (use DB UUID for worker lookup)
       const dbId = tool.pluginDbId;
       if (!workerManager.isRunning(dbId)) {
         throw new Error(
@@ -394,7 +424,7 @@ export function createPluginToolRegistry(workerManager?: PluginWorkerManager): P
         );
       }
 
-      // 5. Dispatch the executeTool RPC call to the worker
+      // 6. Dispatch the executeTool RPC call to the worker
       log.debug(
         { pluginId, pluginDbId: dbId, toolName, namespacedName, agentId: runContext.agentId, runId: runContext.runId },
         "executing tool via plugin worker",
@@ -419,6 +449,12 @@ export function createPluginToolRegistry(workerManager?: PluginWorkerManager): P
         },
         "tool execution completed",
       );
+
+      // 7. Store successful results in cache (errors are never cached — a transient
+      // error would be served stale for the full TTL, masking recovery).
+      if (tool.cacheConfig && !result.error) {
+        cacheSet(toolName, pluginId, argsObj, tool.cacheConfig, result);
+      }
 
       return { pluginId, toolName, result };
     },

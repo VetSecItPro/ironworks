@@ -57,6 +57,39 @@ export interface PluginWebhookDeclaration {
 }
 
 /**
+ * Optional result-caching configuration for a plugin tool.
+ *
+ * Presence of this field opts the tool into caching. Tools without it are
+ * never cached — there is no default TTL because silently caching an unknown
+ * tool is unsafe (the tool may have side-effects). The plugin author must
+ * explicitly declare the intent.
+ *
+ * Only use on read-only / idempotent tools. Writing to external systems while
+ * caching the result is a footgun: subsequent callers will receive stale output
+ * while the side-effect is suppressed. The host trusts the declaration but
+ * documents this contract here so plugin authors understand the obligation.
+ */
+export interface PluginToolCacheConfig {
+  /**
+   * How long a cached result is valid, in seconds. Must be explicit — the host
+   * refuses to infer a TTL because the right value is tool-specific and a wrong
+   * default (e.g. 60 s) would silently serve stale data for unpredictably long
+   * windows.
+   */
+  ttlSeconds: number;
+  /**
+   * Subset of argument names that form the cache key. When specified, only these
+   * fields are hashed; all other args are ignored. This lets a tool exclude
+   * non-deterministic fields (e.g. a `requestTimestamp` injected by the caller)
+   * without those fields busting the cache for semantically identical calls.
+   *
+   * When omitted, ALL args contribute to the key. Defaulting to all args is
+   * safe because it errs toward cache misses rather than collisions.
+   */
+  keyFields?: string[];
+}
+
+/**
  * Declares an agent tool contributed by the plugin. Tools are namespaced
  * by plugin ID at runtime (e.g. `linear:search-issues`).
  *
@@ -73,6 +106,12 @@ export interface PluginToolDeclaration {
   description: string;
   /** JSON Schema describing the tool's input parameters. */
   parametersSchema: JsonSchema;
+  /**
+   * Optional result-caching config. Presence opts this tool into the host-side
+   * LRU cache. Absent means no caching — the tool is always executed live.
+   * See {@link PluginToolCacheConfig} for the contract and safety rules.
+   */
+  cache?: PluginToolCacheConfig;
 }
 
 /**

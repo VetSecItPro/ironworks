@@ -1,0 +1,361 @@
+/**
+ * Tests for the tool result cache (Phase O.5).
+ *
+ * Coverage targets (per spec):
+ *  1. Cache miss on first call with unseen args
+ *  2. Cache hit on repeated call with same args
+ *  3. Cache miss when args differ
+ *  4. TTL expiry causes a miss
+ *  5. `keyFields` subset — only listed fields contribute to the key
+ *  6. No cache field on tool declaration — cache is never consulted
+ *  7. LRU eviction at capacity
+ *  8. Zod schema rejects invalid cache configs
+ */
+
+import {
+  type PluginToolCacheConfig,
+  pluginToolCacheConfigSchema,
+  pluginToolDeclarationSchema,
+} from "@ironworksai/shared";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  _resetToolCache,
+  buildCacheKey,
+  cacheGet,
+  cacheSet,
+  createToolCache,
+  DEFAULT_MAX_CACHE_SIZE,
+  getCacheStats,
+} from "../services/tool-cache.js";
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+const TOOL = "search-issues";
+const ADAPTER = "anthropic-api";
+
+function makeCfg(overrides: Partial<PluginToolCacheConfig> = {}): PluginToolCacheConfig {
+  return { ttlSeconds: 60, ...overrides };
+}
+
+// ---------------------------------------------------------------------------
+// buildCacheKey unit tests
+// ---------------------------------------------------------------------------
+
+describe("buildCacheKey", () => {
+  it("returns a 64-char hex string (SHA-256)", () => {
+    const key = buildCacheKey(TOOL, ADAPTER, { query: "hello" }, makeCfg());
+    expect(key).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it("is deterministic for the same inputs", () => {
+    const cfg = makeCfg();
+    const k1 = buildCacheKey(TOOL, ADAPTER, { query: "hello" }, cfg);
+    const k2 = buildCacheKey(TOOL, ADAPTER, { query: "hello" }, cfg);
+    expect(k1).toBe(k2);
+  });
+
+  it("differs when args differ", () => {
+    const cfg = makeCfg();
+    const k1 = buildCacheKey(TOOL, ADAPTER, { query: "hello" }, cfg);
+    const k2 = buildCacheKey(TOOL, ADAPTER, { query: "world" }, cfg);
+    expect(k1).not.toBe(k2);
+  });
+
+  it("differs when toolName differs", () => {
+    const cfg = makeCfg();
+    const k1 = buildCacheKey("tool-a", ADAPTER, { q: 1 }, cfg);
+    const k2 = buildCacheKey("tool-b", ADAPTER, { q: 1 }, cfg);
+    expect(k1).not.toBe(k2);
+  });
+
+  it("differs when adapterType differs", () => {
+    const cfg = makeCfg();
+    const k1 = buildCacheKey(TOOL, "openai-api", { q: 1 }, cfg);
+    const k2 = buildCacheKey(TOOL, "anthropic-api", { q: 1 }, cfg);
+    expect(k1).not.toBe(k2);
+  });
+
+  it("is stable regardless of arg key insertion order", () => {
+    const cfg = makeCfg();
+    const k1 = buildCacheKey(TOOL, ADAPTER, { a: 1, b: 2 }, cfg);
+    const k2 = buildCacheKey(TOOL, ADAPTER, { b: 2, a: 1 }, cfg);
+    // Same semantic args, different insertion order — must produce the same key
+    expect(k1).toBe(k2);
+  });
+
+  describe("keyFields subset behaviour (case 5)", () => {
+    it("uses only specified keyFields when provided", () => {
+      // `requestId` varies per call but `query` is the semantic key.
+      // keyFields declares only `query` should contribute to the cache key
+      // so `requestId` changes don't bust the cache.
+      const cfg = makeCfg({ keyFields: ["query"] });
+      const k1 = buildCacheKey(TOOL, ADAPTER, { query: "hello", requestId: "req-1" }, cfg);
+      const k2 = buildCacheKey(TOOL, ADAPTER, { query: "hello", requestId: "req-2" }, cfg);
+      expect(k1).toBe(k2);
+    });
+
+    it("produces a different key when a keyField value changes", () => {
+      const cfg = makeCfg({ keyFields: ["query"] });
+      const k1 = buildCacheKey(TOOL, ADAPTER, { query: "hello", requestId: "req-1" }, cfg);
+      const k2 = buildCacheKey(TOOL, ADAPTER, { query: "world", requestId: "req-1" }, cfg);
+      expect(k1).not.toBe(k2);
+    });
+
+    it("all-args key differs when non-key fields differ (validates keyFields reduces collisions)", () => {
+      // Without keyFields: these two calls produce different keys (non-determinism bleeds in)
+      const cfgAll = makeCfg();
+      const kAll1 = buildCacheKey(TOOL, ADAPTER, { query: "hello", requestId: "req-1" }, cfgAll);
+      const kAll2 = buildCacheKey(TOOL, ADAPTER, { query: "hello", requestId: "req-2" }, cfgAll);
+      expect(kAll1).not.toBe(kAll2);
+
+      // With keyFields=['query']: same key despite requestId difference
+      const cfgKeyed = makeCfg({ keyFields: ["query"] });
+      const kKeyed1 = buildCacheKey(TOOL, ADAPTER, { query: "hello", requestId: "req-1" }, cfgKeyed);
+      const kKeyed2 = buildCacheKey(TOOL, ADAPTER, { query: "hello", requestId: "req-2" }, cfgKeyed);
+      expect(kKeyed1).toBe(kKeyed2);
+    });
+
+    it("handles keyFields that are absent from args gracefully", () => {
+      // Missing fields are silently omitted from the subset — no throw
+      const cfg = makeCfg({ keyFields: ["query", "missingField"] });
+      expect(() => buildCacheKey(TOOL, ADAPTER, { query: "hello" }, cfg)).not.toThrow();
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// createToolCache unit tests
+// ---------------------------------------------------------------------------
+
+describe("createToolCache", () => {
+  it("reports size 0 when empty", () => {
+    const cache = createToolCache<string>(10);
+    expect(cache.size()).toBe(0);
+  });
+
+  // Case 1: cache miss on first call
+  it("returns a miss for an unknown key", () => {
+    const cache = createToolCache<string>(10);
+    const result = cache.get("nonexistent");
+    expect(result.hit).toBe(false);
+  });
+
+  // Case 2: cache hit after set with same key
+  it("returns a hit after storing a value", () => {
+    const cache = createToolCache<string>(10);
+    cache.set("k1", "hello", 60);
+    const result = cache.get("k1");
+    expect(result.hit).toBe(true);
+    if (result.hit) {
+      expect(result.value).toBe("hello");
+    }
+  });
+
+  // Case 3: cache miss when args differ (via different keys)
+  it("returns a miss for a different key", () => {
+    const cache = createToolCache<string>(10);
+    cache.set("k1", "hello", 60);
+    const result = cache.get("k2");
+    expect(result.hit).toBe(false);
+  });
+
+  // Case 4: TTL expiry — entry expires after ttlSeconds
+  it("returns a miss after TTL has elapsed", () => {
+    const cache = createToolCache<string>(10);
+
+    // Store with a 1-second TTL but fake time so it appears expired immediately
+    const now = Date.now();
+    vi.spyOn(Date, "now").mockReturnValueOnce(now); // for set()
+    cache.set("k-ttl", "value", 1);
+
+    // Advance time past expiry — next Date.now() call (in get) returns now+2s
+    vi.spyOn(Date, "now").mockReturnValueOnce(now + 2_000);
+    const result = cache.get("k-ttl");
+    expect(result.hit).toBe(false);
+
+    vi.restoreAllMocks();
+  });
+
+  it("returns a hit before TTL elapses", () => {
+    const cache = createToolCache<string>(10);
+    const now = Date.now();
+    vi.spyOn(Date, "now").mockReturnValueOnce(now);
+    cache.set("k-ttl", "value", 60);
+
+    // Still within TTL window
+    vi.spyOn(Date, "now").mockReturnValueOnce(now + 30_000);
+    const result = cache.get("k-ttl");
+    expect(result.hit).toBe(true);
+
+    vi.restoreAllMocks();
+  });
+
+  // Case 7: LRU eviction
+  it("evicts the LRU entry when at capacity", () => {
+    const cache = createToolCache<number>(3);
+    cache.set("k1", 1, 60);
+    cache.set("k2", 2, 60);
+    cache.set("k3", 3, 60);
+    // Access k1 so it becomes MRU; k2 is now LRU
+    cache.get("k1");
+    // Insert k4 — should evict k2 (the LRU)
+    cache.set("k4", 4, 60);
+
+    expect(cache.size()).toBe(3);
+    expect(cache.get("k2").hit).toBe(false); // evicted
+    expect(cache.get("k1").hit).toBe(true);
+    expect(cache.get("k3").hit).toBe(true);
+    expect(cache.get("k4").hit).toBe(true);
+  });
+
+  it("tracks hit and miss stats", () => {
+    const cache = createToolCache<string>(10);
+    cache.set("k", "v", 60);
+    cache.get("k"); // hit
+    cache.get("k"); // hit
+    cache.get("missing"); // miss
+    const stats = cache.getStats();
+    expect(stats.hits).toBe(2);
+    expect(stats.misses).toBe(1);
+    expect(stats.size).toBe(1);
+  });
+
+  it("resets stats on clear()", () => {
+    const cache = createToolCache<string>(10);
+    cache.set("k", "v", 60);
+    cache.get("k");
+    cache.clear();
+    const stats = cache.getStats();
+    expect(stats.hits).toBe(0);
+    expect(stats.misses).toBe(0);
+    expect(stats.size).toBe(0);
+  });
+
+  it("reports the default max size constant as 10,000", () => {
+    // Guard that the constant matches the documented bound from the design comment
+    expect(DEFAULT_MAX_CACHE_SIZE).toBe(10_000);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Default-cache convenience functions (cacheGet / cacheSet)
+// ---------------------------------------------------------------------------
+
+describe("cacheGet / cacheSet (default cache)", () => {
+  beforeEach(() => _resetToolCache());
+  afterEach(() => _resetToolCache());
+
+  const cfg = makeCfg();
+
+  // Case 1: miss on first lookup
+  it("returns a miss when the result has not been cached", () => {
+    const result = cacheGet<string>(TOOL, ADAPTER, { query: "hello" }, cfg);
+    expect(result.hit).toBe(false);
+  });
+
+  // Case 2: hit after cacheSet with same args
+  it("returns a hit after cacheSet with the same args", () => {
+    cacheSet(TOOL, ADAPTER, { query: "hello" }, cfg, "cached-result");
+    const result = cacheGet<string>(TOOL, ADAPTER, { query: "hello" }, cfg);
+    expect(result.hit).toBe(true);
+    if (result.hit) {
+      expect(result.value).toBe("cached-result");
+    }
+  });
+
+  // Case 3: miss when args differ
+  it("returns a miss when args differ from the cached args", () => {
+    cacheSet(TOOL, ADAPTER, { query: "hello" }, cfg, "cached-result");
+    const result = cacheGet<string>(TOOL, ADAPTER, { query: "world" }, cfg);
+    expect(result.hit).toBe(false);
+  });
+
+  // Case 4: TTL expiry via default cache
+  it("returns a miss after the TTL has elapsed", () => {
+    const now = Date.now();
+    vi.spyOn(Date, "now").mockReturnValueOnce(now);
+    cacheSet(TOOL, ADAPTER, { query: "hello" }, makeCfg({ ttlSeconds: 1 }), "value");
+    vi.spyOn(Date, "now").mockReturnValueOnce(now + 2_000);
+    const result = cacheGet<string>(TOOL, ADAPTER, { query: "hello" }, makeCfg({ ttlSeconds: 1 }));
+    expect(result.hit).toBe(false);
+    vi.restoreAllMocks();
+  });
+
+  // Case 5: keyFields subset via default cache
+  it("hits when only keyFields match and other args differ", () => {
+    const cfgKeyed = makeCfg({ keyFields: ["query"] });
+    cacheSet(TOOL, ADAPTER, { query: "hello", requestId: "req-1" }, cfgKeyed, "value");
+    // requestId differs — should still be a hit because keyFields=['query']
+    const result = cacheGet<string>(TOOL, ADAPTER, { query: "hello", requestId: "req-999" }, cfgKeyed);
+    expect(result.hit).toBe(true);
+  });
+
+  // Case 6: no cache config — cache is never consulted
+  it("cache remains empty when cacheGet/cacheSet are never called (no cache config path)", () => {
+    // Simulate the dispatcher branch where the tool has no `cache` field:
+    // neither cacheGet nor cacheSet is invoked. The cache must remain clean.
+    const stats = getCacheStats();
+    expect(stats.size).toBe(0);
+    expect(stats.hits).toBe(0);
+    expect(stats.misses).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Zod schema validation for PluginToolCacheConfig (case 8)
+// ---------------------------------------------------------------------------
+
+describe("pluginToolCacheConfigSchema", () => {
+  it("accepts a valid config with ttlSeconds only", () => {
+    const result = pluginToolCacheConfigSchema.safeParse({ ttlSeconds: 300 });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts a valid config with keyFields", () => {
+    const result = pluginToolCacheConfigSchema.safeParse({ ttlSeconds: 60, keyFields: ["query", "lang"] });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects ttlSeconds = 0", () => {
+    const result = pluginToolCacheConfigSchema.safeParse({ ttlSeconds: 0 });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects negative ttlSeconds", () => {
+    const result = pluginToolCacheConfigSchema.safeParse({ ttlSeconds: -10 });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects non-integer ttlSeconds", () => {
+    const result = pluginToolCacheConfigSchema.safeParse({ ttlSeconds: 1.5 });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects missing ttlSeconds", () => {
+    const result = pluginToolCacheConfigSchema.safeParse({ keyFields: ["query"] });
+    expect(result.success).toBe(false);
+  });
+
+  it("pluginToolDeclarationSchema accepts a cache field", () => {
+    const result = pluginToolDeclarationSchema.safeParse({
+      name: "search",
+      displayName: "Search",
+      description: "Search issues",
+      parametersSchema: { type: "object" },
+      cache: { ttlSeconds: 120 },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("pluginToolDeclarationSchema accepts tool without cache field (opt-in is optional)", () => {
+    const result = pluginToolDeclarationSchema.safeParse({
+      name: "write-comment",
+      displayName: "Write Comment",
+      description: "Posts a comment",
+      parametersSchema: { type: "object" },
+    });
+    expect(result.success).toBe(true);
+  });
+});
