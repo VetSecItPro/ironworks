@@ -1,3 +1,4 @@
+import type { MockInstance } from "vitest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   _resetDefaultObserver,
@@ -8,8 +9,10 @@ import {
 } from "../observability.js";
 
 describe("createObserver (default stdout sink)", () => {
-  // biome-ignore lint/suspicious/noExplicitAny: vi.spyOn generics require any for untyped process.stdout.write
-  let stdoutWrite: ReturnType<typeof vi.spyOn<any, any>>;
+  // Vitest 4: Mock<T> is invariant on the function type. The variable is typed as
+  // MockInstance (the base interface) so any spy — including overloaded signatures
+  // like process.stdout.write — is assignable without the old `any` escape hatch.
+  let stdoutWrite: MockInstance;
   beforeEach(() => {
     stdoutWrite = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
   });
