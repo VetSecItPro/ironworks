@@ -92,28 +92,26 @@ import { beforeEach } from "vitest";
  *     · activeChallenge         — let; challenge token issued in one test leaks
  *                                  into claim-route tests that follow
  *
- *   routes/sidebar-badges.ts
- *     · badgeCache              — Map; 30 s TTL; a cached response from test A
- *                                  can satisfy test B's request and suppress the
- *                                  downstream service call the assertion expects
+ *   routes/sidebar-badges.ts (export only — not in global hook; see NOTE)
+ *     · badgeCache              — Map; 30 s TTL; cached response suppresses mock calls
  *
- *   routes/setup.ts
- *     · rateLimitMap            — Map; per-IP sliding window; tests that hammer
- *                                  the setup route can exhaust the limit and cause
- *                                  subsequent tests to receive unexpected 429s
+ *   routes/setup.ts (export only — not in global hook; see NOTE)
+ *     · rateLimitMap            — Map; per-IP sliding window
  *
- *   routes/support.ts
+ *   routes/support.ts (export only — not in global hook; see NOTE)
  *     · ticketRateBuckets       — Map; same pattern as rateLimitMap
  *
- *   routes/sse.ts
- *     · clients                 — Map<companyId, Set<Response>>; a stale open
- *                                  connection from test A can receive SSE events
- *                                  emitted during test B
+ *   routes/sse.ts (export only — not in global hook; see NOTE)
+ *     · clients                 — Map<companyId, Set<Response>>; stale SSE connections
  *
- *   bridges/telegram.ts
- *     · bots                    — Map<companyId, BotInstance>; a running bot
- *                                  registered in test A can answer companyId
- *                                  lookups during test B
+ *   bridges/telegram.ts (export only — not in global hook; see NOTE)
+ *     · bots                    — Map<companyId, BotInstance>; running bot registry
+ *
+ * NOTE: route factory and bridge modules are NOT added to the global hook. Force-
+ * loading them into every test file's module graph causes each to bind mock
+ * dependencies at the wrong time, introducing new pollution rather than curing it.
+ * They each export _resetSingletonsForTest() so test files that import them directly
+ * can call it in their own beforeEach/afterEach.
  *
  * IMMUTABLE / SAFELY MOCKED — no reset needed
  *   services/activity-log.ts      PLUGIN_EVENT_SET  (ReadonlySet, frozen)
@@ -172,6 +170,14 @@ beforeEach(async () => {
     import("../../storage/index.js").then((m) => m._resetSingletonsForTest?.()).catch(() => undefined),
 
     // ── Tier 2 (residual set — added 2026-04-21) ─────────────────────────────
+    // Only service/utility modules that tests import directly are safe to
+    // include here. Route factories and bridges import heavy dependencies
+    // (express, external SDKs) that must not be force-loaded into every test
+    // file's module graph — doing so would change which mock bindings those
+    // route factories capture and introduce new pollution rather than curing it.
+    // Those modules still have _resetSingletonsForTest() exports so per-file
+    // tests that DO import them can call the reset in their own beforeEach.
+
     import("../../services/tool-cache.js").then((m) => m._resetSingletonsForTest?.()).catch(() => undefined),
 
     import("../../adapters/codex-models.js").then((m) => m._resetSingletonsForTest?.()).catch(() => undefined),
@@ -183,15 +189,5 @@ beforeEach(async () => {
     import("../../lib/error-tracking.js").then((m) => m._resetSingletonsForTest?.()).catch(() => undefined),
 
     import("../../board-claim.js").then((m) => m._resetSingletonsForTest?.()).catch(() => undefined),
-
-    import("../../routes/sidebar-badges.js").then((m) => m._resetSingletonsForTest?.()).catch(() => undefined),
-
-    import("../../routes/setup.js").then((m) => m._resetSingletonsForTest?.()).catch(() => undefined),
-
-    import("../../routes/support.js").then((m) => m._resetSingletonsForTest?.()).catch(() => undefined),
-
-    import("../../routes/sse.js").then((m) => m._resetSingletonsForTest?.()).catch(() => undefined),
-
-    import("../../bridges/telegram.js").then((m) => m._resetSingletonsForTest?.()).catch(() => undefined),
   ]);
 });
