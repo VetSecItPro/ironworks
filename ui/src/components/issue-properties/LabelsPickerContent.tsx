@@ -20,7 +20,7 @@ interface LabelsPickerContentProps {
 export function LabelsPickerContent({
   labelSearch,
   setLabelSearch,
-  inline,
+  inline: _inline,
   labels,
   issueLabelIds,
   toggleLabel,

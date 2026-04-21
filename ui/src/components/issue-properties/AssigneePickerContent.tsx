@@ -20,7 +20,7 @@ interface AssigneePickerContentProps {
 export function AssigneePickerContent({
   assigneeSearch,
   setAssigneeSearch,
-  inline,
+  inline: _inline,
   issueAssigneeAgentId,
   issueAssigneeUserId,
   issueCreatedByUserId,

@@ -24,7 +24,7 @@ export function IssueAttachmentsSection({
   attachments,
   attachmentUploadButton,
   attachmentError,
-  attachmentDragActive,
+  attachmentDragActive: _attachmentDragActive,
   onDragEnter,
   onDragOver,
   onDragLeave,

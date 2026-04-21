@@ -7,7 +7,7 @@ import { MarkdownBody } from "../MarkdownBody";
 import { AutoBadge, DocTypeBadge } from "./LibraryBadges";
 
 export function KnowledgePageViewer({
-  companyId,
+  companyId: _companyId,
   pageId,
   onEdit,
 }: {

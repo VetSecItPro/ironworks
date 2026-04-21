@@ -121,7 +121,7 @@ export function MobileCard({ row }: { row: AgentPerfRow; prevScoreMap: Map<strin
 
 export function DesktopRow({
   row,
-  prevScoreMap,
+  prevScoreMap: _prevScoreMap,
   expandedRowId,
   onToggleExpand,
 }: {

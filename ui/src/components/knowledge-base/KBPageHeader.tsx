@@ -16,7 +16,7 @@ export function KBPageHeader({
   onDelete,
   onBack,
   isSaving,
-  showHistory,
+  showHistory: _showHistory,
 }: {
   selectedPage: KnowledgePage;
   editing: boolean;

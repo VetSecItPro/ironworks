@@ -790,7 +790,7 @@ export function PluginSlotOutlet({
   entityType,
   className,
   itemClassName,
-  errorClassName,
+  errorClassName: _errorClassName,
   missingBehavior = "hidden",
 }: PluginSlotOutletProps) {
   const { slots, errorMessage } = usePluginSlots({

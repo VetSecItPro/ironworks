@@ -31,7 +31,7 @@ function SeverityDot({ severity }: { severity: "warning" | "error" | "info" }) {
 }
 
 function AlertBanner({
-  type,
+  type: _type,
   severity,
   message,
   count,

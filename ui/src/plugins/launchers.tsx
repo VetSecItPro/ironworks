@@ -729,7 +729,7 @@ export function PluginLauncherOutlet({
   entityType,
   className,
   itemClassName,
-  errorClassName,
+  errorClassName: _errorClassName,
 }: PluginLauncherOutletProps) {
   const { activateLauncher } = usePluginLauncherRuntime();
   const { launchers, contributionsByPluginId, errorMessage } = usePluginLaunchers({

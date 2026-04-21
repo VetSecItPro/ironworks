@@ -48,7 +48,7 @@ export function IssuesToolbar({
   bulkStatusOpen,
   bulkAssigneeOpen,
   bulkAssigneeSearch,
-  selectedIds,
+  selectedIds: _selectedIds,
   onOpenNewIssue,
   onSearchCommit,
   onUpdateView,
