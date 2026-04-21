@@ -25,9 +25,9 @@ import { beforeEach } from "vitest";
  * are always mocked at the `vi.mock` level in every test that touches them,
  * so their module-level state is never reached from test code.
  *
- * ── Singleton audit (as of 2026-04-20) ──────────────────────────────────────
+ * ── Singleton audit (as of 2026-04-21) ──────────────────────────────────────
  *
- * MUTABLE — reset required
+ * MUTABLE — reset required (Tier 1 — original set)
  *   services/activity-log.ts
  *     · _pluginEventBus         — let, nullable ref; registration order matters
  *     · cachedGeneralSettings   — let, timed cache; stale data across tests
@@ -65,6 +65,54 @@ import { beforeEach } from "vitest";
  *     · cachedStorageService    — let; bound to config signature at first call
  *     · cachedSignature         — let string; paired with above
  *
+ * MUTABLE — reset required (Tier 2 — residual set added 2026-04-21)
+ *   services/tool-cache.ts
+ *     · _defaultCache           — let; process-level tool result cache; stale
+ *                                  entries survive between tests in same file
+ *
+ *   adapters/codex-models.ts
+ *     · cached                  — let; timed OpenAI model list; fingerprinted by
+ *                                  API key so key changes between tests miss
+ *
+ *   adapters/cursor-models.ts
+ *     · cached                  — let; timed Cursor CLI model list
+ *     · cursorModelsRunner       — let fn; tests can swap the runner via
+ *                                  setCursorModelsRunnerForTests; must be
+ *                                  restored so real CLI is never called in CI
+ *
+ *   log-redaction.ts
+ *     · cachedCurrentUserCandidates — let; reads OS username/homedir on first
+ *                                  call; wrong values in containers vs. dev
+ *
+ *   lib/error-tracking.ts
+ *     · errorCount / lastErrorAt — let counters; accumulate across tests so
+ *                                  assertions on getErrorStats() are order-dependent
+ *
+ *   board-claim.ts
+ *     · activeChallenge         — let; challenge token issued in one test leaks
+ *                                  into claim-route tests that follow
+ *
+ *   routes/sidebar-badges.ts (export only — not in global hook; see NOTE)
+ *     · badgeCache              — Map; 30 s TTL; cached response suppresses mock calls
+ *
+ *   routes/setup.ts (export only — not in global hook; see NOTE)
+ *     · rateLimitMap            — Map; per-IP sliding window
+ *
+ *   routes/support.ts (export only — not in global hook; see NOTE)
+ *     · ticketRateBuckets       — Map; same pattern as rateLimitMap
+ *
+ *   routes/sse.ts (export only — not in global hook; see NOTE)
+ *     · clients                 — Map<companyId, Set<Response>>; stale SSE connections
+ *
+ *   bridges/telegram.ts (export only — not in global hook; see NOTE)
+ *     · bots                    — Map<companyId, BotInstance>; running bot registry
+ *
+ * NOTE: route factory and bridge modules are NOT added to the global hook. Force-
+ * loading them into every test file's module graph causes each to bind mock
+ * dependencies at the wrong time, introducing new pollution rather than curing it.
+ * They each export _resetSingletonsForTest() so test files that import them directly
+ * can call it in their own beforeEach/afterEach.
+ *
  * IMMUTABLE / SAFELY MOCKED — no reset needed
  *   services/activity-log.ts      PLUGIN_EVENT_SET  (ReadonlySet, frozen)
  *   services/agent-instructions.ts IGNORED_* Sets   (frozen enum sets)
@@ -76,6 +124,8 @@ import { beforeEach } from "vitest";
  *   services/routines.ts          _TERMINAL_ISSUE_STATUSES (frozen)
  *   services/secrets.ts           HTTP_PROVIDER_TYPES (frozen)
  *   services/session-state.ts     DRIFT_STOP_WORDS   (frozen)
+ *   middleware/board-mutation-guard.ts SAFE_METHODS   (frozen)
+ *   routes/authz.ts               (purely functional — no module state)
  *
  * ── Reset strategy ──────────────────────────────────────────────────────────
  *
@@ -96,6 +146,7 @@ import { beforeEach } from "vitest";
 
 beforeEach(async () => {
   await Promise.all([
+    // ── Tier 1 (original set) ────────────────────────────────────────────────
     import("../../services/activity-log.js").then((m) => m._resetSingletonsForTest?.()).catch(() => undefined),
 
     import("../../services/heartbeat-scheduling.js").then((m) => m._resetSingletonsForTest?.()).catch(() => undefined),
@@ -117,5 +168,26 @@ beforeEach(async () => {
       .catch(() => undefined),
 
     import("../../storage/index.js").then((m) => m._resetSingletonsForTest?.()).catch(() => undefined),
+
+    // ── Tier 2 (residual set — added 2026-04-21) ─────────────────────────────
+    // Only service/utility modules that tests import directly are safe to
+    // include here. Route factories and bridges import heavy dependencies
+    // (express, external SDKs) that must not be force-loaded into every test
+    // file's module graph — doing so would change which mock bindings those
+    // route factories capture and introduce new pollution rather than curing it.
+    // Those modules still have _resetSingletonsForTest() exports so per-file
+    // tests that DO import them can call the reset in their own beforeEach.
+
+    import("../../services/tool-cache.js").then((m) => m._resetSingletonsForTest?.()).catch(() => undefined),
+
+    import("../../adapters/codex-models.js").then((m) => m._resetSingletonsForTest?.()).catch(() => undefined),
+
+    import("../../adapters/cursor-models.js").then((m) => m._resetSingletonsForTest?.()).catch(() => undefined),
+
+    import("../../log-redaction.js").then((m) => m._resetSingletonsForTest?.()).catch(() => undefined),
+
+    import("../../lib/error-tracking.js").then((m) => m._resetSingletonsForTest?.()).catch(() => undefined),
+
+    import("../../board-claim.js").then((m) => m._resetSingletonsForTest?.()).catch(() => undefined),
   ]);
 });

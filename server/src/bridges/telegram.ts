@@ -555,3 +555,12 @@ export async function startAllTelegramBridges(db: Db): Promise<void> {
     }
   }
 }
+
+/**
+ * Clear the in-process bot registry between tests so a bot instance started
+ * during one test does not respond to companyId lookups in a subsequent test.
+ * Called by the global beforeEach in setup-singletons.ts.
+ */
+export function _resetSingletonsForTest(): void {
+  bots.clear();
+}

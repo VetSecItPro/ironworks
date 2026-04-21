@@ -101,3 +101,12 @@ export async function listCodexModels(): Promise<AdapterModel[]> {
 export function resetCodexModelsCacheForTests() {
   cached = null;
 }
+
+/**
+ * Standard test-infrastructure alias consumed by setup-singletons.ts global
+ * beforeEach hook. Clears the per-key model list cache so tests that set
+ * OPENAI_API_KEY start with an empty cache regardless of execution order.
+ */
+export function _resetSingletonsForTest(): void {
+  resetCodexModelsCacheForTests();
+}

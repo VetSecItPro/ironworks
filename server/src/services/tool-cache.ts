@@ -274,6 +274,14 @@ export function _resetToolCache(): void {
 }
 
 /**
+ * Standard test-infrastructure alias consumed by setup-singletons.ts global
+ * beforeEach hook. Delegates to _resetToolCache so both call sites stay in sync.
+ */
+export function _resetSingletonsForTest(): void {
+  _resetToolCache();
+}
+
+/**
  * Perform a cache lookup against the process-level default cache.
  */
 export function cacheGet<T>(

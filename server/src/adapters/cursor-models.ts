@@ -168,3 +168,13 @@ export function resetCursorModelsCacheForTests() {
 export function setCursorModelsRunnerForTests(runner: (() => CursorModelsCommandResult) | null) {
   cursorModelsRunner = runner ?? defaultCursorModelsRunner;
 }
+
+/**
+ * Standard test-infrastructure alias consumed by setup-singletons.ts global
+ * beforeEach hook. Clears the timed model-list cache AND resets the runner
+ * back to the real CLI so tests don't inherit a fake runner from a prior test.
+ */
+export function _resetSingletonsForTest(): void {
+  resetCursorModelsCacheForTests();
+  setCursorModelsRunnerForTests(null);
+}

@@ -140,3 +140,12 @@ export function redactCurrentUserValue<T>(value: T, opts?: CurrentUserRedactionO
   }
   return redacted as T;
 }
+
+/**
+ * Reset the current-user candidate cache between tests so tests that run in
+ * a different OS user context (CI vs. local dev) do not cross-contaminate each
+ * other's redaction output. Called by the global beforeEach in setup-singletons.ts.
+ */
+export function _resetSingletonsForTest(): void {
+  cachedCurrentUserCandidates = null;
+}

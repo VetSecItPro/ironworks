@@ -274,3 +274,12 @@ export function supportAdminRoutes(db: Db) {
 
   return router;
 }
+
+/**
+ * Clear per-IP ticket rate-limit buckets between tests so a bucket filled
+ * during one test does not cause subsequent tests to hit the limit unexpectedly.
+ * Called by the global beforeEach in setup-singletons.ts.
+ */
+export function _resetSingletonsForTest(): void {
+  ticketRateBuckets.clear();
+}

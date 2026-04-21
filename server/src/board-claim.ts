@@ -152,3 +152,12 @@ export async function claimBoardOwnership(
 
   return { status: "claimed", claimedByUserId: opts.userId };
 }
+
+/**
+ * Reset the in-process claim challenge singleton between tests so tests that
+ * exercise the challenge/claim flow start with an empty slate regardless of
+ * order. Called by the global beforeEach in setup-singletons.ts.
+ */
+export function _resetSingletonsForTest(): void {
+  activeChallenge = null;
+}
