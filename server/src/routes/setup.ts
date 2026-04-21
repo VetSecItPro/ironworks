@@ -409,3 +409,12 @@ export function setupRoutes(db: Db) {
 
   return router;
 }
+
+/**
+ * Clear the in-memory rate-limit window map between tests so a rate-limited
+ * IP from one test does not bleed into a subsequent test and produce spurious
+ * 429 responses. Called by the global beforeEach in setup-singletons.ts.
+ */
+export function _resetSingletonsForTest(): void {
+  rateLimitMap.clear();
+}
