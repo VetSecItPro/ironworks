@@ -27,6 +27,7 @@ import { bugReportRoutes } from "./routes/bug-reports.js";
 import { channelRoutes } from "./routes/channels.js";
 import { companyRoutes } from "./routes/companies.js";
 import { companySkillRoutes } from "./routes/company-skills.js";
+import { costAnalyticsRoutes } from "./routes/cost-analytics.js";
 import { costRoutes } from "./routes/costs.js";
 import { dashboardRoutes } from "./routes/dashboard.js";
 import { deliverableRoutes } from "./routes/deliverables.js";
@@ -313,6 +314,7 @@ export async function createApp(
   api.use(playgroundRoutes(db));
   api.use(adapterCallRoutes(db));
   api.use(costRoutes(db));
+  api.use(costAnalyticsRoutes(db));
   api.use(executiveRoutes(db));
   api.use(activityRoutes(db));
   api.use(dashboardRoutes(db));
