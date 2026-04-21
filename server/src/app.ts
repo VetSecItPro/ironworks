@@ -12,6 +12,7 @@ import { cacheControl, etag } from "./middleware/cache.js";
 import { errorHandler, httpLogger } from "./middleware/index.js";
 import { privateHostnameGuard, resolvePrivateHostnameAllowSet } from "./middleware/private-hostname-guard.js";
 import { enforcePlaybookRunLimit, enforceProjectLimit, enforceStorageLimit } from "./middleware/tier-limits.js";
+import { adapterCallRoutes } from "./routes/adapter-calls.js";
 import { accessRoutes } from "./routes/access.js";
 import { activityRoutes } from "./routes/activity.js";
 import { adminRoutes } from "./routes/admin.js";
@@ -310,6 +311,7 @@ export async function createApp(
   api.use(secretRoutes(db));
   api.use(providerRoutes(db));
   api.use(playgroundRoutes(db));
+  api.use(adapterCallRoutes(db));
   api.use(costRoutes(db));
   api.use(executiveRoutes(db));
   api.use(activityRoutes(db));

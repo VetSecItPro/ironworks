@@ -87,6 +87,10 @@ const SettingsProviders = lazy(() => import("./pages/Settings/Providers").then((
 const SettingsPlayground = lazy(() =>
   import("./pages/Settings/AdapterPlayground").then((m) => ({ default: m.AdapterPlayground })),
 );
+// Settings > Explorer — G.25 adapter-call audit log (Request/Response Explorer)
+const SettingsExplorer = lazy(() =>
+  import("./pages/Settings/RequestExplorer").then((m) => ({ default: m.RequestExplorer })),
+);
 // Admin panel — lazy loaded, instance admin only
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
@@ -319,6 +323,14 @@ function boardRoutes() {
         element={
           <LazyPage>
             <PlaygroundRoute />
+          </LazyPage>
+        }
+      />
+      <Route
+        path="settings/explorer"
+        element={
+          <LazyPage>
+            <ExplorerRoute />
           </LazyPage>
         }
       />
@@ -780,6 +792,20 @@ function PlaygroundRoute() {
     : null;
   if (!matchedCompany) return null;
   return <SettingsPlayground companyId={matchedCompany.id} />;
+}
+
+/**
+ * Resolves :companyPrefix to a company UUID, then renders the Explorer page.
+ * Mirrors the ProvidersRoute pattern exactly.
+ */
+function ExplorerRoute() {
+  const { companies } = useCompany();
+  const { companyPrefix } = useParams<{ companyPrefix?: string }>();
+  const matchedCompany = companyPrefix
+    ? (companies.find((company) => company.issuePrefix.toUpperCase() === companyPrefix.toUpperCase()) ?? null)
+    : null;
+  if (!matchedCompany) return null;
+  return <SettingsExplorer companyId={matchedCompany.id} />;
 }
 
 function OnboardingRoutePage() {
