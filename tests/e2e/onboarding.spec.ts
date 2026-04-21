@@ -115,8 +115,14 @@ test.describe("Onboarding wizard", () => {
     const task = issues.find((i: { title: string }) => i.title === TASK_TITLE);
     expect(task).toBeTruthy();
     expect(task.assigneeAgentId).toBe(ceoAgent.id);
-    expect(task.description).toContain("You are the CEO. You set the direction for the company.");
-    expect(task.description).not.toContain("github.com/ironworksai/companies");
+
+    // The list endpoint omits description for performance (null::text projection).
+    // Fetch the detail endpoint to assert on the actual stored description.
+    const taskDetailRes = await page.request.get(`${baseUrl}/api/issues/${task.id}`);
+    expect(taskDetailRes.ok()).toBe(true);
+    const taskDetail = await taskDetailRes.json();
+    expect(taskDetail.description).toContain("You are the CEO. You set the direction for the company.");
+    expect(taskDetail.description).not.toContain("github.com/ironworksai/companies");
 
     if (!SKIP_LLM) {
       await expect(async () => {
