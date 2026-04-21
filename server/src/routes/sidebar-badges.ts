@@ -119,3 +119,12 @@ export function sidebarBadgeRoutes(db: Db) {
 
   return router;
 }
+
+/**
+ * Clear the process-level badge cache between tests so a cached response from
+ * one test cannot satisfy the next test's request and hide assertion failures.
+ * Called by the global beforeEach in setup-singletons.ts.
+ */
+export function _resetSingletonsForTest(): void {
+  badgeCache.clear();
+}
