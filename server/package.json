@@ -40,6 +40,8 @@
     "postpack": "rm -rf ui-dist",
     "clean": "rm -rf dist",
     "start": "node dist/index.js",
+    "pretest": "pnpm --filter @ironworksai/plugin-sdk build",
+    "test": "vitest",
     "typecheck": "pnpm --filter @ironworksai/plugin-sdk build && tsc --noEmit"
   },
   "dependencies": {
