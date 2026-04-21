@@ -2373,3 +2373,11 @@ export function companySkillService(db: Db) {
     listRuntimeSkillEntries,
   };
 }
+
+/**
+ * Clears all module-level mutable state so each `it()` block starts clean.
+ * Called by the vitest setup file; never invoke in production code paths.
+ */
+export function _resetSingletonsForTest(): void {
+  skillInventoryRefreshPromises.clear();
+}

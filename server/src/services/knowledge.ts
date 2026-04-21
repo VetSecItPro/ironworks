@@ -310,3 +310,11 @@ export function knowledgeService(db: Db) {
     },
   };
 }
+
+/**
+ * Clears all module-level mutable state so each `it()` block starts clean.
+ * Called by the vitest setup file; never invoke in production code paths.
+ */
+export function _resetSingletonsForTest(): void {
+  KB_SUMMARY_CACHE.clear();
+}

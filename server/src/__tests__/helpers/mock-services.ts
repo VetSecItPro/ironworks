@@ -1,11 +1,12 @@
 import { vi } from "vitest";
+import type * as ServicesModule from "../../services/index.js";
 
 /**
  * Full-shape mock of `server/src/services/index.ts` for test files that need
  * to stub the services module.
  *
- * The reason this helper exists: vitest caches module graphs across test files
- * within a fork. When 37+ files each declare partial `vi.mock("../services/index.js")`
+ * Why this helper exists: vitest caches module graphs across test files within
+ * a fork. When 37+ files each declare partial `vi.mock("../services/index.js")`
  * factories with different property subsets, a cached route module can bind to a
  * sibling file's mock shape — producing `undefined` for a service the current
  * test's expectations rely on. The observable symptom is "expected 403, got 200"
@@ -19,7 +20,20 @@ import { vi } from "vitest";
  * Keep in sync with `server/src/services/index.ts` runtime exports. Type-only
  * exports are intentionally omitted — types don't exist at runtime.
  */
-export function makeFullServicesMock(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+
+/**
+ * Maps every key from the real services module to either the actual exported
+ * type or a `vi.fn()` compatible mock. This lets TypeScript enforce that the
+ * returned mock object covers all public exports while still accepting `vi.fn()`
+ * stubs in place of their typed counterparts.
+ *
+ * `overrides` are typed as a partial of the same shape so callers get
+ * autocomplete and cannot accidentally misspell an export name.
+ */
+// biome-ignore lint/suspicious/noExplicitAny: Mock functions stand in for typed callables; `any` is unavoidable at the vi.fn() boundary.
+type ServicesMockShape = { [K in keyof typeof ServicesModule]: any };
+
+export function makeFullServicesMock(overrides: Partial<ServicesMockShape> = {}): ServicesMockShape {
   return {
     // ─── Service factories (called with db, return methods) ────────────────
     accessService: vi.fn(() => ({})),
@@ -150,5 +164,5 @@ export function makeFullServicesMock(overrides: Record<string, unknown> = {}): R
 
     // ─── Caller-supplied overrides (last — wins over any default) ──────────
     ...overrides,
-  };
+  } as ServicesMockShape;
 }

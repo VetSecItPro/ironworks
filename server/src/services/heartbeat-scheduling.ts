@@ -1348,3 +1348,12 @@ export async function enqueueWakeup(
 function runTaskKey(run: typeof heartbeatRuns.$inferSelect) {
   return deriveTaskKey(run.contextSnapshot as Record<string, unknown> | null, null);
 }
+
+/**
+ * Clears all module-level mutable state so each `it()` block starts clean.
+ * Called by the vitest setup file; never invoke in production code paths.
+ */
+export function _resetSingletonsForTest(): void {
+  cachedSchedulerSettings = null;
+  cachedSettingsAt = 0;
+}
