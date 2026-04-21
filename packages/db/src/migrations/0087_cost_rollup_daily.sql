@@ -1,4 +1,4 @@
--- Migration 0086: cost_rollup_daily table.
+-- Migration 0087: cost_rollup_daily table.
 --
 -- Pre-aggregated daily cost summaries sourced from cost_events.
 -- A nightly cron job populates this table so time-series and leaderboard
