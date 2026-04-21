@@ -65,3 +65,13 @@ export function installGlobalErrorHandlers(): void {
 
   logger.info("[error-tracking] Global error handlers installed");
 }
+
+/**
+ * Reset accumulated error counters between tests so assertions on error count
+ * do not depend on the execution order of other test files. Called by the
+ * global beforeEach in setup-singletons.ts.
+ */
+export function _resetSingletonsForTest(): void {
+  errorCount = 0;
+  lastErrorAt = null;
+}
