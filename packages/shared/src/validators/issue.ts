@@ -64,7 +64,16 @@ export const createIssueLabelSchema = z.object({
 
 export type CreateIssueLabel = z.infer<typeof createIssueLabelSchema>;
 
+// Zod 4 materializes defaults when .partial() is applied to a schema with
+// .optional().default(...) fields. For this PATCH schema the route inspects
+// updateFields.status === undefined to decide whether to inject "todo" on
+// reopen; if Zod injects the default "backlog", that check breaks. We strip
+// defaults from every field that carries one in createIssueSchema by
+// redeclaring those fields as plain optional inside .extend().
 export const updateIssueSchema = createIssueSchema.partial().extend({
+  status: z.enum(ISSUE_STATUSES).optional(),
+  priority: z.enum(ISSUE_PRIORITIES).optional(),
+  requestDepth: z.number().int().nonnegative().optional(),
   comment: z.string().min(1).optional(),
   reopen: z.boolean().optional(),
   hiddenAt: z.string().datetime().nullable().optional(),

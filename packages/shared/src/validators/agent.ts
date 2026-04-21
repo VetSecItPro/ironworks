@@ -78,10 +78,25 @@ export const createAgentHireSchema = createAgentSchema.extend({
 
 export type CreateAgentHire = z.infer<typeof createAgentHireSchema>;
 
+// Zod 4 materializes defaults when .partial() is called on a schema with
+// .optional().default(...) fields. For a PATCH schema, a field absent from the
+// request body must remain absent from the parsed output so the route handler
+// can distinguish "caller sent a value" from "schema injected a default".
+// We strip defaults from every field that carries one in createAgentSchema by
+// redeclaring those fields without a default inside .extend(). removeDefault()
+// unwraps the ZodDefault wrapper, leaving the underlying optional type intact.
 export const updateAgentSchema = createAgentSchema
   .omit({ permissions: true })
   .partial()
   .extend({
+    // Strip defaults so absent fields stay absent in req.body after validation.
+    role: z.enum(AGENT_ROLES).optional(),
+    adapterType: z.enum(AGENT_ADAPTER_TYPES).optional(),
+    adapterConfig: z.record(z.string(), z.unknown()).optional(),
+    runtimeConfig: z.record(z.string(), z.unknown()).optional(),
+    budgetMonthlyCents: z.number().int().nonnegative().optional(),
+    employmentType: z.enum(EMPLOYMENT_TYPES).optional(),
+    // Additional PATCH-only fields.
     permissions: z.never().optional(),
     replaceAdapterConfig: z.boolean().optional(),
     status: z.enum(AGENT_STATUSES).optional(),
