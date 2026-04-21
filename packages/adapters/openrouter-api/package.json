@@ -56,9 +56,9 @@
     "picocolors": "^1.1.1"
   },
   "devDependencies": {
-    "@types/node": "^24.12.2",
-"typescript": "^6.0.3",
-        "vitest": "^4.1.4"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.4",
+    "@types/node": "^25.6.0"
   },
   "engines": {
     "node": ">=20"
