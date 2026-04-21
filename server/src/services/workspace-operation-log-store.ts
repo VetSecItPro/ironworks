@@ -162,3 +162,11 @@ export function getWorkspaceOperationLogStore() {
   cachedStore = createLocalFileWorkspaceOperationLogStore(basePath);
   return cachedStore;
 }
+
+/**
+ * Clears all module-level mutable state so each `it()` block starts clean.
+ * Called by the vitest setup file; never invoke in production code paths.
+ */
+export function _resetSingletonsForTest(): void {
+  cachedStore = null;
+}

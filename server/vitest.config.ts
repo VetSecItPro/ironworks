@@ -37,5 +37,11 @@ export default defineConfig({
     sequence: {
       hooks: "stack",
     },
+    // Singleton reset: clears mutable module-level state (Maps, cached refs,
+    // monotone counters) between every it() block so tests that reach the real
+    // service module — rather than a vi.mock stub — start with a clean slate.
+    // The setup file is additive; it does not replace beforeEach hooks in
+    // individual test files.
+    setupFiles: ["src/__tests__/helpers/setup-singletons.ts"],
   },
 });
