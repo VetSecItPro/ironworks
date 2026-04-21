@@ -25,9 +25,9 @@ import { beforeEach } from "vitest";
  * are always mocked at the `vi.mock` level in every test that touches them,
  * so their module-level state is never reached from test code.
  *
- * ── Singleton audit (as of 2026-04-20) ──────────────────────────────────────
+ * ── Singleton audit (as of 2026-04-21) ──────────────────────────────────────
  *
- * MUTABLE — reset required
+ * MUTABLE — reset required (Tier 1 — original set)
  *   services/activity-log.ts
  *     · _pluginEventBus         — let, nullable ref; registration order matters
  *     · cachedGeneralSettings   — let, timed cache; stale data across tests
@@ -65,6 +65,56 @@ import { beforeEach } from "vitest";
  *     · cachedStorageService    — let; bound to config signature at first call
  *     · cachedSignature         — let string; paired with above
  *
+ * MUTABLE — reset required (Tier 2 — residual set added 2026-04-21)
+ *   services/tool-cache.ts
+ *     · _defaultCache           — let; process-level tool result cache; stale
+ *                                  entries survive between tests in same file
+ *
+ *   adapters/codex-models.ts
+ *     · cached                  — let; timed OpenAI model list; fingerprinted by
+ *                                  API key so key changes between tests miss
+ *
+ *   adapters/cursor-models.ts
+ *     · cached                  — let; timed Cursor CLI model list
+ *     · cursorModelsRunner       — let fn; tests can swap the runner via
+ *                                  setCursorModelsRunnerForTests; must be
+ *                                  restored so real CLI is never called in CI
+ *
+ *   log-redaction.ts
+ *     · cachedCurrentUserCandidates — let; reads OS username/homedir on first
+ *                                  call; wrong values in containers vs. dev
+ *
+ *   lib/error-tracking.ts
+ *     · errorCount / lastErrorAt — let counters; accumulate across tests so
+ *                                  assertions on getErrorStats() are order-dependent
+ *
+ *   board-claim.ts
+ *     · activeChallenge         — let; challenge token issued in one test leaks
+ *                                  into claim-route tests that follow
+ *
+ *   routes/sidebar-badges.ts
+ *     · badgeCache              — Map; 30 s TTL; a cached response from test A
+ *                                  can satisfy test B's request and suppress the
+ *                                  downstream service call the assertion expects
+ *
+ *   routes/setup.ts
+ *     · rateLimitMap            — Map; per-IP sliding window; tests that hammer
+ *                                  the setup route can exhaust the limit and cause
+ *                                  subsequent tests to receive unexpected 429s
+ *
+ *   routes/support.ts
+ *     · ticketRateBuckets       — Map; same pattern as rateLimitMap
+ *
+ *   routes/sse.ts
+ *     · clients                 — Map<companyId, Set<Response>>; a stale open
+ *                                  connection from test A can receive SSE events
+ *                                  emitted during test B
+ *
+ *   bridges/telegram.ts
+ *     · bots                    — Map<companyId, BotInstance>; a running bot
+ *                                  registered in test A can answer companyId
+ *                                  lookups during test B
+ *
  * IMMUTABLE / SAFELY MOCKED — no reset needed
  *   services/activity-log.ts      PLUGIN_EVENT_SET  (ReadonlySet, frozen)
  *   services/agent-instructions.ts IGNORED_* Sets   (frozen enum sets)
@@ -76,6 +126,8 @@ import { beforeEach } from "vitest";
  *   services/routines.ts          _TERMINAL_ISSUE_STATUSES (frozen)
  *   services/secrets.ts           HTTP_PROVIDER_TYPES (frozen)
  *   services/session-state.ts     DRIFT_STOP_WORDS   (frozen)
+ *   middleware/board-mutation-guard.ts SAFE_METHODS   (frozen)
+ *   routes/authz.ts               (purely functional — no module state)
  *
  * ── Reset strategy ──────────────────────────────────────────────────────────
  *
@@ -96,6 +148,7 @@ import { beforeEach } from "vitest";
 
 beforeEach(async () => {
   await Promise.all([
+    // ── Tier 1 (original set) ────────────────────────────────────────────────
     import("../../services/activity-log.js").then((m) => m._resetSingletonsForTest?.()).catch(() => undefined),
 
     import("../../services/heartbeat-scheduling.js").then((m) => m._resetSingletonsForTest?.()).catch(() => undefined),
@@ -117,5 +170,28 @@ beforeEach(async () => {
       .catch(() => undefined),
 
     import("../../storage/index.js").then((m) => m._resetSingletonsForTest?.()).catch(() => undefined),
+
+    // ── Tier 2 (residual set — added 2026-04-21) ─────────────────────────────
+    import("../../services/tool-cache.js").then((m) => m._resetSingletonsForTest?.()).catch(() => undefined),
+
+    import("../../adapters/codex-models.js").then((m) => m._resetSingletonsForTest?.()).catch(() => undefined),
+
+    import("../../adapters/cursor-models.js").then((m) => m._resetSingletonsForTest?.()).catch(() => undefined),
+
+    import("../../log-redaction.js").then((m) => m._resetSingletonsForTest?.()).catch(() => undefined),
+
+    import("../../lib/error-tracking.js").then((m) => m._resetSingletonsForTest?.()).catch(() => undefined),
+
+    import("../../board-claim.js").then((m) => m._resetSingletonsForTest?.()).catch(() => undefined),
+
+    import("../../routes/sidebar-badges.js").then((m) => m._resetSingletonsForTest?.()).catch(() => undefined),
+
+    import("../../routes/setup.js").then((m) => m._resetSingletonsForTest?.()).catch(() => undefined),
+
+    import("../../routes/support.js").then((m) => m._resetSingletonsForTest?.()).catch(() => undefined),
+
+    import("../../routes/sse.js").then((m) => m._resetSingletonsForTest?.()).catch(() => undefined),
+
+    import("../../bridges/telegram.js").then((m) => m._resetSingletonsForTest?.()).catch(() => undefined),
   ]);
 });
