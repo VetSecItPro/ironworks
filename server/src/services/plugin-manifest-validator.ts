@@ -128,8 +128,12 @@ export function pluginManifestValidator(): PluginManifestValidator {
         };
       }
 
-      const details = result.error.errors.map((issue) => ({
-        path: issue.path,
+      // Zod 4 removed the `.errors` alias; `.issues` is the canonical property.
+      // Zod 4 types issue.path as PropertyKey[] (includes symbol) but manifest
+      // paths are always strings or numbers in practice — filter symbols out to
+      // satisfy the ManifestParseFailure interface.
+      const details = result.error.issues.map((issue) => ({
+        path: issue.path.filter((p): p is string | number => typeof p !== "symbol"),
         message: issue.message,
       }));
 

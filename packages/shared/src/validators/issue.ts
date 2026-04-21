@@ -18,13 +18,13 @@ export const issueExecutionWorkspaceSettingsSchema = z
       .enum(["inherit", "shared_workspace", "isolated_workspace", "operator_branch", "reuse_existing", "agent_default"])
       .optional(),
     workspaceStrategy: executionWorkspaceStrategySchema.optional().nullable(),
-    workspaceRuntime: z.record(z.unknown()).optional().nullable(),
+    workspaceRuntime: z.record(z.string(), z.unknown()).optional().nullable(),
   })
   .strict();
 
 export const issueAssigneeAdapterOverridesSchema = z
   .object({
-    adapterConfig: z.record(z.unknown()).optional(),
+    adapterConfig: z.record(z.string(), z.unknown()).optional(),
     useProjectWorkspace: z.boolean().optional(),
   })
   .strict();
@@ -49,7 +49,7 @@ export const createIssueSchema = z.object({
     .optional()
     .nullable(),
   executionWorkspaceSettings: issueExecutionWorkspaceSettingsSchema.optional().nullable(),
-  specTemplate: z.record(z.unknown()).optional().nullable(),
+  specTemplate: z.record(z.string(), z.unknown()).optional().nullable(),
   labelIds: z.array(z.string().uuid()).optional(),
   targetDate: z.string().datetime().optional().nullable(),
   dependsOn: z.array(z.string().uuid()).optional(),

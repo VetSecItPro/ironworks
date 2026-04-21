@@ -15,7 +15,8 @@ export const envBindingSecretRefSchema = z.object({
 // Backward-compatible union that accepts legacy inline values.
 export const envBindingSchema = z.union([z.string(), envBindingPlainSchema, envBindingSecretRefSchema]);
 
-export const envConfigSchema = z.record(envBindingSchema);
+// Zod 4 requires explicit key schema; string keys are the only valid record key type.
+export const envConfigSchema = z.record(z.string(), envBindingSchema);
 
 export const createSecretSchema = z.object({
   name: z.string().min(1),
