@@ -28,6 +28,7 @@ import { Input } from "@/components/ui/input";
 import { useProviderStatus } from "../../hooks/useProviderStatus";
 import { relativeTime } from "../../lib/utils";
 import type { HttpAdapterProviderType, ProviderStatusResponse, ProviderTestResponse } from "../../types/providers";
+import { SettingsProviderNav } from "./SettingsProviderNav";
 
 // ─── Static provider metadata ────────────────────────────────────────────────
 
@@ -302,8 +303,17 @@ export function ProvidersPage({ companyId }: ProvidersPageProps) {
   return (
     <div className="max-w-2xl mx-auto py-6 px-4 space-y-6">
       <div>
-        <h1 className="text-xl font-semibold">Provider API Keys</h1>
+        <h1 className="text-xl font-semibold">Providers</h1>
         <p className="mt-1 text-sm text-muted-foreground">
+          Manage API keys and test prompts for HTTP provider adapters.
+        </p>
+      </div>
+
+      <SettingsProviderNav />
+
+      <div>
+        <h2 className="text-base font-medium mb-1">Provider API Keys</h2>
+        <p className="text-sm text-muted-foreground">
           API keys are stored encrypted and never returned. Only the last four characters are shown.
         </p>
       </div>

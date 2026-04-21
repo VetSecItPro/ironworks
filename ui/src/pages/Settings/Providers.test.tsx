@@ -7,6 +7,12 @@ import { ThemeProvider } from "../../context/ThemeContext";
 import type { ProviderStatusResponse } from "../../types/providers";
 import { ProvidersPage } from "./Providers";
 
+// SettingsProviderNav uses useLocation/useParams which require a Router context.
+// Server-render tests run outside of a Router; stub it to avoid the invariant error.
+vi.mock("./SettingsProviderNav", () => ({
+  SettingsProviderNav: () => null,
+}));
+
 const TEST_COMPANY_ID = "00000000-0000-0000-0000-000000000001";
 
 function makeTestClient() {

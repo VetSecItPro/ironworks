@@ -47,6 +47,7 @@ import { nolanIntegrationRoutes } from "./routes/nolan-integration.js";
 import { playbookRoutes } from "./routes/playbooks.js";
 import { privacyRoutes, startRetentionScheduler } from "./routes/privacy.js";
 import { projectRoutes } from "./routes/projects.js";
+import { playgroundRoutes } from "./routes/playground.js";
 import { providerRoutes } from "./routes/providers.js";
 import { roleTemplateRoutes } from "./routes/role-templates.js";
 import { routineRoutes } from "./routes/routines.js";
@@ -308,6 +309,7 @@ export async function createApp(
   api.use(approvalRoutes(db));
   api.use(secretRoutes(db));
   api.use(providerRoutes(db));
+  api.use(playgroundRoutes(db));
   api.use(costRoutes(db));
   api.use(executiveRoutes(db));
   api.use(activityRoutes(db));
