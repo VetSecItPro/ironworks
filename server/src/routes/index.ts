@@ -1,6 +1,6 @@
-export { adapterCallRoutes } from "./adapter-calls.js";
 export { accessRoutes } from "./access.js";
 export { activityRoutes } from "./activity.js";
+export { adapterCallRoutes } from "./adapter-calls.js";
 export { agentRoutes } from "./agents.js";
 export { approvalRoutes } from "./approvals.js";
 export { companyRoutes } from "./companies.js";
