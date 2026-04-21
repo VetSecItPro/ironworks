@@ -580,6 +580,25 @@
   margin-top: 1.1em;
 }
 
+/* Project mention chips rendered outside the mdxeditor context (e.g. MarkdownBody) */
+a.ironworks-mention-chip,
+a.ironworks-project-mention-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0 0.1rem;
+  padding: 0.05rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  line-height: 1.3;
+  text-decoration: none;
+  vertical-align: middle;
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* Mention chips inside the mdxeditor override the base chip styles */
 .ironworks-mdxeditor-content a.ironworks-mention-chip,
 .ironworks-mdxeditor-content a.ironworks-project-mention-chip {
   display: inline-flex;
@@ -597,22 +616,22 @@
   user-select: none;
 }
 
-.ironworks-mdxeditor-content a.ironworks-mention-chip::before,
-a.ironworks-mention-chip::before {
+a.ironworks-mention-chip::before,
+.ironworks-mdxeditor-content a.ironworks-mention-chip::before {
   content: "";
   flex: none;
 }
 
-.ironworks-mdxeditor-content a.ironworks-mention-chip[data-mention-kind="project"]::before,
-a.ironworks-mention-chip[data-mention-kind="project"]::before {
+a.ironworks-mention-chip[data-mention-kind="project"]::before,
+.ironworks-mdxeditor-content a.ironworks-mention-chip[data-mention-kind="project"]::before {
   width: 0.45rem;
   height: 0.45rem;
   border-radius: 999px;
   background-color: var(--ironworks-mention-project-color, currentColor);
 }
 
-.ironworks-mdxeditor-content a.ironworks-mention-chip[data-mention-kind="agent"]::before,
-a.ironworks-mention-chip[data-mention-kind="agent"]::before {
+a.ironworks-mention-chip[data-mention-kind="agent"]::before,
+.ironworks-mdxeditor-content a.ironworks-mention-chip[data-mention-kind="agent"]::before {
   width: 0.75rem;
   height: 0.75rem;
   background-color: currentColor;
@@ -970,23 +989,6 @@ a.ironworks-mention-chip[data-mention-kind="agent"]::before {
   background: transparent;
 }
 
-/* Project mention chips rendered inside MarkdownBody */
-a.ironworks-mention-chip,
-a.ironworks-project-mention-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  margin: 0 0.1rem;
-  padding: 0.05rem 0.45rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  font-size: 0.75rem;
-  line-height: 1.3;
-  text-decoration: none;
-  vertical-align: middle;
-  white-space: nowrap;
-}
-
 /* ---- Drag & Drop Patterns ---- */
 
 .drop-zone-active {
@@ -1061,7 +1063,10 @@ a.ironworks-project-mention-chip {
 
   #root,
   #root > *,
-  main {
+  /* biome-ignore lint/style/noDescendingSpecificity: false positive — `main` inside @media print is scoped to print
+     context only and cannot cascade against `.compact main` in the base stylesheet. Biome's specificity check
+     does not account for @media scope isolation. */
+    main {
     overflow: visible;
     height: auto;
     width: 100%;
@@ -1090,8 +1095,16 @@ a.ironworks-project-mention-chip {
     page-break-after: avoid;
   }
 
+  /* biome-ignore lint/style/noDescendingSpecificity: false positive — `table` here is inside @media print
+     and cannot conflict with `.ironworks-markdown table` in the base stylesheet. Biome's specificity check
+     does not account for @media scope isolation. */
   table,
-  figure,
+  figure {
+    page-break-inside: avoid;
+  }
+  /* biome-ignore lint/style/noDescendingSpecificity: false positive — `img` here is inside @media print
+     and cannot conflict with `.ironworks-mdxeditor-content img` in the base stylesheet. Biome's specificity
+     check does not account for @media scope isolation. */
   img {
     page-break-inside: avoid;
   }
@@ -1148,6 +1161,9 @@ a.ironworks-project-mention-chip {
   }
 
   /* Compact table cells */
+  /* biome-ignore lint/style/noDescendingSpecificity: false positive — `table th/td` here is inside @media (max-width:768px)
+     and cannot conflict with `.ironworks-markdown th` in the base stylesheet. Biome's specificity check
+     does not account for @media scope isolation. */
   table th,
   table td {
     padding-left: 0.375rem;
@@ -1158,6 +1174,9 @@ a.ironworks-project-mention-chip {
 /* Mobile breakpoint: 375px */
 @media (max-width: 375px) {
   /* Reduce padding */
+  /* biome-ignore lint/style/noDescendingSpecificity: false positive — `main` here is inside @media (max-width:375px)
+     and cannot conflict with `.compact main` in the base stylesheet. Biome's specificity check
+     does not account for @media scope isolation. */
   main {
     padding: 0.5rem;
   }
@@ -1183,6 +1202,9 @@ a.ironworks-project-mention-chip {
   }
 
   /* Compact cards */
+  /* biome-ignore lint/style/noDescendingSpecificity: false positive — `.p-4` here is inside @media (max-width:375px)
+     and cannot conflict with `.compact .p-4` in the base stylesheet. Biome's specificity check
+     does not account for @media scope isolation. */
   .p-4,
   .p-5 {
     padding: 0.625rem;

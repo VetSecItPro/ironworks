@@ -161,11 +161,11 @@ details summary {
 details summary::-webkit-details-marker {
   display: none;
 }
-details[open] .chevron {
-  transform: rotate(180deg);
-}
 .chevron {
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+details[open] .chevron {
+  transform: rotate(180deg);
 }
 details[open] summary .summary-text {
   color: #fff;
