@@ -392,15 +392,6 @@ type CompanyPackageIncludeEntry = {
   path: string;
 };
 
-type IronworksExtensionDoc = {
-  schema?: string;
-  company?: Record<string, unknown> | null;
-  agents?: Record<string, Record<string, unknown>> | null;
-  projects?: Record<string, Record<string, unknown>> | null;
-  tasks?: Record<string, Record<string, unknown>> | null;
-  routines?: Record<string, Record<string, unknown>> | null;
-};
-
 export type ProjectLike = {
   id: string;
   name: string;

@@ -58,8 +58,8 @@ function RunListItem({ run, isSelected, agentId }: { run: HeartbeatRun; isSelect
 
 export function RunsTab({
   runs,
-  companyId,
-  agentId,
+  companyId: _companyId,
+  agentId: _agentId,
   agentRouteId,
   selectedRunId,
   adapterType,

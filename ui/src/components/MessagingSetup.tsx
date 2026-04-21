@@ -59,7 +59,7 @@ export function MessagingSetup({ companyId }: MessagingSetupProps) {
 
 // ── Email Card ──
 
-function EmailBridgeCard({ address, status, note }: { address: string | null; status: string; note: string }) {
+function EmailBridgeCard({ address, status: _status, note }: { address: string | null; status: string; note: string }) {
   return (
     <div className="rounded-md border border-border px-4 py-3 space-y-2">
       <div className="flex items-center justify-between">

@@ -1,10 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-interface JwtHeader {
-  alg: string;
-  typ?: string;
-}
-
 export interface LocalAgentJwtClaims {
   sub: string;
   company_id: string;

@@ -95,11 +95,6 @@ type IssueActiveRunRow = {
 };
 type IssueWithLabels = IssueRow & { labels: IssueLabelRow[]; labelIds: string[] };
 type IssueWithLabelsAndRun = IssueWithLabels & { activeRun: IssueActiveRunRow | null };
-type IssueUserCommentStats = {
-  issueId: string;
-  myLastCommentAt: Date | null;
-  lastExternalCommentAt: Date | null;
-};
 type IssueUserContextInput = {
   createdByUserId: string | null;
   assigneeUserId: string | null;

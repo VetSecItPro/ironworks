@@ -127,16 +127,6 @@ type CommentContextData = {
   copiedCount: number;
 } | null;
 
-type ProcessResult = {
-  commandKey: string;
-  cwd: string;
-  code: number | null;
-  stdout: string;
-  stderr: string;
-  startedAt: string;
-  finishedAt: string;
-};
-
 const layoutStack: CSSProperties = {
   display: "grid",
   gap: "12px",
@@ -2496,11 +2486,11 @@ export function KitchenSinkProjectSidebarItem({ context }: PluginProjectSidebarI
   );
 }
 
-export function KitchenSinkProjectTab({ context }: PluginDetailTabProps) {
+export function KitchenSinkProjectTab({ context: _context }: PluginDetailTabProps) {
   return <CompactSurfaceSummary label="Project Detail Tab" entityType="project" />;
 }
 
-export function KitchenSinkIssueTab({ context }: PluginDetailTabProps) {
+export function KitchenSinkIssueTab({ context: _context }: PluginDetailTabProps) {
   return <CompactSurfaceSummary label="Issue Detail Tab" entityType="issue" />;
 }
 

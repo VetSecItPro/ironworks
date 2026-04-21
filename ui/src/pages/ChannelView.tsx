@@ -79,7 +79,7 @@ export function ChannelView() {
   });
 
   // Fetch session for authorUserId
-  const { data: session } = useQuery({
+  const { data: _session } = useQuery({
     queryKey: queryKeys.auth.session,
     queryFn: () => authApi.getSession(),
   });

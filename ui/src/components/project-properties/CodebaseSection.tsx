@@ -55,7 +55,7 @@ function formatRepoUrl(value: string) {
 }
 
 export function CodebaseSection({
-  project,
+  project: _project,
   codebase,
   primaryCodebaseWorkspace,
   hasAdditionalLegacyWorkspaces,
@@ -65,7 +65,7 @@ export function CodebaseSection({
   workspaceError,
   createPending,
   updatePending,
-  removePending,
+  removePending: _removePending,
   createError,
   updateError,
   removeError,

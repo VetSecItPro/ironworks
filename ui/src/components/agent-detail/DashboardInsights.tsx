@@ -11,7 +11,7 @@ import { formatDate, relativeTime } from "../../lib/utils";
 /* -- Underperformer Callout Banner -- */
 
 export function UnderperformerBanner({
-  agent,
+  agent: _agent,
   runs,
   issues,
 }: {
@@ -50,7 +50,7 @@ export function UnderperformerBanner({
 
 export function CurrentTaskSpotlight({
   issues,
-  agentRouteId,
+  agentRouteId: _agentRouteId,
 }: {
   issues: Array<{ id: string; title: string; status: string; identifier?: string | null }>;
   agentRouteId: string;
@@ -83,8 +83,8 @@ export function CurrentTaskSpotlight({
 export function PerformanceHistoryChart({
   runs,
   issues,
-  companyId,
-  agentId,
+  companyId: _companyId,
+  agentId: _agentId,
 }: {
   runs: HeartbeatRun[];
   issues: Array<{ status: string; completedAt?: Date | string | null; createdAt: Date | string }>;
