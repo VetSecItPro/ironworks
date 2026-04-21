@@ -103,6 +103,17 @@ type IssueUserContextInput = {
 };
 type ProjectGoalReader = Pick<Db, "select">;
 
+/**
+ * ListedIssue represents an issue returned from the list() endpoint.
+ * Description field is intentionally NULL (null::text optimization from 2026-04-07).
+ * This is a performance optimization: list rows skip the description field to reduce payload.
+ *
+ * DO NOT access the .description field. To retrieve full issue details including description,
+ * call getById() or getByIdentifier() instead. TypeScript will error if you try to destructure
+ * or access .description from a ListedIssue.
+ */
+type ListedIssue = Omit<IssueWithLabelsAndRun, "description">;
+
 function sameRunLock(checkoutRunId: string | null, actorRunId: string | null) {
   if (actorRunId) return checkoutRunId === actorRunId;
   return checkoutRunId == null;
@@ -588,7 +599,7 @@ export function issueService(db: Db) {
   }
 
   return {
-    list: async (companyId: string, filters?: IssueFilters) => {
+    list: async (companyId: string, filters?: IssueFilters): Promise<ListedIssue[]> => {
       const conditions = [eq(issues.companyId, companyId)];
       const touchedByUserId = filters?.touchedByUserId?.trim() || undefined;
       const inboxArchivedByUserId = filters?.inboxArchivedByUserId?.trim() || undefined;
@@ -723,7 +734,7 @@ export function issueService(db: Db) {
       const [withLabels, runMap] = await Promise.all([withIssueLabels(db, rows), activeRunMapForIssues(db, rows)]);
       const withRuns = withActiveRuns(withLabels, runMap);
       if (!contextUserId || withRuns.length === 0) {
-        return withRuns;
+        return withRuns as ListedIssue[];
       }
 
       const issueIds = withRuns.map((row) => row.id);
@@ -770,7 +781,7 @@ export function issueService(db: Db) {
           myLastReadAt: readByIssueId.get(row.id) ?? null,
           lastExternalCommentAt: statsByIssueId.get(row.id)?.lastExternalCommentAt ?? null,
         }),
-      }));
+      })) as ListedIssue[];
     },
 
     countUnreadTouchedByUser: async (companyId: string, userId: string, status?: string) => {
@@ -865,6 +876,14 @@ export function issueService(db: Db) {
       if (!row) return null;
       const [enriched] = await withIssueLabels(db, [row]);
       return enriched;
+    },
+
+    // Batch fetch full issue details (including description) for a set of known ids.
+    // Use this instead of calling getById() in a loop when you already have the id list.
+    findDetailsByIds: async (ids: string[]): Promise<IssueWithLabels[]> => {
+      if (ids.length === 0) return [];
+      const rows = await db.select().from(issues).where(inArray(issues.id, ids));
+      return withIssueLabels(db, rows);
     },
 
     getByIdentifier: async (identifier: string) => {

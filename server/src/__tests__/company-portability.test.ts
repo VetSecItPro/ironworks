@@ -37,6 +37,7 @@ const issueSvc = {
   list: vi.fn(),
   getById: vi.fn(),
   getByIdentifier: vi.fn(),
+  findDetailsByIds: vi.fn(),
   create: vi.fn(),
 };
 
@@ -206,6 +207,7 @@ describe("company portability", () => {
     issueSvc.list.mockResolvedValue([]);
     issueSvc.getById.mockResolvedValue(null);
     issueSvc.getByIdentifier.mockResolvedValue(null);
+    issueSvc.findDetailsByIds.mockResolvedValue([]);
     routineSvc.list.mockResolvedValue([]);
     routineSvc.getDetail.mockImplementation(async (id: string) => {
       const rows = await routineSvc.list();
@@ -822,25 +824,26 @@ describe("company portability", () => {
         archivedAt: null,
       },
     ]);
-    issueSvc.list.mockResolvedValue([
-      {
-        id: "issue-1",
-        identifier: "PAP-1",
-        title: "Write launch task",
-        description: "Task body",
-        projectId: "project-1",
-        projectWorkspaceId: "workspace-1",
-        assigneeAgentId: "agent-1",
-        status: "todo",
-        priority: "medium",
-        labelIds: [],
-        billingCode: null,
-        executionWorkspaceSettings: {
-          mode: "shared_workspace",
-        },
-        assigneeAdapterOverrides: null,
+    const workspaceIssue = {
+      id: "issue-1",
+      identifier: "PAP-1",
+      title: "Write launch task",
+      description: "Task body",
+      projectId: "project-1",
+      projectWorkspaceId: "workspace-1",
+      assigneeAgentId: "agent-1",
+      status: "todo",
+      priority: "medium",
+      labelIds: [],
+      billingCode: null,
+      executionWorkspaceSettings: {
+        mode: "shared_workspace",
       },
-    ]);
+      assigneeAdapterOverrides: null,
+    };
+    issueSvc.list.mockResolvedValue([workspaceIssue]);
+    // findDetailsByIds replaces N+1 getById calls for the full-export path
+    issueSvc.findDetailsByIds.mockResolvedValue([workspaceIssue]);
 
     const exported = await portability.exportBundle("company-1", {
       include: {
@@ -1012,23 +1015,24 @@ describe("company portability", () => {
         archivedAt: null,
       },
     ]);
-    issueSvc.list.mockResolvedValue([
-      {
-        id: "issue-1",
-        identifier: "PAP-1",
-        title: "Task one",
-        description: "Task body",
-        projectId: "project-1",
-        projectWorkspaceId: "workspace-1",
-        assigneeAgentId: null,
-        status: "todo",
-        priority: "medium",
-        labelIds: [],
-        billingCode: null,
-        executionWorkspaceSettings: null,
-        assigneeAdapterOverrides: null,
-      },
-    ]);
+    const gitInferIssue = {
+      id: "issue-1",
+      identifier: "PAP-1",
+      title: "Task one",
+      description: "Task body",
+      projectId: "project-1",
+      projectWorkspaceId: "workspace-1",
+      assigneeAgentId: null,
+      status: "todo",
+      priority: "medium",
+      labelIds: [],
+      billingCode: null,
+      executionWorkspaceSettings: null,
+      assigneeAdapterOverrides: null,
+    };
+    issueSvc.list.mockResolvedValue([gitInferIssue]);
+    // findDetailsByIds replaces N+1 getById calls for the full-export path
+    issueSvc.findDetailsByIds.mockResolvedValue([gitInferIssue]);
 
     const exported = await portability.exportBundle("company-1", {
       include: {
@@ -1087,7 +1091,7 @@ describe("company portability", () => {
         archivedAt: null,
       },
     ]);
-    issueSvc.list.mockResolvedValue([
+    const collapseIssues = [
       {
         id: "issue-1",
         identifier: "PAP-1",
@@ -1133,7 +1137,10 @@ describe("company portability", () => {
         executionWorkspaceSettings: null,
         assigneeAdapterOverrides: null,
       },
-    ]);
+    ];
+    issueSvc.list.mockResolvedValue(collapseIssues);
+    // findDetailsByIds replaces N+1 getById calls for the full-export path
+    issueSvc.findDetailsByIds.mockResolvedValue(collapseIssues);
 
     const exported = await portability.exportBundle("company-1", {
       include: {

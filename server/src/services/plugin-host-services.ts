@@ -744,8 +744,11 @@ export function buildHostServices(
       async list(params) {
         const companyId = ensureCompanyId(params.companyId);
         await ensurePluginAvailableForCompany(companyId);
+        // List endpoint returns ListedIssue (description: never) for perf. If full details
+        // including description are needed, call get() instead. Cast here for plugin-sdk
+        // compatibility, but plugins must not rely on .description from list results.
         // biome-ignore lint/suspicious/noExplicitAny: plugin-sdk issue list params is a superset; internal service accepts subset
-        return applyWindow((await issues.list(companyId, params as any)) as Issue[], params);
+        return applyWindow((await issues.list(companyId, params as any)) as unknown as Issue[], params);
       },
       async get(params) {
         const companyId = ensureCompanyId(params.companyId);

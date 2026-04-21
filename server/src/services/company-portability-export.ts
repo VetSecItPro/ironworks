@@ -254,6 +254,8 @@ export async function exportBundle(
     selectedProjects.set(match.id, match);
   }
 
+  // selectedIssues holds full issue rows (with description) keyed by id.
+  // We accumulate listed-issue stubs first, then batch-fetch descriptions in one query.
   const selectedIssues = new Map<string, Awaited<ReturnType<typeof issuesSvc.getById>>>();
   const selectedRoutines = new Map<string, (typeof allRoutines)[number]>();
   const routineById = new Map(allRoutines.map((routine) => [routine.id, routine]));
@@ -291,8 +293,10 @@ export async function exportBundle(
       continue;
     }
     selectedProjects.set(match.id, match);
+    // Batch-fetch descriptions for all listed issues in this project rather than N+1 getById calls.
     const projectIssues = await issuesSvc.list(companyId, { projectId: match.id });
-    for (const issue of projectIssues) {
+    const projectIssueDetails = await issuesSvc.findDetailsByIds(projectIssues.map((li) => li.id));
+    for (const issue of projectIssueDetails) {
       selectedIssues.set(issue.id, issue);
     }
     for (const routine of allRoutines.filter((entry) => entry.projectId === match.id)) {
@@ -307,8 +311,10 @@ export async function exportBundle(
   }
 
   if (include.issues && selectedIssues.size === 0) {
+    // Batch-fetch descriptions for all company issues rather than N+1 getById calls.
     const allIssues = await issuesSvc.list(companyId);
-    for (const issue of allIssues) {
+    const allIssueDetails = await issuesSvc.findDetailsByIds(allIssues.map((li) => li.id));
+    for (const issue of allIssueDetails) {
       selectedIssues.set(issue.id, issue);
       if (issue.projectId) {
         const parentProject = projectById.get(issue.projectId);
