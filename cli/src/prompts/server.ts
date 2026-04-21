@@ -62,8 +62,9 @@ export async function promptServer(opts?: {
     message: "Bind host",
     defaultValue: currentServer?.host ?? hostDefault,
     placeholder: hostDefault,
+    // 1.x validate receives `string | undefined` when the field is submitted empty
     validate: (val) => {
-      if (!val.trim()) return "Host is required";
+      if (!val?.trim()) return "Host is required";
     },
   });
 
@@ -97,7 +98,8 @@ export async function promptServer(opts?: {
       placeholder: "dotta-macbook-pro, your-host.tailnet.ts.net",
       validate: (val) => {
         try {
-          parseHostnameCsv(val);
+          // 1.x validate receives `string | undefined`; treat undefined as empty (no hostnames)
+          parseHostnameCsv(val ?? "");
           return;
         } catch (err) {
           return err instanceof Error ? err.message : "Invalid hostname list";
@@ -119,8 +121,9 @@ export async function promptServer(opts?: {
       message: "Public base URL",
       defaultValue: currentAuth?.publicBaseUrl ?? "",
       placeholder: "https://ironworks.example.com",
+      // 1.x validate receives `string | undefined` when the field is submitted empty
       validate: (val) => {
-        const candidate = val.trim();
+        const candidate = val?.trim() ?? "";
         if (!candidate) return "Public base URL is required for public exposure";
         try {
           const url = new URL(candidate);
