@@ -38,6 +38,41 @@ vi.mock("../services/adapter-call-writer.js", () => ({
 
 import { adapterCallRoutes } from "../routes/adapter-calls.js";
 
+// ── DB mock helper ────────────────────────────────────────────────────────────
+// Provides query chaining with optional per-call row customization via mockImplementation.
+
+function buildChainableQuery<T>(defaultResult: T[] = []) {
+  const chain: Record<string, ReturnType<typeof vi.fn>> = {};
+  for (const method of [
+    "select",
+    "from",
+    "where",
+    "leftJoin",
+    "rightJoin",
+    "innerJoin",
+    "orderBy",
+    "groupBy",
+    "limit",
+    "offset",
+    "update",
+    "set",
+    "insert",
+    "values",
+    "onConflictDoNothing",
+    "onConflictDoUpdate",
+    "returning",
+    "delete",
+    "execute",
+  ]) {
+    chain[method] = vi.fn().mockReturnValue(chain);
+  }
+  // biome-ignore lint/suspicious/noThenProperty: test mock drizzle thenable contract
+  chain.then = vi.fn().mockImplementation((resolve: (value: T[]) => unknown) => {
+    return resolve(defaultResult);
+  });
+  return chain;
+}
+
 // ── fixtures ─────────────────────────────────────────────────────────────────
 
 const COMPANY_ID = randomUUID();
@@ -70,8 +105,11 @@ const BASE_CALL = {
   createdAt: new Date("2026-04-20T10:00:00Z"),
 };
 
-function makeApp(actor = boardUser(USER_ID, [COMPANY_ID])) {
-  return buildTestApp({ router: adapterCallRoutes(makeChainableDb([BASE_CALL])), actor });
+function makeApp(actor = boardUser(USER_ID, [COMPANY_ID]), db?: Record<string, unknown>) {
+  return buildTestApp({
+    router: adapterCallRoutes((db ?? makeChainableDb([BASE_CALL])) as Parameters<typeof adapterCallRoutes>[0]),
+    actor,
+  });
 }
 
 function makeAppWithRows<T>(rows: T[], actor = boardUser(USER_ID, [COMPANY_ID])) {
@@ -81,9 +119,9 @@ function makeAppWithRows<T>(rows: T[], actor = boardUser(USER_ID, [COMPANY_ID]))
 // ── GET list ──────────────────────────────────────────────────────────────────
 
 describe("GET /api/companies/:companyId/adapter-calls", () => {
-  it("returns 403 for unauthenticated (noActor)", async () => {
+  it("returns 401 for unauthenticated (noActor)", async () => {
     const res = await request(makeApp(noActor())).get(`/api/companies/${COMPANY_ID}/adapter-calls`);
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(401);
   });
 
   it("returns 403 for cross-company access", async () => {
@@ -91,21 +129,88 @@ describe("GET /api/companies/:companyId/adapter-calls", () => {
     expect(res.status).toBe(403);
   });
 
-  it("returns 200 with items for an authenticated viewer", async () => {
-    const res = await request(makeApp()).get(`/api/companies/${COMPANY_ID}/adapter-calls`);
+  it("returns 403 for viewer role (audit log requires operator/owner)", async () => {
+    // assertCanWrite queries membership and finds viewer role — access denied
+    let selectCallCount = 0;
+    const fakeDb = {
+      select: vi.fn().mockImplementation(() => {
+        selectCallCount++;
+        // First select is the membership check from assertCanWrite
+        if (selectCallCount === 1) {
+          return buildChainableQuery([{ membershipRole: "viewer" }]);
+        }
+        // Subsequent selects would be the adapter-calls query
+        return buildChainableQuery([BASE_CALL]);
+      }),
+      from: vi.fn().mockReturnValue({ where: vi.fn().mockReturnValue({}) }),
+    } as unknown as Record<string, unknown>;
+
+    const res = await request(makeApp(boardUser(USER_ID, [COMPANY_ID]), fakeDb)).get(
+      `/api/companies/${COMPANY_ID}/adapter-calls`,
+    );
+    expect(res.status).toBe(403);
+  });
+
+  it("returns 200 with items for an operator/owner", async () => {
+    // assertCanWrite queries membership and finds non-viewer role — allow access
+    let selectCallCount = 0;
+    const fakeDb = {
+      select: vi.fn().mockImplementation(() => {
+        selectCallCount++;
+        // First select is the membership check from assertCanWrite
+        if (selectCallCount === 1) {
+          return buildChainableQuery([{ membershipRole: "admin" }]);
+        }
+        // Subsequent selects are the adapter-calls query
+        return buildChainableQuery([BASE_CALL]);
+      }),
+      from: vi.fn().mockReturnValue({ where: vi.fn().mockReturnValue({}) }),
+    } as unknown as Record<string, unknown>;
+
+    const res = await request(makeApp(boardUser(USER_ID, [COMPANY_ID]), fakeDb)).get(
+      `/api/companies/${COMPANY_ID}/adapter-calls`,
+    );
     expect(res.status).toBe(200);
     expect(res.body.items).toHaveLength(1);
   });
 
   it("omits promptPayload and responsePayload from list items", async () => {
-    const res = await request(makeApp()).get(`/api/companies/${COMPANY_ID}/adapter-calls`);
+    let selectCallCount = 0;
+    const fakeDb = {
+      select: vi.fn().mockImplementation(() => {
+        selectCallCount++;
+        if (selectCallCount === 1) {
+          return buildChainableQuery([{ membershipRole: "admin" }]);
+        }
+        return buildChainableQuery([BASE_CALL]);
+      }),
+      from: vi.fn().mockReturnValue({ where: vi.fn().mockReturnValue({}) }),
+    } as unknown as Record<string, unknown>;
+
+    const res = await request(makeApp(boardUser(USER_ID, [COMPANY_ID]), fakeDb)).get(
+      `/api/companies/${COMPANY_ID}/adapter-calls`,
+    );
     expect(res.status).toBe(200);
     expect(res.body.items[0].promptPayload).toBeUndefined();
     expect(res.body.items[0].responsePayload).toBeUndefined();
   });
 
   it("strips secret keys from adapterConfigSnapshot in list response", async () => {
-    const res = await request(makeApp()).get(`/api/companies/${COMPANY_ID}/adapter-calls`);
+    let selectCallCount = 0;
+    const fakeDb = {
+      select: vi.fn().mockImplementation(() => {
+        selectCallCount++;
+        if (selectCallCount === 1) {
+          return buildChainableQuery([{ membershipRole: "admin" }]);
+        }
+        return buildChainableQuery([BASE_CALL]);
+      }),
+      from: vi.fn().mockReturnValue({ where: vi.fn().mockReturnValue({}) }),
+    } as unknown as Record<string, unknown>;
+
+    const res = await request(makeApp(boardUser(USER_ID, [COMPANY_ID]), fakeDb)).get(
+      `/api/companies/${COMPANY_ID}/adapter-calls`,
+    );
     expect(res.status).toBe(200);
     const snapshot = res.body.items[0].adapterConfigSnapshot as Record<string, unknown>;
     // apiKey is in the SNAPSHOT_SECRET_KEYS blocklist — must not appear
@@ -116,8 +221,20 @@ describe("GET /api/companies/:companyId/adapter-calls", () => {
 
   it("returns nextCursor when rows exceed limit", async () => {
     const rows = [BASE_CALL, { ...BASE_CALL, id: randomUUID(), occurredAt: new Date("2026-04-19T10:00:00Z") }];
+    let selectCallCount = 0;
+    const fakeDb = {
+      select: vi.fn().mockImplementation(() => {
+        selectCallCount++;
+        if (selectCallCount === 1) {
+          return buildChainableQuery([{ membershipRole: "admin" }]);
+        }
+        return buildChainableQuery(rows);
+      }),
+      from: vi.fn().mockReturnValue({ where: vi.fn().mockReturnValue({}) }),
+    } as unknown as Record<string, unknown>;
+
     const app = buildTestApp({
-      router: adapterCallRoutes(makeChainableDb(rows)),
+      router: adapterCallRoutes(fakeDb as Parameters<typeof adapterCallRoutes>[0]),
       actor: boardUser(USER_ID, [COMPANY_ID]),
     });
     const res = await request(app).get(`/api/companies/${COMPANY_ID}/adapter-calls?limit=1`);
@@ -127,37 +244,122 @@ describe("GET /api/companies/:companyId/adapter-calls", () => {
   });
 
   it("returns null nextCursor when all rows fit in the page", async () => {
-    const res = await request(makeApp()).get(`/api/companies/${COMPANY_ID}/adapter-calls?limit=50`);
+    let selectCallCount = 0;
+    const fakeDb = {
+      select: vi.fn().mockImplementation(() => {
+        selectCallCount++;
+        if (selectCallCount === 1) {
+          return buildChainableQuery([{ membershipRole: "admin" }]);
+        }
+        return buildChainableQuery([BASE_CALL]);
+      }),
+      from: vi.fn().mockReturnValue({ where: vi.fn().mockReturnValue({}) }),
+    } as unknown as Record<string, unknown>;
+
+    const res = await request(makeApp(boardUser(USER_ID, [COMPANY_ID]), fakeDb)).get(
+      `/api/companies/${COMPANY_ID}/adapter-calls?limit=50`,
+    );
     expect(res.status).toBe(200);
     expect(res.body.nextCursor).toBeNull();
   });
 
   it("clamps limit to 100 instead of rejecting out-of-range values", async () => {
-    const res = await request(makeApp()).get(`/api/companies/${COMPANY_ID}/adapter-calls?limit=9999`);
+    let selectCallCount = 0;
+    const fakeDb = {
+      select: vi.fn().mockImplementation(() => {
+        selectCallCount++;
+        if (selectCallCount === 1) {
+          return buildChainableQuery([{ membershipRole: "admin" }]);
+        }
+        return buildChainableQuery([BASE_CALL]);
+      }),
+      from: vi.fn().mockReturnValue({ where: vi.fn().mockReturnValue({}) }),
+    } as unknown as Record<string, unknown>;
+
+    const res = await request(makeApp(boardUser(USER_ID, [COMPANY_ID]), fakeDb)).get(
+      `/api/companies/${COMPANY_ID}/adapter-calls?limit=9999`,
+    );
     expect(res.status).toBe(200);
   });
 
   it("accepts and passes agent_id filter", async () => {
-    const res = await request(makeApp()).get(`/api/companies/${COMPANY_ID}/adapter-calls?agent_id=${AGENT_ID}`);
+    let selectCallCount = 0;
+    const fakeDb = {
+      select: vi.fn().mockImplementation(() => {
+        selectCallCount++;
+        if (selectCallCount === 1) {
+          return buildChainableQuery([{ membershipRole: "admin" }]);
+        }
+        return buildChainableQuery([BASE_CALL]);
+      }),
+      from: vi.fn().mockReturnValue({ where: vi.fn().mockReturnValue({}) }),
+    } as unknown as Record<string, unknown>;
+
+    const res = await request(makeApp(boardUser(USER_ID, [COMPANY_ID]), fakeDb)).get(
+      `/api/companies/${COMPANY_ID}/adapter-calls?agent_id=${AGENT_ID}`,
+    );
     expect(res.status).toBe(200);
   });
 
   it("accepts status filter", async () => {
-    const res = await request(makeApp()).get(`/api/companies/${COMPANY_ID}/adapter-calls?status=success`);
+    let selectCallCount = 0;
+    const fakeDb = {
+      select: vi.fn().mockImplementation(() => {
+        selectCallCount++;
+        if (selectCallCount === 1) {
+          return buildChainableQuery([{ membershipRole: "admin" }]);
+        }
+        return buildChainableQuery([BASE_CALL]);
+      }),
+      from: vi.fn().mockReturnValue({ where: vi.fn().mockReturnValue({}) }),
+    } as unknown as Record<string, unknown>;
+
+    const res = await request(makeApp(boardUser(USER_ID, [COMPANY_ID]), fakeDb)).get(
+      `/api/companies/${COMPANY_ID}/adapter-calls?status=success`,
+    );
     expect(res.status).toBe(200);
   });
 
   it("accepts source filter", async () => {
-    const res = await request(makeApp()).get(`/api/companies/${COMPANY_ID}/adapter-calls?source=agent`);
+    let selectCallCount = 0;
+    const fakeDb = {
+      select: vi.fn().mockImplementation(() => {
+        selectCallCount++;
+        if (selectCallCount === 1) {
+          return buildChainableQuery([{ membershipRole: "admin" }]);
+        }
+        return buildChainableQuery([BASE_CALL]);
+      }),
+      from: vi.fn().mockReturnValue({ where: vi.fn().mockReturnValue({}) }),
+    } as unknown as Record<string, unknown>;
+
+    const res = await request(makeApp(boardUser(USER_ID, [COMPANY_ID]), fakeDb)).get(
+      `/api/companies/${COMPANY_ID}/adapter-calls?source=agent`,
+    );
     expect(res.status).toBe(200);
   });
 
   it("accepts adapter_type filter", async () => {
-    const res = await request(makeApp()).get(`/api/companies/${COMPANY_ID}/adapter-calls?adapter_type=anthropic_api`);
+    let selectCallCount = 0;
+    const fakeDb = {
+      select: vi.fn().mockImplementation(() => {
+        selectCallCount++;
+        if (selectCallCount === 1) {
+          return buildChainableQuery([{ membershipRole: "admin" }]);
+        }
+        return buildChainableQuery([BASE_CALL]);
+      }),
+      from: vi.fn().mockReturnValue({ where: vi.fn().mockReturnValue({}) }),
+    } as unknown as Record<string, unknown>;
+
+    const res = await request(makeApp(boardUser(USER_ID, [COMPANY_ID]), fakeDb)).get(
+      `/api/companies/${COMPANY_ID}/adapter-calls?adapter_type=anthropic_api`,
+    );
     expect(res.status).toBe(200);
   });
 
   it("returns 400 for malformed agent_id (not a UUID)", async () => {
+    // This test still expects 400 since the error comes from query parsing, before authz
     const res = await request(makeApp()).get(`/api/companies/${COMPANY_ID}/adapter-calls?agent_id=not-a-uuid`);
     expect(res.status).toBe(400);
   });
@@ -167,7 +369,21 @@ describe("GET /api/companies/:companyId/adapter-calls", () => {
     const fakeCursor = Buffer.from(JSON.stringify({ occurredAt: "2026-04-20T10:00:00Z", id: CALL_ID })).toString(
       "base64url",
     );
-    const res = await request(makeApp()).get(`/api/companies/${COMPANY_ID}/adapter-calls?cursor=${fakeCursor}`);
+    let selectCallCount = 0;
+    const fakeDb = {
+      select: vi.fn().mockImplementation(() => {
+        selectCallCount++;
+        if (selectCallCount === 1) {
+          return buildChainableQuery([{ membershipRole: "admin" }]);
+        }
+        return buildChainableQuery([BASE_CALL]);
+      }),
+      from: vi.fn().mockReturnValue({ where: vi.fn().mockReturnValue({}) }),
+    } as unknown as Record<string, unknown>;
+
+    const res = await request(makeApp(boardUser(USER_ID, [COMPANY_ID]), fakeDb)).get(
+      `/api/companies/${COMPANY_ID}/adapter-calls?cursor=${fakeCursor}`,
+    );
     expect(res.status).toBe(200);
   });
 });
@@ -176,36 +392,91 @@ describe("GET /api/companies/:companyId/adapter-calls", () => {
 
 describe("GET /api/companies/:companyId/adapter-calls/:id", () => {
   it("returns 404 when call is not found", async () => {
-    const app = makeAppWithRows([]);
+    // makeAppWithRows uses makeChainableDb with empty rows; authorization passes
+    // because the mock returns admin role for the membership check
+    const app = makeAppWithRows([], boardUser(USER_ID, [COMPANY_ID]));
     const res = await request(app).get(`/api/companies/${COMPANY_ID}/adapter-calls/${CALL_ID}`);
     expect(res.status).toBe(404);
   });
 
   it("returns 403 when call belongs to another company", async () => {
     const crossCall = { ...BASE_CALL, companyId: OTHER_COMPANY_ID };
-    const app = makeAppWithRows([crossCall]);
+    let selectCallCount = 0;
+    const fakeDb = {
+      select: vi.fn().mockImplementation(() => {
+        selectCallCount++;
+        if (selectCallCount === 1) {
+          return buildChainableQuery([{ membershipRole: "admin" }]);
+        }
+        return buildChainableQuery([crossCall]);
+      }),
+    } as unknown as Record<string, unknown>;
+
+    const app = buildTestApp({
+      router: adapterCallRoutes(fakeDb as Parameters<typeof adapterCallRoutes>[0]),
+      actor: boardUser(USER_ID, [COMPANY_ID]),
+    });
     const res = await request(app).get(`/api/companies/${COMPANY_ID}/adapter-calls/${CALL_ID}`);
     expect(res.status).toBe(403);
   });
 
-  it("returns 200 with full payloads on detail endpoint", async () => {
-    const res = await request(makeApp()).get(`/api/companies/${COMPANY_ID}/adapter-calls/${CALL_ID}`);
+  it("returns 403 for viewer role (audit log requires operator/owner)", async () => {
+    let selectCallCount = 0;
+    const fakeDb = {
+      select: vi.fn().mockImplementation(() => {
+        selectCallCount++;
+        if (selectCallCount === 1) {
+          return buildChainableQuery([{ membershipRole: "viewer" }]);
+        }
+        return buildChainableQuery([BASE_CALL]);
+      }),
+    } as unknown as Record<string, unknown>;
+
+    const res = await request(makeApp(boardUser(USER_ID, [COMPANY_ID]), fakeDb)).get(
+      `/api/companies/${COMPANY_ID}/adapter-calls/${CALL_ID}`,
+    );
+    expect(res.status).toBe(403);
+  });
+
+  it("returns 200 with full payloads on detail endpoint for operator/owner", async () => {
+    let selectCallCount = 0;
+    const fakeDb = {
+      select: vi.fn().mockImplementation(() => {
+        selectCallCount++;
+        if (selectCallCount === 1) {
+          return buildChainableQuery([{ membershipRole: "admin" }]);
+        }
+        return buildChainableQuery([BASE_CALL]);
+      }),
+    } as unknown as Record<string, unknown>;
+
+    const res = await request(makeApp(boardUser(USER_ID, [COMPANY_ID]), fakeDb)).get(
+      `/api/companies/${COMPANY_ID}/adapter-calls/${CALL_ID}`,
+    );
     expect(res.status).toBe(200);
     expect(res.body.promptPayload).toBeDefined();
     expect(res.body.responsePayload).toBeDefined();
   });
 
   it("strips secret keys from adapterConfigSnapshot in detail response", async () => {
-    const res = await request(makeApp()).get(`/api/companies/${COMPANY_ID}/adapter-calls/${CALL_ID}`);
+    let selectCallCount = 0;
+    const fakeDb = {
+      select: vi.fn().mockImplementation(() => {
+        selectCallCount++;
+        if (selectCallCount === 1) {
+          return buildChainableQuery([{ membershipRole: "admin" }]);
+        }
+        return buildChainableQuery([BASE_CALL]);
+      }),
+    } as unknown as Record<string, unknown>;
+
+    const res = await request(makeApp(boardUser(USER_ID, [COMPANY_ID]), fakeDb)).get(
+      `/api/companies/${COMPANY_ID}/adapter-calls/${CALL_ID}`,
+    );
     expect(res.status).toBe(200);
     const snapshot = res.body.adapterConfigSnapshot as Record<string, unknown>;
     expect(snapshot.apiKey).toBeUndefined();
     expect(snapshot.model).toBe("claude-3-5-sonnet-20241022");
-  });
-
-  it("allows a viewer to read detail (read is always allowed)", async () => {
-    const res = await request(makeApp()).get(`/api/companies/${COMPANY_ID}/adapter-calls/${CALL_ID}`);
-    expect(res.status).toBe(200);
   });
 });
 
@@ -230,9 +501,9 @@ describe("POST /api/companies/:companyId/adapter-calls/:id/replay", () => {
     mockWriteAdapterCall.mockResolvedValue(undefined);
   });
 
-  it("returns 403 for unauthenticated (noActor)", async () => {
+  it("returns 401 for unauthenticated (noActor)", async () => {
     const res = await request(makeApp(noActor())).post(`/api/companies/${COMPANY_ID}/adapter-calls/${CALL_ID}/replay`);
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(401);
   });
 
   it("returns 403 for cross-company access", async () => {

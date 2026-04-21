@@ -7,7 +7,7 @@
  *   POST /companies/:companyId/adapter-calls/:id/replay SSE stream replay
  *
  * Auth:
- *   List + detail: assertBoard (all authenticated users, including viewers)
+ *   List + detail: assertCanWrite (operators / owners only — audit log contains sensitive data)
  *   Replay:        assertCanWrite (operators / owners only — replays cost money)
  *
  * Cursor pagination uses base64url-encoded JSON { occurredAt, id } so the sort
@@ -25,7 +25,7 @@ import { findServerAdapter } from "../adapters/index.js";
 import { forbidden, notFound } from "../errors.js";
 import { writeAdapterCall } from "../services/adapter-call-writer.js";
 import { resolveProviderSecret } from "../services/provider-secret-resolver.js";
-import { assertBoard, assertCanWrite, assertCompanyAccess } from "./authz.js";
+import { assertCanWrite } from "./authz.js";
 
 // ── cursor helpers ────────────────────────────────────────────────────────────
 
@@ -125,9 +125,10 @@ export function adapterCallRoutes(db: Db) {
   // ── GET /companies/:companyId/adapter-calls ─────────────────────────────
 
   router.get("/companies/:companyId/adapter-calls", async (req, res) => {
-    assertBoard(req);
+    // Audit log contains sensitive prompts and responses — operators and owners only.
+    // Viewers (read-only members) are denied access.
     const companyId = req.params.companyId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
 
     const parsed = ListQuerySchema.safeParse(req.query);
     if (!parsed.success) {
@@ -208,9 +209,10 @@ export function adapterCallRoutes(db: Db) {
   // ── GET /companies/:companyId/adapter-calls/:id ─────────────────────────
 
   router.get("/companies/:companyId/adapter-calls/:id", async (req, res) => {
-    assertBoard(req);
+    // Audit log contains sensitive prompts and responses — operators and owners only.
+    // Viewers (read-only members) are denied access.
     const companyId = req.params.companyId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
 
     const callId = req.params.id as string;
 
@@ -230,8 +232,7 @@ export function adapterCallRoutes(db: Db) {
   // ── POST /companies/:companyId/adapter-calls/:id/replay ────────────────
 
   router.post("/companies/:companyId/adapter-calls/:id/replay", async (req, res) => {
-    // Replay costs money — operators and owners only, not viewers
-    assertBoard(req);
+    // Replay costs money — operators and owners only.
     const companyId = req.params.companyId as string;
     await assertCanWrite(req, companyId, db);
 
