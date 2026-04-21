@@ -7,31 +7,6 @@ import { dashboardService } from "../services/dashboard.js";
 import { sidebarBadgeService } from "../services/sidebar-badges.js";
 import { assertCompanyAccess } from "./authz.js";
 
-// In-memory cache for sidebar badge results (badges don't need to be real-time)
-type CachedBadgeEntry = {
-  value: ReturnType<typeof computeBadges> extends Promise<infer T> ? T : never;
-  expiresAt: number;
-};
-const badgeCache = new Map<string, { value: unknown; expiresAt: number }>();
-const BADGE_CACHE_TTL_MS = 30_000; // 30 seconds
-
-function getCachedBadges(cacheKey: string): unknown | null {
-  const entry = badgeCache.get(cacheKey);
-  if (!entry) return null;
-  if (Date.now() > entry.expiresAt) {
-    badgeCache.delete(cacheKey);
-    return null;
-  }
-  return entry.value;
-}
-
-function setCachedBadges(cacheKey: string, value: unknown): void {
-  badgeCache.set(cacheKey, { value, expiresAt: Date.now() + BADGE_CACHE_TTL_MS });
-}
-
-// Suppress unused type alias — used implicitly via the cache map
-void ({} as CachedBadgeEntry);
-
 async function computeBadges(
   db: Db,
   svc: ReturnType<typeof sidebarBadgeService>,
@@ -90,16 +65,12 @@ export function sidebarBadgeRoutes(db: Db) {
     const companyId = req.params.companyId as string;
     assertCompanyAccess(req, companyId);
 
-    // Build a cache key scoped to company + actor (permission-sensitive)
-    const actorKey = req.actor.type === "board" ? `user:${req.actor.userId}` : `agent:${req.actor.agentId ?? "anon"}`;
-    const cacheKey = `${companyId}:${actorKey}`;
-
-    const cached = getCachedBadges(cacheKey);
-    if (cached !== null) {
-      res.json(cached);
-      return;
-    }
-
+    // No cache: badge counts include join-request visibility that depends on
+    // the actor's joins:approve permission. Caching even briefly (30 s was the
+    // previous TTL) causes stale counts when a user's role changes within the
+    // window - they would not see pending join requests until the entry expired.
+    // The underlying queries are cheap indexed aggregates, so the DB round-trip
+    // cost is negligible compared to the correctness risk.
     const result = await computeBadges(
       db,
       svc,
@@ -113,7 +84,6 @@ export function sidebarBadgeRoutes(db: Db) {
       req.actor.type === "agent" ? req.actor.agentId : undefined,
     );
 
-    setCachedBadges(cacheKey, result);
     res.json(result);
   });
 
@@ -121,10 +91,12 @@ export function sidebarBadgeRoutes(db: Db) {
 }
 
 /**
- * Clear the process-level badge cache between tests so a cached response from
- * one test cannot satisfy the next test's request and hide assertion failures.
- * Called by the global beforeEach in setup-singletons.ts.
+ * No-op reset retained for test-infrastructure compatibility. The badgeCache
+ * was removed to eliminate ACL staleness: caching permission-sensitive badge
+ * counts caused stale join-request counts when a user's role changed within
+ * the 30-second TTL window. This function is kept so test files that call it
+ * in their own beforeEach do not need to be updated.
  */
 export function _resetSingletonsForTest(): void {
-  badgeCache.clear();
+  // intentionally empty — no cache state to clear
 }

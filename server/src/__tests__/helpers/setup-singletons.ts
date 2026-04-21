@@ -93,7 +93,8 @@ import { beforeEach } from "vitest";
  *                                  into claim-route tests that follow
  *
  *   routes/sidebar-badges.ts (export only — not in global hook; see NOTE)
- *     · badgeCache              — Map; 30 s TTL; cached response suppresses mock calls
+ *     · badgeCache              — REMOVED (ACL staleness fix). _resetSingletonsForTest()
+ *                                  is retained as a no-op for call-site compatibility.
  *
  *   routes/setup.ts (export only — not in global hook; see NOTE)
  *     · rateLimitMap            — Map; per-IP sliding window
