@@ -336,16 +336,21 @@ export interface HostToWorkerMethods {
   /** @see PLUGIN_SPEC.md §13.2 */
   health: [params: Record<string, never>, result: PluginHealthDiagnostics];
   /** @see PLUGIN_SPEC.md §12.5 */
+  // biome-ignore lint/suspicious/noConfusingVoidType: `void` in named tuple `result` position is the RPC "no result" marker. Changing to `undefined` breaks HostHandler<M> inference in host-client-factory.ts (service impls return Promise<void>). SDK public contract — cannot change without a major version bump.
   shutdown: [params: Record<string, never>, result: void];
   /** @see PLUGIN_SPEC.md §13.3 */
   validateConfig: [params: ValidateConfigParams, result: PluginConfigValidationResult];
   /** @see PLUGIN_SPEC.md §13.4 */
+  // biome-ignore lint/suspicious/noConfusingVoidType: same invariant as `shutdown` above — `void` is the RPC no-result marker in the named tuple. `undefined` breaks HostHandler<M> inference; SDK public contract.
   configChanged: [params: ConfigChangedParams, result: void];
   /** @see PLUGIN_SPEC.md §13.5 */
+  // biome-ignore lint/suspicious/noConfusingVoidType: same invariant as `shutdown` above — `void` is the RPC no-result marker in the named tuple. `undefined` breaks HostHandler<M> inference; SDK public contract.
   onEvent: [params: OnEventParams, result: void];
   /** @see PLUGIN_SPEC.md §13.6 */
+  // biome-ignore lint/suspicious/noConfusingVoidType: same invariant as `shutdown` above — `void` is the RPC no-result marker in the named tuple. `undefined` breaks HostHandler<M> inference; SDK public contract.
   runJob: [params: RunJobParams, result: void];
   /** @see PLUGIN_SPEC.md §13.7 */
+  // biome-ignore lint/suspicious/noConfusingVoidType: same invariant as `shutdown` above — `void` is the RPC no-result marker in the named tuple. `undefined` breaks HostHandler<M> inference; SDK public contract.
   handleWebhook: [params: PluginWebhookInput, result: void];
   /** @see PLUGIN_SPEC.md §13.8 */
   getData: [params: GetDataParams, result: unknown];
@@ -395,8 +400,10 @@ export interface WorkerToHostMethods {
   "state.get": [params: { scopeKind: string; scopeId?: string; namespace?: string; stateKey: string }, result: unknown];
   "state.set": [
     params: { scopeKind: string; scopeId?: string; namespace?: string; stateKey: string; value: unknown },
+    // biome-ignore lint/suspicious/noConfusingVoidType: `void` in named tuple `result` position is the RPC "no result" marker. `undefined` breaks HostHandler<M> inference; service impls return Promise<void>. SDK public contract.
     result: void,
   ];
+  // biome-ignore lint/suspicious/noConfusingVoidType: same invariant as `state.set` above — `void` is the RPC no-result marker. `undefined` breaks HostHandler<M> inference in host-client-factory.ts. SDK public contract.
   "state.delete": [params: { scopeKind: string; scopeId?: string; namespace?: string; stateKey: string }, result: void];
 
   // Entities
@@ -447,7 +454,9 @@ export interface WorkerToHostMethods {
   ];
 
   // Events
+  // biome-ignore lint/suspicious/noConfusingVoidType: `void` in named tuple `result` position is the RPC "no result" marker. `undefined` breaks HostHandler<M> inference; service impls return Promise<void>. SDK public contract.
   "events.emit": [params: { name: string; companyId: string; payload: unknown }, result: void];
+  // biome-ignore lint/suspicious/noConfusingVoidType: same invariant as `events.emit` above — RPC no-result marker. `undefined` breaks HostHandler<M> inference in host-client-factory.ts. SDK public contract.
   "events.subscribe": [params: { eventPattern: string; filter?: Record<string, unknown> | null }, result: void];
 
   // HTTP
@@ -468,15 +477,18 @@ export interface WorkerToHostMethods {
       entityId?: string;
       metadata?: Record<string, unknown>;
     },
+    // biome-ignore lint/suspicious/noConfusingVoidType: `void` in named tuple `result` position is the RPC "no result" marker. `undefined` breaks HostHandler<M> inference; service impls return Promise<void>. SDK public contract.
     result: void,
   ];
 
   // Metrics
+  // biome-ignore lint/suspicious/noConfusingVoidType: `void` in named tuple `result` position is the RPC "no result" marker. `undefined` breaks HostHandler<M> inference; service impls return Promise<void>. SDK public contract.
   "metrics.write": [params: { name: string; value: number; tags?: Record<string, string> }, result: void];
 
   // Logger
   log: [
     params: { level: "info" | "warn" | "error" | "debug"; message: string; meta?: Record<string, unknown> },
+    // biome-ignore lint/suspicious/noConfusingVoidType: same invariant as `metrics.write` above — RPC no-result marker in named tuple. `undefined` breaks HostHandler<M> inference; service impls return Promise<void>. SDK public contract.
     result: void,
   ];
 
@@ -543,6 +555,7 @@ export interface WorkerToHostMethods {
     },
     result: IssueDocument,
   ];
+  // biome-ignore lint/suspicious/noConfusingVoidType: `void` in named tuple `result` position is the RPC "no result" marker. `undefined` breaks HostHandler<M> inference; service impls return Promise<void>. SDK public contract.
   "issues.documents.delete": [params: { issueId: string; key: string; companyId: string }, result: void];
 
   // Agents (read)
@@ -576,6 +589,7 @@ export interface WorkerToHostMethods {
     params: { sessionId: string; companyId: string; prompt: string; reason?: string },
     result: { runId: string },
   ];
+  // biome-ignore lint/suspicious/noConfusingVoidType: `void` in named tuple `result` position is the RPC "no result" marker. `undefined` breaks HostHandler<M> inference; service impls return Promise<void>. SDK public contract.
   "agents.sessions.close": [params: { sessionId: string; companyId: string }, result: void];
 
   // Goals

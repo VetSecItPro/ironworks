@@ -5,6 +5,7 @@ import { MarkdownEditor, type MarkdownEditorRef, type MentionOption } from "./Ma
 
 interface InlineEditorProps {
   value: string;
+  // biome-ignore lint/suspicious/noConfusingVoidType: `void` in the union is intentional — callers that don't return anything (setState dispatchers, synchronous handlers) pass void-returning functions. `undefined` would reject them at the call site. The broader union `void | Promise<unknown>` is the standard pattern for optional-async callbacks.
   onSave: (value: string) => void | Promise<unknown>;
   as?: "h1" | "h2" | "p" | "span";
   className?: string;
