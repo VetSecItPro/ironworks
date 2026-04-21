@@ -878,6 +878,14 @@ export function issueService(db: Db) {
       return enriched;
     },
 
+    // Batch fetch full issue details (including description) for a set of known ids.
+    // Use this instead of calling getById() in a loop when you already have the id list.
+    findDetailsByIds: async (ids: string[]): Promise<IssueWithLabels[]> => {
+      if (ids.length === 0) return [];
+      const rows = await db.select().from(issues).where(inArray(issues.id, ids));
+      return withIssueLabels(db, rows);
+    },
+
     getByIdentifier: async (identifier: string) => {
       const row = await db
         .select()
