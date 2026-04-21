@@ -292,8 +292,11 @@ export async function exportBundle(
     }
     selectedProjects.set(match.id, match);
     const projectIssues = await issuesSvc.list(companyId, { projectId: match.id });
-    for (const issue of projectIssues) {
-      selectedIssues.set(issue.id, issue);
+    for (const listedIssue of projectIssues) {
+      const issue = await issuesSvc.getById(listedIssue.id);
+      if (issue) {
+        selectedIssues.set(issue.id, issue);
+      }
     }
     for (const routine of allRoutines.filter((entry) => entry.projectId === match.id)) {
       selectedRoutines.set(routine.id, routine);
@@ -308,11 +311,14 @@ export async function exportBundle(
 
   if (include.issues && selectedIssues.size === 0) {
     const allIssues = await issuesSvc.list(companyId);
-    for (const issue of allIssues) {
-      selectedIssues.set(issue.id, issue);
-      if (issue.projectId) {
-        const parentProject = projectById.get(issue.projectId);
-        if (parentProject) selectedProjects.set(parentProject.id, parentProject);
+    for (const listedIssue of allIssues) {
+      const issue = await issuesSvc.getById(listedIssue.id);
+      if (issue) {
+        selectedIssues.set(issue.id, issue);
+        if (issue.projectId) {
+          const parentProject = projectById.get(issue.projectId);
+          if (parentProject) selectedProjects.set(parentProject.id, parentProject);
+        }
       }
     }
     if (selectedRoutines.size === 0) {
