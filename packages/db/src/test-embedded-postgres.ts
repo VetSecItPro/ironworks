@@ -50,7 +50,7 @@ async function getAvailablePort(): Promise<number> {
         return;
       }
       const { port } = address;
-      server.close((error) => {
+      server.close((error: Error | undefined) => {
         if (error) reject(error);
         else resolve(port);
       });
