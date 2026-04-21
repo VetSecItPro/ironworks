@@ -1,3 +1,4 @@
+export { adapterCallRoutes } from "./adapter-calls.js";
 export { accessRoutes } from "./access.js";
 export { activityRoutes } from "./activity.js";
 export { agentRoutes } from "./agents.js";

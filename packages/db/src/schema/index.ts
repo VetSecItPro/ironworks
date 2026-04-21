@@ -1,3 +1,4 @@
+export { type AdapterCall, adapterCalls, type NewAdapterCall } from "./adapter_calls.js";
 export { activityLog } from "./activity_log.js";
 export { agentApiKeys } from "./agent_api_keys.js";
 export { agentChannels } from "./agent_channels.js";
