@@ -73,6 +73,15 @@ export function sseRoutes(_db: Db) {
 }
 
 /**
+ * Clear all tracked SSE client connections between tests so a live connection
+ * registered during one test cannot receive events from a subsequent test.
+ * Called by the global beforeEach in setup-singletons.ts.
+ */
+export function _resetSingletonsForTest(): void {
+  clients.clear();
+}
+
+/**
  * Map a LiveEventType to an SSE event name.
  * The UI listens for "activity" and "agent_run" events by name.
  */
