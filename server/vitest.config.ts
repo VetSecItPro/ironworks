@@ -17,12 +17,8 @@ export default defineConfig({
     // throughput for determinism — the server suite runs in ~55s either way at
     // this scale because tests themselves are fast.
     pool: "forks",
-    poolOptions: {
-      forks: {
-        isolate: true,
-        singleFork: true,
-      },
-    },
+    isolate: true,
+    singleFork: true,
     fileParallelism: false,
     // Retain retry: 2. Tier 1 fixture refactor landed (37 files → makeFullServicesMock,
     // 3 files → makeChainableDb, env-scope + route-app helpers extracted), but 3× runs
