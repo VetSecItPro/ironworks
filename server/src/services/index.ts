@@ -122,6 +122,7 @@ export {
 export { sidebarBadgeService } from "./sidebar-badges.js";
 export { validateSpec } from "./spec-validation.js";
 export {
+  _resetToolCache,
   buildCacheKey,
   cacheGet,
   cacheSet,
@@ -132,7 +133,6 @@ export {
   type ToolCacheEntry,
   type ToolCacheLookup,
   type ToolCacheStats,
-  _resetToolCache,
 } from "./tool-cache.js";
 export { userInviteService } from "./user-invites.js";
 export { getVelocityData, type VelocityWeek } from "./velocity.js";
