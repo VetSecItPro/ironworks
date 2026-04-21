@@ -745,6 +745,45 @@ export async function startServer(): Promise<StartedServer> {
     logger.info("Goal snapshot scheduler armed (midnight CT daily)");
   }
 
+  // ── Nightly cost rollup (02:00 UTC) ──
+  // Aggregates cost_events into cost_rollup_daily so dashboard queries read
+  // from a compact indexed table rather than scanning the full event log.
+  {
+    const { runCostRollup } = await import("./services/cost-rollup.js");
+    const ONE_HOUR_MS = 60 * 60 * 1000;
+
+    // Run once at startup to backfill any days missed during server downtime
+    void runCostRollup(db).catch((err) => {
+      logger.error({ err }, "[cost-rollup] startup backfill failed");
+    });
+
+    // Schedule nightly at 02:00 UTC — after midnight so yesterday's data is complete
+    function msUntilNextUtc2am(): number {
+      const now = new Date();
+      const next = new Date(now);
+      next.setUTCHours(2, 0, 0, 0);
+      if (next <= now) next.setUTCDate(next.getUTCDate() + 1);
+      return next.getTime() - now.getTime();
+    }
+
+    const scheduleRollup = () => {
+      setTimeout(() => {
+        void runCostRollup(db).catch((err) => {
+          logger.error({ err }, "[cost-rollup] nightly run failed");
+        });
+        // After first fire, repeat every 24 h
+        setInterval(() => {
+          void runCostRollup(db).catch((err) => {
+            logger.error({ err }, "[cost-rollup] nightly run failed");
+          });
+        }, 24 * ONE_HOUR_MS);
+      }, msUntilNextUtc2am());
+    };
+
+    scheduleRollup();
+    logger.info("Cost rollup scheduler armed (02:00 UTC nightly)");
+  }
+
   // ── Daily quality drift check (REQ-08) ──
   {
     const { checkAllAgentDrift } = await import("./services/quality-drift.js");
