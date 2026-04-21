@@ -18,9 +18,6 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    env:
-      IRONWORKS_E2E_SKIP_LLM: ${{ inputs.skip_llm && 'true' || 'false' }}
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
@@ -37,7 +34,35 @@ jobs:
       - run: pnpm build
       - run: npx playwright install --with-deps chromium
 
+      - name: Seed e2e onboard config
+        # ironworksai run exits early with "No config found and terminal is non-interactive"
+        # when ~/.ironworks/instances/default/config.json is absent. This step writes the
+        # minimum valid config (matches the Zod schema in packages/shared/src/config-schema.ts)
+        # so the server boots without an interactive onboarding session.
+        # local_trusted + embedded-postgres is the zero-dependency path: no external DB,
+        # no auth URL, no storage credentials required.
+        run: |
+          mkdir -p ~/.ironworks/instances/default
+          cat > ~/.ironworks/instances/default/config.json << 'CONF'
+          {
+            "$meta": { "version": 1, "updatedAt": "2026-01-01T00:00:00.000Z", "source": "onboard" },
+            "database": { "mode": "embedded-postgres" },
+            "logging": { "mode": "file" },
+            "server": { "deploymentMode": "local_trusted", "host": "127.0.0.1", "port": 3100 },
+            "auth": { "baseUrlMode": "auto" },
+            "storage": { "provider": "local_disk" },
+            "secrets": { "provider": "local_encrypted", "strictMode": false }
+          }
+          CONF
+
       - name: Run e2e tests
+        env:
+          # IRONWORKS_E2E_SKIP_LLM defaults to true in the test file unless explicitly set to
+          # "false". On PR triggers inputs.skip_llm is undefined, so the old expression
+          # `inputs.skip_llm && 'true' || 'false'` evaluated to 'false', enabling LLM
+          # assertions that require a real ANTHROPIC_API_KEY. CI runs without that key, so
+          # we hard-wire 'true' here and let the workflow_dispatch input only affect manual runs.
+          IRONWORKS_E2E_SKIP_LLM: ${{ (github.event_name == 'workflow_dispatch' && inputs.skip_llm == false) && 'false' || 'true' }}
         run: pnpm run test:e2e
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
