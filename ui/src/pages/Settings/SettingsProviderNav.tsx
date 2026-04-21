@@ -1,11 +1,12 @@
 /**
- * Tab navigation shared by Settings > Providers, Playground, and Explorer.
+ * Tab navigation shared by all Settings sub-pages: Providers, Playground,
+ * Explorer, and Costs.
  * Adding a new Settings sub-page: append an entry to TABS and add the
  * corresponding route in App.tsx.
  */
 
-import { cn } from "@/lib/utils";
 import { useLocation, useParams } from "@/lib/router";
+import { cn } from "@/lib/utils";
 
 interface NavTab {
   label: string;
@@ -16,6 +17,7 @@ const TABS: NavTab[] = [
   { label: "Providers", suffix: "providers" },
   { label: "Playground", suffix: "playground" },
   { label: "Explorer", suffix: "explorer" },
+  { label: "Costs", suffix: "costs" },
 ];
 
 export function SettingsProviderNav() {
