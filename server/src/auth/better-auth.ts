@@ -1,6 +1,7 @@
 import type { IncomingHttpHeaders } from "node:http";
 import type { Db } from "@ironworksai/db";
 import { authAccounts, authSessions, authUsers, authVerifications } from "@ironworksai/db";
+import type { BetterAuthOptions } from "better-auth";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { toNodeHandler } from "better-auth/node";
@@ -75,7 +76,10 @@ export function createBetterAuthInstance(db: Db, config: Config, trustedOrigins?
   const publicUrl = process.env.IRONWORKS_PUBLIC_URL ?? baseUrl;
   const isHttpOnly = publicUrl ? publicUrl.startsWith("http://") : false;
 
-  const authConfig = {
+  // Annotated as BetterAuthOptions so TypeScript does not infer a too-narrow
+  // literal type for the `advanced.useSecureCookies` spread, which would fail
+  // to satisfy the widened `boolean | undefined` type introduced in 1.6.
+  const authConfig: BetterAuthOptions = {
     baseURL: baseUrl,
     secret,
     trustedOrigins: effectiveTrustedOrigins,
@@ -97,7 +101,7 @@ export function createBetterAuthInstance(db: Db, config: Config, trustedOrigins?
   };
 
   if (!baseUrl) {
-    delete (authConfig as { baseURL?: string }).baseURL;
+    delete authConfig.baseURL;
   }
 
   return betterAuth(authConfig);
