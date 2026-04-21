@@ -17,6 +17,7 @@ import { useState } from "react";
 import { api } from "@/api/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { NavLink } from "@/lib/router";
 import { useCompany } from "../../context/CompanyContext";
 
 // ── API types ─────────────────────────────────────────────────────────────────
@@ -531,6 +532,36 @@ export function CostDashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Settings nav tabs */}
+      <nav className="flex gap-0.5 border-b border-border">
+        <NavLink
+          to="/settings/costs"
+          end
+          className={({ isActive }) =>
+            `px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
+              isActive
+                ? "text-foreground border-primary"
+                : "text-muted-foreground border-transparent hover:text-foreground"
+            }`
+          }
+        >
+          Costs
+        </NavLink>
+        <NavLink
+          to="/settings/providers"
+          end
+          className={({ isActive }) =>
+            `px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
+              isActive
+                ? "text-foreground border-primary"
+                : "text-muted-foreground border-transparent hover:text-foreground"
+            }`
+          }
+        >
+          Providers
+        </NavLink>
+      </nav>
+
       {/* Header row */}
       <div className="flex items-center justify-between">
         <div>

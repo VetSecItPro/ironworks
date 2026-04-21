@@ -91,6 +91,8 @@ const SettingsPlayground = lazy(() =>
 const SettingsExplorer = lazy(() =>
   import("./pages/Settings/RequestExplorer").then((m) => ({ default: m.RequestExplorer })),
 );
+// Settings > Cost Dashboard — time-series spend analytics backed by cost_rollup_daily
+const SettingsCosts = lazy(() => import("./pages/Settings/CostDashboard").then((m) => ({ default: m.CostDashboard })));
 // Admin panel — lazy loaded, instance admin only
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
@@ -331,6 +333,14 @@ function boardRoutes() {
         element={
           <LazyPage>
             <ExplorerRoute />
+          </LazyPage>
+        }
+      />
+      <Route
+        path="settings/costs"
+        element={
+          <LazyPage>
+            <SettingsCosts />
           </LazyPage>
         }
       />

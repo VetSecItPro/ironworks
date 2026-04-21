@@ -25,6 +25,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { NavLink } from "@/lib/router";
 import { useProviderStatus } from "../../hooks/useProviderStatus";
 import { relativeTime } from "../../lib/utils";
 import type { HttpAdapterProviderType, ProviderStatusResponse, ProviderTestResponse } from "../../types/providers";
@@ -302,6 +303,36 @@ interface ProvidersPageProps {
 export function ProvidersPage({ companyId }: ProvidersPageProps) {
   return (
     <div className="max-w-2xl mx-auto py-6 px-4 space-y-6">
+      {/* Settings nav tabs */}
+      <nav className="flex gap-0.5 border-b border-border">
+        <NavLink
+          to="/settings/costs"
+          end
+          className={({ isActive }) =>
+            `px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
+              isActive
+                ? "text-foreground border-primary"
+                : "text-muted-foreground border-transparent hover:text-foreground"
+            }`
+          }
+        >
+          Costs
+        </NavLink>
+        <NavLink
+          to="/settings/providers"
+          end
+          className={({ isActive }) =>
+            `px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
+              isActive
+                ? "text-foreground border-primary"
+                : "text-muted-foreground border-transparent hover:text-foreground"
+            }`
+          }
+        >
+          Providers
+        </NavLink>
+      </nav>
+
       <div>
         <h1 className="text-xl font-semibold">Providers</h1>
         <p className="mt-1 text-sm text-muted-foreground">
