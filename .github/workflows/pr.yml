@@ -185,6 +185,11 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Validate e2e test files compile
+        # Fast preflight: catch bad imports, syntax errors, missing symbols before
+        # spinning up the full server + browser lifecycle. Fails fast if test specs don't parse.
+        run: pnpm playwright test --list --config tests/e2e/playwright.config.ts
+
       - name: Install Playwright
         run: npx playwright install --with-deps chromium
 
