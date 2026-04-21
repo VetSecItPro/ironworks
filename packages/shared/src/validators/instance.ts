@@ -23,7 +23,13 @@ export const instanceGeneralSettingsSchema = z
   })
   .strict();
 
-export const patchInstanceGeneralSettingsSchema = instanceGeneralSettingsSchema.partial();
+// Zod 4 materializes defaults during .partial(). PATCH schemas must not inject
+// absent fields into the parsed body — the service layer uses key presence to
+// determine which columns to write. We redeclare the defaulted fields without
+// defaults so the parsed object only contains keys the caller actually sent.
+export const patchInstanceGeneralSettingsSchema = instanceGeneralSettingsSchema.partial().extend({
+  censorUsernameInLogs: z.boolean().optional(),
+});
 
 export const instanceExperimentalSettingsSchema = z
   .object({
@@ -32,7 +38,10 @@ export const instanceExperimentalSettingsSchema = z
   })
   .strict();
 
-export const patchInstanceExperimentalSettingsSchema = instanceExperimentalSettingsSchema.partial();
+export const patchInstanceExperimentalSettingsSchema = instanceExperimentalSettingsSchema.partial().extend({
+  enableIsolatedWorkspaces: z.boolean().optional(),
+  autoRestartDevServerWhenIdle: z.boolean().optional(),
+});
 
 export type SchedulerSettings = z.infer<typeof schedulerSettingsSchema>;
 export type InstanceGeneralSettings = z.infer<typeof instanceGeneralSettingsSchema>;

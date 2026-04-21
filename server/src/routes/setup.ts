@@ -142,8 +142,9 @@ const setupSchema = z.object({
     .email("Invalid email address")
     .transform((s) => s.trim().toLowerCase()),
   password: z.string().min(8, "Password must be at least 8 characters"),
+  // Zod 4 replaced `errorMap` with `error` for custom error messages on literals.
   tosAccepted: z.literal(true, {
-    errorMap: () => ({ message: "You must accept the Terms of Service and Acceptable Use Policy" }),
+    error: "You must accept the Terms of Service and Acceptable Use Policy",
   }),
 });
 

@@ -18,13 +18,13 @@ export const issueExecutionWorkspaceSettingsSchema = z
       .enum(["inherit", "shared_workspace", "isolated_workspace", "operator_branch", "reuse_existing", "agent_default"])
       .optional(),
     workspaceStrategy: executionWorkspaceStrategySchema.optional().nullable(),
-    workspaceRuntime: z.record(z.unknown()).optional().nullable(),
+    workspaceRuntime: z.record(z.string(), z.unknown()).optional().nullable(),
   })
   .strict();
 
 export const issueAssigneeAdapterOverridesSchema = z
   .object({
-    adapterConfig: z.record(z.unknown()).optional(),
+    adapterConfig: z.record(z.string(), z.unknown()).optional(),
     useProjectWorkspace: z.boolean().optional(),
   })
   .strict();
@@ -49,7 +49,7 @@ export const createIssueSchema = z.object({
     .optional()
     .nullable(),
   executionWorkspaceSettings: issueExecutionWorkspaceSettingsSchema.optional().nullable(),
-  specTemplate: z.record(z.unknown()).optional().nullable(),
+  specTemplate: z.record(z.string(), z.unknown()).optional().nullable(),
   labelIds: z.array(z.string().uuid()).optional(),
   targetDate: z.string().datetime().optional().nullable(),
   dependsOn: z.array(z.string().uuid()).optional(),
@@ -64,7 +64,16 @@ export const createIssueLabelSchema = z.object({
 
 export type CreateIssueLabel = z.infer<typeof createIssueLabelSchema>;
 
+// Zod 4 materializes defaults when .partial() is applied to a schema with
+// .optional().default(...) fields. For this PATCH schema the route inspects
+// updateFields.status === undefined to decide whether to inject "todo" on
+// reopen; if Zod injects the default "backlog", that check breaks. We strip
+// defaults from every field that carries one in createIssueSchema by
+// redeclaring those fields as plain optional inside .extend().
 export const updateIssueSchema = createIssueSchema.partial().extend({
+  status: z.enum(ISSUE_STATUSES).optional(),
+  priority: z.enum(ISSUE_PRIORITIES).optional(),
+  requestDepth: z.number().int().nonnegative().optional(),
   comment: z.string().min(1).optional(),
   reopen: z.boolean().optional(),
   hiddenAt: z.string().datetime().nullable().optional(),

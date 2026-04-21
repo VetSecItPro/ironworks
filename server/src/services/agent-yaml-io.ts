@@ -199,7 +199,7 @@ export function buildAgentYamlDocument(agentList: AgentYamlExportInput[]): strin
 const agentYamlAdapterSchema = z.object({
   type: z.string().min(1, "adapter.type is required"),
   model: z.string().min(1).nullable().optional(),
-  config: z.record(z.unknown()).optional().default({}),
+  config: z.record(z.string(), z.unknown()).optional().default({}),
 });
 
 const agentYamlEntrySchema = z.object({
@@ -214,7 +214,8 @@ const agentYamlEntrySchema = z.object({
 });
 
 const agentYamlDocumentSchema = z.object({
-  version: z.literal(1, { errorMap: () => ({ message: "version must be 1" }) }),
+  // Zod 4 replaced `errorMap` with `error` for custom error messages on literals.
+  version: z.literal(1, { error: "version must be 1" }),
   exported_at: z.string().optional(),
   agents: z.array(agentYamlEntrySchema).min(1, "agents list must not be empty"),
 });
@@ -259,7 +260,8 @@ export function parseAgentYamlDocument(raw: string): AgentYamlDocument {
 
   const result = agentYamlDocumentSchema.safeParse(parsed);
   if (!result.success) {
-    const firstError = result.error.errors[0];
+    // Zod 4 removed the `.errors` alias; `.issues` is the canonical property.
+    const firstError = result.error.issues[0];
     const field = firstError?.path.join(".") ?? "unknown";
     const msg = firstError?.message ?? "Validation failed";
     throw unprocessable(`Invalid agent YAML at '${field}': ${msg}`);

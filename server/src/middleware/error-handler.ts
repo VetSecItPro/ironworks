@@ -46,7 +46,8 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
   }
 
   if (err instanceof ZodError) {
-    res.status(400).json({ error: "Validation error", details: err.errors });
+    // Zod 4 removed the `.errors` alias; `.issues` is the canonical property.
+    res.status(400).json({ error: "Validation error", details: err.issues });
     return;
   }
 
