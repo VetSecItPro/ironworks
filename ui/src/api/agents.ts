@@ -219,6 +219,34 @@ export const agentsApi = {
     api.get<import("@ironworksai/shared").Issue | null>(
       `/companies/${companyId}/agents/${encodeURIComponent(agentId)}/chat/issue`,
     ),
+  /**
+   * Export one or more agents as a YAML document.
+   * Omitting agentIds exports all agents in the company.
+   * Returns the raw YAML string.
+   */
+  exportYaml: async (companyId: string, agentIds?: string[]): Promise<string> => {
+    const url = `/companies/${encodeURIComponent(companyId)}/agents/export`;
+    const response = await fetch(`/api${url}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(agentIds && agentIds.length > 0 ? { agent_ids: agentIds } : {}),
+      credentials: "include",
+    });
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      throw new ApiError(text || response.statusText, response.status, null);
+    }
+    return response.text();
+  },
+  /**
+   * Import agents from a YAML document.
+   * mode "create" always inserts; "upsert" updates existing agents matched by id_hint.
+   */
+  importYaml: (companyId: string, yaml: string, mode: "create" | "upsert") =>
+    api.post<{ imported: Array<{ id_hint: string; id: string; action: string }>; errors: string[] }>(
+      `/companies/${encodeURIComponent(companyId)}/agents/import`,
+      { yaml, mode },
+    ),
 };
 
 export interface HeadcountResponse {
