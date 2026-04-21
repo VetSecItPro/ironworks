@@ -162,6 +162,7 @@ export type {
   PluginMinimumHostVersion,
   PluginRecord,
   PluginStateRecord,
+  PluginToolCacheConfig,
   PluginToolDeclaration,
   PluginUiDeclaration,
   PluginUiSlotDeclaration,

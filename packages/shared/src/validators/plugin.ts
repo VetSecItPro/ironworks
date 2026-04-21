@@ -99,6 +99,23 @@ export const pluginWebhookDeclarationSchema = z.object({
 export type PluginWebhookDeclarationInput = z.infer<typeof pluginWebhookDeclarationSchema>;
 
 /**
+ * Validates the optional caching config on a {@link PluginToolDeclaration}.
+ *
+ * `ttlSeconds` is required when `cache` is present — no default is provided
+ * because guessing a TTL is unsafe for arbitrary tools.
+ * `keyFields` is optional; omit to hash all args.
+ */
+export const pluginToolCacheConfigSchema = z.object({
+  ttlSeconds: z
+    .number()
+    .int()
+    .positive("ttlSeconds must be a positive integer — zero or negative TTL would make every entry immediately stale"),
+  keyFields: z.array(z.string().min(1)).optional(),
+});
+
+export type PluginToolCacheConfigInput = z.infer<typeof pluginToolCacheConfigSchema>;
+
+/**
  * Validates a {@link PluginToolDeclaration} — an agent tool contributed by the
  * plugin. Requires `name`, `displayName`, `description`, and a valid
  * `parametersSchema`. Requires the `agent.tools.register` capability.
@@ -110,6 +127,7 @@ export const pluginToolDeclarationSchema = z.object({
   displayName: z.string().min(1),
   description: z.string().min(1),
   parametersSchema: jsonSchemaSchema,
+  cache: pluginToolCacheConfigSchema.optional(),
 });
 
 export type PluginToolDeclarationInput = z.infer<typeof pluginToolDeclarationSchema>;
