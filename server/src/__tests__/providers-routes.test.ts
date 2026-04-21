@@ -8,7 +8,7 @@
  *   - GET returns no key value (only keyLastFour)
  */
 
-import { randomBytes, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { makeChainableDb } from "./helpers/drizzle-mock.js";
@@ -92,28 +92,6 @@ const USER_ID = randomUUID();
 
 function makeEmptyDb() {
   return makeChainableDb([]) as unknown as import("@ironworksai/db").Db;
-}
-
-function makeDbWithRow(row: Record<string, unknown> = {}) {
-  const defaultRow = {
-    id: randomUUID(),
-    companyId: COMPANY_ID,
-    provider: "anthropic_api",
-    encryptedKey: Buffer.alloc(32),
-    encryptedDek: Buffer.alloc(32),
-    dekIv: Buffer.alloc(12),
-    dekAuthTag: Buffer.alloc(16),
-    keyIv: Buffer.alloc(12),
-    keyAuthTag: Buffer.alloc(16),
-    keyLastFour: "cdef",
-    lastTestStatus: null,
-    lastTestedAt: null,
-    disabledAt: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    ...row,
-  };
-  return makeChainableDb([defaultRow]) as unknown as import("@ironworksai/db").Db;
 }
 
 // Unused helper — tests import providerRoutes directly for isolation

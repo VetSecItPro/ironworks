@@ -44,7 +44,7 @@ export function aiGoalBreakdownRoutes(db: Db) {
     const {
       goalTitle: rawGoalTitle,
       goalDescription: rawGoalDescription,
-      projectId,
+      projectId: _projectId,
     } = req.body as {
       goalTitle?: string;
       goalDescription?: string;

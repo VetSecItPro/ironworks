@@ -79,7 +79,7 @@ function useFeatureDots() {
 }
 
 export function Sidebar() {
-  const { openNewIssue } = useDialog();
+  const { openNewIssue: _openNewIssue } = useDialog();
   const { companies, selectedCompanyId, selectedCompany, setSelectedCompanyId } = useCompany();
   const { isMobile, setSidebarOpen } = useSidebar();
   const { markVisited, shouldShowDot } = useFeatureDots();

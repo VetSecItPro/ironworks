@@ -80,7 +80,7 @@ export function classifyTaskImportance(context: {
     agentRole = "",
     isApprovalRelated = false,
     assignedByRole = "",
-    assignedByHuman = false,
+    assignedByHuman: _assignedByHuman = false,
     isRetry = false,
     originKind = "",
   } = context;

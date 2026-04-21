@@ -12,10 +12,6 @@ interface ProjectActivityEntry {
   percent: number;
 }
 
-interface DashboardDataCosts {
-  monthSpendCents: number;
-}
-
 export function SpendMetricsSection({
   todaySpendCents,
   dailyAvgCents,

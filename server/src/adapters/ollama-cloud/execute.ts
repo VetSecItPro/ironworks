@@ -4,7 +4,7 @@ import type { AdapterExecutionContext, AdapterExecutionResult } from "../types.j
 import { asString } from "../utils.js";
 
 export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExecutionResult> {
-  const { config, agent, context } = ctx;
+  const { config, agent: _agent, context } = ctx;
 
   // Get API endpoint and key - check config.apiKey, then env bindings, then process.env
   const apiUrl = asString(config.url, "https://ollama.com/api/chat");

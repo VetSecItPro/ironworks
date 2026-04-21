@@ -20,7 +20,7 @@ import { badRequest, notFound } from "../errors.js";
 import { logActivity } from "../services/index.js";
 import type { ProviderType } from "../services/provider-secret-resolver.js";
 import { resolveProviderSecret } from "../services/provider-secret-resolver.js";
-import { decryptSecret, encryptSecret, getKeyLastFour } from "../services/secrets-vault.js";
+import { encryptSecret, getKeyLastFour } from "../services/secrets-vault.js";
 import { assertBoard, assertCanWrite, assertCompanyAccess, getActorInfo } from "./authz.js";
 
 const VALID_PROVIDERS = new Set<string>(["poe_api", "anthropic_api", "openai_api", "openrouter_api"]);

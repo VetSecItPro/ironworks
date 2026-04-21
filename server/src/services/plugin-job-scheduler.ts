@@ -325,7 +325,7 @@ export function createPluginJobScheduler(options: PluginJobSchedulerOptions): Pl
    * record the result, and advance the schedule pointer.
    */
   async function dispatchJob(job: typeof pluginJobs.$inferSelect): Promise<void> {
-    const { id: jobId, pluginId, jobKey, schedule } = job;
+    const { id: jobId, pluginId, jobKey, schedule: _schedule } = job;
     const jobLog = log.child({ jobId, pluginId, jobKey });
 
     // Mark as active (overlap prevention)

@@ -15,7 +15,6 @@ import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 const KEK_ENV = "IRONWORKS_SECRETS_KEK_B64";
 const KEY_BYTE_LENGTH = 32; // AES-256
 const IV_BYTE_LENGTH = 12; // GCM recommended IV length
-const TAG_BYTE_LENGTH = 16; // GCM auth tag length
 
 export type EncryptedBundle = {
   /** AES-256-GCM ciphertext of the API key (plaintext encrypted with DEK) */

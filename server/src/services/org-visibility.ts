@@ -2,13 +2,6 @@ import type { Db } from "@ironworksai/db";
 import { agents, issues } from "@ironworksai/db";
 import { eq } from "drizzle-orm";
 
-interface OrgAgent {
-  id: string;
-  name: string;
-  role: string;
-  reportsTo: string | null;
-}
-
 /**
  * Resolve the full management chain for an agent.
  * Returns all agent IDs that are "above" this agent in the org chart.
