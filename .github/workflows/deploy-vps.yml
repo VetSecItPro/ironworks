@@ -17,7 +17,7 @@ jobs:
     steps:
       - name: Deploy via SSH
         # Pinned to v1.2.0 — update SHA when upgrading the action version
-        uses: appleboy/ssh-action@2d048bfd40d77e0ad0b38e3c1bb1af0658cbe29b
+        uses: appleboy/ssh-action@7eaf76671a0d7eec5d98ee897acda4f968735a17
         with:
           host: ${{ secrets.VPS_HOST }}
           username: root
