@@ -119,71 +119,76 @@ export function StepLlmProvider({
           (subscription instructions panel); API-key mode has extra space
           below the input, keeping the footer anchored. */}
       <div className="min-h-[260px]">
-      {effectiveAuthMode === "subscription" && activeProvider.subscription ? (
-        <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-4">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <Terminal className="h-4 w-4" />
-            One-time sign-in for {activeProvider.subscription.label}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Your {activeProvider.subscription.label} account signs in once on the server that hosts Ironworks. After
-            that, agents use your subscription automatically — no API key needed.
-          </p>
-          <div className="space-y-1.5">
-            <p className="text-xs font-medium text-foreground">An Ironworks admin runs this once:</p>
-            <pre className="rounded bg-background px-3 py-2 text-xs font-mono select-all overflow-x-auto">
-              {`docker exec -it ironworks-atlas-ironworks-1 ${activeProvider.subscription.loginCommand}`}
-            </pre>
+        {effectiveAuthMode === "subscription" && activeProvider.subscription ? (
+          <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-4">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Terminal className="h-4 w-4" />
+              One-time sign-in for {activeProvider.subscription.label}
+            </div>
             <p className="text-xs text-muted-foreground">
-              The command prints a link. Open the link, sign in with your {activeProvider.subscription.label} account,
-              and you're done. The session stays authenticated until you sign out.
+              Your {activeProvider.subscription.label} account signs in once on the server that hosts Ironworks. After
+              that, agents use your subscription automatically — no API key needed.
+            </p>
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium text-foreground">An Ironworks admin runs this once:</p>
+              <pre className="rounded bg-background px-3 py-2 text-xs font-mono select-all overflow-x-auto">
+                {`docker exec -it ironworks-atlas-ironworks-1 ${activeProvider.subscription.loginCommand}`}
+              </pre>
+              <p className="text-xs text-muted-foreground">
+                The command prints a link. Open the link, sign in with your {activeProvider.subscription.label} account,
+                and you're done. The session stays authenticated until you sign out.
+              </p>
+            </div>
+            <p className="text-xs text-muted-foreground border-t border-border/60 pt-2">
+              Not an admin? Send the command above to whoever installed Ironworks, or switch to{" "}
+              <button
+                type="button"
+                onClick={() => onAuthModeChange("api_key")}
+                className="underline underline-offset-2 hover:text-foreground"
+              >
+                API key
+              </button>{" "}
+              instead.
             </p>
           </div>
-          <p className="text-xs text-muted-foreground border-t border-border/60 pt-2">
-            Not an admin? Send the command above to whoever installed Ironworks, or switch to{" "}
-            <button
-              type="button"
-              onClick={() => onAuthModeChange("api_key")}
-              className="underline underline-offset-2 hover:text-foreground"
-            >
-              API key
-            </button>{" "}
-            instead.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          <label htmlFor="llm-api-key" className="text-sm font-medium">
-            {activeProvider.key === "ollama" ? "Server URL" : "API Key"}
-          </label>
-          <div className="relative">
-            <input
-              id="llm-api-key"
-              type={activeProvider.key === "ollama" ? "url" : "password"}
-              className="w-full rounded-md border border-border bg-transparent px-3 py-2 pr-9 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/70"
-              placeholder={activeProvider.placeholder}
-              value={llmApiKey}
-              onChange={(e) => {
-                onApiKeyChange(e.target.value);
-                onErrorClear();
-              }}
-              autoComplete="off"
-            />
-            {/* Inline format validation indicator */}
-            {llmApiKey.trim().length > 0 && (
-              <span className="absolute right-2.5 top-1/2 -translate-y-1/2">
-                {(() => {
-                  const val = llmApiKey.trim();
-                  const prefix = activeProvider.placeholder.split("...")[0] || "";
-                  const valid = val.length > 10 && (prefix === "API key" || prefix === "http" || val.startsWith(prefix));
-                  return valid ? <Check className="h-4 w-4 text-green-500" /> : <X className="h-4 w-4 text-red-400" />;
-                })()}
-              </span>
-            )}
+        ) : (
+          <div className="space-y-2">
+            <label htmlFor="llm-api-key" className="text-sm font-medium">
+              {activeProvider.key === "ollama" ? "Server URL" : "API Key"}
+            </label>
+            <div className="relative">
+              <input
+                id="llm-api-key"
+                type={activeProvider.key === "ollama" ? "url" : "password"}
+                className="w-full rounded-md border border-border bg-transparent px-3 py-2 pr-9 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 placeholder:text-muted-foreground/70"
+                placeholder={activeProvider.placeholder}
+                value={llmApiKey}
+                onChange={(e) => {
+                  onApiKeyChange(e.target.value);
+                  onErrorClear();
+                }}
+                autoComplete="off"
+              />
+              {/* Inline format validation indicator */}
+              {llmApiKey.trim().length > 0 && (
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2">
+                  {(() => {
+                    const val = llmApiKey.trim();
+                    const prefix = activeProvider.placeholder.split("...")[0] || "";
+                    const valid =
+                      val.length > 10 && (prefix === "API key" || prefix === "http" || val.startsWith(prefix));
+                    return valid ? (
+                      <Check className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <X className="h-4 w-4 text-red-400" />
+                    );
+                  })()}
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">{activeProvider.hint}</p>
           </div>
-          <p className="text-xs text-muted-foreground">{activeProvider.hint}</p>
-        </div>
-      )}
+        )}
       </div>
 
       {llmSaved && (
