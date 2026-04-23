@@ -9,7 +9,7 @@ import { useDialog } from "../../context/DialogContext";
 import { resolveRouteOnboardingOptions } from "../../lib/onboarding-route";
 import { queryKeys } from "../../lib/queryKeys";
 import { DEFAULT_TASK_DESCRIPTION } from "./constants";
-import type { AdapterType, RosterItem, Step } from "./types";
+import type { AdapterType, LlmAuthMode, RosterItem, Step } from "./types";
 import {
   buildAdapterConfig,
   runAdapterEnvironmentTest as doRunEnvTest,
@@ -50,6 +50,7 @@ export function useWizardState() {
   const [companyName, setCompanyName] = useState("");
   const [companyGoal, setCompanyGoal] = useState("");
   const [llmProvider, setLlmProvider] = useState<string>("anthropic");
+  const [llmAuthMode, setLlmAuthMode] = useState<LlmAuthMode>("subscription");
   const [llmApiKey, setLlmApiKey] = useState("");
   const [llmSaved, setLlmSaved] = useState(false);
   const [step2Mode, setStep2Mode] = useState<"pack" | "manual">("pack");
@@ -108,6 +109,7 @@ export function useWizardState() {
       companyName,
       companyGoal,
       llmProvider,
+      llmAuthMode,
       agentName,
       adapterType,
       taskTitle,
@@ -125,6 +127,7 @@ export function useWizardState() {
     companyName,
     companyGoal,
     llmProvider,
+    llmAuthMode,
     agentName,
     adapterType,
     taskTitle,
@@ -146,6 +149,7 @@ export function useWizardState() {
     setCompanyName(saved.companyName);
     setCompanyGoal(saved.companyGoal);
     setLlmProvider(saved.llmProvider);
+    if (saved.llmAuthMode) setLlmAuthMode(saved.llmAuthMode);
     setAgentName(saved.agentName);
     setAdapterType(saved.adapterType);
     setTaskTitle(saved.taskTitle);
@@ -295,6 +299,8 @@ export function useWizardState() {
     setCompanyGoal,
     llmProvider,
     setLlmProvider,
+    llmAuthMode,
+    setLlmAuthMode,
     llmApiKey,
     setLlmApiKey,
     llmSaved,
@@ -331,7 +337,7 @@ export function useWizardState() {
     unsetAnthropicLoading,
     // Handlers
     handleStep1Next: () => h1(deps, companyName, companyGoal),
-    handleStep2LlmNext: () => h2Llm(deps, createdCompanyId, llmProvider, llmApiKey),
+    handleStep2LlmNext: () => h2Llm(deps, createdCompanyId, llmProvider, llmAuthMode, llmApiKey),
     handleStep2Next: () =>
       h2Next(
         deps,

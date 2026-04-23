@@ -21,11 +21,14 @@ export interface RosterItem {
   title: string;
 }
 
+export type LlmAuthMode = "api_key" | "subscription";
+
 export interface WizardPersistedState {
   step: Step;
   companyName: string;
   companyGoal: string;
   llmProvider: string;
+  llmAuthMode: LlmAuthMode;
   agentName: string;
   adapterType: AdapterType;
   taskTitle: string;
@@ -44,4 +47,18 @@ export interface LlmProviderEntry {
   secretName: string;
   placeholder: string;
   hint: string;
+  /**
+   * When defined, the provider supports an OAuth/subscription path in addition
+   * to the API-key path. The UI surfaces a dual-mode selector; picking
+   * subscription skips the secret save step and relies on the local CLI's
+   * own OAuth session (e.g. `claude login`, `codex login`, `gemini` login).
+   */
+  subscription?: {
+    /** Consumer-friendly product name shown in the radio label (e.g. "Claude Pro"). */
+    label: string;
+    /** Exact CLI subcommand the user runs once to authenticate (e.g. "claude login"). */
+    loginCommand: string;
+    /** Short description under the radio — one line only. */
+    tagline: string;
+  };
 }

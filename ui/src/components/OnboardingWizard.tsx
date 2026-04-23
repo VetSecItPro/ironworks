@@ -21,7 +21,7 @@ export function OnboardingWizard() {
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       if (w.step === 1 && w.companyName.trim()) w.handleStep1Next();
-      else if (w.step === 2 && w.llmApiKey.trim()) w.handleStep2LlmNext();
+      else if (w.step === 2 && (w.llmAuthMode === "subscription" || w.llmApiKey.trim())) w.handleStep2LlmNext();
       else if (w.step === 3 && w.step2Mode === "pack" && w.selectedPackKey) w.handlePackDeploy();
       else if (w.step === 3 && w.step2Mode === "manual" && w.agentName.trim()) w.handleStep2Next();
       else if (w.step === 4 && w.taskTitle.trim()) w.handleStep3Next();
@@ -75,10 +75,12 @@ export function OnboardingWizard() {
               {w.step === 2 && (
                 <StepLlmProvider
                   llmProvider={w.llmProvider}
+                  llmAuthMode={w.llmAuthMode}
                   llmApiKey={w.llmApiKey}
                   llmSaved={w.llmSaved}
                   error={w.error}
                   onProviderChange={w.setLlmProvider}
+                  onAuthModeChange={w.setLlmAuthMode}
                   onApiKeyChange={w.setLlmApiKey}
                   onErrorClear={() => w.setError(null)}
                 />
@@ -154,7 +156,7 @@ export function OnboardingWizard() {
                     onClick={() => {
                       w.setError(null);
                       if (w.step === 1 && w.companyName.trim()) void w.handleStep1Next();
-                      else if (w.step === 2 && w.llmApiKey.trim()) void w.handleStep2LlmNext();
+                      else if (w.step === 2 && (w.llmAuthMode === "subscription" || w.llmApiKey.trim())) void w.handleStep2LlmNext();
                       else if (w.step === 3 && w.step2Mode === "pack" && w.selectedPackKey) void w.handlePackDeploy();
                       else if (w.step === 3 && w.step2Mode === "manual" && w.agentName.trim()) void w.handleStep2Next();
                       else if (w.step === 5) void w.handleLaunch();
@@ -171,7 +173,7 @@ export function OnboardingWizard() {
                 initialStep={w.initialStep}
                 companyNameValid={!!w.companyName.trim()}
                 onStep1Next={() => void w.handleStep1Next()}
-                llmApiKeyValid={!!w.llmApiKey.trim()}
+                llmApiKeyValid={w.llmAuthMode === "subscription" || !!w.llmApiKey.trim()}
                 onStep2LlmNext={() => void w.handleStep2LlmNext()}
                 onSkipLlm={() => w.setStep(3)}
                 step2Mode={w.step2Mode}
