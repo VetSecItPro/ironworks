@@ -156,7 +156,8 @@ export function OnboardingWizard() {
                     onClick={() => {
                       w.setError(null);
                       if (w.step === 1 && w.companyName.trim()) void w.handleStep1Next();
-                      else if (w.step === 2 && (w.llmAuthMode === "subscription" || w.llmApiKey.trim())) void w.handleStep2LlmNext();
+                      else if (w.step === 2 && (w.llmAuthMode === "subscription" || w.llmApiKey.trim()))
+                        void w.handleStep2LlmNext();
                       else if (w.step === 3 && w.step2Mode === "pack" && w.selectedPackKey) void w.handlePackDeploy();
                       else if (w.step === 3 && w.step2Mode === "manual" && w.agentName.trim()) void w.handleStep2Next();
                       else if (w.step === 5) void w.handleLaunch();
