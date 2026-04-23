@@ -54,7 +54,7 @@ export function WizardFooter({
   onBack,
 }: WizardFooterProps) {
   return (
-    <div className="flex items-center justify-between mt-8">
+    <div className="flex items-center justify-between mt-auto pt-8">
       <div>
         {step > 1 && step > initialStep && (
           <Button variant="ghost" size="sm" onClick={onBack} disabled={loading}>

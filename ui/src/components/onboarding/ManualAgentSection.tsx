@@ -116,24 +116,18 @@ export function ManualAgentSection({
       <div>
         <span className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
           Adapter type
-          <HelpBeacon text="The adapter determines which AI coding tool powers this agent. Claude Code and Codex are recommended for most use cases. Expand 'More' to see Gemini CLI, OpenCode, and other options." />
+          <HelpBeacon text="The adapter determines which AI coding tool powers this agent. Claude Code and Codex are the most common; expand 'More' for Gemini CLI, OpenCode, and other options." />
         </span>
         <div className="grid grid-cols-2 gap-2">
           {[
-            {
-              value: "claude_local" as const,
-              label: "Claude Code",
-              icon: Wand2,
-              desc: "Local Claude agent",
-              recommended: true,
-            },
-            { value: "codex_local" as const, label: "Codex", icon: Code, desc: "Local Codex agent", recommended: true },
+            { value: "claude_local" as const, label: "Claude Code", icon: Wand2, desc: "Local Claude agent" },
+            { value: "codex_local" as const, label: "Codex", icon: Code, desc: "Local Codex agent" },
           ].map((opt) => (
             <button
               type="button"
               key={opt.value}
               className={cn(
-                "flex flex-col items-center gap-1.5 rounded-md border p-3 text-xs transition-colors relative",
+                "flex flex-col items-center gap-1.5 rounded-md border p-3 text-xs transition-colors",
                 adapterType === opt.value ? "border-foreground bg-accent" : "border-border hover:bg-accent/50",
               )}
               onClick={() => {
@@ -143,11 +137,6 @@ export function ManualAgentSection({
                 if (nextType !== "codex_local") onModelChange("");
               }}
             >
-              {opt.recommended && (
-                <span className="absolute -top-1.5 right-1.5 bg-green-500 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-full leading-none">
-                  Recommended
-                </span>
-              )}
               <opt.icon className="h-4 w-4" />
               <span className="font-medium">{opt.label}</span>
               <span className="text-muted-foreground text-[10px]">{opt.desc}</span>

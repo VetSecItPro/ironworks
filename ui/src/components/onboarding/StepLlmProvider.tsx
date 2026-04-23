@@ -113,23 +113,42 @@ export function StepLlmProvider({
         </div>
       )}
 
-      {/* Subscription instructions OR API Key input */}
+      {/* Subscription instructions OR API Key input.
+          Wrapper reserves a min-height so switching between modes does not
+          shift the footer up and down. 260px covers the tallest state
+          (subscription instructions panel); API-key mode has extra space
+          below the input, keeping the footer anchored. */}
+      <div className="min-h-[260px]">
       {effectiveAuthMode === "subscription" && activeProvider.subscription ? (
-        <div className="space-y-2 rounded-lg border border-border bg-muted/20 p-4">
+        <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-4">
           <div className="flex items-center gap-2 text-sm font-medium">
             <Terminal className="h-4 w-4" />
-            One-time CLI login
+            One-time sign-in for {activeProvider.subscription.label}
           </div>
           <p className="text-xs text-muted-foreground">
-            Your {activeProvider.subscription.label} session lives in the container. Run this once in a terminal with
-            shell access to the Ironworks container, then click Next:
+            Your {activeProvider.subscription.label} account signs in once on the server that hosts Ironworks. After
+            that, agents use your subscription automatically — no API key needed.
           </p>
-          <pre className="rounded bg-background px-3 py-2 text-xs font-mono select-all overflow-x-auto">
-            {`docker exec -it ironworks-atlas-ironworks-1 ${activeProvider.subscription.loginCommand}`}
-          </pre>
-          <p className="text-xs text-muted-foreground">
-            The CLI prints an authentication URL — open it in your browser, sign in, and the OAuth token is stored
-            inside the container for agents to use.
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-foreground">An Ironworks admin runs this once:</p>
+            <pre className="rounded bg-background px-3 py-2 text-xs font-mono select-all overflow-x-auto">
+              {`docker exec -it ironworks-atlas-ironworks-1 ${activeProvider.subscription.loginCommand}`}
+            </pre>
+            <p className="text-xs text-muted-foreground">
+              The command prints a link. Open the link, sign in with your {activeProvider.subscription.label} account,
+              and you're done. The session stays authenticated until you sign out.
+            </p>
+          </div>
+          <p className="text-xs text-muted-foreground border-t border-border/60 pt-2">
+            Not an admin? Send the command above to whoever installed Ironworks, or switch to{" "}
+            <button
+              type="button"
+              onClick={() => onAuthModeChange("api_key")}
+              className="underline underline-offset-2 hover:text-foreground"
+            >
+              API key
+            </button>{" "}
+            instead.
           </p>
         </div>
       ) : (
@@ -165,6 +184,7 @@ export function StepLlmProvider({
           <p className="text-xs text-muted-foreground">{activeProvider.hint}</p>
         </div>
       )}
+      </div>
 
       {llmSaved && (
         <div className="inline-flex items-center gap-2 rounded-full bg-green-500/10 border border-green-500/30 px-3 py-1.5 text-sm text-green-600 dark:text-green-400">

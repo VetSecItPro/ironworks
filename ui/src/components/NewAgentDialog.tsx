@@ -26,21 +26,18 @@ const ADVANCED_ADAPTER_OPTIONS: Array<{
   label: string;
   desc: string;
   icon: ComponentType<{ className?: string }>;
-  recommended?: boolean;
 }> = [
   {
     value: "claude_local",
     label: "Claude Code",
     icon: Wand2,
     desc: "Local Claude agent",
-    recommended: true,
   },
   {
     value: "codex_local",
     label: "Codex",
     icon: Code,
     desc: "Local Codex agent",
-    recommended: true,
   },
   {
     value: "gemini_local",
@@ -190,15 +187,10 @@ export function NewAgentDialog() {
                     type="button"
                     key={opt.value}
                     className={cn(
-                      "flex flex-col items-center gap-1.5 rounded-md border border-border p-3 text-xs transition-colors hover:bg-accent/50 relative",
+                      "flex flex-col items-center gap-1.5 rounded-md border border-border p-3 text-xs transition-colors hover:bg-accent/50",
                     )}
                     onClick={() => handleAdvancedAdapterPick(opt.value)}
                   >
-                    {opt.recommended && (
-                      <span className="absolute -top-1.5 right-1.5 bg-green-500 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded-full leading-none">
-                        Recommended
-                      </span>
-                    )}
                     <opt.icon className="h-4 w-4" />
                     <span className="font-medium">{opt.label}</span>
                     <span className="text-muted-foreground text-[10px]">{opt.desc}</span>

@@ -131,12 +131,12 @@ function TeamPackSection({
 }) {
   return (
     <div className="space-y-3">
-      {(teamPacks ?? []).map((pack, packIdx) => (
+      {(teamPacks ?? []).map((pack) => (
         <button
           type="button"
           key={pack.key}
           className={cn(
-            "w-full text-left rounded-lg border p-4 transition-colors relative",
+            "w-full text-left rounded-lg border p-4 transition-colors",
             selectedPackKey === pack.key ? "border-foreground bg-accent" : "border-border hover:bg-accent/50",
           )}
           onClick={() => {
@@ -156,11 +156,6 @@ function TeamPackSection({
           }}
           disabled={packCreating}
         >
-          {packIdx === 0 && (
-            <span className="absolute -top-2 right-3 bg-blue-500 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full leading-none">
-              Recommended
-            </span>
-          )}
           <div className="flex items-center justify-between mb-1">
             <span className="text-sm font-medium">{pack.name}</span>
             <span className="text-xs text-muted-foreground">{pack.roleCount} agents</span>
