@@ -79,11 +79,11 @@ export const LLM_PROVIDERS: readonly LlmProviderEntry[] = [
     hint: "ollama.com/settings",
   },
   {
-    key: "ollama",
-    label: "Ollama (self-hosted)",
-    secretName: "OLLAMA_BASE_URL",
-    placeholder: "http://localhost:11434",
-    hint: "Your Ollama server URL",
+    key: "poe",
+    label: "Poe",
+    secretName: "POE_API_KEY",
+    placeholder: "sk-poe-...",
+    hint: "poe.com/api_key",
   },
 ];
 
