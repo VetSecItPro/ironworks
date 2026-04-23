@@ -4,12 +4,17 @@ on:
   pull_request:
     branches:
       - master
+  # Manual trigger as an escape hatch when GitHub's pull_request events stall
+  # (has happened — "events register, no run created"). Dispatching on a
+  # feature branch runs the same policy/verify/e2e jobs against that branch
+  # vs master. PR-only expressions fall back to sensible defaults.
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: pr-${{ github.event.pull_request.number }}
+  group: pr-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -26,8 +31,10 @@ jobs:
       - name: Block manual lockfile edits
         if: github.head_ref != 'chore/refresh-lockfile'
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          # Fallback to the branchpoint from master when invoked via workflow_dispatch
+          # (no PR context). `git merge-base` resolves at checkout time below.
+          BASE_SHA: ${{ github.event.pull_request.base.sha || 'origin/master' }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           changed="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
           # Allow lockfile edits when accompanied by a package.json change in the
@@ -96,8 +103,10 @@ jobs:
 
       - name: Validate dependency resolution when manifests change
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          # Fallback to the branchpoint from master when invoked via workflow_dispatch
+          # (no PR context). `git merge-base` resolves at checkout time below.
+          BASE_SHA: ${{ github.event.pull_request.base.sha || 'origin/master' }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           changed="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
           manifest_pattern='(^|/)package\.json$|^pnpm-workspace\.yaml$|^\.npmrc$|^pnpmfile\.(cjs|js|mjs)$'
@@ -113,6 +122,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          # Need history so the lint step can diff against origin/master when
+          # invoked via workflow_dispatch (no PR context).
+          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4
@@ -130,8 +143,10 @@ jobs:
 
       - name: Lint (changed files only — baseline allowance for legacy debt)
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          # Fallback to the branchpoint from master when invoked via workflow_dispatch
+          # (no PR context). `git merge-base` resolves at checkout time below.
+          BASE_SHA: ${{ github.event.pull_request.base.sha || 'origin/master' }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           # Enforce biome on PR-changed files only. Existing violations in legacy
           # code are tracked tech debt (see CHANGELOG / .github/BIOME_DEBT.md);
