@@ -34,20 +34,35 @@ export const LLM_PROVIDERS: readonly LlmProviderEntry[] = [
     secretName: "ANTHROPIC_API_KEY",
     placeholder: "sk-ant-...",
     hint: "console.anthropic.com",
+    subscription: {
+      label: "Claude Pro / Max",
+      loginCommand: "claude login",
+      tagline: "Use your existing Claude subscription — no per-token API cost.",
+    },
   },
   {
     key: "openai",
-    label: "OpenAI",
+    label: "OpenAI (ChatGPT)",
     secretName: "OPENAI_API_KEY",
     placeholder: "sk-...",
     hint: "platform.openai.com/api-keys",
+    subscription: {
+      label: "ChatGPT Plus / Pro",
+      loginCommand: "codex login",
+      tagline: "Use your existing ChatGPT subscription — no per-token API cost.",
+    },
   },
   {
     key: "google",
-    label: "Google AI (Gemini)",
+    label: "Google (Gemini)",
     secretName: "GEMINI_API_KEY",
     placeholder: "AIza...",
     hint: "aistudio.google.com/apikey",
+    subscription: {
+      label: "Gemini Advanced",
+      loginCommand: "gemini",
+      tagline: "Sign in with Google to use your Gemini subscription.",
+    },
   },
   {
     key: "openrouter",

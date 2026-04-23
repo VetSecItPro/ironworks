@@ -23,7 +23,7 @@ import {
 import { queryKeys } from "../../lib/queryKeys";
 import { defaultCreateValues } from "../agent-config-defaults";
 import { LLM_PROVIDERS } from "./constants";
-import type { AdapterType, RosterItem, Step } from "./types";
+import type { AdapterType, LlmAuthMode, RosterItem, Step } from "./types";
 
 export interface WizardHandlerDeps {
   queryClient: QueryClient;
@@ -145,13 +145,28 @@ export async function handleStep2LlmNext(
   deps: WizardHandlerDeps,
   createdCompanyId: string | null,
   llmProvider: string,
+  llmAuthMode: LlmAuthMode,
   llmApiKey: string,
 ) {
-  if (!llmApiKey.trim() || !createdCompanyId) return;
+  if (!createdCompanyId) return;
+  const provider = LLM_PROVIDERS.find((p) => p.key === llmProvider) ?? LLM_PROVIDERS[0];
+
+  // Subscription mode relies on the local CLI's OAuth session (claude login,
+  // codex login, gemini); no API-key secret to store. The user is expected to
+  // have authenticated the CLI inside the container — the instructions in
+  // StepLlmProvider explain the exact command. The agent's adapter (*-local)
+  // auto-detects the absence of the API-key env var and falls back to
+  // subscription billing at runtime.
+  if (llmAuthMode === "subscription" && provider.subscription) {
+    deps.setLlmSaved(true);
+    deps.setStep(3);
+    return;
+  }
+
+  if (!llmApiKey.trim()) return;
   deps.setLoading(true);
   deps.setError(null);
   try {
-    const provider = LLM_PROVIDERS.find((p) => p.key === llmProvider) ?? LLM_PROVIDERS[0];
     await secretsApi.create(createdCompanyId, {
       name: provider.secretName,
       value: llmApiKey.trim(),

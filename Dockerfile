@@ -65,7 +65,7 @@ FROM base AS production
 WORKDIR /app
 COPY --chown=node:node --from=build /app /app
 # AI CLI tools — versions pinned for supply-chain safety; bump intentionally when upgrading
-RUN npm install --global --omit=dev @anthropic-ai/claude-code@2.1.92 @openai/codex@0.118.0 opencode-ai@0.3.1 \
+RUN npm install --global --omit=dev @anthropic-ai/claude-code@2.1.92 @openai/codex@0.118.0 @google/gemini-cli@0.39.0 opencode-ai@0.3.1 \
   && mkdir -p /ironworks \
   && chown node:node /ironworks
 
