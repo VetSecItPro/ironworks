@@ -52,3 +52,17 @@ export function subscribeGlobalLiveEvents(listener: LiveEventListener) {
   emitter.on("*", listener);
   return () => emitter.off("*", listener);
 }
+
+/**
+ * Reset module-level singletons for test isolation.
+ *
+ * Called by `server/src/__tests__/helpers/setup-singletons.ts` in a global
+ * `beforeEach` so cross-test pollution of `nextEventId` and leftover listeners
+ * cannot leak between `it()` blocks. Safe to call in production — it just
+ * resets the counter and removes listeners — but the setup file only wires
+ * it up under Vitest.
+ */
+export function _resetSingletonsForTest() {
+  nextEventId = 0;
+  emitter.removeAllListeners();
+}

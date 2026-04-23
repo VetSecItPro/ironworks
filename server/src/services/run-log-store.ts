@@ -154,3 +154,13 @@ export function getRunLogStore() {
   return cachedStore;
 }
 
+/**
+ * Reset module-level singletons for test isolation.
+ *
+ * Called by `server/src/__tests__/helpers/setup-singletons.ts` in a global
+ * `beforeEach` so `cachedStore` cannot leak between `it()` blocks.
+ */
+export function _resetSingletonsForTest() {
+  cachedStore = null;
+}
+
