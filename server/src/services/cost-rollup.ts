@@ -48,7 +48,10 @@ async function writeWatermark(db: Db, dateStr: string): Promise<void> {
       target: instanceSettings.singletonKey,
       set: {
         // Merge into the existing jsonb bag rather than replacing it wholesale
-        general: sql`${instanceSettings.general} || jsonb_build_object('costRollupWatermark', ${dateStr})`,
+        // Cast the bound parameter to text so Postgres can resolve jsonb_build_object's
+        // polymorphic value slot — without the cast the driver sends an untyped param
+        // and the planner errors with "could not determine data type of parameter $3".
+        general: sql`${instanceSettings.general} || jsonb_build_object('costRollupWatermark', ${dateStr}::text)`,
         updatedAt: sql`now()`,
       },
     });
