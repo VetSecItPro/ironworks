@@ -60,7 +60,7 @@ export function OnboardingWizard() {
               w.step === 1 ? "md:w-1/2" : "md:w-full",
             )}
           >
-            <div className="w-full max-w-2xl mx-auto my-auto px-10 py-12 shrink-0">
+            <div className="w-full max-w-2xl mx-auto mt-12 mb-6 px-10 py-6 shrink-0 min-h-[640px] flex flex-col">
               <ProgressTabs currentStep={w.step} onStepClick={w.setStep} />
 
               {w.step === 1 && (
@@ -156,7 +156,8 @@ export function OnboardingWizard() {
                     onClick={() => {
                       w.setError(null);
                       if (w.step === 1 && w.companyName.trim()) void w.handleStep1Next();
-                      else if (w.step === 2 && (w.llmAuthMode === "subscription" || w.llmApiKey.trim())) void w.handleStep2LlmNext();
+                      else if (w.step === 2 && (w.llmAuthMode === "subscription" || w.llmApiKey.trim()))
+                        void w.handleStep2LlmNext();
                       else if (w.step === 3 && w.step2Mode === "pack" && w.selectedPackKey) void w.handlePackDeploy();
                       else if (w.step === 3 && w.step2Mode === "manual" && w.agentName.trim()) void w.handleStep2Next();
                       else if (w.step === 5) void w.handleLaunch();
