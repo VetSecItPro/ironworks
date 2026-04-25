@@ -53,6 +53,7 @@ export function useWizardState() {
   const [llmAuthMode, setLlmAuthMode] = useState<LlmAuthMode>("subscription");
   const [llmApiKey, setLlmApiKey] = useState("");
   const [llmSaved, setLlmSaved] = useState(false);
+  const [taskSaved, setTaskSaved] = useState(false);
   const [step2Mode, setStep2Mode] = useState<"pack" | "manual">("pack");
   const [selectedPackKey, setSelectedPackKey] = useState<string | null>(null);
   const [rosterItems, setRosterItems] = useState<RosterItem[]>([]);
@@ -304,6 +305,7 @@ export function useWizardState() {
     llmApiKey,
     setLlmApiKey,
     llmSaved,
+    taskSaved,
     step2Mode,
     setStep2Mode,
     teamPacks,
@@ -359,8 +361,14 @@ export function useWizardState() {
     handleStep3Next: () => {
       if (createdCompanyId && createdAgentId) {
         setError(null);
+        setTaskSaved(true);
         setStep(5);
       }
+    },
+    handleSkipTask: () => {
+      setError(null);
+      setTaskSaved(false);
+      setStep(5);
     },
     handleLaunch: () =>
       hLaunch(

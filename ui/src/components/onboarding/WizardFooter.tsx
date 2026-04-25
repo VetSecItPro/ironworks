@@ -25,6 +25,7 @@ interface WizardFooterProps {
   // Step 4
   taskTitleValid: boolean;
   onStep3Next: () => void;
+  onSkipTask: () => void;
   // Step 5
   onLaunch: () => void;
   // Navigation
@@ -50,6 +51,7 @@ export function WizardFooter({
   onPackDeploy,
   taskTitleValid,
   onStep3Next,
+  onSkipTask,
   onLaunch,
   onBack,
 }: WizardFooterProps) {
@@ -123,14 +125,28 @@ export function WizardFooter({
           </Button>
         )}
         {step === 4 && (
-          <Button size="sm" disabled={!taskTitleValid || loading} onClick={onStep3Next}>
-            {loading ? (
-              <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
-            ) : (
-              <ArrowRight className="h-3.5 w-3.5 mr-1" />
-            )}
-            {loading ? "Creating..." : "Next"}
-          </Button>
+          <div className="flex items-center gap-3">
+            <div className="flex flex-col items-end gap-0.5">
+              <button
+                type="button"
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                onClick={onSkipTask}
+              >
+                Skip for now
+              </button>
+              <span className="text-[10px] text-muted-foreground/70 max-w-[200px] text-right">
+                You can add a first task later from the agent dashboard
+              </span>
+            </div>
+            <Button size="sm" disabled={!taskTitleValid || loading} onClick={onStep3Next}>
+              {loading ? (
+                <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+              ) : (
+                <ArrowRight className="h-3.5 w-3.5 mr-1" />
+              )}
+              {loading ? "Creating..." : "Next"}
+            </Button>
+          </div>
         )}
         {step === 5 && (
           <Button size="sm" disabled={loading} onClick={onLaunch}>
