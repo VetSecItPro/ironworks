@@ -21,6 +21,48 @@ export interface OpenRouterModel {
 }
 
 export const OPENROUTER_MODELS: OpenRouterModel[] = [
+  // ─── Free tier (OpenRouter ":free" suffix) ─────────────────────────────────
+  // Western open-weight models available at zero per-token cost on OpenRouter.
+  // Subject to a global free-tier rate limit (1000 req/day for accounts with
+  // >$10 in lifetime credits, 50/day otherwise). Pricing-table.ts handles
+  // unknown/missing entries gracefully — costUsd = null, usage still tracked.
+  {
+    id: "openai/gpt-oss-120b:free",
+    label: "GPT-OSS 120B (free)",
+    provider: "openai",
+    maxOutputTokens: 16384,
+  },
+  {
+    id: "openai/gpt-oss-20b:free",
+    label: "GPT-OSS 20B (free)",
+    provider: "openai",
+    maxOutputTokens: 8192,
+  },
+  {
+    id: "meta-llama/llama-3.3-70b-instruct:free",
+    label: "Llama 3.3 70B Instruct (free)",
+    provider: "meta-llama",
+    maxOutputTokens: 8192,
+  },
+  {
+    id: "nousresearch/hermes-3-llama-3.1-405b:free",
+    label: "Hermes 3 Llama 3.1 405B (free)",
+    provider: "nousresearch",
+    maxOutputTokens: 8192,
+  },
+  {
+    id: "google/gemma-4-31b-it:free",
+    label: "Gemma 4 31B (free)",
+    provider: "google",
+    maxOutputTokens: 8192,
+  },
+  {
+    id: "google/gemma-3-12b-it:free",
+    label: "Gemma 3 12B (free)",
+    provider: "google",
+    maxOutputTokens: 8192,
+  },
+
   // Llama 4 family (Meta, released 2025) — strong open-weight multi-modal models
   {
     id: "meta-llama/llama-4-scout-17b-16e-instruct",
