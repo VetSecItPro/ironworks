@@ -1,5 +1,6 @@
 import { index, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { companies } from "./companies.js";
+import { skillRecipes } from "./skill_recipes.js";
 
 export const companySkills = pgTable(
   "company_skills",
@@ -20,6 +21,19 @@ export const companySkills = pgTable(
     compatibility: text("compatibility").notNull().default("compatible"),
     fileInventory: jsonb("file_inventory").$type<Array<Record<string, unknown>>>().notNull().default([]),
     metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+    /**
+     * Provenance of this skill row.
+     * 'authored' = human-written via the Skills UI.
+     * 'extracted' = produced by the AI extraction loop and approved by an operator.
+     * Schema leaves room to extend to 'seeded' (curated Atlas Ops starter pack) without migration.
+     */
+    origin: text("origin").notNull().default("authored"),
+    /**
+     * Links back to the skill_recipes row this skill was materialised from.
+     * NULL for 'authored' skills. ON DELETE SET NULL so deleting a recipe row
+     * does not cascade-destroy the live skill.
+     */
+    recipeId: uuid("recipe_id").references(() => skillRecipes.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
