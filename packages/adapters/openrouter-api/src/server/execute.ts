@@ -28,6 +28,7 @@ import { parseSseStream } from "@ironworksai/adapter-utils/http/sse-parser";
 import type { Transport } from "@ironworksai/adapter-utils/http/transport";
 import { validateOpenRouterConfig } from "../shared/config.js";
 import { OPENROUTER_MODELS } from "../shared/models.js";
+import { checkAndIncrement } from "./daily-quota.js";
 import { isAdapterDisabled } from "./kill-switch.js";
 import { adapterRateLimiter } from "./rate-limit-config.js";
 
@@ -214,6 +215,20 @@ export async function execute(
     };
   }
   const apiKey: string = apiKeyOrNull;
+
+  // Per-agent daily quota guard — prevents a single runaway agent from burning
+  // the whole free-tier budget. Cap is configurable via OPENROUTER_API_DAILY_AGENT_CAP
+  // env var; defaults to 250/agent/UTC-day. Resets at UTC midnight.
+  const quota = checkAndIncrement(ctx.agent?.id ?? null);
+  if (!quota.allowed) {
+    return {
+      exitCode: 1,
+      signal: null,
+      timedOut: false,
+      errorMessage: `OpenRouter daily request cap reached for this agent (${quota.countToday}/${quota.cap} on ${quota.utcDate} UTC). Resets at UTC midnight. Override via OPENROUTER_API_DAILY_AGENT_CAP env var.`,
+      errorCode: "openrouter_api_daily_quota_exceeded",
+    };
+  }
 
   // Acquire a rate-limit token before any network I/O.
   await rateLimiter.acquire(ADAPTER_TYPE);
