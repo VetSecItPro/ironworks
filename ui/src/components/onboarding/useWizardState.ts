@@ -338,32 +338,26 @@ export function useWizardState() {
     shouldSuggestUnsetAnthropicApiKey,
     unsetAnthropicLoading,
     // Handlers
+    // Steps 1-4 are now pure client-state advancers — no server calls until Launch.
     handleStep1Next: () => h1(deps, companyName, companyGoal),
-    handleStep2LlmNext: () => h2Llm(deps, createdCompanyId, llmProvider, llmAuthMode, llmApiKey),
+    handleStep2LlmNext: () => h2Llm(deps, llmProvider, llmAuthMode, llmApiKey),
     handleStep2Next: () =>
       h2Next(
         deps,
-        createdCompanyId,
         adapterType,
         agentName,
-        getConfig(),
         model,
-        isLocalAdapter,
-        adapterEnvResult,
         adapterModels,
         adapterModelsError as Error | null,
         adapterModelsLoading,
         adapterModelsFetching,
-        () => doRunEnvTest(deps, createdCompanyId, adapterType, getConfig()),
       ),
-    handlePackDeploy: () => hPack(deps, createdCompanyId, rosterItems, adapterType, getConfig()),
-    handleUnsetAnthropicApiKey: () => hUnset(deps, createdCompanyId, createdAgentId, adapterType, getConfig()),
+    handlePackDeploy: () => hPack(deps, rosterItems),
+    handleUnsetAnthropicApiKey: () => hUnset(deps),
     handleStep3Next: () => {
-      if (createdCompanyId && createdAgentId) {
-        setError(null);
-        setTaskSaved(true);
-        setStep(5);
-      }
+      setError(null);
+      setTaskSaved(true);
+      setStep(5);
     },
     handleSkipTask: () => {
       setError(null);
@@ -371,21 +365,24 @@ export function useWizardState() {
       setStep(5);
     },
     handleLaunch: () =>
-      hLaunch(
-        deps,
-        createdCompanyId,
-        createdAgentId,
-        createdCompanyGoalId,
-        createdProjectId,
-        createdIssueRef,
-        createdCompanyPrefix,
+      hLaunch(deps, {
+        companyName,
+        companyGoal,
+        llmProvider,
+        llmAuthMode,
+        llmApiKey,
+        step2Mode,
+        rosterItems,
+        agentName,
+        adapterType,
+        adapterConfig: getConfig(),
         taskTitle,
         taskDescription,
         extraTasks,
         reset,
         closeOnboarding,
         navigate,
-      ),
+      }),
     runAdapterEnvironmentTest: () => doRunEnvTest(deps, createdCompanyId, adapterType, getConfig()),
     taskTitle,
     setTaskTitle,
