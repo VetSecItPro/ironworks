@@ -38,6 +38,7 @@ import {
 import { queueIssueAssignmentWakeup } from "../services/issue-assignment-wakeup.js";
 import { playbookExecutionService } from "../services/playbook-execution.js";
 import { createQualityGateReview } from "../services/quality-gate.js";
+import { proposeSkillFromCompletedIssue } from "../services/skill-extraction.js";
 import { validateSpec } from "../services/spec-validation.js";
 import type { StorageService } from "../storage/types.js";
 import { assertCanWrite, assertCompanyAccess, getActorInfo } from "./authz.js";
@@ -1333,6 +1334,14 @@ export function issueRoutes(db: Db, storage: StorageService) {
             issueTitle: issue.title,
             outcome,
           }).catch((err) => logger.warn({ err, issueId: issue.id }, "post-task reflection failed"));
+
+          // Skill loop extraction: fire-and-forget alongside reflection.
+          // Never awaited so extraction latency is invisible to the HTTP caller.
+          proposeSkillFromCompletedIssue(db, {
+            agentId: issue.assigneeAgentId,
+            companyId: issue.companyId,
+            issueId: issue.id,
+          }).catch((err) => logger.warn({ err, issueId: issue.id }, "[skill-extraction] propose skill failed"));
         }
       }
     })();
