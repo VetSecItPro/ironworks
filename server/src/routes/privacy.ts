@@ -55,6 +55,9 @@ import {
   routineRuns,
   routines,
   routineTriggers,
+  skillEvaluations,
+  skillInvocations,
+  skillRecipes,
   workspaceOperations,
   workspaceRuntimeServices,
 } from "@ironworksai/db";
@@ -475,6 +478,13 @@ export async function deleteCompanyData(db: Db, companyId: string): Promise<void
 
   // ── Tier 15: activity log ────────────────────────────────────────────────
   await db.delete(activityLog).where(eq(activityLog.companyId, companyId));
+
+  // ── Tier 15b: skill loop tables (FK-first: evaluations → invocations → recipes) ──
+  // skill_recipes.source_skill_id references company_skills ON DELETE SET NULL,
+  // so recipes must be removed before company_skills at Tier 16.
+  await db.delete(skillEvaluations).where(eq(skillEvaluations.companyId, companyId));
+  await db.delete(skillInvocations).where(eq(skillInvocations.companyId, companyId));
+  await db.delete(skillRecipes).where(eq(skillRecipes.companyId, companyId));
 
   // ── Tier 16: miscellaneous company-scoped tables ─────────────────────────
   await db.delete(labels).where(eq(labels.companyId, companyId));
