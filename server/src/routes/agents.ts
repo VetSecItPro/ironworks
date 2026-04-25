@@ -1631,18 +1631,17 @@ export function agentRoutes(db: Db) {
       // agent on `claude_local` (the default suggested by every role template).
       const adapterType = body.adapterType || item.suggestedAdapter || "claude_local";
       const roleTemplate = ROLE_TEMPLATES.find((t) => t.key === item.templateKey);
-      // OpenRouter needs an explicit model. If the wizard didn't supply one,
-      // fall back to the role's reasoning tier: deep roles (CEO, CTO, Legal,
-      // Security) get the strongest free Western reasoning model; the rest
-      // get the workhorse 70B.
+      // OpenRouter needs an explicit model. When the wizard didn't supply one
+      // (and we have a role template), seed `model` from the role's
+      // `modelPrimary` and `fallbackModel` from `modelFallback`. The OpenRouter
+      // adapter will run primary first, swap to fallback only on rate-limit /
+      // server / circuit-open errors after the primary's retry budget is spent.
       const adapterConfigWithTier =
         adapterType === "openrouter_api" && !(body.adapterConfig ?? {}).model && roleTemplate
           ? {
               ...(body.adapterConfig ?? {}),
-              model:
-                roleTemplate.reasoningTier === "deep"
-                  ? "openai/gpt-oss-120b:free"
-                  : "meta-llama/llama-3.3-70b-instruct:free",
+              model: roleTemplate.modelPrimary,
+              fallbackModel: roleTemplate.modelFallback,
             }
           : (body.adapterConfig ?? {});
       const baseAdapterConfig = applyCreateDefaultsByAdapterType(adapterType, adapterConfigWithTier);

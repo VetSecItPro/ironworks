@@ -53,12 +53,16 @@ export interface RoleTemplate {
   /** Default adapter suggestion. */
   suggestedAdapter: string;
   /**
-   * Reasoning tier hint. Adapters that need a model selection (currently
-   * openrouter_api) consult this to pick a default — "deep" roles get the
-   * strongest available reasoning model; "workhorse" roles get the cheaper
-   * routine-ops model.
+   * Per-role default model when the resolved adapter requires a model selection
+   * (currently only openrouter_api). The pack-deploy uses these as the agent's
+   * primary model; if it exhausts retries with a rate-limit / server error the
+   * adapter falls back to `modelFallback` for one final attempt before failing.
+   *
+   * Both must be values registered in `OPENROUTER_MODELS` (see
+   * packages/adapters/openrouter-api/src/shared/models.ts).
    */
-  reasoningTier: "deep" | "workhorse";
+  modelPrimary: string;
+  modelFallback: string;
   /** Skills to auto-assign. */
   skills: string[];
   /** SOUL.md content. */
@@ -155,7 +159,8 @@ export const ROLE_TEMPLATES: RoleTemplate[] = [
     roleLevel: "executive",
     defaultIcon: "crown",
     suggestedAdapter: "claude_local",
-    reasoningTier: "deep",
+    modelPrimary: "openai/gpt-oss-120b:free",
+    modelFallback: "nousresearch/hermes-3-llama-3.1-405b:free",
     skills: ["ironworks", "ironworks-create-agent", "para-memory-files"],
     soul: `# SOUL.md — CEO
 
@@ -231,7 +236,8 @@ You own #company. When the board assigns a task, announce it with your delegatio
     roleLevel: "executive",
     defaultIcon: "briefcase",
     suggestedAdapter: "claude_local",
-    reasoningTier: "workhorse",
+    modelPrimary: "meta-llama/llama-3.3-70b-instruct:free",
+    modelFallback: "google/gemma-4-31b-it:free",
     skills: ["ironworks", "para-memory-files"],
     soul: `# SOUL.md — COO
 
@@ -298,7 +304,8 @@ You own #operations. Post weekly execution summaries. When a department misses a
     roleLevel: "executive",
     defaultIcon: "code",
     suggestedAdapter: "claude_local",
-    reasoningTier: "deep",
+    modelPrimary: "openai/gpt-oss-120b:free",
+    modelFallback: "nousresearch/hermes-3-llama-3.1-405b:free",
     skills: ["ironworks", "ironworks-create-agent", "para-memory-files"],
     soul: `# SOUL.md — CTO
 
@@ -373,7 +380,8 @@ You are the Knowledge Base steward. This is the company's institutional memory.
     roleLevel: "executive",
     defaultIcon: "megaphone",
     suggestedAdapter: "claude_local",
-    reasoningTier: "workhorse",
+    modelPrimary: "nousresearch/hermes-3-llama-3.1-405b:free",
+    modelFallback: "meta-llama/llama-3.3-70b-instruct:free",
     skills: ["ironworks", "para-memory-files"],
     soul: `# SOUL.md — CMO
 
@@ -436,7 +444,8 @@ You own #marketing. Coordinate content production: assign briefs, review drafts,
     roleLevel: "management",
     defaultIcon: "users",
     suggestedAdapter: "claude_local",
-    reasoningTier: "workhorse",
+    modelPrimary: "meta-llama/llama-3.3-70b-instruct:free",
+    modelFallback: "google/gemma-4-31b-it:free",
     skills: ["ironworks", "ironworks-create-agent", "para-memory-files"],
     soul: `# SOUL.md — VP of HR
 
@@ -529,7 +538,8 @@ You own the company culture. Build and maintain:
     roleLevel: "executive",
     defaultIcon: "dollar-sign",
     suggestedAdapter: "claude_local",
-    reasoningTier: "workhorse",
+    modelPrimary: "meta-llama/llama-3.3-70b-instruct:free",
+    modelFallback: "google/gemma-4-31b-it:free",
     skills: ["ironworks", "para-memory-files"],
     soul: `# SOUL.md — CFO
 
@@ -606,7 +616,8 @@ Post weekly cost summaries to #company. Post budget alerts immediately when thre
     roleLevel: "staff",
     defaultIcon: "terminal",
     suggestedAdapter: "claude_local",
-    reasoningTier: "workhorse",
+    modelPrimary: "openai/gpt-oss-120b:free",
+    modelFallback: "meta-llama/llama-3.3-70b-instruct:free",
     skills: ["ironworks", "para-memory-files"],
     soul: `# SOUL.md — Senior Engineer
 
@@ -669,7 +680,8 @@ Participate in #engineering. Post status updates when you complete significant w
     roleLevel: "staff",
     defaultIcon: "server",
     suggestedAdapter: "claude_local",
-    reasoningTier: "workhorse",
+    modelPrimary: "openai/gpt-oss-120b:free",
+    modelFallback: "meta-llama/llama-3.3-70b-instruct:free",
     skills: ["ironworks", "para-memory-files"],
     soul: `# SOUL.md — DevOps Engineer
 
@@ -735,7 +747,8 @@ Participate in #engineering. Post production incident notifications immediately 
     roleLevel: "staff",
     defaultIcon: "shield",
     suggestedAdapter: "claude_local",
-    reasoningTier: "deep",
+    modelPrimary: "openai/gpt-oss-120b:free",
+    modelFallback: "meta-llama/llama-3.3-70b-instruct:free",
     skills: ["ironworks", "para-memory-files"],
     soul: `# SOUL.md — Security Engineer
 
@@ -801,7 +814,8 @@ Participate in #engineering with monitoring interest in all channels. Post secur
     roleLevel: "management",
     defaultIcon: "scale",
     suggestedAdapter: "claude_local",
-    reasoningTier: "workhorse",
+    modelPrimary: "google/gemma-4-31b-it:free",
+    modelFallback: "openai/gpt-oss-120b:free",
     skills: ["ironworks", "para-memory-files"],
     soul: `# SOUL.md — Compliance Director
 
@@ -865,7 +879,8 @@ Monitor all channels for compliance-relevant activity: PII handling, data retent
     roleLevel: "management",
     defaultIcon: "gavel",
     suggestedAdapter: "claude_local",
-    reasoningTier: "deep",
+    modelPrimary: "google/gemma-4-31b-it:free",
+    modelFallback: "openai/gpt-oss-120b:free",
     skills: ["ironworks", "para-memory-files"],
     soul: `# SOUL.md - Legal Counsel
 
@@ -954,7 +969,8 @@ Monitor all channels for legal risk signals: contract discussions, liability men
     roleLevel: "staff",
     defaultIcon: "pen-line",
     suggestedAdapter: "claude_local",
-    reasoningTier: "workhorse",
+    modelPrimary: "nousresearch/hermes-3-llama-3.1-405b:free",
+    modelFallback: "meta-llama/llama-3.3-70b-instruct:free",
     skills: ["ironworks", "para-memory-files"],
     soul: `# SOUL.md — Content Marketer
 
@@ -1018,7 +1034,8 @@ Participate in #marketing and follow the CMO's norms. Post content status update
     roleLevel: "staff",
     defaultIcon: "palette",
     suggestedAdapter: "claude_local",
-    reasoningTier: "workhorse",
+    modelPrimary: "meta-llama/llama-3.3-70b-instruct:free",
+    modelFallback: "google/gemma-4-31b-it:free",
     skills: ["ironworks", "para-memory-files"],
     soul: `# SOUL.md — UX Designer
 

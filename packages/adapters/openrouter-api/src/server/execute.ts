@@ -109,8 +109,8 @@ export async function execute(
   const { config } = validation;
   const model = config.model;
 
-  const apiKey = resolveApiKey(ctx.config) ?? process.env.ADAPTER_OPENROUTER_API_KEY ?? null;
-  if (!apiKey) {
+  const apiKeyOrNull = resolveApiKey(ctx.config) ?? process.env.ADAPTER_OPENROUTER_API_KEY ?? null;
+  if (!apiKeyOrNull) {
     return {
       exitCode: 1,
       signal: null,
@@ -120,6 +120,7 @@ export async function execute(
       errorCode: "openrouter_api_config_error",
     };
   }
+  const apiKey: string = apiKeyOrNull;
 
   // Acquire a rate-limit token before any network I/O.
   await rateLimiter.acquire(ADAPTER_TYPE);
@@ -170,8 +171,13 @@ export async function execute(
 
   let usage: UsageSummary | undefined;
   const textChunks: string[] = [];
+  let modelUsed = model;
 
-  try {
+  // Single-attempt runner — wraps the streaming POST so we can call it twice
+  // (primary + fallback) without duplicating SSE parsing logic.
+  async function runWithModel(modelId: string) {
+    requestBody.model = modelId;
+    modelUsed = modelId;
     await runWithRetry(
       async (retryCtx) => {
         const response = await transport.sendJsonStream({
@@ -223,7 +229,42 @@ export async function execute(
         },
       },
     );
-  } catch (err) {
+  }
+
+  // Eligible-for-fallback: only swap models on transient upstream issues that
+  // are likely model-specific (rate-limit, model overload, gateway errors).
+  // Auth errors, config errors, and post-tool-call stream breaks must NOT
+  // trigger a model swap (R16 + auth invariants).
+  function isFallbackEligible(err: unknown): boolean {
+    if (err instanceof HttpAdapterAuthError) return false;
+    if (err instanceof HttpAdapterStreamBreak && err.toolCallEmitted) return false;
+    if (err instanceof HttpAdapterError) {
+      return err.code === "rate_limited" || err.code === "server_error" || err.code === "circuit_open";
+    }
+    return false;
+  }
+
+  try {
+    await runWithModel(model);
+  } catch (primaryErr) {
+    if (config.fallbackModel && isFallbackEligible(primaryErr)) {
+      await ctx.onLog(
+        "stderr",
+        `[openrouter-api] primary model ${model} exhausted retries (${errorCodeFrom(primaryErr)}); attempting fallback ${config.fallbackModel}\n`,
+      );
+      try {
+        await runWithModel(config.fallbackModel);
+      } catch (fallbackErr) {
+        // Surface the fallback's failure — primary's error is already logged above.
+        return handleExecError(fallbackErr);
+      }
+    } else {
+      return handleExecError(primaryErr);
+    }
+  }
+
+  // Continue to cost computation below (success path).
+  function handleExecError(err: unknown): AdapterExecutionResult {
     if (err instanceof HttpAdapterAuthError) {
       return {
         exitCode: 1,
@@ -258,7 +299,7 @@ export async function execute(
   // in pricing-table.ts. If the specific model isn't in the table, costUsd is null (R19 graceful).
   let costUsd: number | null = null;
   if (usage) {
-    const costResult = computeCost("openrouter", model, usage);
+    const costResult = computeCost("openrouter", modelUsed, usage);
     costUsd = costResult.totalUsd > 0 ? costResult.totalUsd : null;
     if (costResult.warnings.length > 0) {
       await ctx.onLog("stderr", `[openrouter-api] cost warnings: ${costResult.warnings.join("; ")}\n`);
@@ -279,7 +320,7 @@ export async function execute(
     signal: null,
     timedOut: false,
     provider: "openrouter",
-    model,
+    model: modelUsed,
     ...(usage
       ? {
           usage: {
