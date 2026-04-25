@@ -8,7 +8,8 @@ export type AdapterType =
   | "pi_local"
   | "cursor"
   | "http"
-  | "openclaw_gateway";
+  | "openclaw_gateway"
+  | "openrouter_api";
 
 export interface RosterItem {
   id: string;

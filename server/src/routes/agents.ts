@@ -1625,8 +1625,27 @@ export function agentRoutes(db: Db) {
     const createdAgents: NonNullable<Awaited<ReturnType<typeof svc.getById>>>[] = [];
 
     for (const item of body.agents) {
-      const adapterType = item.suggestedAdapter || body.adapterType;
-      const baseAdapterConfig = applyCreateDefaultsByAdapterType(adapterType, body.adapterConfig ?? {});
+      // Honor the wizard's chosen adapter. The role template's
+      // `suggestedAdapter` is only a fallback when the caller didn't pick one
+      // — otherwise picking OpenRouter in the wizard would silently land every
+      // agent on `claude_local` (the default suggested by every role template).
+      const adapterType = body.adapterType || item.suggestedAdapter || "claude_local";
+      const roleTemplate = ROLE_TEMPLATES.find((t) => t.key === item.templateKey);
+      // OpenRouter needs an explicit model. If the wizard didn't supply one,
+      // fall back to the role's reasoning tier: deep roles (CEO, CTO, Legal,
+      // Security) get the strongest free Western reasoning model; the rest
+      // get the workhorse 70B.
+      const adapterConfigWithTier =
+        adapterType === "openrouter_api" && !(body.adapterConfig ?? {}).model && roleTemplate
+          ? {
+              ...(body.adapterConfig ?? {}),
+              model:
+                roleTemplate.reasoningTier === "deep"
+                  ? "openai/gpt-oss-120b:free"
+                  : "meta-llama/llama-3.3-70b-instruct:free",
+            }
+          : (body.adapterConfig ?? {});
+      const baseAdapterConfig = applyCreateDefaultsByAdapterType(adapterType, adapterConfigWithTier);
       const desiredSkillAssignment = await resolveDesiredSkillAssignment(
         companyId,
         adapterType,
@@ -1643,8 +1662,7 @@ export function agentRoutes(db: Db) {
 
       const reportsToAgentId = item.reportsTo ? (agentIdByTemplateKey.get(item.reportsTo) ?? null) : null;
 
-      // Resolve soul/agents content from the role template or explicit body fields
-      const roleTemplate = ROLE_TEMPLATES.find((t) => t.key === item.templateKey);
+      // Resolve soul/agents content from the role template (already fetched above) or explicit body fields
       const soulContent = item.soulMd ?? roleTemplate?.soul ?? null;
       const agentsContent = item.agentsMd ?? roleTemplate?.agents ?? null;
       const resolvedAgentInstructions = agentsContent ? `${COMMON_AGENT_PREAMBLE}\n\n${agentsContent}` : null;
