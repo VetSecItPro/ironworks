@@ -155,7 +155,7 @@ export function WizardFooter({
             ) : (
               <ArrowRight className="h-3.5 w-3.5 mr-1" />
             )}
-            {loading ? "Creating..." : "Create & Open Issue"}
+            {loading ? "Launching..." : "Create Your AI Company"}
           </Button>
         )}
       </div>
