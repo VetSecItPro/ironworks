@@ -121,6 +121,7 @@ export {
   saveSessionState,
 } from "./session-state.js";
 export { sidebarBadgeService } from "./sidebar-badges.js";
+export { skillRecipeService } from "./skill-recipe-service.js";
 export { validateSpec } from "./spec-validation.js";
 export {
   _resetToolCache,

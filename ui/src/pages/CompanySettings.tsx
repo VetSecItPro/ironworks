@@ -25,6 +25,7 @@ import { RiskThresholdsSection } from "../components/settings/RiskThresholdsSect
 import { SecuritySection } from "../components/settings/SecuritySection";
 // Section components
 import { SettingsErrorBoundary } from "../components/settings/SettingsErrorBoundary";
+import { SkillRecipesSection } from "../components/settings/SkillRecipesSection";
 import { TalentPoolSection } from "../components/settings/TalentPoolSection";
 import { TeamMembersSection } from "../components/settings/TeamMembersSection";
 import { WebhooksSettings } from "../components/WebhooksSettings";
@@ -37,6 +38,7 @@ const SETTINGS_SECTIONS = [
   { id: "hiring", label: "Hiring" },
   { id: "invites", label: "Invites" },
   { id: "messaging", label: "Messaging" },
+  { id: "skill-recipes", label: "Skills" },
   { id: "security", label: "Security" },
   { id: "api-keys", label: "API Keys" },
   { id: "autonomy", label: "Autonomy" },
@@ -158,6 +160,8 @@ function CompanySettingsInner() {
         <div id="messaging" className="scroll-mt-6">
           <MessagingSetup companyId={state.selectedCompanyId} />
         </div>
+
+        <SkillRecipesSection companyId={state.selectedCompanyId} />
 
         <SecuritySection companyId={state.selectedCompanyId} />
         <CompanyPackagesSection />
