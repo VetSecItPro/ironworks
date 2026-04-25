@@ -191,7 +191,7 @@ function TeamPackSection({
                   }
                   placeholder={item.title}
                 />
-                <span className="text-[10px] text-muted-foreground shrink-0 w-16 truncate" title={item.title}>
+                <span className="text-[10px] text-muted-foreground shrink-0 whitespace-nowrap" title={item.title}>
                   {item.title}
                 </span>
                 <button
