@@ -1,7 +1,10 @@
-import { Check, Terminal, X } from "lucide-react";
+import { Check, LogIn, X } from "lucide-react";
+import { useState } from "react";
+import type { OAuthProvider } from "@/api/oauth-login.js";
 import { cn } from "../../lib/utils";
 import { LlmProviderLogo } from "../LlmProviderLogos";
 import { LLM_PROVIDERS } from "./constants";
+import { OAuthLoginModal } from "./OAuthLoginModal";
 import type { LlmAuthMode } from "./types";
 
 interface StepLlmProviderProps {
@@ -16,6 +19,13 @@ interface StepLlmProviderProps {
   onErrorClear: () => void;
 }
 
+// Providers whose `key` maps directly to an OAuthProvider understood by the server
+const OAUTH_PROVIDER_MAP: Record<string, OAuthProvider> = {
+  anthropic: "anthropic",
+  openai: "openai",
+  google: "google",
+};
+
 export function StepLlmProvider({
   llmProvider,
   llmAuthMode,
@@ -27,12 +37,16 @@ export function StepLlmProvider({
   onApiKeyChange,
   onErrorClear,
 }: StepLlmProviderProps) {
+  const [modalOpen, setModalOpen] = useState(false);
+
   const activeProvider = LLM_PROVIDERS.find((p) => p.key === llmProvider) ?? LLM_PROVIDERS[0];
   const supportsSubscription = Boolean(activeProvider.subscription);
   // Providers without a subscription path are forced into api_key mode regardless
   // of the stored state (e.g. the user picked Anthropic subscription then switched
   // to OpenRouter, which has no subscription option).
   const effectiveAuthMode: LlmAuthMode = supportsSubscription ? llmAuthMode : "api_key";
+
+  const oauthProvider = OAUTH_PROVIDER_MAP[activeProvider.key] ?? null;
 
   return (
     <div className="space-y-6">
@@ -113,43 +127,55 @@ export function StepLlmProvider({
         </div>
       )}
 
-      {/* Subscription instructions OR API Key input.
+      {/* Subscription sign-in panel OR API Key input.
           Wrapper reserves a min-height so switching between modes does not
           shift the footer up and down. 260px covers the tallest state
-          (subscription instructions panel); API-key mode has extra space
-          below the input, keeping the footer anchored. */}
+          (subscription panel); API-key mode has extra space below the input,
+          keeping the footer anchored. */}
       <div className="min-h-[260px]">
         {effectiveAuthMode === "subscription" && activeProvider.subscription ? (
           <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-4">
             <div className="flex items-center gap-2 text-sm font-medium">
-              <Terminal className="h-4 w-4" />
+              <LogIn className="h-4 w-4" />
               One-time sign-in for {activeProvider.subscription.label}
             </div>
             <p className="text-xs text-muted-foreground">
               Your {activeProvider.subscription.label} account signs in once on the server that hosts Ironworks. After
-              that, agents use your subscription automatically — no API key needed.
+              that, agents use your subscription automatically - no API key needed.
             </p>
-            <div className="space-y-1.5">
-              <p className="text-xs font-medium text-foreground">An Ironworks admin runs this once:</p>
-              <pre className="rounded bg-background px-3 py-2 text-xs font-mono select-all overflow-x-auto">
-                {`docker exec -it ironworks-atlas-ironworks-1 ${activeProvider.subscription.loginCommand}`}
-              </pre>
+
+            {oauthProvider ? (
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-foreground/90 transition-colors"
+                >
+                  <LogIn className="h-4 w-4" />
+                  Sign in with {activeProvider.subscription.label}
+                </button>
+                <p className="text-xs text-muted-foreground border-t border-border/60 pt-2">
+                  Not an admin? Ask whoever installed Ironworks to complete sign-in, or switch to{" "}
+                  <button
+                    type="button"
+                    onClick={() => onAuthModeChange("api_key")}
+                    className="underline underline-offset-2 hover:text-foreground"
+                  >
+                    API key
+                  </button>{" "}
+                  instead.
+                </p>
+              </div>
+            ) : (
+              // Fallback for providers not yet wired to OAuth flow
               <p className="text-xs text-muted-foreground">
-                The command prints a link. Open the link, sign in with your {activeProvider.subscription.label} account,
-                and you're done. The session stays authenticated until you sign out.
+                Run{" "}
+                <code className="rounded bg-background px-1.5 py-0.5 font-mono">
+                  {activeProvider.subscription.loginCommand}
+                </code>{" "}
+                in the container to authenticate, then return here.
               </p>
-            </div>
-            <p className="text-xs text-muted-foreground border-t border-border/60 pt-2">
-              Not an admin? Send the command above to whoever installed Ironworks, or switch to{" "}
-              <button
-                type="button"
-                onClick={() => onAuthModeChange("api_key")}
-                className="underline underline-offset-2 hover:text-foreground"
-              >
-                API key
-              </button>{" "}
-              instead.
-            </p>
+            )}
           </div>
         ) : (
           <div className="space-y-2">
@@ -209,6 +235,20 @@ export function StepLlmProvider({
         <p className="text-sm text-destructive" role="alert">
           {error}
         </p>
+      )}
+
+      {/* OAuth sign-in modal — rendered at component root so it overlays the wizard */}
+      {oauthProvider && activeProvider.subscription && (
+        <OAuthLoginModal
+          open={modalOpen}
+          provider={oauthProvider}
+          providerLabel={activeProvider.subscription.label}
+          onSuccess={() => {
+            // Surface the subscription as "saved" so the wizard can proceed
+            onAuthModeChange("subscription");
+          }}
+          onOpenChange={setModalOpen}
+        />
       )}
     </div>
   );

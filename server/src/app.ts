@@ -46,6 +46,7 @@ import { libraryRoutes } from "./routes/library.js";
 import { llmRoutes } from "./routes/llms.js";
 import { emailWebhookRoutes, messagingRoutes } from "./routes/messaging.js";
 import { nolanIntegrationRoutes } from "./routes/nolan-integration.js";
+import { oauthLoginRoutes } from "./routes/oauth-login.js";
 import { playbookRoutes } from "./routes/playbooks.js";
 import { playgroundRoutes } from "./routes/playground.js";
 import { privacyRoutes, startRetentionScheduler } from "./routes/privacy.js";
@@ -342,6 +343,7 @@ export async function createApp(
   api.use(expertiseMapRoutes(db));
   api.use(nolanIntegrationRoutes(db));
   api.use(sseRoutes(db));
+  api.use(oauthLoginRoutes());
 
   // Start daily data retention cleanup
   startRetentionScheduler(db);
