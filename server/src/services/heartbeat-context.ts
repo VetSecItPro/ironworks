@@ -832,3 +832,70 @@ export async function injectPlaybookGuidance(
     logger.debug({ err: (err as Error).message, agentId: agent.id }, "playbook RAG injection failed, skipping");
   }
 }
+
+// ── MCP tool injection ─────────────────────────────────────────────────────
+
+/**
+ * Discover enabled MCP servers for this agent and inject their tool lists into
+ * the agent context under `ironworksMcpTools`.
+ *
+ * The injected section uses the `mcp__<server-name>__<tool>` naming convention
+ * so the adapter can route calls back through the MCP client when the agent
+ * invokes one of these tools.
+ *
+ * Best-effort: discovery failures for individual servers are logged and skipped
+ * so a broken server config never blocks agent execution.
+ *
+ * MCP_INTEGRATION_TODO: Process adapters (claude, codex, etc.) receive context
+ * only via env vars and subprocess stdio — they do not read this context key.
+ * Full tool dispatch for process adapters requires either a sidecar proxy or
+ * extending IRONWORKS_CONTEXT env serialization. HTTP adapters (ollama-cloud,
+ * openai-api, etc.) read ironworksMcpTools and include it in the system prompt.
+ */
+export async function injectMcpTools(
+  db: Db,
+  context: Record<string, unknown>,
+  agent: { id: string; companyId: string },
+): Promise<void> {
+  try {
+    const { mcpServerService } = await import("./mcp-server-service.js");
+    const svc = mcpServerService(db);
+    const enabledServers = await svc.listEnabledForAgent(agent.companyId, agent.id);
+    if (enabledServers.length === 0) return;
+
+    const sections: string[] = [];
+
+    for (const server of enabledServers) {
+      try {
+        const tools = await svc.discoverTools(server);
+        if (tools.length === 0) continue;
+
+        const toolLines = tools
+          .map((t) => {
+            const namespacedName = `mcp__${server.name}__${t.name}`;
+            const desc = t.description ? ` — ${t.description}` : "";
+            return `- \`${namespacedName}\`${desc}`;
+          })
+          .join("\n");
+
+        sections.push(`### ${server.name}\n${toolLines}`);
+      } catch (err) {
+        // A broken or unreachable server must not stop the heartbeat run.
+        logger.warn(
+          { err: (err as Error).message, serverId: server.id, serverName: server.name },
+          "MCP tool discovery failed, skipping server",
+        );
+      }
+    }
+
+    if (sections.length === 0) return;
+
+    context.ironworksMcpTools =
+      `## External Tools (MCP)\n\n` +
+      `The following tools are available via connected MCP servers. ` +
+      `Use the exact namespaced name when calling a tool (e.g. \`mcp__Filesystem__read_file\`).\n\n` +
+      sections.join("\n\n");
+  } catch (err) {
+    logger.debug({ err: (err as Error).message }, "MCP tool injection failed, skipping");
+  }
+}

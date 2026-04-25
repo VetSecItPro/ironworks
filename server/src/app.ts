@@ -44,6 +44,7 @@ import { issueRoutes } from "./routes/issues.js";
 import { knowledgeRoutes } from "./routes/knowledge.js";
 import { libraryRoutes } from "./routes/library.js";
 import { llmRoutes } from "./routes/llms.js";
+import { mcpServerRoutes } from "./routes/mcp-servers.js";
 import { emailWebhookRoutes, messagingRoutes } from "./routes/messaging.js";
 import { nolanIntegrationRoutes } from "./routes/nolan-integration.js";
 import { oauthLoginRoutes } from "./routes/oauth-login.js";
@@ -334,6 +335,7 @@ export async function createApp(
   api.use(goalStatsRoutes(db));
   api.use(goalCheckInRoutes(db));
   api.use(aiGoalBreakdownRoutes(db));
+  api.use(mcpServerRoutes(db));
   api.use(messagingRoutes(db));
   api.use(searchRoutes());
   api.use(slimRoutes(db));

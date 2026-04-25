@@ -12,6 +12,7 @@ export { healthRoutes } from "./health.js";
 export { instanceSettingsRoutes } from "./instance-settings.js";
 export { issueRoutes } from "./issues.js";
 export { llmRoutes } from "./llms.js";
+export { mcpServerRoutes } from "./mcp-servers.js";
 export { emailWebhookRoutes, messagingRoutes } from "./messaging.js";
 export { projectRoutes } from "./projects.js";
 export { routineRoutes } from "./routines.js";

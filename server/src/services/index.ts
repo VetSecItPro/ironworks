@@ -92,6 +92,7 @@ export { issueApprovalService } from "./issue-approvals.js";
 export { type IssueFilters, issueService } from "./issues.js";
 export { publishLiveEvent, subscribeCompanyLiveEvents } from "./live-events.js";
 export { messagingBridgeService } from "./messaging-bridges.js";
+export { mcpServerService } from "./mcp-server-service.js";
 export {
   captureAllPerformanceSnapshots,
   capturePerformanceSnapshot,
