@@ -16,11 +16,19 @@ import { computeCost } from "@ironworksai/adapter-utils/http/cost";
 import { HttpAdapterAuthError, HttpAdapterError, HttpAdapterStreamBreak } from "@ironworksai/adapter-utils/http/errors";
 import type { RateLimiter } from "@ironworksai/adapter-utils/http/rate-limiter";
 import { DEFAULT_RETRY_POLICY, runWithRetry } from "@ironworksai/adapter-utils/http/retry";
-import { appendTurn, buildTranscript, deserializeSession } from "@ironworksai/adapter-utils/http/session-replay";
+import {
+  appendTurn,
+  buildTranscript,
+  compactIfNeeded,
+  deserializeSession,
+  type MessageTurn,
+} from "@ironworksai/adapter-utils/http/session-replay";
 import type { UsageSummary } from "@ironworksai/adapter-utils/http/sse-parser";
 import { parseSseStream } from "@ironworksai/adapter-utils/http/sse-parser";
 import type { Transport } from "@ironworksai/adapter-utils/http/transport";
 import { validateOpenRouterConfig } from "../shared/config.js";
+import { OPENROUTER_MODELS } from "../shared/models.js";
+import { checkAndIncrement } from "./daily-quota.js";
 import { isAdapterDisabled } from "./kill-switch.js";
 import { adapterRateLimiter } from "./rate-limit-config.js";
 
@@ -33,6 +41,92 @@ const DEFAULT_HTTP_REFERER = "https://command.useapex.io";
 const DEFAULT_X_TITLE = "IronWorks";
 
 const DEFAULT_SYSTEM_PROMPT = "You are a helpful AI agent operating inside the IronWorks multi-agent framework.";
+
+// Cheapest free Western model — used for transcript summarization when an
+// agent's session approaches the context budget. Picked for speed and cost,
+// not strength — summarization is a compression task, not a reasoning task.
+const SUMMARIZATION_MODEL = "google/gemma-3-12b-it:free";
+
+// Default context window assumed when a model isn't in OPENROUTER_MODELS.
+// Most modern open-weight models converge on 128K, so this is a safe floor.
+const DEFAULT_CONTEXT_WINDOW_TOKENS = 131072;
+
+const SUMMARIZATION_SYSTEM_PROMPT = `You are a transcript-summarization assistant. Compress the conversation history below into a concise, faithful summary that preserves: (1) decisions made and their rationale, (2) tasks identified and their owners, (3) facts and findings the next assistant turn will need, (4) any open questions or pending items. Drop greetings, restatements, and conversational fluff. Output as terse bulleted notes — under 400 words. Do not editorialize.`;
+
+interface SummarizerDeps {
+  apiKey: string;
+  httpReferer: string;
+  xTitle: string;
+  transport: Transport;
+  onLog: AdapterExecutionContext["onLog"];
+}
+
+function turnsToPlainText(turns: MessageTurn[]): string {
+  return turns
+    .map((turn) => {
+      const text =
+        typeof turn.content === "string"
+          ? turn.content
+          : turn.content
+              .filter((b): b is { type: "text"; text: string } => b.type === "text")
+              .map((b) => b.text)
+              .join("\n");
+      return text.trim().length > 0 ? `[${turn.role}] ${text}` : null;
+    })
+    .filter((s): s is string => s !== null)
+    .join("\n\n");
+}
+
+/**
+ * Build a summarizer compatible with session-replay's `Compactor` type. Uses a
+ * small/fast free model via a non-streaming POST — summarization is a
+ * compression task, not a reasoning task, so model strength doesn't matter
+ * much; cost and latency do. Returned string is wrapped by compactIfNeeded
+ * into a synthetic assistant turn the next round will see as established
+ * context.
+ *
+ * Tolerant of failure: if the summarization call errors out, we throw —
+ * compactIfNeeded then falls through to its hard-truncation path, which keeps
+ * the heartbeat alive (just with less faithful prefix preservation).
+ */
+function makeSummarizer(deps: SummarizerDeps): (turns: MessageTurn[]) => Promise<string> {
+  return async (turns: MessageTurn[]) => {
+    const joinedText = turnsToPlainText(turns);
+    const response = await fetch(OPENROUTER_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${deps.apiKey}`,
+        "HTTP-Referer": deps.httpReferer,
+        "X-Title": deps.xTitle,
+      },
+      body: JSON.stringify({
+        model: SUMMARIZATION_MODEL,
+        max_tokens: 512,
+        messages: [
+          { role: "system", content: SUMMARIZATION_SYSTEM_PROMPT },
+          { role: "user", content: joinedText },
+        ],
+      }),
+    });
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      await deps.onLog("stderr", `[openrouter-api] summarization HTTP ${response.status}: ${text.slice(0, 200)}\n`);
+      throw new Error(`summarization HTTP ${response.status}`);
+    }
+    const json = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
+    const summary = json.choices?.[0]?.message?.content?.trim();
+    if (!summary || summary.length === 0) {
+      throw new Error("summarization returned empty result");
+    }
+    return `[Earlier conversation summary]\n\n${summary}`;
+  };
+}
+
+function getContextWindowFor(modelId: string): number {
+  const entry = OPENROUTER_MODELS.find((m) => m.id === modelId);
+  return entry?.contextWindowTokens ?? DEFAULT_CONTEXT_WINDOW_TOKENS;
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -109,8 +203,8 @@ export async function execute(
   const { config } = validation;
   const model = config.model;
 
-  const apiKey = resolveApiKey(ctx.config) ?? process.env.ADAPTER_OPENROUTER_API_KEY ?? null;
-  if (!apiKey) {
+  const apiKeyOrNull = resolveApiKey(ctx.config) ?? process.env.ADAPTER_OPENROUTER_API_KEY ?? null;
+  if (!apiKeyOrNull) {
     return {
       exitCode: 1,
       signal: null,
@@ -118,6 +212,21 @@ export async function execute(
       errorMessage:
         "OpenRouter API key is not configured. Set apiKey in adapter config or ADAPTER_OPENROUTER_API_KEY environment variable.",
       errorCode: "openrouter_api_config_error",
+    };
+  }
+  const apiKey: string = apiKeyOrNull;
+
+  // Per-agent daily quota guard — prevents a single runaway agent from burning
+  // the whole free-tier budget. Cap is configurable via OPENROUTER_API_DAILY_AGENT_CAP
+  // env var; defaults to 250/agent/UTC-day. Resets at UTC midnight.
+  const quota = checkAndIncrement(ctx.agent?.id ?? null);
+  if (!quota.allowed) {
+    return {
+      exitCode: 1,
+      signal: null,
+      timedOut: false,
+      errorMessage: `OpenRouter daily request cap reached for this agent (${quota.countToday}/${quota.cap} on ${quota.utcDate} UTC). Resets at UTC midnight. Override via OPENROUTER_API_DAILY_AGENT_CAP env var.`,
+      errorCode: "openrouter_api_daily_quota_exceeded",
     };
   }
 
@@ -144,14 +253,36 @@ export async function execute(
 
   sessionState = appendTurn(sessionState, { role: "user", content: userMessage });
 
-  // buildTranscript with format:"openai" produces the OpenAI-compat messages array
-  // that OpenRouter accepts (same wire format as openai-api and poe-api).
-  const messages = buildTranscript(sessionState, { format: "openai" }) as unknown[];
-
   // OpenRouter identifying headers — required per their convention for routing/dashboards.
   // Configurable so operators can brand their own deployments.
   const httpReferer = config.httpReferer ?? DEFAULT_HTTP_REFERER;
   const xTitle = config.xTitle ?? DEFAULT_X_TITLE;
+
+  // Context discipline: when the transcript estimate approaches the model's
+  // context cliff, summarize the older prefix into a synthetic assistant turn
+  // before we send it. Trigger fires at 0.85x context (early warning); target
+  // post-compaction is 0.5x context (room for response + new turns).
+  const contextWindow = getContextWindowFor(model);
+  const triggerTokens = Math.floor(contextWindow * 0.85);
+  const targetTokens = Math.floor(contextWindow * 0.5);
+  const compactionResult = await compactIfNeeded(sessionState, {
+    triggerTokens,
+    targetTokens,
+    preserveRecent: 6,
+    systemPrompt: DEFAULT_SYSTEM_PROMPT,
+    compactor: makeSummarizer({ apiKey, httpReferer, xTitle, transport, onLog: ctx.onLog }),
+  });
+  if (compactionResult.outcome !== "no-op") {
+    await ctx.onLog(
+      "stdout",
+      `[openrouter-api] compaction outcome=${compactionResult.outcome} tokens=${compactionResult.estimatedTokensBefore}→${compactionResult.estimatedTokensAfter} compactedTurns=${compactionResult.compactedTurnCount}\n`,
+    );
+  }
+  sessionState = compactionResult.state;
+
+  // buildTranscript with format:"openai" produces the OpenAI-compat messages array
+  // that OpenRouter accepts (same wire format as openai-api and poe-api).
+  const messages = buildTranscript(sessionState, { format: "openai" }) as unknown[];
 
   // Build OpenAI-compat request body
   const requestBody: Record<string, unknown> = {
@@ -170,8 +301,13 @@ export async function execute(
 
   let usage: UsageSummary | undefined;
   const textChunks: string[] = [];
+  let modelUsed = model;
 
-  try {
+  // Single-attempt runner — wraps the streaming POST so we can call it twice
+  // (primary + fallback) without duplicating SSE parsing logic.
+  async function runWithModel(modelId: string) {
+    requestBody.model = modelId;
+    modelUsed = modelId;
     await runWithRetry(
       async (retryCtx) => {
         const response = await transport.sendJsonStream({
@@ -223,7 +359,42 @@ export async function execute(
         },
       },
     );
-  } catch (err) {
+  }
+
+  // Eligible-for-fallback: only swap models on transient upstream issues that
+  // are likely model-specific (rate-limit, model overload, gateway errors).
+  // Auth errors, config errors, and post-tool-call stream breaks must NOT
+  // trigger a model swap (R16 + auth invariants).
+  function isFallbackEligible(err: unknown): boolean {
+    if (err instanceof HttpAdapterAuthError) return false;
+    if (err instanceof HttpAdapterStreamBreak && err.toolCallEmitted) return false;
+    if (err instanceof HttpAdapterError) {
+      return err.code === "rate_limited" || err.code === "server_error" || err.code === "circuit_open";
+    }
+    return false;
+  }
+
+  try {
+    await runWithModel(model);
+  } catch (primaryErr) {
+    if (config.fallbackModel && isFallbackEligible(primaryErr)) {
+      await ctx.onLog(
+        "stderr",
+        `[openrouter-api] primary model ${model} exhausted retries (${errorCodeFrom(primaryErr)}); attempting fallback ${config.fallbackModel}\n`,
+      );
+      try {
+        await runWithModel(config.fallbackModel);
+      } catch (fallbackErr) {
+        // Surface the fallback's failure — primary's error is already logged above.
+        return handleExecError(fallbackErr);
+      }
+    } else {
+      return handleExecError(primaryErr);
+    }
+  }
+
+  // Continue to cost computation below (success path).
+  function handleExecError(err: unknown): AdapterExecutionResult {
     if (err instanceof HttpAdapterAuthError) {
       return {
         exitCode: 1,
@@ -258,7 +429,7 @@ export async function execute(
   // in pricing-table.ts. If the specific model isn't in the table, costUsd is null (R19 graceful).
   let costUsd: number | null = null;
   if (usage) {
-    const costResult = computeCost("openrouter", model, usage);
+    const costResult = computeCost("openrouter", modelUsed, usage);
     costUsd = costResult.totalUsd > 0 ? costResult.totalUsd : null;
     if (costResult.warnings.length > 0) {
       await ctx.onLog("stderr", `[openrouter-api] cost warnings: ${costResult.warnings.join("; ")}\n`);
@@ -279,7 +450,7 @@ export async function execute(
     signal: null,
     timedOut: false,
     provider: "openrouter",
-    model,
+    model: modelUsed,
     ...(usage
       ? {
           usage: {

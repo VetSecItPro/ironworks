@@ -329,10 +329,17 @@ export async function handleLaunch(deps: WizardHandlerDeps, params: LaunchParams
             agentsMd: template?.agents ?? null,
           };
         });
+        // Pack flow skips Step 3-manual where the user would have set adapterType
+        // explicitly, so derive it from the LLM provider chosen in Step 2.
+        // OpenRouter API-key flow → openrouter_api; the server then picks a
+        // tier-appropriate model per role from the role template.
+        const packAdapterType: AdapterType =
+          !isSubscription && params.llmProvider === "openrouter" ? "openrouter_api" : params.adapterType;
+        const packAdapterConfig = packAdapterType === "openrouter_api" ? { temperature: 0.7 } : params.adapterConfig;
         const result = await agentsApi.deployTeamPack(company.id, {
           agents: agentPayloads,
-          adapterType: params.adapterType,
-          adapterConfig: params.adapterConfig,
+          adapterType: packAdapterType,
+          adapterConfig: packAdapterConfig,
         });
         deps.setPackProgress({ done: sorted.length, total: sorted.length });
         if (result.agents.length > 0) {

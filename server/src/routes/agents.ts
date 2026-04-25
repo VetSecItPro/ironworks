@@ -1625,8 +1625,26 @@ export function agentRoutes(db: Db) {
     const createdAgents: NonNullable<Awaited<ReturnType<typeof svc.getById>>>[] = [];
 
     for (const item of body.agents) {
-      const adapterType = item.suggestedAdapter || body.adapterType;
-      const baseAdapterConfig = applyCreateDefaultsByAdapterType(adapterType, body.adapterConfig ?? {});
+      // Honor the wizard's chosen adapter. The role template's
+      // `suggestedAdapter` is only a fallback when the caller didn't pick one
+      // — otherwise picking OpenRouter in the wizard would silently land every
+      // agent on `claude_local` (the default suggested by every role template).
+      const adapterType = body.adapterType || item.suggestedAdapter || "claude_local";
+      const roleTemplate = ROLE_TEMPLATES.find((t) => t.key === item.templateKey);
+      // OpenRouter needs an explicit model. When the wizard didn't supply one
+      // (and we have a role template), seed `model` from the role's
+      // `modelPrimary` and `fallbackModel` from `modelFallback`. The OpenRouter
+      // adapter will run primary first, swap to fallback only on rate-limit /
+      // server / circuit-open errors after the primary's retry budget is spent.
+      const adapterConfigWithTier =
+        adapterType === "openrouter_api" && !(body.adapterConfig ?? {}).model && roleTemplate
+          ? {
+              ...(body.adapterConfig ?? {}),
+              model: roleTemplate.modelPrimary,
+              fallbackModel: roleTemplate.modelFallback,
+            }
+          : (body.adapterConfig ?? {});
+      const baseAdapterConfig = applyCreateDefaultsByAdapterType(adapterType, adapterConfigWithTier);
       const desiredSkillAssignment = await resolveDesiredSkillAssignment(
         companyId,
         adapterType,
@@ -1643,8 +1661,7 @@ export function agentRoutes(db: Db) {
 
       const reportsToAgentId = item.reportsTo ? (agentIdByTemplateKey.get(item.reportsTo) ?? null) : null;
 
-      // Resolve soul/agents content from the role template or explicit body fields
-      const roleTemplate = ROLE_TEMPLATES.find((t) => t.key === item.templateKey);
+      // Resolve soul/agents content from the role template (already fetched above) or explicit body fields
       const soulContent = item.soulMd ?? roleTemplate?.soul ?? null;
       const agentsContent = item.agentsMd ?? roleTemplate?.agents ?? null;
       const resolvedAgentInstructions = agentsContent ? `${COMMON_AGENT_PREAMBLE}\n\n${agentsContent}` : null;
@@ -1660,7 +1677,12 @@ export function agentRoutes(db: Db) {
         runtimeConfig: {
           heartbeat: {
             enabled: true,
-            intervalSec: 3600,
+            // 4hr idle interval — agents wake instantly on issue assignment
+            // / @mention via wakeOnDemand, so responsiveness is preserved.
+            // Cuts baseline call volume ~75% vs the prior 1hr default,
+            // materially preserving free-tier per-model rate-limit budget
+            // for actual work.
+            intervalSec: 14400,
             wakeOnDemand: true,
             cooldownSec: 10,
             maxConcurrentRuns: 1,

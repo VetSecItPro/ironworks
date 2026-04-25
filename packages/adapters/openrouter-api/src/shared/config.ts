@@ -13,6 +13,14 @@ export interface OpenRouterAdapterConfig {
   apiKey?: string;
   /** OpenRouter model ID — required. */
   model: string;
+  /**
+   * Optional fallback model ID. When the primary `model` exhausts retries with
+   * a rate-limit or server error, the adapter runs one final attempt against
+   * this model before surfacing the failure. Free-tier models on OpenRouter
+   * are rate-limited per-model (not per-account), so a fallback meaningfully
+   * lifts effective throughput for long-running fleets.
+   */
+  fallbackModel?: string;
   /** Sampling temperature [0, 2]. Optional. */
   temperature?: number;
   /** Max tokens for completion. Optional — defaults to 4096. */
@@ -77,6 +85,26 @@ export function validateOpenRouterConfig(raw: unknown): ValidateOpenRouterConfig
     };
   }
 
+  // fallbackModel optional — must be a known model ID if provided. Same registry as primary.
+  let fallbackModel: string | undefined;
+  if (record.fallbackModel !== undefined) {
+    if (typeof record.fallbackModel !== "string" || record.fallbackModel.trim().length === 0) {
+      return { ok: false, error: "fallbackModel must be a non-empty string when provided." };
+    }
+    const fb = record.fallbackModel.trim();
+    if (!OPENROUTER_MODEL_IDS.has(fb)) {
+      return {
+        ok: false,
+        error: `Unknown OpenRouter fallbackModel: "${fb}". Use one of the supported model IDs.`,
+        suggestions: OPENROUTER_MODELS.map((m) => m.id),
+      };
+    }
+    if (fb === model) {
+      return { ok: false, error: "fallbackModel must differ from primary model." };
+    }
+    fallbackModel = fb;
+  }
+
   // temperature optional [0, 2]
   if (record.temperature !== undefined) {
     const temp = record.temperature;
@@ -129,6 +157,7 @@ export function validateOpenRouterConfig(raw: unknown): ValidateOpenRouterConfig
 
   const config: OpenRouterAdapterConfig = {
     model,
+    ...(fallbackModel !== undefined ? { fallbackModel } : {}),
     ...(apiKey !== undefined ? { apiKey } : {}),
     ...(record.temperature !== undefined ? { temperature: record.temperature as number } : {}),
     ...(record.maxTokens !== undefined ? { maxTokens: record.maxTokens as number } : {}),

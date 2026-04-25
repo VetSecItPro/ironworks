@@ -34,6 +34,7 @@ import { notFound } from "../errors.js";
 import { resolveDefaultAgentWorkspaceDir, resolveManagedProjectWorkspaceDir } from "../home-paths.js";
 import { redactCurrentUserText, redactCurrentUserValue } from "../log-redaction.js";
 import { logger } from "../middleware/logger.js";
+import { TEAM_DIRECTORY_PLACEHOLDER } from "../onboarding-assets/role-templates.js";
 import { logActivity } from "./activity-log.js";
 import { type BudgetEnforcementScope, budgetService } from "./budgets.js";
 import { companySkillService } from "./company-skills.js";
@@ -158,6 +159,30 @@ import {
 } from "./workspace-runtime.js";
 
 const execFile = promisify(execFileCallback);
+
+/**
+ * Render a per-company colleague directory for substitution into the shared
+ * `{{TEAM_DIRECTORY}}` placeholder in COMMON_AGENT_PREAMBLE. Each line is one
+ * colleague (excluding self). Falls back to a "no colleagues" stub when the
+ * agent is the only one in the company — keeps the prompt structurally valid
+ * even on pre-fleet installs.
+ *
+ * Reads only `name`, `title`, `role` per agent — small query, fine to run on
+ * every heartbeat. No caching needed: the result is small and renames matter
+ * to land immediately.
+ */
+async function renderTeamDirectory(db: Db, companyId: string, currentAgentId: string): Promise<string> {
+  const colleagues = await db
+    .select({ name: agents.name, title: agents.title, role: agents.role })
+    .from(agents)
+    .where(
+      and(eq(agents.companyId, companyId), sql`${agents.id} <> ${currentAgentId}`, sql`${agents.terminatedAt} IS NULL`),
+    );
+  if (colleagues.length === 0) {
+    return "_(no other agents on this team yet)_";
+  }
+  return colleagues.map((c) => `- ${c.name} (${c.title ?? c.role})`).join("\n");
+}
 
 function deriveRepoNameFromRepoUrl(repoUrl: string | null): string | null {
   const trimmed = repoUrl?.trim() ?? "";
@@ -2171,7 +2196,17 @@ export function heartbeatService(db: Db) {
         context.systemPrompt = agent.systemPrompt;
       }
       if (typeof agent.agentInstructions === "string" && agent.agentInstructions) {
-        context.agentInstructions = agent.agentInstructions;
+        // The shared preamble carries a {{TEAM_DIRECTORY}} placeholder so the
+        // colleague list reflects THIS company's actual agent names + titles
+        // rather than baking SteelMotion/Atlas/etc. names into the global
+        // template. Substitute lazily per heartbeat — picks up renames
+        // immediately without any prompt-version migration.
+        let instructions = agent.agentInstructions;
+        if (instructions.includes(TEAM_DIRECTORY_PLACEHOLDER)) {
+          const directory = await renderTeamDirectory(db, agent.companyId, agent.id);
+          instructions = instructions.split(TEAM_DIRECTORY_PLACEHOLDER).join(directory);
+        }
+        context.agentInstructions = instructions;
       }
 
       // Inject platform awareness — runs every heartbeat, gives agents a full

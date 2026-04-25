@@ -116,15 +116,6 @@ export function StepLaunch({
           )}
         </div>
       </div>
-
-      {/* What happens next explainer */}
-      <div className="rounded-md border border-border bg-muted/20 px-3 py-2.5">
-        <p className="text-xs font-medium text-foreground/80">What happens next</p>
-        <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-          Your agent will start working on the task. Check the dashboard in a few minutes to see progress, review
-          deliverables, and follow activity.
-        </p>
-      </div>
     </div>
   );
 }
