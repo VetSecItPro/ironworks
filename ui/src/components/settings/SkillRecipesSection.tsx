@@ -15,11 +15,16 @@
  * Bulk-approve renders a multi-select checkbox column on the Proposed tab and
  * a single "Approve selected" button below the table.
  *
+ * PR 6/6 additions:
+ *   - Pause/Resume toggle button on the active-tab detail panel.
+ *   - "paused" badge in the Active list view for paused recipes.
+ *   - Paused recipes still appear in the Active tab so operators can unpause them.
+ *
  * @see MDMP §3.4 for the wireframe that drove this layout.
  */
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle, ChevronRight, Circle, Wand2, XCircle } from "lucide-react";
+import { CheckCircle, ChevronRight, Circle, PauseCircle, PlayCircle, Wand2, XCircle } from "lucide-react";
 import { useState } from "react";
 import {
   type EditRecipePatch,
@@ -38,7 +43,17 @@ import { Textarea } from "../ui/textarea";
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
-function StatusBadge({ status }: { status: SkillRecipeStatus }) {
+function StatusBadge({ status, paused = false }: { status: SkillRecipeStatus; paused?: boolean }) {
+  // Paused active recipes show a distinct badge so operators can spot them at a glance
+  if (status === "active" && paused) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium bg-orange-100 text-orange-800 border-orange-200">
+        <PauseCircle className="h-3 w-3" />
+        paused
+      </span>
+    );
+  }
+
   const variants: Record<SkillRecipeStatus, { label: string; className: string }> = {
     proposed: { label: "proposed", className: "bg-yellow-100 text-yellow-800 border-yellow-200" },
     approved: { label: "approved", className: "bg-blue-100 text-blue-800 border-blue-200" },
@@ -236,6 +251,22 @@ function DetailPanel({ recipeId, companyId, onClose }: DetailPanelProps) {
     },
   });
 
+  const pauseMutation = useMutation({
+    mutationFn: () => skillRecipesApi.pause(recipeId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.skillRecipes.list(companyId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.skillRecipes.detail(recipeId) });
+    },
+  });
+
+  const resumeMutation = useMutation({
+    mutationFn: () => skillRecipesApi.resume(recipeId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.skillRecipes.list(companyId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.skillRecipes.detail(recipeId) });
+    },
+  });
+
   const recipe = detailQuery.data;
 
   if (detailQuery.isLoading) {
@@ -248,6 +279,7 @@ function DetailPanel({ recipeId, companyId, onClose }: DetailPanelProps) {
 
   const isProposed = recipe.status === "proposed";
   const isActive = recipe.status === "active";
+  const isPaused = recipe.pausedAt != null;
 
   return (
     <div className="space-y-4 px-1">
@@ -255,7 +287,7 @@ function DetailPanel({ recipeId, companyId, onClose }: DetailPanelProps) {
       <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-muted-foreground">
         <div>
           <span className="font-medium text-foreground">Status: </span>
-          <StatusBadge status={recipe.status} />
+          <StatusBadge status={recipe.status} paused={recipe.pausedAt != null} />
         </div>
         <div>
           <span className="font-medium text-foreground">Confidence: </span>
@@ -285,6 +317,12 @@ function DetailPanel({ recipeId, companyId, onClose }: DetailPanelProps) {
           <span className="font-medium text-foreground">Extracted: </span>
           {new Date(recipe.createdAt).toLocaleString()}
         </div>
+        {recipe.pausedAt && (
+          <div className="col-span-2 text-orange-700">
+            <span className="font-medium">Paused since: </span>
+            {new Date(recipe.pausedAt).toLocaleString()}
+          </div>
+        )}
       </div>
 
       {/* Action buttons for proposed status */}
@@ -305,9 +343,30 @@ function DetailPanel({ recipeId, companyId, onClose }: DetailPanelProps) {
         </div>
       )}
 
-      {/* Archive button for active recipes */}
+      {/* Pause/Resume + Archive buttons for active recipes */}
       {isActive && mode === "view" && (
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          {isPaused ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => resumeMutation.mutate()}
+              disabled={resumeMutation.isPending}
+            >
+              <PlayCircle className="h-3.5 w-3.5 mr-1.5" />
+              {resumeMutation.isPending ? "Resuming..." : "Resume"}
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => pauseMutation.mutate()}
+              disabled={pauseMutation.isPending}
+            >
+              <PauseCircle className="h-3.5 w-3.5 mr-1.5" />
+              {pauseMutation.isPending ? "Pausing..." : "Pause"}
+            </Button>
+          )}
           <Button
             size="sm"
             variant="outline"
@@ -320,10 +379,21 @@ function DetailPanel({ recipeId, companyId, onClose }: DetailPanelProps) {
       )}
 
       {/* Mutation error */}
-      {(approveMutation.isError || editMutation.isError || rejectMutation.isError || archiveMutation.isError) && (
+      {(approveMutation.isError ||
+        editMutation.isError ||
+        rejectMutation.isError ||
+        archiveMutation.isError ||
+        pauseMutation.isError ||
+        resumeMutation.isError) && (
         <p className="text-xs text-destructive">
-          {(approveMutation.error ?? editMutation.error ?? rejectMutation.error ?? archiveMutation.error)?.message ??
-            "An error occurred."}
+          {(
+            approveMutation.error ??
+            editMutation.error ??
+            rejectMutation.error ??
+            archiveMutation.error ??
+            pauseMutation.error ??
+            resumeMutation.error
+          )?.message ?? "An error occurred."}
         </p>
       )}
 
@@ -485,7 +555,7 @@ function RecipeTable({ items, selectedIds, onToggleSelect, onSelectRow, showChec
                 )}
               </td>
               <td className="px-4 py-2">
-                <StatusBadge status={item.status} />
+                <StatusBadge status={item.status} paused={item.pausedAt != null} />
               </td>
               <td className="px-4 py-2 text-right text-xs text-muted-foreground">{item.confidence}%</td>
               <td className="px-4 py-2 text-xs text-muted-foreground">

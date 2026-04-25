@@ -18,6 +18,7 @@ import { issueLabels, issues, labels, skillRecipes } from "@ironworksai/db";
 import { and, eq, sql } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 import { resolveProviderSecret } from "./provider-secret-resolver.js";
+import { checkCostOverhead, isSkillLoopCostDisabled } from "./skill-circuit-breaker.js";
 import { SKILL_MATCHER_PROMPT_V1 } from "./skill-prompts.js";
 
 // ── Re-export the SkillRecipe inferred type for callers that don't import from DB ──
@@ -79,11 +80,15 @@ function isSkillLoopEnabled(companyId: string): boolean {
 // ── DB helpers ───────────────────────────────────────────────────────────────
 
 /**
- * Fetch all `active` recipes for a company where `applicable_role_titles`
- * contains the agent's role title (Postgres array overlap operator `@>`).
+ * Fetch all `active`, non-paused recipes for a company where
+ * `applicable_role_titles` contains the agent's role title.
  *
  * An empty `applicable_role_titles` array means the recipe has no role
  * restriction and is always included — guarded by the OR clause below.
+ *
+ * Recipes with a non-null `paused_at` are excluded so a paused recipe stops
+ * being injected immediately without a status change. They remain 'active' and
+ * resume on the very next heartbeat once `paused_at` is cleared.
  */
 async function fetchCandidateRecipes(db: Db, companyId: string, agentRoleTitle: string): Promise<SkillRecipe[]> {
   return db
@@ -93,6 +98,8 @@ async function fetchCandidateRecipes(db: Db, companyId: string, agentRoleTitle: 
       and(
         eq(skillRecipes.companyId, companyId),
         eq(skillRecipes.status, "active"),
+        // Exclude operator-paused and runaway-detector-paused recipes
+        sql`${skillRecipes.pausedAt} IS NULL`,
         // Include recipes that restrict to this role OR have no role restriction
         sql`(
           ${skillRecipes.applicableRoleTitles} @> ARRAY[${agentRoleTitle}]::text[]
@@ -257,6 +264,26 @@ export async function matchSkillsForRun(db: Db, opts: MatchSkillsOpts): Promise<
   if (!isSkillLoopEnabled(companyId)) return [];
   // Matcher requires an issue to provide context — skills are issue-scoped in v1
   if (!issueId) return [];
+
+  // Fast denylist check (in-memory) before the candidate DB query
+  if (isSkillLoopCostDisabled(companyId)) {
+    logger.info({ companyId, agentId }, "[skill-matching] skill loop disabled by cost circuit breaker, skipping");
+    return [];
+  }
+
+  // Cost overhead check — skip matcher LLM call if spend is over threshold
+  const costCheck = await checkCostOverhead(db, companyId).catch((err) => {
+    logger.warn({ err, companyId }, "[skill-matching] cost overhead check failed (non-fatal), proceeding");
+    return null;
+  });
+
+  if (costCheck?.shouldDisable) {
+    logger.info(
+      { companyId, agentId, ratio: costCheck.ratio },
+      "[skill-matching] cost circuit breaker triggered, skipping matcher",
+    );
+    return [];
+  }
 
   try {
     const candidates = await fetchCandidateRecipes(db, companyId, agentRoleTitle);

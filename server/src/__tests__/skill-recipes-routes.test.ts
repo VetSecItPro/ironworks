@@ -1,5 +1,5 @@
 /**
- * Route-level tests for skill-recipes — PR 3/6 of the skill loop.
+ * Route-level tests for skill-recipes — PRs 3/6 and 6/6 of the skill loop.
  *
  * Coverage:
  *   1. GET /companies/:id/skill-recipes — list with optional status filter
@@ -10,6 +10,8 @@
  *   6. POST /skill-recipes/:id/reject — persists reason
  *   7. POST /skill-recipes/:id/archive — sets archived_at
  *   8. Audit log entry is created on each state transition (approve/reject/archive/edit)
+ *   9. POST /skill-recipes/:id/pause — sets paused_at + audit log
+ *  10. POST /skill-recipes/:id/resume — clears paused_at + audit log
  */
 
 import express from "express";
@@ -42,6 +44,7 @@ function makeRecipeListItem(overrides: Record<string, unknown> = {}) {
     archivedAt: null,
     approvedAt: null,
     approvedByUserId: null,
+    pausedAt: null,
     ...overrides,
   };
 }
@@ -93,6 +96,8 @@ const mockSvc = vi.hoisted(() => ({
   approveRecipe: vi.fn(),
   rejectRecipe: vi.fn(),
   archiveRecipe: vi.fn(),
+  pauseRecipe: vi.fn(),
+  resumeRecipe: vi.fn(),
 }));
 
 vi.mock("../services/skill-recipe-service.js", () => ({
@@ -321,6 +326,78 @@ describe("Audit log entries on state transitions", () => {
     await request(makeApp()).post(`/skill-recipes/${RECIPE_ID}/archive`);
 
     const [calledId, calledUserId] = mockSvc.archiveRecipe.mock.calls[0] as [string, string];
+    expect(calledId).toBe(RECIPE_ID);
+    expect(calledUserId).toBe(USER_ID);
+  });
+});
+
+// ── PR 6/6 — Pause / Resume ───────────────────────────────────────────────────
+
+describe("POST /skill-recipes/:id/pause", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("sets paused_at via service and returns updated recipe", async () => {
+    const now = new Date();
+    mockSvc.detail.mockResolvedValue(makeRecipeDetail({ status: "active" }));
+    const paused = makeRecipeListItem({ status: "active", pausedAt: now });
+    mockSvc.pauseRecipe.mockResolvedValue(paused);
+
+    const res = await request(makeApp()).post(`/skill-recipes/${RECIPE_ID}/pause`);
+
+    expect(res.status).toBe(200);
+    // pausedAt should be non-null in the response
+    expect(res.body.pausedAt).not.toBeNull();
+    expect(mockSvc.pauseRecipe).toHaveBeenCalledWith(RECIPE_ID, USER_ID);
+  });
+
+  it("returns 404 when recipe not found", async () => {
+    mockSvc.detail.mockResolvedValue(null);
+    const res = await request(makeApp()).post("/skill-recipes/nonexistent/pause");
+    expect(res.status).toBe(404);
+    expect(mockSvc.pauseRecipe).not.toHaveBeenCalled();
+  });
+
+  it("passes correct userId so audit log records the operator", async () => {
+    mockSvc.detail.mockResolvedValue(makeRecipeDetail({ status: "active" }));
+    mockSvc.pauseRecipe.mockResolvedValue(makeRecipeListItem({ status: "active", pausedAt: new Date() }));
+
+    await request(makeApp()).post(`/skill-recipes/${RECIPE_ID}/pause`);
+
+    const [calledId, calledUserId] = mockSvc.pauseRecipe.mock.calls[0] as [string, string];
+    expect(calledId).toBe(RECIPE_ID);
+    expect(calledUserId).toBe(USER_ID);
+  });
+});
+
+describe("POST /skill-recipes/:id/resume", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("clears paused_at via service and returns updated recipe", async () => {
+    mockSvc.detail.mockResolvedValue(makeRecipeDetail({ status: "active", pausedAt: new Date() }));
+    const resumed = makeRecipeListItem({ status: "active", pausedAt: null });
+    mockSvc.resumeRecipe.mockResolvedValue(resumed);
+
+    const res = await request(makeApp()).post(`/skill-recipes/${RECIPE_ID}/resume`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.pausedAt).toBeNull();
+    expect(mockSvc.resumeRecipe).toHaveBeenCalledWith(RECIPE_ID, USER_ID);
+  });
+
+  it("returns 404 when recipe not found", async () => {
+    mockSvc.detail.mockResolvedValue(null);
+    const res = await request(makeApp()).post("/skill-recipes/nonexistent/resume");
+    expect(res.status).toBe(404);
+    expect(mockSvc.resumeRecipe).not.toHaveBeenCalled();
+  });
+
+  it("passes correct userId so audit log records the operator", async () => {
+    mockSvc.detail.mockResolvedValue(makeRecipeDetail({ status: "active", pausedAt: new Date() }));
+    mockSvc.resumeRecipe.mockResolvedValue(makeRecipeListItem({ status: "active", pausedAt: null }));
+
+    await request(makeApp()).post(`/skill-recipes/${RECIPE_ID}/resume`);
+
+    const [calledId, calledUserId] = mockSvc.resumeRecipe.mock.calls[0] as [string, string];
     expect(calledId).toBe(RECIPE_ID);
     expect(calledUserId).toBe(USER_ID);
   });
