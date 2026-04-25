@@ -372,8 +372,11 @@ export async function handleLaunch(
       deps.setCreatedProjectId(projectId);
       deps.queryClient.invalidateQueries({ queryKey: queryKeys.projects.list(createdCompanyId) });
     }
+    // Task is optional — user may have skipped step 4. Only create an issue
+    // when we actually have a title to create one with.
     let issueRef = createdIssueRef;
-    if (!issueRef) {
+    const hasTask = taskTitle.trim().length > 0;
+    if (hasTask && !issueRef) {
       const issue = await issuesApi.create(
         createdCompanyId,
         buildOnboardingIssuePayload({
@@ -408,7 +411,12 @@ export async function handleLaunch(
     deps.setSelectedCompanyId(createdCompanyId);
     reset();
     closeOnboarding();
-    navigate(createdCompanyPrefix ? `/${createdCompanyPrefix}/issues/${issueRef}` : `/issues/${issueRef}`);
+    if (issueRef) {
+      navigate(createdCompanyPrefix ? `/${createdCompanyPrefix}/issues/${issueRef}` : `/issues/${issueRef}`);
+    } else {
+      // No first task — drop the user on the agents list so they can interact directly.
+      navigate(createdCompanyPrefix ? `/${createdCompanyPrefix}/agents` : "/agents");
+    }
   } catch (err) {
     deps.setError(err instanceof Error ? err.message : "Failed to create task");
   } finally {

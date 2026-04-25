@@ -143,6 +143,7 @@ export function OnboardingWizard() {
                   agentName={w.agentName}
                   adapterType={w.adapterType}
                   taskTitle={w.taskTitle}
+                  taskSaved={w.taskSaved}
                   onStepClick={w.setStep}
                 />
               )}
@@ -187,6 +188,7 @@ export function OnboardingWizard() {
                 onPackDeploy={() => void w.handlePackDeploy()}
                 taskTitleValid={!!w.taskTitle.trim()}
                 onStep3Next={() => void w.handleStep3Next()}
+                onSkipTask={() => w.handleSkipTask()}
                 onLaunch={() => void w.handleLaunch()}
                 onBack={() => w.setStep((w.step - 1) as Step)}
               />

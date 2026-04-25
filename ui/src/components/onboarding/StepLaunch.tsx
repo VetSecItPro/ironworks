@@ -10,6 +10,7 @@ interface StepLaunchProps {
   agentName: string;
   adapterType: AdapterType;
   taskTitle: string;
+  taskSaved: boolean;
   onStepClick: (step: Step) => void;
 }
 
@@ -20,6 +21,7 @@ export function StepLaunch({
   agentName,
   adapterType,
   taskTitle,
+  taskSaved,
   onStepClick,
 }: StepLaunchProps) {
   return (
@@ -95,7 +97,9 @@ export function StepLaunch({
           <ListTodo className="h-4 w-4 text-muted-foreground shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-[10px] uppercase tracking-wide text-muted-foreground">First Task</p>
-            <p className="text-sm font-medium truncate">{taskTitle}</p>
+            <p className="text-sm font-medium truncate">
+              {taskSaved ? taskTitle : <span className="text-muted-foreground italic">No first task</span>}
+            </p>
           </div>
           <button
             type="button"
@@ -105,7 +109,11 @@ export function StepLaunch({
           >
             <Pencil className="h-3.5 w-3.5" />
           </button>
-          <Check className="h-4 w-4 text-green-500 shrink-0" />
+          {taskSaved ? (
+            <Check className="h-4 w-4 text-green-500 shrink-0" />
+          ) : (
+            <span className="text-[10px] text-amber-500 shrink-0">Skipped</span>
+          )}
         </div>
       </div>
 

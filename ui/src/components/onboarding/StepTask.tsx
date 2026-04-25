@@ -53,7 +53,7 @@ export function StepTask({
         </label>
         <select
           id="onboarding-task-template"
-          className="w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 text-foreground"
+          className="w-full rounded-md border border-border bg-transparent pl-3 pr-9 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50 text-foreground"
           value=""
           onChange={(e) => {
             const tpl = TASK_TEMPLATES.find((t) => t.title === e.target.value);
