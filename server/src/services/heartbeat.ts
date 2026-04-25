@@ -22,6 +22,7 @@ import {
   principalPermissionGrants,
   projects,
   projectWorkspaces,
+  skillInvocations,
 } from "@ironworksai/db";
 import type { OutputTokenCategory } from "@ironworksai/shared";
 import { DEFAULT_OUTPUT_TOKEN_LIMITS, WESTERN_COUNCIL_MODELS } from "@ironworksai/shared";
@@ -36,6 +37,7 @@ import { redactCurrentUserText, redactCurrentUserValue } from "../log-redaction.
 import { logger } from "../middleware/logger.js";
 import { TEAM_DIRECTORY_PLACEHOLDER } from "../onboarding-assets/role-templates.js";
 import { logActivity } from "./activity-log.js";
+import { injectSkillRecipes } from "./agent-learning.js";
 import { type BudgetEnforcementScope, budgetService } from "./budgets.js";
 import { companySkillService } from "./company-skills.js";
 import {
@@ -148,6 +150,7 @@ import {
 } from "./model-routing.js";
 import { getRunLogStore, type RunLogHandle } from "./run-log-store.js";
 import { secretService } from "./secrets.js";
+import { type MatchedRecipe, matchSkillsForRun } from "./skill-matching.js";
 import { workspaceOperationService } from "./workspace-operations.js";
 import {
   buildWorkspaceReadyComment,
@@ -1954,6 +1957,17 @@ export function heartbeatService(db: Db) {
           )
         : runtimeSkillEntries;
 
+      // Task 3: Skill Loop Matching — fire the 200 ms matcher now so its network
+      // round-trip overlaps with the workspace resolution work above. Result is
+      // consumed after context.agentInstructions is populated further below.
+      const agentRoleTitle = agent.title ?? agent.role;
+      const matchedRecipesPromise: Promise<MatchedRecipe[]> = matchSkillsForRun(db, {
+        companyId: agent.companyId,
+        agentId: agent.id,
+        issueId: issueId ?? null,
+        agentRoleTitle,
+      });
+
       const runtimeConfig = {
         ...resolvedConfig,
         ironworksRuntimeSkills: filteredSkillEntries,
@@ -2210,6 +2224,14 @@ export function heartbeatService(db: Db) {
         context.agentInstructions = instructions;
       }
 
+      // Inject matched skill recipes into agent instructions. The matcher
+      // promise was started earlier (Task 3) to overlap with workspace
+      // resolution. Awaiting here is safe — the 200 ms budget is enforced
+      // inside matchSkillsForRun via Promise.race, so this never blocks long.
+      // On any error the service returns [] and logs; the run is not affected.
+      const matchedRecipes = await matchedRecipesPromise;
+      injectSkillRecipes(context, matchedRecipes);
+
       // Inject platform awareness — runs every heartbeat, gives agents a full
       // mental model of their capabilities whether or not they have an issue.
       injectPlatformAwareness(context, agent);
@@ -2371,6 +2393,34 @@ export function heartbeatService(db: Db) {
           .returning()
           .then((rows) => rows[0] ?? null);
         if (runningWithSession) run = runningWithSession;
+
+        // Record one skill_invocations row per injected recipe. These rows
+        // start with outcome='inflight' and are updated to the final outcome
+        // once the run completes. Any insert failure is non-fatal.
+        if (matchedRecipes.length > 0) {
+          try {
+            await db.insert(skillInvocations).values(
+              matchedRecipes.map((r) => ({
+                companyId: agent.companyId,
+                recipeId: r.id,
+                agentId: agent.id,
+                heartbeatRunId: run.id,
+                issueId: issueId ?? null,
+                matcherScore: String(r.matcherScore),
+                matcherModel: "google/gemma-3-12b-it:free",
+                injectedAt: new Date(),
+                outcome: "inflight",
+                expectedRunsToCompletion: null,
+                actualRunsToCompletion: null,
+              })),
+            );
+          } catch (invocationInsertErr) {
+            logger.warn(
+              { err: invocationInsertErr, runId: run.id },
+              "[skill-loop] failed to insert skill_invocations rows, continuing",
+            );
+          }
+        }
 
         const runningAgent = await db
           .update(agents)
@@ -3057,6 +3107,26 @@ export function heartbeatService(db: Db) {
             });
           }
         }
+        // Update skill_invocations outcome for any recipes injected this run.
+        // Maps the heartbeat outcome to the invocation outcome vocabulary.
+        // Failure is non-fatal — a missed outcome update is recoverable by PR #5
+        // eval rollup which will re-derive outcome from the run row.
+        if (matchedRecipes.length > 0) {
+          try {
+            const invocationOutcome =
+              outcome === "succeeded" ? "completed" : outcome === "cancelled" ? "cancelled" : "failed";
+            await db
+              .update(skillInvocations)
+              .set({ outcome: invocationOutcome })
+              .where(and(eq(skillInvocations.heartbeatRunId, run.id), eq(skillInvocations.agentId, agent.id)));
+          } catch (invocationUpdateErr) {
+            logger.warn(
+              { err: invocationUpdateErr, runId: run.id },
+              "[skill-loop] failed to update skill_invocations outcome, continuing",
+            );
+          }
+        }
+
         await finalizeAgentStatus(agent.id, outcome);
       } catch (err) {
         const message = redactCurrentUserText(
@@ -3123,6 +3193,22 @@ export function heartbeatService(db: Db) {
               lastRunId: failedRun.id,
               lastError: message,
             });
+          }
+        }
+
+        // Update skill_invocations to 'failed' for any recipes injected this run.
+        // Mirrors the success-path update; non-fatal on error.
+        if (matchedRecipes.length > 0) {
+          try {
+            await db
+              .update(skillInvocations)
+              .set({ outcome: "failed" })
+              .where(and(eq(skillInvocations.heartbeatRunId, run.id), eq(skillInvocations.agentId, agent.id)));
+          } catch (invocationUpdateErr) {
+            logger.warn(
+              { err: invocationUpdateErr, runId: run.id },
+              "[skill-loop] failed to update skill_invocations outcome in catch, continuing",
+            );
           }
         }
 
