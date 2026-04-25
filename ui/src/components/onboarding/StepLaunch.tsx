@@ -116,7 +116,6 @@ export function StepLaunch({
           )}
         </div>
       </div>
-
     </div>
   );
 }
