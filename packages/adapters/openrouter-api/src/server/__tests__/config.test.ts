@@ -27,6 +27,33 @@ describe("validateOpenRouterConfig", () => {
     }
   });
 
+  it("accepts a valid fallbackModel", () => {
+    const result = validateOpenRouterConfig({
+      model: "openai/gpt-oss-120b:free",
+      fallbackModel: "meta-llama/llama-3.3-70b-instruct:free",
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.config.fallbackModel).toBe("meta-llama/llama-3.3-70b-instruct:free");
+  });
+
+  it("rejects fallbackModel equal to primary model", () => {
+    const result = validateOpenRouterConfig({
+      model: "openai/gpt-oss-120b:free",
+      fallbackModel: "openai/gpt-oss-120b:free",
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toMatch(/differ from primary/i);
+  });
+
+  it("rejects unknown fallbackModel", () => {
+    const result = validateOpenRouterConfig({
+      model: "openai/gpt-oss-120b:free",
+      fallbackModel: "nonexistent/fake-model-9000",
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toMatch(/unknown openrouter fallbackmodel/i);
+  });
+
   it("accepts env-var reference for apiKey", () => {
     const result = validateOpenRouterConfig({
       model: "meta-llama/llama-4-scout-17b-16e-instruct",
@@ -97,5 +124,11 @@ describe("validateOpenRouterConfig", () => {
     const ids = OPENROUTER_MODELS.map((m) => m.id);
     expect(ids).toContain("anthropic/claude-opus-4-7");
     expect(ids).toContain("anthropic/claude-sonnet-4-6");
+  });
+
+  it("every model declares a positive contextWindowTokens", () => {
+    for (const m of OPENROUTER_MODELS) {
+      expect(m.contextWindowTokens, `${m.id} contextWindowTokens`).toBeGreaterThan(0);
+    }
   });
 });

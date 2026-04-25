@@ -18,6 +18,12 @@ export interface OpenRouterModel {
   provider: string;
   /** Maximum output tokens (approximate — varies by OpenRouter version). */
   maxOutputTokens: number;
+  /**
+   * Model context window in tokens (input + output combined). Drives the
+   * compaction trigger threshold — adapters use this to decide when to
+   * summarize older transcript turns before they exceed the cliff.
+   */
+  contextWindowTokens: number;
 }
 
 export const OPENROUTER_MODELS: OpenRouterModel[] = [
@@ -31,36 +37,42 @@ export const OPENROUTER_MODELS: OpenRouterModel[] = [
     label: "GPT-OSS 120B (free)",
     provider: "openai",
     maxOutputTokens: 16384,
+    contextWindowTokens: 131072,
   },
   {
     id: "openai/gpt-oss-20b:free",
     label: "GPT-OSS 20B (free)",
     provider: "openai",
     maxOutputTokens: 8192,
+    contextWindowTokens: 131072,
   },
   {
     id: "meta-llama/llama-3.3-70b-instruct:free",
     label: "Llama 3.3 70B Instruct (free)",
     provider: "meta-llama",
     maxOutputTokens: 8192,
+    contextWindowTokens: 131072,
   },
   {
     id: "nousresearch/hermes-3-llama-3.1-405b:free",
     label: "Hermes 3 Llama 3.1 405B (free)",
     provider: "nousresearch",
     maxOutputTokens: 8192,
+    contextWindowTokens: 131072,
   },
   {
     id: "google/gemma-4-31b-it:free",
     label: "Gemma 4 31B (free)",
     provider: "google",
     maxOutputTokens: 8192,
+    contextWindowTokens: 262144,
   },
   {
     id: "google/gemma-3-12b-it:free",
     label: "Gemma 3 12B (free)",
     provider: "google",
     maxOutputTokens: 8192,
+    contextWindowTokens: 131072,
   },
 
   // Llama 4 family (Meta, released 2025) — strong open-weight multi-modal models
@@ -69,12 +81,14 @@ export const OPENROUTER_MODELS: OpenRouterModel[] = [
     label: "Llama 4 Scout 17B",
     provider: "meta-llama",
     maxOutputTokens: 8192,
+    contextWindowTokens: 1048576,
   },
   {
     id: "meta-llama/llama-4-maverick-17b-128e-instruct",
     label: "Llama 4 Maverick 17B",
     provider: "meta-llama",
     maxOutputTokens: 8192,
+    contextWindowTokens: 1048576,
   },
 
   // Mistral family — strong European models, good for regulated workloads
@@ -83,12 +97,14 @@ export const OPENROUTER_MODELS: OpenRouterModel[] = [
     label: "Mistral Large 2411",
     provider: "mistralai",
     maxOutputTokens: 8192,
+    contextWindowTokens: 131072,
   },
   {
     id: "mistralai/mistral-small-2501",
     label: "Mistral Small 2501",
     provider: "mistralai",
     maxOutputTokens: 8192,
+    contextWindowTokens: 131072,
   },
 
   // Anthropic via OpenRouter relay — no prompt caching passthrough (documented in agentConfigurationDoc)
@@ -97,12 +113,14 @@ export const OPENROUTER_MODELS: OpenRouterModel[] = [
     label: "Claude Opus 4.7 (via OpenRouter)",
     provider: "anthropic",
     maxOutputTokens: 8192,
+    contextWindowTokens: 200000,
   },
   {
     id: "anthropic/claude-sonnet-4-6",
     label: "Claude Sonnet 4.6 (via OpenRouter)",
     provider: "anthropic",
     maxOutputTokens: 8192,
+    contextWindowTokens: 200000,
   },
 
   // OpenAI via OpenRouter relay
@@ -111,12 +129,14 @@ export const OPENROUTER_MODELS: OpenRouterModel[] = [
     label: "GPT-5 (via OpenRouter)",
     provider: "openai",
     maxOutputTokens: 16384,
+    contextWindowTokens: 262144,
   },
   {
     id: "openai/gpt-5-mini",
     label: "GPT-5 Mini (via OpenRouter)",
     provider: "openai",
     maxOutputTokens: 16384,
+    contextWindowTokens: 262144,
   },
 
   // Google Gemini family — excellent long-context and multimodal capabilities
@@ -125,12 +145,14 @@ export const OPENROUTER_MODELS: OpenRouterModel[] = [
     label: "Gemini 2.5 Flash",
     provider: "google",
     maxOutputTokens: 8192,
+    contextWindowTokens: 1048576,
   },
   {
     id: "google/gemini-2.5-pro",
     label: "Gemini 2.5 Pro",
     provider: "google",
     maxOutputTokens: 8192,
+    contextWindowTokens: 1048576,
   },
 
   // DeepSeek — strong coding and reasoning models from China
@@ -139,12 +161,14 @@ export const OPENROUTER_MODELS: OpenRouterModel[] = [
     label: "DeepSeek V3",
     provider: "deepseek",
     maxOutputTokens: 8192,
+    contextWindowTokens: 131072,
   },
   {
     id: "deepseek/deepseek-r1",
     label: "DeepSeek R1",
     provider: "deepseek",
     maxOutputTokens: 8192,
+    contextWindowTokens: 131072,
   },
 
   // Qwen — Alibaba's multilingual model, strong on Asian-language tasks
@@ -153,6 +177,7 @@ export const OPENROUTER_MODELS: OpenRouterModel[] = [
     label: "Qwen 2.5 72B Instruct",
     provider: "qwen",
     maxOutputTokens: 8192,
+    contextWindowTokens: 131072,
   },
 
   // xAI Grok — strong reasoning + real-time web knowledge
@@ -161,6 +186,7 @@ export const OPENROUTER_MODELS: OpenRouterModel[] = [
     label: "Grok 3 Latest",
     provider: "x-ai",
     maxOutputTokens: 8192,
+    contextWindowTokens: 131072,
   },
 
   // Perplexity Sonar — optimized for factual retrieval with web grounding
@@ -168,6 +194,7 @@ export const OPENROUTER_MODELS: OpenRouterModel[] = [
     id: "perplexity/sonar-large",
     label: "Perplexity Sonar Large",
     provider: "perplexity",
+    contextWindowTokens: 131072,
     maxOutputTokens: 8192,
   },
 ];

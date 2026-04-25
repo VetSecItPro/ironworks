@@ -1677,7 +1677,12 @@ export function agentRoutes(db: Db) {
         runtimeConfig: {
           heartbeat: {
             enabled: true,
-            intervalSec: 3600,
+            // 4hr idle interval — agents wake instantly on issue assignment
+            // / @mention via wakeOnDemand, so responsiveness is preserved.
+            // Cuts baseline call volume ~75% vs the prior 1hr default,
+            // materially preserving free-tier per-model rate-limit budget
+            // for actual work.
+            intervalSec: 14400,
             wakeOnDemand: true,
             cooldownSec: 10,
             maxConcurrentRuns: 1,
