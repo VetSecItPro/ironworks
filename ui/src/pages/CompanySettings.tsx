@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { SettingsSidebarNav, useCompanySettingsState } from "../components/company-settings";
 import { InviteUserDialog } from "../components/InviteUserDialog";
 import { MessagingSetup } from "../components/MessagingSetup";
+import { AgentsRosterSection } from "../components/settings/AgentsRosterSection";
 import { ApiKeysSection } from "../components/settings/ApiKeysSection";
 import { AppearanceSection } from "../components/settings/AppearanceSection";
 import { AuditTrailSection } from "../components/settings/AuditTrailSection";
@@ -31,6 +32,7 @@ const SETTINGS_SECTIONS = [
   { id: "general", label: "General" },
   { id: "appearance", label: "Appearance" },
   { id: "branding", label: "Branding" },
+  { id: "agents-roster", label: "Agents" },
   { id: "hiring", label: "Hiring" },
   { id: "invites", label: "Invites" },
   { id: "messaging", label: "Messaging" },
@@ -133,6 +135,8 @@ function CompanySettingsInner() {
           removeIronWorksBranding={state.removeIronWorksBranding}
           setRemoveIronWorksBranding={state.setRemoveIronWorksBranding}
         />
+
+        <AgentsRosterSection companyId={state.selectedCompanyId} />
 
         <HiringSection
           selectedCompany={state.selectedCompany}

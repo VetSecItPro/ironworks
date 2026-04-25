@@ -180,6 +180,10 @@ function TeamPackSection({
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Customize Roster</span>
             <span className="text-[10px] text-muted-foreground">{rosterItems.length} agents</span>
           </div>
+          <p className="text-[10px] text-muted-foreground/70 leading-snug">
+            Names default to titles. Type real names if you want — e.g. "Anouar Bencheqroun" instead of "CEO". You can
+            rename these any time from Settings → Agents.
+          </p>
           <div className="space-y-1.5">
             {rosterItems.map((item) => (
               <div key={item.id} className="flex items-center gap-2">
