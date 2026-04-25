@@ -1,12 +1,14 @@
 /**
- * API client for skill recipes — PR 3/6 of the skill loop.
+ * API client for skill recipes — PRs 3/6 and 6/6 of the skill loop.
  *
- * Wraps the six skill-recipe routes behind a typed client that matches the
+ * Wraps the eight skill-recipe routes behind a typed client that matches the
  * pattern established by `companySkills.ts` and `agents.ts`.
  *
  * The approve endpoint returns both the updated recipe and the newly-created
  * company_skills row so the UI can invalidate both query keys in a single
  * mutation callback.
+ *
+ * PR 6/6 adds pause/resume endpoints and the `pausedAt` field on list items.
  */
 
 import type { api } from "./client";
@@ -32,6 +34,8 @@ export interface SkillRecipeListItem {
   archivedAt: string | null;
   approvedAt: string | null;
   approvedByUserId: string | null;
+  /** Non-null when the recipe is paused by the operator or the runaway detector. */
+  pausedAt: string | null;
 }
 
 export interface SkillRecipeDetail extends SkillRecipeListItem {
@@ -96,4 +100,10 @@ export const skillRecipesApi = {
 
   archive: (id: string): ReturnType<typeof api.post<SkillRecipeListItem>> =>
     apiClient.post<SkillRecipeListItem>(`/skill-recipes/${encodeURIComponent(id)}/archive`, {}),
+
+  pause: (id: string): ReturnType<typeof api.post<SkillRecipeListItem>> =>
+    apiClient.post<SkillRecipeListItem>(`/skill-recipes/${encodeURIComponent(id)}/pause`, {}),
+
+  resume: (id: string): ReturnType<typeof api.post<SkillRecipeListItem>> =>
+    apiClient.post<SkillRecipeListItem>(`/skill-recipes/${encodeURIComponent(id)}/resume`, {}),
 };

@@ -1,16 +1,20 @@
 /**
- * Skill recipe service — PR 3/6 of the IronWorks self-improving skill loop.
+ * Skill recipe service — PRs 3/6 and 6/6 of the IronWorks self-improving skill loop.
  *
  * CRUD layer for skill_recipes rows. The critical path is `approveRecipe`:
  * it atomically flips the recipe to 'active' AND inserts a company_skills row
  * (origin='extracted') so existing runtime loaders pick up the skill with zero
  * additional changes.
  *
- * Other transitions (reject, archive, edit) are simpler single-row updates.
- * All are audited via `logActivity` so the Audit Trail section shows a clean
- * timeline of operator decisions.
+ * Other transitions (reject, archive, edit, pause, resume) are simpler single-row
+ * updates. All are audited via `logActivity` so the Audit Trail section shows a
+ * clean timeline of operator decisions.
  *
- * @see MDMP §4 PR #3 scope.
+ * PR 6/6 additions: `pauseRecipe` and `resumeRecipe`. Pause sets `paused_at = now()`
+ * without changing `status` so the recipe resumes instantly when unpaused. The
+ * matcher filters `WHERE paused_at IS NULL` to skip paused recipes.
+ *
+ * @see MDMP §4 PR #3 and PR #6 scope.
  * @see MDMP §3.1 for why company_skills is the canonical loader-facing store.
  */
 
@@ -42,6 +46,8 @@ export interface SkillRecipeListItem {
   archivedAt: Date | null;
   approvedAt: Date | null;
   approvedByUserId: string | null;
+  /** Non-null when the recipe has been paused by the operator or the runaway detector. */
+  pausedAt: Date | null;
 }
 
 export interface SkillRecipeDetail extends SkillRecipeListItem {
@@ -95,6 +101,7 @@ function toListItem(row: SkillRecipeRow): SkillRecipeListItem {
     archivedAt: row.archivedAt ?? null,
     approvedAt: row.approvedAt ?? null,
     approvedByUserId: row.approvedByUserId ?? null,
+    pausedAt: row.pausedAt ?? null,
   };
 }
 
@@ -354,6 +361,67 @@ export function skillRecipeService(db: Db) {
         actorType: "user",
         actorId: userId,
         action: "skill_recipe.archived",
+        entityType: "skill_recipe",
+        entityId: id,
+        details: {},
+      });
+
+      return toListItem(updated);
+    },
+
+    /**
+     * Pause an active recipe. Sets `paused_at = now()` without touching `status`
+     * so the matcher skips it on the next heartbeat cycle. The recipe remains
+     * 'active' in all other respects — statistics keep accumulating, it appears
+     * in the Active tab, and it resumes the moment `paused_at` is cleared.
+     *
+     * Called by both the operator UI (HTTP route) and the runaway detector
+     * (direct service call, with actorId = 'system').
+     */
+    pauseRecipe: async (id: string, actorId: string): Promise<SkillRecipeListItem | null> => {
+      const now = new Date();
+      const updated = await db
+        .update(skillRecipes)
+        .set({ pausedAt: now, updatedAt: now })
+        .where(eq(skillRecipes.id, id))
+        .returning()
+        .then((rows) => rows[0] ?? null);
+
+      if (!updated) return null;
+
+      await logActivity(db, {
+        companyId: updated.companyId,
+        actorType: actorId === "system" ? "system" : "user",
+        actorId,
+        action: "skill_recipe.paused",
+        entityType: "skill_recipe",
+        entityId: id,
+        details: {},
+      });
+
+      return toListItem(updated);
+    },
+
+    /**
+     * Resume a paused recipe. Clears `paused_at` so the matcher considers it
+     * again immediately on the next heartbeat.
+     */
+    resumeRecipe: async (id: string, actorId: string): Promise<SkillRecipeListItem | null> => {
+      const now = new Date();
+      const updated = await db
+        .update(skillRecipes)
+        .set({ pausedAt: null, updatedAt: now })
+        .where(eq(skillRecipes.id, id))
+        .returning()
+        .then((rows) => rows[0] ?? null);
+
+      if (!updated) return null;
+
+      await logActivity(db, {
+        companyId: updated.companyId,
+        actorType: actorId === "system" ? "system" : "user",
+        actorId,
+        action: "skill_recipe.resumed",
         entityType: "skill_recipe",
         entityId: id,
         details: {},

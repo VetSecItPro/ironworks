@@ -18,6 +18,7 @@ import { agents, companySecrets, heartbeatRunEvents, heartbeatRuns, issues, skil
 import { and, desc, eq } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 import { resolveProviderSecret } from "./provider-secret-resolver.js";
+import { checkCostOverhead, isSkillLoopCostDisabled } from "./skill-circuit-breaker.js";
 import { SKILL_EXTRACTION_PROMPT_V1 } from "./skill-prompts.js";
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -402,6 +403,27 @@ export async function proposeSkillFromCompletedIssue(db: Db, opts: ProposeSkillO
 
   if (!isSkillLoopEnabled(companyId)) {
     logger.debug({ companyId }, "[skill-extraction] skill loop disabled for company");
+    return null;
+  }
+
+  // Fast denylist check first (in-memory, no DB hit) before the heavier DB query
+  if (isSkillLoopCostDisabled(companyId)) {
+    logger.info({ companyId }, "[skill-extraction] skill loop disabled by cost circuit breaker, skipping");
+    return null;
+  }
+
+  // Async cost overhead check — if we're over threshold, add to denylist and skip
+  const costCheck = await checkCostOverhead(db, companyId).catch((err) => {
+    // Cost check failure must not block extraction — log and continue
+    logger.warn({ err, companyId }, "[skill-extraction] cost overhead check failed (non-fatal), proceeding");
+    return null;
+  });
+
+  if (costCheck?.shouldDisable) {
+    logger.info(
+      { companyId, ratio: costCheck.ratio },
+      "[skill-extraction] cost circuit breaker triggered, skipping extraction",
+    );
     return null;
   }
 

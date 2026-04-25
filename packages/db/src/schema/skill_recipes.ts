@@ -61,6 +61,18 @@ export const skillRecipes = pgTable(
      * Auto-archive fires when this is stale + effectiveness_delta < -0.10.
      */
     lastValidatedAt: timestamp("last_validated_at", { withTimezone: true }).defaultNow(),
+    /**
+     * Set to a non-null timestamp by the operator (or runaway detector) to
+     * temporarily suspend this recipe from being injected. The matcher filters
+     * WHERE paused_at IS NULL so a paused recipe is silently skipped without
+     * changing its lifecycle status.
+     *
+     * Cleared (set to NULL) by the resume action to resume injection immediately
+     * on the next heartbeat.
+     *
+     * @see MDMP §4 PR #6: "per-recipe pause/resume"
+     */
+    pausedAt: timestamp("paused_at", { withTimezone: true }),
     metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

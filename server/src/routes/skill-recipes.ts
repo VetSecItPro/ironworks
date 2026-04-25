@@ -1,9 +1,9 @@
 /**
- * Skill recipe routes — PR 3/6 of the IronWorks self-improving skill loop.
+ * Skill recipe routes — PRs 3/6 and 6/6 of the IronWorks self-improving skill loop.
  *
  * Exposes the operator review UI surface: list, detail, approve, reject, edit,
- * and archive. All mutations are board-only (assertBoard) because only human
- * operators should gate what enters the live skill library.
+ * archive, pause, and resume. All mutations are board-only (assertBoard) because
+ * only human operators should gate what enters the live skill library.
  *
  * Route shape follows the rest of the IronWorks API:
  *   GET  /companies/:companyId/skill-recipes
@@ -12,8 +12,10 @@
  *   POST /skill-recipes/:id/approve
  *   POST /skill-recipes/:id/reject
  *   POST /skill-recipes/:id/archive
+ *   POST /skill-recipes/:id/pause    ← PR 6/6
+ *   POST /skill-recipes/:id/resume   ← PR 6/6
  *
- * @see MDMP §4 PR #3 scope.
+ * @see MDMP §4 PR #3 and PR #6 scope.
  */
 
 import type { Db } from "@ironworksai/db";
@@ -22,7 +24,7 @@ import { badRequest, notFound } from "../errors.js";
 import { skillRecipeService } from "../services/skill-recipe-service.js";
 import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
 
-const VALID_STATUSES = new Set(["proposed", "approved", "rejected", "active", "archived"]);
+const VALID_STATUSES = new Set(["proposed", "approved", "rejected", "active", "archived", "paused"]);
 
 export function skillRecipeRoutes(db: Db) {
   const router = Router();
@@ -161,6 +163,52 @@ export function skillRecipeRoutes(db: Db) {
 
     const actor = getActorInfo(req);
     const updated = await svc.archiveRecipe(id, actor.actorId);
+    if (!updated) throw notFound("Skill recipe not found");
+
+    res.json(updated);
+  });
+
+  /**
+   * Pause an active recipe. Sets paused_at = now() so the matcher skips it on
+   * the next heartbeat without changing the recipe's lifecycle status. The
+   * recipe remains 'active' and can be resumed at any time.
+   *
+   * The runaway detector also calls this path (directly via the service) when
+   * it detects an activation-rate spike — audit log entry is created in both cases.
+   */
+  router.post("/skill-recipes/:id/pause", async (req, res) => {
+    assertBoard(req);
+    const { id } = req.params;
+
+    const recipe = await svc.detail(id);
+    if (!recipe) {
+      throw notFound("Skill recipe not found");
+    }
+    assertCompanyAccess(req, recipe.companyId);
+
+    const actor = getActorInfo(req);
+    const updated = await svc.pauseRecipe(id, actor.actorId);
+    if (!updated) throw notFound("Skill recipe not found");
+
+    res.json(updated);
+  });
+
+  /**
+   * Resume a paused recipe. Clears paused_at so the matcher considers it again
+   * on the very next heartbeat.
+   */
+  router.post("/skill-recipes/:id/resume", async (req, res) => {
+    assertBoard(req);
+    const { id } = req.params;
+
+    const recipe = await svc.detail(id);
+    if (!recipe) {
+      throw notFound("Skill recipe not found");
+    }
+    assertCompanyAccess(req, recipe.companyId);
+
+    const actor = getActorInfo(req);
+    const updated = await svc.resumeRecipe(id, actor.actorId);
     if (!updated) throw notFound("Skill recipe not found");
 
     res.json(updated);
