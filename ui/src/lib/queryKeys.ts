@@ -128,6 +128,10 @@ export const queryKeys = {
   skills: {
     available: ["skills", "available"] as const,
   },
+  skillRecipes: {
+    list: (companyId: string, status?: string) => ["skill-recipes", companyId, status ?? "__all__"] as const,
+    detail: (id: string) => ["skill-recipes", "detail", id] as const,
+  },
   playbooks: {
     list: (companyId: string) => ["playbooks", companyId] as const,
     detail: (companyId: string, playbookId: string) => ["playbooks", companyId, playbookId] as const,

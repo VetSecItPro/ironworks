@@ -59,6 +59,7 @@ import { searchRoutes } from "./routes/search.js";
 import { secretRoutes } from "./routes/secrets.js";
 import { setupRoutes } from "./routes/setup.js";
 import { sidebarBadgeRoutes } from "./routes/sidebar-badges.js";
+import { skillRecipeRoutes } from "./routes/skill-recipes.js";
 import { slimRoutes } from "./routes/slim.js";
 import { sseRoutes } from "./routes/sse.js";
 import { supportPublicRoutes } from "./routes/support.js";
@@ -321,6 +322,7 @@ export async function createApp(
   api.use(activityRoutes(db));
   api.use(dashboardRoutes(db));
   api.use(sidebarBadgeRoutes(db));
+  api.use(skillRecipeRoutes(db));
   api.use(instanceSettingsRoutes(db));
   api.use(libraryRoutes(db));
   api.use(playbookRoutes(db));

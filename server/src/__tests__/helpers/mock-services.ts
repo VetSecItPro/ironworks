@@ -66,6 +66,7 @@ export function makeFullServicesMock(overrides: Partial<ServicesMockShape> = {})
     routineService: vi.fn(() => ({})),
     secretService: vi.fn(() => ({})),
     sidebarBadgeService: vi.fn(() => ({})),
+    skillRecipeService: vi.fn(() => ({})),
     userInviteService: vi.fn(() => ({})),
     workProductService: vi.fn(() => ({})),
     workspaceOperationService: vi.fn(() => ({})),

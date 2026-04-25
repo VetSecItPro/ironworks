@@ -21,5 +21,6 @@ export { ModelRoutingSection } from "./ModelRoutingSection";
 export { RiskThresholdsSection } from "./RiskThresholdsSection";
 export { SecuritySection } from "./SecuritySection";
 export { SettingsErrorBoundary } from "./SettingsErrorBoundary";
+export { SkillRecipesSection } from "./SkillRecipesSection";
 export { TalentPoolSection } from "./TalentPoolSection";
 export { TeamMembersSection } from "./TeamMembersSection";
