@@ -65,6 +65,7 @@ export { knowledgePageRevisions, knowledgePages } from "./knowledge_pages.js";
 export { labels } from "./labels.js";
 export { libraryFileEvents } from "./library_file_events.js";
 export { libraryFiles } from "./library_files.js";
+export { type McpServer, mcpServers, type NewMcpServer } from "./mcp_servers.js";
 export { messagingBridges } from "./messaging_bridges.js";
 export { playbookRunSteps, playbookRuns } from "./playbook_runs.js";
 export { playbookSteps, playbooks } from "./playbooks.js";

@@ -15,6 +15,8 @@ export { healthApi } from "./health";
 export { heartbeatsApi } from "./heartbeats";
 export { instanceSettingsApi } from "./instanceSettings";
 export { issuesApi } from "./issues";
+export type { McpServer, McpTool } from "./mcpServers";
+export { mcpServersApi } from "./mcpServers";
 export { projectsApi } from "./projects";
 export { routinesApi } from "./routines";
 export { sidebarBadgesApi } from "./sidebarBadges";

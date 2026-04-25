@@ -59,6 +59,7 @@ export function makeFullServicesMock(overrides: Partial<ServicesMockShape> = {})
     instanceSettingsService: vi.fn(() => ({})),
     issueApprovalService: vi.fn(() => ({})),
     issueService: vi.fn(() => ({})),
+    mcpServerService: vi.fn(() => ({})),
     messagingBridgeService: vi.fn(() => ({})),
     playbookService: vi.fn(() => ({})),
     projectService: vi.fn(() => ({})),

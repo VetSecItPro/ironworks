@@ -91,6 +91,7 @@ export { instanceSettingsService } from "./instance-settings.js";
 export { issueApprovalService } from "./issue-approvals.js";
 export { type IssueFilters, issueService } from "./issues.js";
 export { publishLiveEvent, subscribeCompanyLiveEvents } from "./live-events.js";
+export { mcpServerService } from "./mcp-server-service.js";
 export { messagingBridgeService } from "./messaging-bridges.js";
 export {
   captureAllPerformanceSnapshots,

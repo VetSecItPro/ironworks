@@ -94,6 +94,13 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     logger.info({ keysChecked: channelContextKeys }, "[ollama-cloud] No channel messages in context");
   }
 
+  // MCP external tools — injected by injectMcpTools() when the company has active MCP servers.
+  // Format: "## External Tools (MCP)\n...\n- `mcp__<server>__<tool>` — description"
+  const mcpTools = strVal(context.ironworksMcpTools);
+  if (mcpTools) {
+    messages.push({ role: "system", content: mcpTools });
+  }
+
   // Channel posting instruction
   const channelPostingInstruction = strVal(context.ironworksChannelPosting);
   if (channelPostingInstruction) {

@@ -64,6 +64,7 @@ import {
   injectDeadlineUrgency,
   injectDependencyContext,
   injectGoalContext,
+  injectMcpTools,
   injectOnboardingReplay,
   injectPendingDeliberations,
   injectPendingMentions,
@@ -2274,6 +2275,10 @@ export function heartbeatService(db: Db) {
         issueContext?.title ?? null,
         typeof context.issueContext === "string" ? context.issueContext : null,
       );
+
+      // MCP tool injection: discover enabled MCP servers for this agent and inject
+      // their tool lists so the agent knows what external tools it can call.
+      await injectMcpTools(db, context, { id: agent.id, companyId: agent.companyId });
 
       context.ironworksWorkspace = {
         cwd: executionWorkspace.cwd,

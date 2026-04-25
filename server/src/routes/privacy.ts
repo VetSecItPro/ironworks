@@ -43,6 +43,7 @@ import {
   labels,
   libraryFileEvents,
   libraryFiles,
+  mcpServers,
   messagingBridges,
   playbookRuns,
   playbooks,
@@ -479,6 +480,9 @@ export async function deleteCompanyData(db: Db, companyId: string): Promise<void
   await db.delete(labels).where(eq(labels.companyId, companyId));
   await db.delete(assets).where(eq(assets.companyId, companyId));
   await db.delete(companySkills).where(eq(companySkills.companyId, companyId));
+
+  // ── Tier 17a: MCP servers (cascade on company, but explicit for GDPR clarity) ──────
+  await db.delete(mcpServers).where(eq(mcpServers.companyId, companyId));
 
   // ── Tier 17: secrets (company_secret_versions has no companyId; cascade removes them) ─
   await db.delete(companySecrets).where(eq(companySecrets.companyId, companyId));

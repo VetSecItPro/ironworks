@@ -19,6 +19,7 @@ import { GeneralSection } from "../components/settings/GeneralSection";
 import { HiringSection } from "../components/settings/HiringSection";
 import { IntegrationHubSection } from "../components/settings/IntegrationHubSection";
 import { InvitesSection } from "../components/settings/InvitesSection";
+import { McpServersSection } from "../components/settings/McpServersSection";
 import { ModelRoutingSection } from "../components/settings/ModelRoutingSection";
 import { RiskThresholdsSection } from "../components/settings/RiskThresholdsSection";
 import { SecuritySection } from "../components/settings/SecuritySection";
@@ -42,6 +43,7 @@ const SETTINGS_SECTIONS = [
   { id: "model-routing", label: "Model Routing" },
   { id: "cost-alerts", label: "Cost Alerts" },
   { id: "webhooks", label: "Webhooks" },
+  { id: "mcp-servers", label: "MCP Servers" },
   { id: "integrations", label: "Integrations" },
   { id: "audit-trail", label: "Audit Trail" },
   { id: "data-privacy", label: "Data & Privacy" },
@@ -181,6 +183,8 @@ function CompanySettingsInner() {
         <div id="webhooks" className="space-y-4 scroll-mt-6">
           <WebhooksSettings />
         </div>
+
+        <McpServersSection companyId={state.selectedCompanyId} />
 
         <IntegrationHubSection />
         <AuditTrailSection />
