@@ -47,13 +47,21 @@ const PG_DB = process.env.PG_DB ?? "ironworks";
 
 // ── DB helpers ────────────────────────────────────────────────────────────────
 
+// psql prints command tags ("UPDATE 0", "INSERT 0 1") to stdout even with -t -A.
+// A real RETURNING row from this script always starts with a UUID recipe_id and
+// contains '|' separators between columns; tag lines have neither.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function psql(sql) {
   const escaped = sql.replace(/'/g, "'\\''");
   const cmd = `docker exec ${PG_CONTAINER} psql -U ${PG_USER} -d ${PG_DB} -t -A -c '${escaped}'`;
   try {
     const out = execSync(cmd, { encoding: "utf8" }).trim();
     if (!out) return [];
-    return out.split("\n").map((line) => line.split("|"));
+    return out
+      .split("\n")
+      .map((line) => line.split("|"))
+      .filter((cols) => cols.length > 1 && UUID_RE.test(cols[0]));
   } catch (err) {
     throw new Error(`psql failed: ${err.message}`);
   }
