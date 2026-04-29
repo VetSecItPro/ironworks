@@ -500,8 +500,11 @@ You own the company culture. Build and maintain:
     roleLevel: "executive",
     defaultIcon: "dollar-sign",
     suggestedAdapter: "claude_local",
-    modelPrimary: "meta-llama/llama-3.3-70b-instruct:free",
-    modelFallback: "google/gemma-4-31b-it:free",
+    // Gemma 4's structured-output reliability matters more for financial work
+    // (budget tables, P&L summaries, expense JSON) than the larger Llama 3.3's
+    // generalist edge. Llama 3.3 fallback covers freeform financial analysis.
+    modelPrimary: "google/gemma-4-31b-it:free",
+    modelFallback: "meta-llama/llama-3.3-70b-instruct:free",
     skills: ["ironworks", "para-memory-files"],
     soul: `# SOUL.md — CFO
 
