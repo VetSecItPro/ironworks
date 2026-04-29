@@ -981,9 +981,17 @@ export const DELIVERABLE_STATUSES = [
 ] as const;
 export type DeliverableStatus = (typeof DELIVERABLE_STATUSES)[number];
 
-/** Western fallback models for council/cascade strategies. */
+/**
+ * Western fallback models for council/cascade strategies.
+ *
+ * IDs reference OpenRouter free-tier Western models present in
+ * `OPENROUTER_MODEL_IDS` (packages/adapters/openrouter-api/src/shared/models.ts).
+ * Ollama Cloud `:cloud` IDs were the prior values but stopped working when
+ * subscriptions were cancelled; these OpenRouter equivalents work with the
+ * `openrouter_api` adapter that the rest of the matrix already uses.
+ */
 export const WESTERN_COUNCIL_MODELS = {
-  heavy: "devstral-2:cloud", // Mistral 123B - best Western model
-  medium: "nemotron-3-super:cloud", // NVIDIA 120B MoE
-  light: "gemma4:31b-cloud", // Google 31B
+  heavy: "nousresearch/hermes-3-llama-3.1-405b:free", // 405B - best free Western reasoning
+  medium: "openai/gpt-oss-120b:free", // 120B MoE - strong analytic depth
+  light: "google/gemma-4-31b-it:free", // 31B - fast, 262K context
 } as const;
