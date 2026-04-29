@@ -9,76 +9,130 @@ concurrency:
   group: deploy-vps
   cancel-in-progress: true
 
+# Deploy uses raw ssh with a 3-attempt retry loop instead of appleboy/ssh-action
+# because GH Actions → Hostinger SSH has been intermittently timing out at the
+# TCP dial layer (`dial tcp ***:22: i/o timeout`) without any apparent VPS-side
+# block (no fail2ban hit, no firewall rule). The default 30s ConnectTimeout in
+# appleboy was too aggressive for transient WAN blips between Azure-hosted GH
+# runners and Hostinger. Raw ssh with ConnectTimeout=60 + 3 attempts handles
+# this without adding a new third-party action dependency.
 jobs:
   deploy:
     name: Deploy to Ironworks VPS
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
-      - name: Deploy via SSH
-        # Pinned to v1.2.0 — update SHA when upgrading the action version
-        uses: appleboy/ssh-action@7eaf76671a0d7eec5d98ee897acda4f968735a17
+      - name: Set up SSH key + known_hosts
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          # Write the deploy key to disk (action env is already secret-redacted)
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # Pre-populate known_hosts so the retry loop never has to answer the
+          # host-key prompt. ssh-keyscan tolerates timeouts and silent failure
+          # (we still set StrictHostKeyChecking=no defensively).
+          ssh-keyscan -T 30 -t ed25519,rsa "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Stage deploy script
+        run: |
+          cat > /tmp/deploy.sh <<'SCRIPT'
+          set -euo pipefail
+          cd /root/ironworks-atlas
+
+          echo "==> Expected SHA: ${EXPECTED_SHA}"
+          echo "==> Pulling latest from master (preserving VPS-local prod compose hardening)..."
+          git fetch origin master
+          # VPS has intentional local diverges on docker-compose.production.yml
+          # (pg17 pin vs master's pg18, 127.0.0.1 binding, dropped :5432 publish).
+          # Stash those before reset, then restore.
+          if ! git diff --quiet docker-compose.production.yml; then
+            git stash push -m "vps-prod-hardening-$(date +%s)" -- docker-compose.production.yml
+            STASHED=1
+          else
+            STASHED=0
+          fi
+          git reset --hard origin/master
+          if [ "$STASHED" = "1" ]; then
+            git stash pop
+          fi
+
+          echo "==> Rebuilding and restarting atlas stack (no compose down - preserves volumes)..."
+          docker compose -f docker-compose.production.yml up -d --build
+
+          echo "==> Pruning old images..."
+          docker image prune -f
+
+          echo "==> Waiting for health check on :3101..."
+          HEALTHY=0
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3101/api/health > /dev/null 2>&1; then
+              echo "==> Ironworks is healthy!"
+              HEALTHY=1
+              break
+            fi
+            sleep 2
+          done
+
+          if [ "$HEALTHY" = "0" ]; then
+            echo "==> ERROR: Health check timed out after 60s"
+            docker compose -f docker-compose.production.yml logs --tail=50
+            exit 1
+          fi
+
+          echo "==> Verifying VPS HEAD matches pushed commit..."
+          ACTUAL_SHA=$(git rev-parse HEAD)
+          if [ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]; then
+            echo "==> ERROR: VPS HEAD ($ACTUAL_SHA) does not match expected ($EXPECTED_SHA)"
+            echo "==> Deploy appears to have silently reverted or a race occurred."
+            exit 1
+          fi
+          echo "==> VPS HEAD == $EXPECTED_SHA ✓"
+          SCRIPT
+
+      - name: Deploy via SSH with 3-attempt retry
         env:
           EXPECTED_SHA: ${{ github.sha }}
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: root
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script_stop: true
-          command_timeout: 15m
-          envs: EXPECTED_SHA
-          script: |
-            set -euo pipefail
-            cd /root/ironworks-atlas
-
-            echo "==> Expected SHA: ${EXPECTED_SHA}"
-            echo "==> Pulling latest from master (preserving VPS-local prod compose hardening)..."
-            git fetch origin master
-            # VPS has intentional local diverges on docker-compose.production.yml
-            # (pg17 pin vs master's pg18, 127.0.0.1 binding, dropped :5432 publish).
-            # Stash those before reset, then restore.
-            if ! git diff --quiet docker-compose.production.yml; then
-              git stash push -m "vps-prod-hardening-$(date +%s)" -- docker-compose.production.yml
-              STASHED=1
-            else
-              STASHED=0
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          set -uo pipefail
+          # ConnectTimeout=60 covers the WAN blips that were causing 30s appleboy
+          # default to fail. ServerAliveInterval=15 keeps the session alive
+          # through the docker build (which can pause for minutes).
+          # StrictHostKeyChecking=no + UserKnownHostsFile points at the known
+          # entry written above; the redundant flag is belt-and-suspenders for
+          # cases where ssh-keyscan failed silently.
+          SSH_OPTS=(
+            -i "$HOME/.ssh/deploy_key"
+            -o ConnectTimeout=60
+            -o ServerAliveInterval=15
+            -o ServerAliveCountMax=20
+            -o StrictHostKeyChecking=no
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts"
+            -o LogLevel=ERROR
+          )
+          MAX_ATTEMPTS=3
+          for attempt in $(seq 1 $MAX_ATTEMPTS); do
+            echo "==> Deploy attempt $attempt/$MAX_ATTEMPTS"
+            if ssh "${SSH_OPTS[@]}" "root@${VPS_HOST}" \
+                 "EXPECTED_SHA='${EXPECTED_SHA}' bash -s" < /tmp/deploy.sh; then
+              echo "==> Deploy succeeded on attempt $attempt"
+              exit 0
             fi
-            git reset --hard origin/master
-            if [ "$STASHED" = "1" ]; then
-              git stash pop
+            if [ "$attempt" -lt "$MAX_ATTEMPTS" ]; then
+              # Linear backoff: 30s, 60s. Total worst-case wait ~90s + 3 * connect-timeouts.
+              wait=$((attempt * 30))
+              echo "==> Attempt $attempt failed; sleeping ${wait}s before retry..."
+              sleep "$wait"
             fi
-
-            echo "==> Rebuilding and restarting atlas stack (no compose down - preserves volumes)..."
-            docker compose -f docker-compose.production.yml up -d --build
-
-            echo "==> Pruning old images..."
-            docker image prune -f
-
-            echo "==> Waiting for health check on :3101..."
-            HEALTHY=0
-            for i in $(seq 1 30); do
-              if curl -sf http://localhost:3101/api/health > /dev/null 2>&1; then
-                echo "==> Ironworks is healthy!"
-                HEALTHY=1
-                break
-              fi
-              sleep 2
-            done
-
-            if [ "$HEALTHY" = "0" ]; then
-              echo "==> ERROR: Health check timed out after 60s"
-              docker compose -f docker-compose.production.yml logs --tail=50
-              exit 1
-            fi
-
-            echo "==> Verifying VPS HEAD matches pushed commit..."
-            ACTUAL_SHA=$(git rev-parse HEAD)
-            if [ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]; then
-              echo "==> ERROR: VPS HEAD ($ACTUAL_SHA) does not match expected ($EXPECTED_SHA)"
-              echo "==> Deploy appears to have silently reverted or a race occurred."
-              exit 1
-            fi
-            echo "==> VPS HEAD == $EXPECTED_SHA ✓"
+          done
+          echo "==> ERROR: All $MAX_ATTEMPTS deploy attempts failed"
+          exit 1
 
       - name: Notify Telegram on failure
         if: failure()
