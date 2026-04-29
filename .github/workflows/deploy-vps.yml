@@ -9,34 +9,64 @@ concurrency:
   group: deploy-vps
   cancel-in-progress: true
 
-# Deploy uses raw ssh with a 3-attempt retry loop instead of appleboy/ssh-action
-# because GH Actions → Hostinger SSH has been intermittently timing out at the
-# TCP dial layer (`dial tcp ***:22: i/o timeout`) without any apparent VPS-side
-# block (no fail2ban hit, no firewall rule). The default 30s ConnectTimeout in
-# appleboy was too aggressive for transient WAN blips between Azure-hosted GH
-# runners and Hostinger. Raw ssh with ConnectTimeout=60 + 3 attempts handles
-# this without adding a new third-party action dependency.
+# Deploy routes through Tailscale rather than the public internet because GH
+# Actions runners (Azure egress) → Hostinger public SSH has been blackholing
+# at the TCP dial layer (`dial tcp ***:22: i/o timeout`). Three consecutive
+# deploys plus a 3-attempt retry workflow all hit the same 60s timeout without
+# any VPS-side firewall block (no fail2ban hits, no ufw, no iptables drops).
+# The block appears to be Hostinger-side throttling of the GH runner IP range.
+#
+# Tailscale gives us a private mesh that bypasses this entirely: the runner
+# joins the tailnet for the duration of the job, then ssh's to the VPS at its
+# 100.x.y.z Tailscale IP — same packets, completely different routing path.
+#
+# Required GH secrets:
+#   - TS_OAUTH_CLIENT_ID / TS_OAUTH_SECRET — Tailscale OAuth client (preferred
+#     over reusable auth keys; rotates automatically and scopes via tags).
+#     Create at https://login.tailscale.com/admin/settings/oauth with
+#     "Devices" write scope, tag `tag:ci`.
+#   - VPS_TAILSCALE_HOST — Tailscale IP of ironworks-vps (e.g. 100.93.111.58)
+#   - VPS_SSH_KEY — unchanged, the existing deploy private key
+#   - TELEGRAM_ALERT_BOT_TOKEN / TELEGRAM_ALERT_CHAT_ID — unchanged
+#
+# Required Tailscale ACL update (admin → Access controls):
+#   ACLs must allow `tag:ci` to ssh to `tag:atlas-vps` (or whatever tag the
+#   ironworks-vps node carries). Without this the runner joins the tailnet
+#   but cannot SSH to the VPS.
 jobs:
   deploy:
     name: Deploy to Ironworks VPS
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
+      - name: Join Tailscale network
+        # Pin to a specific SHA before merging to production. Using the v2
+        # tag here for initial review; SHA-pin in a follow-up.
+        uses: tailscale/github-action@v2
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+          # ACCEPT_DNS=false keeps the runner's resolver pointed at GitHub's
+          # default rather than Tailscale's MagicDNS. We use the Tailscale IP
+          # directly, so MagicDNS isn't needed and disabling it avoids surprise
+          # DNS resolution behavior in the build environment.
+          args: --accept-dns=false
+
       - name: Set up SSH key + known_hosts
         env:
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
-          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_TAILSCALE_HOST: ${{ secrets.VPS_TAILSCALE_HOST }}
         run: |
           set -euo pipefail
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          # Write the deploy key to disk (action env is already secret-redacted)
           printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          # Pre-populate known_hosts so the retry loop never has to answer the
-          # host-key prompt. ssh-keyscan tolerates timeouts and silent failure
-          # (we still set StrictHostKeyChecking=no defensively).
-          ssh-keyscan -T 30 -t ed25519,rsa "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          # ssh-keyscan over the Tailscale IP. Generally faster than over WAN
+          # and Tailscale's WireGuard tunnel doesn't drop the way the public
+          # path was. -T 30 still defended against transient slowness.
+          ssh-keyscan -T 30 -t ed25519,rsa "$VPS_TAILSCALE_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
           chmod 644 ~/.ssh/known_hosts
 
       - name: Stage deploy script
@@ -95,21 +125,20 @@ jobs:
           echo "==> VPS HEAD == $EXPECTED_SHA ✓"
           SCRIPT
 
-      - name: Deploy via SSH with 3-attempt retry
+      - name: Deploy via SSH over Tailscale (with 3-attempt retry for transient WireGuard handshake delay)
         env:
           EXPECTED_SHA: ${{ github.sha }}
-          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_TAILSCALE_HOST: ${{ secrets.VPS_TAILSCALE_HOST }}
         run: |
           set -uo pipefail
-          # ConnectTimeout=60 covers the WAN blips that were causing 30s appleboy
-          # default to fail. ServerAliveInterval=15 keeps the session alive
-          # through the docker build (which can pause for minutes).
-          # StrictHostKeyChecking=no + UserKnownHostsFile points at the known
-          # entry written above; the redundant flag is belt-and-suspenders for
-          # cases where ssh-keyscan failed silently.
+          # Tailscale's first connection sometimes pays a WireGuard handshake
+          # latency cost. ConnectTimeout=30 is plenty over the tailnet
+          # (typical RTT is sub-100ms once peers are in sync). The 3-attempt
+          # retry remains as a small belt-and-suspenders for the rare
+          # initial-handshake-slowness case.
           SSH_OPTS=(
             -i "$HOME/.ssh/deploy_key"
-            -o ConnectTimeout=60
+            -o ConnectTimeout=30
             -o ServerAliveInterval=15
             -o ServerAliveCountMax=20
             -o StrictHostKeyChecking=no
@@ -118,20 +147,20 @@ jobs:
           )
           MAX_ATTEMPTS=3
           for attempt in $(seq 1 $MAX_ATTEMPTS); do
-            echo "==> Deploy attempt $attempt/$MAX_ATTEMPTS"
-            if ssh "${SSH_OPTS[@]}" "root@${VPS_HOST}" \
+            echo "==> Deploy attempt $attempt/$MAX_ATTEMPTS via tailscale ${VPS_TAILSCALE_HOST}"
+            if ssh "${SSH_OPTS[@]}" "root@${VPS_TAILSCALE_HOST}" \
                  "EXPECTED_SHA='${EXPECTED_SHA}' bash -s" < /tmp/deploy.sh; then
               echo "==> Deploy succeeded on attempt $attempt"
               exit 0
             fi
             if [ "$attempt" -lt "$MAX_ATTEMPTS" ]; then
-              # Linear backoff: 30s, 60s. Total worst-case wait ~90s + 3 * connect-timeouts.
-              wait=$((attempt * 30))
+              wait=$((attempt * 15))
               echo "==> Attempt $attempt failed; sleeping ${wait}s before retry..."
               sleep "$wait"
             fi
           done
-          echo "==> ERROR: All $MAX_ATTEMPTS deploy attempts failed"
+          echo "==> ERROR: All $MAX_ATTEMPTS tailscale-routed deploy attempts failed"
+          echo "==> Check tailscale ACLs: tag:ci must be allowed to ssh tag:atlas-vps"
           exit 1
 
       - name: Notify Telegram on failure
