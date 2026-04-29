@@ -16,13 +16,13 @@ export interface AutomationRule {
 export const TRIGGER_OPTIONS: { value: Trigger; label: string; hint: string }[] = [
   {
     value: "issue_created",
-    label: "Issue created",
-    hint: "Fires when any new issue is created",
+    label: "Mission created",
+    hint: "Fires when any new mission is created",
   },
   {
     value: "status_changed",
     label: "Status changed",
-    hint: "Fires when an issue status changes to a specified value",
+    hint: "Fires when a mission status changes to a specified value",
   },
   {
     value: "agent_failed",
@@ -70,7 +70,7 @@ export const ACTION_VALUE_LABELS: Record<Action, string> = {
   assign_agent: "Agent name to assign",
   change_status: "New status value",
   send_notification: "Notification message",
-  create_issue: "Issue title",
+  create_issue: "Mission title",
 };
 
 export const STORAGE_KEY = "ironworks:automation-rules";

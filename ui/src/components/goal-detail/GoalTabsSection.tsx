@@ -85,7 +85,7 @@ export function GoalTabsSection({
   return (
     <Tabs defaultValue={goalIssues.length > 0 ? "issues" : "children"}>
       <TabsList>
-        <TabsTrigger value="issues">Issues ({goalIssues.length})</TabsTrigger>
+        <TabsTrigger value="issues">Missions ({goalIssues.length})</TabsTrigger>
         <TabsTrigger value="key-results">Key Results ({(keyResults ?? []).length})</TabsTrigger>
         <TabsTrigger value="children">Sub-Goals ({childGoals.length})</TabsTrigger>
         <TabsTrigger value="projects">Projects ({linkedProjects.length})</TabsTrigger>
@@ -97,7 +97,7 @@ export function GoalTabsSection({
         <div className="flex justify-end mb-2">
           <Button size="sm" variant="outline" onClick={() => onOpenNewIssue({ goalId })}>
             <Plus className="h-3.5 w-3.5 mr-1" />
-            Create Issue
+            Create Mission
           </Button>
         </div>
         {goalIssues.length === 0 ? (

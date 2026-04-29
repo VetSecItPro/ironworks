@@ -32,7 +32,7 @@ export const DEFAULT_STEPS: TourStep[] = [
   },
   {
     target: '[data-tour="issues"]',
-    title: "Issues & Tasks",
+    title: "Missions & Tasks",
     description:
       "Create and track work items. Assign them to agents or team members, set priorities, and monitor progress through the board or list view.",
     placement: "right",

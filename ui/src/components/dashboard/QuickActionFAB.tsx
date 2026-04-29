@@ -38,7 +38,7 @@ export function QuickActionFAB({
             className="flex items-center gap-2 rounded-full bg-background border border-border px-4 py-2.5 text-sm font-medium shadow-xl hover:bg-accent hover:shadow-2xl hover:-translate-y-0.5 transition-all duration-150 whitespace-nowrap"
           >
             <CircleDot className="h-3.5 w-3.5" />
-            Create Issue
+            Create Mission
           </button>
           <button
             type="button"
