@@ -397,7 +397,7 @@ export function createPluginToolRegistry(workerManager?: PluginWorkerManager): P
           : {};
 
       if (tool.cacheConfig) {
-        const cached = cacheGet<ToolResult>(toolName, pluginId, argsObj, tool.cacheConfig);
+        const cached = cacheGet<ToolResult>(runContext.companyId, toolName, pluginId, argsObj, tool.cacheConfig);
         if (cached.hit) {
           log.debug(
             { pluginId, toolName, namespacedName, agentId: runContext.agentId, runId: runContext.runId },
@@ -453,7 +453,7 @@ export function createPluginToolRegistry(workerManager?: PluginWorkerManager): P
       // 7. Store successful results in cache (errors are never cached — a transient
       // error would be served stale for the full TTL, masking recovery).
       if (tool.cacheConfig && !result.error) {
-        cacheSet(toolName, pluginId, argsObj, tool.cacheConfig, result);
+        cacheSet(runContext.companyId, toolName, pluginId, argsObj, tool.cacheConfig, result);
       }
 
       return { pluginId, toolName, result };

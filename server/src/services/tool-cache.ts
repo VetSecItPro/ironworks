@@ -19,13 +19,17 @@
  * intentionally generous because the eviction cost (a Map delete + insert) is
  * O(1) and the downside of over-eviction is a cache miss, not incorrectness.
  *
- * CACHE KEY — SHA-256 of `{ toolName, adapterType, argsSubset }`.
- * Including `adapterType` prevents a collision when two adapters call the same
- * tool name but expect different behavior from the same plugin. SHA-256 is
- * overkill for security here (there's no adversarial key-forging risk); it's
- * used because Node's built-in `crypto.createHash` is available without extra
- * deps and produces a compact, fixed-length key (64 hex chars) with negligible
- * collision probability.
+ * CACHE KEY — SHA-256 of `{ companyId, toolName, adapterType, argsSubset }`.
+ * `companyId` is the privacy boundary: every cached entry is scoped to the
+ * company that produced it, so Company A's "list invoices" result can never be
+ * served to Company B even when args + tool name + adapter all match. This is
+ * the primary tenant-isolation guarantee for the cache layer; tests assert it
+ * explicitly. `adapterType` prevents a collision when two adapters call the
+ * same tool name but expect different behavior from the same plugin. SHA-256
+ * is overkill for security here (there's no adversarial key-forging risk);
+ * it's used because Node's built-in `crypto.createHash` is available without
+ * extra deps and produces a compact, fixed-length key (64 hex chars) with
+ * negligible collision probability.
  *
  * ERROR RESULTS — never cached.
  * A tool error is often transient (network blip, rate limit, worker restart).
@@ -202,8 +206,14 @@ export function createToolCache<T>(maxSize: number = DEFAULT_MAX_CACHE_SIZE): To
 // ---------------------------------------------------------------------------
 
 /**
- * Build a deterministic cache key from the tool identity and the relevant
- * subset of call arguments.
+ * Build a deterministic cache key from the tool identity, owning company, and
+ * the relevant subset of call arguments.
+ *
+ * Why include `companyId` in the key? Tenant isolation. Every cached entry is
+ * scoped to the company that produced it — Company A's read of `list_invoices`
+ * cannot be served to Company B even when adapter + tool + args all match.
+ * Without this, a cached entry from one tenant would leak across to another at
+ * the cache layer despite database-level RLS. Tests assert this isolation.
  *
  * Why SHA-256 rather than a plain JSON string?
  * - Bounded, fixed-length keys (64 hex chars) regardless of arg depth or size.
@@ -215,6 +225,7 @@ export function createToolCache<T>(maxSize: number = DEFAULT_MAX_CACHE_SIZE): To
  * insertion order produce the same key. Without it `{ a:1, b:2 }` and
  * `{ b:2, a:1 }` would be different keys despite being semantically equal.
  *
+ * @param companyId - UUID of the company; isolates cache entries per tenant
  * @param toolName - The bare (non-namespaced) tool name
  * @param adapterType - The adapter type string (e.g. "anthropic-api")
  * @param args - Full args object from the tool invocation
@@ -222,6 +233,7 @@ export function createToolCache<T>(maxSize: number = DEFAULT_MAX_CACHE_SIZE): To
  *   which args contribute to the key
  */
 export function buildCacheKey(
+  companyId: string,
   toolName: string,
   adapterType: string,
   args: Record<string, unknown>,
@@ -238,7 +250,7 @@ export function buildCacheKey(
   // Stable JSON serialization: sort keys recursively so insertion order
   // in the caller's args object never affects the key.
   const payload = JSON.stringify(
-    { toolName, adapterType, argsSubset },
+    { companyId, toolName, adapterType, argsSubset },
     // replacer that sorts object keys at every level
     (_key, value: unknown) =>
       value !== null && typeof value === "object" && !Array.isArray(value)
@@ -282,31 +294,37 @@ export function _resetSingletonsForTest(): void {
 }
 
 /**
- * Perform a cache lookup against the process-level default cache.
+ * Perform a cache lookup against the process-level default cache. The caller
+ * MUST pass the owning `companyId` — entries are scoped per-tenant so that a
+ * Company A result is never served to Company B.
  */
 export function cacheGet<T>(
+  companyId: string,
   toolName: string,
   adapterType: string,
   args: Record<string, unknown>,
   cacheConfig: PluginToolCacheConfig,
 ): ToolCacheLookup<T> {
-  const key = buildCacheKey(toolName, adapterType, args, cacheConfig);
+  const key = buildCacheKey(companyId, toolName, adapterType, args, cacheConfig);
   return getDefaultCache().get(key) as ToolCacheLookup<T>;
 }
 
 /**
- * Store a successful tool result in the process-level default cache.
+ * Store a successful tool result in the process-level default cache. Scoped
+ * to `companyId` — see `cacheGet` for the tenant-isolation rationale.
+ *
  * Never call this for error results — caching errors would serve stale
  * failures to subsequent callers for the full TTL window.
  */
 export function cacheSet<T>(
+  companyId: string,
   toolName: string,
   adapterType: string,
   args: Record<string, unknown>,
   cacheConfig: PluginToolCacheConfig,
   value: T,
 ): void {
-  const key = buildCacheKey(toolName, adapterType, args, cacheConfig);
+  const key = buildCacheKey(companyId, toolName, adapterType, args, cacheConfig);
   getDefaultCache().set(key, value, cacheConfig.ttlSeconds);
 }
 

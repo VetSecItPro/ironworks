@@ -34,6 +34,8 @@ import {
 
 const TOOL = "search-issues";
 const ADAPTER = "anthropic-api";
+const COMPANY_A = "00000000-0000-0000-0000-aaaaaaaaaaaa";
+const COMPANY_B = "00000000-0000-0000-0000-bbbbbbbbbbbb";
 
 function makeCfg(overrides: Partial<PluginToolCacheConfig> = {}): PluginToolCacheConfig {
   return { ttlSeconds: 60, ...overrides };
@@ -45,42 +47,42 @@ function makeCfg(overrides: Partial<PluginToolCacheConfig> = {}): PluginToolCach
 
 describe("buildCacheKey", () => {
   it("returns a 64-char hex string (SHA-256)", () => {
-    const key = buildCacheKey(TOOL, ADAPTER, { query: "hello" }, makeCfg());
+    const key = buildCacheKey(COMPANY_A, TOOL, ADAPTER, { query: "hello" }, makeCfg());
     expect(key).toMatch(/^[0-9a-f]{64}$/);
   });
 
   it("is deterministic for the same inputs", () => {
     const cfg = makeCfg();
-    const k1 = buildCacheKey(TOOL, ADAPTER, { query: "hello" }, cfg);
-    const k2 = buildCacheKey(TOOL, ADAPTER, { query: "hello" }, cfg);
+    const k1 = buildCacheKey(COMPANY_A, TOOL, ADAPTER, { query: "hello" }, cfg);
+    const k2 = buildCacheKey(COMPANY_A, TOOL, ADAPTER, { query: "hello" }, cfg);
     expect(k1).toBe(k2);
   });
 
   it("differs when args differ", () => {
     const cfg = makeCfg();
-    const k1 = buildCacheKey(TOOL, ADAPTER, { query: "hello" }, cfg);
-    const k2 = buildCacheKey(TOOL, ADAPTER, { query: "world" }, cfg);
+    const k1 = buildCacheKey(COMPANY_A, TOOL, ADAPTER, { query: "hello" }, cfg);
+    const k2 = buildCacheKey(COMPANY_A, TOOL, ADAPTER, { query: "world" }, cfg);
     expect(k1).not.toBe(k2);
   });
 
   it("differs when toolName differs", () => {
     const cfg = makeCfg();
-    const k1 = buildCacheKey("tool-a", ADAPTER, { q: 1 }, cfg);
-    const k2 = buildCacheKey("tool-b", ADAPTER, { q: 1 }, cfg);
+    const k1 = buildCacheKey(COMPANY_A, "tool-a", ADAPTER, { q: 1 }, cfg);
+    const k2 = buildCacheKey(COMPANY_A, "tool-b", ADAPTER, { q: 1 }, cfg);
     expect(k1).not.toBe(k2);
   });
 
   it("differs when adapterType differs", () => {
     const cfg = makeCfg();
-    const k1 = buildCacheKey(TOOL, "openai-api", { q: 1 }, cfg);
-    const k2 = buildCacheKey(TOOL, "anthropic-api", { q: 1 }, cfg);
+    const k1 = buildCacheKey(COMPANY_A, TOOL, "openai-api", { q: 1 }, cfg);
+    const k2 = buildCacheKey(COMPANY_A, TOOL, "anthropic-api", { q: 1 }, cfg);
     expect(k1).not.toBe(k2);
   });
 
   it("is stable regardless of arg key insertion order", () => {
     const cfg = makeCfg();
-    const k1 = buildCacheKey(TOOL, ADAPTER, { a: 1, b: 2 }, cfg);
-    const k2 = buildCacheKey(TOOL, ADAPTER, { b: 2, a: 1 }, cfg);
+    const k1 = buildCacheKey(COMPANY_A, TOOL, ADAPTER, { a: 1, b: 2 }, cfg);
+    const k2 = buildCacheKey(COMPANY_A, TOOL, ADAPTER, { b: 2, a: 1 }, cfg);
     // Same semantic args, different insertion order — must produce the same key
     expect(k1).toBe(k2);
   });
@@ -91,36 +93,36 @@ describe("buildCacheKey", () => {
       // keyFields declares only `query` should contribute to the cache key
       // so `requestId` changes don't bust the cache.
       const cfg = makeCfg({ keyFields: ["query"] });
-      const k1 = buildCacheKey(TOOL, ADAPTER, { query: "hello", requestId: "req-1" }, cfg);
-      const k2 = buildCacheKey(TOOL, ADAPTER, { query: "hello", requestId: "req-2" }, cfg);
+      const k1 = buildCacheKey(COMPANY_A, TOOL, ADAPTER, { query: "hello", requestId: "req-1" }, cfg);
+      const k2 = buildCacheKey(COMPANY_A, TOOL, ADAPTER, { query: "hello", requestId: "req-2" }, cfg);
       expect(k1).toBe(k2);
     });
 
     it("produces a different key when a keyField value changes", () => {
       const cfg = makeCfg({ keyFields: ["query"] });
-      const k1 = buildCacheKey(TOOL, ADAPTER, { query: "hello", requestId: "req-1" }, cfg);
-      const k2 = buildCacheKey(TOOL, ADAPTER, { query: "world", requestId: "req-1" }, cfg);
+      const k1 = buildCacheKey(COMPANY_A, TOOL, ADAPTER, { query: "hello", requestId: "req-1" }, cfg);
+      const k2 = buildCacheKey(COMPANY_A, TOOL, ADAPTER, { query: "world", requestId: "req-1" }, cfg);
       expect(k1).not.toBe(k2);
     });
 
     it("all-args key differs when non-key fields differ (validates keyFields reduces collisions)", () => {
       // Without keyFields: these two calls produce different keys (non-determinism bleeds in)
       const cfgAll = makeCfg();
-      const kAll1 = buildCacheKey(TOOL, ADAPTER, { query: "hello", requestId: "req-1" }, cfgAll);
-      const kAll2 = buildCacheKey(TOOL, ADAPTER, { query: "hello", requestId: "req-2" }, cfgAll);
+      const kAll1 = buildCacheKey(COMPANY_A, TOOL, ADAPTER, { query: "hello", requestId: "req-1" }, cfgAll);
+      const kAll2 = buildCacheKey(COMPANY_A, TOOL, ADAPTER, { query: "hello", requestId: "req-2" }, cfgAll);
       expect(kAll1).not.toBe(kAll2);
 
       // With keyFields=['query']: same key despite requestId difference
       const cfgKeyed = makeCfg({ keyFields: ["query"] });
-      const kKeyed1 = buildCacheKey(TOOL, ADAPTER, { query: "hello", requestId: "req-1" }, cfgKeyed);
-      const kKeyed2 = buildCacheKey(TOOL, ADAPTER, { query: "hello", requestId: "req-2" }, cfgKeyed);
+      const kKeyed1 = buildCacheKey(COMPANY_A, TOOL, ADAPTER, { query: "hello", requestId: "req-1" }, cfgKeyed);
+      const kKeyed2 = buildCacheKey(COMPANY_A, TOOL, ADAPTER, { query: "hello", requestId: "req-2" }, cfgKeyed);
       expect(kKeyed1).toBe(kKeyed2);
     });
 
     it("handles keyFields that are absent from args gracefully", () => {
       // Missing fields are silently omitted from the subset — no throw
       const cfg = makeCfg({ keyFields: ["query", "missingField"] });
-      expect(() => buildCacheKey(TOOL, ADAPTER, { query: "hello" }, cfg)).not.toThrow();
+      expect(() => buildCacheKey(COMPANY_A, TOOL, ADAPTER, { query: "hello" }, cfg)).not.toThrow();
     });
   });
 });
@@ -251,14 +253,14 @@ describe("cacheGet / cacheSet (default cache)", () => {
 
   // Case 1: miss on first lookup
   it("returns a miss when the result has not been cached", () => {
-    const result = cacheGet<string>(TOOL, ADAPTER, { query: "hello" }, cfg);
+    const result = cacheGet<string>(COMPANY_A, TOOL, ADAPTER, { query: "hello" }, cfg);
     expect(result.hit).toBe(false);
   });
 
   // Case 2: hit after cacheSet with same args
   it("returns a hit after cacheSet with the same args", () => {
-    cacheSet(TOOL, ADAPTER, { query: "hello" }, cfg, "cached-result");
-    const result = cacheGet<string>(TOOL, ADAPTER, { query: "hello" }, cfg);
+    cacheSet(COMPANY_A, TOOL, ADAPTER, { query: "hello" }, cfg, "cached-result");
+    const result = cacheGet<string>(COMPANY_A, TOOL, ADAPTER, { query: "hello" }, cfg);
     expect(result.hit).toBe(true);
     if (result.hit) {
       expect(result.value).toBe("cached-result");
@@ -267,8 +269,8 @@ describe("cacheGet / cacheSet (default cache)", () => {
 
   // Case 3: miss when args differ
   it("returns a miss when args differ from the cached args", () => {
-    cacheSet(TOOL, ADAPTER, { query: "hello" }, cfg, "cached-result");
-    const result = cacheGet<string>(TOOL, ADAPTER, { query: "world" }, cfg);
+    cacheSet(COMPANY_A, TOOL, ADAPTER, { query: "hello" }, cfg, "cached-result");
+    const result = cacheGet<string>(COMPANY_A, TOOL, ADAPTER, { query: "world" }, cfg);
     expect(result.hit).toBe(false);
   });
 
@@ -276,9 +278,9 @@ describe("cacheGet / cacheSet (default cache)", () => {
   it("returns a miss after the TTL has elapsed", () => {
     const now = Date.now();
     vi.spyOn(Date, "now").mockReturnValueOnce(now);
-    cacheSet(TOOL, ADAPTER, { query: "hello" }, makeCfg({ ttlSeconds: 1 }), "value");
+    cacheSet(COMPANY_A, TOOL, ADAPTER, { query: "hello" }, makeCfg({ ttlSeconds: 1 }), "value");
     vi.spyOn(Date, "now").mockReturnValueOnce(now + 2_000);
-    const result = cacheGet<string>(TOOL, ADAPTER, { query: "hello" }, makeCfg({ ttlSeconds: 1 }));
+    const result = cacheGet<string>(COMPANY_A, TOOL, ADAPTER, { query: "hello" }, makeCfg({ ttlSeconds: 1 }));
     expect(result.hit).toBe(false);
     vi.restoreAllMocks();
   });
@@ -286,9 +288,9 @@ describe("cacheGet / cacheSet (default cache)", () => {
   // Case 5: keyFields subset via default cache
   it("hits when only keyFields match and other args differ", () => {
     const cfgKeyed = makeCfg({ keyFields: ["query"] });
-    cacheSet(TOOL, ADAPTER, { query: "hello", requestId: "req-1" }, cfgKeyed, "value");
+    cacheSet(COMPANY_A, TOOL, ADAPTER, { query: "hello", requestId: "req-1" }, cfgKeyed, "value");
     // requestId differs — should still be a hit because keyFields=['query']
-    const result = cacheGet<string>(TOOL, ADAPTER, { query: "hello", requestId: "req-999" }, cfgKeyed);
+    const result = cacheGet<string>(COMPANY_A, TOOL, ADAPTER, { query: "hello", requestId: "req-999" }, cfgKeyed);
     expect(result.hit).toBe(true);
   });
 
@@ -357,5 +359,39 @@ describe("pluginToolCacheConfigSchema", () => {
       parametersSchema: { type: "object" },
     });
     expect(result.success).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tenant isolation — every cached entry is scoped to companyId. Two companies
+// asking the same tool with the same args must NEVER share a cache entry.
+// This is the load-bearing privacy guarantee for the cache layer; without it
+// Company A's data leaks into Company B's runs.
+// ---------------------------------------------------------------------------
+
+describe("tenant isolation by companyId", () => {
+  beforeEach(() => _resetToolCache());
+  afterEach(() => _resetToolCache());
+
+  const cfg = makeCfg();
+
+  it("buildCacheKey produces different keys for the same tool+args across companies", () => {
+    const kA = buildCacheKey(COMPANY_A, TOOL, ADAPTER, { query: "hello" }, cfg);
+    const kB = buildCacheKey(COMPANY_B, TOOL, ADAPTER, { query: "hello" }, cfg);
+    expect(kA).not.toBe(kB);
+  });
+
+  it("Company B never reads Company A's cached entry", () => {
+    cacheSet(COMPANY_A, TOOL, ADAPTER, { query: "hello" }, cfg, "company-A-secret-result");
+    const lookupB = cacheGet<string>(COMPANY_B, TOOL, ADAPTER, { query: "hello" }, cfg);
+    expect(lookupB.hit).toBe(false);
+  });
+
+  it("Company A still reads its own cached entry after Company B writes a different one", () => {
+    cacheSet(COMPANY_A, TOOL, ADAPTER, { query: "hello" }, cfg, "value-A");
+    cacheSet(COMPANY_B, TOOL, ADAPTER, { query: "hello" }, cfg, "value-B");
+    const lookupA = cacheGet<string>(COMPANY_A, TOOL, ADAPTER, { query: "hello" }, cfg);
+    expect(lookupA.hit).toBe(true);
+    if (lookupA.hit) expect(lookupA.value).toBe("value-A");
   });
 });
