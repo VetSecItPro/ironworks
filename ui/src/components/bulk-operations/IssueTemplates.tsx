@@ -87,7 +87,7 @@ export function TemplatePicker({ templates = BUILT_IN_TEMPLATES, onSelect, class
         onClick={() =>
           onSelect({
             id: "blank",
-            name: "Blank Issue",
+            name: "Blank Mission",
             icon: "file",
             defaults: {},
           })

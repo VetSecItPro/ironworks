@@ -25,7 +25,7 @@ export const QuickActionsGrid = memo(function QuickActionsGrid({
   const actions: QuickAction[] = [
     {
       icon: CircleDot,
-      label: "New Issue",
+      label: "New Mission",
       description: "Create a task",
       action: onCreateIssue,
       accent: "text-blue-500",

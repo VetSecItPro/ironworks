@@ -73,56 +73,83 @@ jobs:
         run: |
           cat > /tmp/deploy.sh <<'SCRIPT'
           set -euo pipefail
-          cd /root/ironworks-atlas
+
+          # Two stacks share this VPS, both clones of VetSecItPro/ironworks:
+          #   /root/ironworks-atlas → command.useapex.io (Mission Command), :3101, prod compose
+          #   /root/ironworks       → missionreadytech.cloud (SteelMotion),  :3100, default compose
+          # Both must reach EXPECTED_SHA before this job is considered green.
+
+          deploy_stack() {
+            local stack_dir="$1"
+            local stack_name="$2"
+            local compose_file="$3"
+            local health_port="$4"
+
+            echo ""
+            echo "###############################################################"
+            echo "# Deploying ${stack_name} (${stack_dir} → :${health_port})"
+            echo "###############################################################"
+
+            cd "$stack_dir"
+
+            echo "==> Pulling latest from master (preserving VPS-local compose hardening)..."
+            git fetch origin master
+            # VPS has intentional local diverges on the compose file (pg pin,
+            # 127.0.0.1 binding, dropped :5432 publish). Stash those before
+            # reset, then restore.
+            if ! git diff --quiet "$compose_file"; then
+              git stash push -m "vps-prod-hardening-$(date +%s)" -- "$compose_file"
+              STASHED=1
+            else
+              STASHED=0
+            fi
+            git reset --hard origin/master
+            if [ "$STASHED" = "1" ]; then
+              git stash pop
+            fi
+
+            echo "==> Rebuilding and restarting ${stack_name} stack (no compose down - preserves volumes)..."
+            docker compose -f "$compose_file" up -d --build
+
+            echo "==> Waiting for health check on :${health_port}..."
+            HEALTHY=0
+            for i in $(seq 1 30); do
+              if curl -sf "http://localhost:${health_port}/api/health" > /dev/null 2>&1; then
+                echo "==> ${stack_name} is healthy!"
+                HEALTHY=1
+                break
+              fi
+              sleep 2
+            done
+
+            if [ "$HEALTHY" = "0" ]; then
+              echo "==> ERROR: ${stack_name} health check timed out after 60s"
+              docker compose -f "$compose_file" logs --tail=50
+              return 1
+            fi
+
+            echo "==> Verifying ${stack_name} HEAD matches pushed commit..."
+            ACTUAL_SHA=$(git rev-parse HEAD)
+            if [ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]; then
+              echo "==> ERROR: ${stack_name} HEAD ($ACTUAL_SHA) does not match expected ($EXPECTED_SHA)"
+              return 1
+            fi
+            echo "==> ${stack_name} HEAD == $EXPECTED_SHA ✓"
+          }
 
           echo "==> Expected SHA: ${EXPECTED_SHA}"
-          echo "==> Pulling latest from master (preserving VPS-local prod compose hardening)..."
-          git fetch origin master
-          # VPS has intentional local diverges on docker-compose.production.yml
-          # (pg17 pin vs master's pg18, 127.0.0.1 binding, dropped :5432 publish).
-          # Stash those before reset, then restore.
-          if ! git diff --quiet docker-compose.production.yml; then
-            git stash push -m "vps-prod-hardening-$(date +%s)" -- docker-compose.production.yml
-            STASHED=1
-          else
-            STASHED=0
-          fi
-          git reset --hard origin/master
-          if [ "$STASHED" = "1" ]; then
-            git stash pop
-          fi
 
-          echo "==> Rebuilding and restarting atlas stack (no compose down - preserves volumes)..."
-          docker compose -f docker-compose.production.yml up -d --build
+          # Atlas first (Mission Command — internal/partner traffic via CF Access).
+          deploy_stack /root/ironworks-atlas atlas docker-compose.production.yml 3101
 
-          echo "==> Pruning old images..."
+          # SteelMotion second (public customer traffic). If atlas failed,
+          # set -e already aborted us above, so SM never starts on a broken
+          # release. Local compose with health on :3100.
+          deploy_stack /root/ironworks steelmotion docker-compose.yml 3100
+
+          echo ""
+          echo "==> Both stacks deployed successfully and at $EXPECTED_SHA."
           docker image prune -f
-
-          echo "==> Waiting for health check on :3101..."
-          HEALTHY=0
-          for i in $(seq 1 30); do
-            if curl -sf http://localhost:3101/api/health > /dev/null 2>&1; then
-              echo "==> Ironworks is healthy!"
-              HEALTHY=1
-              break
-            fi
-            sleep 2
-          done
-
-          if [ "$HEALTHY" = "0" ]; then
-            echo "==> ERROR: Health check timed out after 60s"
-            docker compose -f docker-compose.production.yml logs --tail=50
-            exit 1
-          fi
-
-          echo "==> Verifying VPS HEAD matches pushed commit..."
-          ACTUAL_SHA=$(git rev-parse HEAD)
-          if [ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]; then
-            echo "==> ERROR: VPS HEAD ($ACTUAL_SHA) does not match expected ($EXPECTED_SHA)"
-            echo "==> Deploy appears to have silently reverted or a race occurred."
-            exit 1
-          fi
-          echo "==> VPS HEAD == $EXPECTED_SHA ✓"
           SCRIPT
 
       - name: Deploy via SSH over Tailscale (with 3-attempt retry for transient WireGuard handshake delay)

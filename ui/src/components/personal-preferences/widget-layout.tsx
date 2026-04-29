@@ -16,7 +16,7 @@ export interface WidgetConfig {
 const DEFAULT_WIDGETS: WidgetConfig[] = [
   { id: "metrics", label: "Key Metrics", visible: true, order: 0 },
   { id: "active-agents", label: "Active Agents", visible: true, order: 1 },
-  { id: "recent-issues", label: "Recent Issues", visible: true, order: 2 },
+  { id: "recent-issues", label: "Recent Missions", visible: true, order: 2 },
   { id: "charts", label: "Charts", visible: true, order: 3 },
   { id: "activity", label: "Activity Feed", visible: true, order: 4 },
   { id: "goals", label: "Goal Progress", visible: true, order: 5 },

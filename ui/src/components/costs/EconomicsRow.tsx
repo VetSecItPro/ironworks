@@ -153,8 +153,8 @@ export function EconomicsRow({
               <div className="grid grid-cols-4 gap-2 text-[10px] uppercase tracking-wider text-muted-foreground pb-1 border-b border-border/50">
                 <span className="col-span-1">Project</span>
                 <span className="text-right">Cost</span>
-                <span className="text-right">Issues</span>
-                <span className="text-right">$/Issue</span>
+                <span className="text-right">Missions</span>
+                <span className="text-right">$/Mission</span>
               </div>
               {costAllocation.slice(0, 8).map((row) => (
                 <div key={row.projectId} className="grid grid-cols-4 gap-2 text-sm py-1">
