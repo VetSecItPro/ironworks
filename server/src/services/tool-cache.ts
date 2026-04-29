@@ -335,3 +335,98 @@ export function cacheSet<T>(
 export function getCacheStats(): ToolCacheStats {
   return getDefaultCache().getStats();
 }
+
+// ---------------------------------------------------------------------------
+// Framework-level (first-party) cache helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Cache config for first-party IronWorks read functions. Mirrors
+ * `PluginToolCacheConfig` structurally but is declared separately so it
+ * does not bleed plugin-sdk semantics into framework-internal code.
+ */
+export interface FrameworkToolCacheConfig {
+  /**
+   * How long a cached entry is considered fresh.
+   * Must be a positive integer (seconds).
+   */
+  ttlSeconds: number;
+  /**
+   * Which keys from the `args` object contribute to the cache key.
+   * When omitted, all keys in `args` contribute. Declare only the fields
+   * that semantically distinguish one result from another — omit transient
+   * fields (timestamps, request IDs) that vary per call but don't change
+   * the result.
+   */
+  keyFields?: string[];
+}
+
+/**
+ * Build a deterministic cache key for a first-party (non-plugin) IronWorks
+ * read function.
+ *
+ * Why no `adapterType` here? First-party service functions are not
+ * adapter-specific — they serve the same DB data to every adapter type.
+ * Including `adapterType` would fragment the cache per adapter and nullify
+ * the cross-adapter deduplication benefit (e.g. 13 agents on 3 different
+ * adapters calling `renderTeamDirectory` would produce 3 separate cache
+ * entries instead of 1). The plugin-tool path retains `adapterType` because
+ * plugins are per-adapter-installation.
+ *
+ * Tenant isolation via `companyId` is the same as for plugin tools: Company
+ * A's team directory must never be served to Company B's agent.
+ */
+export function buildFrameworkCacheKey(
+  companyId: string,
+  toolName: string,
+  args: Record<string, unknown>,
+  config: FrameworkToolCacheConfig,
+): string {
+  const argsSubset: Record<string, unknown> =
+    config.keyFields && config.keyFields.length > 0
+      ? Object.fromEntries(config.keyFields.filter((f) => f in args).map((f) => [f, args[f]]))
+      : args;
+
+  const payload = JSON.stringify({ companyId, toolName, argsSubset }, (_key, value: unknown) =>
+    value !== null && typeof value === "object" && !Array.isArray(value)
+      ? Object.fromEntries(Object.entries(value as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)))
+      : value,
+  );
+
+  return createHash("sha256").update(payload).digest("hex");
+}
+
+/**
+ * Look up a cached result for a first-party IronWorks read function.
+ *
+ * Call this at the top of any expensive read that is called multiple times per
+ * heartbeat cycle with semantically identical arguments. On a hit, skip the DB
+ * query entirely and return the cached value.
+ */
+export function frameworkCacheGet<T>(
+  companyId: string,
+  toolName: string,
+  args: Record<string, unknown>,
+  config: FrameworkToolCacheConfig,
+): ToolCacheLookup<T> {
+  const key = buildFrameworkCacheKey(companyId, toolName, args, config);
+  return getDefaultCache().get(key) as ToolCacheLookup<T>;
+}
+
+/**
+ * Store a successful result for a first-party IronWorks read function.
+ *
+ * Only call this for non-error results — caching an error would serve the
+ * stale failure to subsequent callers for the full TTL window, masking
+ * transient failures and slowing recovery.
+ */
+export function frameworkCacheSet<T>(
+  companyId: string,
+  toolName: string,
+  args: Record<string, unknown>,
+  config: FrameworkToolCacheConfig,
+  value: T,
+): void {
+  const key = buildFrameworkCacheKey(companyId, toolName, args, config);
+  getDefaultCache().set(key, value, config.ttlSeconds);
+}

@@ -151,6 +151,7 @@ import {
 import { getRunLogStore, type RunLogHandle } from "./run-log-store.js";
 import { secretService } from "./secrets.js";
 import { type MatchedRecipe, matchSkillsForRun } from "./skill-matching.js";
+import { type FrameworkToolCacheConfig, frameworkCacheGet, frameworkCacheSet, getCacheStats } from "./tool-cache.js";
 import { workspaceOperationService } from "./workspace-operations.js";
 import {
   buildWorkspaceReadyComment,
@@ -164,6 +165,24 @@ import {
 
 const execFile = promisify(execFileCallback);
 
+// ---------------------------------------------------------------------------
+// First-party read cache configurations
+// ---------------------------------------------------------------------------
+
+/**
+ * Team directory: per-agent view of colleagues, sorted by name.
+ *
+ * TTL 300s — the agent roster changes only on operator action (hire, rename,
+ * terminate). A 5-minute window catches any roster change before the next
+ * heartbeat while eliminating the 13 identical DB reads that fire when all
+ * 13 Atlas Ops agents wake simultaneously. Key includes `currentAgentId`
+ * because each agent sees every colleague EXCEPT itself.
+ */
+const TEAM_DIRECTORY_CACHE: FrameworkToolCacheConfig = {
+  ttlSeconds: 300,
+  keyFields: ["companyId", "currentAgentId"],
+};
+
 /**
  * Render a per-company colleague directory for substitution into the shared
  * `{{TEAM_DIRECTORY}}` placeholder in COMMON_AGENT_PREAMBLE. Each line is one
@@ -171,21 +190,33 @@ const execFile = promisify(execFileCallback);
  * agent is the only one in the company — keeps the prompt structurally valid
  * even on pre-fleet installs.
  *
- * Reads only `name`, `title`, `role` per agent — small query, fine to run on
- * every heartbeat. No caching needed: the result is small and renames matter
- * to land immediately.
+ * Result is cached for 300 seconds: the colleague list only changes on
+ * operator action (hire, rename, terminate), so within a heartbeat cycle
+ * all agents beyond the first get a cache hit. Staleness is bounded to
+ * one heartbeat cycle at most (default 4-hour interval).
  */
 async function renderTeamDirectory(db: Db, companyId: string, currentAgentId: string): Promise<string> {
+  const cached = frameworkCacheGet<string>(
+    companyId,
+    "renderTeamDirectory",
+    { companyId, currentAgentId },
+    TEAM_DIRECTORY_CACHE,
+  );
+  if (cached.hit) return cached.value;
+
   const colleagues = await db
     .select({ name: agents.name, title: agents.title, role: agents.role })
     .from(agents)
     .where(
       and(eq(agents.companyId, companyId), sql`${agents.id} <> ${currentAgentId}`, sql`${agents.terminatedAt} IS NULL`),
     );
-  if (colleagues.length === 0) {
-    return "_(no other agents on this team yet)_";
-  }
-  return colleagues.map((c) => `- ${c.name} (${c.title ?? c.role})`).join("\n");
+  const result =
+    colleagues.length === 0
+      ? "_(no other agents on this team yet)_"
+      : colleagues.map((c) => `- ${c.name} (${c.title ?? c.role})`).join("\n");
+
+  frameworkCacheSet(companyId, "renderTeamDirectory", { companyId, currentAgentId }, TEAM_DIRECTORY_CACHE, result);
+  return result;
 }
 
 function deriveRepoNameFromRepoUrl(repoUrl: string | null): string | null {
@@ -3247,6 +3278,20 @@ export function heartbeatService(db: Db) {
       await releaseRuntimeServicesForRun(run.id).catch(() => undefined);
       activeRunExecutions.delete(run.id);
       await startNextQueuedRunForAgent(run.agentId);
+
+      // Emit cache stats after every run so operators can observe hit rates
+      // over time without instrumenting individual tools. Only logs when at
+      // least one first-party cache hit has fired — avoids noise on cold starts
+      // where every call is a miss (e.g. the very first run after a deploy).
+      const cacheStats = getCacheStats();
+      if (cacheStats.hits > 0) {
+        const total = cacheStats.hits + cacheStats.misses;
+        const hitRatePct = total > 0 ? Math.round((cacheStats.hits / total) * 100) : 0;
+        logger.info(
+          { cacheHits: cacheStats.hits, cacheMisses: cacheStats.misses, cacheSize: cacheStats.size, hitRatePct },
+          "[tool-cache] run complete — cache stats (cumulative since process start)",
+        );
+      }
     }
   }
 

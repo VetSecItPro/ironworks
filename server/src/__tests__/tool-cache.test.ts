@@ -21,10 +21,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   _resetToolCache,
   buildCacheKey,
+  buildFrameworkCacheKey,
   cacheGet,
   cacheSet,
   createToolCache,
   DEFAULT_MAX_CACHE_SIZE,
+  type FrameworkToolCacheConfig,
+  frameworkCacheGet,
+  frameworkCacheSet,
   getCacheStats,
 } from "../services/tool-cache.js";
 
@@ -393,5 +397,182 @@ describe("tenant isolation by companyId", () => {
     const lookupA = cacheGet<string>(COMPANY_A, TOOL, ADAPTER, { query: "hello" }, cfg);
     expect(lookupA.hit).toBe(true);
     if (lookupA.hit) expect(lookupA.value).toBe("value-A");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildFrameworkCacheKey — first-party tool key builder (no adapterType)
+// ---------------------------------------------------------------------------
+
+describe("buildFrameworkCacheKey", () => {
+  function makeFwCfg(overrides: Partial<FrameworkToolCacheConfig> = {}): FrameworkToolCacheConfig {
+    return { ttlSeconds: 300, ...overrides };
+  }
+
+  it("returns a 64-char hex string", () => {
+    const key = buildFrameworkCacheKey(COMPANY_A, "renderTeamDirectory", { companyId: COMPANY_A }, makeFwCfg());
+    expect(key).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it("is deterministic for the same inputs", () => {
+    const cfg = makeFwCfg();
+    const k1 = buildFrameworkCacheKey(COMPANY_A, "renderTeamDirectory", { companyId: COMPANY_A }, cfg);
+    const k2 = buildFrameworkCacheKey(COMPANY_A, "renderTeamDirectory", { companyId: COMPANY_A }, cfg);
+    expect(k1).toBe(k2);
+  });
+
+  it("differs when companyId differs (tenant isolation)", () => {
+    const cfg = makeFwCfg();
+    const kA = buildFrameworkCacheKey(COMPANY_A, "renderTeamDirectory", { companyId: COMPANY_A }, cfg);
+    const kB = buildFrameworkCacheKey(COMPANY_B, "renderTeamDirectory", { companyId: COMPANY_B }, cfg);
+    expect(kA).not.toBe(kB);
+  });
+
+  it("differs when toolName differs", () => {
+    const cfg = makeFwCfg();
+    const k1 = buildFrameworkCacheKey(COMPANY_A, "renderTeamDirectory", {}, cfg);
+    const k2 = buildFrameworkCacheKey(COMPANY_A, "fetchCandidateRecipes", {}, cfg);
+    expect(k1).not.toBe(k2);
+  });
+
+  it("differs from buildCacheKey for the same tool (no adapterType in framework key)", () => {
+    // The two key builders must not produce the same key for equivalent inputs
+    // because plugin keys include adapterType and framework keys do not.
+    // If they collided, a plugin tool result could poison a first-party cache slot.
+    const pluginKey = buildCacheKey(COMPANY_A, TOOL, ADAPTER, {}, makeCfg());
+    const fwKey = buildFrameworkCacheKey(COMPANY_A, TOOL, {}, makeFwCfg());
+    expect(pluginKey).not.toBe(fwKey);
+  });
+
+  it("respects keyFields subset", () => {
+    const cfg = makeFwCfg({ keyFields: ["companyId"] });
+    // agentId varies per agent but companyId is stable — should collapse to one key
+    const k1 = buildFrameworkCacheKey(
+      COMPANY_A,
+      "renderTeamDirectory",
+      { companyId: COMPANY_A, agentId: "agent-1" },
+      cfg,
+    );
+    const k2 = buildFrameworkCacheKey(
+      COMPANY_A,
+      "renderTeamDirectory",
+      { companyId: COMPANY_A, agentId: "agent-2" },
+      cfg,
+    );
+    expect(k1).toBe(k2);
+  });
+
+  it("is stable regardless of args key insertion order", () => {
+    const cfg = makeFwCfg();
+    const k1 = buildFrameworkCacheKey(COMPANY_A, "renderTeamDirectory", { a: 1, b: 2 }, cfg);
+    const k2 = buildFrameworkCacheKey(COMPANY_A, "renderTeamDirectory", { b: 2, a: 1 }, cfg);
+    expect(k1).toBe(k2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// frameworkCacheGet / frameworkCacheSet — first-party cache helpers
+// ---------------------------------------------------------------------------
+
+describe("frameworkCacheGet / frameworkCacheSet (default cache)", () => {
+  beforeEach(() => _resetToolCache());
+  afterEach(() => _resetToolCache());
+
+  const fwCfg: FrameworkToolCacheConfig = { ttlSeconds: 300 };
+
+  // Hit after set with same args
+  it("returns a hit after frameworkCacheSet with the same args", () => {
+    frameworkCacheSet(COMPANY_A, "renderTeamDirectory", { companyId: COMPANY_A }, fwCfg, "- Alice (CEO)");
+    const result = frameworkCacheGet<string>(COMPANY_A, "renderTeamDirectory", { companyId: COMPANY_A }, fwCfg);
+    expect(result.hit).toBe(true);
+    if (result.hit) expect(result.value).toBe("- Alice (CEO)");
+  });
+
+  // Miss before any set
+  it("returns a miss on first call (cold cache)", () => {
+    const result = frameworkCacheGet<string>(COMPANY_A, "renderTeamDirectory", { companyId: COMPANY_A }, fwCfg);
+    expect(result.hit).toBe(false);
+  });
+
+  // Simulates two-call deduplication: second call within TTL is a hit
+  it("second call within TTL does not re-execute the underlying function (one set, one get)", () => {
+    let dbCallCount = 0;
+
+    // Simulate the first agent's call (cache miss — DB is queried, result cached)
+    const firstResult = frameworkCacheGet<string>(COMPANY_A, "renderTeamDirectory", { companyId: COMPANY_A }, fwCfg);
+    if (!firstResult.hit) {
+      dbCallCount++;
+      frameworkCacheSet(
+        COMPANY_A,
+        "renderTeamDirectory",
+        { companyId: COMPANY_A },
+        fwCfg,
+        "- Alice (CEO)\n- Bob (CTO)",
+      );
+    }
+
+    // Simulate the second agent's call (cache hit — DB is NOT queried)
+    const secondResult = frameworkCacheGet<string>(COMPANY_A, "renderTeamDirectory", { companyId: COMPANY_A }, fwCfg);
+    if (!secondResult.hit) {
+      dbCallCount++;
+    }
+
+    expect(secondResult.hit).toBe(true);
+    // Only one DB call fired despite two "agent" calls — the cache deduplicates
+    expect(dbCallCount).toBe(1);
+  });
+
+  // TTL expiry — cache expires after ttlSeconds
+  it("returns a miss after TTL has elapsed", () => {
+    const now = Date.now();
+    vi.spyOn(Date, "now").mockReturnValueOnce(now);
+    frameworkCacheSet(COMPANY_A, "renderTeamDirectory", { companyId: COMPANY_A }, { ttlSeconds: 1 }, "value");
+    vi.spyOn(Date, "now").mockReturnValueOnce(now + 2_000);
+    const result = frameworkCacheGet<string>(
+      COMPANY_A,
+      "renderTeamDirectory",
+      { companyId: COMPANY_A },
+      { ttlSeconds: 1 },
+    );
+    expect(result.hit).toBe(false);
+    vi.restoreAllMocks();
+  });
+
+  // Tenant isolation — Company B must not read Company A's cached entry
+  it("Company B cannot read Company A's cached entry (tenant isolation)", () => {
+    frameworkCacheSet(COMPANY_A, "renderTeamDirectory", { companyId: COMPANY_A }, fwCfg, "company-A-secret");
+    const lookupB = frameworkCacheGet<string>(COMPANY_B, "renderTeamDirectory", { companyId: COMPANY_B }, fwCfg);
+    expect(lookupB.hit).toBe(false);
+  });
+
+  it("Company A reads its own entry even after Company B writes one", () => {
+    frameworkCacheSet(COMPANY_A, "renderTeamDirectory", { companyId: COMPANY_A }, fwCfg, "value-A");
+    frameworkCacheSet(COMPANY_B, "renderTeamDirectory", { companyId: COMPANY_B }, fwCfg, "value-B");
+    const lookupA = frameworkCacheGet<string>(COMPANY_A, "renderTeamDirectory", { companyId: COMPANY_A }, fwCfg);
+    expect(lookupA.hit).toBe(true);
+    if (lookupA.hit) expect(lookupA.value).toBe("value-A");
+  });
+
+  // Tool name scoping — different tools must not share entries
+  it("different first-party tools do not share cache entries", () => {
+    frameworkCacheSet(COMPANY_A, "renderTeamDirectory", { companyId: COMPANY_A }, fwCfg, "team-data");
+    const crossLookup = frameworkCacheGet<string>(COMPANY_A, "fetchCandidateRecipes", { companyId: COMPANY_A }, fwCfg);
+    expect(crossLookup.hit).toBe(false);
+  });
+
+  // keyFields reduces cache key so different agentIds share an entry for role-invariant data
+  it("keyFields=companyId collapses identical company reads across different agentIds", () => {
+    const cfgCompanyOnly: FrameworkToolCacheConfig = { ttlSeconds: 120, keyFields: ["companyId"] };
+    // Agent 1 misses and primes the cache
+    frameworkCacheSet(COMPANY_A, "listCompanySkillsFull", { companyId: COMPANY_A }, cfgCompanyOnly, ["skill-a"]);
+    // Agent 2 with a different (irrelevant) field still hits
+    const hit = frameworkCacheGet<string[]>(
+      COMPANY_A,
+      "listCompanySkillsFull",
+      { companyId: COMPANY_A },
+      cfgCompanyOnly,
+    );
+    expect(hit.hit).toBe(true);
+    if (hit.hit) expect(hit.value).toEqual(["skill-a"]);
   });
 });

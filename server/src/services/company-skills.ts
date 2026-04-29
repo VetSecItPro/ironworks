@@ -36,6 +36,26 @@ import { resolveIronworksInstanceRoot } from "../home-paths.js";
 import { agentService } from "./agents.js";
 import { projectService } from "./projects.js";
 import { secretService } from "./secrets.js";
+import { type FrameworkToolCacheConfig, frameworkCacheGet, frameworkCacheSet } from "./tool-cache.js";
+
+// ---------------------------------------------------------------------------
+// First-party cache config for company skills list
+// ---------------------------------------------------------------------------
+
+/**
+ * Full company skill catalog (all installed skills, any status).
+ *
+ * TTL 120s — the skill list changes only on operator install/uninstall/approve.
+ * Every agent in a company calls `listRuntimeSkillEntries` (which delegates to
+ * `listFull`) at heartbeat start to build the skill allowlist for its adapter.
+ * With 13 agents, that is 13 identical DB queries per cycle; caching collapses
+ * them to 1. The key is `companyId` only — the result is company-scoped and
+ * not further filtered here (filtering by role happens in the caller).
+ */
+const COMPANY_SKILLS_LIST_CACHE: FrameworkToolCacheConfig = {
+  ttlSeconds: 120,
+  keyFields: ["companyId"],
+};
 
 type CompanySkillRow = typeof companySkills.$inferSelect;
 
@@ -1539,13 +1559,25 @@ export function companySkillService(db: Db) {
   }
 
   async function listFull(companyId: string): Promise<CompanySkill[]> {
+    const cacheArgs = { companyId };
+    const cached = frameworkCacheGet<CompanySkill[]>(
+      companyId,
+      "listCompanySkillsFull",
+      cacheArgs,
+      COMPANY_SKILLS_LIST_CACHE,
+    );
+    if (cached.hit) return cached.value;
+
     await ensureSkillInventoryCurrent(companyId);
     const rows = await db
       .select()
       .from(companySkills)
       .where(eq(companySkills.companyId, companyId))
       .orderBy(asc(companySkills.name), asc(companySkills.key));
-    return rows.map((row) => toCompanySkill(row));
+    const result = rows.map((row) => toCompanySkill(row));
+
+    frameworkCacheSet(companyId, "listCompanySkillsFull", cacheArgs, COMPANY_SKILLS_LIST_CACHE, result);
+    return result;
   }
 
   async function getById(id: string) {
