@@ -20,6 +20,7 @@ import { logger } from "../middleware/logger.js";
 import { resolveProviderSecret } from "./provider-secret-resolver.js";
 import { checkCostOverhead, isSkillLoopCostDisabled } from "./skill-circuit-breaker.js";
 import { SKILL_MATCHER_PROMPT_V1 } from "./skill-prompts.js";
+import { type FrameworkToolCacheConfig, frameworkCacheGet, frameworkCacheSet } from "./tool-cache.js";
 
 // ── Re-export the SkillRecipe inferred type for callers that don't import from DB ──
 
@@ -49,6 +50,28 @@ const OPENROUTER_CHAT_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 /** Hard wall-clock budget for the matcher LLM call (milliseconds). */
 const MATCHER_TIMEOUT_MS = 200;
+
+// ---------------------------------------------------------------------------
+// First-party cache config for candidate recipe reads
+// ---------------------------------------------------------------------------
+
+/**
+ * Active skill recipes for a company + role title pair.
+ *
+ * TTL 120s — recipes change only on operator approve/reject/pause. Two agents
+ * with the same role title (e.g. "Software Engineer") share a cache hit: the
+ * recipe list for their role is identical regardless of agent identity. Key
+ * includes `agentRoleTitle` because role-restricted recipes produce different
+ * result sets per role.
+ *
+ * Do NOT include `agentId` in keyFields: the DB query filters on companyId +
+ * role, not on agent identity. Including agentId would fragment the cache and
+ * defeat cross-agent deduplication.
+ */
+const CANDIDATE_RECIPES_CACHE: FrameworkToolCacheConfig = {
+  ttlSeconds: 120,
+  keyFields: ["companyId", "agentRoleTitle"],
+};
 
 /** Minimum score to include in the injection set. */
 const SCORE_THRESHOLD = 0.7;
@@ -91,7 +114,16 @@ function isSkillLoopEnabled(companyId: string): boolean {
  * resume on the very next heartbeat once `paused_at` is cleared.
  */
 async function fetchCandidateRecipes(db: Db, companyId: string, agentRoleTitle: string): Promise<SkillRecipe[]> {
-  return db
+  const cacheArgs = { companyId, agentRoleTitle };
+  const cached = frameworkCacheGet<SkillRecipe[]>(
+    companyId,
+    "fetchCandidateRecipes",
+    cacheArgs,
+    CANDIDATE_RECIPES_CACHE,
+  );
+  if (cached.hit) return cached.value;
+
+  const recipes = await db
     .select()
     .from(skillRecipes)
     .where(
@@ -108,6 +140,9 @@ async function fetchCandidateRecipes(db: Db, companyId: string, agentRoleTitle: 
         )`,
       ),
     );
+
+  frameworkCacheSet(companyId, "fetchCandidateRecipes", cacheArgs, CANDIDATE_RECIPES_CACHE, recipes);
+  return recipes;
 }
 
 /**
