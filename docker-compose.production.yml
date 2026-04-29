@@ -34,6 +34,13 @@ services:
       OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
       GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
       OPENROUTER_API_KEY: "${OPENROUTER_API_KEY:-}"
+      # The openrouter-api adapter reads ADAPTER_OPENROUTER_API_KEY at runtime
+      # (packages/adapters/openrouter-api/src/server/execute.ts). The bare
+      # OPENROUTER_API_KEY above stays for any consumer expecting that name;
+      # both resolve to the same secret. Without this passthrough, agents on
+      # openrouter_api fail with "OpenRouter API key is not configured" even
+      # when the host .env has OPENROUTER_API_KEY set.
+      ADAPTER_OPENROUTER_API_KEY: "${OPENROUTER_API_KEY:-}"
       OLLAMA_API_KEY: "${OLLAMA_API_KEY:-}"
       OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-}"
       IRONWORKS_DEPLOYMENT_MODE: "authenticated"

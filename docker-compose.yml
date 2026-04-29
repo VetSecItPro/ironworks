@@ -44,6 +44,9 @@ services:
       OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
       GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
       OPENROUTER_API_KEY: "${OPENROUTER_API_KEY:-}"
+      # See docker-compose.production.yml for rationale: openrouter-api adapter
+      # reads ADAPTER_OPENROUTER_API_KEY at runtime, not OPENROUTER_API_KEY.
+      ADAPTER_OPENROUTER_API_KEY: "${OPENROUTER_API_KEY:-}"
       OLLAMA_API_KEY: "${OLLAMA_API_KEY:-}"
       OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-}"
     volumes:
