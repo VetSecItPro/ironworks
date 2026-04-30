@@ -28,8 +28,12 @@ services:
 
   server:
     build: .
+    # SEC-INFRA-001: bind app port to loopback only.
+    # Caddy on the host is the only public ingress; binding to 0.0.0.0 was
+    # leaving the app reachable directly via the VPS public IP if the host
+    # firewall ever lapsed. Mirrors the `db` service's loopback bind above.
     ports:
-      - "3100:3100"
+      - "127.0.0.1:3100:3100"
     environment:
       # DEV DEFAULT: override by setting POSTGRES_USER/POSTGRES_PASSWORD/POSTGRES_DB env vars
       DATABASE_URL: "postgres://${POSTGRES_USER:-ironworks}:${POSTGRES_PASSWORD:-ironworks}@db:5432/${POSTGRES_DB:-ironworks}"
