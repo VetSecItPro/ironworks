@@ -15,33 +15,33 @@ export const NL_MAPPINGS: NLMapping[] = [
   {
     patterns: [/blocked\s+issues/i, /blocked\s+tasks/i, /what.*blocked/i],
     url: "/issues?q=&status=blocked",
-    label: "Show blocked issues",
+    label: "Show blocked missions",
   },
   {
     patterns: [/overdue\s+issues/i, /overdue\s+tasks/i, /what.*overdue/i],
     url: "/issues?q=&status=in_progress",
-    label: "Show in-progress issues (check for overdue)",
+    label: "Show in-progress missions (check for overdue)",
   },
   {
     patterns: [/active\s+(issues|tasks)/i, /in\s*progress/i, /what.*working\s+on/i],
     url: "/issues?q=&status=in_progress",
-    label: "Show active issues",
+    label: "Show active missions",
   },
   {
     patterns: [/unassigned\s+(issues|tasks)/i, /no\s+assignee/i],
     url: "/issues?assignee=__unassigned",
-    label: "Show unassigned issues",
+    label: "Show unassigned missions",
   },
   {
     patterns: [/high\s*priority/i, /urgent\s+(issues|tasks)/i, /critical\s+(issues|tasks)/i],
     url: "/issues?q=&priority=critical,high",
-    label: "Show high priority issues",
+    label: "Show high priority missions",
   },
   { patterns: [/backlog/i, /backlog\s+(issues|tasks)/i], url: "/issues?q=&status=backlog", label: "Show backlog" },
   {
     patterns: [/done\s+(issues|tasks)/i, /completed\s+(issues|tasks)/i, /finished/i],
     url: "/issues?q=&status=done",
-    label: "Show completed issues",
+    label: "Show completed missions",
   },
   {
     patterns: [/all\s+agents/i, /show\s*(me\s+)?agents/i, /who\s+works\s+here/i],

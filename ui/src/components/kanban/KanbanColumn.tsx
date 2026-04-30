@@ -77,7 +77,7 @@ export const KanbanColumn = memo(function KanbanColumn({
           {wipLimit !== undefined && <span className="text-muted-foreground/40">/{wipLimit}</span>}
         </span>
         {wipLimit !== undefined && (
-          <HelpBeacon text="WIP (Work In Progress) limits cap how many issues can be in this column at once. When the limit is reached, the count turns amber. Going over turns it red. This helps prevent overloading agents with too many concurrent tasks." />
+          <HelpBeacon text="WIP (Work In Progress) limits cap how many missions can be in this column at once. When the limit is reached, the count turns amber. Going over turns it red. This helps prevent overloading agents with too many concurrent tasks." />
         )}
 
         {overLimit && <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />}

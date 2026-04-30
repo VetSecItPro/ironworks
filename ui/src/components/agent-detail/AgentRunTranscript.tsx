@@ -398,7 +398,7 @@ export function RunDetail({
                     >
                       {clearSessionsForTouchedIssues.isPending
                         ? "clearing session..."
-                        : "clear session for these issues"}
+                        : "clear session for these missions"}
                     </button>
                     {clearSessionsForTouchedIssues.isError && (
                       <p className="text-[11px] text-destructive mt-1">

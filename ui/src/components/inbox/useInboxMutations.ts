@@ -138,7 +138,7 @@ export function useInboxMutations({ selectedCompanyId, navigate, markItemRead }:
       invalidateInboxIssueQueries();
     },
     onError: (err, id) => {
-      setActionError(err instanceof Error ? err.message : "Failed to archive issue");
+      setActionError(err instanceof Error ? err.message : "Failed to archive mission");
       setArchivingIssueIds((prev) => {
         const next = new Set(prev);
         next.delete(id);
@@ -172,7 +172,7 @@ export function useInboxMutations({ selectedCompanyId, navigate, markItemRead }:
       invalidateInboxIssueQueries();
     },
     onError: (err) => {
-      setActionError(err instanceof Error ? err.message : "Failed to archive selected issues");
+      setActionError(err instanceof Error ? err.message : "Failed to archive selected missions");
       setArchivingIssueIds(new Set());
     },
     onSettled: (_data, error, ids) => {

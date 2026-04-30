@@ -14,7 +14,7 @@ export function ByProjectCard({ byProject }: { byProject: ByProjectRow[] }) {
     <Card className="flex flex-col">
       <CardHeader className="px-5 pt-5 pb-2">
         <CardTitle className="text-base">By Project</CardTitle>
-        <CardDescription>Run costs attributed through project-linked issues.</CardDescription>
+        <CardDescription>Run costs attributed through project-linked missions.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-2 px-5 pb-5 pt-2 flex-1">
         {(byProject.length ?? 0) === 0 ? (

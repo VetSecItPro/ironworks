@@ -40,7 +40,7 @@ export function EngineeringMetricsSection({ doraMetrics }: EngineeringMetricsSec
                   ? "medium"
                   : "low"
           }
-          description="Avg issue created to done"
+          description="Avg mission created to done"
         />
         <DORAMetricBlock
           label="Change Failure Rate"
@@ -54,7 +54,7 @@ export function EngineeringMetricsSection({ doraMetrics }: EngineeringMetricsSec
                   ? "medium"
                   : "low"
           }
-          description="Cancelled / total issues"
+          description="Cancelled / total missions"
         />
         <DORAMetricBlock
           label="Mean Time to Recovery"
@@ -72,7 +72,7 @@ export function EngineeringMetricsSection({ doraMetrics }: EngineeringMetricsSec
                   ? "medium"
                   : "low"
           }
-          description="Critical/high issue resolution time"
+          description="Critical/high mission resolution time"
         />
       </div>
       <p className="text-[11px] text-muted-foreground">

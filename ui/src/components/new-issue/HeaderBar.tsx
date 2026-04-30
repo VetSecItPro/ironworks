@@ -104,7 +104,7 @@ export function HeaderBar({
           </PopoverContent>
         </Popover>
         <span className="text-muted-foreground/80">&rsaquo;</span>
-        <span>New issue</span>
+        <span>New mission</span>
       </div>
       <div className="flex items-center gap-1">
         {/* Template dropdown */}

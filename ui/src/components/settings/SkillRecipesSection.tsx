@@ -303,7 +303,7 @@ function DetailPanel({ recipeId, companyId, onClose }: DetailPanelProps) {
         </div>
         {recipe.sourceIssueId && (
           <div className="col-span-2">
-            <span className="font-medium text-foreground">Source issue ID: </span>
+            <span className="font-medium text-foreground">Source mission ID: </span>
             <span className="font-mono">{recipe.sourceIssueId}</span>
           </div>
         )}

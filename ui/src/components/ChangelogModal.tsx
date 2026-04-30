@@ -54,7 +54,7 @@ const CHANGELOG: ChangelogEntry[] = [
     date: "2026-04-05",
     title: "SLA & Service Level Management",
     description:
-      "Configure response and resolution time targets per priority level. Track compliance rates and SLA breaches with countdown timers on issues.",
+      "Configure response and resolution time targets per priority level. Track compliance rates and SLA breaches with countdown timers on missions.",
     type: "feature",
   },
   {
@@ -72,7 +72,7 @@ const CHANGELOG: ChangelogEntry[] = [
     date: "2026-04-05",
     title: "Smart Priority Suggestions & Duplicate Detection",
     description:
-      "AI-powered priority suggestions based on issue title keywords and automatic duplicate issue detection when creating new issues.",
+      "AI-powered priority suggestions based on mission title keywords and automatic duplicate mission detection when creating new missions.",
     type: "feature",
   },
   {
@@ -81,7 +81,7 @@ const CHANGELOG: ChangelogEntry[] = [
     date: "2026-04-05",
     title: "Custom Workflow & Status Configuration",
     description:
-      "Define custom issue statuses beyond the defaults, map them to open/closed categories, and add custom fields (text, number, date, select) to issues.",
+      "Define custom mission statuses beyond the defaults, map them to open/closed categories, and add custom fields (text, number, date, select) to missions.",
     type: "feature",
   },
 ];

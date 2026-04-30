@@ -265,7 +265,7 @@ export function InboxWorkItemList({
             "absolute left-0 top-0 hidden h-full w-7 items-center justify-center sm:flex",
             isSelected ? "opacity-100" : "opacity-0 group-hover/sel:opacity-100",
           )}
-          aria-label={isSelected ? "Deselect issue" : "Select issue"}
+          aria-label={isSelected ? "Deselect mission" : "Select mission"}
         >
           <Checkbox
             checked={isSelected}

@@ -183,7 +183,7 @@ export function Goals() {
       {totalGoals === 0 && (
         <EmptyState
           icon={Target}
-          message="Goals track what your agents are working toward. Create a goal, then add issues or run a playbook to break it into tasks."
+          message="Goals track what your agents are working toward. Create a goal, then add missions or run a playbook to break it into tasks."
           action="Create Goal"
           onAction={() => openNewGoal()}
         />

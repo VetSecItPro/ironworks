@@ -38,14 +38,14 @@ export function EconomicsRow({
       <Card>
         <CardHeader className="px-5 pt-5 pb-2">
           <CardTitle className="text-base">Unit Economics</CardTitle>
-          <CardDescription>Cost efficiency per completed issue and active hour.</CardDescription>
+          <CardDescription>Cost efficiency per completed mission and active hour.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 px-5 pb-5 pt-2">
           {unitEconomics ? (
             <>
               <div className="flex items-end justify-between">
                 <div>
-                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Cost / Issue</div>
+                  <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Cost / Mission</div>
                   <div className="text-2xl font-semibold tabular-nums mt-1">
                     {formatCents(unitEconomics.current.costPerIssue)}
                   </div>
@@ -145,7 +145,7 @@ export function EconomicsRow({
       <Card>
         <CardHeader className="px-5 pt-5 pb-2">
           <CardTitle className="text-base">Cost Allocation</CardTitle>
-          <CardDescription>Per-project cost breakdown with issue counts.</CardDescription>
+          <CardDescription>Per-project cost breakdown with mission counts.</CardDescription>
         </CardHeader>
         <CardContent className="px-5 pb-5 pt-2">
           {costAllocation && costAllocation.length > 0 ? (
