@@ -71,4 +71,12 @@ export const authApi = {
   signOut: async () => {
     await authPost("/sign-out", {});
   },
+
+  updateUser: async (input: { name: string }) => {
+    await authPost("/update-user", input);
+  },
+
+  changePassword: async (input: { currentPassword: string; newPassword: string; revokeOtherSessions?: boolean }) => {
+    await authPost("/change-password", input);
+  },
 };
