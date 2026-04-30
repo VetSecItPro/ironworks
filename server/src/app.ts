@@ -245,6 +245,7 @@ export async function createApp(
     actorMiddleware(db, {
       deploymentMode: opts.deploymentMode,
       resolveSession: opts.resolveSession,
+      bindHost: opts.bindHost,
     }),
   );
   app.get("/api/auth/get-session", (req, res) => {

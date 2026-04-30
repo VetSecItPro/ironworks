@@ -16,9 +16,26 @@ function hashToken(token: string) {
 interface ActorMiddlewareOptions {
   deploymentMode: DeploymentMode;
   resolveSession?: (req: Request) => Promise<BetterAuthSessionResult | null>;
+  /** Bind host (e.g., process config.host). Used to enforce SEC-AUTH-003 invariant. */
+  bindHost?: string;
+}
+
+function isLoopbackBindHost(host: string | undefined): boolean {
+  if (!host) return false;
+  const normalized = host.trim().toLowerCase();
+  return normalized === "127.0.0.1" || normalized === "::1" || normalized === "localhost";
 }
 
 export function actorMiddleware(db: Db, opts: ActorMiddlewareOptions): RequestHandler {
+  // SEC-AUTH-003 defense-in-depth: local_trusted mode auto-actor with isInstanceAdmin=true
+  // and no token MUST never run on a non-loopback bind. Startup also enforces this in
+  // index.ts; this is a redundant assertion at the security-critical boundary.
+  if (opts.deploymentMode === "local_trusted" && opts.bindHost !== undefined && !isLoopbackBindHost(opts.bindHost)) {
+    throw new Error(
+      `local_trusted deployment mode forbidden on non-loopback bind host (received: ${opts.bindHost}). ` +
+        "Use authenticated mode for any non-loopback deployment.",
+    );
+  }
   const boardAuth = boardAuthService(db);
   return async (req, _res, next) => {
     req.actor =

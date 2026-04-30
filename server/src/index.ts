@@ -430,6 +430,10 @@ export async function startServer(): Promise<StartedServer> {
     startupDbInfo = { mode: "embedded-postgres", dataDir, port };
   }
 
+  // SEC-AUTH-003: local_trusted deployment mode auto-grants instance-admin to every
+  // request without a token (see actorMiddleware). Requiring a loopback bind host here
+  // is the load-bearing safety: if anyone misconfigures HOST=0.0.0.0 in this mode, the
+  // public internet would inherit instance-admin. This MUST stay a hard-fail.
   if (config.deploymentMode === "local_trusted" && !isLoopbackHost(config.host)) {
     throw new Error(
       `local_trusted mode requires loopback host binding (received: ${config.host}). ` +
@@ -452,6 +456,20 @@ export async function startServer(): Promise<StartedServer> {
       if (!config.authPublicBaseUrl) {
         throw new Error("authenticated public exposure requires auth.publicBaseUrl");
       }
+    }
+    // SEC-AUTH-001 defense-in-depth: when a Polar checkout / setup gate is configured,
+    // better-auth's raw /api/auth/sign-up MUST be disabled. Otherwise anyone can
+    // create an account that bypasses the paid-onboarding gate. The control here is
+    // env IRONWORKS_AUTH_DISABLE_SIGN_UP=true (mapped to config.authDisableSignUp).
+    const polarConfigured = Boolean(
+      process.env.POLAR_ACCESS_TOKEN?.trim() && process.env.POLAR_ORGANIZATION_ID?.trim(),
+    );
+    if (polarConfigured && !config.authDisableSignUp) {
+      throw new Error(
+        "authenticated mode with a Polar checkout gate requires IRONWORKS_AUTH_DISABLE_SIGN_UP=true " +
+          "(otherwise the better-auth /api/auth/sign-up endpoint bypasses the setup/checkout gate). " +
+          "Set IRONWORKS_AUTH_DISABLE_SIGN_UP=true in the deployment environment.",
+      );
     }
   }
 

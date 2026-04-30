@@ -7,8 +7,8 @@ export interface LocalAgentJwtClaims {
   run_id: string;
   iat: number;
   exp: number;
-  iss?: string;
-  aud?: string;
+  iss: string;
+  aud: string;
   jti?: string;
 }
 
@@ -120,10 +120,12 @@ export function verifyLocalAgentJwt(token: string): LocalAgentJwtClaims | null {
   const now = Math.floor(Date.now() / 1000);
   if (exp < now) return null;
 
-  const issuer = typeof claims.iss === "string" ? claims.iss : undefined;
-  const audience = typeof claims.aud === "string" ? claims.aud : undefined;
-  if (issuer && issuer !== config.issuer) return null;
-  if (audience && audience !== config.audience) return null;
+  // Defense-in-depth (SEC-AUTH-002): require iss and aud claims.
+  // The signing path always emits both; tokens missing either are forged or stale and rejected.
+  const issuer = typeof claims.iss === "string" ? claims.iss : null;
+  const audience = typeof claims.aud === "string" ? claims.aud : null;
+  if (!issuer || issuer !== config.issuer) return null;
+  if (!audience || audience !== config.audience) return null;
 
   return {
     sub,
@@ -132,8 +134,8 @@ export function verifyLocalAgentJwt(token: string): LocalAgentJwtClaims | null {
     run_id: runId,
     iat,
     exp,
-    ...(issuer ? { iss: issuer } : {}),
-    ...(audience ? { aud: audience } : {}),
+    iss: issuer,
+    aud: audience,
     jti: typeof claims.jti === "string" ? claims.jti : undefined,
   };
 }
