@@ -26,12 +26,21 @@ services:
     # firewall ever lapsed. Mirrors the `postgres` service's loopback bind.
     ports:
       - "127.0.0.1:${IRONWORKS_PORT:-3100}:3100"
+    # OPS containment for the heap leak that crashed SteelMotion at ~10h
+    # uptime (V8 OOM at the platform-default ~2GB old-space cap).
+    # Auto-restart + headroom while the leak is profiled.
+    restart: unless-stopped
+    mem_limit: 5g
+    mem_reservation: 1g
     depends_on:
       postgres:
         condition: service_healthy
     environment:
       HOST: "0.0.0.0"
       IRONWORKS_HOME: "/ironworks"
+      # Lift V8 old-space from default ~2GB to 4GB. Docker mem_limit (5g)
+      # must stay > this so docker doesn't OOM-kill V8 before V8's GC.
+      NODE_OPTIONS: "--max-old-space-size=4096"
       DATABASE_URL: "postgres://ironworks:${POSTGRES_PASSWORD}@postgres:5432/ironworks"
       # LLM Provider API keys - pass through from host .env so adapters can use them
       ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
