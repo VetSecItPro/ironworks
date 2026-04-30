@@ -1,5 +1,9 @@
+// SEC-LOG-001 hardening: matches a wide set of secret-ish key names case-insensitively.
+// Standalone "token" and "key" are intentionally included (not just access_token / api_key)
+// so request bodies like { token: "...", key: "..." } posted to setup/secrets routes get
+// redacted before they reach downstream loggers.
 const SECRET_PAYLOAD_KEY_RE =
-  /(api[-_]?key|access[-_]?token|auth(?:_?token)?|authorization|bearer|secret|passwd|password|credential|jwt|private[-_]?key|cookie|connectionstring)/i;
+  /(api[-_]?key|access[-_]?token|auth(?:_?token)?|authorization|bearer|secret|passwd|password|credential|jwt|private[-_]?key|cookie|connectionstring|^token$|[-_]token$|^key$|[-_]key$)/i;
 const JWT_VALUE_RE = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)?$/;
 export const REDACTED_EVENT_VALUE = "***REDACTED***";
 

@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import type { Db } from "@ironworksai/db";
 import { Router } from "express";
 import { getCompanyEmailAddress, handleInboundEmail } from "../bridges/email.js";
@@ -217,8 +218,12 @@ export function emailWebhookRoutes(db: Db) {
       res.status(503).json({ ok: false, error: "Email bridge not configured" });
       return;
     }
-    const token = req.query.token ?? req.headers["x-webhook-secret"];
-    if (token !== webhookSecret) {
+    // SEC-WEBHOOK-001: timing-safe comparison to prevent webhook-secret oracle.
+    const tokenRaw = req.query.token ?? req.headers["x-webhook-secret"];
+    const token = typeof tokenRaw === "string" ? tokenRaw : "";
+    const tokenBuf = Buffer.from(token);
+    const secretBuf = Buffer.from(webhookSecret);
+    if (tokenBuf.length !== secretBuf.length || !timingSafeEqual(tokenBuf, secretBuf)) {
       res.status(401).json({ ok: false, error: "Invalid webhook secret" });
       return;
     }
