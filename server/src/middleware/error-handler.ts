@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
 import { HttpError } from "../errors.js";
 import { captureError } from "../lib/error-tracking.js";
+import { sanitizeRecord } from "../redaction.js";
 
 export interface ErrorContext {
   error: { message: string; stack?: string; name?: string; details?: unknown; raw?: unknown };
@@ -12,15 +13,30 @@ export interface ErrorContext {
   reqQuery?: unknown;
 }
 
+/**
+ * SEC-LOG-001: redact request body/params/query before they're attached for downstream
+ * loggers. Without this, POSTs to /api/setup, /api/secrets, /api/providers etc. would
+ * leak password/token/apiKey/authorization fields into error logs. `sanitizeRecord`
+ * (server/src/redaction.ts) matches secret-ish key names case-insensitively and also
+ * redacts JWT-shaped values regardless of key name.
+ */
+function redactForLogging(value: unknown): unknown {
+  if (value === null || value === undefined) return value;
+  if (typeof value !== "object") return value;
+  if (Array.isArray(value)) return value.map(redactForLogging);
+  // Plain object: feed through the secret-key sanitizer
+  return sanitizeRecord(value as Record<string, unknown>);
+}
+
 function attachErrorContext(req: Request, res: Response, payload: ErrorContext["error"], rawError?: Error) {
   // biome-ignore lint/suspicious/noExplicitAny: attaching custom props to Express Response not in its type definitions
   (res as any).__errorContext = {
     error: payload,
     method: req.method,
     url: req.originalUrl,
-    reqBody: req.body,
-    reqParams: req.params,
-    reqQuery: req.query,
+    reqBody: redactForLogging(req.body),
+    reqParams: redactForLogging(req.params),
+    reqQuery: redactForLogging(req.query),
   } satisfies ErrorContext;
   if (rawError) {
     // biome-ignore lint/suspicious/noExplicitAny: attaching custom props to Express Response not in its type definitions
