@@ -6,6 +6,13 @@ on:
       - master
   workflow_dispatch:
 
+# SEC-CI-001: scoped permissions. This workflow pushes a branch and opens/merges
+# a PR for lockfile refreshes — needs `contents: write` + `pull-requests: write`.
+# Nothing else is granted.
+permissions:
+  contents: write
+  pull-requests: write
+
 concurrency:
   group: refresh-lockfile-master
   cancel-in-progress: false

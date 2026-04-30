@@ -1,5 +1,11 @@
 name: Release
 
+# SEC-CI-001: default to read-only at workflow level. Per-job blocks below
+# upgrade to `contents: write` (tag pushes) or `id-token: write` (npm OIDC)
+# only where actually needed (publish_canary, publish_stable).
+permissions:
+  contents: read
+
 on:
   push:
     branches:

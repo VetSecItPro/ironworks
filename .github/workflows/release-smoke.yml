@@ -1,5 +1,9 @@
 name: Release Smoke
 
+# SEC-CI-001: read-only — release-smoke only pulls a published image and tests it.
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
     inputs:
