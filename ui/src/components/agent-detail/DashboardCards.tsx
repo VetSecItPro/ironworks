@@ -377,7 +377,7 @@ export function EmploymentCard({ agent, companyId }: { agent: AgentDetailRecord;
             <span className="text-sm mt-1 block">
               {onboardingMetricsQuery.data.rampTimeDays !== null
                 ? `${onboardingMetricsQuery.data.rampTimeDays} days`
-                : "Not yet completed first issue"}
+                : "Not yet completed first mission"}
             </span>
           </div>
         )}

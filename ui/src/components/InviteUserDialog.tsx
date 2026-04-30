@@ -12,7 +12,7 @@ import { queryKeys } from "../lib/queryKeys";
 const ROLE_OPTIONS: { value: MembershipRole; label: string; description: string }[] = [
   { value: "owner", label: "Owner", description: "Full access including billing" },
   { value: "admin", label: "Admin", description: "Everything except billing" },
-  { value: "member", label: "Member", description: "Create issues, edit KB, comment" },
+  { value: "member", label: "Member", description: "Create missions, edit KB, comment" },
   { value: "viewer", label: "Viewer", description: "Read-only, can comment" },
 ];
 

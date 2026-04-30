@@ -42,7 +42,7 @@ export function getSuggestedActions(lastAgentMessage: string | null): { label: s
   const lower = lastAgentMessage.toLowerCase();
 
   if (lastAgentMessage.length > 80) {
-    actions.push({ label: "Create issue from this", icon: PlusCircle });
+    actions.push({ label: "Create mission from this", icon: PlusCircle });
   }
 
   if (
@@ -55,7 +55,7 @@ export function getSuggestedActions(lastAgentMessage: string | null): { label: s
   }
 
   if (lower.includes("task") || lower.includes("issue") || lower.includes("todo") || lower.includes("item")) {
-    actions.push({ label: "View related issues", icon: ClipboardList });
+    actions.push({ label: "View related missions", icon: ClipboardList });
   }
 
   if (lower.includes("code") || lower.includes("review") || lower.includes("bug") || lower.includes("fix")) {
@@ -66,8 +66,8 @@ export function getSuggestedActions(lastAgentMessage: string | null): { label: s
 }
 
 export const SUGGESTED_ACTION_PROMPTS: Record<string, string> = {
-  "Create issue from this": "Based on your last response, create a new issue with a clear title and description.",
+  "Create mission from this": "Based on your last response, create a new mission with a clear title and description.",
   "Share to channel": "Format your last response as a brief update that can be shared with the team.",
-  "View related issues": "List any related issues or tasks that are connected to what you just described.",
+  "View related missions": "List any related missions or tasks that are connected to what you just described.",
   "Request detailed review": "Provide a more detailed code review with specific line-by-line feedback.",
 };

@@ -40,12 +40,12 @@ export const ACTION_OPTIONS: { value: Action; label: string; hint: string }[] = 
   {
     value: "assign_agent",
     label: "Assign agent",
-    hint: "Auto-assign an agent to the triggering issue",
+    hint: "Auto-assign an agent to the triggering mission",
   },
   {
     value: "change_status",
     label: "Change status",
-    hint: "Update the issue status automatically",
+    hint: "Update the mission status automatically",
   },
   {
     value: "send_notification",
@@ -54,8 +54,8 @@ export const ACTION_OPTIONS: { value: Action; label: string; hint: string }[] = 
   },
   {
     value: "create_issue",
-    label: "Create issue",
-    hint: "Create a follow-up issue automatically",
+    label: "Create mission",
+    hint: "Create a follow-up mission automatically",
   },
 ];
 

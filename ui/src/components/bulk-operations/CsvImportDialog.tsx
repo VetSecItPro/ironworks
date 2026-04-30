@@ -147,7 +147,7 @@ export function CsvImportDialog({ open, onClose, onImport, existingTitles = [] }
           {step === "upload" && (
             <div className="flex flex-col items-center justify-center py-12 border-2 border-dashed border-border rounded-lg">
               <FileUp className="h-10 w-10 text-muted-foreground mb-3" />
-              <p className="text-sm text-muted-foreground mb-4">Upload a CSV file with your issues</p>
+              <p className="text-sm text-muted-foreground mb-4">Upload a CSV file with your missions</p>
               <input
                 ref={fileRef}
                 type="file"

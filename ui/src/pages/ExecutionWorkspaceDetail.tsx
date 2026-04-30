@@ -63,7 +63,7 @@ export function ExecutionWorkspaceDetail() {
             "None"
           )}
         </DetailRow>
-        <DetailRow label="Source issue">
+        <DetailRow label="Source mission">
           {workspace.sourceIssueId ? (
             <Link to={`/issues/${workspace.sourceIssueId}`} className="hover:underline">
               {workspace.sourceIssueId}

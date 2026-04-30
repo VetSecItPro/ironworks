@@ -18,7 +18,7 @@ export function DepGraphSvg({ issue, blockers, blocked, criticalPath }: DepGraph
         viewBox={`0 0 ${Math.max(600, (blockers.length + blocked.length + 1) * 200)} ${Math.max(120, Math.max(blockers.length, blocked.length, 1) * 50 + 40)}`}
         preserveAspectRatio="xMidYMid meet"
       >
-        <title>Issue dependency graph</title>
+        <title>Mission dependency graph</title>
         <defs>
           <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
             <polygon points="0 0, 8 3, 0 6" className="fill-muted-foreground/50" />

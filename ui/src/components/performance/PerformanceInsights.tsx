@@ -28,8 +28,8 @@ function generateInsights(rows: AgentPerfRow[]): Insight[] {
         type: "warning",
         agent: "Team",
         agentId: null,
-        message: `${spendingAgents.length} agent${spendingAgents.length === 1 ? "" : "s"} have consumed tokens (${formatCents(spendingAgents.reduce((s, r) => s + r.totalSpendCents, 0))} total) but completed 0 tasks. Create and assign issues to start tracking output.`,
-        actionLabel: "Create issue",
+        message: `${spendingAgents.length} agent${spendingAgents.length === 1 ? "" : "s"} have consumed tokens (${formatCents(spendingAgents.reduce((s, r) => s + r.totalSpendCents, 0))} total) but completed 0 tasks. Create and assign missions to start tracking output.`,
+        actionLabel: "Create mission",
         actionHref: "/issues",
       });
     }

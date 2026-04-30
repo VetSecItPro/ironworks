@@ -155,7 +155,7 @@ export function ApprovalDetail() {
   const primaryLinkedIssue = linkedIssues?.[0] ?? null;
   const resolvedCta = primaryLinkedIssue
     ? {
-        label: (linkedIssues?.length ?? 0) > 1 ? "Review linked issues" : "Review linked issue",
+        label: (linkedIssues?.length ?? 0) > 1 ? "Review linked missions" : "Review linked mission",
         to: `/issues/${primaryLinkedIssue.identifier ?? primaryLinkedIssue.id}`,
       }
     : linkedAgentId

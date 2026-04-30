@@ -20,7 +20,7 @@ export const DEFAULT_STEPS: TourStep[] = [
     target: '[data-tour="sidebar"]',
     title: "Navigation Sidebar",
     description:
-      "Use the sidebar to navigate between agents, projects, issues, goals, and more. Toggle it with the [ key.",
+      "Use the sidebar to navigate between agents, projects, missions, goals, and more. Toggle it with the [ key.",
     placement: "right",
   },
   {
@@ -48,14 +48,14 @@ export const DEFAULT_STEPS: TourStep[] = [
     target: '[data-tour="projects"]',
     title: "Projects",
     description:
-      "Organize work into projects. Each project groups related issues, tracks budgets, and provides a focused view of progress.",
+      "Organize work into projects. Each project groups related missions, tracks budgets, and provides a focused view of progress.",
     placement: "right",
   },
   {
     target: '[data-tour="goals"]',
     title: "Goals & OKRs",
     description:
-      "Set strategic goals and link issues to them. Track progress with automatic rollup from linked tasks and sub-goals.",
+      "Set strategic goals and link missions to them. Track progress with automatic rollup from linked tasks and sub-goals.",
     placement: "right",
   },
 ];
