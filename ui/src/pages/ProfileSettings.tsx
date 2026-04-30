@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Bell, Check, Globe, Keyboard, Lock, Palette, User } from "lucide-react";
+import { AlertTriangle, Bell, Check, Eye, EyeOff, Globe, Keyboard, Lock, Palette, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { authApi } from "@/api/auth";
 import { Button } from "@/components/ui/button";
@@ -89,6 +89,9 @@ export function ProfileSettings() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
   const [passwordSaved, setPasswordSaved] = useState(false);
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
     setBreadcrumbs([{ label: "Settings", href: "/company/settings" }, { label: "Profile" }]);
@@ -284,34 +287,54 @@ export function ProfileSettings() {
             <label htmlFor="profile-current-password" className="text-sm font-medium">
               Current password
             </label>
-            <input
-              id="profile-current-password"
-              type="password"
-              className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none focus:border-primary"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              placeholder="Enter current password"
-              autoComplete="current-password"
-            />
+            <div className="relative">
+              <input
+                id="profile-current-password"
+                type={showCurrent ? "text" : "password"}
+                className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 pr-9 text-sm outline-none focus:border-primary"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="Enter current password"
+                autoComplete="current-password"
+              />
+              <button
+                type="button"
+                aria-label={showCurrent ? "Hide password" : "Show password"}
+                onClick={() => setShowCurrent((v) => !v)}
+                className="absolute inset-y-0 right-2 flex items-center text-muted-foreground hover:text-foreground"
+              >
+                {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
 
           <div className="space-y-1.5">
             <label htmlFor="profile-new-password" className="text-sm font-medium">
               New password
             </label>
-            <input
-              id="profile-new-password"
-              type="password"
-              className={`w-full rounded-md border bg-transparent px-2.5 py-1.5 text-sm outline-none ${
-                newPassword && validatePassword(newPassword).length > 0
-                  ? "border-amber-500 focus:border-amber-500"
-                  : "border-border focus:border-primary"
-              }`}
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Enter new password"
-              autoComplete="new-password"
-            />
+            <div className="relative">
+              <input
+                id="profile-new-password"
+                type={showNew ? "text" : "password"}
+                className={`w-full rounded-md border bg-transparent px-2.5 py-1.5 pr-9 text-sm outline-none ${
+                  newPassword && validatePassword(newPassword).length > 0
+                    ? "border-amber-500 focus:border-amber-500"
+                    : "border-border focus:border-primary"
+                }`}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Enter new password"
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                aria-label={showNew ? "Hide password" : "Show password"}
+                onClick={() => setShowNew((v) => !v)}
+                className="absolute inset-y-0 right-2 flex items-center text-muted-foreground hover:text-foreground"
+              >
+                {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
             {newPassword && validatePassword(newPassword).length > 0 && (
               <div className="space-y-0.5 mt-1">
                 {validatePassword(newPassword).map((issue) => (
@@ -327,19 +350,29 @@ export function ProfileSettings() {
             <label htmlFor="profile-confirm-password" className="text-sm font-medium">
               Confirm new password
             </label>
-            <input
-              id="profile-confirm-password"
-              type="password"
-              className={`w-full rounded-md border bg-transparent px-2.5 py-1.5 text-sm outline-none ${
-                confirmPassword && confirmPassword !== newPassword
-                  ? "border-destructive focus:border-destructive"
-                  : "border-border focus:border-primary"
-              }`}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Confirm new password"
-              autoComplete="new-password"
-            />
+            <div className="relative">
+              <input
+                id="profile-confirm-password"
+                type={showConfirm ? "text" : "password"}
+                className={`w-full rounded-md border bg-transparent px-2.5 py-1.5 pr-9 text-sm outline-none ${
+                  confirmPassword && confirmPassword !== newPassword
+                    ? "border-destructive focus:border-destructive"
+                    : "border-border focus:border-primary"
+                }`}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm new password"
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                aria-label={showConfirm ? "Hide password" : "Show password"}
+                onClick={() => setShowConfirm((v) => !v)}
+                className="absolute inset-y-0 right-2 flex items-center text-muted-foreground hover:text-foreground"
+              >
+                {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
             {confirmPassword && confirmPassword !== newPassword && (
               <p className="text-xs text-destructive">Passwords do not match</p>
             )}
