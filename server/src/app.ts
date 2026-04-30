@@ -2,8 +2,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createBrotliCompress, createDeflate, createGzip } from "node:zlib";
-import type { Db } from "@ironworksai/db";
+import { authUsers, type Db } from "@ironworksai/db";
 import type { DeploymentExposure, DeploymentMode } from "@ironworksai/shared";
+import { eq } from "drizzle-orm";
 import express, { type Request as ExpressRequest, Router } from "express";
 import type { BetterAuthSessionResult } from "./auth/better-auth.js";
 import { actorMiddleware } from "./middleware/auth.js";
@@ -248,21 +249,39 @@ export async function createApp(
       bindHost: opts.bindHost,
     }),
   );
-  app.get("/api/auth/get-session", (req, res) => {
+  app.get("/api/auth/get-session", async (req, res) => {
     if (req.actor.type !== "board" || !req.actor.userId) {
       res.status(401).json({ error: "Unauthorized" });
       return;
     }
+    // Hydrate email + name from the user table so consumers (Profile page,
+    // user pills, etc.) get a real session shape instead of nulls. The
+    // actor middleware only carries userId; everything else lives on the
+    // authUsers row.
+    const userId = req.actor.userId;
+    let email: string | null = null;
+    let name: string | null = req.actor.source === "local_implicit" ? "Local Board" : null;
+    try {
+      const rows = await db
+        .select({ email: authUsers.email, name: authUsers.name })
+        .from(authUsers)
+        .where(eq(authUsers.id, userId))
+        .limit(1);
+      if (rows[0]) {
+        email = rows[0].email ?? email;
+        name = rows[0].name ?? name;
+      }
+    } catch {
+      // Swallow DB errors — fall back to nulls so the endpoint never 500s
+      // a logged-in user. Worst case the UI shows a blank email field,
+      // identical to the previous behavior.
+    }
     res.json({
       session: {
-        id: `ironworks:${req.actor.source}:${req.actor.userId}`,
-        userId: req.actor.userId,
+        id: `ironworks:${req.actor.source}:${userId}`,
+        userId,
       },
-      user: {
-        id: req.actor.userId,
-        email: null,
-        name: req.actor.source === "local_implicit" ? "Local Board" : null,
-      },
+      user: { id: userId, email, name },
     });
   });
   if (opts.betterAuthHandler) {
