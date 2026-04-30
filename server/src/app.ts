@@ -2,9 +2,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createBrotliCompress, createDeflate, createGzip } from "node:zlib";
-import { type Db, authUsers } from "@ironworksai/db";
-import { eq } from "drizzle-orm";
+import { authUsers, type Db } from "@ironworksai/db";
 import type { DeploymentExposure, DeploymentMode } from "@ironworksai/shared";
+import { eq } from "drizzle-orm";
 import express, { type Request as ExpressRequest, Router } from "express";
 import type { BetterAuthSessionResult } from "./auth/better-auth.js";
 import { actorMiddleware } from "./middleware/auth.js";
@@ -262,7 +262,8 @@ export async function createApp(
     let email: string | null = null;
     let name: string | null = req.actor.source === "local_implicit" ? "Local Board" : null;
     try {
-      const rows = await db.select({ email: authUsers.email, name: authUsers.name })
+      const rows = await db
+        .select({ email: authUsers.email, name: authUsers.name })
         .from(authUsers)
         .where(eq(authUsers.id, userId))
         .limit(1);
