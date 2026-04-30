@@ -5,6 +5,12 @@ on:
     branches: [master]
   workflow_dispatch:
 
+# SEC-CI-001: lock GITHUB_TOKEN to read-only at workflow level. The deploy job
+# does not need write access to repo contents — it only ssh's to the VPS using
+# secrets. Per-job grants can override only when justified.
+permissions:
+  contents: read
+
 concurrency:
   group: deploy-vps
   cancel-in-progress: true
@@ -42,7 +48,11 @@ jobs:
       - name: Join Tailscale network
         # Pin to a specific SHA before merging to production. Using the v2
         # tag here for initial review; SHA-pin in a follow-up.
-        uses: tailscale/github-action@v2
+        # SEC-CI-002: SHA-pin tailscale action — every other action in this repo
+        # is digest-pinned. This one carries the VPS SSH key + tailnet creds at
+        # runtime, so a tag-mutation supply-chain attack would compromise both
+        # atlas + steelmotion stacks (Chain 5).
+        uses: tailscale/github-action@05c58255396c88c609919d571a8b117099c69020 # v2
         with:
           oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
