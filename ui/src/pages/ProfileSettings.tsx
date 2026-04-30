@@ -1,5 +1,7 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Bell, Check, Globe, Keyboard, Lock, Palette, User } from "lucide-react";
 import { useEffect, useState } from "react";
+import { authApi } from "@/api/auth";
 import { Button } from "@/components/ui/button";
 import { useBreadcrumbs } from "@/context/BreadcrumbContext";
 import { useToast } from "@/context/ToastContext";
@@ -38,18 +40,11 @@ const TIMEZONE_OPTIONS = [
 // localStorage keys
 // ---------------------------------------------------------------------------
 
+// Display name + email come from the Better Auth session (server-authoritative).
+// Timezone has no DB column on the user table yet, so it stays in localStorage
+// — purely client-side cosmetic preference until a schema migration lands.
 const STORAGE_PREFIX = "ironworks:profile";
-const nameKey = `${STORAGE_PREFIX}:displayName`;
-const emailKey = `${STORAGE_PREFIX}:email`;
 const tzKey = `${STORAGE_PREFIX}:timezone`;
-
-function loadProfile() {
-  return {
-    displayName: localStorage.getItem(nameKey) ?? "",
-    email: localStorage.getItem(emailKey) ?? "admin@ironworks.local",
-    timezone: localStorage.getItem(tzKey) ?? "America/Chicago",
-  };
-}
 
 // ---------------------------------------------------------------------------
 // Validation helpers
@@ -71,11 +66,24 @@ function validatePassword(password: string): string[] {
 export function ProfileSettings() {
   const { setBreadcrumbs } = useBreadcrumbs();
   const { pushToast } = useToast();
+  const queryClient = useQueryClient();
+
+  const sessionQuery = useQuery({
+    queryKey: ["auth", "session"],
+    queryFn: () => authApi.getSession(),
+    staleTime: 30_000,
+  });
+
+  const sessionUser = sessionQuery.data?.user ?? null;
+  const sessionEmail = sessionUser?.email ?? "";
+  const sessionName = sessionUser?.name ?? "";
 
   const [displayName, setDisplayName] = useState("");
-  const [email, setEmail] = useState("");
-  const [timezone, setTimezone] = useState("America/Chicago");
+  const [timezone, setTimezone] = useState(
+    () => localStorage.getItem(tzKey) ?? "America/Chicago",
+  );
   const [profileSaved, setProfileSaved] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
 
   // Password state
   const [currentPassword, setCurrentPassword] = useState("");
@@ -88,20 +96,58 @@ export function ProfileSettings() {
     setBreadcrumbs([{ label: "Settings", href: "/company/settings" }, { label: "Profile" }]);
   }, [setBreadcrumbs]);
 
+  // Seed the editable name field once the session resolves. Only sync from
+  // server when the local edit buffer is still pristine — never clobber an
+  // in-flight edit on background refetch.
   useEffect(() => {
-    const profile = loadProfile();
-    setDisplayName(profile.displayName);
-    setEmail(profile.email);
-    setTimezone(profile.timezone);
-  }, []);
+    if (sessionUser && displayName === "") {
+      setDisplayName(sessionName);
+    }
+  }, [sessionUser, sessionName, displayName]);
+
+  const updateProfileMutation = useMutation({
+    mutationFn: (input: { name: string }) => authApi.updateUser(input),
+    onSuccess: () => {
+      setProfileSaved(true);
+      setProfileError(null);
+      pushToast({ title: "Profile updated", tone: "success" });
+      queryClient.invalidateQueries({ queryKey: ["auth", "session"] });
+      setTimeout(() => setProfileSaved(false), 2000);
+    },
+    onError: (err) => {
+      setProfileError(err instanceof Error ? err.message : "Failed to update profile");
+    },
+  });
+
+  const changePasswordMutation = useMutation({
+    mutationFn: (input: { currentPassword: string; newPassword: string }) =>
+      authApi.changePassword(input),
+    onSuccess: () => {
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setPasswordErrors([]);
+      setPasswordSaved(true);
+      pushToast({ title: "Password changed", tone: "success" });
+      setTimeout(() => setPasswordSaved(false), 2000);
+    },
+    onError: (err) => {
+      setPasswordErrors([err instanceof Error ? err.message : "Failed to change password"]);
+    },
+  });
 
   function handleSaveProfile() {
     if (!displayName.trim()) return;
-    localStorage.setItem(nameKey, displayName.trim());
+    setProfileError(null);
     localStorage.setItem(tzKey, timezone);
-    setProfileSaved(true);
-    pushToast({ title: "Profile updated", tone: "success" });
-    setTimeout(() => setProfileSaved(false), 2000);
+    if (displayName.trim() !== sessionName) {
+      updateProfileMutation.mutate({ name: displayName.trim() });
+    } else {
+      // Timezone-only change — nothing to persist server-side.
+      setProfileSaved(true);
+      pushToast({ title: "Profile updated", tone: "success" });
+      setTimeout(() => setProfileSaved(false), 2000);
+    }
   }
 
   function handleChangePassword() {
@@ -117,19 +163,11 @@ export function ProfileSettings() {
       return;
     }
     setPasswordErrors([]);
-    // In a real app this would call an API. For now, just confirm.
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-    setPasswordSaved(true);
-    pushToast({ title: "Password changed", tone: "success" });
-    setTimeout(() => setPasswordSaved(false), 2000);
+    changePasswordMutation.mutate({ currentPassword, newPassword });
   }
 
-  const profileDirty = (() => {
-    const saved = loadProfile();
-    return displayName !== saved.displayName || timezone !== saved.timezone;
-  })();
+  const profileDirty =
+    displayName.trim() !== sessionName || timezone !== (localStorage.getItem(tzKey) ?? "America/Chicago");
 
   const nameError = displayName.length > 0 && displayName.trim().length === 0 ? "Name cannot be blank" : null;
 
@@ -184,7 +222,8 @@ export function ProfileSettings() {
             <input
               id="profile-email"
               className="w-full rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-sm outline-none text-muted-foreground cursor-not-allowed"
-              value={email}
+              value={sessionQuery.isLoading ? "" : sessionEmail}
+              placeholder={sessionQuery.isLoading ? "Loading..." : ""}
               readOnly
               tabIndex={-1}
             />
@@ -212,9 +251,25 @@ export function ProfileSettings() {
           </div>
         </div>
 
+        {profileError && (
+          <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2">
+            <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+            <p className="text-xs text-destructive">{profileError}</p>
+          </div>
+        )}
+
         <div className="flex items-center gap-2 pt-1">
-          <Button size="sm" onClick={handleSaveProfile} disabled={!displayName.trim() || !!nameError || !profileDirty}>
-            Save Profile
+          <Button
+            size="sm"
+            onClick={handleSaveProfile}
+            disabled={
+              !displayName.trim() ||
+              !!nameError ||
+              !profileDirty ||
+              updateProfileMutation.isPending
+            }
+          >
+            {updateProfileMutation.isPending ? "Saving..." : "Save Profile"}
           </Button>
           {profileSaved && (
             <span className="flex items-center gap-1 text-xs text-green-600">
@@ -316,9 +371,14 @@ export function ProfileSettings() {
           <Button
             size="sm"
             onClick={handleChangePassword}
-            disabled={!currentPassword || !newPassword || !confirmPassword}
+            disabled={
+              !currentPassword ||
+              !newPassword ||
+              !confirmPassword ||
+              changePasswordMutation.isPending
+            }
           >
-            Change Password
+            {changePasswordMutation.isPending ? "Changing..." : "Change Password"}
           </Button>
           {passwordSaved && (
             <span className="flex items-center gap-1 text-xs text-green-600">
