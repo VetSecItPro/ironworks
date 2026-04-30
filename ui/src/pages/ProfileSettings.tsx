@@ -79,9 +79,7 @@ export function ProfileSettings() {
   const sessionName = sessionUser?.name ?? "";
 
   const [displayName, setDisplayName] = useState("");
-  const [timezone, setTimezone] = useState(
-    () => localStorage.getItem(tzKey) ?? "America/Chicago",
-  );
+  const [timezone, setTimezone] = useState(() => localStorage.getItem(tzKey) ?? "America/Chicago");
   const [profileSaved, setProfileSaved] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
 
@@ -120,8 +118,7 @@ export function ProfileSettings() {
   });
 
   const changePasswordMutation = useMutation({
-    mutationFn: (input: { currentPassword: string; newPassword: string }) =>
-      authApi.changePassword(input),
+    mutationFn: (input: { currentPassword: string; newPassword: string }) => authApi.changePassword(input),
     onSuccess: () => {
       setCurrentPassword("");
       setNewPassword("");
@@ -262,12 +259,7 @@ export function ProfileSettings() {
           <Button
             size="sm"
             onClick={handleSaveProfile}
-            disabled={
-              !displayName.trim() ||
-              !!nameError ||
-              !profileDirty ||
-              updateProfileMutation.isPending
-            }
+            disabled={!displayName.trim() || !!nameError || !profileDirty || updateProfileMutation.isPending}
           >
             {updateProfileMutation.isPending ? "Saving..." : "Save Profile"}
           </Button>
@@ -371,12 +363,7 @@ export function ProfileSettings() {
           <Button
             size="sm"
             onClick={handleChangePassword}
-            disabled={
-              !currentPassword ||
-              !newPassword ||
-              !confirmPassword ||
-              changePasswordMutation.isPending
-            }
+            disabled={!currentPassword || !newPassword || !confirmPassword || changePasswordMutation.isPending}
           >
             {changePasswordMutation.isPending ? "Changing..." : "Change Password"}
           </Button>
