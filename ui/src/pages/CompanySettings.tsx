@@ -155,8 +155,13 @@ function CompanySettingsInner() {
           selectedCompany={state.selectedCompany}
           onToggleApproval={(v) => state.settingsMutation.mutate(v)}
         />
+        {/* Department templates + talent pool are orphan sections related to
+            hiring; tuck them next to it so they're discoverable without
+            adding sidebar entries. */}
+        <DepartmentTemplatesSection companyId={state.selectedCompanyId} />
+        <TalentPoolSection companyId={state.selectedCompanyId} />
 
-        {/* Team Members rendered immediately after Hiring so the human-invite
+        {/* Team Members rendered after Hiring so the human-invite
             flow is discoverable. The Invites section below is for agent CLI
             snippet generation, not for adding people to the workspace. */}
         {state.canManageMembers && (
@@ -190,10 +195,20 @@ function CompanySettingsInner() {
         <SkillRecipesSection companyId={state.selectedCompanyId} />
 
         <SecuritySection companyId={state.selectedCompanyId} />
-        <CompanyPackagesSection />
 
-        <ApiKeysSection configuredKeys={state.configuredKeys} />
-        <DataExportSection isLoading={state.exportLoading} onExport={state.handleDataExport} />
+        {/* The render order from API Keys downward matches SETTINGS_SECTIONS
+            exactly so the sidebar's IntersectionObserver-driven highlight
+            tracks scroll cleanly. Orphan sections without sidebar entries
+            (Company Packages, Data Export) live near related anchors. */}
+        <ApiKeysSection companyId={state.selectedCompanyId} secrets={state.secretsQuery.data ?? []} />
+
+        <AutonomySection defaultAutonomy={state.defaultAutonomy} onAutonomyChange={state.handleAutonomyChange} />
+
+        <div id="model-routing" className="scroll-mt-6">
+          <ModelRoutingSection companyId={state.selectedCompanyId} />
+        </div>
+        <RiskThresholdsSection companyId={state.selectedCompanyId} />
+
         <CostAlertsSection companyId={state.selectedCompanyId} />
 
         <div id="webhooks" className="space-y-4 scroll-mt-6">
@@ -205,15 +220,8 @@ function CompanySettingsInner() {
         <IntegrationHubSection />
         <AuditTrailSection />
         <DataPrivacySection selectedCompany={state.selectedCompany} selectedCompanyId={state.selectedCompanyId} />
-        <AutonomySection defaultAutonomy={state.defaultAutonomy} onAutonomyChange={state.handleAutonomyChange} />
-
-        <div id="model-routing" className="scroll-mt-6">
-          <ModelRoutingSection companyId={state.selectedCompanyId} />
-        </div>
-
-        <DepartmentTemplatesSection companyId={state.selectedCompanyId} />
-        <RiskThresholdsSection companyId={state.selectedCompanyId} />
-        <TalentPoolSection companyId={state.selectedCompanyId} />
+        <DataExportSection isLoading={state.exportLoading} onExport={state.handleDataExport} />
+        <CompanyPackagesSection />
 
         {/* Danger Zone always last — destructive operations sit at the bottom
             so they're never reached by accident while scrolling. */}
