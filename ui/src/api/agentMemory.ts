@@ -33,4 +33,16 @@ export const agentMemoryApi = {
 
   remove: (companyId: string, agentId: string, entryId: string) =>
     api.delete<{ ok: true }>(`/companies/${companyId}/agents/${agentId}/memory/${entryId}`),
+
+  promote: (companyId: string, agentId: string, entryId: string) =>
+    api.post<{ id: string; title: string; slug: string }>(
+      `/companies/${companyId}/agents/${agentId}/memory/${entryId}/promote`,
+      {},
+    ),
+
+  share: (companyId: string, agentId: string, entryId: string, opts: { companyWide: boolean }) =>
+    api.post<{ shared: number; targets: Array<{ id: string; name: string }> }>(
+      `/companies/${companyId}/agents/${agentId}/memory/${entryId}/share`,
+      opts,
+    ),
 };
