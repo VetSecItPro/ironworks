@@ -192,13 +192,6 @@ function CompanySettingsInner() {
         <SecuritySection companyId={state.selectedCompanyId} />
         <CompanyPackagesSection />
 
-        <DangerZoneSection
-          selectedCompany={state.selectedCompany}
-          onArchive={state.handleArchive}
-          isArchiving={state.archiveMutation.isPending}
-          archiveError={state.archiveMutation.isError ? (state.archiveMutation.error as Error) : null}
-        />
-
         <ApiKeysSection configuredKeys={state.configuredKeys} />
         <DataExportSection isLoading={state.exportLoading} onExport={state.handleDataExport} />
         <CostAlertsSection companyId={state.selectedCompanyId} />
@@ -221,6 +214,18 @@ function CompanySettingsInner() {
         <DepartmentTemplatesSection companyId={state.selectedCompanyId} />
         <RiskThresholdsSection companyId={state.selectedCompanyId} />
         <TalentPoolSection companyId={state.selectedCompanyId} />
+
+        {/* Danger Zone always last — destructive operations sit at the bottom
+            so they're never reached by accident while scrolling. */}
+        <DangerZoneSection
+          selectedCompany={state.selectedCompany}
+          onArchive={state.handleArchive}
+          onDelete={state.handleDelete}
+          isArchiving={state.archiveMutation.isPending}
+          isDeleting={state.deleteMutation.isPending}
+          archiveError={state.archiveMutation.isError ? (state.archiveMutation.error as Error) : null}
+          deleteError={state.deleteMutation.isError ? (state.deleteMutation.error as Error) : null}
+        />
 
         <InviteUserDialog open={state.inviteDialogOpen} onOpenChange={state.setInviteDialogOpen} />
       </div>

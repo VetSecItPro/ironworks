@@ -298,6 +298,25 @@ export function useCompanySettingsState() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: ({ companyId, nextCompanyId }: { companyId: string; nextCompanyId: string | null }) =>
+      companiesApi.remove(companyId).then(() => ({ nextCompanyId })),
+    onSuccess: async ({ nextCompanyId }) => {
+      pushToast({ title: "Company permanently deleted", tone: "success" });
+      if (nextCompanyId) {
+        setSelectedCompanyId(nextCompanyId);
+      }
+      await queryClient.invalidateQueries({ queryKey: queryKeys.companies.all });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.companies.stats });
+    },
+    onError: (err) => {
+      pushToast({
+        title: err instanceof Error ? `Delete failed: ${err.message}` : "Failed to delete company",
+        tone: "error",
+      });
+    },
+  });
+
   useEffect(() => {
     setBreadcrumbs([{ label: selectedCompany?.name ?? "Company", href: "/dashboard" }, { label: "Settings" }]);
   }, [setBreadcrumbs, selectedCompany?.name]);
@@ -312,11 +331,28 @@ export function useCompanySettingsState() {
 
   function handleArchive() {
     if (!selectedCompanyId || !selectedCompany) return;
-    const confirmed = window.confirm(`Archive company "${selectedCompany.name}"? It will be hidden from the sidebar.`);
+    const confirmed = window.confirm(
+      `Archive company "${selectedCompany.name}"?\n\nIt will be hidden from the sidebar but ALL data is kept (agents, history, secrets, knowledge base). Reversible by an instance admin.\n\nTip: even though archive is reversible, consider exporting your data first as a backup. Cancel and use Settings → Data Export.`,
+    );
     if (!confirmed) return;
     const nextCompanyId =
       companies.find((company) => company.id !== selectedCompanyId && company.status !== "archived")?.id ?? null;
     archiveMutation.mutate({ companyId: selectedCompanyId, nextCompanyId });
+  }
+
+  function handleDelete() {
+    if (!selectedCompanyId || !selectedCompany) return;
+    const typed = window.prompt(
+      `⚠️ PERMANENTLY DELETE "${selectedCompany.name}"?\n\nThis wipes ALL data: agents, heartbeats, channels, knowledge, secrets, issues, library files. CANNOT be undone.\n\nSTRONGLY RECOMMENDED: cancel and export your data first via Settings → Data Export. There is no recovery after this point.\n\nIf you have already exported, type the company name to confirm:`,
+    );
+    if (typed === null) return;
+    if (typed.trim() !== selectedCompany.name) {
+      pushToast({ title: "Name did not match. Delete cancelled.", tone: "error" });
+      return;
+    }
+    const nextCompanyId =
+      companies.find((company) => company.id !== selectedCompanyId && company.status !== "archived")?.id ?? null;
+    deleteMutation.mutate({ companyId: selectedCompanyId, nextCompanyId });
   }
 
   async function handleCopySnippet() {
@@ -373,6 +409,8 @@ export function useCompanySettingsState() {
     exportLoading,
     handleDataExport,
     archiveMutation,
+    deleteMutation,
+    handleDelete,
     handleSaveGeneral,
     handleArchive,
     handleCopySnippet,
