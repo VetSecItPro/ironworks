@@ -14,13 +14,12 @@ import { issueService } from "../services/issues.js";
 import { messagingBridgeService } from "../services/messaging-bridges.js";
 import { secretService } from "../services/secrets.js";
 
-// OpenRouter is the LLM transport for the Telegram bridge's classifier and
-// chat-reply persona. Other providers (Ollama Cloud, direct Anthropic, etc.)
-// are not used here even when available — the bridge defers to OpenRouter
-// because it works for every workspace that has an OPENROUTER_API_KEY
-// configured (the dominant case for free-Western model usage).
+// OpenRouter is the LLM transport for the Telegram bridge. Other providers
+// (Ollama Cloud, direct Anthropic, etc.) are not used here even when
+// available — the bridge defers to OpenRouter because it works for every
+// workspace that has an OPENROUTER_API_KEY configured (the dominant case
+// for free-Western model usage).
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const CLASSIFIER_MODEL = "google/gemma-4-31b-it:free";
 const FALLBACK_CHAT_MODEL = "openai/gpt-oss-120b:free";
 
 const TELEGRAM_API = "https://api.telegram.org";
@@ -29,59 +28,13 @@ const MAX_TELEGRAM_MSG_LENGTH = 4000; // leave buffer under 4096 limit
 
 // ── Intent classification ──
 
-const OBVIOUS_CHAT = /^(ok|yes|no|k|yep|nope|sure|thanks|thx|hi|hey|hello|yo)\.?!?$/i;
-const EMOJI_ONLY = /^[\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+$/u;
-
-async function openrouterChat(model: string, system: string, user: string): Promise<string> {
-  const apiKey = process.env.ADAPTER_OPENROUTER_API_KEY ?? process.env.OPENROUTER_API_KEY ?? "";
-  if (!apiKey) throw new Error("OPENROUTER_API_KEY missing");
-  const res = await fetch(OPENROUTER_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: user },
-      ],
-      max_tokens: 250,
-    }),
-  });
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`OpenRouter ${res.status}: ${body.slice(0, 200)}`);
-  }
-  const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
-  return (data.choices?.[0]?.message?.content ?? "").trim();
-}
-
-async function classifyIntent(text: string): Promise<"chat" | "task"> {
-  const trimmed = text.trim();
-  if (!trimmed) return "chat";
-  if (EMOJI_ONLY.test(trimmed)) return "chat";
-  if (OBVIOUS_CHAT.test(trimmed)) return "chat";
-
-  try {
-    const answer = await openrouterChat(
-      CLASSIFIER_MODEL,
-      "You are a message classifier for a CEO's Telegram bot. Classify the user's message as either TASK or CHAT.\n\nTASK: The user is giving a directive, asking for something to be done, reporting an issue, requesting information, or assigning work.\n\nCHAT: The user is making casual conversation, greeting, acknowledging, expressing emotion, giving status updates about themselves, or saying they're busy/unavailable.\n\nRespond with ONLY the word TASK or CHAT. Nothing else.",
-      text,
-    );
-    const upper = answer.toUpperCase();
-    logger.debug(
-      { intent: upper.includes("CHAT") ? "chat" : "task", text: text.slice(0, 50) },
-      "[telegram-bridge] Message classified",
-    );
-    if (upper.includes("CHAT")) return "chat";
-    return "task";
-  } catch (err) {
-    logger.warn({ err }, "[telegram-bridge] LLM classification error, defaulting to task");
-    return "task";
-  }
-}
+// In-memory per-chat conversation history. This is the only state the bridge
+// keeps between Telegram messages so the CEO has continuity. Lost on restart
+// (acceptable trade for v1 — DB-backed history is a follow-up).
+const CHAT_HISTORY_LIMIT = 20;
+type Turn = { role: "user" | "assistant"; content: string };
+const chatHistory = new Map<string, Turn[]>(); // chatId → rolling history
+const ACTION_TAG_RE = /\[CREATE_TASK\]\s*title:\s*(.+?)\s*\|\s*description:\s*([\s\S]+?)(?:\n|$)/i;
 
 // Read the CEO agent for this workspace so the chat persona reflects whatever
 // the operator has named/configured for that role. Falls back to a generic
@@ -109,18 +62,86 @@ async function loadCeoPersona(db: Db, companyId: string): Promise<{ persona: str
   }
 }
 
-async function generateChatReply(db: Db, companyId: string, text: string): Promise<string> {
+interface CeoTurn {
+  reply: string;
+  createTask: { title: string; description: string } | null;
+}
+
+// One LLM call that drives the whole exchange. The CEO uses judgment to
+// decide whether the message warrants a task or just a conversational
+// response. No upstream classifier — the CEO is the chief-of-staff.
+async function runCeoTurn(db: Db, companyId: string, chatId: string, userMessage: string): Promise<CeoTurn> {
   const { persona, model } = await loadCeoPersona(db, companyId);
+  const history = chatHistory.get(chatId) ?? [];
+
+  const systemPrompt = `You are ${persona}, chatting with the principal operator on Telegram.
+
+You are their chief-of-staff partner. Most messages are conversation: greetings, status updates, thinking out loud, asking questions. Respond naturally - brief, warm, professional, 1-3 sentences.
+
+Sometimes the operator asks you to actually do something (research, draft, build, deliver). When you decide a concrete task is warranted, append a single line at the END of your reply in this exact format on its own line:
+
+[CREATE_TASK] title: <short title under 100 chars> | description: <full task brief, can be multi-paragraph>
+
+Only emit [CREATE_TASK] when:
+- The operator clearly wants action taken (not just talking through an idea)
+- The scope is concrete enough to brief the team
+- You'd actually delegate this if you were a real CEO
+
+Do NOT emit [CREATE_TASK] for:
+- Greetings, status updates, casual conversation
+- Questions you can answer directly
+- Half-baked ideas the operator is still thinking through (ask clarifying questions instead)
+- Acknowledgments
+
+If unsure, ask a clarifying question instead of creating a task.
+
+STYLE RULES (strict):
+- Never use em dashes (—) or en dashes (–). Use regular dashes (-) or rewrite.
+- No sparkle or decorative emoji.
+- Plain text only. No markdown formatting.`;
+
+  const messages: Turn[] = [...history, { role: "user", content: userMessage }];
+
+  let raw: string;
   try {
-    const reply = await openrouterChat(
-      model,
-      `You are ${persona} for the company. You're chatting with the principal operator on Telegram. Keep responses brief (1-2 sentences), professional but warm. Confident leader who respects the operator's time. Never create tasks or mention issues. Just have a natural conversation.`,
-      text,
-    );
-    return (reply || "Got it.").slice(0, 500);
-  } catch {
-    return "Got it.";
+    const apiKey = process.env.ADAPTER_OPENROUTER_API_KEY ?? process.env.OPENROUTER_API_KEY ?? "";
+    const res = await fetch(OPENROUTER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: "system", content: systemPrompt }, ...messages],
+        max_tokens: 600,
+      }),
+    });
+    if (!res.ok) {
+      logger.warn({ status: res.status }, "[telegram-bridge] CEO turn failed, returning fallback");
+      return { reply: "Got it.", createTask: null };
+    }
+    const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
+    raw = (data.choices?.[0]?.message?.content ?? "").trim();
+  } catch (err) {
+    logger.warn({ err }, "[telegram-bridge] CEO turn error, returning fallback");
+    return { reply: "Got it.", createTask: null };
   }
+
+  // Parse out the optional [CREATE_TASK] tag.
+  const match = raw.match(ACTION_TAG_RE);
+  let createTask: CeoTurn["createTask"] = null;
+  let reply = raw;
+  if (match) {
+    createTask = { title: match[1].trim(), description: match[2].trim() };
+    reply = raw.replace(ACTION_TAG_RE, "").trim() || "On it.";
+  }
+
+  // Strip em/en dashes belt-and-suspenders.
+  reply = reply.replace(/[—–]/g, "-").slice(0, 1000);
+
+  // Persist the turn (truncate to last N exchanges).
+  const updated: Turn[] = [...messages, { role: "assistant", content: reply }];
+  chatHistory.set(chatId, updated.slice(-CHAT_HISTORY_LIMIT));
+
+  return { reply, createTask };
 }
 
 // ── Types ──
@@ -351,51 +372,32 @@ function startTelegramPollLoop(db: Db, bot: BotInstance): void {
           continue;
         }
 
-        // Regular message
-        const existingIssueId = bot.activeThreads.get(chatId);
+        // Drive every message through the CEO. The CEO decides whether the
+        // turn warrants creating a task (emits [CREATE_TASK] tag) or is just
+        // conversation. No upstream classifier — single source of judgment.
+        const turn = await runCeoTurn(db, bot.companyId, chatId, text);
 
-        if (!existingIssueId) {
-          const intent = await classifyIntent(text);
-          if (intent === "chat") {
-            const reply = await generateChatReply(db, bot.companyId, text);
-            await sendTelegram(bot.token, chatId, reply);
-            continue;
-          }
-
-          // Create new issue
-          // SEC-INTEG-004: Sanitize Telegram content before creating issues
+        if (turn.createTask) {
+          // Sanitize sender name (SEC-INTEG-004) before stamping into issue.
           const rawSenderName = msg.from?.first_name ?? msg.from?.username ?? "Unknown";
           const senderName = rawSenderName.replace(/[`*_~[\]<>]/g, "").slice(0, 50);
-          const safeText = text.slice(0, 4000);
-          await sendTelegram(bot.token, chatId, "Creating task for CEO...");
+          const safeTitle = turn.createTask.title.slice(0, 200);
+          const safeBody =
+            `${turn.createTask.description}\n\n---\nOriginated from Telegram (${senderName}, chat ${chatId}). ` +
+            `User's message: ${text.slice(0, 1000)}`;
 
-          const issue = await createBridgeIssue(
-            db,
-            bot.companyId,
-            bot.ceoAgentId,
-            `[Telegram] ${safeText.slice(0, 150)}`,
-            `Message from Telegram (${senderName}, chat ${chatId}):\n\n${safeText}`,
-          );
-
+          const issue = await createBridgeIssue(db, bot.companyId, bot.ceoAgentId, safeTitle, safeBody);
           if (issue.error) {
-            await sendTelegram(bot.token, chatId, `Error creating task: ${issue.error}`);
-            continue;
+            await sendTelegram(bot.token, chatId, `${turn.reply}\n\n(Couldn't create task: ${issue.error})`);
+          } else {
+            const newIssueId = issue.id ?? issue.issueId ?? "";
+            bot.activeThreads.set(chatId, newIssueId);
+            bot.lastSeenComment.set(newIssueId, Date.now());
+            await sendTelegram(bot.token, chatId, `${turn.reply}\n\n(Task ${issue.identifier ?? newIssueId} filed.)`);
           }
-
-          const newIssueId = issue.id ?? issue.issueId ?? "";
-          bot.activeThreads.set(chatId, newIssueId);
-          bot.lastSeenComment.set(newIssueId, Date.now());
-          await sendTelegram(
-            bot.token,
-            chatId,
-            `Task created (${issue.identifier ?? newIssueId}). CEO will be notified on next heartbeat.\n\nI'll relay the CEO's response here.`,
-          );
         } else {
-          // Add comment to existing issue
-          const result = await addBridgeComment(db, bot.companyId, existingIssueId, `[via Telegram]: ${text}`);
-          if (result.error) {
-            await sendTelegram(bot.token, chatId, `Error: ${result.error}`);
-          }
+          // Pure conversation turn — just relay the CEO's reply.
+          await sendTelegram(bot.token, chatId, turn.reply);
         }
       }
     } catch (err) {
