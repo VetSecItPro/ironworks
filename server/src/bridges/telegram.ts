@@ -6,13 +6,22 @@
  */
 
 import type { Db } from "@ironworksai/db";
-import { messagingBridges } from "@ironworksai/db";
+import { agents as agentsTable, messagingBridges } from "@ironworksai/db";
 import { and, eq, isNotNull } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 import { agentService } from "../services/agents.js";
 import { issueService } from "../services/issues.js";
 import { messagingBridgeService } from "../services/messaging-bridges.js";
 import { secretService } from "../services/secrets.js";
+
+// OpenRouter is the LLM transport for the Telegram bridge's classifier and
+// chat-reply persona. Other providers (Ollama Cloud, direct Anthropic, etc.)
+// are not used here even when available — the bridge defers to OpenRouter
+// because it works for every workspace that has an OPENROUTER_API_KEY
+// configured (the dominant case for free-Western model usage).
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+const CLASSIFIER_MODEL = "google/gemma-4-31b-it:free";
+const FALLBACK_CHAT_MODEL = "openai/gpt-oss-120b:free";
 
 const TELEGRAM_API = "https://api.telegram.org";
 const POLL_INTERVAL_MS = 10_000;
@@ -23,94 +32,94 @@ const MAX_TELEGRAM_MSG_LENGTH = 4000; // leave buffer under 4096 limit
 const OBVIOUS_CHAT = /^(ok|yes|no|k|yep|nope|sure|thanks|thx|hi|hey|hello|yo)\.?!?$/i;
 const EMOJI_ONLY = /^[\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+$/u;
 
+async function openrouterChat(model: string, system: string, user: string): Promise<string> {
+  const apiKey = process.env.ADAPTER_OPENROUTER_API_KEY ?? process.env.OPENROUTER_API_KEY ?? "";
+  if (!apiKey) throw new Error("OPENROUTER_API_KEY missing");
+  const res = await fetch(OPENROUTER_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user },
+      ],
+      max_tokens: 250,
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`OpenRouter ${res.status}: ${body.slice(0, 200)}`);
+  }
+  const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
+  return (data.choices?.[0]?.message?.content ?? "").trim();
+}
+
 async function classifyIntent(text: string): Promise<"chat" | "task"> {
   const trimmed = text.trim();
   if (!trimmed) return "chat";
   if (EMOJI_ONLY.test(trimmed)) return "chat";
   if (OBVIOUS_CHAT.test(trimmed)) return "chat";
 
-  // LLM classification for everything else
   try {
-    const apiKey = process.env.OLLAMA_API_KEY ?? "";
-    if (!apiKey) return "task"; // No key = fall back to task creation
-
-    const response = await fetch("https://ollama.com/api/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "ministral-3:3b",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a message classifier for a CEO's Telegram bot. Classify the user's message as either TASK or CHAT.\n\nTASK: The user is giving a directive, asking for something to be done, reporting an issue, requesting information, or assigning work.\n\nCHAT: The user is making casual conversation, greeting, acknowledging, expressing emotion, giving status updates about themselves, or saying they're busy/unavailable.\n\nRespond with ONLY the word TASK or CHAT. Nothing else.",
-          },
-          {
-            role: "user",
-            content: text,
-          },
-        ],
-        stream: false,
-      }),
-    });
-
-    if (!response.ok) {
-      logger.warn({ status: response.status }, "[telegram-bridge] LLM classification failed, defaulting to task");
-      return "task";
-    }
-
-    const data = (await response.json()) as { message?: { content?: string } };
-    const answer = (data.message?.content ?? "").trim().toUpperCase();
+    const answer = await openrouterChat(
+      CLASSIFIER_MODEL,
+      "You are a message classifier for a CEO's Telegram bot. Classify the user's message as either TASK or CHAT.\n\nTASK: The user is giving a directive, asking for something to be done, reporting an issue, requesting information, or assigning work.\n\nCHAT: The user is making casual conversation, greeting, acknowledging, expressing emotion, giving status updates about themselves, or saying they're busy/unavailable.\n\nRespond with ONLY the word TASK or CHAT. Nothing else.",
+      text,
+    );
+    const upper = answer.toUpperCase();
     logger.debug(
-      { intent: answer.includes("CHAT") ? "chat" : "task", text: text.slice(0, 50) },
+      { intent: upper.includes("CHAT") ? "chat" : "task", text: text.slice(0, 50) },
       "[telegram-bridge] Message classified",
     );
-
-    if (answer.includes("CHAT")) return "chat";
-    return "task"; // Default to task if unclear
+    if (upper.includes("CHAT")) return "chat";
+    return "task";
   } catch (err) {
     logger.warn({ err }, "[telegram-bridge] LLM classification error, defaulting to task");
     return "task";
   }
 }
 
-async function generateChatReply(text: string): Promise<string> {
+// Read the CEO agent for this workspace so the chat persona reflects whatever
+// the operator has named/configured for that role. Falls back to a generic
+// "the CEO" identity if no row is found, and to the workspace-default model
+// from the matrix if the agent has no adapter_config.model set.
+async function loadCeoPersona(db: Db, companyId: string): Promise<{ persona: string; model: string }> {
   try {
-    const apiKey = process.env.OLLAMA_API_KEY ?? "";
-    if (!apiKey) return "Got it, Boss. Let me know when you need anything.";
-
-    const response = await fetch("https://ollama.com/api/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "ministral-3:3b",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are Marcus Cole, CEO of the company. You're chatting with the Boss (company owner) on Telegram. Keep responses brief (1-2 sentences), professional but warm. You're a confident leader who respects the boss's time. Never create tasks or mention issues. Just have a natural conversation.",
-          },
-          {
-            role: "user",
-            content: text,
-          },
-        ],
-        stream: false,
-      }),
-    });
-
-    if (!response.ok) return "Got it, Boss.";
-
-    const data = (await response.json()) as { message?: { content?: string } };
-    return (data.message?.content ?? "Got it, Boss.").trim().slice(0, 500);
+    const ceo = await db
+      .select({ name: agentsTable.name, title: agentsTable.title, adapterConfig: agentsTable.adapterConfig })
+      .from(agentsTable)
+      .where(and(eq(agentsTable.companyId, companyId), eq(agentsTable.role, "ceo")))
+      .then((rows) => rows[0] ?? null);
+    const name = (ceo?.name ?? "").trim();
+    const title = (ceo?.title ?? "").trim();
+    const persona =
+      name && title && name.toLowerCase() !== "ceo"
+        ? `${name}, ${title}`
+        : name && name.toLowerCase() !== "ceo"
+          ? name
+          : "the CEO";
+    const cfg = (ceo?.adapterConfig ?? {}) as { model?: string };
+    return { persona, model: cfg.model ?? FALLBACK_CHAT_MODEL };
   } catch {
-    return "Got it, Boss. Let me know when you need anything.";
+    return { persona: "the CEO", model: FALLBACK_CHAT_MODEL };
+  }
+}
+
+async function generateChatReply(db: Db, companyId: string, text: string): Promise<string> {
+  const { persona, model } = await loadCeoPersona(db, companyId);
+  try {
+    const reply = await openrouterChat(
+      model,
+      `You are ${persona} for the company. You're chatting with the principal operator on Telegram. Keep responses brief (1-2 sentences), professional but warm. Confident leader who respects the operator's time. Never create tasks or mention issues. Just have a natural conversation.`,
+      text,
+    );
+    return (reply || "Got it.").slice(0, 500);
+  } catch {
+    return "Got it.";
   }
 }
 
@@ -311,7 +320,11 @@ function startTelegramPollLoop(db: Db, bot: BotInstance): void {
           continue;
         }
 
-        // Persist owner chat ID for startup notifications
+        // Single-owner enforcement.
+        // First chat to /start (or send any message) claims ownership of the
+        // bot. After that, every other chat_id is rejected with a friendly
+        // "private bot" message. The operator can reset the owner via the
+        // Settings UI to transfer the channel.
         if (!bot.ownerChatId) {
           bot.ownerChatId = chatId;
           const bridgeSvc = messagingBridgeService(db);
@@ -324,6 +337,18 @@ function startTelegramPollLoop(db: Db, bot: BotInstance): void {
               .set({ config, updatedAt: new Date() })
               .where(eq(messagingBridges.id, bridge.id));
           }
+          logger.info({ companyId: bot.companyId, chatId }, "[telegram-bridge] Owner claimed");
+        } else if (chatId !== bot.ownerChatId) {
+          await sendTelegram(
+            bot.token,
+            chatId,
+            "This bot is private. Reach out to the workspace admin if you need access.",
+          );
+          logger.warn(
+            { companyId: bot.companyId, chatId, owner: bot.ownerChatId },
+            "[telegram-bridge] Rejected non-owner message",
+          );
+          continue;
         }
 
         // Regular message
@@ -332,7 +357,7 @@ function startTelegramPollLoop(db: Db, bot: BotInstance): void {
         if (!existingIssueId) {
           const intent = await classifyIntent(text);
           if (intent === "chat") {
-            const reply = await generateChatReply(text);
+            const reply = await generateChatReply(db, bot.companyId, text);
             await sendTelegram(bot.token, chatId, reply);
             continue;
           }
