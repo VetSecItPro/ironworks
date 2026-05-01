@@ -147,6 +147,16 @@ function CompanySettingsInner() {
           onToggleApproval={(v) => state.settingsMutation.mutate(v)}
         />
 
+        {/* Team Members rendered immediately after Hiring so the human-invite
+            flow is discoverable. The Invites section below is for agent CLI
+            snippet generation, not for adding people to the workspace. */}
+        {state.canManageMembers && (
+          <TeamMembersSection
+            members={state.membersQuery.data ?? []}
+            onInvite={() => state.setInviteDialogOpen(true)}
+          />
+        )}
+
         <InvitesSection
           isGenerating={state.inviteMutation.isPending}
           inviteError={state.inviteError}
@@ -172,13 +182,6 @@ function CompanySettingsInner() {
           isArchiving={state.archiveMutation.isPending}
           archiveError={state.archiveMutation.isError ? (state.archiveMutation.error as Error) : null}
         />
-
-        {state.canManageMembers && (
-          <TeamMembersSection
-            members={state.membersQuery.data ?? []}
-            onInvite={() => state.setInviteDialogOpen(true)}
-          />
-        )}
 
         <ApiKeysSection configuredKeys={state.configuredKeys} />
         <DataExportSection isLoading={state.exportLoading} onExport={state.handleDataExport} />
