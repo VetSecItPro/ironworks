@@ -1,9 +1,13 @@
-import { Atom, Bot, Globe, Zap } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { Atom, Bot, Check, Globe, Loader2, X, Zap } from "lucide-react";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { api } from "../../api/client";
 import { useProviderStatus } from "../../hooks/useProviderStatus";
 import { cn } from "../../lib/utils";
-import type { HttpAdapterProviderType } from "../../types/providers";
+import type { HttpAdapterProviderType, ProviderTestResponse } from "../../types/providers";
 
 interface ProviderMeta {
   type: HttpAdapterProviderType;
@@ -63,6 +67,19 @@ function ProviderCard({
 }) {
   const { status, isLoading } = useProviderStatus(companyId, meta.type);
   const configured = status?.configured ?? false;
+  const [testResult, setTestResult] = useState<{ passed: boolean; error?: string } | null>(null);
+
+  const testMutation = useMutation({
+    mutationFn: () => api.post<ProviderTestResponse>(`/companies/${companyId}/providers/${meta.type}/test`, {}),
+    onSuccess: (res) => {
+      setTestResult({ passed: res.passed, error: res.error });
+      setTimeout(() => setTestResult(null), 4000);
+    },
+    onError: (err) => {
+      setTestResult({ passed: false, error: err instanceof Error ? err.message : "Test failed" });
+      setTimeout(() => setTestResult(null), 4000);
+    },
+  });
 
   return (
     <Card
@@ -88,6 +105,37 @@ function ProviderCard({
       </CardHeader>
       <CardContent className="px-4">
         <p className="text-xs text-muted-foreground leading-relaxed">{meta.valueProp}</p>
+        {configured && companyId && (
+          <div className="mt-2 flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-6 px-2 text-[10px]"
+              disabled={testMutation.isPending}
+              onClick={(e) => {
+                e.stopPropagation();
+                testMutation.mutate();
+              }}
+            >
+              {testMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <>Test connection</>}
+            </Button>
+            {testResult &&
+              (testResult.passed ? (
+                <span className="inline-flex items-center gap-1 text-[10px] text-green-600 dark:text-green-400">
+                  <Check className="h-3 w-3" />
+                  Pass
+                </span>
+              ) : (
+                <span
+                  className="inline-flex items-center gap-1 text-[10px] text-destructive truncate max-w-[180px]"
+                  title={testResult.error ?? "Failed"}
+                >
+                  <X className="h-3 w-3" />
+                  {testResult.error ?? "Fail"}
+                </span>
+              ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -1,10 +1,22 @@
 // @vitest-environment node
 
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { ThemeProvider } from "../../context/ThemeContext";
 import type { ProviderStatusResponse } from "../../types/providers";
 import { AdapterPicker } from "./AdapterPicker";
+
+// AdapterPicker uses useMutation for the Test-connection button, which needs
+// a QueryClient ancestor — even in SSR tests.
+function renderWithProviders(ui: React.ReactElement) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return renderToStaticMarkup(
+    <QueryClientProvider client={client}>
+      <ThemeProvider>{ui}</ThemeProvider>
+    </QueryClientProvider>,
+  );
+}
 
 const TEST_COMPANY_ID = "00000000-0000-0000-0000-000000000001";
 
@@ -28,11 +40,7 @@ vi.mock("../../hooks/useProviderStatus", () => ({
 
 describe("AdapterPicker", () => {
   it("renders a card for each of the four HTTP adapters", () => {
-    const html = renderToStaticMarkup(
-      <ThemeProvider>
-        <AdapterPicker companyId={TEST_COMPANY_ID} onSelect={vi.fn()} />
-      </ThemeProvider>,
-    );
+    const html = renderWithProviders(<AdapterPicker companyId={TEST_COMPANY_ID} onSelect={vi.fn()} />);
 
     expect(html).toContain("Poe");
     expect(html).toContain("Anthropic");
@@ -41,11 +49,7 @@ describe("AdapterPicker", () => {
   });
 
   it("shows Configured chip for configured providers and Not configured for unconfigured", () => {
-    const html = renderToStaticMarkup(
-      <ThemeProvider>
-        <AdapterPicker companyId={TEST_COMPANY_ID} onSelect={vi.fn()} />
-      </ThemeProvider>,
-    );
+    const html = renderWithProviders(<AdapterPicker companyId={TEST_COMPANY_ID} onSelect={vi.fn()} />);
 
     const configuredCount = (html.match(/Configured/g) ?? []).length;
     expect(configuredCount).toBeGreaterThanOrEqual(2);
@@ -55,22 +59,14 @@ describe("AdapterPicker", () => {
   });
 
   it("renders value-prop text for each provider", () => {
-    const html = renderToStaticMarkup(
-      <ThemeProvider>
-        <AdapterPicker companyId={TEST_COMPANY_ID} onSelect={vi.fn()} />
-      </ThemeProvider>,
-    );
+    const html = renderWithProviders(<AdapterPicker companyId={TEST_COMPANY_ID} onSelect={vi.fn()} />);
 
     expect(html).toContain("subscription");
     expect(html).toContain("cache");
   });
 
   it("renders one data-provider attribute per provider type", () => {
-    const html = renderToStaticMarkup(
-      <ThemeProvider>
-        <AdapterPicker companyId={TEST_COMPANY_ID} onSelect={vi.fn()} />
-      </ThemeProvider>,
-    );
+    const html = renderWithProviders(<AdapterPicker companyId={TEST_COMPANY_ID} onSelect={vi.fn()} />);
 
     expect(html).toContain('data-provider="poe_api"');
     expect(html).toContain('data-provider="anthropic_api"');

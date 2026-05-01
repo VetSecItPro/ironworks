@@ -45,4 +45,7 @@ export const messagingApi = {
 
   testTelegram: (companyId: string) =>
     api.post<TelegramTestResult>(`/companies/${companyId}/messaging/telegram/test`, {}),
+
+  resetTelegramOwner: (companyId: string) =>
+    api.post<{ ok: true }>(`/companies/${companyId}/messaging/telegram/reset-owner`, {}),
 };

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Gamepad2, Hash, Loader2, Mail, MessageCircle, RefreshCw, Trash2 } from "lucide-react";
+import { Check, Gamepad2, Hash, KeyRound, Loader2, Mail, MessageCircle, RefreshCw, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { type MessagingBridge, messagingApi } from "../api/messaging";
@@ -123,6 +123,13 @@ function TelegramBridgeCard({
     },
   });
 
+  const resetOwnerMutation = useMutation({
+    mutationFn: () => messagingApi.resetTelegramOwner(companyId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey });
+    },
+  });
+
   const testMutation = useMutation({
     mutationFn: () => messagingApi.testTelegram(companyId),
     onSuccess: () => {
@@ -133,6 +140,7 @@ function TelegramBridgeCard({
   const isConnected = bridge?.status === "connected";
   const isError = bridge?.status === "error";
   const botUsername = (bridge?.config as { botUsername?: string })?.botUsername;
+  const ownerChatId = (bridge?.config as { ownerChatId?: string })?.ownerChatId;
 
   return (
     <div className="rounded-md border border-border px-4 py-3 space-y-2">
@@ -161,7 +169,12 @@ function TelegramBridgeCard({
               Bot: @{botUsername} {bridge.running ? "(running)" : "(stopped)"}
             </div>
           )}
-          <div className="flex items-center gap-2">
+          {ownerChatId && (
+            <div className="text-xs text-muted-foreground">
+              Owner chat ID: <code className="font-mono">{ownerChatId}</code>
+            </div>
+          )}
+          <div className="flex items-center gap-2 flex-wrap">
             <Button size="sm" variant="outline" onClick={() => testMutation.mutate()} disabled={testMutation.isPending}>
               {testMutation.isPending ? (
                 <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
@@ -170,6 +183,30 @@ function TelegramBridgeCard({
               )}
               Test Connection
             </Button>
+            {ownerChatId && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      "Reset Telegram owner? The next message to the bot will claim ownership. The current owner will lose access until they re-claim.",
+                    )
+                  ) {
+                    resetOwnerMutation.mutate();
+                  }
+                }}
+                disabled={resetOwnerMutation.isPending}
+                title="Clear current owner so a new operator can claim the bot"
+              >
+                {resetOwnerMutation.isPending ? (
+                  <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
+                ) : (
+                  <KeyRound className="h-3 w-3 mr-1.5" />
+                )}
+                Reset Owner
+              </Button>
+            )}
             <Button
               size="sm"
               variant="outline"

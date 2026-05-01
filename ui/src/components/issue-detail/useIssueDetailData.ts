@@ -311,8 +311,17 @@ export function useIssueDetailData(issueId: string | undefined) {
   });
 
   const addComment = useMutation({
-    mutationFn: ({ body, reopen, replyToId }: { body: string; reopen?: boolean; replyToId?: string | null }) =>
-      issuesApi.addComment(issueId!, body, reopen, undefined, replyToId),
+    mutationFn: ({
+      body,
+      reopen,
+      replyToId,
+      interrupt,
+    }: {
+      body: string;
+      reopen?: boolean;
+      replyToId?: string | null;
+      interrupt?: boolean;
+    }) => issuesApi.addComment(issueId!, body, reopen, interrupt, replyToId),
     onSuccess: () => {
       invalidateIssue();
       queryClient.invalidateQueries({ queryKey: queryKeys.issues.comments(issueId!) });
