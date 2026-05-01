@@ -1,5 +1,5 @@
-import { writeHeapSnapshot } from "node:v8";
 import { join } from "node:path";
+import { writeHeapSnapshot } from "node:v8";
 
 import { logger } from "../middleware/logger.js";
 
@@ -69,10 +69,7 @@ function takeHeapSnapshot(snapshotDir: string) {
       const path = join(snapshotDir, `heap-${ts}.heapsnapshot`);
       const written = writeHeapSnapshot(path);
       const mem = process.memoryUsage();
-      logger.warn(
-        { path: written, rss: mem.rss, heapUsed: mem.heapUsed },
-        "heap-snapshot written",
-      );
+      logger.warn({ path: written, rss: mem.rss, heapUsed: mem.heapUsed }, "heap-snapshot written");
     } catch (err) {
       logger.error({ err }, "heap-snapshot failed");
     }
