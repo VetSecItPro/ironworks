@@ -1,11 +1,12 @@
 import { MEMORY_TYPE_LABELS, MEMORY_TYPES } from "@ironworksai/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Brain, ChevronDown, ChevronRight, Plus, X } from "lucide-react";
+import { BookOpen, Brain, ChevronDown, ChevronRight, Plus, Share2, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { type AgentMemoryEntry, agentMemoryApi } from "../../api/agentMemory";
 import { executiveApi } from "../../api/executive";
+import { useToast } from "../../context/ToastContext";
 import { queryKeys } from "../../lib/queryKeys";
 import { cn, relativeTime } from "../../lib/utils";
 
@@ -19,10 +20,18 @@ function MemoryCard({
   entry,
   onDelete,
   isDeleting,
+  onPromote,
+  isPromoting,
+  onShare,
+  isSharing,
 }: {
   entry: AgentMemoryEntry;
   onDelete: () => void;
   isDeleting: boolean;
+  onPromote: () => void;
+  isPromoting: boolean;
+  onShare: (companyWide: boolean) => void;
+  isSharing: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const content = entry.content;
@@ -46,13 +55,33 @@ function MemoryCard({
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="text-[10px] text-muted-foreground">{relativeTime(entry.createdAt)}</span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="text-[10px] text-muted-foreground mr-1">{relativeTime(entry.createdAt)}</span>
+          <button
+            type="button"
+            aria-label="Promote to company knowledge"
+            title="Promote to company knowledge"
+            onClick={onPromote}
+            disabled={isPromoting || isSharing || isDeleting}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <BookOpen className="h-3 w-3" />
+          </button>
+          <button
+            type="button"
+            aria-label="Share with same-department agents"
+            title="Share with same-department agents (alt+click for company-wide)"
+            onClick={(e) => onShare(e.altKey)}
+            disabled={isPromoting || isSharing || isDeleting}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Share2 className="h-3 w-3" />
+          </button>
           <button
             type="button"
             aria-label="Delete memory entry"
             onClick={onDelete}
-            disabled={isDeleting}
+            disabled={isPromoting || isSharing || isDeleting}
             className="text-muted-foreground hover:text-destructive transition-colors"
           >
             <X className="h-3 w-3" />
@@ -190,6 +219,7 @@ function AddMemoryForm({
 
 export function AgentMemoryTab({ companyId, agentId }: { companyId: string; agentId: string }) {
   const queryClient = useQueryClient();
+  const { pushToast } = useToast();
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [showAddForm, setShowAddForm] = useState(false);
 
@@ -220,6 +250,31 @@ export function AgentMemoryTab({ companyId, agentId }: { companyId: string; agen
     mutationFn: (entryId: string) => agentMemoryApi.remove(companyId, agentId, entryId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["agent-memory", companyId, agentId] });
+    },
+  });
+
+  const promoteMutation = useMutation({
+    mutationFn: (entryId: string) => agentMemoryApi.promote(companyId, agentId, entryId),
+    onSuccess: (res) => {
+      pushToast({ title: `Promoted to knowledge: ${res.title}`, tone: "success" });
+      queryClient.invalidateQueries({ queryKey: queryKeys.knowledge?.list?.(companyId) ?? ["knowledge"] });
+    },
+    onError: (err) => {
+      pushToast({ title: err instanceof Error ? `Promote failed: ${err.message}` : "Promote failed", tone: "error" });
+    },
+  });
+
+  const shareMutation = useMutation({
+    mutationFn: ({ entryId, companyWide }: { entryId: string; companyWide: boolean }) =>
+      agentMemoryApi.share(companyId, agentId, entryId, { companyWide }),
+    onSuccess: (res, vars) => {
+      pushToast({
+        title: `Shared with ${res.shared} agent${res.shared === 1 ? "" : "s"}${vars.companyWide ? " (company-wide)" : " (same department)"}`,
+        tone: "success",
+      });
+    },
+    onError: (err) => {
+      pushToast({ title: err instanceof Error ? `Share failed: ${err.message}` : "Share failed", tone: "error" });
     },
   });
 
@@ -337,6 +392,18 @@ export function AgentMemoryTab({ companyId, agentId }: { companyId: string; agen
               entry={entry}
               onDelete={() => deleteMutation.mutate(entry.id)}
               isDeleting={deleteMutation.isPending}
+              onPromote={() => {
+                if (
+                  window.confirm(
+                    "Promote this memory to a company-wide knowledge page? Other agents will be able to read it.",
+                  )
+                ) {
+                  promoteMutation.mutate(entry.id);
+                }
+              }}
+              isPromoting={promoteMutation.isPending}
+              onShare={(companyWide) => shareMutation.mutate({ entryId: entry.id, companyWide })}
+              isSharing={shareMutation.isPending}
             />
           ))}
         </div>

@@ -469,6 +469,8 @@ export function IssueDetail() {
       </Tabs>
 
       <IssueApprovalsSection
+        issueId={issue.id}
+        companyId={issue.companyId}
         linkedApprovals={linkedApprovals ?? []}
         open={secondaryOpen.approvals}
         onOpenChange={(open) => setSecondaryOpen((prev) => ({ ...prev, approvals: open }))}
