@@ -97,6 +97,36 @@ export function accessService(db: Db) {
       .orderBy(sql`${companyMemberships.createdAt} desc`);
   }
 
+  async function getMembershipById(companyId: string, memberId: string) {
+    return db
+      .select()
+      .from(companyMemberships)
+      .where(and(eq(companyMemberships.companyId, companyId), eq(companyMemberships.id, memberId)))
+      .then((rows) => rows[0] ?? null);
+  }
+
+  async function removeMembership(companyId: string, memberId: string) {
+    // Hard delete keeps the table small and matches user expectations of
+    // "remove from team". Audit history of the action lives in activity_log
+    // (set up by the route handler). Permission grants are wiped first to
+    // avoid orphans.
+    const member = await getMembershipById(companyId, memberId);
+    if (!member) return null;
+    await db.transaction(async (tx) => {
+      await tx
+        .delete(principalPermissionGrants)
+        .where(
+          and(
+            eq(principalPermissionGrants.companyId, companyId),
+            eq(principalPermissionGrants.principalType, member.principalType),
+            eq(principalPermissionGrants.principalId, member.principalId),
+          ),
+        );
+      await tx.delete(companyMemberships).where(eq(companyMemberships.id, memberId));
+    });
+    return member;
+  }
+
   async function listActiveUserMemberships(companyId: string) {
     return db
       .select()
@@ -370,6 +400,8 @@ export function accessService(db: Db) {
     getMembership,
     ensureMembership,
     listMembers,
+    getMembershipById,
+    removeMembership,
     listActiveUserMemberships,
     copyActiveUserMemberships,
     setMemberPermissions,

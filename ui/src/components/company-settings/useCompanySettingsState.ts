@@ -118,6 +118,20 @@ export function useCompanySettingsState() {
     },
   });
 
+  const removeMemberMutation = useMutation({
+    mutationFn: (memberId: string) => accessApi.removeMember(selectedCompanyId!, memberId),
+    onSuccess: () => {
+      pushToast({ title: "Member removed", tone: "success" });
+      queryClient.invalidateQueries({ queryKey: ["access", "members", selectedCompanyId] });
+    },
+    onError: (err) => {
+      pushToast({
+        title: err instanceof Error ? `Failed to remove: ${err.message}` : "Failed to remove member",
+        tone: "error",
+      });
+    },
+  });
+
   const secretsQuery = useQuery({
     queryKey: queryKeys.secrets.list(selectedCompanyId ?? ""),
     queryFn: () => secretsApi.list(selectedCompanyId!),
@@ -342,6 +356,7 @@ export function useCompanySettingsState() {
     membersQuery,
     userInvitesQuery,
     revokeUserInviteMutation,
+    removeMemberMutation,
     configuredKeys,
     inviteError,
     inviteSnippet,

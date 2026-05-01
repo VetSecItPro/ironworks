@@ -1,5 +1,7 @@
+import { useQuery } from "@tanstack/react-query";
 import { Settings } from "lucide-react";
 import { useEffect, useState } from "react";
+import { authApi } from "../api/auth";
 import { SettingsSidebarNav, useCompanySettingsState } from "../components/company-settings";
 import { InviteUserDialog } from "../components/InviteUserDialog";
 import { MessagingSetup } from "../components/MessagingSetup";
@@ -64,6 +66,12 @@ export function CompanySettings() {
 function CompanySettingsInner() {
   const state = useCompanySettingsState();
   const [activeSection, setActiveSection] = useState("general");
+  const sessionQuery = useQuery({
+    queryKey: ["auth", "session"],
+    queryFn: () => authApi.getSession(),
+    staleTime: 30_000,
+  });
+  const currentUserId = sessionQuery.data?.user?.id ?? null;
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -155,9 +163,12 @@ function CompanySettingsInner() {
           <TeamMembersSection
             members={state.membersQuery.data ?? []}
             invites={state.userInvitesQuery.data ?? []}
+            currentUserId={currentUserId}
             onInvite={() => state.setInviteDialogOpen(true)}
             onRevokeInvite={(inviteId) => state.revokeUserInviteMutation.mutate(inviteId)}
+            onRemoveMember={(memberId) => state.removeMemberMutation.mutate(memberId)}
             isRevoking={state.revokeUserInviteMutation.isPending}
+            isRemoving={state.removeMemberMutation.isPending}
             publicUrl={typeof window !== "undefined" ? window.location.origin : ""}
           />
         )}
