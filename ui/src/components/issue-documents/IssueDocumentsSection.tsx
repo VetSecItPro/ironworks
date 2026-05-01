@@ -13,6 +13,7 @@ import { cn } from "../../lib/utils";
 import { MarkdownBody } from "../MarkdownBody";
 import { MarkdownEditor, type MentionOption } from "../MarkdownEditor";
 import { DocumentCard } from "./DocumentCard";
+import { DocumentRevisionsDrawer } from "./DocumentRevisionsDrawer";
 import type { DocumentConflictState, DraftState } from "./types";
 import {
   DOCUMENT_AUTOSAVE_DEBOUNCE_MS,
@@ -53,6 +54,7 @@ export function IssueDocumentsSection({
   const [autosaveDocumentKey, setAutosaveDocumentKey] = useState<string | null>(null);
   const [copiedDocumentKey, setCopiedDocumentKey] = useState<string | null>(null);
   const [highlightDocumentKey, setHighlightDocumentKey] = useState<string | null>(null);
+  const [revisionsForKey, setRevisionsForKey] = useState<string | null>(null);
   const autosaveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const copiedDocumentTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasScrolledToHashRef = useRef(false);
@@ -548,6 +550,7 @@ export function IssueDocumentsSection({
               onCopyBody={(key, body) => void copyDocumentBody(key, body)}
               onSetConfirmDelete={setConfirmDeleteKey}
               onDelete={(key) => deleteDocument.mutate(key)}
+              onViewRevisions={(key) => setRevisionsForKey(key)}
               onBeginEdit={beginEdit}
               onDraftBlur={handleDraftBlur}
               onDraftKeyDown={handleDraftKeyDown}
@@ -572,6 +575,13 @@ export function IssueDocumentsSection({
           );
         })}
       </div>
+
+      <DocumentRevisionsDrawer
+        open={!!revisionsForKey}
+        onOpenChange={(open) => !open && setRevisionsForKey(null)}
+        issueId={issue.id}
+        doc={revisionsForKey ? (sortedDocuments.find((d) => d.key === revisionsForKey) ?? null) : null}
+      />
     </div>
   );
 }
