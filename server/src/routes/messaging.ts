@@ -34,16 +34,25 @@ export function messagingRoutes(db: Db) {
       running: b.platform === "telegram" ? isTelegramBridgeRunning(companyId) : undefined,
     }));
 
-    // Also include email info
+    // Also include email info — derive actual status from runtime config so
+    // the UI doesn't lie about whether email actually works. Two gates must
+    // both be set: webhook secret env var AND inbound MX records on the
+    // domain. We can only check the env var server-side; the MX status is
+    // surfaced as a follow-up note for the operator.
     const company = await companySvc.getById(companyId);
     const emailAddress = company ? getCompanyEmailAddress(company.name) : null;
+    const webhookSecretConfigured = Boolean(process.env.IRONWORKS_EMAIL_WEBHOOK_SECRET);
+    const emailStatus = webhookSecretConfigured ? "ready" : "inactive";
+    const emailNote = webhookSecretConfigured
+      ? "Webhook secret configured. Inbound mail must also have MX records on the domain pointing to a parser (Mailgun/SendGrid/Postmark) that POSTs to /api/webhooks/email."
+      : "Email bridge is disabled. To enable: set IRONWORKS_EMAIL_WEBHOOK_SECRET in the server env, configure a parser (Mailgun/SendGrid/Postmark) to POST to /api/webhooks/email, and add MX records on the domain.";
 
     res.json({
       bridges: enriched,
       email: {
         address: emailAddress,
-        status: "auto_configured",
-        note: "Requires DNS configuration on ironworksapp.ai (MX records)",
+        status: emailStatus,
+        note: emailNote,
       },
       platforms: bridgeSvc.getSupportedPlatforms(),
     });
