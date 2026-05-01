@@ -409,6 +409,29 @@ export function useIssueDetailData(issueId: string | undefined) {
     },
   });
 
+  const checkoutIssue = useMutation({
+    mutationFn: (agentId: string) => issuesApi.checkout(issueId!, agentId),
+    onSuccess: (_data, agentId) => {
+      const name = agentMap.get(agentId)?.name ?? "agent";
+      pushToast({ title: `Mission parked to ${name}`, tone: "success" });
+      invalidateIssue();
+    },
+    onError: (err) => {
+      pushToast({ title: err instanceof Error ? `Checkout failed: ${err.message}` : "Checkout failed", tone: "error" });
+    },
+  });
+
+  const releaseIssue = useMutation({
+    mutationFn: () => issuesApi.release(issueId!),
+    onSuccess: () => {
+      pushToast({ title: "Checkout released", tone: "success" });
+      invalidateIssue();
+    },
+    onError: (err) => {
+      pushToast({ title: err instanceof Error ? `Release failed: ${err.message}` : "Release failed", tone: "error" });
+    },
+  });
+
   return {
     // Core
     issue,
@@ -453,5 +476,7 @@ export function useIssueDetailData(issueId: string | undefined) {
     importMarkdownDocument,
     deleteAttachment,
     deleteIssue,
+    checkoutIssue,
+    releaseIssue,
   };
 }

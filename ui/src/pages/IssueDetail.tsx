@@ -90,6 +90,8 @@ export function IssueDetail() {
     importMarkdownDocument,
     deleteAttachment,
     deleteIssue,
+    checkoutIssue,
+    releaseIssue,
     markIssueRead,
   } = data;
 
@@ -275,6 +277,23 @@ export function IssueDetail() {
             }
             setMoreOpen(false);
           }}
+          checkedOutAgentName={
+            issue.status === "in_progress" && issue.assigneeAgentId
+              ? (agentMap.get(issue.assigneeAgentId)?.name ?? null)
+              : null
+          }
+          parkableAgents={
+            ["todo", "backlog", "blocked"].includes(issue.status)
+              ? (agents ?? [])
+                  .filter((a) => a.status !== "terminated")
+                  .map((a) => ({ id: a.id, name: a.name }))
+                  .sort((a, b) => a.name.localeCompare(b.name))
+              : []
+          }
+          onParkToAgent={(agentId) => checkoutIssue.mutate(agentId)}
+          onReleaseCheckout={() => releaseIssue.mutate()}
+          isParkPending={checkoutIssue.isPending}
+          isReleasePending={releaseIssue.isPending}
         />
         <InlineEditor
           value={issue.title}
