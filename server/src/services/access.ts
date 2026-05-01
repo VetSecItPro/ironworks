@@ -1,5 +1,5 @@
 import type { Db } from "@ironworksai/db";
-import { companyMemberships, instanceUserRoles, principalPermissionGrants } from "@ironworksai/db";
+import { authUsers, companyMemberships, instanceUserRoles, principalPermissionGrants } from "@ironworksai/db";
 import type { PermissionKey, PrincipalType } from "@ironworksai/shared";
 import { and, eq, inArray, sql } from "drizzle-orm";
 
@@ -72,9 +72,27 @@ export function accessService(db: Db) {
   }
 
   async function listMembers(companyId: string) {
+    // LEFT JOIN authUsers so user-typed memberships carry email + name.
+    // Agent-typed memberships keep null email/name (the principal_id resolves
+    // to an agent row elsewhere; UI can render those separately if needed).
     return db
-      .select()
+      .select({
+        id: companyMemberships.id,
+        companyId: companyMemberships.companyId,
+        principalType: companyMemberships.principalType,
+        principalId: companyMemberships.principalId,
+        membershipRole: companyMemberships.membershipRole,
+        status: companyMemberships.status,
+        createdAt: companyMemberships.createdAt,
+        updatedAt: companyMemberships.updatedAt,
+        userEmail: authUsers.email,
+        userName: authUsers.name,
+      })
       .from(companyMemberships)
+      .leftJoin(
+        authUsers,
+        and(eq(companyMemberships.principalType, "user"), eq(companyMemberships.principalId, authUsers.id)),
+      )
       .where(eq(companyMemberships.companyId, companyId))
       .orderBy(sql`${companyMemberships.createdAt} desc`);
   }

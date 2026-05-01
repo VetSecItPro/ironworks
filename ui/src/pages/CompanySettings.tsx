@@ -36,7 +36,8 @@ const SETTINGS_SECTIONS = [
   { id: "branding", label: "Branding" },
   { id: "agents-roster", label: "Agents" },
   { id: "hiring", label: "Hiring" },
-  { id: "invites", label: "Invites" },
+  { id: "team-members", label: "Team Members" },
+  { id: "invites", label: "Agent Invites" },
   { id: "messaging", label: "Messaging" },
   { id: "skill-recipes", label: "Skills" },
   { id: "security", label: "Security" },
@@ -153,7 +154,11 @@ function CompanySettingsInner() {
         {state.canManageMembers && (
           <TeamMembersSection
             members={state.membersQuery.data ?? []}
+            invites={state.userInvitesQuery.data ?? []}
             onInvite={() => state.setInviteDialogOpen(true)}
+            onRevokeInvite={(inviteId) => state.revokeUserInviteMutation.mutate(inviteId)}
+            isRevoking={state.revokeUserInviteMutation.isPending}
+            publicUrl={typeof window !== "undefined" ? window.location.origin : ""}
           />
         )}
 

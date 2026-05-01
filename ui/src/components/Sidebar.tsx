@@ -340,7 +340,7 @@ export function Sidebar() {
         </SidebarSection>
 
         {channels && channels.length > 0 && (
-          <SidebarSection label="Channels">
+          <SidebarSection label="Chat Channels">
             {channels
               .filter((ch) => matchLabel(ch.name))
               .map((channel) => (

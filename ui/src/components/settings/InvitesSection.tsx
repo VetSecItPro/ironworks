@@ -23,11 +23,14 @@ export function InvitesSection({
 }: InvitesSectionProps) {
   return (
     <div id="invites" className="space-y-4 scroll-mt-6">
-      <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Invites</h2>
+      <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Agent Invites</h2>
       <div className="space-y-3 rounded-md border border-border px-4 py-4">
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-muted-foreground">Generate an OpenClaw agent invite snippet.</span>
-          <HintIcon text="Creates a short-lived OpenClaw agent invite and renders a copy-ready prompt." />
+          <span className="text-xs text-muted-foreground">
+            Bootstrap a remote AI agent worker (OpenClaw CLI runtime) into this workspace. For inviting{" "}
+            <span className="font-medium">people</span>, use Team Members above.
+          </span>
+          <HintIcon text="Creates a short-lived agent-runtime invite token and renders a copy-ready prompt for the OpenClaw CLI to consume. Not used for human teammates." />
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button size="sm" onClick={onGenerate} disabled={isGenerating}>
