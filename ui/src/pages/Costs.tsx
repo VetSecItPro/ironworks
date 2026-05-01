@@ -13,6 +13,7 @@ import { CostsHeader } from "../components/costs/CostsHeader";
 import { DepartmentsTabContent } from "../components/costs/DepartmentsTabContent";
 import { FinanceTabContent } from "../components/costs/FinanceTabContent";
 import { OverviewTabContent } from "../components/costs/OverviewTabContent";
+import { PerIssueTabContent } from "../components/costs/PerIssueTabContent";
 import { ProjectsTabContent } from "../components/costs/ProjectsTabContent";
 import { ProvidersTabContent } from "../components/costs/ProvidersTabContent";
 import { TokensTabContent } from "../components/costs/TokensTabContent";
@@ -42,7 +43,16 @@ export function Costs() {
   const { setBreadcrumbs } = useBreadcrumbs();
 
   const [mainTab, setMainTab] = useState<
-    "overview" | "budgets" | "providers" | "billers" | "finance" | "projects" | "tokens" | "departments" | "analysis"
+    | "overview"
+    | "budgets"
+    | "providers"
+    | "billers"
+    | "finance"
+    | "projects"
+    | "missions"
+    | "tokens"
+    | "departments"
+    | "analysis"
   >("overview");
   const [showNewFinanceEvent, setShowNewFinanceEvent] = useState(false);
   const [showNewBudget, setShowNewBudget] = useState(false);
@@ -323,6 +333,7 @@ export function Costs() {
         <TabsList variant="line" className="justify-start">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="projects">Projects</TabsTrigger>
+          <TabsTrigger value="missions">Per Mission</TabsTrigger>
           <TabsTrigger value="budgets">Budgets</TabsTrigger>
           <TabsTrigger value="providers">AI Providers</TabsTrigger>
           <TabsTrigger value="billers">Billers</TabsTrigger>
@@ -425,6 +436,10 @@ export function Costs() {
             from={from}
             to={to}
           />
+        </TabsContent>
+
+        <TabsContent value="missions" className="mt-4 space-y-4">
+          <PerIssueTabContent companyId={companyId} />
         </TabsContent>
 
         <TabsContent value="tokens" className="mt-4 space-y-4">

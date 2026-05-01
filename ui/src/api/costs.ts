@@ -68,6 +68,11 @@ export const costsApi = {
 
   projectExportUrl: (companyId: string, projectId: string, from?: string, to?: string) =>
     `/api/companies/${companyId}/costs/project-export?projectId=${encodeURIComponent(projectId)}${from ? `&from=${encodeURIComponent(from)}` : ""}${to ? `&to=${encodeURIComponent(to)}` : ""}`,
+
+  perIssue: (companyId: string, days = 30) =>
+    api.get<Array<{ issueId: string; issueTitle: string; totalCost: number; runCount: number }>>(
+      `/companies/${companyId}/cost-per-issue?days=${days}`,
+    ),
 };
 
 export interface EquivalentSpendResult {
