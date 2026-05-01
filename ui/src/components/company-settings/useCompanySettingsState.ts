@@ -5,6 +5,7 @@ import { accessApi } from "../../api/access";
 import { assetsApi } from "../../api/assets";
 import { companiesApi } from "../../api/companies";
 import { secretsApi } from "../../api/secrets";
+import { userInvitesApi } from "../../api/userInvites";
 import { useBreadcrumbs } from "../../context/BreadcrumbContext";
 import { useCompany } from "../../context/CompanyContext";
 import { useToast } from "../../context/ToastContext";
@@ -93,8 +94,28 @@ export function useCompanySettingsState() {
 
   const membersQuery = useQuery({
     queryKey: ["access", "members", selectedCompanyId],
-    queryFn: () => accessApi.listJoinRequests(selectedCompanyId!, "approved"),
+    queryFn: () => accessApi.listMembers(selectedCompanyId!),
     enabled: !!selectedCompanyId && canManageMembers,
+  });
+
+  const userInvitesQuery = useQuery({
+    queryKey: ["user-invites", selectedCompanyId],
+    queryFn: () => userInvitesApi.list(selectedCompanyId!),
+    enabled: !!selectedCompanyId && canManageMembers,
+  });
+
+  const revokeUserInviteMutation = useMutation({
+    mutationFn: (inviteId: string) => userInvitesApi.revoke(selectedCompanyId!, inviteId),
+    onSuccess: () => {
+      pushToast({ title: "Invite revoked", tone: "success" });
+      queryClient.invalidateQueries({ queryKey: ["user-invites", selectedCompanyId] });
+    },
+    onError: (err) => {
+      pushToast({
+        title: err instanceof Error ? `Failed to revoke: ${err.message}` : "Failed to revoke invite",
+        tone: "error",
+      });
+    },
   });
 
   const secretsQuery = useQuery({
@@ -319,6 +340,8 @@ export function useCompanySettingsState() {
     handleAutonomyChange,
     canManageMembers,
     membersQuery,
+    userInvitesQuery,
+    revokeUserInviteMutation,
     configuredKeys,
     inviteError,
     inviteSnippet,
