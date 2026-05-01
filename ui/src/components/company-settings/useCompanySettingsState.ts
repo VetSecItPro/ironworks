@@ -390,6 +390,7 @@ export function useCompanySettingsState() {
     handleAutonomyChange,
     canManageMembers,
     membersQuery,
+    secretsQuery,
     userInvitesQuery,
     revokeUserInviteMutation,
     removeMemberMutation,
