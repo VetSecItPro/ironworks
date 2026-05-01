@@ -1,4 +1,4 @@
-import { Check, Copy, EyeOff, Hexagon, MoreHorizontal, Repeat, SlidersHorizontal } from "lucide-react";
+import { Check, Copy, EyeOff, Hexagon, MoreHorizontal, Repeat, SlidersHorizontal, Trash2 } from "lucide-react";
 import { PriorityIcon } from "@/components/PriorityIcon";
 import { StatusIcon } from "@/components/StatusIcon";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,7 @@ interface IssueHeaderBarProps {
   onPanelShow: () => void;
   onMoreOpenChange: (open: boolean) => void;
   onHide: () => void;
+  onDelete: () => void;
 }
 
 export function IssueHeaderBar({
@@ -62,6 +63,7 @@ export function IssueHeaderBar({
   onPanelShow,
   onMoreOpenChange,
   onHide,
+  onDelete,
 }: IssueHeaderBarProps) {
   return (
     <div className="flex items-center gap-2 min-w-0 flex-wrap">
@@ -155,7 +157,7 @@ export function IssueHeaderBar({
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-44 p-1" align="end">
+          <PopoverContent className="w-48 p-1" align="end">
             <button
               type="button"
               className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50 text-destructive"
@@ -163,6 +165,14 @@ export function IssueHeaderBar({
             >
               <EyeOff className="h-3 w-3" />
               Hide this Mission
+            </button>
+            <button
+              type="button"
+              className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50 text-destructive"
+              onClick={onDelete}
+            >
+              <Trash2 className="h-3 w-3" />
+              Delete permanently
             </button>
           </PopoverContent>
         </Popover>

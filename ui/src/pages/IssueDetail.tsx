@@ -89,6 +89,7 @@ export function IssueDetail() {
     uploadAttachment,
     importMarkdownDocument,
     deleteAttachment,
+    deleteIssue,
     markIssueRead,
   } = data;
 
@@ -261,6 +262,17 @@ export function IssueDetail() {
           onMoreOpenChange={setMoreOpen}
           onHide={() => {
             updateIssue.mutate({ hiddenAt: new Date().toISOString() }, { onSuccess: () => navigate("/issues/all") });
+            setMoreOpen(false);
+          }}
+          onDelete={() => {
+            const label = issue.identifier ?? issue.title;
+            if (
+              window.confirm(
+                `Delete ${label} permanently? This removes the mission, all comments, attachments, and documents. Cannot be undone.`,
+              )
+            ) {
+              deleteIssue.mutate(undefined, { onSuccess: () => navigate("/issues/all") });
+            }
             setMoreOpen(false);
           }}
         />

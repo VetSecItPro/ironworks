@@ -387,6 +387,19 @@ export function useIssueDetailData(issueId: string | undefined) {
     },
   });
 
+  const deleteIssue = useMutation({
+    mutationFn: () => issuesApi.remove(issueId!),
+    onSuccess: () => {
+      if (selectedCompanyId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.issues.list(selectedCompanyId) });
+      }
+      pushToast({ title: "Mission deleted", tone: "success" });
+    },
+    onError: (err) => {
+      pushToast({ title: err instanceof Error ? err.message : "Delete failed", tone: "error" });
+    },
+  });
+
   return {
     // Core
     issue,
@@ -430,5 +443,6 @@ export function useIssueDetailData(issueId: string | undefined) {
     uploadAttachment,
     importMarkdownDocument,
     deleteAttachment,
+    deleteIssue,
   };
 }
