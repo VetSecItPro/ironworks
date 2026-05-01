@@ -163,7 +163,7 @@ export async function createApp(
           "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
           "font-src 'self' https://fonts.gstatic.com data:; " +
           "img-src 'self' data: blob:; " +
-          "connect-src 'self' ws: wss: https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com https://ollama.com; " +
+          "connect-src 'self' ws: wss: https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com https://openrouter.ai; " +
           "frame-src 'none'; " +
           "object-src 'none'; " +
           "base-uri 'self'",
@@ -261,15 +261,17 @@ export async function createApp(
     const userId = req.actor.userId;
     let email: string | null = null;
     let name: string | null = req.actor.source === "local_implicit" ? "Local Board" : null;
+    let image: string | null = null;
     try {
       const rows = await db
-        .select({ email: authUsers.email, name: authUsers.name })
+        .select({ email: authUsers.email, name: authUsers.name, image: authUsers.image })
         .from(authUsers)
         .where(eq(authUsers.id, userId))
         .limit(1);
       if (rows[0]) {
         email = rows[0].email ?? email;
         name = rows[0].name ?? name;
+        image = rows[0].image ?? null;
       }
     } catch {
       // Swallow DB errors — fall back to nulls so the endpoint never 500s
@@ -281,7 +283,7 @@ export async function createApp(
         id: `ironworks:${req.actor.source}:${userId}`,
         userId,
       },
-      user: { id: userId, email, name },
+      user: { id: userId, email, name, image },
     });
   });
   if (opts.betterAuthHandler) {

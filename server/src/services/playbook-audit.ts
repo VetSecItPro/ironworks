@@ -26,10 +26,12 @@ import { type LookupResult, lookupPlaybook } from "./playbook-rag.js";
  * (timeout, parse error, etc.) we return null — never break the run.
  */
 
-const AUDIT_MODEL = process.env.IRONWORKS_AUDIT_MODEL || "ministral-3:3b";
-const AUDIT_URL = process.env.OLLAMA_BASE_URL
-  ? `${process.env.OLLAMA_BASE_URL.replace(/\/$/, "")}/api/chat`
-  : "https://ollama.com/api/chat";
+// Default to OpenRouter free Western model. Workspaces that want to use a
+// different audit model (e.g. self-hosted Ollama) can override IRONWORKS_AUDIT_MODEL
+// + IRONWORKS_AUDIT_URL + IRONWORKS_AUDIT_API_KEY in env. The transport is
+// OpenAI-compatible chat completions, which both OpenRouter and Ollama Cloud expose.
+const AUDIT_MODEL = process.env.IRONWORKS_AUDIT_MODEL || "google/gemma-4-31b-it:free";
+const AUDIT_URL = process.env.IRONWORKS_AUDIT_URL || "https://openrouter.ai/api/v1/chat/completions";
 const AUDIT_TIMEOUT_MS = 30_000;
 
 export interface AuditInput {
@@ -55,9 +57,15 @@ export interface AuditVerdict {
 export async function auditAgentRun(db: Db, input: AuditInput): Promise<AuditVerdict | null> {
   const start = Date.now();
 
-  const apiKey = process.env.OLLAMA_API_KEY;
+  // Auth resolution order: explicit IRONWORKS_AUDIT_API_KEY → ADAPTER_OPENROUTER_API_KEY
+  // → OPENROUTER_API_KEY → OLLAMA_API_KEY (legacy). If none present, skip audit silently.
+  const apiKey =
+    process.env.IRONWORKS_AUDIT_API_KEY ??
+    process.env.ADAPTER_OPENROUTER_API_KEY ??
+    process.env.OPENROUTER_API_KEY ??
+    process.env.OLLAMA_API_KEY;
   if (!apiKey) {
-    logger.debug({ agentId: input.agentId }, "playbook-audit: no OLLAMA_API_KEY, skipping audit");
+    logger.debug({ agentId: input.agentId }, "playbook-audit: no audit API key configured, skipping audit");
     return null;
   }
 
@@ -144,8 +152,8 @@ If the agent followed the playbook, set violations to [] and confidence high.
         body: JSON.stringify({
           model: AUDIT_MODEL,
           messages: [{ role: "user", content: auditPrompt }],
-          stream: false,
-          options: { num_predict: 500, temperature: 0.2 },
+          max_tokens: 500,
+          temperature: 0.2,
         }),
         signal: controller.signal,
       });
@@ -153,8 +161,14 @@ If the agent followed the playbook, set violations to [] and confidence high.
       if (!res.ok) {
         throw new Error(`audit model returned ${res.status}`);
       }
-      const data = (await res.json()) as { message?: { content?: string } };
-      verdictRaw = data.message?.content ?? "";
+      // OpenAI-compatible chat completions (OpenRouter shape). Ollama Cloud's
+      // legacy `{ message: { content } }` shape is also tolerated for
+      // backward compatibility with older overrides via IRONWORKS_AUDIT_URL.
+      const data = (await res.json()) as {
+        choices?: Array<{ message?: { content?: string } }>;
+        message?: { content?: string };
+      };
+      verdictRaw = data.choices?.[0]?.message?.content ?? data.message?.content ?? "";
     } finally {
       clearTimeout(timer);
     }

@@ -11,6 +11,7 @@ import { InstanceSidebar } from "./InstanceSidebar";
 import { PropertiesPanel } from "./PropertiesPanel";
 import { Sidebar } from "./Sidebar";
 import { StatusBar } from "./StatusBar";
+import { TopBar } from "./TopBar";
 
 const NewIssueDialog = lazy(() => import("./NewIssueDialog").then((m) => ({ default: m.NewIssueDialog })));
 const NewProjectDialog = lazy(() => import("./NewProjectDialog").then((m) => ({ default: m.NewProjectDialog })));
@@ -335,6 +336,7 @@ export function Layout() {
                 <AskAIHeaderButton onClick={() => setAskAIOpen((v) => !v)} />
                 <AskAIPanel open={askAIOpen} onClose={() => setAskAIOpen(false)} />
                 <NotificationBell unreadCount={notifs.unreadCount} onClick={() => setNotifCenterOpen(true)} />
+                <TopBar />
               </div>
             </div>
           </header>
