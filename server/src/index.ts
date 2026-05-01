@@ -30,6 +30,7 @@ import { getBoardClaimWarningUrl, initializeBoardClaimChallenge } from "./board-
 import { loadConfig } from "./config.js";
 import { installGlobalErrorHandlers } from "./lib/error-tracking.js";
 import { logger } from "./middleware/logger.js";
+import { installHeapMonitor } from "./observability/heap-monitor.js";
 import { setupLiveEventsWebSocketServer } from "./realtime/live-events-ws.js";
 import { heartbeatService, reconcilePersistedRuntimeServicesOnStartup, routineService } from "./services/index.js";
 import { printStartupBanner } from "./startup-banner.js";
@@ -877,6 +878,9 @@ export async function startServer(): Promise<StartedServer> {
     };
 
     installGlobalErrorHandlers();
+    // Heap-monitor: periodic memory.usage logging + SIGUSR2 → heap snapshot.
+    // Diagnostic plumbing for the SM OOM; see observability/heap-monitor.ts.
+    installHeapMonitor();
     server.once("error", onError);
     server.listen(listenPort, config.host, () => {
       server.off("error", onError);
