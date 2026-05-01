@@ -59,7 +59,11 @@ export function MessagingSetup({ companyId }: MessagingSetupProps) {
 
 // ── Email Card ──
 
-function EmailBridgeCard({ address, status: _status, note }: { address: string | null; status: string; note: string }) {
+function EmailBridgeCard({ address, status, note }: { address: string | null; status: string; note: string }) {
+  // Surface the real backend status. "ready" = webhook secret set; "inactive"
+  // = bridge disabled. The label/colour drives operator expectations so the
+  // card matches whether email actually works.
+  const isReady = status === "ready";
   return (
     <div className="rounded-md border border-border px-4 py-3 space-y-2">
       <div className="flex items-center justify-between">
@@ -67,12 +71,20 @@ function EmailBridgeCard({ address, status: _status, note }: { address: string |
           <Mail className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm font-medium">Email</span>
         </div>
-        <StatusBadge status="auto_configured" label="Auto-configured" />
+        <StatusBadge status={isReady ? "auto_configured" : "disconnected"} label={isReady ? "Ready" : "Inactive"} />
       </div>
       {address && (
         <div className="space-y-1">
-          <div className="text-xs text-muted-foreground">Inbound email address:</div>
-          <code className="block text-xs bg-muted/50 rounded px-2 py-1.5 font-mono select-all">{address}</code>
+          <div className="text-xs text-muted-foreground">
+            Reserved inbound address {isReady ? "" : "(not yet receiving mail)"}:
+          </div>
+          <code
+            className={`block text-xs rounded px-2 py-1.5 font-mono select-all ${
+              isReady ? "bg-muted/50" : "bg-muted/30 text-muted-foreground line-through decoration-1"
+            }`}
+          >
+            {address}
+          </code>
         </div>
       )}
       <p className="text-xs text-muted-foreground">{note}</p>
