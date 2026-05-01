@@ -1,4 +1,17 @@
-import { Check, Copy, EyeOff, Hexagon, MoreHorizontal, Repeat, SlidersHorizontal, Trash2 } from "lucide-react";
+import {
+  Check,
+  Copy,
+  EyeOff,
+  Hexagon,
+  Mail,
+  MessageSquare,
+  MoreHorizontal,
+  Radio,
+  Repeat,
+  SlidersHorizontal,
+  Trash2,
+  Webhook,
+} from "lucide-react";
 import { PriorityIcon } from "@/components/PriorityIcon";
 import { StatusIcon } from "@/components/StatusIcon";
 import { Button } from "@/components/ui/button";
@@ -89,6 +102,29 @@ export function IssueHeaderBar({
           <Repeat className="h-3 w-3" />
           Routine
         </Link>
+      )}
+      {originKind && originKind !== "routine_execution" && (
+        <span
+          className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400 shrink-0"
+          title={`Origin: ${originKind}${originId ? ` (${originId})` : ""}`}
+        >
+          {originKind === "telegram" || originKind === "messaging_bridge" ? (
+            <MessageSquare className="h-3 w-3" />
+          ) : originKind === "email" || originKind === "email_inbound" ? (
+            <Mail className="h-3 w-3" />
+          ) : originKind === "webhook" ? (
+            <Webhook className="h-3 w-3" />
+          ) : (
+            <Radio className="h-3 w-3" />
+          )}
+          {originKind === "telegram" || originKind === "messaging_bridge"
+            ? "Telegram"
+            : originKind === "email" || originKind === "email_inbound"
+              ? "Email"
+              : originKind === "webhook"
+                ? "Webhook"
+                : originKind}
+        </span>
       )}
 
       {projectId ? (

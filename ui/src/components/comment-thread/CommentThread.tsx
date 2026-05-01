@@ -27,7 +27,9 @@ interface CommentThreadProps {
     reopen?: boolean,
     reassignment?: CommentReassignment,
     replyToId?: string | null,
+    interrupt?: boolean,
   ) => Promise<void>;
+  hasLiveRuns?: boolean;
   issueStatus?: string;
   agentMap?: Map<string, Agent>;
   imageUploadHandler?: (file: File) => Promise<string>;
@@ -58,10 +60,12 @@ export function CommentThread({
   currentAssigneeValue = "",
   suggestedAssigneeValue,
   mentions: providedMentions,
+  hasLiveRuns = false,
 }: CommentThreadProps) {
   const { reactions, toggleReaction } = useCommentReactions();
   const [body, setBody] = useState("");
   const [reopen, setReopen] = useState(true);
+  const [interrupt, setInterrupt] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [attaching, setAttaching] = useState(false);
   const [pastedImage, setPastedImage] = useState<{ file: File; preview: string } | null>(null);
@@ -185,10 +189,17 @@ export function CommentThread({
 
     setSubmitting(true);
     try {
-      await onAdd(trimmed, reopen ? true : undefined, reassignment ?? undefined, replyToId);
+      await onAdd(
+        trimmed,
+        reopen ? true : undefined,
+        reassignment ?? undefined,
+        replyToId,
+        interrupt ? true : undefined,
+      );
       setBody("");
       if (draftKey) clearDraft(draftKey);
       setReopen(true);
+      setInterrupt(false);
       setReplyToId(null);
       setReassignTarget(effectiveSuggestedAssigneeValue);
     } finally {
@@ -361,6 +372,20 @@ export function CommentThread({
             />
             Re-open
           </label>
+          {hasLiveRuns && (
+            <label
+              className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 cursor-pointer select-none"
+              title="Stop the active agent run and re-queue with this comment as new context"
+            >
+              <input
+                type="checkbox"
+                checked={interrupt}
+                onChange={(e) => setInterrupt(e.target.checked)}
+                className="rounded border-border"
+              />
+              Interrupt run
+            </label>
+          )}
           {enableReassign && reassignOptions.length > 0 && (
             <InlineEntitySelector
               value={reassignTarget}

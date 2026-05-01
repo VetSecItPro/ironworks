@@ -1,5 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import type { Db } from "@ironworksai/db";
+import { messagingBridges } from "@ironworksai/db";
+import { eq } from "drizzle-orm";
 import { Router } from "express";
 import { getCompanyEmailAddress, handleInboundEmail } from "../bridges/email.js";
 import {
@@ -200,6 +202,41 @@ export function messagingRoutes(db: Db) {
       await bridgeSvc.updateStatus(companyId, "telegram", "error", (err as Error).message);
       res.status(500).json({ error: (err as Error).message, status: "error" });
     }
+  });
+
+  // ── Reset Telegram owner ──
+  // Clears ownerChatId on the bridge config so the next /start claims ownership.
+  // Used when transferring the bot to a different operator without re-running
+  // setup (the bot token + persona stay; only the owner gets reset).
+
+  router.post("/companies/:companyId/messaging/telegram/reset-owner", async (req, res) => {
+    assertBoard(req);
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+
+    const bridge = await bridgeSvc.getByPlatform(companyId, "telegram");
+    if (!bridge) {
+      res.status(404).json({ error: "No Telegram bridge configured" });
+      return;
+    }
+
+    const config = { ...((bridge.config as Record<string, unknown> | null) ?? {}) };
+    const previousOwner = (config.ownerChatId as string | undefined) ?? null;
+    delete config.ownerChatId;
+
+    await db.update(messagingBridges).set({ config, updatedAt: new Date() }).where(eq(messagingBridges.id, bridge.id));
+
+    await logActivity(db, {
+      companyId,
+      actorType: "user",
+      actorId: req.actor.userId ?? "board",
+      action: "messaging.telegram.owner_reset",
+      entityType: "messaging_bridge",
+      entityId: bridge.id,
+      details: { previousOwner },
+    });
+
+    res.json({ ok: true });
   });
 
   // ── Email inbound webhook (public — no auth required) ──

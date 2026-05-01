@@ -420,12 +420,13 @@ export function IssueDetail() {
             currentAssigneeValue={actualAssigneeValue}
             suggestedAssigneeValue={suggestedAssigneeValue}
             mentions={mentionOptions}
-            onAdd={async (body, reopen, reassignment, replyToId) => {
+            hasLiveRuns={hasLiveRuns}
+            onAdd={async (body, reopen, reassignment, replyToId, interrupt) => {
               if (reassignment) {
                 await addCommentAndReassign.mutateAsync({ body, reopen, reassignment });
                 return;
               }
-              await addComment.mutateAsync({ body, reopen, replyToId });
+              await addComment.mutateAsync({ body, reopen, replyToId, interrupt });
             }}
             imageUploadHandler={async (file) => {
               const a = await uploadAttachment.mutateAsync(file);
