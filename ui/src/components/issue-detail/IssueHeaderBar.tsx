@@ -3,6 +3,8 @@ import {
   Copy,
   EyeOff,
   Hexagon,
+  KeyRound,
+  Lock,
   Mail,
   MessageSquare,
   MoreHorizontal,
@@ -10,6 +12,7 @@ import {
   Repeat,
   SlidersHorizontal,
   Trash2,
+  Unlock,
   Webhook,
 } from "lucide-react";
 import { PriorityIcon } from "@/components/PriorityIcon";
@@ -53,6 +56,14 @@ interface IssueHeaderBarProps {
   onMoreOpenChange: (open: boolean) => void;
   onHide: () => void;
   onDelete: () => void;
+  /** Currently checked-out agent (in_progress + assigneeAgentId set), if any. */
+  checkedOutAgentName?: string | null;
+  /** Active agents available to park missions to. */
+  parkableAgents?: Array<{ id: string; name: string }>;
+  onParkToAgent: (agentId: string) => void;
+  onReleaseCheckout: () => void;
+  isParkPending: boolean;
+  isReleasePending: boolean;
 }
 
 export function IssueHeaderBar({
@@ -77,6 +88,12 @@ export function IssueHeaderBar({
   onMoreOpenChange,
   onHide,
   onDelete,
+  checkedOutAgentName = null,
+  parkableAgents = [],
+  onParkToAgent,
+  onReleaseCheckout,
+  isParkPending,
+  isReleasePending,
 }: IssueHeaderBarProps) {
   return (
     <div className="flex items-center gap-2 min-w-0 flex-wrap">
@@ -186,6 +203,60 @@ export function IssueHeaderBar({
         >
           <SlidersHorizontal className="h-4 w-4" />
         </Button>
+
+        {/* Park / Release lives inline so operators can manually claim a mission
+            for a specific agent (forces in_progress + sets assigneeAgentId) or
+            release a stuck checkout. Agent runs do this implicitly; humans
+            previously had no surface for the same operation. */}
+        {checkedOutAgentName ? (
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            className="shrink-0"
+            title={`Release checkout (${checkedOutAgentName})`}
+            disabled={isReleasePending}
+            onClick={() => {
+              if (window.confirm(`Release ${checkedOutAgentName}'s checkout on this mission?`)) {
+                onReleaseCheckout();
+              }
+            }}
+          >
+            <Unlock className="h-4 w-4" />
+          </Button>
+        ) : parkableAgents.length > 0 ? (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                className="shrink-0"
+                title="Park to agent"
+                disabled={isParkPending}
+              >
+                <Lock className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56 p-1" align="end">
+              <div className="px-2 py-1.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                Park to agent (locks status to in-progress)
+              </div>
+              <div className="max-h-60 overflow-y-auto">
+                {parkableAgents.map((agent) => (
+                  <button
+                    key={agent.id}
+                    type="button"
+                    className="flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50 text-left"
+                    onClick={() => onParkToAgent(agent.id)}
+                    disabled={isParkPending}
+                  >
+                    <KeyRound className="h-3 w-3" />
+                    <span className="truncate">{agent.name}</span>
+                  </button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+        ) : null}
 
         <Popover open={moreOpen} onOpenChange={onMoreOpenChange}>
           <PopoverTrigger asChild>
