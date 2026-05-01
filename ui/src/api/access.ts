@@ -121,6 +121,9 @@ export const accessApi = {
   listJoinRequests: (companyId: string, status: "pending_approval" | "approved" | "rejected" = "pending_approval") =>
     api.get<JoinRequest[]>(`/companies/${companyId}/join-requests?status=${status}`),
 
+  removeMember: (companyId: string, memberId: string) =>
+    api.delete<{ removed: boolean; memberId: string }>(`/companies/${companyId}/members/${memberId}`),
+
   listMembers: (companyId: string) =>
     api.get<
       Array<{

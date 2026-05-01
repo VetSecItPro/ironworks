@@ -1,4 +1,4 @@
-import { Copy, MailX, ShieldCheck, UserPlus } from "lucide-react";
+import { Copy, MailX, ShieldCheck, UserMinus, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export interface MemberRow {
@@ -24,9 +24,12 @@ export interface PendingInvite {
 interface TeamMembersSectionProps {
   members: MemberRow[];
   invites: PendingInvite[];
+  currentUserId: string | null;
   onInvite: () => void;
   onRevokeInvite: (inviteId: string) => void;
+  onRemoveMember: (memberId: string) => void;
   isRevoking: boolean;
+  isRemoving: boolean;
   publicUrl: string;
 }
 
@@ -61,9 +64,12 @@ function copyInviteLink(publicUrl: string, _inviteId: string) {
 export function TeamMembersSection({
   members,
   invites,
+  currentUserId,
   onInvite,
   onRevokeInvite,
+  onRemoveMember,
   isRevoking,
+  isRemoving,
   publicUrl,
 }: TeamMembersSectionProps) {
   // Only render user-typed memberships in the Team Members panel —
@@ -110,6 +116,29 @@ export function TeamMembersSection({
               >
                 {m.status}
               </span>
+              {/* Self-remove is blocked server-side; hide the button to avoid
+                  surfacing a control that always errors. Owners + instance
+                  admins reach this section via canManageMembers gate. */}
+              {m.principalId !== currentUserId && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        `Remove ${m.userName || m.userEmail || "this member"} from the workspace? They will lose access immediately.`,
+                      )
+                    ) {
+                      onRemoveMember(m.id);
+                    }
+                  }}
+                  disabled={isRemoving}
+                  title="Remove from workspace"
+                  className="text-destructive hover:text-destructive"
+                >
+                  <UserMinus className="h-3.5 w-3.5" />
+                </Button>
+              )}
             </div>
           ))
         )}

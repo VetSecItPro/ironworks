@@ -2414,6 +2414,23 @@ export function accessRoutes(
     res.json(members);
   });
 
+  router.delete("/companies/:companyId/members/:memberId", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    const memberId = req.params.memberId as string;
+    await assertCompanyPermission(req, companyId, "users:manage_permissions");
+    // Block self-removal: an admin removing themselves leaves the workspace
+    // unmanageable. Force them to ask another admin/owner.
+    const target = await access.getMembershipById(companyId, memberId);
+    if (!target) throw notFound("Member not found");
+    if (target.principalType === "user" && target.principalId === req.actor.userId) {
+      res.status(409).json({ error: "Cannot remove yourself from the workspace. Ask another admin or owner." });
+      return;
+    }
+    const removed = await access.removeMembership(companyId, memberId);
+    if (!removed) throw notFound("Member not found");
+    res.json({ removed: true, memberId });
+  });
+
   router.patch(
     "/companies/:companyId/members/:memberId/permissions",
     validate(updateMemberPermissionsSchema),
