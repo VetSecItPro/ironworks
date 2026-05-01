@@ -39,6 +39,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { adapterCallsApi } from "../../api/adapter-calls";
 import { useAdapterCallDetail, useAdapterCallList } from "../../hooks/useAdapterCalls";
 import { relativeTime } from "../../lib/utils";
 import type {
@@ -249,9 +250,10 @@ function CallDrawer({
     setReplayRunning(true);
     setReplayOutput("");
 
-    // SSE replay via raw fetch + ReadableStream — EventSource is GET-only so we
-    // parse SSE frames manually from the POST response body.
-    fetch(`/api/companies/${companyId}/adapter-calls/${callId}/replay`, { method: "POST" })
+    // SSE replay — adapterCallsApi.replayStream returns the raw Response so
+    // we can read chunk frames manually (EventSource is GET-only).
+    adapterCallsApi
+      .replayStream(companyId, callId)
       .then(async (res) => {
         if (!res.body) return;
         const reader = res.body.getReader();

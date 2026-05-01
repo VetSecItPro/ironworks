@@ -6,6 +6,7 @@ import type {
   AgentInstructionsBundle,
   AgentInstructionsFileDetail,
   AgentKeyCreated,
+  AgentPromptVersion,
   AgentRuntimeState,
   AgentSkillSnapshot,
   AgentTaskSession,
@@ -111,6 +112,10 @@ export const agentsApi = {
     api.get<AgentConfigRevision>(agentPath(id, companyId, `/config-revisions/${revisionId}`)),
   rollbackConfigRevision: (id: string, revisionId: string, companyId?: string) =>
     api.post<Agent>(agentPath(id, companyId, `/config-revisions/${revisionId}/rollback`), {}),
+  listPromptVersions: (id: string) =>
+    api.get<AgentPromptVersion[]>(`/agents/${encodeURIComponent(id)}/prompt-versions`),
+  rollbackPromptVersion: (id: string, version: number) =>
+    api.post<{ ok: true }>(`/agents/${encodeURIComponent(id)}/prompt-versions/${version}/rollback`, {}),
   create: (companyId: string, data: Record<string, unknown>) => api.post<Agent>(`/companies/${companyId}/agents`, data),
   deployTeamPack: (
     companyId: string,

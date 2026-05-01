@@ -1,6 +1,6 @@
 import type { AgentDetail as AgentDetailRecord } from "@ironworksai/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, FileText } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { type AgentPermissionUpdate, agentsApi } from "../../api/agents";
@@ -203,11 +203,20 @@ export function AgentConfigurePage({
   updatePermissions: { mutate: (permissions: AgentPermissionUpdate) => void; isPending: boolean };
 }) {
   const queryClient = useQueryClient();
+  const { pushToast } = useToast();
   const [revisionsOpen, setRevisionsOpen] = useState(false);
+  const [promptVersionsOpen, setPromptVersionsOpen] = useState(false);
+  const [expandedPromptVersionId, setExpandedPromptVersionId] = useState<string | null>(null);
 
   const { data: configRevisions } = useQuery({
     queryKey: queryKeys.agents.configRevisions(agent.id),
     queryFn: () => agentsApi.listConfigRevisions(agent.id, companyId),
+  });
+
+  const { data: promptVersions } = useQuery({
+    queryKey: ["agents", agent.id, "prompt-versions"],
+    queryFn: () => agentsApi.listPromptVersions(agent.id),
+    enabled: promptVersionsOpen,
   });
 
   const rollbackConfig = useMutation({
@@ -216,6 +225,19 @@ export function AgentConfigurePage({
       queryClient.invalidateQueries({ queryKey: queryKeys.agents.detail(agent.id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.agents.detail(agent.urlKey) });
       queryClient.invalidateQueries({ queryKey: queryKeys.agents.configRevisions(agent.id) });
+    },
+  });
+
+  const rollbackPrompt = useMutation({
+    mutationFn: (version: number) => agentsApi.rollbackPromptVersion(agent.id, version),
+    onSuccess: () => {
+      pushToast({ title: "Prompt rolled back", tone: "success" });
+      queryClient.invalidateQueries({ queryKey: queryKeys.agents.detail(agent.id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.agents.detail(agent.urlKey) });
+      queryClient.invalidateQueries({ queryKey: ["agents", agent.id, "prompt-versions"] });
+    },
+    onError: (err) => {
+      pushToast({ title: err instanceof Error ? `Rollback failed: ${err.message}` : "Rollback failed", tone: "error" });
     },
   });
 
@@ -284,6 +306,111 @@ export function AgentConfigurePage({
                     </p>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Prompt Versions — distinct from Configuration Revisions: snapshots
+          only system_prompt + agent_instructions, with version numbers. Used
+          for SOUL/playbook rollback without touching unrelated config keys. */}
+      <div>
+        <button
+          type="button"
+          className="flex items-center gap-2 text-sm font-medium hover:text-foreground transition-colors"
+          onClick={() => setPromptVersionsOpen((v) => !v)}
+        >
+          {promptVersionsOpen ? (
+            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+          )}
+          <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+          Prompt Versions
+          <span className="text-xs font-normal text-muted-foreground">{promptVersions?.length ?? 0}</span>
+        </button>
+        {promptVersionsOpen && (
+          <div className="mt-3">
+            {(promptVersions ?? []).length === 0 ? (
+              <p className="text-sm text-muted-foreground">No prompt versions snapshotted yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {(promptVersions ?? []).slice(0, 20).map((pv) => {
+                  const expanded = expandedPromptVersionId === pv.id;
+                  return (
+                    <div key={pv.id} className="border border-border/70 rounded-md p-3 space-y-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="text-xs text-muted-foreground">
+                          <span className="font-mono">v{pv.versionNumber}</span>
+                          <span className="mx-1">·</span>
+                          <span>{formatDate(pv.createdAt)}</span>
+                          {pv.changeSummary ? (
+                            <>
+                              <span className="mx-1">·</span>
+                              <span title={pv.changeSummary}>
+                                {pv.changeSummary.length > 60
+                                  ? `${pv.changeSummary.slice(0, 60)}...`
+                                  : pv.changeSummary}
+                              </span>
+                            </>
+                          ) : null}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2.5 text-xs"
+                            onClick={() => setExpandedPromptVersionId(expanded ? null : pv.id)}
+                          >
+                            {expanded ? "Hide" : "View"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2.5 text-xs"
+                            onClick={() => {
+                              if (
+                                window.confirm(
+                                  `Roll back agent ${agent.name} to prompt v${pv.versionNumber}? This replaces the current system prompt and instructions.`,
+                                )
+                              ) {
+                                rollbackPrompt.mutate(pv.versionNumber);
+                              }
+                            }}
+                            disabled={rollbackPrompt.isPending}
+                          >
+                            Restore
+                          </Button>
+                        </div>
+                      </div>
+                      {expanded ? (
+                        <div className="space-y-2 mt-2">
+                          {pv.systemPrompt ? (
+                            <div>
+                              <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">
+                                System prompt
+                              </div>
+                              <pre className="text-[11px] bg-muted/40 rounded p-2 max-h-48 overflow-auto whitespace-pre-wrap font-mono">
+                                {pv.systemPrompt}
+                              </pre>
+                            </div>
+                          ) : null}
+                          {pv.agentInstructions ? (
+                            <div>
+                              <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">
+                                Agent instructions
+                              </div>
+                              <pre className="text-[11px] bg-muted/40 rounded p-2 max-h-48 overflow-auto whitespace-pre-wrap font-mono">
+                                {pv.agentInstructions}
+                              </pre>
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

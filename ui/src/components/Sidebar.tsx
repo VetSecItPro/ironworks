@@ -17,6 +17,7 @@ import {
   Network,
   Package,
   Plus,
+  Radio,
   Repeat,
   Search,
   Settings,
@@ -406,6 +407,13 @@ export function Sidebar() {
           )}
           {matchLabel("Company Activity") && <SidebarNavItem to="/activity" label="Company Activity" icon={History} />}
           {matchLabel("Audit Log") && <SidebarNavItem to="/audit-log" label="Audit Log" icon={Shield} />}
+          {selectedCompany && matchLabel("Adapter Requests") && (
+            <SidebarNavItem
+              to={`/${selectedCompany.issuePrefix.toUpperCase()}/settings/explorer`}
+              label="Adapter Requests"
+              icon={Radio}
+            />
+          )}
           {matchLabel("Settings") && <SidebarNavItem to="/company/settings" label="Settings" icon={Settings} />}
           {matchLabel("My Profile") && <SidebarNavItem to="/profile" label="My Profile" icon={User} />}
         </SidebarSection>

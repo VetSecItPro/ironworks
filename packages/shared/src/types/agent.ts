@@ -104,6 +104,23 @@ export interface AgentConfigRevision {
   createdAt: Date;
 }
 
+/**
+ * Distinct from AgentConfigRevision: snapshots only the system_prompt and
+ * agent_instructions fields with monotonic versionNumber. Used for SOUL/
+ * playbook rollback without restoring unrelated config changes.
+ */
+export interface AgentPromptVersion {
+  id: string;
+  agentId: string;
+  companyId: string;
+  versionNumber: number;
+  systemPrompt: string | null;
+  agentInstructions: string | null;
+  changedByUserId: string | null;
+  changeSummary: string | null;
+  createdAt: Date;
+}
+
 export type AdapterEnvironmentCheckLevel = "info" | "warn" | "error";
 export type AdapterEnvironmentTestStatus = "pass" | "warn" | "fail";
 

@@ -254,6 +254,7 @@ export type {
   AgentInstructionsFileSummary,
   AgentKeyCreated,
   AgentPermissions,
+  AgentPromptVersion,
   AgentRuntimeState,
   AgentSkillEntry,
   AgentSkillOrigin,

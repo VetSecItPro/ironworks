@@ -30,6 +30,7 @@ export type {
   AgentInstructionsFileSummary,
   AgentKeyCreated,
   AgentPermissions,
+  AgentPromptVersion,
 } from "./agent.js";
 export type { Approval, ApprovalComment } from "./approval.js";
 export type { AssetImage } from "./asset.js";

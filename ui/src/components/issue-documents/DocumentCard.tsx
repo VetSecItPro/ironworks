@@ -1,5 +1,5 @@
 import type { IssueDocument } from "@ironworksai/shared";
-import { Check, ChevronDown, ChevronRight, Copy, Download, MoreHorizontal, Trash2 } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, Copy, Download, History, MoreHorizontal, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -40,6 +40,7 @@ interface DocumentCardProps {
   onCopyBody: (key: string, body: string) => void;
   onSetConfirmDelete: (key: string | null) => void;
   onDelete: (key: string) => void;
+  onViewRevisions: (key: string) => void;
   onBeginEdit: (key: string) => void;
   onDraftBlur: (event: React.FocusEvent<HTMLDivElement>) => void;
   onDraftKeyDown: (event: React.KeyboardEvent) => void;
@@ -78,6 +79,7 @@ export function DocumentCard({
   onCopyBody,
   onSetConfirmDelete,
   onDelete,
+  onViewRevisions,
   onBeginEdit,
   onDraftBlur,
   onDraftKeyDown,
@@ -147,6 +149,10 @@ export function DocumentCard({
               <DropdownMenuItem onClick={() => downloadDocumentFile(doc.key, activeDraft?.body ?? doc.body)}>
                 <Download className="h-3.5 w-3.5" />
                 Download document
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onViewRevisions(doc.key)}>
+                <History className="h-3.5 w-3.5" />
+                View revisions
               </DropdownMenuItem>
               {canDeleteDocuments ? <DropdownMenuSeparator /> : null}
               {canDeleteDocuments ? (
