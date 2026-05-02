@@ -20,6 +20,7 @@ function normalizeGeneralSettings(raw: unknown): InstanceGeneralSettings {
       censorUsernameInLogs: parsed.data.censorUsernameInLogs ?? false,
       backupRetention: parsed.data.backupRetention,
       scheduler: parsed.data.scheduler,
+      promptPreamble: parsed.data.promptPreamble,
     };
   }
   return {

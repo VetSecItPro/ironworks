@@ -20,6 +20,14 @@ export const instanceGeneralSettingsSchema = z
     censorUsernameInLogs: z.boolean().default(false),
     backupRetention: backupRetentionPolicySchema.optional(),
     scheduler: schedulerSettingsSchema.optional(),
+    /**
+     * Instance-tier prompt preamble. Prepended to every agent's resolved
+     * system prompt at heartbeat time, before role/agent tiers. Use for
+     * operator-level context that applies to ALL agents in this deployment
+     * (e.g., parent-company identity, compliance posture, time-zone defaults).
+     * Empty/absent → no prepend, behavior unchanged.
+     */
+    promptPreamble: z.string().max(4000).optional(),
   })
   .strict();
 
@@ -29,6 +37,7 @@ export const instanceGeneralSettingsSchema = z
 // defaults so the parsed object only contains keys the caller actually sent.
 export const patchInstanceGeneralSettingsSchema = instanceGeneralSettingsSchema.partial().extend({
   censorUsernameInLogs: z.boolean().optional(),
+  promptPreamble: z.string().max(4000).optional(),
 });
 
 export const instanceExperimentalSettingsSchema = z

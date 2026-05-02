@@ -17,6 +17,13 @@ export interface InstanceGeneralSettings {
   censorUsernameInLogs: boolean;
   backupRetention?: BackupRetentionPolicy;
   scheduler?: SchedulerSettings;
+  /**
+   * Instance-tier prompt preamble. Prepended to every agent's resolved
+   * system prompt at heartbeat time, before role and agent tiers. Use for
+   * operator-level context that applies to ALL agents in this deployment.
+   * Empty/absent → no prepend, behavior unchanged.
+   */
+  promptPreamble?: string;
 }
 
 export interface InstanceExperimentalSettings {
