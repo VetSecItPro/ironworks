@@ -870,7 +870,16 @@ export async function injectMcpTools(
         const tools = await svc.discoverTools(server);
         if (tools.length === 0) continue;
 
-        const toolLines = tools
+        // Per-server allowlist filter. Empty array = pass everything (back-compat
+        // default). Non-empty = only listed tool segments survive into the agent
+        // context. Tool-call validation at invocation time is still pending the
+        // sidecar proxy (see MCP_INTEGRATION_TODO above), so this is the only
+        // current chokepoint: tools the LLM never sees can't be hallucinated.
+        const allowed = server.enabledToolNames;
+        const filteredTools = allowed.length === 0 ? tools : tools.filter((t) => allowed.includes(t.name));
+        if (filteredTools.length === 0) continue;
+
+        const toolLines = filteredTools
           .map((t) => {
             const namespacedName = `mcp__${server.name}__${t.name}`;
             const desc = t.description ? ` — ${t.description}` : "";

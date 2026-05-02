@@ -1,4 +1,4 @@
-import { Cpu, Pencil, Play, Plus, Trash2 } from "lucide-react";
+import { Cpu, Filter, Pencil, Play, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { McpServer, McpTool } from "../../api/mcpServers";
 import { mcpServersApi } from "../../api/mcpServers";
@@ -346,6 +346,19 @@ export function McpServersSection({ companyId }: { companyId: string }) {
               </div>
               {server.description && <p className="text-xs text-muted-foreground">{server.description}</p>}
               {ts && <ToolsPanel tools={ts.tools} error={ts.error} loading={ts.loading} />}
+              <ToolAllowlistEditor
+                server={server}
+                discoveredTools={ts?.tools ?? []}
+                onLoadTools={() => handleTest(server)}
+                onSave={async (next) => {
+                  const updated = await mcpServersApi.update(server.id, { enabledToolNames: next });
+                  setServers((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+                  pushToast({
+                    title: next.length === 0 ? "All tools allowed" : `${next.length} tool(s) allowlisted`,
+                    tone: "success",
+                  });
+                }}
+              />
             </div>
           );
         })}
@@ -373,6 +386,127 @@ export function McpServersSection({ companyId }: { companyId: string }) {
         title="Edit MCP Server"
         submitLabel="Save Changes"
       />
+    </div>
+  );
+}
+
+/**
+ * Per-server tool allowlist. Empty list (server.enabledToolNames === []) means
+ * all advertised tools pass through to agents — the back-compat default. Non-
+ * empty selection filters tools by name segment at heartbeat-render time.
+ *
+ * The picker auto-loads discovered tools on first expand; if the user has
+ * already clicked "Test" we reuse that result instead of fetching twice.
+ * "Save" only PATCHes when the selection actually changed.
+ */
+function ToolAllowlistEditor({
+  server,
+  discoveredTools,
+  onLoadTools,
+  onSave,
+}: {
+  server: McpServer;
+  discoveredTools: McpTool[];
+  onLoadTools: () => Promise<void> | void;
+  onSave: (next: string[]) => Promise<void>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState<string[]>(server.enabledToolNames);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setSelected(server.enabledToolNames);
+  }, [server.enabledToolNames]);
+
+  useEffect(() => {
+    if (open && discoveredTools.length === 0) {
+      void onLoadTools();
+    }
+  }, [open, discoveredTools.length, onLoadTools]);
+
+  const dirty =
+    selected.length !== server.enabledToolNames.length ||
+    !selected.every((name) => server.enabledToolNames.includes(name));
+
+  function toggle(name: string) {
+    setSelected((prev) => (prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]));
+  }
+
+  return (
+    <div className="border-t border-border/60 pt-2 mt-1">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+      >
+        <Filter className="h-3 w-3" />
+        Allowed tools{" "}
+        <span className="text-[10px]">
+          ({server.enabledToolNames.length === 0 ? "all" : `${server.enabledToolNames.length} allowlisted`})
+        </span>
+      </button>
+      {open && (
+        <div className="mt-2 space-y-2">
+          <p className="text-[11px] text-muted-foreground">
+            Empty selection = all advertised tools allowed (default). Tick specific tools to restrict.
+          </p>
+          {discoveredTools.length === 0 ? (
+            <p className="text-xs text-muted-foreground">Click "Test" above to discover available tools.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+              {discoveredTools.map((t) => (
+                <label
+                  key={t.name}
+                  className="flex items-start gap-2 text-xs cursor-pointer rounded px-1.5 py-1 hover:bg-accent/30"
+                >
+                  <input
+                    type="checkbox"
+                    className="mt-0.5"
+                    checked={selected.includes(t.name)}
+                    onChange={() => toggle(t.name)}
+                  />
+                  <div className="min-w-0">
+                    <code className="font-mono text-[11px]">{t.name}</code>
+                    {t.description ? (
+                      <div className="text-[10px] text-muted-foreground truncate" title={t.description}>
+                        {t.description}
+                      </div>
+                    ) : null}
+                  </div>
+                </label>
+              ))}
+            </div>
+          )}
+          {discoveredTools.length > 0 && (
+            <div className="flex items-center gap-2 pt-1">
+              <Button
+                size="sm"
+                className="h-7 text-xs"
+                disabled={!dirty || saving}
+                onClick={async () => {
+                  setSaving(true);
+                  try {
+                    await onSave(selected);
+                  } finally {
+                    setSaving(false);
+                  }
+                }}
+              >
+                {saving ? "Saving…" : "Save allowlist"}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs"
+                onClick={() => setSelected([])}
+                disabled={selected.length === 0}
+              >
+                Clear (allow all)
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

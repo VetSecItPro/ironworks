@@ -27,6 +27,11 @@ export const mcpServers = pgTable(
     // Comma-separated agent UUIDs that may use this server. Empty string = all agents allowed.
     // Stored as text array in SQL; accessed via JSON in app layer for portability.
     enabledForAgentIds: text("enabled_for_agent_ids").array().notNull().default([]),
+    // Tool-name allowlist filter. Empty array = all tools advertised by the server are allowed
+    // (backwards-compatible default). When non-empty, only listed names pass through to agent
+    // context. Server tool names follow the `mcp__<server>__<tool>` convention; entries here
+    // store just the tool segment (e.g. "search_files"), not the prefixed form.
+    enabledToolNames: text("enabled_tool_names").array().notNull().default([]),
     status: text("status").notNull().$type<"active" | "paused">().default("active"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

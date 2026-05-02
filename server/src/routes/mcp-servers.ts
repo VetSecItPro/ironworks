@@ -37,8 +37,17 @@ export function mcpServerRoutes(db: Db) {
     const companyId = parseCompanyId(req.params.companyId);
     await assertCanWrite(req, companyId, db);
 
-    const { name, description, transport, command, url, apiKeySecretName, enabledForAgentIds, status } =
-      req.body as Record<string, unknown>;
+    const {
+      name,
+      description,
+      transport,
+      command,
+      url,
+      apiKeySecretName,
+      enabledForAgentIds,
+      enabledToolNames,
+      status,
+    } = req.body as Record<string, unknown>;
 
     if (typeof name !== "string" || !name.trim()) {
       throw unprocessable("name is required");
@@ -58,6 +67,7 @@ export function mcpServerRoutes(db: Db) {
       url: typeof url === "string" ? url : null,
       apiKeySecretName: typeof apiKeySecretName === "string" ? apiKeySecretName : null,
       enabledForAgentIds: Array.isArray(enabledForAgentIds) ? (enabledForAgentIds as string[]) : [],
+      enabledToolNames: Array.isArray(enabledToolNames) ? (enabledToolNames as string[]) : [],
       status: (status as "active" | "paused") ?? "active",
     });
 
@@ -75,8 +85,17 @@ export function mcpServerRoutes(db: Db) {
     assertCompanyAccess(req, existing.companyId);
     await assertCanWrite(req, existing.companyId, db);
 
-    const { name, description, transport, command, url, apiKeySecretName, enabledForAgentIds, status } =
-      req.body as Record<string, unknown>;
+    const {
+      name,
+      description,
+      transport,
+      command,
+      url,
+      apiKeySecretName,
+      enabledForAgentIds,
+      enabledToolNames,
+      status,
+    } = req.body as Record<string, unknown>;
 
     if (transport !== undefined && !VALID_TRANSPORTS.has(transport as string)) {
       throw unprocessable("transport must be 'stdio' or 'http'");
@@ -94,6 +113,9 @@ export function mcpServerRoutes(db: Db) {
       ...(apiKeySecretName !== undefined && { apiKeySecretName: apiKeySecretName as string | null }),
       ...(enabledForAgentIds !== undefined && {
         enabledForAgentIds: Array.isArray(enabledForAgentIds) ? (enabledForAgentIds as string[]) : [],
+      }),
+      ...(enabledToolNames !== undefined && {
+        enabledToolNames: Array.isArray(enabledToolNames) ? (enabledToolNames as string[]) : [],
       }),
       ...(status !== undefined && { status: status as "active" | "paused" }),
     });
