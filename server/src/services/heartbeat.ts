@@ -35,7 +35,7 @@ import { notFound } from "../errors.js";
 import { resolveDefaultAgentWorkspaceDir, resolveManagedProjectWorkspaceDir } from "../home-paths.js";
 import { redactCurrentUserText, redactCurrentUserValue } from "../log-redaction.js";
 import { logger } from "../middleware/logger.js";
-import { TEAM_DIRECTORY_PLACEHOLDER } from "../onboarding-assets/role-templates.js";
+import { ROLE_TEMPLATES, TEAM_DIRECTORY_PLACEHOLDER } from "../onboarding-assets/role-templates.js";
 import { logActivity } from "./activity-log.js";
 import { injectSkillRecipes } from "./agent-learning.js";
 import { type BudgetEnforcementScope, budgetService } from "./budgets.js";
@@ -2236,18 +2236,44 @@ export function heartbeatService(db: Db) {
         }
       }
 
-      // Inject provider-agnostic agent instructions from DB columns into context
-      // so ALL adapter types (ollama_cloud, process, http, etc.) receive them.
-      if (typeof agent.systemPrompt === "string" && agent.systemPrompt) {
-        context.systemPrompt = agent.systemPrompt;
+      // Three-tier prompt assembly. Order of precedence:
+      //   1. instance.promptPreamble — operator-level, prepended to systemPrompt
+      //   2. agent.systemPrompt / agentInstructions — explicit per-agent values
+      //   3. role-template fallback — used only when agent column is empty
+      // The role tier is a safety net: every agent created via team-pack hire
+      // gets `system_prompt` and `agent_instructions` seeded from the role
+      // template, so this fallback only fires for agents created outside that
+      // path or for agents whose columns were cleared. Without this, an empty
+      // column meant the agent went into a heartbeat with no persona at all.
+      const generalSettings = await instanceSettings.getGeneral();
+      const instancePreamble =
+        typeof generalSettings.promptPreamble === "string" && generalSettings.promptPreamble.trim()
+          ? generalSettings.promptPreamble.trim()
+          : null;
+      const roleTemplate =
+        ROLE_TEMPLATES.find((t) => t.role === agent.role && (!agent.department || t.department === agent.department)) ??
+        ROLE_TEMPLATES.find((t) => t.role === agent.role) ??
+        null;
+
+      const baseSystemPrompt =
+        typeof agent.systemPrompt === "string" && agent.systemPrompt ? agent.systemPrompt : (roleTemplate?.soul ?? "");
+      if (baseSystemPrompt) {
+        context.systemPrompt = instancePreamble ? `${instancePreamble}\n\n${baseSystemPrompt}` : baseSystemPrompt;
+      } else if (instancePreamble) {
+        context.systemPrompt = instancePreamble;
       }
-      if (typeof agent.agentInstructions === "string" && agent.agentInstructions) {
+
+      const baseInstructions =
+        typeof agent.agentInstructions === "string" && agent.agentInstructions
+          ? agent.agentInstructions
+          : (roleTemplate?.agents ?? "");
+      if (baseInstructions) {
         // The shared preamble carries a {{TEAM_DIRECTORY}} placeholder so the
         // colleague list reflects THIS company's actual agent names + titles
         // rather than baking SteelMotion/Atlas/etc. names into the global
         // template. Substitute lazily per heartbeat — picks up renames
         // immediately without any prompt-version migration.
-        let instructions = agent.agentInstructions;
+        let instructions = baseInstructions;
         if (instructions.includes(TEAM_DIRECTORY_PLACEHOLDER)) {
           const directory = await renderTeamDirectory(db, agent.companyId, agent.id);
           instructions = instructions.split(TEAM_DIRECTORY_PLACEHOLDER).join(directory);

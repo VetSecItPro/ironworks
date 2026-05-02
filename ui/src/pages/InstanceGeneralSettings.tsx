@@ -91,6 +91,13 @@ export function InstanceGeneralSettings() {
 
   return (
     <div className="max-w-4xl space-y-6">
+      <PromptPreambleSection
+        initial={generalQuery.data?.promptPreamble ?? ""}
+        onSave={async (value) => {
+          await instanceSettingsApi.updateGeneral({ promptPreamble: value });
+          await queryClient.invalidateQueries({ queryKey: queryKeys.instance.generalSettings });
+        }}
+      />
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <SlidersHorizontal className="h-5 w-5 text-muted-foreground" />
@@ -442,5 +449,70 @@ export function InstanceGeneralSettings() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+/**
+ * Instance-tier prompt preamble. Prepended to every agent's resolved system
+ * prompt at heartbeat time. Use for operator-level context that applies to
+ * ALL agents in this deployment (parent-company identity, compliance posture,
+ * time-zone defaults, etc.). Empty/null = no prepend, behavior unchanged.
+ */
+function PromptPreambleSection({ initial, onSave }: { initial: string; onSave: (value: string) => Promise<void> }) {
+  const [value, setValue] = useState(initial);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  useEffect(() => {
+    setValue(initial);
+  }, [initial]);
+  const dirty = value !== initial;
+
+  return (
+    <section className="rounded-xl border border-border bg-card p-5">
+      <div className="space-y-3">
+        <div className="space-y-1.5">
+          <h2 className="text-sm font-semibold">Workspace prompt preamble</h2>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            Prepended to every agent's resolved system prompt before the per-role and per-agent layers. Operator-level
+            context only — agent identity belongs on the agent rows. Leave blank for no prepend (default).
+          </p>
+        </div>
+        <textarea
+          value={value}
+          onChange={(e) => {
+            setValue(e.target.value);
+            setSaved(false);
+          }}
+          rows={6}
+          maxLength={4000}
+          placeholder="e.g. You operate within Atlas Operations, a veteran-owned AI agency. All times in America/Chicago."
+          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm font-mono outline-none focus:border-primary"
+        />
+        <div className="flex items-center gap-3">
+          <Button
+            size="sm"
+            disabled={!dirty || saving}
+            onClick={async () => {
+              setSaving(true);
+              setSaveError(null);
+              try {
+                await onSave(value.trim());
+                setSaved(true);
+              } catch (err) {
+                setSaveError(err instanceof Error ? err.message : "Save failed");
+              } finally {
+                setSaving(false);
+              }
+            }}
+          >
+            {saving ? "Saving…" : "Save preamble"}
+          </Button>
+          <span className="text-xs text-muted-foreground">{value.length} / 4000</span>
+          {saveError ? <span className="text-xs text-destructive">{saveError}</span> : null}
+          {saved && !dirty ? <span className="text-xs text-green-600 dark:text-green-400">Saved</span> : null}
+        </div>
+      </div>
+    </section>
   );
 }
