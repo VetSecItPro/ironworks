@@ -39,12 +39,26 @@ async function toReadableStream(body: unknown): Promise<Readable> {
   if (typeof candidate.transformToWebStream === "function") {
     const webStream = candidate.transformToWebStream();
     const reader = webStream.getReader();
+    // Wrap reader.read() in try/finally so abandoned consumers (HTTP client
+    // disconnects, downstream errors, partial reads on early Readable.destroy)
+    // still release the reader lock and cancel the underlying stream. Without
+    // this, the WebStream + its internal buffers are pinned to the heap
+    // indefinitely — every aborted download leaks the response payload.
     return Readable.from(
       (async function* () {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          if (value) yield value;
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (value) yield value;
+          }
+        } finally {
+          try {
+            reader.releaseLock();
+          } catch {}
+          try {
+            await webStream.cancel();
+          } catch {}
         }
       })(),
     );
