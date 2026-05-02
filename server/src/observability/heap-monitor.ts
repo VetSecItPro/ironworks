@@ -35,11 +35,29 @@ import { logger } from "../middleware/logger.js";
 const SAMPLE_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 const SNAPSHOT_DIR_DEFAULT = "/ironworks/heap-snapshots";
 
+// Auto-snapshot triggers — close the gap that manual SIGUSR2 leaves open
+// (operator asleep at 03:00 when leak crosses threshold = lost evidence).
+//
+// Two strategies:
+// 1. Uptime markers — single snapshots at fixed wall-clock ages so we always
+//    have a baseline (4h, before leak typically manifests) and a leak-window
+//    sample (10h, when V8 old-space typically fills) that can be diffed.
+// 2. Growth detector — fires when heapUsed grows monotonically across a
+//    rolling window of samples (5 samples × 5min = 25min of strict growth).
+//    Catches leaks that hit earlier or later than the uptime markers expect.
+//
+// Cooldown prevents snapshot spam: once a growth-trigger fires, suppress
+// further auto-snapshots for COOLDOWN_MS so a runaway leak doesn't fill disk.
+const UPTIME_SNAPSHOT_MARKERS_MS = [4, 10].map((h) => h * 60 * 60 * 1000);
+const GROWTH_WINDOW_SAMPLES = 5;
+const GROWTH_THRESHOLD_BYTES = 50 * 1024 * 1024; // 50 MB monotonic growth
+const COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes between auto-snapshots
+
 function fmtMB(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
 }
 
-function logMemorySample() {
+function logMemorySample(): NodeJS.MemoryUsage {
   const mem = process.memoryUsage();
   // Compact one-line log — easy to grep and to extract via journalctl
   // for plotting. Keys mirror process.memoryUsage() so a consumer can
@@ -56,6 +74,7 @@ function logMemorySample() {
     },
     "memory-sample",
   );
+  return mem;
 }
 
 function takeHeapSnapshot(snapshotDir: string) {
@@ -77,12 +96,18 @@ function takeHeapSnapshot(snapshotDir: string) {
 }
 
 /**
- * Install the heap-monitor side effects: 5-minute memory logging +
- * SIGUSR2 → heap snapshot. Idempotent — calling twice is harmless but
- * just registers duplicate handlers; only call from process startup.
+ * Install the heap-monitor side effects:
+ *  - 5-minute memory logging
+ *  - SIGUSR2 → manual heap snapshot
+ *  - Auto-snapshot at 4h + 10h uptime markers (always-on baseline)
+ *  - Auto-snapshot when heapUsed grows monotonically across 5 samples (25min)
+ *    by ≥ 50 MB (rate-of-change leak detector)
  *
- * Returns a disposer that clears the interval and removes the signal
- * handler. Useful for tests that mount/unmount the server.
+ * The cooldown gates auto-snapshots to one every 30 min so a fast-growing
+ * leak doesn't fill the snapshot directory. Manual SIGUSR2 ignores cooldown.
+ *
+ * Idempotent — calling twice is harmless but registers duplicate handlers.
+ * Only call from process startup. Returns a disposer for test mount/unmount.
  */
 export function installHeapMonitor(opts?: { snapshotDir?: string }): () => void {
   if (process.env.IRONWORKS_DISABLE_HEAP_MONITOR === "true") {
@@ -90,12 +115,55 @@ export function installHeapMonitor(opts?: { snapshotDir?: string }): () => void 
   }
 
   const snapshotDir = opts?.snapshotDir ?? SNAPSHOT_DIR_DEFAULT;
+  const startedAt = Date.now();
+  const heapHistory: number[] = []; // last GROWTH_WINDOW_SAMPLES heapUsed values
+  let lastAutoSnapshotAt = 0;
+  const firedUptimeMarkers = new Set<number>();
+
+  function maybeAutoSnapshot(reason: string) {
+    if (Date.now() - lastAutoSnapshotAt < COOLDOWN_MS) return;
+    lastAutoSnapshotAt = Date.now();
+    logger.warn({ reason }, "heap-monitor auto-snapshot triggered");
+    takeHeapSnapshot(snapshotDir);
+  }
+
+  function tick() {
+    const mem = logMemorySample();
+    const uptimeMs = Date.now() - startedAt;
+
+    // Uptime-marker triggers — always-on baseline + leak-window samples.
+    for (const marker of UPTIME_SNAPSHOT_MARKERS_MS) {
+      if (!firedUptimeMarkers.has(marker) && uptimeMs >= marker) {
+        firedUptimeMarkers.add(marker);
+        maybeAutoSnapshot(`uptime-marker-${(marker / 3600000).toFixed(0)}h`);
+      }
+    }
+
+    // Growth detector — push current sample onto rolling window, fire when
+    // every sample is strictly higher than the prior AND total growth
+    // across the window exceeds the byte threshold.
+    heapHistory.push(mem.heapUsed);
+    if (heapHistory.length > GROWTH_WINDOW_SAMPLES) heapHistory.shift();
+    if (heapHistory.length === GROWTH_WINDOW_SAMPLES) {
+      let monotonic = true;
+      for (let i = 1; i < heapHistory.length; i++) {
+        if (heapHistory[i]! <= heapHistory[i - 1]!) {
+          monotonic = false;
+          break;
+        }
+      }
+      const growth = heapHistory[heapHistory.length - 1]! - heapHistory[0]!;
+      if (monotonic && growth >= GROWTH_THRESHOLD_BYTES) {
+        maybeAutoSnapshot(`growth-${fmtMB(growth)}-over-${GROWTH_WINDOW_SAMPLES}-samples`);
+      }
+    }
+  }
 
   // Sample once at startup so the first data point lands in the log
   // without waiting 5 minutes — useful for confirming the monitor armed.
-  logMemorySample();
+  tick();
 
-  const timer = setInterval(logMemorySample, SAMPLE_INTERVAL_MS);
+  const timer = setInterval(tick, SAMPLE_INTERVAL_MS);
   // Don't keep the event loop alive just for the sampler.
   if (typeof timer.unref === "function") timer.unref();
 
@@ -103,8 +171,14 @@ export function installHeapMonitor(opts?: { snapshotDir?: string }): () => void 
   process.on("SIGUSR2", onSigusr2);
 
   logger.info(
-    { snapshotDir, sampleIntervalMs: SAMPLE_INTERVAL_MS },
-    "heap-monitor armed (memory-sample every 5min, SIGUSR2 → heap snapshot)",
+    {
+      snapshotDir,
+      sampleIntervalMs: SAMPLE_INTERVAL_MS,
+      uptimeMarkers: UPTIME_SNAPSHOT_MARKERS_MS,
+      growthWindow: GROWTH_WINDOW_SAMPLES,
+      growthThresholdBytes: GROWTH_THRESHOLD_BYTES,
+    },
+    "heap-monitor armed (memory-sample every 5min, SIGUSR2 + uptime markers + growth detector)",
   );
 
   return () => {
