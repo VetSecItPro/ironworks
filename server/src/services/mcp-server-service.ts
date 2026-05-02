@@ -30,6 +30,12 @@ export type CreateMcpServerInput = {
   url?: string | null;
   apiKeySecretName?: string | null;
   enabledForAgentIds?: string[];
+  /**
+   * Tool-name allowlist. Empty array = all advertised tools pass through
+   * (back-compat). Names match the segment after `mcp__<server>__`, e.g.
+   * `["read_file", "list_directory"]` not `["mcp__Filesystem__read_file"]`.
+   */
+  enabledToolNames?: string[];
   status?: "active" | "paused";
 };
 
@@ -93,6 +99,7 @@ export function mcpServerService(db: Db) {
           url: input.url,
           apiKeySecretName: input.apiKeySecretName,
           enabledForAgentIds: input.enabledForAgentIds ?? [],
+          enabledToolNames: input.enabledToolNames ?? [],
           status: input.status ?? "active",
         })
         .returning();

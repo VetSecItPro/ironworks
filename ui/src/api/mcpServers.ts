@@ -10,6 +10,11 @@ export interface McpServer {
   url: string | null;
   apiKeySecretName: string | null;
   enabledForAgentIds: string[];
+  /**
+   * Tool-name allowlist. Empty = all tools advertised by the server pass through
+   * (back-compat). Non-empty = only listed names survive into agent context.
+   */
+  enabledToolNames: string[];
   status: "active" | "paused";
   createdAt: string;
   updatedAt: string;
@@ -29,6 +34,7 @@ export interface CreateMcpServerPayload {
   url?: string | null;
   apiKeySecretName?: string | null;
   enabledForAgentIds?: string[];
+  enabledToolNames?: string[];
   status?: "active" | "paused";
 }
 
