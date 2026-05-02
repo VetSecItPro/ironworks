@@ -68,6 +68,7 @@ import {
   injectGoalContext,
   injectMcpTools,
   injectOnboardingReplay,
+  injectPeerActivity,
   injectPendingDeliberations,
   injectPendingMentions,
   injectPlatformAwareness,
@@ -2358,6 +2359,13 @@ export function heartbeatService(db: Db) {
       // MCP tool injection: discover enabled MCP servers for this agent and inject
       // their tool lists so the agent knows what external tools it can call.
       await injectMcpTools(db, context, { id: agent.id, companyId: agent.companyId });
+
+      // Peer activity (Track A): hard-capped ambient feed of what other agents
+      // are actively working on + recently shipped. Lazy de-conflict — no
+      // enforcement, just visibility so agents don't step on each other's
+      // in-flight work. Kept tight (~400 token cap) to stay friendly to free-
+      // tier model context windows.
+      await injectPeerActivity(db, context, { id: agent.id, companyId: agent.companyId });
 
       context.ironworksWorkspace = {
         cwd: executionWorkspace.cwd,

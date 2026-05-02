@@ -908,3 +908,123 @@ export async function injectMcpTools(
     logger.debug({ err: (err as Error).message }, "MCP tool injection failed, skipping");
   }
 }
+
+// ── Peer activity (Track A — lazy de-conflict) ─────────────────────────────
+//
+// Surface what other agents in the workspace are working on, in the smallest
+// possible format. The goal is ambient awareness: a CEO about to file a task
+// to Theo should already see in their context that Theo has an in-flight
+// issue they can either share details with or wait for. No checkout-time
+// enforcement; no similarity scoring. Just an ambient feed.
+//
+// Token budget: hard cap ~400 tokens worst-case. We hit that by limiting
+// active to 8 rows + recent-shipped to 5 rows, single-line each, truncating
+// titles at 80 chars. Free-tier OpenRouter models (gpt-oss-120b, llama-3.3,
+// hermes-3, gemma) all have ≥128K context, so this is well under 0.5%
+// budget — but keeping it tight matters because it's added to *every*
+// heartbeat for *every* agent.
+
+const PEER_ACTIVITY_ACTIVE_LIMIT = 8;
+const PEER_ACTIVITY_SHIPPED_LIMIT = 5;
+const PEER_ACTIVITY_SHIPPED_WINDOW_MS = 4 * 60 * 60 * 1000; // 4 hours
+const PEER_ACTIVITY_TITLE_MAX = 80;
+
+function formatRelativeMinutes(date: Date): string {
+  const minutes = Math.max(0, Math.floor((Date.now() - date.getTime()) / 60_000));
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
+export async function injectPeerActivity(
+  db: Db,
+  context: Record<string, unknown>,
+  agent: { id: string; companyId: string },
+): Promise<void> {
+  try {
+    const cutoff = new Date(Date.now() - PEER_ACTIVITY_SHIPPED_WINDOW_MS);
+
+    // Two queries in parallel: in-flight peer work + recently shipped peer work.
+    // Filtered to other agents in the same company. Sort active by updatedAt
+    // (most-recently-touched first), shipped by updatedAt desc.
+    const [activeRows, shippedRows] = await Promise.all([
+      db
+        .select({
+          identifier: issues.identifier,
+          title: issues.title,
+          assigneeAgentId: issues.assigneeAgentId,
+          updatedAt: issues.updatedAt,
+        })
+        .from(issues)
+        .where(
+          and(
+            eq(issues.companyId, agent.companyId),
+            eq(issues.status, "in_progress"),
+            isNotNull(issues.assigneeAgentId),
+            sql`${issues.assigneeAgentId} <> ${agent.id}`,
+          ),
+        )
+        .orderBy(desc(issues.updatedAt))
+        .limit(PEER_ACTIVITY_ACTIVE_LIMIT),
+      db
+        .select({
+          identifier: issues.identifier,
+          title: issues.title,
+          assigneeAgentId: issues.assigneeAgentId,
+          updatedAt: issues.updatedAt,
+        })
+        .from(issues)
+        .where(
+          and(
+            eq(issues.companyId, agent.companyId),
+            eq(issues.status, "done"),
+            isNotNull(issues.assigneeAgentId),
+            sql`${issues.assigneeAgentId} <> ${agent.id}`,
+            sql`${issues.updatedAt} > ${cutoff}`,
+          ),
+        )
+        .orderBy(desc(issues.updatedAt))
+        .limit(PEER_ACTIVITY_SHIPPED_LIMIT),
+    ]);
+
+    if (activeRows.length === 0 && shippedRows.length === 0) return;
+
+    // One agent lookup for all peer ids referenced in either result set.
+    const peerIds = new Set<string>();
+    for (const r of activeRows) if (r.assigneeAgentId) peerIds.add(r.assigneeAgentId);
+    for (const r of shippedRows) if (r.assigneeAgentId) peerIds.add(r.assigneeAgentId);
+    const agentMap = new Map<string, string>();
+    if (peerIds.size > 0) {
+      const peerRows = await db
+        .select({ id: agents.id, name: agents.name })
+        .from(agents)
+        .where(sql`${agents.id} = ANY(${sql.raw(`ARRAY[${[...peerIds].map((id) => `'${id}'::uuid`).join(",")}]`)})`);
+      for (const p of peerRows) agentMap.set(p.id, p.name);
+    }
+
+    const truncate = (s: string) =>
+      s.length > PEER_ACTIVITY_TITLE_MAX ? `${s.slice(0, PEER_ACTIVITY_TITLE_MAX - 1)}…` : s;
+
+    const sections: string[] = [];
+    if (activeRows.length > 0) {
+      const lines = activeRows.map((r) => {
+        const peer = agentMap.get(r.assigneeAgentId ?? "") ?? "(unknown)";
+        const ago = formatRelativeMinutes(r.updatedAt);
+        return `- ${peer} — ${r.identifier ?? "?"} "${truncate(r.title)}" (touched ${ago})`;
+      });
+      sections.push(`**Active:**\n${lines.join("\n")}`);
+    }
+    if (shippedRows.length > 0) {
+      const lines = shippedRows.map((r) => {
+        const peer = agentMap.get(r.assigneeAgentId ?? "") ?? "(unknown)";
+        return `- ${peer} — ${r.identifier ?? "?"} "${truncate(r.title)}"`;
+      });
+      sections.push(`**Recently shipped (last 4h):**\n${lines.join("\n")}`);
+    }
+
+    context.ironworksPeerActivity = `## Peer Activity\n${sections.join("\n\n")}`;
+  } catch (err) {
+    logger.debug({ err: (err as Error).message, agentId: agent.id }, "peer activity injection failed, skipping");
+  }
+}
