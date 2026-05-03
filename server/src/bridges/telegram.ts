@@ -9,10 +9,26 @@ import type { Db } from "@ironworksai/db";
 import { agents as agentsTable, issues as issuesTable, messagingBridges } from "@ironworksai/db";
 import { and, desc, eq, inArray, isNotNull } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
+import { logActivity } from "../services/activity-log.js";
 import { agentService } from "../services/agents.js";
 import { issueService } from "../services/issues.js";
 import { messagingBridgeService } from "../services/messaging-bridges.js";
 import { secretService } from "../services/secrets.js";
+
+// SEC-CHAOS-002: typed actor for workspace mutations driven by a messaging
+// bridge. Threaded into activity-log calls so audit entries can attribute
+// closes/reassigns/comments back to a specific Telegram chatId rather than
+// disappearing into an anonymous "system" bucket.
+export interface BridgeActor {
+  type: "bridge";
+  platform: "telegram";
+  chatId: string;
+  companyId: string;
+}
+
+function bridgeActorId(actor: BridgeActor): string {
+  return `${actor.platform}:${actor.chatId}`;
+}
 
 // OpenRouter is the LLM transport for the Telegram bridge. Other providers
 // (Ollama Cloud, direct Anthropic, etc.) are not used here even when
@@ -58,6 +74,35 @@ const TAG_REASSIGN =
 const TAG_ADD_COMMENT = /\[ADD_COMMENT\]\s*id:\s*([A-Z]+-\d+)\s*\|\s*body:\s*([\s\S]+?)(?=\n\[|$)/gi;
 const ALL_TAGS_RE = /\[(?:CREATE_TASK|CLOSE_TASK|CLOSE_ALL_FROM_CHAT|REASSIGN|ADD_COMMENT)\][^\n]*(?:\n(?!\[).+)*/gi;
 
+// SEC-CHAOS-002 fix #3: a chat sender can include literal "[CLOSE_TASK] id:ATL-1"
+// inside their message. Smaller free-tier LLMs sometimes echo or comply with
+// strings the user wrote, producing real action tags from injected text. Strip
+// any tag-shaped substring from the user content before it ever reaches the
+// model so the model only sees a redaction marker.
+const USER_TAG_INJECTION_RE = /\[(?:CREATE_TASK|CLOSE_TASK|CLOSE_ALL_FROM_CHAT|REASSIGN|ADD_COMMENT)\]/gi;
+
+export function sanitizeUserMessage(input: string): string {
+  return input.replace(USER_TAG_INJECTION_RE, "[REDACTED-TAG]");
+}
+
+// SEC-CHAOS-002 fix #1: parse the operator-controlled allowlist from the bridge
+// config. Empty/missing array preserves the legacy first-claimer ownership
+// model so back-compat is intact for existing single-operator deployments.
+export function parseAllowedChatIds(config: unknown): string[] {
+  if (!config || typeof config !== "object") return [];
+  const raw = (config as Record<string, unknown>).allowedChatIds;
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((v): v is string => typeof v === "string" && v.trim().length > 0).map((v) => v.trim());
+}
+
+// Returns true when the chatId is permitted to interact with this bot.
+// allowlist non-empty → strict gate (only listed chatIds pass). allowlist empty
+// → permissive (legacy first-claimer ownership inside the polling loop applies).
+export function isChatIdAllowed(chatId: string, allowlist: string[]): boolean {
+  if (allowlist.length === 0) return true;
+  return allowlist.includes(chatId);
+}
+
 // Read the CEO agent for this workspace so the chat persona reflects whatever
 // the operator has named/configured for that role. Falls back to a generic
 // "the CEO" identity if no row is found, and to the workspace-default model
@@ -82,11 +127,6 @@ async function loadCeoPersona(db: Db, companyId: string): Promise<{ persona: str
   } catch {
     return { persona: "the CEO", model: FALLBACK_CHAT_MODEL };
   }
-}
-
-interface CeoTurn {
-  reply: string;
-  createTask: { title: string; description: string } | null;
 }
 
 interface ParsedActions {
@@ -253,7 +293,9 @@ ${workspaceContext}
 - Plain text only. No markdown formatting.
 - Keep replies under 4 sentences unless the operator asks for depth.`;
 
-  const messages: Turn[] = [...history, { role: "user", content: userMessage }];
+  // SEC: chat content can contain literal '[CREATE_TASK]' strings; smaller LLMs sometimes echo them. Strip before LLM sees user message.
+  const safeUserMessage = sanitizeUserMessage(userMessage);
+  const messages: Turn[] = [...history, { role: "user", content: safeUserMessage }];
 
   let raw: string;
   try {
@@ -318,6 +360,9 @@ interface BotInstance {
   token: string;
   ceoAgentId: string | null;
   ownerChatId: string | null;
+  // SEC-CHAOS-002: pre-registered chatIds that are permitted to drive workspace
+  // actions. Empty → fall back to first-claimer single-owner mode.
+  allowedChatIds: string[];
   lastUpdateId: number;
   activeThreads: Map<string, string>; // chatId -> issueId
   lastSeenComment: Map<string, number>; // issueId -> timestamp
@@ -391,13 +436,25 @@ async function createBridgeIssue(
 
 async function addBridgeComment(
   db: Db,
-  _companyId: string,
+  actor: BridgeActor,
   issueId: string,
   body: string,
 ): Promise<{ error?: string }> {
   const svc = getIssueService(db);
   try {
-    await svc.addComment(issueId, body, { userId: "telegram-bridge" });
+    // SEC-CHAOS-002 fix #2: attribution stays in activity-log via the bridge
+    // action below; the comment row itself uses no userId since bridge actors
+    // are not real users and we don't want to invent a synthetic user FK.
+    await svc.addComment(issueId, body, {});
+    void logActivity(db, {
+      companyId: actor.companyId,
+      actorType: "bridge",
+      actorId: bridgeActorId(actor),
+      action: "issue.comment.added",
+      entityType: "issue",
+      entityId: issueId,
+      details: { platform: actor.platform, chatId: actor.chatId, via: "telegram_bridge" },
+    }).catch(() => {});
     return {};
   } catch (err) {
     return { error: (err as Error).message };
@@ -466,6 +523,24 @@ function startTelegramPollLoop(db: Db, bot: BotInstance): void {
 
         const chatId = String(msg.chat.id);
         const text = msg.text.trim();
+
+        // SEC-CHAOS-002 fix #1: pre-registered allowlist gate. When the operator
+        // has populated allowedChatIds via Settings UI, only those chatIds reach
+        // the rest of the loop — including /start, /new, /status. Any other
+        // chatId gets the standard "private bot" rejection. When the list is
+        // empty we preserve legacy first-claimer behavior below.
+        if (!isChatIdAllowed(chatId, bot.allowedChatIds)) {
+          await sendTelegram(
+            bot.token,
+            chatId,
+            "This bot is private. Reach out to the workspace admin if you need access.",
+          );
+          logger.warn(
+            { companyId: bot.companyId, chatId, allowlistSize: bot.allowedChatIds.length },
+            "[telegram-bridge] Rejected chatId not in allowlist",
+          );
+          continue;
+        }
 
         // Handle /start
         if (text === "/start") {
@@ -537,6 +612,17 @@ function startTelegramPollLoop(db: Db, bot: BotInstance): void {
         const actionLog: string[] = [];
         const filedKey = chatKey(bot.companyId, chatId);
 
+        // SEC-CHAOS-002 fix #2: every workspace mutation triggered from this
+        // turn carries the same bridge actor identity into activity-log so the
+        // audit trail records WHICH telegram chatId drove the change.
+        const bridgeActor: BridgeActor = {
+          type: "bridge",
+          platform: "telegram",
+          chatId,
+          companyId: bot.companyId,
+        };
+        const bridgeActorIdValue = bridgeActorId(bridgeActor);
+
         // Sanitize sender name once for any task-create tags (SEC-INTEG-004).
         const rawSenderName = msg.from?.first_name ?? msg.from?.username ?? "Unknown";
         const senderName = rawSenderName.replace(/[`*_~[\]<>]/g, "").slice(0, 50);
@@ -557,6 +643,15 @@ function startTelegramPollLoop(db: Db, bot: BotInstance): void {
             filed.push({ id: newIssueId, identifier, title: safeTitle, createdAt: Date.now() });
             chatFiledIssues.set(filedKey, filed);
             actionLog.push(`filed ${identifier}`);
+            void logActivity(db, {
+              companyId: bot.companyId,
+              actorType: "bridge",
+              actorId: bridgeActorIdValue,
+              action: "issue.created",
+              entityType: "issue",
+              entityId: newIssueId,
+              details: { identifier, title: safeTitle, platform: bridgeActor.platform, chatId, via: "telegram_bridge" },
+            }).catch(() => {});
           }
         }
 
@@ -569,6 +664,21 @@ function startTelegramPollLoop(db: Db, bot: BotInstance): void {
               continue;
             }
             await issueSvc.update(issue.id, { status: "cancelled" });
+            void logActivity(db, {
+              companyId: bot.companyId,
+              actorType: "bridge",
+              actorId: bridgeActorIdValue,
+              action: "issue.cancelled",
+              entityType: "issue",
+              entityId: issue.id,
+              details: {
+                identifier: c.identifier,
+                reason: c.reason,
+                platform: bridgeActor.platform,
+                chatId,
+                via: "telegram_bridge",
+              },
+            }).catch(() => {});
             actionLog.push(`closed ${c.identifier}${c.reason ? ` (${c.reason})` : ""}`);
             // Remove from chat ledger if it was filed by this chat.
             const filed = chatFiledIssues.get(filedKey) ?? [];
@@ -592,6 +702,22 @@ function startTelegramPollLoop(db: Db, bot: BotInstance): void {
               try {
                 await issueSvc.update(f.id, { status: "cancelled" });
                 closed++;
+                void logActivity(db, {
+                  companyId: bot.companyId,
+                  actorType: "bridge",
+                  actorId: bridgeActorIdValue,
+                  action: "issue.cancelled",
+                  entityType: "issue",
+                  entityId: f.id,
+                  details: {
+                    identifier: f.identifier,
+                    reason: turn.actions.closeAllFromChat?.reason ?? null,
+                    bulk: "close_all_from_chat",
+                    platform: bridgeActor.platform,
+                    chatId,
+                    via: "telegram_bridge",
+                  },
+                }).catch(() => {});
               } catch {
                 /* skip — keep going */
               }
@@ -609,7 +735,7 @@ function startTelegramPollLoop(db: Db, bot: BotInstance): void {
               actionLog.push(`couldn't comment on ${c.identifier}: not found`);
               continue;
             }
-            const result = await addBridgeComment(db, bot.companyId, issue.id, `[via Telegram CEO]: ${c.body}`);
+            const result = await addBridgeComment(db, bridgeActor, issue.id, `[via Telegram CEO]: ${c.body}`);
             if (result.error) {
               actionLog.push(`couldn't comment on ${c.identifier}: ${result.error}`);
             } else {
@@ -638,6 +764,23 @@ function startTelegramPollLoop(db: Db, bot: BotInstance): void {
               continue;
             }
             await issueSvc.update(issue.id, { assigneeAgentId: targetAgent.id });
+            void logActivity(db, {
+              companyId: bot.companyId,
+              actorType: "bridge",
+              actorId: bridgeActorIdValue,
+              action: "issue.reassigned",
+              entityType: "issue",
+              entityId: issue.id,
+              details: {
+                identifier: r.identifier,
+                toAgentId: targetAgent.id,
+                toAgentName: r.to.trim(),
+                reason: r.reason,
+                platform: bridgeActor.platform,
+                chatId,
+                via: "telegram_bridge",
+              },
+            }).catch(() => {});
             actionLog.push(`reassigned ${r.identifier} to ${r.to.trim()}`);
           } catch (err) {
             actionLog.push(`couldn't reassign ${r.identifier}: ${(err as Error).message.slice(0, 80)}`);
@@ -737,12 +880,14 @@ export async function startTelegramBridge(db: Db, companyId: string, token: stri
   const bridge = await bridgeSvc.getByPlatform(companyId, "telegram");
   const storedConfig = (bridge?.config ?? {}) as Record<string, unknown>;
   const ownerChatId = (storedConfig.ownerChatId as string) ?? null;
+  const allowedChatIds = parseAllowedChatIds(storedConfig);
 
   const bot: BotInstance = {
     companyId,
     token,
     ceoAgentId,
     ownerChatId,
+    allowedChatIds,
     lastUpdateId: 0,
     activeThreads: new Map(),
     lastSeenComment: new Map(),

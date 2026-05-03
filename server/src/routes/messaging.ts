@@ -239,6 +239,67 @@ export function messagingRoutes(db: Db) {
     res.json({ ok: true });
   });
 
+  // ── Update Telegram allowed chat IDs ──
+  // SEC-CHAOS-002 fix #1: pre-registered allowlist of Telegram chatIds. When
+  // non-empty, only listed chatIds can interact with the bot — closing the
+  // first-claimer ownership race. Empty list preserves legacy single-owner mode.
+  router.put("/companies/:companyId/messaging/telegram/allowed-chat-ids", async (req, res) => {
+    assertBoard(req);
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+
+    const body = req.body as { allowedChatIds?: unknown };
+    const raw = body.allowedChatIds;
+    if (!Array.isArray(raw)) {
+      res.status(400).json({ error: "allowedChatIds must be an array of strings" });
+      return;
+    }
+    const cleaned = raw
+      .filter((v): v is string => typeof v === "string")
+      .map((v) => v.trim())
+      .filter((v) => v.length > 0 && /^-?\d+$/.test(v));
+    if (cleaned.length !== raw.length) {
+      res.status(400).json({ error: "Each chat ID must be a non-empty integer string" });
+      return;
+    }
+
+    const bridge = await bridgeSvc.getByPlatform(companyId, "telegram");
+    if (!bridge) {
+      res.status(404).json({ error: "No Telegram bridge configured" });
+      return;
+    }
+
+    const config = { ...((bridge.config as Record<string, unknown> | null) ?? {}) };
+    config.allowedChatIds = cleaned;
+    await db.update(messagingBridges).set({ config, updatedAt: new Date() }).where(eq(messagingBridges.id, bridge.id));
+
+    // Restart the bot so the new allowlist is picked up by the in-memory
+    // BotInstance immediately rather than waiting for the next process restart.
+    if (bridge.secretId) {
+      try {
+        const token = await secretSvc.resolveSecretValue(companyId, bridge.secretId, "latest");
+        if (token) {
+          await stopTelegramBridge(companyId);
+          await startTelegramBridge(db, companyId, token);
+        }
+      } catch (err) {
+        logger.warn({ err, companyId }, "[messaging] failed to restart bot after allowlist update");
+      }
+    }
+
+    await logActivity(db, {
+      companyId,
+      actorType: "user",
+      actorId: req.actor.userId ?? "board",
+      action: "messaging.telegram.allowed_chat_ids_updated",
+      entityType: "messaging_bridge",
+      entityId: bridge.id,
+      details: { count: cleaned.length },
+    });
+
+    res.json({ ok: true, allowedChatIds: cleaned });
+  });
+
   // ── Email inbound webhook (public — no auth required) ──
   // This will be mounted separately outside the auth middleware
 

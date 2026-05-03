@@ -48,4 +48,9 @@ export const messagingApi = {
 
   resetTelegramOwner: (companyId: string) =>
     api.post<{ ok: true }>(`/companies/${companyId}/messaging/telegram/reset-owner`, {}),
+
+  updateTelegramAllowedChatIds: (companyId: string, allowedChatIds: string[]) =>
+    api.put<{ ok: true; allowedChatIds: string[] }>(`/companies/${companyId}/messaging/telegram/allowed-chat-ids`, {
+      allowedChatIds,
+    }),
 };
