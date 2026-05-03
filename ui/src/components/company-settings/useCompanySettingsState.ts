@@ -23,6 +23,9 @@ export function useCompanySettingsState() {
   const [companyName, setCompanyName] = useState("");
   const [description, setDescription] = useState("");
   const [brandColor, setBrandColor] = useState("");
+  // SEC-PROMPT-001: per-tenant prompt preamble. Empty = inherit instance-level
+  // preamble (server falls back automatically).
+  const [promptPreamble, setPromptPreamble] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
   const [logoUploadError, setLogoUploadError] = useState<string | null>(null);
 
@@ -66,6 +69,7 @@ export function useCompanySettingsState() {
     setCompanyName(selectedCompany.name);
     setDescription(selectedCompany.description ?? "");
     setBrandColor(selectedCompany.brandColor ?? "");
+    setPromptPreamble(selectedCompany.promptPreamble ?? "");
     setLogoUrl(selectedCompany.logoUrl ?? "");
     const bKey = `ironworks:branding:${selectedCompany.id}`;
     setAccentColor(localStorage.getItem(`${bKey}:accent`) ?? "");
@@ -154,11 +158,16 @@ export function useCompanySettingsState() {
     !!selectedCompany &&
     (companyName !== selectedCompany.name ||
       description !== (selectedCompany.description ?? "") ||
-      brandColor !== (selectedCompany.brandColor ?? ""));
+      brandColor !== (selectedCompany.brandColor ?? "") ||
+      promptPreamble !== (selectedCompany.promptPreamble ?? ""));
 
   const generalMutation = useMutation({
-    mutationFn: (data: { name: string; description: string | null; brandColor: string | null }) =>
-      companiesApi.update(selectedCompanyId!, data),
+    mutationFn: (data: {
+      name: string;
+      description: string | null;
+      brandColor: string | null;
+      promptPreamble: string | null;
+    }) => companiesApi.update(selectedCompanyId!, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.companies.all });
     },
@@ -326,6 +335,7 @@ export function useCompanySettingsState() {
       name: companyName.trim(),
       description: description.trim() || null,
       brandColor: brandColor || null,
+      promptPreamble: promptPreamble.trim() || null,
     });
   }
 
@@ -376,6 +386,8 @@ export function useCompanySettingsState() {
     setDescription,
     brandColor,
     setBrandColor,
+    promptPreamble,
+    setPromptPreamble,
     logoUrl,
     logoUploadError,
     accentColor,

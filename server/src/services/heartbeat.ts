@@ -13,6 +13,7 @@ import {
   agents,
   agentTaskSessions,
   agentWakeupRequests,
+  companies,
   costEvents,
   heartbeatRunEvents,
   heartbeatRuns,
@@ -2238,7 +2239,7 @@ export function heartbeatService(db: Db) {
       }
 
       // Three-tier prompt assembly. Order of precedence:
-      //   1. instance.promptPreamble — operator-level, prepended to systemPrompt
+      //   1. company.promptPreamble (per-tenant) → instance.promptPreamble (fallback)
       //   2. agent.systemPrompt / agentInstructions — explicit per-agent values
       //   3. role-template fallback — used only when agent column is empty
       // The role tier is a safety net: every agent created via team-pack hire
@@ -2246,11 +2247,28 @@ export function heartbeatService(db: Db) {
       // template, so this fallback only fires for agents created outside that
       // path or for agents whose columns were cleared. Without this, an empty
       // column meant the agent went into a heartbeat with no persona at all.
+      //
+      // SEC-PROMPT-001: company.promptPreamble takes precedence so each tenant
+      // gets its own preamble. Falling back to instance.promptPreamble keeps
+      // single-tenant deployments backwards-compatible (no schema migration
+      // pain) — a multi-tenant operator who wants tenant isolation simply
+      // sets a non-empty per-company preamble and the instance value is
+      // ignored for that tenant.
+      const [companyRow] = await db
+        .select({ promptPreamble: companies.promptPreamble })
+        .from(companies)
+        .where(eq(companies.id, agent.companyId))
+        .limit(1);
+      const companyPreamble =
+        typeof companyRow?.promptPreamble === "string" && companyRow.promptPreamble.trim()
+          ? companyRow.promptPreamble.trim()
+          : null;
       const generalSettings = await instanceSettings.getGeneral();
       const instancePreamble =
         typeof generalSettings.promptPreamble === "string" && generalSettings.promptPreamble.trim()
           ? generalSettings.promptPreamble.trim()
           : null;
+      const resolvedPreamble = companyPreamble ?? instancePreamble;
       const roleTemplate =
         ROLE_TEMPLATES.find((t) => t.role === agent.role && (!agent.department || t.department === agent.department)) ??
         ROLE_TEMPLATES.find((t) => t.role === agent.role) ??
@@ -2259,9 +2277,9 @@ export function heartbeatService(db: Db) {
       const baseSystemPrompt =
         typeof agent.systemPrompt === "string" && agent.systemPrompt ? agent.systemPrompt : (roleTemplate?.soul ?? "");
       if (baseSystemPrompt) {
-        context.systemPrompt = instancePreamble ? `${instancePreamble}\n\n${baseSystemPrompt}` : baseSystemPrompt;
-      } else if (instancePreamble) {
-        context.systemPrompt = instancePreamble;
+        context.systemPrompt = resolvedPreamble ? `${resolvedPreamble}\n\n${baseSystemPrompt}` : baseSystemPrompt;
+      } else if (resolvedPreamble) {
+        context.systemPrompt = resolvedPreamble;
       }
 
       const baseInstructions =

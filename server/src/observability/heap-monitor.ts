@@ -1,7 +1,15 @@
+import { chmod, readdir, stat, unlink } from "node:fs/promises";
 import { join } from "node:path";
 import { writeHeapSnapshot } from "node:v8";
 
 import { logger } from "../middleware/logger.js";
+
+// SEC-HEAP-001: V8 heap snapshots contain the entire process memory by
+// definition — including decrypted workspaceProviderSecrets, JWT signing
+// material, telegram bot tokens, and OAuth credentials. Treat every
+// .heapsnapshot file as a sensitive secret artifact: chmod 0600 to block
+// other host users, and sweep files older than the retention horizon on
+// each new write so they don't accumulate on disk indefinitely.
 
 /**
  * Heap-monitor wires up two pieces of observability we need to actually
@@ -34,6 +42,17 @@ import { logger } from "../middleware/logger.js";
 
 const SAMPLE_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 const SNAPSHOT_DIR_DEFAULT = "/ironworks/heap-snapshots";
+
+// Retention: drop snapshots older than this on each new write. Seven days
+// gives operators a week-long window to grab a snapshot for a leak
+// investigation; anything older is stale and not worth the disk footprint
+// (or the secret-exposure risk if the volume is mounted elsewhere).
+const SNAPSHOT_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+// File mode for written snapshots: owner read+write only. Defense in depth —
+// the snapshot dir should already be operator-only, but a 0600 file mode
+// blocks any other UID inside the container or on the host volume from
+// reading them if the dir mode regresses.
+const SNAPSHOT_FILE_MODE = 0o600;
 
 // Auto-snapshot triggers — close the gap that manual SIGUSR2 leaves open
 // (operator asleep at 03:00 when leak crosses threshold = lost evidence).
@@ -77,18 +96,55 @@ function logMemorySample(): NodeJS.MemoryUsage {
   return mem;
 }
 
+async function sweepOldSnapshots(snapshotDir: string): Promise<void> {
+  // SEC-HEAP-001: cap retention so secret-bearing snapshots don't accumulate.
+  // Failure here must not stop the new snapshot from being written — log and
+  // continue. The sweep is best-effort.
+  try {
+    const entries = await readdir(snapshotDir);
+    const now = Date.now();
+    for (const name of entries) {
+      if (!name.endsWith(".heapsnapshot")) continue;
+      const full = join(snapshotDir, name);
+      try {
+        const st = await stat(full);
+        if (now - st.mtimeMs > SNAPSHOT_RETENTION_MS) {
+          await unlink(full);
+          logger.info({ path: full, ageMs: now - st.mtimeMs }, "heap-snapshot expired and removed");
+        }
+      } catch (err) {
+        logger.warn({ err, path: full }, "heap-snapshot retention sweep skipped a file");
+      }
+    }
+  } catch (err) {
+    logger.warn({ err, snapshotDir }, "heap-snapshot retention sweep failed");
+  }
+}
+
 function takeHeapSnapshot(snapshotDir: string) {
   // Run async-detached so the SIGUSR2 handler returns immediately.
   // writeHeapSnapshot itself is synchronous from Node's POV but the V8
   // heap is paused only briefly while the structure is walked; large
   // heaps can take 1-2s. Acceptable for a manual diagnostic action.
-  setImmediate(() => {
+  setImmediate(async () => {
     try {
       const ts = new Date().toISOString().replace(/[:.]/g, "-");
       const path = join(snapshotDir, `heap-${ts}.heapsnapshot`);
       const written = writeHeapSnapshot(path);
+      // SEC-HEAP-001: tighten file mode immediately after V8 closes the fd.
+      // writeHeapSnapshot honours the process umask, which on most container
+      // images leaves files at 0644 — readable by any other UID with shell
+      // access to the volume. chmod 0600 closes that.
+      try {
+        await chmod(written, SNAPSHOT_FILE_MODE);
+      } catch (chmodErr) {
+        logger.warn({ err: chmodErr, path: written }, "heap-snapshot chmod failed");
+      }
       const mem = process.memoryUsage();
       logger.warn({ path: written, rss: mem.rss, heapUsed: mem.heapUsed }, "heap-snapshot written");
+      // Sweep AFTER the new snapshot is on disk so a sweep failure can never
+      // leave the operator with zero snapshots when they need one.
+      await sweepOldSnapshots(snapshotDir);
     } catch (err) {
       logger.error({ err }, "heap-snapshot failed");
     }
@@ -114,7 +170,10 @@ export function installHeapMonitor(opts?: { snapshotDir?: string }): () => void 
     return () => undefined;
   }
 
-  const snapshotDir = opts?.snapshotDir ?? SNAPSHOT_DIR_DEFAULT;
+  // SEC-HEAP-001: allow operators to redirect snapshots to a non-persisted
+  // volume (e.g. a tmpfs) so they don't survive container restart. Explicit
+  // opts.snapshotDir wins over env so tests stay deterministic.
+  const snapshotDir = opts?.snapshotDir ?? process.env.IRONWORKS_HEAP_SNAPSHOT_DIR?.trim() ?? SNAPSHOT_DIR_DEFAULT;
   const startedAt = Date.now();
   const heapHistory: number[] = []; // last GROWTH_WINDOW_SAMPLES heapUsed values
   let lastAutoSnapshotAt = 0;

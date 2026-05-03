@@ -59,8 +59,15 @@ export function companyRoutes(db: Db, storage?: StorageService) {
     await db.transaction(async (tx) => {
       // Direct FKs to companies.id: collect column + table names so we can
       // wipe them by company_id. Reverse dependency order isn't needed
-      // because we issue raw DELETEs per table; cross-FKs between siblings
+      // because we issue DELETEs per table; cross-FKs between siblings
       // resolve as we walk. Postgres holds row locks per statement.
+      //
+      // SEC-ONBOARD-001: pg_constraint can return any catalog-reachable
+      // identifier shape (schema-qualified, mixed case, etc.). Validate
+      // table/column names against a strict regex BEFORE handing them to
+      // sql.identifier so a future catalog-level compromise can't smuggle
+      // a quoted-identifier injection through. companyId flows in as a
+      // bound parameter via tagged-template interpolation, never as text.
       const directChildren = (await tx.execute(sql`
         SELECT conrelid::regclass::text AS table_name,
                (SELECT attname FROM pg_attribute WHERE attrelid = conrelid AND attnum = ANY(conkey) LIMIT 1) AS column_name
@@ -68,6 +75,8 @@ export function companyRoutes(db: Db, storage?: StorageService) {
          WHERE contype = 'f'
            AND confrelid = 'public.companies'::regclass
       `)) as unknown as Array<{ table_name: string; column_name: string }>;
+
+      const SAFE_IDENTIFIER = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
 
       // Iterate until we no longer make progress: each pass tries to delete
       // from every direct child; FK-from-child-to-child rows resolve as
@@ -79,9 +88,18 @@ export function companyRoutes(db: Db, storage?: StorageService) {
         for (const key of remaining) {
           const [tableName, columnName] = key.split("|");
           if (!tableName || !columnName) continue;
+          if (!SAFE_IDENTIFIER.test(tableName) || !SAFE_IDENTIFIER.test(columnName)) {
+            // Skip anything that isn't a plain unquoted identifier. Postgres'
+            // pg_constraint returns the simple name for public-schema tables,
+            // so a value that fails this regex is either a catalog edge case
+            // (schema-qualified, quoted) or a tampered row. Either way: don't
+            // execute it.
+            logger.warn({ tableName, columnName }, "rollbackCompanyById skipped non-simple identifier");
+            continue;
+          }
           try {
             await tx.execute(
-              sql.raw(`DELETE FROM ${tableName} WHERE ${columnName} = '${companyId.replace(/'/g, "''")}'`),
+              sql`DELETE FROM ${sql.identifier(tableName)} WHERE ${sql.identifier(columnName)} = ${companyId}`,
             );
           } catch {
             stillBlocked.add(key);
@@ -585,10 +603,40 @@ export function companyRoutes(db: Db, storage?: StorageService) {
         try {
           await rollbackCompanyById(createdCompanyId);
         } catch (cleanupErr) {
+          // SEC-ONBOARD-002: rollback failed (typically FK-cycle prevents the
+          // outer DELETE from completing). The transaction inside
+          // rollbackCompanyById ensures we don't leave half-deleted children,
+          // but the partial company row + descendants remain. Tag the row as
+          // archived with a clear pause_reason so it's hidden from active
+          // company listings and won't collide with a re-onboard attempt
+          // using the same prefix. Best-effort: failure to flip the flag is
+          // non-fatal, the original error still propagates to the caller.
           logger.error(
             { cleanupErr, originalErr: err, companyId: createdCompanyId },
-            "Onboard rollback failed - partial company may persist; manual cleanup required",
+            "Onboard rollback failed - partial company persisting; flagging as archived",
           );
+          try {
+            await db
+              .update(companies)
+              .set({
+                status: "archived",
+                // pauseReason is a constrained enum at the type level; the
+                // DB column itself is plain text. "system" is the closest
+                // semantic match for an internally-triggered halt. The
+                // human-readable detail goes into description so operators
+                // can identify these rows during cleanup.
+                pauseReason: "system",
+                description: "[onboard rollback failed] manual cleanup required",
+                pausedAt: new Date(),
+                updatedAt: new Date(),
+              })
+              .where(eq(companies.id, createdCompanyId));
+          } catch (markErr) {
+            logger.error(
+              { markErr, companyId: createdCompanyId },
+              "Failed to mark partial company as archived; manual cleanup required",
+            );
+          }
         }
       }
       throw err;

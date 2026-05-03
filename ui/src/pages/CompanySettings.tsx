@@ -116,6 +116,8 @@ function CompanySettingsInner() {
           description={state.description}
           setDescription={state.setDescription}
           brandColor={state.brandColor}
+          promptPreamble={state.promptPreamble}
+          setPromptPreamble={state.setPromptPreamble}
           generalDirty={state.generalDirty}
           onSave={state.handleSaveGeneral}
           isSaving={state.generalMutation.isPending}

@@ -54,6 +54,13 @@ services:
       # openrouter_api fail with "OpenRouter API key is not configured" even
       # when the host .env has OPENROUTER_API_KEY set.
       ADAPTER_OPENROUTER_API_KEY: "${OPENROUTER_API_KEY:-}"
+      # SEC-COMPOSE-001: provider-secret-resolver env fallback expects the
+      # ADAPTER_*_API_KEY shape for non-OpenRouter providers as well. Wire
+      # them here so env-based credential resolution works in production
+      # parity with the shared adapter naming convention.
+      ADAPTER_ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+      ADAPTER_OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      ADAPTER_POE_API_KEY: "${POE_API_KEY:-}"
       OLLAMA_API_KEY: "${OLLAMA_API_KEY:-}"
       OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-}"
       POE_API_KEY: "${POE_API_KEY:-}"

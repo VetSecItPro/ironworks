@@ -15,6 +15,10 @@ export const companies = pgTable(
     spentMonthlyCents: integer("spent_monthly_cents").notNull().default(0),
     requireBoardApprovalForNewAgents: boolean("require_board_approval_for_new_agents").notNull().default(true),
     brandColor: text("brand_color"),
+    // SEC-PROMPT-001: per-company override for the instance-level prompt
+    // preamble. NULL/empty = fall back to instance.promptPreamble for
+    // backwards compatibility with single-tenant deployments.
+    promptPreamble: text("prompt_preamble"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
