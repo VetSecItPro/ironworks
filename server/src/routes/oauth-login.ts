@@ -84,6 +84,30 @@ interface OAuthSession {
 /** In-memory session store. Instance-scoped; survives restarts would require persistence. */
 const sessions = new Map<string, OAuthSession>();
 
+// SEC-OAUTH-001: best-effort cleanup of spawned CLIs on graceful shutdown.
+// If the server crashes hard the children become orphaned, but for a SIGTERM
+// rollout we kill the still-pending OAuth subprocesses so they don't linger
+// holding open stdin/stdout/stderr fds. Idempotent — registering the handler
+// twice is harmless because the child .kill() is no-op once exited.
+let shutdownHookInstalled = false;
+function installShutdownHook(): void {
+  if (shutdownHookInstalled) return;
+  shutdownHookInstalled = true;
+  const cleanupAll = () => {
+    for (const [, session] of sessions) {
+      try {
+        session.proc.kill("SIGTERM");
+      } catch {
+        // child already exited
+      }
+    }
+    sessions.clear();
+  };
+  process.once("SIGTERM", cleanupAll);
+  process.once("SIGINT", cleanupAll);
+  process.once("beforeExit", cleanupAll);
+}
+
 const SESSION_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 function expandTilde(p: string): string {
@@ -132,6 +156,7 @@ function sweepExpiredSessions(): void {
 
 export function oauthLoginRoutes() {
   const router = Router();
+  installShutdownHook();
 
   // POST /api/oauth-login/:provider/start
   router.post("/oauth-login/:provider/start", async (req, res) => {

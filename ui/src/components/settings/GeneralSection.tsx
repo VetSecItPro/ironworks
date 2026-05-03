@@ -9,6 +9,8 @@ interface GeneralSectionProps {
   description: string;
   setDescription: (v: string) => void;
   brandColor: string;
+  promptPreamble: string;
+  setPromptPreamble: (v: string) => void;
   generalDirty: boolean;
   onSave: () => void;
   isSaving: boolean;
@@ -23,6 +25,8 @@ export function GeneralSection({
   setDescription,
   selectedCompany,
   brandColor,
+  promptPreamble,
+  setPromptPreamble,
   generalDirty,
   onSave,
   isSaving,
@@ -48,6 +52,19 @@ export function GeneralSection({
             value={description}
             placeholder="Optional company description"
             onChange={(e) => setDescription(e.target.value)}
+          />
+        </Field>
+        <Field
+          label="Prompt preamble"
+          hint="Prepended to every agent's system prompt for this company. Leave empty to inherit the instance-level preamble."
+        >
+          <textarea
+            className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
+            rows={4}
+            value={promptPreamble}
+            placeholder="(empty = inherit instance preamble)"
+            onChange={(e) => setPromptPreamble(e.target.value)}
+            maxLength={4000}
           />
         </Field>
       </div>

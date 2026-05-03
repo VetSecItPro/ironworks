@@ -46,7 +46,7 @@ import { pluginRegistryService } from "../services/plugin-registry.js";
 import type { PluginStreamBus } from "../services/plugin-stream-bus.js";
 import type { PluginToolDispatcher } from "../services/plugin-tool-dispatcher.js";
 import type { PluginWorkerManager } from "../services/plugin-worker-manager.js";
-import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
+import { assertBoard, assertCompanyAccess, assertInstanceAdmin, getActorInfo } from "./authz.js";
 
 /** UI slot declaration extracted from plugin manifest */
 type PluginUiSlotDeclaration = NonNullable<NonNullable<IronworksPluginManifestV1["ui"]>["slots"]>[number];
@@ -589,7 +589,13 @@ export function pluginRoutes(
    * - `500` — installation succeeded but manifest is missing (indicates a loader bug)
    */
   router.post("/plugins/install", async (req, res) => {
-    assertBoard(req);
+    // SEC-PLUGIN-001: install runs `npm install` on the shared host and the
+    // resulting plugin code executes inside fork()'d workers with IPC back to
+    // the host loader. That privilege belongs to the instance operator, not to
+    // any tenant board member. Gating with `assertInstanceAdmin` (instead of
+    // `assertBoard`) prevents a low-privilege member of any company from
+    // staging arbitrary npm packages onto the host filesystem.
+    assertInstanceAdmin(req);
     const { packageName, version, isLocalPath } = req.body as PluginInstallRequest;
 
     // Input validation
@@ -1200,7 +1206,9 @@ export function pluginRoutes(
    * Errors: 404 if plugin not found, 400 for lifecycle errors
    */
   router.delete("/plugins/:pluginId", async (req, res) => {
-    assertBoard(req);
+    // SEC-PLUGIN-001: uninstall removes plugin files from the host fs and
+    // optionally purges retained data. Host-level mutation = instance-admin.
+    assertInstanceAdmin(req);
     const { pluginId } = req.params;
     const purge = req.query.purge === "true";
 
@@ -1433,7 +1441,9 @@ export function pluginRoutes(
    * Errors: 404 if plugin not found, 400 for lifecycle errors
    */
   router.post("/plugins/:pluginId/upgrade", async (req, res) => {
-    assertBoard(req);
+    // SEC-PLUGIN-001: upgrade re-runs `npm install` — same host-privilege
+    // boundary as install. Restrict to instance-admin.
+    assertInstanceAdmin(req);
     const { pluginId } = req.params;
     const body = req.body as { version?: string } | undefined;
     const version = body?.version;

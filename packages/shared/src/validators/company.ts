@@ -22,6 +22,9 @@ export const updateCompanySchema = createCompanySchema.partial().extend({
   requireBoardApprovalForNewAgents: z.boolean().optional(),
   brandColor: brandColorSchema,
   logoAssetId: logoAssetIdSchema,
+  // SEC-PROMPT-001: per-company override for the instance prompt preamble.
+  // null clears the override and re-enables the instance-level fallback.
+  promptPreamble: z.string().max(4000).nullable().optional(),
 });
 
 export type UpdateCompany = z.infer<typeof updateCompanySchema>;

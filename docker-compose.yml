@@ -63,6 +63,14 @@ services:
       # See docker-compose.production.yml for rationale: openrouter-api adapter
       # reads ADAPTER_OPENROUTER_API_KEY at runtime, not OPENROUTER_API_KEY.
       ADAPTER_OPENROUTER_API_KEY: "${OPENROUTER_API_KEY:-}"
+      # SEC-COMPOSE-001: provider-secret-resolver also looks up
+      # ADAPTER_ANTHROPIC_API_KEY / ADAPTER_OPENAI_API_KEY / ADAPTER_POE_API_KEY
+      # for env-based credential fallback. Without these, env-resolution
+      # silently fails inside the container and operators see a confusing
+      # "auth not configured" error even when the host .env is populated.
+      ADAPTER_ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+      ADAPTER_OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      ADAPTER_POE_API_KEY: "${POE_API_KEY:-}"
       OLLAMA_API_KEY: "${OLLAMA_API_KEY:-}"
       OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-}"
       POE_API_KEY: "${POE_API_KEY:-}"
