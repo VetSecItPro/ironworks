@@ -16,6 +16,8 @@ import { forbidden } from "../errors.js";
 import { logger } from "../middleware/logger.js";
 import { validate } from "../middleware/validate.js";
 import { ROLE_TEMPLATES } from "../onboarding-assets/role-templates.js";
+import { applyAgentPostCreateEmbellishments } from "../services/agent-bootstrap.js";
+import { agentInstructionsService } from "../services/agent-instructions.js";
 import { seedDefaultChannels } from "../services/channels.js";
 import { goalService } from "../services/goals.js";
 import {
@@ -380,12 +382,25 @@ export function companyRoutes(db: Db, storage?: StorageService) {
 
       // 4. Agents - pack or manual single. agentService.create runs the
       //    minimum schema-level insert. Filesystem-bound embellishments
-      //    (managed instructions bundle, library folder) intentionally do
-      //    not run here because they cannot participate in a DB rollback;
-      //    agents still function with inline prompt template + default
-      //    permissions, and Settings > Agents can refresh files later.
+      //    (managed instructions bundle, library folder, channel join,
+      //    default tasks:assign grant) run AFTER all rows commit, in a
+      //    tolerant try/catch loop: if any single embellishment fails the
+      //    company is already functional and Settings > Agents can refresh
+      //    files later. If the DB-side create fails earlier, the outer
+      //    catch wipes the company so we never persist a half-built tenant.
       let primaryAgentId: string | null = null;
       const createdAgentIds: string[] = [];
+      const createdAgentRecords: Array<{
+        agent: {
+          id: string;
+          companyId: string;
+          name: string;
+          role: string;
+          adapterType: string;
+          adapterConfig: unknown;
+        };
+        department?: string;
+      }> = [];
 
       if (payload.step2Mode === "pack" && payload.rosterItems.length > 0) {
         // Sort so managers (no reportsTo) are created before reports,
@@ -438,6 +453,7 @@ export function companyRoutes(db: Db, storage?: StorageService) {
           });
           agentIdByTemplateKey.set(item.templateKey, created.id);
           createdAgentIds.push(created.id);
+          createdAgentRecords.push({ agent: created });
           if (created.role === "ceo" && !primaryAgentId) primaryAgentId = created.id;
 
           await logActivity(db, {
@@ -468,6 +484,7 @@ export function companyRoutes(db: Db, storage?: StorageService) {
         });
         primaryAgentId = created.id;
         createdAgentIds.push(created.id);
+        createdAgentRecords.push({ agent: created });
         await logActivity(db, {
           companyId: company.id,
           actorType: actor.actorType,
@@ -478,6 +495,27 @@ export function companyRoutes(db: Db, storage?: StorageService) {
           entityType: "agent",
           entityId: created.id,
           details: { name: created.name, role: created.role, source: "onboard_manual" },
+        });
+      }
+
+      // Post-create embellishments: managed instructions bundle, library
+      // folder, default tasks:assign grant, channel auto-join. Each step is
+      // tolerant inside applyAgentPostCreateEmbellishments; a single failure
+      // does not abort the others, and the company is already committed +
+      // functional regardless. Settings > Agents can refresh anything that
+      // didn't land. The standard agent-creation routes call the same helpers
+      // (one-by-one) so behavior is consistent across entry points.
+      const instructionsSvc = agentInstructionsService();
+      const grantedByUserId = req.actor.userId ?? null;
+      for (const record of createdAgentRecords) {
+        await applyAgentPostCreateEmbellishments(record.agent, {
+          db,
+          agents,
+          access,
+          instructions: instructionsSvc,
+          grantedByUserId,
+          department: record.department,
+          logger,
         });
       }
 

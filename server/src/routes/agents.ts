@@ -55,11 +55,11 @@ import { logger } from "../middleware/logger.js";
 import { validate } from "../middleware/validate.js";
 import { COMMON_AGENT_PREAMBLE, ROLE_TEMPLATES } from "../onboarding-assets/role-templates.js";
 import { redactEventPayload } from "../redaction.js";
-import { autoJoinAgentChannels, findCompanyChannel, postMessage as postChannelMessage } from "../services/channels.js";
 import {
-  loadDefaultAgentInstructionsBundle,
-  resolveDefaultAgentInstructionsBundleRole,
-} from "../services/default-agent-instructions.js";
+  applyDefaultAgentTaskAssignGrant as applyDefaultAgentTaskAssignGrantSvc,
+  materializeDefaultInstructionsBundleForNewAgent as materializeDefaultInstructionsBundleForNewAgentSvc,
+} from "../services/agent-bootstrap.js";
+import { autoJoinAgentChannels, findCompanyChannel, postMessage as postChannelMessage } from "../services/channels.js";
 import {
   accessService,
   agentInstructionsService,
@@ -221,8 +221,7 @@ export function agentRoutes(db: Db) {
   }
 
   async function applyDefaultAgentTaskAssignGrant(companyId: string, agentId: string, grantedByUserId: string | null) {
-    await access.ensureMembership(companyId, "agent", agentId, "member", "active");
-    await access.setPrincipalPermission(companyId, "agent", agentId, "tasks:assign", true, grantedByUserId);
+    await applyDefaultAgentTaskAssignGrantSvc(companyId, agentId, grantedByUserId, { access });
   }
 
   async function assertCanCreateAgentsForCompany(req: Request, companyId: string) {
@@ -485,35 +484,7 @@ export function agentRoutes(db: Db) {
       adapterConfig: unknown;
     },
   >(agent: T): Promise<T> {
-    if (!DEFAULT_MANAGED_INSTRUCTIONS_ADAPTER_TYPES.has(agent.adapterType)) {
-      return agent;
-    }
-
-    const adapterConfig = asRecord(agent.adapterConfig) ?? {};
-    const hasExplicitInstructionsBundle =
-      Boolean(asNonEmptyString(adapterConfig.instructionsBundleMode)) ||
-      Boolean(asNonEmptyString(adapterConfig.instructionsRootPath)) ||
-      Boolean(asNonEmptyString(adapterConfig.instructionsEntryFile)) ||
-      Boolean(asNonEmptyString(adapterConfig.instructionsFilePath)) ||
-      Boolean(asNonEmptyString(adapterConfig.agentsMdPath));
-    if (hasExplicitInstructionsBundle) {
-      return agent;
-    }
-
-    const promptTemplate = typeof adapterConfig.promptTemplate === "string" ? adapterConfig.promptTemplate : "";
-    const files =
-      promptTemplate.trim().length === 0
-        ? await loadDefaultAgentInstructionsBundle(resolveDefaultAgentInstructionsBundleRole(agent.role))
-        : { "AGENTS.md": promptTemplate };
-    const materialized = await instructions.materializeManagedBundle(agent, files, {
-      entryFile: "AGENTS.md",
-      replaceExisting: false,
-    });
-    const nextAdapterConfig = { ...materialized.adapterConfig };
-    delete nextAdapterConfig.promptTemplate;
-
-    const updated = await svc.update(agent.id, { adapterConfig: nextAdapterConfig });
-    return (updated as T | null) ?? { ...agent, adapterConfig: nextAdapterConfig };
+    return materializeDefaultInstructionsBundleForNewAgentSvc(agent, { agents: svc, instructions });
   }
 
   async function assertCanManageInstructionsPath(req: Request, targetAgent: { id: string; companyId: string }) {
