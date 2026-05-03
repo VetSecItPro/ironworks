@@ -8,19 +8,20 @@ describe("companiesApi.onboard", () => {
   let fetchSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    fetchSpy = vi.fn(async () =>
-      new Response(
-        JSON.stringify({
-          companyId: "co-1",
-          companyPrefix: "ACM",
-          companyGoalId: "g-1",
-          primaryAgentId: "a-1",
-          agentIds: ["a-1"],
-          projectId: "p-1",
-          primaryIssueRef: "ACM-1",
-        }),
-        { status: 201, headers: { "Content-Type": "application/json" } },
-      ),
+    fetchSpy = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            companyId: "co-1",
+            companyPrefix: "ACM",
+            companyGoalId: "g-1",
+            primaryAgentId: "a-1",
+            agentIds: ["a-1"],
+            projectId: "p-1",
+            primaryIssueRef: "ACM-1",
+          }),
+          { status: 201, headers: { "Content-Type": "application/json" } },
+        ),
     );
     globalThis.fetch = fetchSpy as unknown as typeof fetch;
   });

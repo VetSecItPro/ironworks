@@ -49,10 +49,10 @@ export function companyRoutes(db: Db, storage?: StorageService) {
   const knowledgesvc = knowledgeService(db);
 
   // Discovers every public-schema table that has a FK chain back to
-   // companies.id (direct or transitive) and deletes that company's rows
-   // from each in topological order. Used by the onboard rollback path
-   // where companyService.remove's static list isn't comprehensive enough
-   // to clear all seeded rows. Operates inside a single transaction.
+  // companies.id (direct or transitive) and deletes that company's rows
+  // from each in topological order. Used by the onboard rollback path
+  // where companyService.remove's static list isn't comprehensive enough
+  // to clear all seeded rows. Operates inside a single transaction.
   async function rollbackCompanyById(companyId: string) {
     await db.transaction(async (tx) => {
       // Direct FKs to companies.id: collect column + table names so we can
@@ -408,9 +408,7 @@ export function companyRoutes(db: Db, storage?: StorageService) {
               ? {
                   ...payload.adapterConfig,
                   ...(payload.adapterConfig.model ? {} : { model: roleTemplate.modelPrimary }),
-                  ...(payload.adapterConfig.fallbackModel
-                    ? {}
-                    : { fallbackModel: roleTemplate.modelFallback }),
+                  ...(payload.adapterConfig.fallbackModel ? {} : { fallbackModel: roleTemplate.modelFallback }),
                 }
               : { ...payload.adapterConfig };
           const reportsToAgentId = item.reportsTo ? (agentIdByTemplateKey.get(item.reportsTo) ?? null) : null;
@@ -522,10 +520,7 @@ export function companyRoutes(db: Db, storage?: StorageService) {
               status: "todo",
             });
           } catch (err) {
-            logger.warn(
-              { err, companyId: company.id, extraTitle },
-              "Non-fatal: extra onboarding task creation failed",
-            );
+            logger.warn({ err, companyId: company.id, extraTitle }, "Non-fatal: extra onboarding task creation failed");
           }
         }
       }

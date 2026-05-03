@@ -303,7 +303,9 @@ export async function handleLaunch(deps: WizardHandlerDeps, params: LaunchParams
     params.closeOnboarding();
     if (result.primaryIssueRef) {
       params.navigate(
-        result.companyPrefix ? `/${result.companyPrefix}/issues/${result.primaryIssueRef}` : `/issues/${result.primaryIssueRef}`,
+        result.companyPrefix
+          ? `/${result.companyPrefix}/issues/${result.primaryIssueRef}`
+          : `/issues/${result.primaryIssueRef}`,
       );
     } else {
       params.navigate(result.companyPrefix ? `/${result.companyPrefix}/agents` : "/agents");
