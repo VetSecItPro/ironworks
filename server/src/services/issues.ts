@@ -886,7 +886,22 @@ export function issueService(db: Db) {
       return withIssueLabels(db, rows);
     },
 
-    getByIdentifier: async (identifier: string) => {
+    // SEC: companyId required — query enforces tenant scope rather than relying on post-hoc check
+    getByIdentifier: async (identifier: string, companyId: string) => {
+      const row = await db
+        .select()
+        .from(issues)
+        .where(and(eq(issues.identifier, identifier.toUpperCase()), eq(issues.companyId, companyId)))
+        .then((rows) => rows[0] ?? null);
+      if (!row) return null;
+      const [enriched] = await withIssueLabels(db, [row]);
+      return enriched;
+    },
+
+    // Look up an issue by identifier WITHOUT a company scope.
+    // Caller MUST follow up with assertCompanyAccess(req, issue.companyId) before exposing data.
+    // Used by routes whose URL does not carry companyId (param resolver, identifier-based reads).
+    findByIdentifierUnsafe: async (identifier: string) => {
       const row = await db
         .select()
         .from(issues)

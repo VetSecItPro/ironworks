@@ -171,7 +171,8 @@ export function issueRoutes(db: Db, storage: StorageService) {
 
   async function normalizeIssueIdentifier(rawId: string): Promise<string> {
     if (/^[A-Z]+-\d+$/i.test(rawId)) {
-      const issue = await svc.getByIdentifier(rawId);
+      // Param-resolver: companyId not yet known here; route handler enforces access via assertCompanyAccess.
+      const issue = await svc.findByIdentifierUnsafe(rawId);
       if (issue) {
         return issue.id;
       }

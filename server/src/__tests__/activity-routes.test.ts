@@ -15,6 +15,7 @@ const mockActivityService = vi.hoisted(() => ({
 const mockIssueService = vi.hoisted(() => ({
   getById: vi.fn(),
   getByIdentifier: vi.fn(),
+  findByIdentifierUnsafe: vi.fn(),
 }));
 
 vi.mock("../services/activity.js", () => ({
@@ -54,7 +55,7 @@ describe("activity routes", () => {
   });
 
   it("resolves issue identifiers before loading runs", async () => {
-    mockIssueService.getByIdentifier.mockResolvedValue({
+    mockIssueService.findByIdentifierUnsafe.mockResolvedValue({
       id: "issue-uuid-1",
       companyId: "company-1",
     });
@@ -67,7 +68,7 @@ describe("activity routes", () => {
     const res = await request(createApp()).get("/api/issues/PAP-475/runs");
 
     expect(res.status).toBe(200);
-    expect(mockIssueService.getByIdentifier).toHaveBeenCalledWith("PAP-475");
+    expect(mockIssueService.findByIdentifierUnsafe).toHaveBeenCalledWith("PAP-475");
     expect(mockIssueService.getById).not.toHaveBeenCalled();
     expect(mockActivityService.runsForIssue).toHaveBeenCalledWith("company-1", "issue-uuid-1");
     expect(res.body).toEqual([{ runId: "run-1" }]);

@@ -18,7 +18,7 @@ import os from "node:os";
 import path from "node:path";
 import { Router } from "express";
 import { badRequest, notFound } from "../errors.js";
-import { assertBoard } from "./authz.js";
+import { assertInstanceAdmin } from "./authz.js";
 
 // ── Provider config ───────────────────────────────────────────────────────────
 
@@ -135,7 +135,8 @@ export function oauthLoginRoutes() {
 
   // POST /api/oauth-login/:provider/start
   router.post("/oauth-login/:provider/start", async (req, res) => {
-    assertBoard(req);
+    // SEC: instance-admin only — OAuth tokens land on the host fs, shared across all companies
+    assertInstanceAdmin(req);
     sweepExpiredSessions();
 
     const provider = req.params.provider as Provider;
@@ -228,7 +229,8 @@ export function oauthLoginRoutes() {
 
   // GET /api/oauth-login/:provider/check?sessionId=X
   router.get("/oauth-login/:provider/check", (req, res) => {
-    assertBoard(req);
+    // SEC: instance-admin only — OAuth tokens land on the host fs, shared across all companies
+    assertInstanceAdmin(req);
 
     const provider = req.params.provider as Provider;
     if (!PROVIDER_CONFIGS[provider]) {
@@ -269,7 +271,8 @@ export function oauthLoginRoutes() {
 
   // DELETE /api/oauth-login/:provider/sessions/:id — cancel an in-flight session
   router.delete("/oauth-login/:provider/sessions/:id", (req, res) => {
-    assertBoard(req);
+    // SEC: instance-admin only — OAuth tokens land on the host fs, shared across all companies
+    assertInstanceAdmin(req);
 
     const { id } = req.params;
     if (!sessions.has(id)) {

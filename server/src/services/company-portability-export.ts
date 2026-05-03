@@ -262,7 +262,7 @@ export async function exportBundle(
   const resolveIssueBySelector = async (selector: string) => {
     const trimmed = selector.trim();
     if (!trimmed) return null;
-    return trimmed.includes("-") ? issuesSvc.getByIdentifier(trimmed) : issuesSvc.getById(trimmed);
+    return trimmed.includes("-") ? issuesSvc.getByIdentifier(trimmed, companyId) : issuesSvc.getById(trimmed);
   };
   for (const selector of input.issues ?? []) {
     const issue = await resolveIssueBySelector(selector);
