@@ -75,22 +75,6 @@ export const OPENROUTER_MODELS: OpenRouterModel[] = [
     contextWindowTokens: 131072,
   },
 
-  // Llama 4 family (Meta, released 2025) — strong open-weight multi-modal models
-  {
-    id: "meta-llama/llama-4-scout-17b-16e-instruct",
-    label: "Llama 4 Scout 17B",
-    provider: "meta-llama",
-    maxOutputTokens: 8192,
-    contextWindowTokens: 1048576,
-  },
-  {
-    id: "meta-llama/llama-4-maverick-17b-128e-instruct",
-    label: "Llama 4 Maverick 17B",
-    provider: "meta-llama",
-    maxOutputTokens: 8192,
-    contextWindowTokens: 1048576,
-  },
-
   // Mistral family — strong European models, good for regulated workloads
   {
     id: "mistralai/mistral-large-2411",
@@ -98,29 +82,6 @@ export const OPENROUTER_MODELS: OpenRouterModel[] = [
     provider: "mistralai",
     maxOutputTokens: 8192,
     contextWindowTokens: 131072,
-  },
-  {
-    id: "mistralai/mistral-small-2501",
-    label: "Mistral Small 2501",
-    provider: "mistralai",
-    maxOutputTokens: 8192,
-    contextWindowTokens: 131072,
-  },
-
-  // Anthropic via OpenRouter relay — no prompt caching passthrough (documented in agentConfigurationDoc)
-  {
-    id: "anthropic/claude-opus-4-7",
-    label: "Claude Opus 4.7 (via OpenRouter)",
-    provider: "anthropic",
-    maxOutputTokens: 8192,
-    contextWindowTokens: 200000,
-  },
-  {
-    id: "anthropic/claude-sonnet-4-6",
-    label: "Claude Sonnet 4.6 (via OpenRouter)",
-    provider: "anthropic",
-    maxOutputTokens: 8192,
-    contextWindowTokens: 200000,
   },
 
   // OpenAI via OpenRouter relay
@@ -157,13 +118,6 @@ export const OPENROUTER_MODELS: OpenRouterModel[] = [
 
   // DeepSeek — strong coding and reasoning models from China
   {
-    id: "deepseek/deepseek-v3",
-    label: "DeepSeek V3",
-    provider: "deepseek",
-    maxOutputTokens: 8192,
-    contextWindowTokens: 131072,
-  },
-  {
     id: "deepseek/deepseek-r1",
     label: "DeepSeek R1",
     provider: "deepseek",
@@ -178,24 +132,6 @@ export const OPENROUTER_MODELS: OpenRouterModel[] = [
     provider: "qwen",
     maxOutputTokens: 8192,
     contextWindowTokens: 131072,
-  },
-
-  // xAI Grok — strong reasoning + real-time web knowledge
-  {
-    id: "x-ai/grok-3-latest",
-    label: "Grok 3 Latest",
-    provider: "x-ai",
-    maxOutputTokens: 8192,
-    contextWindowTokens: 131072,
-  },
-
-  // Perplexity Sonar — optimized for factual retrieval with web grounding
-  {
-    id: "perplexity/sonar-large",
-    label: "Perplexity Sonar Large",
-    provider: "perplexity",
-    contextWindowTokens: 131072,
-    maxOutputTokens: 8192,
   },
 ];
 

@@ -31,7 +31,7 @@ function makeCtx(configOverrides: Record<string, unknown> = {}) {
   return {
     adapterType: "openrouter_api" as const,
     config: {
-      model: "meta-llama/llama-4-scout-17b-16e-instruct",
+      model: "openai/gpt-oss-120b:free",
       apiKey: "sk-or-v1-validtestkey12345",
       ...configOverrides,
     },

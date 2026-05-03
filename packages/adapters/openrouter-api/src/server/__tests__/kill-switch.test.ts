@@ -52,7 +52,7 @@ describe("openrouter_api kill-switch (G.8)", () => {
       runId: "run-1",
       agent: { id: "a1", companyId: "c1", name: "Test", adapterType: "openrouter_api", adapterConfig: {} },
       runtime: { sessionId: null, sessionParams: null, sessionDisplayId: null, taskKey: null },
-      config: { apiKey: "sk-or-test", model: "anthropic/claude-sonnet-4-6" },
+      config: { apiKey: "sk-or-test", model: "openai/gpt-oss-120b:free" },
       context: { taskId: "t1", issueId: "i1", wakeReason: "test", issueIds: [] },
       onLog: async () => {},
     };
@@ -73,7 +73,7 @@ describe("openrouter_api kill-switch (G.8)", () => {
       runId: "run-1",
       agent: { id: "a1", companyId: "c1", name: "Test", adapterType: "openrouter_api", adapterConfig: {} },
       runtime: { sessionId: null, sessionParams: null, sessionDisplayId: null, taskKey: null },
-      config: { apiKey: "sk-or-test", model: "anthropic/claude-sonnet-4-6" },
+      config: { apiKey: "sk-or-test", model: "openai/gpt-oss-120b:free" },
       context: { taskId: "t1", issueId: "i1", wakeReason: "test", issueIds: [] },
       onLog: async () => {},
     };

@@ -4,9 +4,9 @@ import { OPENROUTER_MODELS } from "../../shared/models.js";
 
 describe("validateOpenRouterConfig", () => {
   it("accepts a minimal valid config with just model", () => {
-    const result = validateOpenRouterConfig({ model: "meta-llama/llama-4-scout-17b-16e-instruct" });
+    const result = validateOpenRouterConfig({ model: "openai/gpt-oss-120b:free" });
     expect(result.ok).toBe(true);
-    if (result.ok) expect(result.config.model).toBe("meta-llama/llama-4-scout-17b-16e-instruct");
+    if (result.ok) expect(result.config.model).toBe("openai/gpt-oss-120b:free");
   });
 
   it("rejects missing model field", () => {
@@ -56,7 +56,7 @@ describe("validateOpenRouterConfig", () => {
 
   it("accepts env-var reference for apiKey", () => {
     const result = validateOpenRouterConfig({
-      model: "meta-llama/llama-4-scout-17b-16e-instruct",
+      model: "openai/gpt-oss-120b:free",
       // biome-ignore lint/suspicious/noTemplateCurlyInString: intentional literal — testing env-var reference string syntax
       apiKey: "${OPENROUTER_API_KEY}",
     });
@@ -66,20 +66,20 @@ describe("validateOpenRouterConfig", () => {
   });
 
   it("accepts temperature in [0, 2]", () => {
-    const result = validateOpenRouterConfig({ model: "meta-llama/llama-4-scout-17b-16e-instruct", temperature: 0.7 });
+    const result = validateOpenRouterConfig({ model: "openai/gpt-oss-120b:free", temperature: 0.7 });
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.config.temperature).toBe(0.7);
   });
 
   it("rejects temperature > 2", () => {
-    const result = validateOpenRouterConfig({ model: "meta-llama/llama-4-scout-17b-16e-instruct", temperature: 2.5 });
+    const result = validateOpenRouterConfig({ model: "openai/gpt-oss-120b:free", temperature: 2.5 });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toMatch(/temperature/i);
   });
 
   it("accepts systemPromptSkills string array", () => {
     const result = validateOpenRouterConfig({
-      model: "meta-llama/llama-4-scout-17b-16e-instruct",
+      model: "openai/gpt-oss-120b:free",
       systemPromptSkills: ["ironworks", "atlas"],
     });
     expect(result.ok).toBe(true);
@@ -94,7 +94,7 @@ describe("validateOpenRouterConfig", () => {
 
   it("accepts httpReferer override", () => {
     const result = validateOpenRouterConfig({
-      model: "meta-llama/llama-4-scout-17b-16e-instruct",
+      model: "openai/gpt-oss-120b:free",
       httpReferer: "https://my-app.example.com",
     });
     expect(result.ok).toBe(true);
@@ -103,27 +103,22 @@ describe("validateOpenRouterConfig", () => {
 
   it("accepts xTitle override", () => {
     const result = validateOpenRouterConfig({
-      model: "meta-llama/llama-4-scout-17b-16e-instruct",
+      model: "openai/gpt-oss-120b:free",
       xTitle: "MyApp",
     });
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.config.xTitle).toBe("MyApp");
   });
 
-  it("models list contains 15+ entries", () => {
-    expect(OPENROUTER_MODELS.length).toBeGreaterThanOrEqual(15);
+  it("models list contains the curated current catalog", () => {
+    expect(OPENROUTER_MODELS.length).toBeGreaterThanOrEqual(10);
   });
 
-  it("models list includes required Llama-4 entries", () => {
+  it("models list includes required free-tier Western entries", () => {
     const ids = OPENROUTER_MODELS.map((m) => m.id);
-    expect(ids).toContain("meta-llama/llama-4-scout-17b-16e-instruct");
-    expect(ids).toContain("meta-llama/llama-4-maverick-17b-128e-instruct");
-  });
-
-  it("models list includes required Anthropic relay entries", () => {
-    const ids = OPENROUTER_MODELS.map((m) => m.id);
-    expect(ids).toContain("anthropic/claude-opus-4-7");
-    expect(ids).toContain("anthropic/claude-sonnet-4-6");
+    expect(ids).toContain("openai/gpt-oss-120b:free");
+    expect(ids).toContain("meta-llama/llama-3.3-70b-instruct:free");
+    expect(ids).toContain("nousresearch/hermes-3-llama-3.1-405b:free");
   });
 
   it("every model declares a positive contextWindowTokens", () => {

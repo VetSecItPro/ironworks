@@ -34,7 +34,7 @@ function makeBaseCtx(configOverrides: Record<string, unknown> = {}): AdapterExec
       adapterConfig: {},
     },
     config: {
-      model: "meta-llama/llama-4-scout-17b-16e-instruct",
+      model: "openai/gpt-oss-120b:free",
       apiKey: "sk-or-v1-validtestkey12345",
       ...configOverrides,
     },
@@ -65,7 +65,7 @@ describe("execute", () => {
     const result = await execute(ctx, transport);
     expect(result.exitCode).toBe(0);
     expect(result.provider).toBe("openrouter");
-    expect(result.model).toBe("meta-llama/llama-4-scout-17b-16e-instruct");
+    expect(result.model).toBe("openai/gpt-oss-120b:free");
   });
 
   it("returns config error when model is missing", async () => {

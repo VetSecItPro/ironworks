@@ -3,7 +3,7 @@ import { getSkillSnapshot, injectSkillsIntoSystemPrompt } from "../skills.js";
 
 describe("getSkillSnapshot", () => {
   it("returns mode: system-prompt-injected for openrouter_api adapter (G.6)", () => {
-    const snapshot = getSkillSnapshot({ config: { model: "meta-llama/llama-4-scout-17b-16e-instruct" } });
+    const snapshot = getSkillSnapshot({ config: { model: "openai/gpt-oss-120b:free" } });
     expect(snapshot.mode).toBe("system-prompt-injected");
     expect(snapshot.supported).toBe(true);
   });
