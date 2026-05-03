@@ -39,7 +39,10 @@ export function setPluginEventBus(bus: PluginEventBus): void {
 
 export interface LogActivityInput {
   companyId: string;
-  actorType: "agent" | "user" | "system";
+  // SEC-CHAOS-002: "bridge" added so workspace mutations driven by external
+  // messaging bridges (Telegram CEO chat) carry their own actor identity in
+  // the audit log instead of being indistinguishable from internal "system".
+  actorType: "agent" | "user" | "system" | "bridge";
   actorId: string;
   action: string;
   entityType: string;
@@ -185,7 +188,10 @@ export async function logActivity(db: Db, input: LogActivityInput) {
       eventType: input.action as PluginEventType,
       occurredAt: new Date().toISOString(),
       actorId: input.actorId,
-      actorType: input.actorType,
+      // SEC-CHAOS-002: plugin SDK actorType union doesn't include "bridge"; map
+      // bridge-driven events to "system" for the external plugin contract while
+      // keeping the precise actorType in our internal activity_log row.
+      actorType: input.actorType === "bridge" ? "system" : input.actorType,
       entityId: input.entityId,
       entityType: input.entityType,
       companyId: input.companyId,

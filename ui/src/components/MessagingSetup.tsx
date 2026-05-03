@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Gamepad2, Hash, KeyRound, Loader2, Mail, MessageCircle, RefreshCw, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { type MessagingBridge, messagingApi } from "../api/messaging";
 import { Field } from "./agent-config-primitives";
@@ -141,6 +141,27 @@ function TelegramBridgeCard({
   const isError = bridge?.status === "error";
   const botUsername = (bridge?.config as { botUsername?: string })?.botUsername;
   const ownerChatId = (bridge?.config as { ownerChatId?: string })?.ownerChatId;
+  const persistedAllowedChatIds = (bridge?.config as { allowedChatIds?: string[] })?.allowedChatIds ?? [];
+
+  // SEC-CHAOS-002: pre-registered chatId allowlist editor. Empty list = legacy
+  // first-claimer mode; populated list = strict gate (only listed chatIds reach
+  // the CEO chat loop). Each line is one chatId.
+  const [allowedChatIdsText, setAllowedChatIdsText] = useState<string>(persistedAllowedChatIds.join("\n"));
+
+  // Reset the textarea when the persisted value changes (after a successful
+  // save or a fresh fetch). Depending on the joined string keeps the effect
+  // stable across the array-identity churn from each react-query render.
+  const persistedKey = persistedAllowedChatIds.join(",");
+  useEffect(() => {
+    setAllowedChatIdsText(persistedKey.length === 0 ? "" : persistedKey.replace(/,/g, "\n"));
+  }, [persistedKey]);
+
+  const updateAllowedMutation = useMutation({
+    mutationFn: (ids: string[]) => messagingApi.updateTelegramAllowedChatIds(companyId, ids),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey });
+    },
+  });
 
   return (
     <div className="rounded-md border border-border px-4 py-3 space-y-2">
@@ -227,6 +248,61 @@ function TelegramBridgeCard({
               <Check className="h-3 w-3" /> Connection verified
             </span>
           )}
+
+          {/* SEC-CHAOS-002: pre-registered chatId allowlist. Empty list keeps the legacy
+              first-claimer single-owner mode; one chatId per line locks the bot to those operators. */}
+          <div className="space-y-1.5 pt-2 border-t border-border/50">
+            <Field
+              label="Allowed chat IDs"
+              hint="One chat ID per line. Leave empty to allow the first chat that messages the bot to claim ownership (legacy mode). Populated → only listed chat IDs can interact."
+            >
+              <textarea
+                className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm font-mono outline-none min-h-[72px]"
+                value={allowedChatIdsText}
+                onChange={(e) => setAllowedChatIdsText(e.target.value)}
+                placeholder="123456789&#10;987654321"
+                spellCheck={false}
+              />
+            </Field>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  const ids = allowedChatIdsText
+                    .split(/\r?\n/)
+                    .map((s) => s.trim())
+                    .filter((s) => s.length > 0);
+                  updateAllowedMutation.mutate(ids);
+                }}
+                disabled={updateAllowedMutation.isPending}
+              >
+                {updateAllowedMutation.isPending ? (
+                  <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
+                ) : (
+                  <Check className="h-3 w-3 mr-1.5" />
+                )}
+                Save allowed chat IDs
+              </Button>
+              {persistedAllowedChatIds.length > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  {persistedAllowedChatIds.length} chat ID{persistedAllowedChatIds.length === 1 ? "" : "s"} active
+                </span>
+              )}
+            </div>
+            {updateAllowedMutation.isError && (
+              <p className="text-xs text-destructive">
+                {updateAllowedMutation.error instanceof Error
+                  ? updateAllowedMutation.error.message
+                  : "Failed to save allowed chat IDs"}
+              </p>
+            )}
+            {updateAllowedMutation.isSuccess && (
+              <span className="text-xs text-green-600 flex items-center gap-1">
+                <Check className="h-3 w-3" /> Allowed chat IDs saved
+              </span>
+            )}
+          </div>
         </div>
       )}
 
