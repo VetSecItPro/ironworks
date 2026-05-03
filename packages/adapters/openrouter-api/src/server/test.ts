@@ -82,7 +82,7 @@ export async function testEnvironment(
   // Probe: minimal chat completions request to verify auth and connectivity.
   // max_tokens: 1 minimizes cost. Non-streaming so the response is a single JSON object.
   const probeBody = {
-    model: "meta-llama/llama-4-scout-17b-16e-instruct",
+    model: "openai/gpt-oss-120b:free",
     max_tokens: 1,
     messages: [{ role: "user", content: "ok" }],
   };

@@ -32,7 +32,7 @@ Do not use this adapter when:
 
 **OpenRouter does not relay Anthropic's \`cache_control\` headers through most routes.**
 
-When calling Anthropic models (e.g. \`anthropic/claude-sonnet-4-6\`) via OpenRouter:
+When calling Anthropic models via OpenRouter:
 - Prompt caching is NOT active, even though the underlying model supports it.
 - You pay full input token rates (~4x more than cached-read rate).
 - For the Atlas Ops 13-agent fleet, this costs approximately $1,100/month more
@@ -70,7 +70,7 @@ authenticated, so any string is acceptable.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | \`apiKey\` | string | No* | OpenRouter API key or env-var ref like \`\${OPENROUTER_API_KEY}\`. *Required unless set via env. |
-| \`model\` | string | Yes | OpenRouter model ID (e.g. \`meta-llama/llama-4-scout-17b-16e-instruct\`). |
+| \`model\` | string | Yes | OpenRouter model ID (e.g. \`openai/gpt-oss-120b:free\`). |
 | \`temperature\` | number | No | Sampling temperature [0, 2]. Default: model default. |
 | \`maxTokens\` | number | No | Max completion tokens. Default: 4096. |
 | \`httpReferer\` | string | No | HTTP-Referer header value. Default: \`https://command.useapex.io\`. |
@@ -81,24 +81,22 @@ authenticated, so any string is acceptable.
 
 | Model ID | Label | Provider | Notes |
 |----------|-------|----------|-------|
-| \`meta-llama/llama-4-scout-17b-16e-instruct\` | Llama 4 Scout 17B | Meta | Efficient multi-modal. Recommended default open-weight model. |
-| \`meta-llama/llama-4-maverick-17b-128e-instruct\` | Llama 4 Maverick 17B | Meta | Larger context, stronger performance. |
+| \`openai/gpt-oss-120b:free\` | GPT-OSS 120B (free) | OpenAI | Free-tier Western open-weight model. |
+| \`openai/gpt-oss-20b:free\` | GPT-OSS 20B (free) | OpenAI | Free-tier, smaller and faster. |
+| \`meta-llama/llama-3.3-70b-instruct:free\` | Llama 3.3 70B Instruct (free) | Meta | Strong free-tier instruction-following. |
+| \`nousresearch/hermes-3-llama-3.1-405b:free\` | Hermes 3 Llama 3.1 405B (free) | NousResearch | Largest free-tier model, deep reasoning. |
+| \`google/gemma-4-31b-it:free\` | Gemma 4 31B (free) | Google | Free-tier, 262K context window. |
+| \`google/gemma-3-12b-it:free\` | Gemma 3 12B (free) | Google | Free-tier, used as compaction summarizer. |
 | \`mistralai/mistral-large-2411\` | Mistral Large 2411 | Mistral | Strong European model, GDPR-friendly deployment path. |
-| \`mistralai/mistral-small-2501\` | Mistral Small 2501 | Mistral | Fast and cost-effective. |
-| \`anthropic/claude-opus-4-7\` | Claude Opus 4.7 | Anthropic* | Via OpenRouter relay — no prompt caching. |
-| \`anthropic/claude-sonnet-4-6\` | Claude Sonnet 4.6 | Anthropic* | Via OpenRouter relay — no prompt caching. |
 | \`openai/gpt-5\` | GPT-5 | OpenAI* | Via OpenRouter relay. |
 | \`openai/gpt-5-mini\` | GPT-5 Mini | OpenAI* | Via OpenRouter relay. |
 | \`google/gemini-2.5-flash\` | Gemini 2.5 Flash | Google | Fast, excellent long-context. |
 | \`google/gemini-2.5-pro\` | Gemini 2.5 Pro | Google | Highest Google capability tier. |
-| \`deepseek/deepseek-v3\` | DeepSeek V3 | DeepSeek | Strong coding and reasoning. |
 | \`deepseek/deepseek-r1\` | DeepSeek R1 | DeepSeek | Reasoning model with chain-of-thought. |
 | \`qwen/qwen-2.5-72b-instruct\` | Qwen 2.5 72B Instruct | Qwen | Strong multilingual and Asian-language tasks. |
-| \`x-ai/grok-3-latest\` | Grok 3 Latest | xAI | Real-time web knowledge + strong reasoning. |
-| \`perplexity/sonar-large\` | Perplexity Sonar Large | Perplexity | Retrieval-grounded factual answers. |
 
-*For Anthropic and OpenAI models via relay, use \`anthropic_api\` or \`openai_api\` directly
-to access provider-native features (prompt caching, structured outputs, extended thinking).
+*For OpenAI models via relay, use \`openai_api\` directly to access provider-native
+features (structured outputs). Use \`anthropic_api\` directly for Claude with prompt caching.
 
 ## Session Management
 
