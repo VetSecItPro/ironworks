@@ -7,11 +7,22 @@ import type {
   CompanyPortabilityImportResult,
   CompanyPortabilityPreviewRequest,
   CompanyPortabilityPreviewResult,
+  OnboardCompany,
   UpdateCompanyBranding,
 } from "@ironworksai/shared";
 import { api } from "./client";
 
 export type CompanyStats = Record<string, { agentCount: number; issueCount: number }>;
+
+export interface OnboardCompanyResponse {
+  companyId: string;
+  companyPrefix: string;
+  companyGoalId: string | null;
+  primaryAgentId: string | null;
+  agentIds: string[];
+  projectId: string | null;
+  primaryIssueRef: string | null;
+}
 
 export const companiesApi = {
   list: () => api.get<Company[]>("/companies"),
@@ -19,6 +30,10 @@ export const companiesApi = {
   stats: () => api.get<CompanyStats>("/companies/stats"),
   create: (data: { name: string; description?: string | null; budgetMonthlyCents?: number }) =>
     api.post<Company>("/companies", data),
+  // Single-shot company creation for the onboarding wizard's Launch button.
+  // Server runs every dependent insert atomically — on any failure the
+  // partially built company is wiped before the error reaches the client.
+  onboard: (data: OnboardCompany) => api.post<OnboardCompanyResponse>("/companies/onboard", data),
   update: (
     companyId: string,
     data: Partial<

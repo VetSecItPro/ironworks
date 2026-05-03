@@ -85,6 +85,8 @@ export {
 export {
   type CreateCompany,
   createCompanySchema,
+  type OnboardCompany,
+  onboardCompanySchema,
   type UpdateCompany,
   type UpdateCompanyBranding,
   updateCompanyBrandingSchema,

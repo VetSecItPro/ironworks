@@ -44,3 +44,62 @@ export const updateCompanyBrandingSchema = z
   );
 
 export type UpdateCompanyBranding = z.infer<typeof updateCompanyBrandingSchema>;
+
+const onboardRosterItemSchema = z.object({
+  templateKey: z.string().min(1),
+  name: z.string().min(1),
+  role: z.string().min(1),
+  title: z.string().nullable().optional(),
+  reportsTo: z.string().nullable().optional(),
+  suggestedAdapter: z.string().nullable().optional(),
+  skills: z.array(z.string()).optional(),
+});
+
+const onboardExtraTaskSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().optional().nullable(),
+});
+
+// Single payload for the wizard's Launch button. The server runs every create
+// inside one orchestrator and rolls back the company (and all child rows) on
+// any failure, so the client can never end up with half-built state. See
+// POST /companies/onboard handler.
+export const onboardCompanySchema = z
+  .object({
+    companyName: z.string().min(1),
+    companyGoal: z.string().optional().default(""),
+    llmProvider: z.string().min(1),
+    llmAuthMode: z.enum(["api_key", "subscription"]),
+    llmApiKey: z.string().optional().default(""),
+    llmSecretName: z.string().min(1),
+    step2Mode: z.enum(["pack", "manual"]),
+    rosterItems: z.array(onboardRosterItemSchema).optional().default([]),
+    agentName: z.string().optional().default(""),
+    adapterType: z.string().min(1),
+    adapterConfig: z.record(z.string(), z.unknown()).optional().default({}),
+    primaryTask: z
+      .object({
+        title: z.string().optional().default(""),
+        description: z.string().optional().default(""),
+      })
+      .optional(),
+    extraTasks: z.array(onboardExtraTaskSchema).optional().default([]),
+  })
+  .superRefine((value, ctx) => {
+    if (value.step2Mode === "pack" && value.rosterItems.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["rosterItems"],
+        message: "rosterItems required for pack mode",
+      });
+    }
+    if (value.step2Mode === "manual" && !value.agentName.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["agentName"],
+        message: "agentName required for manual mode",
+      });
+    }
+  });
+
+export type OnboardCompany = z.infer<typeof onboardCompanySchema>;
