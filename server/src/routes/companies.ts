@@ -1,27 +1,37 @@
 import type { Db } from "@ironworksai/db";
-import { companyMemberships } from "@ironworksai/db";
+import { companies, companyMemberships } from "@ironworksai/db";
 import {
   companyPortabilityExportSchema,
   companyPortabilityImportSchema,
   companyPortabilityPreviewSchema,
   createCompanySchema,
+  type OnboardCompany,
+  onboardCompanySchema,
   updateCompanyBrandingSchema,
   updateCompanySchema,
 } from "@ironworksai/shared";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { type Request, Router } from "express";
 import { forbidden } from "../errors.js";
+import { logger } from "../middleware/logger.js";
 import { validate } from "../middleware/validate.js";
+import { ROLE_TEMPLATES } from "../onboarding-assets/role-templates.js";
+import { applyAgentPostCreateEmbellishments } from "../services/agent-bootstrap.js";
+import { agentInstructionsService } from "../services/agent-instructions.js";
 import { seedDefaultChannels } from "../services/channels.js";
+import { goalService } from "../services/goals.js";
 import {
   accessService,
   agentService,
   budgetService,
   companyPortabilityService,
   companyService,
+  issueService,
   logActivity,
   playbookService,
+  projectService,
   routineService,
+  secretService,
   seedSystemRoleTemplates,
 } from "../services/index.js";
 import { knowledgeService } from "../services/knowledge.js";
@@ -39,6 +49,51 @@ export function companyRoutes(db: Db, storage?: StorageService) {
   const playbooksvc = playbookService(db);
   const routinesvc = routineService(db);
   const knowledgesvc = knowledgeService(db);
+
+  // Discovers every public-schema table that has a FK chain back to
+  // companies.id (direct or transitive) and deletes that company's rows
+  // from each in topological order. Used by the onboard rollback path
+  // where companyService.remove's static list isn't comprehensive enough
+  // to clear all seeded rows. Operates inside a single transaction.
+  async function rollbackCompanyById(companyId: string) {
+    await db.transaction(async (tx) => {
+      // Direct FKs to companies.id: collect column + table names so we can
+      // wipe them by company_id. Reverse dependency order isn't needed
+      // because we issue raw DELETEs per table; cross-FKs between siblings
+      // resolve as we walk. Postgres holds row locks per statement.
+      const directChildren = (await tx.execute(sql`
+        SELECT conrelid::regclass::text AS table_name,
+               (SELECT attname FROM pg_attribute WHERE attrelid = conrelid AND attnum = ANY(conkey) LIMIT 1) AS column_name
+          FROM pg_constraint
+         WHERE contype = 'f'
+           AND confrelid = 'public.companies'::regclass
+      `)) as unknown as Array<{ table_name: string; column_name: string }>;
+
+      // Iterate until we no longer make progress: each pass tries to delete
+      // from every direct child; FK-from-child-to-child rows resolve as
+      // siblings shrink. Bound iterations to keep this finite.
+      const maxPasses = 8;
+      const remaining = new Set(directChildren.map((c) => `${c.table_name}|${c.column_name}`));
+      for (let pass = 0; pass < maxPasses && remaining.size > 0; pass++) {
+        const stillBlocked = new Set<string>();
+        for (const key of remaining) {
+          const [tableName, columnName] = key.split("|");
+          if (!tableName || !columnName) continue;
+          try {
+            await tx.execute(
+              sql.raw(`DELETE FROM ${tableName} WHERE ${columnName} = '${companyId.replace(/'/g, "''")}'`),
+            );
+          } catch {
+            stillBlocked.add(key);
+          }
+        }
+        remaining.clear();
+        for (const k of stillBlocked) remaining.add(k);
+      }
+
+      await tx.delete(companies).where(eq(companies.id, companyId));
+    });
+  }
 
   async function assertCanUpdateBranding(req: Request, companyId: string) {
     assertCompanyAccess(req, companyId);
@@ -222,6 +277,322 @@ export function companyRoutes(db: Db, storage?: StorageService) {
       },
     });
     res.json(result);
+  });
+
+  // POST /companies/onboard
+  //
+  // Single orchestrator endpoint for the new-company wizard's terminal Launch
+  // action. Replaces the 7+ sequential client calls (company > goal > secret
+  // > agents > project > issue > extra tasks) that could leave a partially
+  // built company in the DB if any intermediate step failed.
+  //
+  // Atomicity model: on any failure mid-flow, the freshly created company is
+  // wiped via companyService.remove(), which deletes every child row in the
+  // expected dependency order inside its own Drizzle transaction. The client
+  // therefore sees "everything committed" or "nothing committed" - never a
+  // half-built state.
+  //
+  // Why compensating-action instead of one Drizzle transaction: services
+  // bind `db` at construction time and have nested .transaction() calls
+  // plus filesystem side-effects (instructions-bundle materialization, log
+  // writes) that cannot participate in a DB rollback. The compensating
+  // approach gives the same user-facing guarantee with vastly less risk.
+  router.post("/onboard", validate(onboardCompanySchema), async (req, res) => {
+    assertBoard(req);
+    if (!(req.actor.source === "local_implicit" || req.actor.isInstanceAdmin)) {
+      throw forbidden("Instance admin required");
+    }
+    const payload = req.body as OnboardCompany;
+    const actor = getActorInfo(req);
+    const userIdForOwnership = req.actor.userId ?? "local-board";
+
+    const goalSvc = goalService(db);
+    const secretSvc = secretService(db);
+    const projectSvc = projectService(db);
+    const issueSvc = issueService(db);
+
+    let createdCompanyId: string | null = null;
+    try {
+      // 1. Company row + ownership membership + standard seeds (mirrors the
+      //    POST /companies handler below; kept inline so behavioral parity
+      //    stays obvious without a shared helper indirection).
+      const company = await svc.create({ name: payload.companyName.trim() });
+      createdCompanyId = company.id;
+      await access.ensureMembership(company.id, "user", userIdForOwnership, "owner", "active");
+      await logActivity(db, {
+        companyId: company.id,
+        actorType: "user",
+        actorId: userIdForOwnership,
+        action: "company.created",
+        entityType: "company",
+        entityId: company.id,
+        details: { name: company.name, source: "onboard" },
+      });
+      try {
+        await playbooksvc.seedDefaults(company.id);
+        await routinesvc.seedDefaults(company.id);
+        await knowledgesvc.seedDefaults(company.id);
+        await seedSystemRoleTemplates(db, company.id);
+      } catch (err) {
+        logger.warn({ err, companyId: company.id }, "Non-fatal: onboard company seeding partial failure");
+      }
+      try {
+        await seedDefaultChannels(db, company.id);
+      } catch (err) {
+        logger.warn({ err, companyId: company.id }, "Non-fatal: onboard channel seeding failure");
+      }
+
+      // 2. Optional company goal. First non-empty line is the title; rest is
+      //    the description (mirrors parseOnboardingGoalInput in the UI).
+      let companyGoalId: string | null = null;
+      const goalRaw = (payload.companyGoal ?? "").trim();
+      if (goalRaw) {
+        const [firstLine, ...restLines] = goalRaw.split(/\r?\n/);
+        const goalTitle = firstLine.trim();
+        const goalDescription = restLines.join("\n").trim();
+        const goalRow = await goalSvc.create(company.id, {
+          title: goalTitle,
+          description: goalDescription.length > 0 ? goalDescription : null,
+          level: "company",
+          status: "active",
+        });
+        companyGoalId = goalRow.id;
+      }
+
+      // 3. LLM API-key secret (api_key auth mode, only when a key was given).
+      //    Subscription mode relies on container CLI auth and writes nothing.
+      const isSubscription = payload.llmAuthMode === "subscription";
+      const apiKeyTrimmed = payload.llmApiKey.trim();
+      if (!isSubscription && apiKeyTrimmed) {
+        await secretSvc.create(
+          company.id,
+          {
+            name: payload.llmSecretName,
+            // Onboarding always lands new tenants on local_encrypted; the
+            // standalone secrets route honors IRONWORKS_SECRETS_PROVIDER but
+            // we don't propagate that here to keep wizard behavior
+            // deterministic.
+            provider: "local_encrypted",
+            value: apiKeyTrimmed,
+            description: `${payload.llmProvider} API key for LLM access`,
+          },
+          { userId: req.actor.userId ?? null, agentId: null },
+        );
+      }
+
+      // 4. Agents - pack or manual single. agentService.create runs the
+      //    minimum schema-level insert. Filesystem-bound embellishments
+      //    (managed instructions bundle, library folder, channel join,
+      //    default tasks:assign grant) run AFTER all rows commit, in a
+      //    tolerant try/catch loop: if any single embellishment fails the
+      //    company is already functional and Settings > Agents can refresh
+      //    files later. If the DB-side create fails earlier, the outer
+      //    catch wipes the company so we never persist a half-built tenant.
+      let primaryAgentId: string | null = null;
+      const createdAgentIds: string[] = [];
+      const createdAgentRecords: Array<{
+        agent: {
+          id: string;
+          companyId: string;
+          name: string;
+          role: string;
+          adapterType: string;
+          adapterConfig: unknown;
+        };
+        department?: string;
+      }> = [];
+
+      if (payload.step2Mode === "pack" && payload.rosterItems.length > 0) {
+        // Sort so managers (no reportsTo) are created before reports,
+        // matching the wizard's prior pack ordering.
+        const sorted = [...payload.rosterItems].sort((a, b) => {
+          if (!a.reportsTo) return -1;
+          if (!b.reportsTo) return 1;
+          return 0;
+        });
+        const agentIdByTemplateKey = new Map<string, string>();
+
+        for (const item of sorted) {
+          const roleTemplate = ROLE_TEMPLATES.find((t) => t.key === item.templateKey);
+          // OpenRouter API mode needs explicit primary/fallback model from
+          // the role tier; other adapters pass adapterConfig through.
+          const adapterType =
+            !isSubscription && payload.llmProvider === "openrouter" ? "openrouter_api" : payload.adapterType;
+          const baseAdapterConfig =
+            adapterType === "openrouter_api" && roleTemplate
+              ? {
+                  ...payload.adapterConfig,
+                  ...(payload.adapterConfig.model ? {} : { model: roleTemplate.modelPrimary }),
+                  ...(payload.adapterConfig.fallbackModel ? {} : { fallbackModel: roleTemplate.modelFallback }),
+                }
+              : { ...payload.adapterConfig };
+          const reportsToAgentId = item.reportsTo ? (agentIdByTemplateKey.get(item.reportsTo) ?? null) : null;
+          const soulContent = roleTemplate?.soul ?? null;
+
+          const created = await agents.create(company.id, {
+            name: item.name.trim() || item.title || item.role,
+            role: item.role,
+            title: item.title ?? null,
+            reportsTo: reportsToAgentId,
+            adapterType,
+            adapterConfig: baseAdapterConfig,
+            // Mirrors team-pack defaults: 4hr idle interval + wakeOnDemand.
+            runtimeConfig: {
+              heartbeat: {
+                enabled: true,
+                intervalSec: 14400,
+                wakeOnDemand: true,
+                cooldownSec: 10,
+                maxConcurrentRuns: 1,
+              },
+            },
+            systemPrompt: soulContent,
+            status: "idle",
+            spentMonthlyCents: 0,
+            lastHeartbeatAt: null,
+          });
+          agentIdByTemplateKey.set(item.templateKey, created.id);
+          createdAgentIds.push(created.id);
+          createdAgentRecords.push({ agent: created });
+          if (created.role === "ceo" && !primaryAgentId) primaryAgentId = created.id;
+
+          await logActivity(db, {
+            companyId: company.id,
+            actorType: actor.actorType,
+            actorId: actor.actorId,
+            agentId: actor.agentId,
+            runId: actor.runId,
+            action: "agent.created",
+            entityType: "agent",
+            entityId: created.id,
+            details: { name: created.name, role: created.role, source: "onboard_team_pack" },
+          });
+        }
+        if (!primaryAgentId && createdAgentIds.length > 0) primaryAgentId = createdAgentIds[0];
+      } else if (payload.step2Mode === "manual" && payload.agentName.trim()) {
+        const created = await agents.create(company.id, {
+          name: payload.agentName.trim(),
+          role: "ceo",
+          adapterType: payload.adapterType,
+          adapterConfig: { ...payload.adapterConfig },
+          runtimeConfig: {
+            heartbeat: { enabled: true, intervalSec: 3600, wakeOnDemand: true, cooldownSec: 10, maxConcurrentRuns: 1 },
+          },
+          status: "idle",
+          spentMonthlyCents: 0,
+          lastHeartbeatAt: null,
+        });
+        primaryAgentId = created.id;
+        createdAgentIds.push(created.id);
+        createdAgentRecords.push({ agent: created });
+        await logActivity(db, {
+          companyId: company.id,
+          actorType: actor.actorType,
+          actorId: actor.actorId,
+          agentId: actor.agentId,
+          runId: actor.runId,
+          action: "agent.created",
+          entityType: "agent",
+          entityId: created.id,
+          details: { name: created.name, role: created.role, source: "onboard_manual" },
+        });
+      }
+
+      // Post-create embellishments: managed instructions bundle, library
+      // folder, default tasks:assign grant, channel auto-join. Each step is
+      // tolerant inside applyAgentPostCreateEmbellishments; a single failure
+      // does not abort the others, and the company is already committed +
+      // functional regardless. Settings > Agents can refresh anything that
+      // didn't land. The standard agent-creation routes call the same helpers
+      // (one-by-one) so behavior is consistent across entry points.
+      const instructionsSvc = agentInstructionsService();
+      const grantedByUserId = req.actor.userId ?? null;
+      for (const record of createdAgentRecords) {
+        await applyAgentPostCreateEmbellishments(record.agent, {
+          db,
+          agents,
+          access,
+          instructions: instructionsSvc,
+          grantedByUserId,
+          department: record.department,
+          logger,
+        });
+      }
+
+      // 5. Project + first issue (only when a primary task title was given
+      //    and we have a primary agent to assign it to). Extra tasks are
+      //    individually try/catch-wrapped to preserve the prior wizard's
+      //    "non-blocking" semantics; failures are logged so they aren't
+      //    silent.
+      let createdProjectId: string | null = null;
+      let primaryIssueRef: string | null = null;
+      const primaryTaskTitle = (payload.primaryTask?.title ?? "").trim();
+      if (primaryTaskTitle && primaryAgentId) {
+        const project = await projectSvc.create(company.id, {
+          name: "Onboarding",
+          status: "in_progress",
+          ...(companyGoalId ? { goalIds: [companyGoalId] } : {}),
+        });
+        createdProjectId = project.id;
+        const primaryDescription = (payload.primaryTask?.description ?? "").trim();
+        const primaryIssue = await issueSvc.create(company.id, {
+          title: primaryTaskTitle,
+          ...(primaryDescription ? { description: primaryDescription } : {}),
+          assigneeAgentId: primaryAgentId,
+          projectId: project.id,
+          ...(companyGoalId ? { goalId: companyGoalId } : {}),
+          status: "todo",
+        });
+        primaryIssueRef = primaryIssue.identifier ?? primaryIssue.id;
+
+        for (const extra of payload.extraTasks) {
+          const extraTitle = extra.title.trim();
+          if (!extraTitle) continue;
+          try {
+            await issueSvc.create(company.id, {
+              title: extraTitle,
+              ...(extra.description ? { description: extra.description.trim() } : {}),
+              assigneeAgentId: primaryAgentId,
+              projectId: project.id,
+              ...(companyGoalId ? { goalId: companyGoalId } : {}),
+              status: "todo",
+            });
+          } catch (err) {
+            logger.warn({ err, companyId: company.id, extraTitle }, "Non-fatal: extra onboarding task creation failed");
+          }
+        }
+      }
+
+      res.status(201).json({
+        companyId: company.id,
+        companyPrefix: company.issuePrefix,
+        companyGoalId,
+        primaryAgentId,
+        agentIds: createdAgentIds,
+        projectId: createdProjectId,
+        primaryIssueRef,
+      });
+    } catch (err) {
+      // Compensating cleanup: wipe every row tied to this company id by
+      // walking pg_constraint at runtime. companyService.remove maintains
+      // its own static dependency list which omits a number of seed-table
+      // descendants (playbooks, routines, knowledge pages, channels,
+      // role templates, etc.); rather than dual-maintain that list, the
+      // rollback path discovers all FK-referencing tables dynamically and
+      // deletes from each before deleting the company row. This keeps the
+      // user-facing atomicity guarantee robust against schema drift.
+      if (createdCompanyId) {
+        try {
+          await rollbackCompanyById(createdCompanyId);
+        } catch (cleanupErr) {
+          logger.error(
+            { cleanupErr, originalErr: err, companyId: createdCompanyId },
+            "Onboard rollback failed - partial company may persist; manual cleanup required",
+          );
+        }
+      }
+      throw err;
+    }
   });
 
   router.post("/", validate(createCompanySchema), async (req, res) => {

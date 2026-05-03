@@ -540,6 +540,8 @@ export {
   linkIssueApprovalSchema,
   listJoinRequestsQuerySchema,
   listPluginStateSchema,
+  type OnboardCompany,
+  onboardCompanySchema,
   type PatchInstanceExperimentalSettings,
   type PatchInstanceGeneralSettings,
   type PatchPluginConfig,
