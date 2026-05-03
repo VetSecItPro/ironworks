@@ -170,6 +170,7 @@ const mockIssueService = vi.hoisted(() => ({
     .mockImplementation((companyId: string) => Object.values(ISSUES).filter((i: any) => i.companyId === companyId)),
   getById: vi.fn().mockImplementation((id: string) => ISSUES[id] ?? null),
   getByIdentifier: vi.fn().mockResolvedValue(null),
+  findByIdentifierUnsafe: vi.fn().mockResolvedValue(null),
   // biome-ignore lint/suspicious/noExplicitAny: vi.fn mock type erasure; pass-through identity function for testing
   create: vi.fn().mockImplementation((_companyId: string, data: any) => ({
     id: randomUUID(),

@@ -26,7 +26,8 @@ export function activityRoutes(db: Db) {
 
   async function resolveIssueByRef(rawId: string) {
     if (/^[A-Z]+-\d+$/i.test(rawId)) {
-      return issueSvc.getByIdentifier(rawId);
+      // Caller invokes assertCompanyAccess(req, issue.companyId) on the returned row.
+      return issueSvc.findByIdentifierUnsafe(rawId);
     }
     return issueSvc.getById(rawId);
   }

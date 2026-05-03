@@ -1117,6 +1117,11 @@ export function agentRoutes(db: Db) {
   router.post("/agents/:id/config-revisions/:revisionId/rollback", async (req, res) => {
     const id = req.params.id as string;
     const revisionId = req.params.revisionId as string;
+    // SEC: config rollback is a privilege boundary — agents must not mutate their own (or peer agents') configs
+    if (req.actor.type === "agent") {
+      res.status(403).json({ error: "Agents cannot mutate agent config history; use a human-actor session." });
+      return;
+    }
     const existing = await svc.getById(id);
     if (!existing) {
       res.status(404).json({ error: "Agent not found" });
@@ -2807,7 +2812,7 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
     const rawId = req.params.issueId as string;
     const issueSvc = issueService(db);
     const isIdentifier = /^[A-Z]+-\d+$/i.test(rawId);
-    const issue = isIdentifier ? await issueSvc.getByIdentifier(rawId) : await issueSvc.getById(rawId);
+    const issue = isIdentifier ? await issueSvc.findByIdentifierUnsafe(rawId) : await issueSvc.getById(rawId);
     if (!issue) {
       res.status(404).json({ error: "Issue not found" });
       return;
@@ -2845,7 +2850,7 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
     const rawId = req.params.issueId as string;
     const issueSvc = issueService(db);
     const isIdentifier = /^[A-Z]+-\d+$/i.test(rawId);
-    const issue = isIdentifier ? await issueSvc.getByIdentifier(rawId) : await issueSvc.getById(rawId);
+    const issue = isIdentifier ? await issueSvc.findByIdentifierUnsafe(rawId) : await issueSvc.getById(rawId);
     if (!issue) {
       res.status(404).json({ error: "Issue not found" });
       return;
@@ -3260,6 +3265,11 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
   // POST /agents/:agentId/prompt-versions/:version/rollback
   router.post("/agents/:agentId/prompt-versions/:version/rollback", async (req, res) => {
     const { agentId, version } = req.params;
+    // SEC: prompt rollback is a privilege boundary — agents must not mutate their own (or peer agents') SOULs
+    if (req.actor.type === "agent") {
+      res.status(403).json({ error: "Agents cannot mutate agent prompt history; use a human-actor session." });
+      return;
+    }
     const agentRow = await svc.getById(agentId);
     if (!agentRow) {
       res.status(404).json({ error: "Agent not found" });

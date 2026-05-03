@@ -33,6 +33,7 @@ const mockIssueService = vi.hoisted(() => ({
   list: vi.fn(),
   getById: vi.fn(),
   getByIdentifier: vi.fn().mockResolvedValue(null),
+  findByIdentifierUnsafe: vi.fn().mockResolvedValue(null),
   create: vi.fn(),
   update: vi.fn(),
   remove: vi.fn(),

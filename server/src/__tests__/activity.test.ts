@@ -43,6 +43,7 @@ const mockActivityService = vi.hoisted(() => ({
 const mockIssueService = vi.hoisted(() => ({
   getById: vi.fn(),
   getByIdentifier: vi.fn(),
+  findByIdentifierUnsafe: vi.fn(),
   list: vi.fn().mockResolvedValue([]),
 }));
 
@@ -119,6 +120,7 @@ describe("activity routes", () => {
     mockActivityService.issuesForRun.mockResolvedValue([]);
     mockIssueService.getById.mockResolvedValue(MOCK_ISSUE);
     mockIssueService.getByIdentifier.mockResolvedValue(MOCK_ISSUE);
+    mockIssueService.findByIdentifierUnsafe.mockResolvedValue(MOCK_ISSUE);
   });
 
   describe("GET /api/companies/:companyId/activity", () => {
@@ -204,7 +206,7 @@ describe("activity routes", () => {
       const res = await request(app).get(`/api/issues/ENG-42/activity`);
 
       expect(res.status).toBe(200);
-      expect(mockIssueService.getByIdentifier).toHaveBeenCalledWith("ENG-42");
+      expect(mockIssueService.findByIdentifierUnsafe).toHaveBeenCalledWith("ENG-42");
     });
 
     it("returns 404 for non-existent issue", async () => {

@@ -16,7 +16,8 @@ export const costEvents = pgTable(
     agentId: uuid("agent_id")
       .notNull()
       .references(() => agents.id),
-    issueId: uuid("issue_id").references(() => issues.id),
+    // SEC: issue hard-delete sets historical FK to null rather than blocking; preserves audit row
+    issueId: uuid("issue_id").references(() => issues.id, { onDelete: "set null" }),
     projectId: uuid("project_id").references(() => projects.id),
     goalId: uuid("goal_id").references(() => goals.id),
     heartbeatRunId: uuid("heartbeat_run_id").references(() => heartbeatRuns.id),

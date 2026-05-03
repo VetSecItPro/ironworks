@@ -3,6 +3,7 @@ import {
   activityLog,
   agentApiKeys,
   agentConfigRevisions,
+  agentPromptVersions,
   agentRuntimeState,
   agents,
   agentTaskSessions,
@@ -58,6 +59,7 @@ import {
   skillEvaluations,
   skillInvocations,
   skillRecipes,
+  supportTickets,
   workspaceOperations,
   workspaceRuntimeServices,
 } from "@ironworksai/db";
@@ -474,6 +476,8 @@ export async function deleteCompanyData(db: Db, companyId: string): Promise<void
   await db.delete(agentRuntimeState).where(eq(agentRuntimeState.companyId, companyId));
   await db.delete(agentTaskSessions).where(eq(agentTaskSessions.companyId, companyId));
   await db.delete(agentWakeupRequests).where(eq(agentWakeupRequests.companyId, companyId));
+  // SEC: explicit cleanup — agent_prompt_versions FKs companies without ON DELETE CASCADE so the final delete would fail
+  await db.delete(agentPromptVersions).where(eq(agentPromptVersions.companyId, companyId));
   await db.delete(agents).where(eq(agents.companyId, companyId));
 
   // ── Tier 15: activity log ────────────────────────────────────────────────
@@ -510,6 +514,10 @@ export async function deleteCompanyData(db: Db, companyId: string): Promise<void
   // ── Tier 19: subscriptions and memberships (before company row) ──────────
   await db.delete(companySubscriptions).where(eq(companySubscriptions.companyId, companyId));
   await db.delete(companyMemberships).where(eq(companyMemberships.companyId, companyId));
+
+  // SEC: explicit cleanup — support_tickets FKs companies without ON DELETE CASCADE so the final delete would fail
+  // (support_ticket_comments cascades from support_tickets)
+  await db.delete(supportTickets).where(eq(supportTickets.companyId, companyId));
 
   // ── Tier 20: the company itself ──────────────────────────────────────────
   await db.delete(companies).where(eq(companies.id, companyId));

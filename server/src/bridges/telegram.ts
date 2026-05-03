@@ -33,13 +33,19 @@ const MAX_TELEGRAM_MSG_LENGTH = 4000; // leave buffer under 4096 limit
 // (acceptable trade for v1 — DB-backed history is a follow-up).
 const CHAT_HISTORY_LIMIT = 20;
 type Turn = { role: "user" | "assistant"; content: string };
-const chatHistory = new Map<string, Turn[]>(); // chatId → rolling history
+// SEC: cross-tenant key isolation — chatId alone collides if multiple bots talk to same Telegram chat
+const chatHistory = new Map<string, Turn[]>(); // `${companyId}::${chatId}` → rolling history
 
 // Per-chat record of issues the CEO has filed from this conversation. Lets us
 // answer "close all the tasks you created" without forcing the operator to
 // remember ATL-ids and lets the system prompt teach Holland what's open.
 type FiledIssue = { id: string; identifier: string; title: string; createdAt: number };
-const chatFiledIssues = new Map<string, FiledIssue[]>(); // chatId → filed issues
+// SEC: cross-tenant key isolation — chatId alone collides if multiple bots talk to same Telegram chat
+const chatFiledIssues = new Map<string, FiledIssue[]>(); // `${companyId}::${chatId}` → filed issues
+
+function chatKey(companyId: string, chatId: string): string {
+  return `${companyId}::${chatId}`;
+}
 
 // Action tags the CEO can emit at the end of a reply. The bridge parses each
 // one (in order) and executes the corresponding workspace action. Anything
@@ -176,8 +182,9 @@ async function runCeoTurn(
   userMessage: string,
 ): Promise<{ reply: string; raw: string; actions: ParsedActions }> {
   const { persona, model } = await loadCeoPersona(db, companyId);
-  const history = chatHistory.get(chatId) ?? [];
-  const filed = chatFiledIssues.get(chatId) ?? [];
+  const key = chatKey(companyId, chatId);
+  const history = chatHistory.get(key) ?? [];
+  const filed = chatFiledIssues.get(key) ?? [];
   const workspaceContext = await loadWorkspaceContext(db, companyId);
 
   // Inject the current filed-issue ledger as context so the CEO can speak
@@ -290,7 +297,7 @@ ${workspaceContext}
   // Persist the turn — store the cleaned reply (no tags) so future turns
   // see what the user actually saw, not the raw model output.
   const updated: Turn[] = [...messages, { role: "assistant", content: reply }];
-  chatHistory.set(chatId, updated.slice(-CHAT_HISTORY_LIMIT));
+  chatHistory.set(key, updated.slice(-CHAT_HISTORY_LIMIT));
 
   return { reply, raw, actions };
 }
@@ -528,6 +535,7 @@ function startTelegramPollLoop(db: Db, bot: BotInstance): void {
         const turn = await runCeoTurn(db, bot.companyId, chatId, text);
         const issueSvc = getIssueService(db);
         const actionLog: string[] = [];
+        const filedKey = chatKey(bot.companyId, chatId);
 
         // Sanitize sender name once for any task-create tags (SEC-INTEG-004).
         const rawSenderName = msg.from?.first_name ?? msg.from?.username ?? "Unknown";
@@ -545,9 +553,9 @@ function startTelegramPollLoop(db: Db, bot: BotInstance): void {
             const identifier = issue.identifier ?? newIssueId.slice(0, 8);
             bot.activeThreads.set(chatId, newIssueId);
             bot.lastSeenComment.set(newIssueId, Date.now());
-            const filed = chatFiledIssues.get(chatId) ?? [];
+            const filed = chatFiledIssues.get(filedKey) ?? [];
             filed.push({ id: newIssueId, identifier, title: safeTitle, createdAt: Date.now() });
-            chatFiledIssues.set(chatId, filed);
+            chatFiledIssues.set(filedKey, filed);
             actionLog.push(`filed ${identifier}`);
           }
         }
@@ -555,17 +563,17 @@ function startTelegramPollLoop(db: Db, bot: BotInstance): void {
         // CLOSE_TASK actions
         for (const c of turn.actions.closeTasks) {
           try {
-            const issue = await issueSvc.getByIdentifier(c.identifier);
-            if (!issue || issue.companyId !== bot.companyId) {
+            const issue = await issueSvc.getByIdentifier(c.identifier, bot.companyId);
+            if (!issue) {
               actionLog.push(`couldn't close ${c.identifier}: not found`);
               continue;
             }
             await issueSvc.update(issue.id, { status: "cancelled" });
             actionLog.push(`closed ${c.identifier}${c.reason ? ` (${c.reason})` : ""}`);
             // Remove from chat ledger if it was filed by this chat.
-            const filed = chatFiledIssues.get(chatId) ?? [];
+            const filed = chatFiledIssues.get(filedKey) ?? [];
             chatFiledIssues.set(
-              chatId,
+              filedKey,
               filed.filter((f) => f.identifier !== c.identifier),
             );
           } catch (err) {
@@ -575,7 +583,7 @@ function startTelegramPollLoop(db: Db, bot: BotInstance): void {
 
         // CLOSE_ALL_FROM_CHAT
         if (turn.actions.closeAllFromChat) {
-          const filed = chatFiledIssues.get(chatId) ?? [];
+          const filed = chatFiledIssues.get(filedKey) ?? [];
           if (filed.length === 0) {
             actionLog.push("no tasks to close from this thread");
           } else {
@@ -588,7 +596,7 @@ function startTelegramPollLoop(db: Db, bot: BotInstance): void {
                 /* skip — keep going */
               }
             }
-            chatFiledIssues.set(chatId, []);
+            chatFiledIssues.set(filedKey, []);
             actionLog.push(`closed ${closed} task${closed === 1 ? "" : "s"} from this thread`);
           }
         }
@@ -596,8 +604,8 @@ function startTelegramPollLoop(db: Db, bot: BotInstance): void {
         // ADD_COMMENT actions
         for (const c of turn.actions.addComments) {
           try {
-            const issue = await issueSvc.getByIdentifier(c.identifier);
-            if (!issue || issue.companyId !== bot.companyId) {
+            const issue = await issueSvc.getByIdentifier(c.identifier, bot.companyId);
+            if (!issue) {
               actionLog.push(`couldn't comment on ${c.identifier}: not found`);
               continue;
             }
@@ -615,8 +623,8 @@ function startTelegramPollLoop(db: Db, bot: BotInstance): void {
         // REASSIGN actions
         for (const r of turn.actions.reassigns) {
           try {
-            const issue = await issueSvc.getByIdentifier(r.identifier);
-            if (!issue || issue.companyId !== bot.companyId) {
+            const issue = await issueSvc.getByIdentifier(r.identifier, bot.companyId);
+            if (!issue) {
               actionLog.push(`couldn't reassign ${r.identifier}: not found`);
               continue;
             }
@@ -777,6 +785,15 @@ export async function stopTelegramBridge(companyId: string): Promise<void> {
   if (bot.pollTimer) clearTimeout(bot.pollTimer);
   if (bot.responsePollTimer) clearTimeout(bot.responsePollTimer);
   bots.delete(companyId);
+
+  // SEC: drop all per-chat state for this company so map entries don't outlive the bot
+  const prefix = `${companyId}::`;
+  for (const k of chatHistory.keys()) {
+    if (k.startsWith(prefix)) chatHistory.delete(k);
+  }
+  for (const k of chatFiledIssues.keys()) {
+    if (k.startsWith(prefix)) chatFiledIssues.delete(k);
+  }
 
   logger.info({ companyId }, "[telegram-bridge] stopped");
 }

@@ -29,7 +29,8 @@ export const skillInvocations = pgTable(
       .notNull()
       .references(() => agents.id),
     heartbeatRunId: uuid("heartbeat_run_id").references(() => heartbeatRuns.id),
-    issueId: uuid("issue_id").references(() => issues.id),
+    // SEC: issue hard-delete sets historical FK to null rather than blocking; preserves audit row
+    issueId: uuid("issue_id").references(() => issues.id, { onDelete: "set null" }),
     /** Matcher confidence at injection time; range 0.000–1.000. */
     matcherScore: numeric("matcher_score", { precision: 4, scale: 3 }),
     /** Model used for matching (e.g. 'google/gemma-3-12b-it:free'). */
