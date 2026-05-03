@@ -82,4 +82,21 @@ describe("SEC-HEAP-001 heap-monitor retention + dir override", () => {
     );
     expect(sourceText).toMatch(/SNAPSHOT_FILE_MODE\s*=\s*0o600/);
   });
+
+  it("ADV-001: default snapshot dir is NOT under the /ironworks host bind-mount", async () => {
+    // Heap snapshots contain decrypted DEKs/JWTs/OAuth tokens. The default
+    // location MUST be in-container ephemeral (e.g. /tmp/heap-snapshots), so
+    // a host-level compromise doesn't escalate to secret exfiltration.
+    // Operators who want persistent snapshots set IRONWORKS_HEAP_SNAPSHOT_DIR
+    // explicitly to an audited path. If a future change reintroduces a
+    // bind-mounted default, this test fails fast.
+    const sourceText = await import("node:fs/promises").then((m) =>
+      m.readFile(new URL("../observability/heap-monitor.ts", import.meta.url), "utf8"),
+    );
+    const match = sourceText.match(/SNAPSHOT_DIR_DEFAULT\s*=\s*"([^"]+)"/);
+    expect(match).not.toBeNull();
+    const defaultDir = match![1]!;
+    expect(defaultDir).toBe("/tmp/heap-snapshots");
+    expect(defaultDir.startsWith("/ironworks")).toBe(false);
+  });
 });

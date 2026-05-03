@@ -1,4 +1,4 @@
-import { chmod, readdir, stat, unlink } from "node:fs/promises";
+import { chmod, mkdir, readdir, stat, unlink } from "node:fs/promises";
 import { join } from "node:path";
 import { writeHeapSnapshot } from "node:v8";
 
@@ -32,16 +32,28 @@ import { logger } from "../middleware/logger.js";
  *
  * Operator usage:
  *   docker exec ironworks-server-1 sh -c 'kill -USR2 1'
- *   # writes /ironworks/heap-snapshots/heap-2026-04-30T...heapsnapshot
- *   docker cp ironworks-server-1:/ironworks/heap-snapshots/. ./heaps/
- *   # Open in Chrome DevTools → Memory tab → Load profile.
+ *   # writes /tmp/heap-snapshots/heap-2026-04-30T...heapsnapshot (in-container)
+ *   docker cp ironworks-server-1:/tmp/heap-snapshots/. ./heaps/
+ *   # Open in Chrome DevTools -> Memory tab -> Load profile.
+ *   # For cross-restart persistence: set IRONWORKS_HEAP_SNAPSHOT_DIR to an
+ *   # operator-audited path (snapshots are secret-bearing — never the
+ *   # default /ironworks bind-mount).
  *
  * Both pieces are no-ops in tests (skipped when IRONWORKS_DISABLE_HEAP_MONITOR=true)
  * to avoid log noise + filesystem writes during vitest runs.
  */
 
 const SAMPLE_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
-const SNAPSHOT_DIR_DEFAULT = "/ironworks/heap-snapshots";
+// SEC-HEAP-001 (ADV-001): default snapshot location is in-container ephemeral
+// (/tmp), NOT the /ironworks bind-mount. Heap snapshots contain decrypted DEKs,
+// JWT signing material, OAuth tokens, and Telegram bot tokens by definition;
+// dumping them onto a host-mounted volume by default means a host-level
+// compromise (or a misconfigured backup job) escalates to full secret
+// exfiltration. /tmp is process-local, gone on container restart, and never
+// reaches the host filesystem. Operators who explicitly want persistent
+// snapshots for cross-restart leak hunting set IRONWORKS_HEAP_SNAPSHOT_DIR
+// to a path they've audited (and ideally a tmpfs or root-only mount).
+const SNAPSHOT_DIR_DEFAULT = "/tmp/heap-snapshots";
 
 // Retention: drop snapshots older than this on each new write. Seven days
 // gives operators a week-long window to grab a snapshot for a leak
@@ -128,6 +140,11 @@ function takeHeapSnapshot(snapshotDir: string) {
   // heaps can take 1-2s. Acceptable for a manual diagnostic action.
   setImmediate(async () => {
     try {
+      // ADV-001: default snapshotDir is /tmp/heap-snapshots which won't exist
+      // on a fresh container — create it eagerly with mode 0700 so other UIDs
+      // can't even list filenames (snapshot filenames leak nothing today, but
+      // defense in depth for the secret-bearing payloads inside).
+      await mkdir(snapshotDir, { recursive: true, mode: 0o700 });
       const ts = new Date().toISOString().replace(/[:.]/g, "-");
       const path = join(snapshotDir, `heap-${ts}.heapsnapshot`);
       const written = writeHeapSnapshot(path);
