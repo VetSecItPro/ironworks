@@ -2,8 +2,26 @@ import type { Db } from "@ironworksai/db";
 import { companyMemberships } from "@ironworksai/db";
 import { and, eq } from "drizzle-orm";
 import type { Request } from "express";
-import { forbidden, unauthorized } from "../errors.js";
+import { forbidden, HttpError, unauthorized } from "../errors.js";
 import { logActivity } from "../services/activity-log.js";
+
+/**
+ * Reject a session-backed user whose email has not been verified yet. Used
+ * to gate company creation: a malicious actor could otherwise sign up with
+ * someone else's email, create a company under that identity, and harvest
+ * resources before the real owner notices the invite.
+ *
+ * Permissive when emailVerified is `undefined` (e.g. local_implicit board,
+ * agent, board API key) — these are non-interactive principals where the
+ * verification gate is not relevant.
+ */
+export function assertEmailVerified(req: Request): void {
+  if (req.actor.emailVerified === false) {
+    throw new HttpError(403, "Email verification required to create a company.", {
+      code: "email_verification_required",
+    });
+  }
+}
 
 export function assertBoard(req: Request) {
   if (req.actor.type !== "board") {

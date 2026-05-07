@@ -34,6 +34,7 @@ import { RecentDeliverablesWidget } from "../components/dashboard/RecentDelivera
 import { SpendMetricsSection } from "../components/dashboard/SpendMetricsSection";
 import { VelocityDepartmentSection } from "../components/dashboard/VelocityDepartmentSection";
 import { WorkforceImpactSection } from "../components/dashboard/WorkforceImpactSection";
+import { EmailVerificationBanner } from "../components/EmailVerificationBanner";
 import { EmptyState } from "../components/EmptyState";
 import { GettingStartedChecklist } from "../components/GettingStartedChecklist";
 import { MetricCard } from "../components/MetricCard";
@@ -444,6 +445,7 @@ export function Dashboard() {
         onInvokeAgent={() => navigate("/agents")}
         onRunPlaybook={() => navigate("/playbooks")}
       />
+      <EmailVerificationBanner />
       <WelcomeBanner />
       <ApiKeyOnboardingBanner />
       <GettingStartedChecklist

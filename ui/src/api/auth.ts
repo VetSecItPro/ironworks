@@ -1,6 +1,13 @@
 export type AuthSession = {
   session: { id: string; userId: string };
-  user: { id: string; email: string | null; name: string | null; image: string | null };
+  user: {
+    id: string;
+    email: string | null;
+    name: string | null;
+    image: string | null;
+    /** True for verified users, local board, OAuth-verified emails. */
+    emailVerified: boolean;
+  };
 };
 
 function toSession(value: unknown): AuthSession | null {
@@ -21,6 +28,11 @@ function toSession(value: unknown): AuthSession | null {
       email: typeof user.email === "string" ? user.email : null,
       name: typeof user.name === "string" ? user.name : null,
       image: typeof user.image === "string" ? user.image : null,
+      // Default to true when the field is missing so existing local /
+      // legacy clients keep their previous (permissive) behavior — only an
+      // explicit `false` triggers the verification banner / company-create
+      // gate.
+      emailVerified: typeof user.emailVerified === "boolean" ? user.emailVerified : true,
     },
   };
 }
@@ -71,6 +83,14 @@ export const authApi = {
 
   signOut: async () => {
     await authPost("/sign-out", {});
+  },
+
+  /**
+   * Re-send the verification email for the given address. Server enforces
+   * a 3/hour rate limit and returns 429 when exceeded.
+   */
+  resendVerification: async (email: string) => {
+    await authPost("/resend-verification", { email });
   },
 
   updateUser: async (input: { name: string }) => {

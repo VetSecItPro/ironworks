@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { Db } from "@ironworksai/db";
-import { agentApiKeys, agents, companyMemberships, instanceUserRoles } from "@ironworksai/db";
+import { agentApiKeys, agents, authUsers, companyMemberships, instanceUserRoles } from "@ironworksai/db";
 import type { DeploymentMode } from "@ironworksai/shared";
 import { and, eq, isNull } from "drizzle-orm";
 import type { Request, RequestHandler } from "express";
@@ -59,7 +59,10 @@ export function actorMiddleware(db: Db, opts: ActorMiddlewareOptions): RequestHa
         }
         if (session?.user?.id) {
           const userId = session.user.id;
-          const [roleRow, memberships] = await Promise.all([
+          // emailVerified is authoritative on the user row, not the session.
+          // Session value can lag (e.g. user verified in another tab) so we
+          // re-read it here on every request that lands in this branch.
+          const [roleRow, memberships, userRow] = await Promise.all([
             db
               .select({ id: instanceUserRoles.id })
               .from(instanceUserRoles)
@@ -75,12 +78,18 @@ export function actorMiddleware(db: Db, opts: ActorMiddlewareOptions): RequestHa
                   eq(companyMemberships.status, "active"),
                 ),
               ),
+            db
+              .select({ emailVerified: authUsers.emailVerified })
+              .from(authUsers)
+              .where(eq(authUsers.id, userId))
+              .then((rows) => rows[0] ?? null),
           ]);
           req.actor = {
             type: "board",
             userId,
             companyIds: memberships.map((row) => row.companyId),
             isInstanceAdmin: Boolean(roleRow),
+            emailVerified: userRow?.emailVerified ?? undefined,
             runId: runIdHeader ?? undefined,
             source: "session",
           };

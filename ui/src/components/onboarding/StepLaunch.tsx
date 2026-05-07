@@ -1,5 +1,6 @@
 import { Bot, Building2, Check, Key, ListTodo, Pencil, Rocket } from "lucide-react";
 import { getUIAdapter } from "../../adapters";
+import { EmailVerificationBanner } from "../EmailVerificationBanner";
 import { LLM_PROVIDERS } from "./constants";
 import type { AdapterType, Step } from "./types";
 
@@ -26,6 +27,7 @@ export function StepLaunch({
 }: StepLaunchProps) {
   return (
     <div className="space-y-5">
+      <EmailVerificationBanner />
       <div className="flex items-center gap-3 mb-1">
         <div className="bg-muted/50 p-2">
           <Rocket className="h-5 w-5 text-muted-foreground" />

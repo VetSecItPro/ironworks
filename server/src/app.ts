@@ -224,9 +224,18 @@ export async function createApp(
     let email: string | null = null;
     let name: string | null = req.actor.source === "local_implicit" ? "Local Board" : null;
     let image: string | null = null;
+    // local_implicit (the loopback board) is implicitly verified — there is
+    // no inbox round-trip for the local user. session-backed actors get the
+    // real value off the user row.
+    let emailVerified: boolean = req.actor.source === "local_implicit";
     try {
       const rows = await db
-        .select({ email: authUsers.email, name: authUsers.name, image: authUsers.image })
+        .select({
+          email: authUsers.email,
+          name: authUsers.name,
+          image: authUsers.image,
+          emailVerified: authUsers.emailVerified,
+        })
         .from(authUsers)
         .where(eq(authUsers.id, userId))
         .limit(1);
@@ -234,6 +243,7 @@ export async function createApp(
         email = rows[0].email ?? email;
         name = rows[0].name ?? name;
         image = rows[0].image ?? null;
+        emailVerified = Boolean(rows[0].emailVerified);
       }
     } catch {
       // Swallow DB errors — fall back to nulls so the endpoint never 500s
@@ -245,10 +255,60 @@ export async function createApp(
         id: `ironworks:${req.actor.source}:${userId}`,
         userId,
       },
-      user: { id: userId, email, name, image },
+      user: { id: userId, email, name, image, emailVerified },
     });
   });
   if (opts.betterAuthHandler) {
+    // ── Rate-limit verification-email resends ──
+    // better-auth exposes POST /api/auth/send-verification-email with no
+    // built-in rate-limit. An attacker (or a buggy client retry loop) could
+    // otherwise hammer the endpoint and trigger an inbox flood — so we wrap
+    // the path with a simple in-memory sliding-window limiter (3/hour per
+    // email + IP combo). The friendlier alias /api/auth/resend-verification
+    // points at the same handler so the UI has a stable name to call.
+    const verifyResendLimit = new Map<string, { count: number; windowStart: number }>();
+    const VERIFY_RESEND_MAX = 3;
+    const VERIFY_RESEND_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+    const verifyResendLimiter: express.RequestHandler = (req, res, next) => {
+      const ip = req.ip ?? req.socket.remoteAddress ?? "unknown";
+      const bodyEmail =
+        req.body && typeof req.body === "object" && typeof (req.body as { email?: unknown }).email === "string"
+          ? ((req.body as { email: string }).email ?? "").trim().toLowerCase()
+          : "";
+      const key = `${ip}::${bodyEmail}`;
+      const now = Date.now();
+      const entry = verifyResendLimit.get(key);
+      if (!entry || now - entry.windowStart > VERIFY_RESEND_WINDOW_MS) {
+        verifyResendLimit.set(key, { count: 1, windowStart: now });
+        next();
+        return;
+      }
+      if (entry.count >= VERIFY_RESEND_MAX) {
+        const retryAfterSec = Math.max(1, Math.ceil((entry.windowStart + VERIFY_RESEND_WINDOW_MS - now) / 1000));
+        res
+          .status(429)
+          .set("Retry-After", String(retryAfterSec))
+          .json({ error: "Too many verification email requests. Please wait and try again." });
+        return;
+      }
+      entry.count++;
+      next();
+    };
+
+    app.post("/api/auth/send-verification-email", verifyResendLimiter, opts.betterAuthHandler);
+    // Friendly alias used by the UI banner — rewrite the path so the
+    // better-auth handler picks up its canonical /send-verification-email
+    // route.
+    app.post(
+      "/api/auth/resend-verification",
+      verifyResendLimiter,
+      (req, _res, next) => {
+        req.url = "/api/auth/send-verification-email";
+        next();
+      },
+      opts.betterAuthHandler,
+    );
+
     app.all("/api/auth/*authPath", opts.betterAuthHandler);
   }
   app.use(llmRoutes(db));

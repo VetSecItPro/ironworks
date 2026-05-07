@@ -181,4 +181,36 @@ describeEmbeddedPostgres("POST /api/companies/onboard", () => {
     const secretRows = await db.select().from(companySecrets);
     expect(secretRows).toHaveLength(0);
   });
+
+  it("returns 403 with email_verification_required when actor.emailVerified is false", async () => {
+    // Build an app where the injected actor is a session-backed user with
+    // an unverified email — same shape the production actor middleware
+    // assigns when it reads emailVerified=false off the user row.
+    const { companyRoutes } = await import("../routes/companies.js");
+    const app = express();
+    app.use(express.json());
+    app.use((req, _res, next) => {
+      // biome-ignore lint/suspicious/noExplicitAny: actor is attached by upstream auth middleware in production
+      (req as any).actor = {
+        type: "board",
+        userId: "test-unverified",
+        companyIds: [],
+        isInstanceAdmin: true,
+        emailVerified: false,
+        source: "session",
+      };
+      next();
+    });
+    app.use("/api/companies", companyRoutes(db));
+    app.use(errorHandler);
+
+    const res = await request(app).post("/api/companies/onboard").send(basePayload());
+
+    expect(res.status).toBe(403);
+    expect(res.body.details).toMatchObject({ code: "email_verification_required" });
+
+    // No company rows should have been created.
+    const companyRows = await db.select().from(companies);
+    expect(companyRows).toHaveLength(0);
+  });
 });
