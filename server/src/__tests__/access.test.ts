@@ -21,12 +21,20 @@ const mockAccessService = vi.hoisted(() => ({
   ensureMembership: vi.fn(),
   setMemberPermissions: vi.fn(),
   setPrincipalPermission: vi.fn(),
+  setPrincipalGrants: vi.fn(),
   listMembers: vi.fn(),
   listPermissions: vi.fn().mockResolvedValue([]),
   hasPermission: vi.fn().mockResolvedValue(true),
   getMembership: vi.fn().mockResolvedValue(null),
+  getMembershipById: vi.fn().mockResolvedValue(null),
+  removeMembership: vi.fn(),
   listPrincipalPermissions: vi.fn().mockResolvedValue([]),
   listPrincipalGrants: vi.fn().mockResolvedValue([]),
+  listUserCompanyAccess: vi.fn().mockResolvedValue([]),
+  setUserCompanyAccess: vi.fn().mockResolvedValue([]),
+  isInstanceAdmin: vi.fn().mockResolvedValue(false),
+  promoteInstanceAdmin: vi.fn(),
+  demoteInstanceAdmin: vi.fn(),
 }));
 
 const mockAgentService = vi.hoisted(() => ({
@@ -41,6 +49,14 @@ const mockAgentService = vi.hoisted(() => ({
 
 const mockBoardAuthService = vi.hoisted(() => ({
   getSession: vi.fn(),
+  createCliAuthChallenge: vi.fn(),
+  describeCliAuthChallenge: vi.fn(),
+  approveCliAuthChallenge: vi.fn(),
+  cancelCliAuthChallenge: vi.fn(),
+  resolveBoardAccess: vi.fn(),
+  resolveBoardActivityCompanyIds: vi.fn().mockResolvedValue([]),
+  assertCurrentBoardKey: vi.fn(),
+  revokeBoardApiKey: vi.fn(),
 }));
 
 const mockBudgetService = vi.hoisted(() => ({
@@ -128,6 +144,11 @@ describe("access routes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockAccessService.listMembers.mockResolvedValue(MOCK_MEMBERS);
+    mockAccessService.canUser.mockResolvedValue(true);
+    mockAccessService.hasPermission.mockResolvedValue(true);
+    mockAccessService.isInstanceAdmin.mockResolvedValue(false);
+    mockAccessService.listUserCompanyAccess.mockResolvedValue([]);
+    mockBoardAuthService.resolveBoardActivityCompanyIds.mockResolvedValue([]);
   });
 
   describe("GET /api/companies/:companyId/members", () => {
@@ -171,6 +192,176 @@ describe("access routes", () => {
 
       // Should fail because body is validated via Zod schema
       expect(res.status).toBeGreaterThanOrEqual(400);
+    });
+  });
+
+  describe("DELETE /api/companies/:companyId/members/:memberId", () => {
+    it("removes a member when caller has permission", async () => {
+      const memberId = randomUUID();
+      mockAccessService.getMembershipById.mockResolvedValue({
+        principalType: "user",
+        principalId: OTHER_USER_ID,
+      });
+      mockAccessService.removeMembership.mockResolvedValue({ id: memberId });
+      const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
+      const res = await request(app).delete(`/api/companies/${COMPANY_ID}/members/${memberId}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({ removed: true, memberId });
+    });
+
+    it("returns 404 when membership does not exist", async () => {
+      mockAccessService.getMembershipById.mockResolvedValue(null);
+      const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
+      const res = await request(app).delete(`/api/companies/${COMPANY_ID}/members/${randomUUID()}`);
+      expect(res.status).toBe(404);
+    });
+
+    it("blocks self-removal with 409", async () => {
+      const memberId = randomUUID();
+      mockAccessService.getMembershipById.mockResolvedValue({
+        principalType: "user",
+        principalId: USER_ID,
+      });
+      const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
+      const res = await request(app).delete(`/api/companies/${COMPANY_ID}/members/${memberId}`);
+
+      expect(res.status).toBe(409);
+      expect(res.body.error).toContain("Cannot remove yourself");
+    });
+
+    it("rejects deletion without permission with 403", async () => {
+      mockAccessService.canUser.mockResolvedValue(false);
+      const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
+      const res = await request(app).delete(`/api/companies/${COMPANY_ID}/members/${randomUUID()}`);
+      expect(res.status).toBe(403);
+    });
+  });
+
+  describe("GET /api/me/access", () => {
+    it("returns instance admin flag and memberships for board user", async () => {
+      mockAccessService.isInstanceAdmin.mockResolvedValue(true);
+      mockAccessService.listUserCompanyAccess.mockResolvedValue([
+        { companyId: COMPANY_ID, membershipRole: "owner", status: "active" },
+      ]);
+      const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
+      const res = await request(app).get("/api/me/access");
+
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({
+        isInstanceAdmin: true,
+        memberships: [{ companyId: COMPANY_ID, role: "owner", status: "active" }],
+      });
+    });
+
+    it("returns empty body for unauthenticated actor", async () => {
+      const app = await createApp(noActor());
+      const res = await request(app).get("/api/me/access");
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ isInstanceAdmin: false, memberships: [] });
+    });
+  });
+
+  describe("POST /api/admin/users/:userId/promote-instance-admin", () => {
+    it("promotes a user when caller is instance admin", async () => {
+      mockAccessService.isInstanceAdmin.mockResolvedValue(true);
+      mockAccessService.promoteInstanceAdmin.mockResolvedValue({ userId: OTHER_USER_ID });
+      const adminActor = {
+        type: "board",
+        userId: USER_ID,
+        companyIds: [COMPANY_ID],
+        isInstanceAdmin: true,
+        source: "session",
+      };
+      const app = await createApp(adminActor);
+      const res = await request(app).post(`/api/admin/users/${OTHER_USER_ID}/promote-instance-admin`);
+
+      expect(res.status).toBe(201);
+      expect(mockAccessService.promoteInstanceAdmin).toHaveBeenCalledWith(OTHER_USER_ID);
+    });
+
+    it("rejects non-instance-admin caller with 403", async () => {
+      const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
+      const res = await request(app).post(`/api/admin/users/${OTHER_USER_ID}/promote-instance-admin`);
+      expect(res.status).toBe(403);
+    });
+  });
+
+  describe("POST /api/admin/users/:userId/demote-instance-admin", () => {
+    it("returns 404 when user is not an instance admin", async () => {
+      mockAccessService.isInstanceAdmin.mockResolvedValue(true);
+      mockAccessService.demoteInstanceAdmin.mockResolvedValue(null);
+      const adminActor = {
+        type: "board",
+        userId: USER_ID,
+        companyIds: [COMPANY_ID],
+        isInstanceAdmin: true,
+        source: "session",
+      };
+      const app = await createApp(adminActor);
+      const res = await request(app).post(`/api/admin/users/${OTHER_USER_ID}/demote-instance-admin`);
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe("POST /api/cli-auth/challenges", () => {
+    it("creates a CLI auth challenge", async () => {
+      const challengeId = randomUUID();
+      const expiresAt = new Date(Date.now() + 60_000);
+      mockBoardAuthService.createCliAuthChallenge.mockResolvedValue({
+        challenge: {
+          id: challengeId,
+          expiresAt,
+          boardApiKeyId: "key-1",
+        },
+        challengeSecret: "challenge-secret",
+        pendingBoardToken: "pending-token",
+      });
+      const app = await createApp(noActor());
+      const res = await request(app)
+        .post("/api/cli-auth/challenges")
+        .send({ command: "ironworks login", clientName: "test-cli" });
+
+      expect(res.status).toBe(201);
+      expect(res.body).toMatchObject({
+        id: challengeId,
+        token: "challenge-secret",
+        boardApiToken: "pending-token",
+      });
+    });
+  });
+
+  describe("GET /api/cli-auth/me", () => {
+    it("returns 401 for unauthenticated caller", async () => {
+      const app = await createApp(noActor());
+      const res = await request(app).get("/api/cli-auth/me");
+      expect(res.status).toBe(401);
+    });
+
+    it("returns access snapshot for board user", async () => {
+      mockBoardAuthService.resolveBoardAccess.mockResolvedValue({
+        user: { id: USER_ID, name: "Test" },
+        isInstanceAdmin: false,
+        companyIds: [COMPANY_ID],
+      });
+      const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
+      const res = await request(app).get("/api/cli-auth/me");
+
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({
+        userId: USER_ID,
+        isInstanceAdmin: false,
+        companyIds: [COMPANY_ID],
+      });
+    });
+  });
+
+  describe("GET /api/skills/available", () => {
+    it("returns 200 (public route, no auth required)", async () => {
+      const app = await createApp(noActor());
+      const res = await request(app).get("/api/skills/available");
+      expect(res.status).toBe(200);
     });
   });
 });
