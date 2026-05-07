@@ -37,7 +37,7 @@ import {
 import { knowledgeService } from "../services/knowledge.js";
 import { ROLE_DEFAULT_CAPABILITIES } from "../services/role-defaults.js";
 import type { StorageService } from "../storage/types.js";
-import { assertBoard, assertCompanyAccess, assertInstanceAdmin, getActorInfo } from "./authz.js";
+import { assertBoard, assertCompanyAccess, assertEmailVerified, assertInstanceAdmin, getActorInfo } from "./authz.js";
 
 export function companyRoutes(db: Db, storage?: StorageService) {
   const router = Router();
@@ -320,6 +320,10 @@ export function companyRoutes(db: Db, storage?: StorageService) {
     if (!(req.actor.source === "local_implicit" || req.actor.isInstanceAdmin)) {
       throw forbidden("Instance admin required");
     }
+    // Block onboarding when the actor is a real user whose email is not yet
+    // verified. Prevents identity-spoof signups from spinning up companies
+    // before the legitimate inbox holder has clicked the verification link.
+    assertEmailVerified(req);
     const payload = req.body as OnboardCompany;
     const actor = getActorInfo(req);
     const userIdForOwnership = req.actor.userId ?? "local-board";
@@ -648,6 +652,7 @@ export function companyRoutes(db: Db, storage?: StorageService) {
     if (!(req.actor.source === "local_implicit" || req.actor.isInstanceAdmin)) {
       throw forbidden("Instance admin required");
     }
+    assertEmailVerified(req);
     const company = await svc.create(req.body);
     await access.ensureMembership(company.id, "user", req.actor.userId ?? "local-board", "owner", "active");
     await logActivity(db, {

@@ -7,11 +7,14 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { toNodeHandler } from "better-auth/node";
 import type { Request, RequestHandler } from "express";
 import type { Config } from "../config.js";
+import { logger } from "../middleware/logger.js";
+import { getEmailService } from "../services/email.js";
 
 export type BetterAuthSessionUser = {
   id: string;
   email?: string | null;
   name?: string | null;
+  emailVerified?: boolean;
 };
 
 export type BetterAuthSessionResult = {
@@ -97,6 +100,45 @@ export function createBetterAuthInstance(db: Db, config: Config, trustedOrigins?
       requireEmailVerification: false,
       disableSignUp: config.authDisableSignUp,
     },
+    // Email verification — enabled for password+email signups so a bad actor
+    // cannot create an account with someone else's email and immediately
+    // start spinning up companies under that identity. OAuth providers (when
+    // wired in) verify the email server-side; their tokens are trusted and
+    // bypass this gate.
+    //
+    // The verification mail is sent through the EmailService abstraction
+    // (server/src/services/email.ts). When no transport is configured the
+    // default console transport logs the verification URL so dev/local does
+    // not block.
+    emailVerification: {
+      sendOnSignUp: true,
+      // 24h gives the user a comfortable window to complete the flow even
+      // across timezone differences without keeping tokens valid forever.
+      expiresIn: 60 * 60 * 24,
+      autoSignInAfterVerification: true,
+      sendVerificationEmail: async ({ user, url }) => {
+        try {
+          await getEmailService().sendEmail({
+            to: user.email,
+            subject: "Verify your Ironworks email",
+            tag: "verify-email",
+            text: `Hello ${user.name ?? ""},
+
+Please verify your email to finish setting up your Ironworks account by visiting the link below:
+
+${url}
+
+If you did not request this, you can safely ignore the message.
+
+— Ironworks`,
+          });
+        } catch (err) {
+          // Never throw out of the signup path because the mail failed to
+          // ship. The user can resend via /api/auth/resend-verification.
+          logger.error({ err, to: user.email }, "Failed to send verification email");
+        }
+      },
+    },
     ...(isHttpOnly ? { advanced: { useSecureCookies: false } } : {}),
   };
 
@@ -128,7 +170,7 @@ export async function resolveBetterAuthSessionFromHeaders(
 
   const value = sessionValue as {
     session?: { id?: string; userId?: string } | null;
-    user?: { id?: string; email?: string | null; name?: string | null } | null;
+    user?: { id?: string; email?: string | null; name?: string | null; emailVerified?: boolean } | null;
   };
   const session =
     value.session?.id && value.session.userId ? { id: value.session.id, userId: value.session.userId } : null;
@@ -137,6 +179,7 @@ export async function resolveBetterAuthSessionFromHeaders(
         id: value.user.id,
         email: value.user.email ?? null,
         name: value.user.name ?? null,
+        emailVerified: typeof value.user.emailVerified === "boolean" ? value.user.emailVerified : undefined,
       }
     : null;
 
