@@ -29,7 +29,6 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { NavLink } from "@/lib/router";
-import { PluginSlotOutlet } from "@/plugins/slots";
 import { channelsApi } from "../api/channels";
 import { heartbeatsApi } from "../api/heartbeats";
 import { sidebarBadgesApi } from "../api/sidebarBadges";
@@ -186,11 +185,6 @@ export function Sidebar() {
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }));
   }
 
-  const pluginContext = {
-    companyId: selectedCompanyId,
-    companyPrefix: selectedCompany?.issuePrefix ?? null,
-  };
-
   return (
     <aside className="w-full h-full min-h-0 border-r border-border bg-background flex flex-col">
       {/* Top bar: Company switcher + Search */}
@@ -295,15 +289,6 @@ export function Sidebar() {
               badge={inboxBadge.inbox}
               badgeTone={inboxBadge.failedRuns > 0 ? "danger" : "default"}
               alert={inboxBadge.failedRuns > 0}
-            />
-          )}
-          {!q && (
-            <PluginSlotOutlet
-              slotTypes={["sidebar"]}
-              context={pluginContext}
-              className="flex flex-col gap-0.5"
-              itemClassName="text-[13px] font-medium"
-              missingBehavior="placeholder"
             />
           )}
         </div>
@@ -417,16 +402,6 @@ export function Sidebar() {
           {matchLabel("Settings") && <SidebarNavItem to="/company/settings" label="Settings" icon={Settings} />}
           {matchLabel("My Profile") && <SidebarNavItem to="/profile" label="My Profile" icon={User} />}
         </SidebarSection>
-
-        {!q && (
-          <PluginSlotOutlet
-            slotTypes={["sidebarPanel"]}
-            context={pluginContext}
-            className="flex flex-col gap-3"
-            itemClassName="rounded-lg border border-border p-3"
-            missingBehavior="placeholder"
-          />
-        )}
       </nav>
     </aside>
   );

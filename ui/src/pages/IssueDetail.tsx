@@ -4,8 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLocation, useNavigate, useParams } from "@/lib/router";
-import { PluginLauncherOutlet } from "@/plugins/launchers";
-import { PluginSlotMount, PluginSlotOutlet } from "@/plugins/slots";
 import { CommentThread } from "../components/CommentThread";
 import { InlineEditor } from "../components/InlineEditor";
 import { IssueDependencyGraph } from "../components/IssueDependencyGraph";
@@ -82,7 +80,6 @@ export function IssueDetail() {
     linkedRuns,
     linkedApprovals,
     attachments,
-    issuePluginTabItems,
     updateIssue,
     addComment,
     addCommentAndReassign,
@@ -94,8 +91,6 @@ export function IssueDetail() {
     releaseIssue,
     markIssueRead,
   } = data;
-
-  const activePluginTab = issuePluginTabItems.find((item) => item.value === detailTab) ?? null;
 
   const sourceBreadcrumb = useMemo(
     () => readIssueDetailBreadcrumb(location.state) ?? { label: "Missions", href: "/issues" },
@@ -321,45 +316,6 @@ export function IssueDetail() {
         />
       </div>
 
-      <PluginSlotOutlet
-        slotTypes={["toolbarButton", "contextMenuItem"]}
-        entityType="issue"
-        context={{
-          companyId: issue.companyId,
-          projectId: issue.projectId ?? null,
-          entityId: issue.id,
-          entityType: "issue",
-        }}
-        className="flex flex-wrap gap-2"
-        itemClassName="inline-flex"
-        missingBehavior="placeholder"
-      />
-      <PluginLauncherOutlet
-        placementZones={["toolbarButton"]}
-        entityType="issue"
-        context={{
-          companyId: issue.companyId,
-          projectId: issue.projectId ?? null,
-          entityId: issue.id,
-          entityType: "issue",
-        }}
-        className="flex flex-wrap gap-2"
-        itemClassName="inline-flex"
-      />
-      <PluginSlotOutlet
-        slotTypes={["taskDetailView"]}
-        entityType="issue"
-        context={{
-          companyId: issue.companyId,
-          projectId: issue.projectId ?? null,
-          entityId: issue.id,
-          entityType: "issue",
-        }}
-        className="space-y-3"
-        itemClassName="rounded-lg border border-border p-3"
-        missingBehavior="placeholder"
-      />
-
       <IssueDocumentsSection
         issue={issue}
         canDeleteDocuments={Boolean(session?.user?.id)}
@@ -418,19 +374,12 @@ export function IssueDetail() {
             <GitBranch className="h-3.5 w-3.5" />
             Dependencies
           </TabsTrigger>
-          {issuePluginTabItems.map((item) => (
-            <TabsTrigger key={item.value} value={item.value}>
-              {item.label}
-            </TabsTrigger>
-          ))}
         </TabsList>
 
         <TabsContent value="comments">
           <CommentThread
             comments={commentsWithRunMeta}
             linkedRuns={timelineRuns}
-            companyId={issue.companyId}
-            projectId={issue.projectId}
             issueStatus={issue.status}
             agentMap={agentMap}
             draftKey={`ironworks:issue-comment-draft:${issue.id}`}
@@ -471,20 +420,6 @@ export function IssueDetail() {
         <TabsContent value="dependencies">
           <IssueDependencyGraph issue={issue} allIssues={allIssues ?? []} />
         </TabsContent>
-        {activePluginTab && (
-          <TabsContent value={activePluginTab.value}>
-            <PluginSlotMount
-              slot={activePluginTab.slot}
-              context={{
-                companyId: issue.companyId,
-                projectId: issue.projectId ?? null,
-                entityId: issue.id,
-                entityType: "issue",
-              }}
-              missingBehavior="placeholder"
-            />
-          </TabsContent>
-        )}
       </Tabs>
 
       <IssueApprovalsSection

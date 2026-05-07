@@ -9,7 +9,6 @@ import { registerCompanyCommands } from "./commands/client/company.js";
 import { registerContextCommands } from "./commands/client/context.js";
 import { registerDashboardCommands } from "./commands/client/dashboard.js";
 import { registerIssueCommands } from "./commands/client/issue.js";
-import { registerPluginCommands } from "./commands/client/plugin.js";
 import { configure } from "./commands/configure.js";
 import { dbBackupCommand } from "./commands/db-backup.js";
 import { doctor } from "./commands/doctor.js";
@@ -133,7 +132,6 @@ registerApprovalCommands(program);
 registerActivityCommands(program);
 registerDashboardCommands(program);
 registerWorktreeCommands(program);
-registerPluginCommands(program);
 
 const auth = program.command("auth").description("Authentication and bootstrap utilities");
 

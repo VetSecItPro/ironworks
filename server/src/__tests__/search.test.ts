@@ -23,7 +23,6 @@ vi.mock("../services/web-search.js", () => ({
 
 vi.mock("../services/activity-log.js", () => ({
   logActivity: vi.fn(),
-  setPluginEventBus: vi.fn(),
 }));
 
 vi.mock("../middleware/logger.js", () => ({

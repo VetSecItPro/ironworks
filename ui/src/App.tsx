@@ -53,9 +53,6 @@ const NewAgent = lazy(() => import("./pages/NewAgent").then((m) => ({ default: m
 const RunTranscriptUxLab = lazy(() =>
   import("./pages/RunTranscriptUxLab").then((m) => ({ default: m.RunTranscriptUxLab })),
 );
-const PluginManager = lazy(() => import("./pages/PluginManager").then((m) => ({ default: m.PluginManager })));
-const PluginSettings = lazy(() => import("./pages/PluginSettings").then((m) => ({ default: m.PluginSettings })));
-const PluginPage = lazy(() => import("./pages/PluginPage").then((m) => ({ default: m.PluginPage })));
 const ChannelView = lazy(() => import("./pages/ChannelView").then((m) => ({ default: m.ChannelView })));
 const ClientPortal = lazy(() => import("./pages/ClientPortal").then((m) => ({ default: m.ClientPortal })));
 const AgentMarketplace = lazy(() => import("./pages/AgentMarketplace").then((m) => ({ default: m.AgentMarketplace })));
@@ -346,14 +343,6 @@ function boardRoutes() {
       />
       <Route path="settings" element={<LegacySettingsRedirect />} />
       <Route path="settings/*" element={<LegacySettingsRedirect />} />
-      <Route
-        path="plugins/:pluginId"
-        element={
-          <LazyPage>
-            <PluginPage />
-          </LazyPage>
-        }
-      />
       <Route
         path="org"
         element={
@@ -755,14 +744,6 @@ function boardRoutes() {
           </LazyPage>
         }
       />
-      <Route
-        path=":pluginRoutePath"
-        element={
-          <LazyPage>
-            <PluginPage />
-          </LazyPage>
-        }
-      />
       <Route path="*" element={<NotFoundPage scope="board" />} />
     </>
   );
@@ -975,22 +956,6 @@ export function App() {
               element={
                 <LazyPage>
                   <InstanceExperimentalSettings />
-                </LazyPage>
-              }
-            />
-            <Route
-              path="plugins"
-              element={
-                <LazyPage>
-                  <PluginManager />
-                </LazyPage>
-              }
-            />
-            <Route
-              path="plugins/:pluginId"
-              element={
-                <LazyPage>
-                  <PluginSettings />
                 </LazyPage>
               }
             />

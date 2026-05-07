@@ -4,8 +4,6 @@ import { CopyPlus } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { Tabs } from "@/components/ui/tabs";
 import { Navigate, useLocation, useNavigate, useParams } from "@/lib/router";
-import { PluginLauncherOutlet } from "@/plugins/launchers";
-import { PluginSlotMount, PluginSlotOutlet, usePluginSlots } from "@/plugins/slots";
 import { assetsApi } from "../api/assets";
 import { budgetsApi } from "../api/budgets";
 import { projectsApi } from "../api/projects";
@@ -28,13 +26,7 @@ import { useToast } from "../context/ToastContext";
 import { queryKeys } from "../lib/queryKeys";
 import { projectRouteRef } from "../lib/utils";
 
-type ProjectBaseTab = "overview" | "list" | "configuration" | "budget" | "activity";
-type ProjectPluginTab = `plugin:${string}`;
-type ProjectTab = ProjectBaseTab | ProjectPluginTab;
-
-function isProjectPluginTab(value: string | null): value is ProjectPluginTab {
-  return typeof value === "string" && value.startsWith("plugin:");
-}
+type ProjectTab = "overview" | "list" | "configuration" | "budget" | "activity";
 
 function resolveProjectTab(pathname: string, projectId: string): ProjectTab | null {
   const segments = pathname.split("/").filter(Boolean);
@@ -78,12 +70,7 @@ export function ProjectDetail() {
   }, [companies, companyPrefix]);
   const lookupCompanyId = routeCompanyId ?? selectedCompanyId ?? undefined;
   const canFetchProject = routeProjectRef.length > 0 && (isUuidLike(routeProjectRef) || Boolean(lookupCompanyId));
-  const activeRouteTab = routeProjectRef ? resolveProjectTab(location.pathname, routeProjectRef) : null;
-  const pluginTabFromSearch = useMemo(() => {
-    const tab = new URLSearchParams(location.search).get("tab");
-    return isProjectPluginTab(tab) ? tab : null;
-  }, [location.search]);
-  const activeTab = activeRouteTab ?? pluginTabFromSearch;
+  const activeTab = routeProjectRef ? resolveProjectTab(location.pathname, routeProjectRef) : null;
 
   const {
     data: project,
@@ -97,23 +84,6 @@ export function ProjectDetail() {
   const canonicalProjectRef = project ? projectRouteRef(project) : routeProjectRef;
   const projectLookupRef = project?.id ?? routeProjectRef;
   const resolvedCompanyId = project?.companyId ?? selectedCompanyId;
-
-  const { slots: pluginDetailSlots, isLoading: pluginDetailSlotsLoading } = usePluginSlots({
-    slotTypes: ["detailTab"],
-    entityType: "project",
-    companyId: resolvedCompanyId,
-    enabled: !!resolvedCompanyId,
-  });
-  const pluginTabItems = useMemo(
-    () =>
-      pluginDetailSlots.map((slot) => ({
-        value: `plugin:${slot.pluginKey}:${slot.id}` as ProjectPluginTab,
-        label: slot.displayName,
-        slot,
-      })),
-    [pluginDetailSlots],
-  );
-  const activePluginTab = pluginTabItems.find((item) => item.value === activeTab) ?? null;
 
   useEffect(() => {
     if (!project?.companyId || project.companyId === selectedCompanyId) return;
@@ -214,10 +184,6 @@ export function ProjectDetail() {
 
   useEffect(() => {
     if (!project || routeProjectRef === canonicalProjectRef) return;
-    if (isProjectPluginTab(activeTab)) {
-      navigate(`/projects/${canonicalProjectRef}?tab=${encodeURIComponent(activeTab)}`, { replace: true });
-      return;
-    }
     const pathSeg = activeTab && TAB_TO_PATH[activeTab];
     if (pathSeg) {
       navigate(`/projects/${canonicalProjectRef}/${pathSeg}${activeTab === "list" && filter ? `/${filter}` : ""}`, {
@@ -283,9 +249,6 @@ export function ProjectDetail() {
     },
   });
 
-  if (pluginTabFromSearch && !pluginDetailSlotsLoading && !activePluginTab)
-    return <Navigate to={`/projects/${canonicalProjectRef}/issues`} replace />;
-
   if (routeProjectRef && activeTab === null) {
     let cachedTab: string | null = null;
     if (project?.id) {
@@ -298,8 +261,6 @@ export function ProjectDetail() {
       return <Navigate to={`/projects/${canonicalProjectRef}/configuration`} replace />;
     if (cachedTab === "budget") return <Navigate to={`/projects/${canonicalProjectRef}/budget`} replace />;
     if (cachedTab === "activity") return <Navigate to={`/projects/${canonicalProjectRef}/activity`} replace />;
-    if (isProjectPluginTab(cachedTab))
-      return <Navigate to={`/projects/${canonicalProjectRef}?tab=${encodeURIComponent(cachedTab)}`} replace />;
     return <Navigate to={`/projects/${canonicalProjectRef}/issues`} replace />;
   }
 
@@ -307,24 +268,11 @@ export function ProjectDetail() {
   if (error) return <p className="text-sm text-destructive">{error.message}</p>;
   if (!project) return null;
 
-  const pluginCtx = {
-    companyId: resolvedCompanyId ?? null,
-    companyPrefix: companyPrefix ?? null,
-    projectId: project.id,
-    projectRef: canonicalProjectRef,
-    entityId: project.id,
-    entityType: "project" as const,
-  };
-
   const handleTabChange = (tab: ProjectTab) => {
     if (project?.id) {
       try {
         localStorage.setItem(`ironworks:project-tab:${project.id}`, tab);
       } catch {}
-    }
-    if (isProjectPluginTab(tab)) {
-      navigate(`/projects/${canonicalProjectRef}?tab=${encodeURIComponent(tab)}`);
-      return;
     }
     navigate(`/projects/${canonicalProjectRef}/${TAB_TO_PATH[tab] ?? "issues"}`);
   };
@@ -365,22 +313,6 @@ export function ProjectDetail() {
         </div>
       </div>
 
-      <PluginSlotOutlet
-        slotTypes={["toolbarButton", "contextMenuItem"]}
-        entityType="project"
-        context={pluginCtx}
-        className="flex flex-wrap gap-2"
-        itemClassName="inline-flex"
-        missingBehavior="placeholder"
-      />
-      <PluginLauncherOutlet
-        placementZones={["toolbarButton"]}
-        entityType="project"
-        context={pluginCtx}
-        className="flex flex-wrap gap-2"
-        itemClassName="inline-flex"
-      />
-
       <Tabs value={activeTab ?? "list"} onValueChange={(v) => handleTabChange(v as ProjectTab)}>
         <PageTabBar
           items={[
@@ -389,7 +321,6 @@ export function ProjectDetail() {
             { value: "activity", label: "Activity" },
             { value: "configuration", label: "Configuration" },
             { value: "budget", label: "Budget" },
-            ...pluginTabItems.map((i) => ({ value: i.value, label: i.label })),
           ]}
           align="start"
           value={activeTab ?? "list"}
@@ -438,13 +369,6 @@ export function ProjectDetail() {
           />
         </div>
       ) : null}
-      {activePluginTab && (
-        <PluginSlotMount
-          slot={activePluginTab.slot}
-          context={{ ...pluginCtx, companyId: resolvedCompanyId }}
-          missingBehavior="placeholder"
-        />
-      )}
     </div>
   );
 }

@@ -88,7 +88,6 @@ vi.mock("../services/channels.js", () => ({
 
 vi.mock("../services/activity-log.js", () => ({
   logActivity: mockLogActivity,
-  setPluginEventBus: vi.fn(),
 }));
 
 vi.mock("../services/role-defaults.js", () => ({

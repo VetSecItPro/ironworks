@@ -16,7 +16,6 @@ import { useProjectOrder } from "@/hooks/useProjectOrder";
 import { assigneeValueFromSelection, suggestedCommentAssigneeValue } from "@/lib/assignees";
 import { queryKeys } from "@/lib/queryKeys";
 import { visibleRunCostUsd } from "@/lib/utils";
-import { usePluginSlots } from "@/plugins/slots";
 import type { CommentReassignment, IssueCostSummary } from "./issue-detail-utils";
 import { asRecord, fileBaseName, slugifyDocumentKey, titleizeFilename, usageNumber } from "./issue-detail-utils";
 
@@ -124,13 +123,6 @@ export function useIssueDetailData(issueId: string | undefined) {
     projects: projects ?? [],
     companyId: selectedCompanyId,
     userId: currentUserId,
-  });
-
-  const { slots: issuePluginDetailSlots } = usePluginSlots({
-    slotTypes: ["detailTab"],
-    entityType: "issue",
-    companyId: resolvedCompanyId,
-    enabled: !!resolvedCompanyId,
   });
 
   // --- Derived data ---
@@ -247,16 +239,6 @@ export function useIssueDetailData(issueId: string | undefined) {
     }
     return { input, output, cached, cost, totalTokens: input + output, hasCost, hasTokens };
   }, [linkedRuns]);
-
-  const issuePluginTabItems = useMemo(
-    () =>
-      issuePluginDetailSlots.map((slot) => ({
-        value: `plugin:${slot.pluginKey}:${slot.id}`,
-        label: slot.displayName,
-        slot,
-      })),
-    [issuePluginDetailSlots],
-  );
 
   // --- Invalidation helper ---
   const invalidateIssue = () => {
@@ -466,7 +448,6 @@ export function useIssueDetailData(issueId: string | undefined) {
     suggestedAssigneeValue,
     commentsWithRunMeta,
     issueCostSummary,
-    issuePluginTabItems,
     // Mutations
     markIssueRead,
     updateIssue,

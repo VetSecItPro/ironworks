@@ -67,13 +67,7 @@ import { slimRoutes } from "./routes/slim.js";
 import { sseRoutes } from "./routes/sse.js";
 import { supportPublicRoutes } from "./routes/support.js";
 import { teamTemplateRoutes } from "./routes/team-templates.js";
-import { setPluginEventBus } from "./services/activity-log.js";
-import { createPluginEventBus } from "./services/plugin-event-bus.js";
-import { pluginRegistryService } from "./services/plugin-registry.js";
 import type { StorageService } from "./storage/types.js";
-// Plugin system disabled — not needed for V1 productization
-// import { pluginRoutes } from "./routes/plugins.js";
-// import { pluginUiStaticRoutes } from "./routes/plugin-ui-static.js";
 import { applyUiBranding } from "./ui-branding.js";
 
 type UiMode = "none" | "static" | "vite-dev";
@@ -99,7 +93,6 @@ export async function createApp(
     companyDeletionEnabled: boolean;
     instanceId?: string;
     hostVersion?: string;
-    localPluginDir?: string;
     betterAuthHandler?: express.RequestHandler;
     resolveSession?: (req: ExpressRequest) => Promise<BetterAuthSessionResult | null>;
   },
@@ -390,13 +383,6 @@ export async function createApp(
   // Start daily data retention cleanup
   startRetentionScheduler(db);
 
-  // ── Plugin system disabled for V1 productization ──
-  // The plugin system adds complexity without customer value at this stage.
-  // Re-enable when extension marketplace is needed (100+ clients).
-  // Original code preserved in git history.
-  const _pluginRegistry = pluginRegistryService(db);
-  const eventBus = createPluginEventBus();
-  setPluginEventBus(eventBus);
   api.use(
     accessRoutes(db, {
       deploymentMode: opts.deploymentMode,
@@ -415,10 +401,6 @@ export async function createApp(
   app.use("/api", (_req, res) => {
     res.status(404).json({ error: "API route not found" });
   });
-  // Plugin UI static routes disabled
-  // app.use(pluginUiStaticRoutes(db, {
-  //   localPluginDir: opts.localPluginDir ?? DEFAULT_LOCAL_PLUGIN_DIR,
-  // }));
 
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
   if (opts.uiMode === "static") {
@@ -481,10 +463,6 @@ export async function createApp(
   }
 
   app.use(errorHandler);
-
-  // Plugin startup disabled
-  // jobCoordinator.start();
-  // scheduler.start();
 
   return app;
 }

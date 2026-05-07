@@ -121,7 +121,7 @@ export function channelRoutes(db: Db) {
       linkedIssueId: typeof body.linkedIssueId === "string" ? body.linkedIssueId : undefined,
       replyToId: typeof body.replyToId === "string" ? body.replyToId : undefined,
       reasoning: typeof body.reasoning === "string" ? body.reasoning : undefined,
-      // biome-ignore lint/suspicious/noExplicitAny: wakeOpts type differs between plugin-sdk and heartbeat service signatures
+      // biome-ignore lint/suspicious/noExplicitAny: channel-router's enqueueWakeup accepts a wider Record<string, unknown> shape (e.g. non-WakeupOptions sources like "channel_relevance") than heartbeat.wakeup's WakeupOptions signature; the cast bridges the two without leaking either type.
       enqueueWakeup: (agentId, wakeOpts) => heartbeat.wakeup(agentId, wakeOpts as any),
     });
 

@@ -1,5 +1,5 @@
 import { Menu } from "lucide-react";
-import { Fragment, useMemo } from "react";
+import { Fragment } from "react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -10,55 +10,15 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/lib/router";
-import { PluginLauncherOutlet, usePluginLaunchers } from "@/plugins/launchers";
-import { PluginSlotOutlet, usePluginSlots } from "@/plugins/slots";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
-import { useCompany } from "../context/CompanyContext";
 import { useSidebar } from "../context/SidebarContext";
-
-type GlobalToolbarContext = { companyId: string | null; companyPrefix: string | null };
-
-function GlobalToolbarPlugins({ context }: { context: GlobalToolbarContext }) {
-  const { slots } = usePluginSlots({ slotTypes: ["globalToolbarButton"], companyId: context.companyId });
-  const { launchers } = usePluginLaunchers({
-    placementZones: ["globalToolbarButton"],
-    companyId: context.companyId,
-    enabled: !!context.companyId,
-  });
-  if (slots.length === 0 && launchers.length === 0) return null;
-  return (
-    <div className="flex items-center gap-1 ml-auto shrink-0 pl-2">
-      <PluginSlotOutlet slotTypes={["globalToolbarButton"]} context={context} className="flex items-center gap-1" />
-      <PluginLauncherOutlet
-        placementZones={["globalToolbarButton"]}
-        context={context}
-        className="flex items-center gap-1"
-      />
-    </div>
-  );
-}
 
 export function BreadcrumbBar() {
   const { breadcrumbs } = useBreadcrumbs();
   const { toggleSidebar, isMobile } = useSidebar();
-  const { selectedCompanyId, selectedCompany } = useCompany();
-
-  const globalToolbarSlotContext = useMemo(
-    () => ({
-      companyId: selectedCompanyId ?? null,
-      companyPrefix: selectedCompany?.issuePrefix ?? null,
-    }),
-    [selectedCompanyId, selectedCompany?.issuePrefix],
-  );
-
-  const globalToolbarSlots = <GlobalToolbarPlugins context={globalToolbarSlotContext} />;
 
   if (breadcrumbs.length === 0) {
-    return (
-      <div className="border-b border-border px-4 md:px-6 h-12 shrink-0 flex items-center justify-end">
-        {globalToolbarSlots}
-      </div>
-    );
+    return <div className="border-b border-border px-4 md:px-6 h-12 shrink-0 flex items-center justify-end" />;
   }
 
   const menuButton = isMobile && (
@@ -75,7 +35,6 @@ export function BreadcrumbBar() {
         <div className="min-w-0 overflow-hidden flex-1">
           <h1 className="text-sm font-semibold uppercase tracking-wider truncate">{breadcrumbs[0].label}</h1>
         </div>
-        {globalToolbarSlots}
       </div>
     );
   }
@@ -107,7 +66,6 @@ export function BreadcrumbBar() {
           </BreadcrumbList>
         </Breadcrumb>
       </div>
-      {globalToolbarSlots}
     </div>
   );
 }

@@ -125,10 +125,7 @@ export { skillRecipeService } from "./skill-recipe-service.js";
 export { validateSpec } from "./spec-validation.js";
 export {
   _resetToolCache,
-  buildCacheKey,
   buildFrameworkCacheKey,
-  cacheGet,
-  cacheSet,
   createToolCache,
   DEFAULT_MAX_CACHE_SIZE,
   type FrameworkToolCacheConfig,

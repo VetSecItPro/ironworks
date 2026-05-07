@@ -147,29 +147,6 @@ export type {
   LegacyPlanDocument,
 } from "./issue.js";
 export type { LiveEvent } from "./live.js";
-export type {
-  IronworksPluginManifestV1,
-  JsonSchema,
-  PluginConfig,
-  PluginEntityQuery,
-  PluginEntityRecord,
-  PluginJobDeclaration,
-  PluginJobRecord,
-  PluginJobRunRecord,
-  PluginLauncherActionDeclaration,
-  PluginLauncherDeclaration,
-  PluginLauncherRenderContextSnapshot,
-  PluginLauncherRenderDeclaration,
-  PluginMinimumHostVersion,
-  PluginRecord,
-  PluginStateRecord,
-  PluginToolCacheConfig,
-  PluginToolDeclaration,
-  PluginUiDeclaration,
-  PluginUiSlotDeclaration,
-  PluginWebhookDeclaration,
-  PluginWebhookDeliveryRecord,
-} from "./plugin.js";
 export type { Project, ProjectCodebase, ProjectCodebaseOrigin, ProjectGoalRef, ProjectWorkspace } from "./project.js";
 export type { ProviderQuotaResult, QuotaWindow } from "./quota.js";
 export type {

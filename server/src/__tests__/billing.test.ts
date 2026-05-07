@@ -67,7 +67,6 @@ vi.mock("../services/billing.js", () => ({
 
 vi.mock("../services/activity-log.js", () => ({
   logActivity: vi.fn(),
-  setPluginEventBus: vi.fn(),
 }));
 
 vi.mock("../middleware/logger.js", () => ({

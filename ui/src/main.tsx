@@ -1,7 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import * as React from "react";
 import { StrictMode } from "react";
-import * as ReactDOM from "react-dom";
 import { createRoot } from "react-dom/client";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter } from "@/lib/router";
@@ -16,12 +14,8 @@ import { PanelProvider } from "./context/PanelContext";
 import { SidebarProvider } from "./context/SidebarContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { ToastProvider } from "./context/ToastContext";
-import { initPluginBridge } from "./plugins/bridge-init";
-import { PluginLauncherProvider } from "./plugins/launchers";
 import "@mdxeditor/editor/style.css";
 import "./index.css";
-
-initPluginBridge(React, ReactDOM);
 
 // Apply compact mode if saved
 if (isCompactMode()) {
@@ -63,13 +57,11 @@ createRoot(document.getElementById("root")!).render(
                   <BreadcrumbProvider>
                     <SidebarProvider>
                       <PanelProvider>
-                        <PluginLauncherProvider>
-                          <PowerModeProvider>
-                            <DialogProvider>
-                              <App />
-                            </DialogProvider>
-                          </PowerModeProvider>
-                        </PluginLauncherProvider>
+                        <PowerModeProvider>
+                          <DialogProvider>
+                            <App />
+                          </DialogProvider>
+                        </PowerModeProvider>
                       </PanelProvider>
                     </SidebarProvider>
                   </BreadcrumbProvider>

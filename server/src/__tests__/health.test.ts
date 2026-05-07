@@ -26,7 +26,6 @@ vi.mock("../middleware/logger.js", () => ({
 
 vi.mock("../services/activity-log.js", () => ({
   logActivity: vi.fn(),
-  setPluginEventBus: vi.fn(),
 }));
 
 // ── App builder ─────────────────────────────────────────────────────────────
