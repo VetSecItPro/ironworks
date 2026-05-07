@@ -4,6 +4,17 @@ All notable changes to IronWorks are documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **Anthropic context compaction in claude-local** (`packages/adapters/claude-local/src/server/execute.ts`).
+  The Claude CLI's `--betas <name>` flag (v2.1.132+) now passes through `compact-2026-01-12`
+  to the Anthropic API for API-key authenticated runs (`ANTHROPIC_API_KEY` set).
+  Subscription/OAuth runs are unchanged — Anthropic restricts beta-header passthrough
+  to API-key auth, so subscription users continue to rely on the CLI's internal
+  session management. Wired via new pure helper `buildCompactionArgs(enabled, billingType)`
+  with 8 unit tests in `execute.test.ts`. Prompt-cache breakpoints (line-69 TODO) are
+  still blocked — Claude CLI doesn't yet expose a `--cache-control` / `--cache-breakpoints`
+  flag.
+
 ### Removed
 - **Plugin system** (full deletion). The plugin extension framework was disabled
   for V1 productization (no plugin routes mounted, no worker processes started)
