@@ -5,6 +5,21 @@ All notable changes to IronWorks are documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Middleware unit tests for rate limiter + security headers**
+  (`server/src/middleware/rate-limit.test.ts`,
+  `server/src/middleware/security-headers.test.ts`). The in-memory rate limiter
+  and the hand-rolled security-headers middleware were previously inline in
+  `app.ts` with no isolated coverage. Both are now extracted into their own
+  modules (`middleware/rate-limit.ts` + `middleware/security-headers.ts`) with
+  identical runtime behavior, mounted on a tiny supertest harness, and covered
+  by 13 new tests: rate-limit allows up-to-N, returns 429 over-limit, isolates
+  per-IP buckets, resets after window expiry, exempts `/api/health` and
+  heartbeat routes, skips OPTIONS preflights, and handles the unknown-IP
+  fallback; security-headers emits the four standard hardening headers on
+  every response, gates CSP on the vite-dev flag, and pins the SEC-HDR-001
+  inline-script SHA-256 as a regression guard. Existing `actorMiddleware`
+  coverage in `auth.test.ts` (34 tests) is preserved. Total middleware suite
+  is now 47 tests across 3 files.
 - **Adapter startup smoke tests for codex-local, cursor-local, gemini-local**
   (`packages/adapters/{codex,cursor,gemini}-local/src/server/*.test.ts`).
   These three CLI process adapters previously had zero unit-test coverage. Each
@@ -152,6 +167,18 @@ All notable changes to IronWorks are documented in this file.
   `allowedHeaders`. 12 unit tests in `cors-config.test.ts`.
 
 ### Changed
+- **Release smoke now gates the canary channel** (`.github/workflows/release.yml`).
+  Previously `release-smoke.yml` was workflow_dispatch only and ran post-facto
+  against an already-published canary, with no automated rollback. The release
+  workflow now (a) captures the prior `canary` dist-tag before publishing,
+  (b) calls `release-smoke.yml` as a `workflow_call` reusable workflow against
+  the just-published canary, and (c) on smoke failure, runs a
+  `rollback_canary_on_smoke_failure` job that repoints every public package's
+  `canary` dist-tag back to the prior version (mirroring
+  `scripts/rollback-latest.sh`'s logic for the `latest` channel). The git
+  canary tag stays intact, but consumers running `npx ironworksai@canary` are
+  protected from a broken build, and the workflow exits non-zero so red CI
+  blocks human promotion to stable.
 - Documented `@deprecated` symbols with explicit migration paths and removal-blocker
   rationale (no behavior change). Audited candidates:
   - `RunDatabaseBackupOptions.retentionDays` (`packages/db/src/backup-lib.ts`) - KEPT,

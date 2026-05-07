@@ -14,6 +14,8 @@ import { boardMutationGuard } from "./middleware/board-mutation-guard.js";
 import { cacheControl, etag } from "./middleware/cache.js";
 import { errorHandler, httpLogger } from "./middleware/index.js";
 import { privateHostnameGuard, resolvePrivateHostnameAllowSet } from "./middleware/private-hostname-guard.js";
+import { rateLimitMiddleware } from "./middleware/rate-limit.js";
+import { securityHeadersMiddleware } from "./middleware/security-headers.js";
 import { enforcePlaybookRunLimit, enforceProjectLimit, enforceStorageLimit } from "./middleware/tier-limits.js";
 import { httpRequestsMiddleware, metricsHandler } from "./observability/metrics.js";
 import { accessRoutes } from "./routes/access.js";
@@ -115,72 +117,16 @@ export async function createApp(
   app.use(cors(corsResult.options));
 
   // ── Global Rate Limiting (SEC-ADV-013) ──
-  // Simple in-memory sliding window rate limiter. No external dependency.
-  // Limit is generous because in Docker deployments, agents + users share IPs.
-  const rateBuckets = new Map<string, { count: number; resetAt: number }>();
-  const RATE_LIMIT = 600; // requests per window (handles 12 agents + active users)
-  const RATE_WINDOW_MS = 60_000; // 1 minute
-  app.use((req, res, next) => {
-    if (!req.path.startsWith("/api") || req.method === "OPTIONS") return next();
-    // Exempt internal heartbeat and health checks from rate limiting
-    if (req.path === "/api/health" || req.path.includes("/heartbeat")) return next();
-    const ip = req.ip ?? req.socket.remoteAddress ?? "unknown";
-    const now = Date.now();
-    let bucket = rateBuckets.get(ip);
-    if (!bucket || now > bucket.resetAt) {
-      bucket = { count: 0, resetAt: now + RATE_WINDOW_MS };
-      rateBuckets.set(ip, bucket);
-    }
-    bucket.count++;
-    if (bucket.count > RATE_LIMIT) {
-      res.status(429).json({ error: "Too many requests. Try again later." });
-      return;
-    }
-    // Prune stale buckets every ~1000 requests
-    if (bucket.count === 1 && rateBuckets.size > 1000) {
-      for (const [k, v] of rateBuckets) {
-        if (now > v.resetAt) rateBuckets.delete(k);
-      }
-    }
-    next();
-  });
+  // In-memory sliding window rate limiter. Implementation lives in
+  // middleware/rate-limit.ts so it is unit-testable in isolation.
+  app.use(rateLimitMiddleware());
 
   // ── Security Headers (no external dependency) ──
+  // SEC-HDR-001: CSP carries an explicit script SHA-256 for the theme-detection
+  // snippet in ui/index.html. See middleware/security-headers.ts for the full
+  // policy + the recompute incantation if that snippet ever changes.
   app.disable("x-powered-by");
-  app.use((_req, res, next) => {
-    res.setHeader("X-Content-Type-Options", "nosniff");
-    res.setHeader("X-Frame-Options", "DENY");
-    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
-    if (opts.uiMode !== "vite-dev") {
-      // SEC-HDR-001: Remove 'unsafe-inline' from script-src.
-      // The only inline script in the app is the theme-detection snippet in
-      // ui/index.html (lines 24-44). Its SHA-256 hash is listed explicitly so
-      // the browser allows it without opening the door to arbitrary inline JS.
-      // If the snippet ever changes, recompute the hash with:
-      //   node -e "const c=require('fs').readFileSync('ui/index.html','utf8');
-      //     const s=c.slice(c.indexOf('<script>\n')+9,c.indexOf('\n    </script>'));
-      //     const h=require('crypto').createHash('sha256').update(s).digest('base64');
-      //     console.log(\"'sha256-\"+h+\"'\")"
-      //
-      // style-src retains 'unsafe-inline' because React inline style={{}} props
-      // and Radix UI primitives inject styles at runtime. Removing it would
-      // require a full CSS-in-JS audit and nonce plumbing — deferred.
-      res.setHeader(
-        "Content-Security-Policy",
-        "default-src 'self'; " +
-          "script-src 'self' 'sha256-6vvXBpbC3dPDRTfAkvCMzs3MZCffSXiteXHKnMn1oCs='; " +
-          "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-          "font-src 'self' https://fonts.gstatic.com data:; " +
-          "img-src 'self' data: blob:; " +
-          "connect-src 'self' ws: wss: https://api.anthropic.com https://api.openai.com https://generativelanguage.googleapis.com https://openrouter.ai; " +
-          "frame-src 'none'; " +
-          "object-src 'none'; " +
-          "base-uri 'self'",
-      );
-    }
-    next();
-  });
+  app.use(securityHeadersMiddleware({ skipCsp: opts.uiMode === "vite-dev" }));
 
   // ── HTTP Compression ──
   // Use Node.js built-in zlib for gzip/deflate compression on API responses.
