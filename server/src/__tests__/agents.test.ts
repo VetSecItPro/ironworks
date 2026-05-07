@@ -33,6 +33,11 @@ const mockAgentService = vi.hoisted(() => ({
   pause: vi.fn(),
   resume: vi.fn(),
   terminate: vi.fn(),
+  remove: vi.fn(),
+  createApiKey: vi.fn(),
+  revokeKey: vi.fn(),
+  listConfigRevisions: vi.fn().mockResolvedValue([]),
+  getConfigRevision: vi.fn(),
   getChainOfCommand: vi.fn().mockResolvedValue([]),
   getAccessState: vi.fn().mockResolvedValue({ permissions: [], membership: null }),
   listKeys: vi.fn().mockResolvedValue([]),
@@ -272,6 +277,154 @@ describe("agent routes", () => {
       const app = await createApp(noActor());
       const res = await request(app).post(`/api/agents/${AGENT_ID}/pause`);
       expect(res.status).toBe(403);
+    });
+
+    it("returns 404 when pausing a non-existent agent", async () => {
+      mockAgentService.pause.mockResolvedValue(null);
+      const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
+      const res = await request(app).post(`/api/agents/${randomUUID()}/pause`);
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe("POST /api/agents/:id/resume", () => {
+    it("resumes a paused agent", async () => {
+      mockAgentService.resume.mockResolvedValue({ ...MOCK_AGENT, status: "active" });
+      const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
+      const res = await request(app).post(`/api/agents/${AGENT_ID}/resume`);
+
+      expect(res.status).toBe(200);
+      expect(mockAgentService.resume).toHaveBeenCalledWith(AGENT_ID);
+    });
+
+    it("returns 404 when resuming a non-existent agent", async () => {
+      mockAgentService.resume.mockResolvedValue(null);
+      const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
+      const res = await request(app).post(`/api/agents/${randomUUID()}/resume`);
+      expect(res.status).toBe(404);
+    });
+
+    it("rejects non-board actors with 403", async () => {
+      const app = await createApp({ type: "agent", agentId: randomUUID(), companyId: COMPANY_ID, source: "agent_key" });
+      const res = await request(app).post(`/api/agents/${AGENT_ID}/resume`);
+      expect(res.status).toBe(403);
+    });
+  });
+
+  describe("DELETE /api/agents/:id", () => {
+    it("deletes an agent and returns ok envelope", async () => {
+      mockAgentService.remove.mockResolvedValue(MOCK_AGENT);
+      const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
+      const res = await request(app).delete(`/api/agents/${AGENT_ID}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ ok: true });
+      expect(mockAgentService.remove).toHaveBeenCalledWith(AGENT_ID);
+    });
+
+    it("returns 404 when deleting a non-existent agent", async () => {
+      mockAgentService.remove.mockResolvedValue(null);
+      const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
+      const res = await request(app).delete(`/api/agents/${randomUUID()}`);
+      expect(res.status).toBe(404);
+    });
+
+    it("rejects deletion from non-board actor with 403", async () => {
+      const app = await createApp(noActor());
+      const res = await request(app).delete(`/api/agents/${AGENT_ID}`);
+      expect(res.status).toBe(403);
+    });
+  });
+
+  describe("GET /api/agents/:id/keys", () => {
+    it("lists API keys for board user", async () => {
+      const KEY = { id: randomUUID(), agentId: AGENT_ID, name: "primary", lastUsedAt: null };
+      mockAgentService.listKeys.mockResolvedValue([KEY]);
+      const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
+      const res = await request(app).get(`/api/agents/${AGENT_ID}/keys`);
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual([KEY]);
+    });
+
+    it("rejects non-board actor with 403", async () => {
+      const app = await createApp({ type: "agent", agentId: AGENT_ID, companyId: COMPANY_ID, source: "agent_key" });
+      const res = await request(app).get(`/api/agents/${AGENT_ID}/keys`);
+      expect(res.status).toBe(403);
+    });
+  });
+
+  describe("POST /api/agents/:id/keys", () => {
+    it("creates an API key for an agent", async () => {
+      const KEY = { id: randomUUID(), agentId: AGENT_ID, name: "ci-key", token: "secret-token" };
+      mockAgentService.createApiKey.mockResolvedValue(KEY);
+      const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
+      const res = await request(app).post(`/api/agents/${AGENT_ID}/keys`).send({ name: "ci-key" });
+
+      expect(res.status).toBe(201);
+      expect(res.body).toMatchObject({ id: KEY.id, name: "ci-key" });
+      expect(mockAgentService.createApiKey).toHaveBeenCalledWith(AGENT_ID, "ci-key");
+    });
+
+    it("rejects key creation with empty name (Zod min(1) fails)", async () => {
+      const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
+      const res = await request(app).post(`/api/agents/${AGENT_ID}/keys`).send({ name: "" });
+      expect(res.status).toBe(400);
+    });
+  });
+
+  describe("DELETE /api/agents/:id/keys/:keyId", () => {
+    it("revokes an API key", async () => {
+      mockAgentService.revokeKey.mockResolvedValue({ id: "k1", agentId: AGENT_ID });
+      const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
+      const res = await request(app).delete(`/api/agents/${AGENT_ID}/keys/k1`);
+      expect(res.status).toBe(200);
+    });
+
+    it("returns 404 when key does not exist", async () => {
+      mockAgentService.revokeKey.mockResolvedValue(null);
+      const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
+      const res = await request(app).delete(`/api/agents/${AGENT_ID}/keys/missing`);
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe("GET /api/agents/:id/config-revisions", () => {
+    it("returns empty list when no revisions exist", async () => {
+      mockAgentService.listConfigRevisions.mockResolvedValue([]);
+      const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
+      const res = await request(app).get(`/api/agents/${AGENT_ID}/config-revisions`);
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual([]);
+    });
+
+    it("returns 404 when agent not found", async () => {
+      mockAgentService.getById.mockResolvedValue(null);
+      const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
+      const res = await request(app).get(`/api/agents/${randomUUID()}/config-revisions`);
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe("GET /api/companies/:companyId/agents (list filters)", () => {
+    it("forwards employmentType filter to service", async () => {
+      const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
+      const res = await request(app).get(`/api/companies/${COMPANY_ID}/agents`).query({ employmentType: "full_time" });
+
+      expect(res.status).toBe(200);
+      expect(mockAgentService.list).toHaveBeenCalledWith(
+        COMPANY_ID,
+        expect.objectContaining({ employmentType: "full_time" }),
+      );
+    });
+
+    it("ignores invalid employmentType and uses undefined", async () => {
+      const app = await createApp(boardUser(USER_ID, [COMPANY_ID]));
+      await request(app).get(`/api/companies/${COMPANY_ID}/agents`).query({ employmentType: "not-a-valid-type" });
+
+      expect(mockAgentService.list).toHaveBeenCalledWith(
+        COMPANY_ID,
+        expect.objectContaining({ employmentType: undefined }),
+      );
     });
   });
 });

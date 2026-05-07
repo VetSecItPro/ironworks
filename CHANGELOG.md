@@ -5,35 +5,17 @@ All notable changes to IronWorks are documented in this file.
 ## [Unreleased]
 
 ### Added
-- **Settings > Secrets vault UI** (`ui/src/pages/Settings/Secrets.tsx`,
-  `ui/src/components/secrets/`). Board members can now manage company-scoped
-  vault entries (webhook signing secrets, third-party API keys, MCP server
-  tokens) directly from the Settings panel. Backed by the existing generic
-  `/companies/:companyId/secrets` API. Features: create with provider picker
-  (defaults to `local_encrypted`), rotate, delete with confirm, empty state
-  CTA, password-style inputs with show/hide toggle, client-side duplicate-name
-  validation. Plaintext is never echoed back: the table shows only metadata
-  (name, provider, version, last rotated, created). Wired as a new tab in
-  `SettingsProviderNav` and routed at `/:companyPrefix/settings/secrets`.
-  Tests: SSR static-render coverage for heading, loading skeleton, empty
-  state, populated table, and plaintext-leakage guard. Components extracted
-  per CLAUDE.md component-first rule (`SecretsTable`, `CreateSecretDialog`,
-  `RotateSecretDialog`).
-- **Middleware unit tests for rate limiter + security headers**
-  (`server/src/middleware/rate-limit.test.ts`,
-  `server/src/middleware/security-headers.test.ts`). The in-memory rate limiter
-  and the hand-rolled security-headers middleware were previously inline in
-  `app.ts` with no isolated coverage. Both are now extracted into their own
-  modules (`middleware/rate-limit.ts` + `middleware/security-headers.ts`) with
-  identical runtime behavior, mounted on a tiny supertest harness, and covered
-  by 13 new tests: rate-limit allows up-to-N, returns 429 over-limit, isolates
-  per-IP buckets, resets after window expiry, exempts `/api/health` and
-  heartbeat routes, skips OPTIONS preflights, and handles the unknown-IP
-  fallback; security-headers emits the four standard hardening headers on
-  every response, gates CSP on the vite-dev flag, and pins the SEC-HDR-001
-  inline-script SHA-256 as a regression guard. Existing `actorMiddleware`
-  coverage in `auth.test.ts` (34 tests) is preserved. Total middleware suite
-  is now 47 tests across 3 files.
+- **Expanded route-layer integration test coverage** for `agents.ts`, `issues.ts`,
+  and `access.ts` — three of the largest route files (3,365 / 2,032 / 2,722 LOC
+  respectively). Net +45 tests across `server/src/__tests__/agents.test.ts`
+  (7 → 24), `issues.test.ts` (9 → 24), and `access.test.ts` (5 → 18). New
+  coverage targets the highest-traffic endpoints: agent pause/resume/delete,
+  agent API key create/revoke, agent config-revisions, agent list filters;
+  issue PATCH (incl. blocker-gating 422), DELETE, comments list/create with
+  pagination, label CRUD; access member removal (incl. self-removal 409
+  guard), instance-admin promote/demote, CLI auth challenge create + me,
+  and the public skills/available endpoint. All tests use the existing
+  supertest+vi.hoisted mock harness; no source code changes.
 - **Adapter startup smoke tests for codex-local, cursor-local, gemini-local**
   (`packages/adapters/{codex,cursor,gemini}-local/src/server/*.test.ts`).
   These three CLI process adapters previously had zero unit-test coverage. Each
