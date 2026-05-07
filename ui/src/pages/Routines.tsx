@@ -173,8 +173,20 @@ export function Routines() {
       })),
     [projects],
   );
-  const agentById = useMemo(() => new Map((agents ?? []).map((agent) => [agent.id, agent])), [agents]);
-  const projectById = useMemo(() => new Map((projects ?? []).map((project) => [project.id, project])), [projects]);
+  // Project into the narrow {id, name, icon?|color?} shape the child components declare.
+  // Mapping here (rather than casting at every call site) lets us drop seven `as any` casts
+  // and keeps the Map invariance from biting us when the full Agent/Project types widen.
+  const agentById = useMemo<Map<string, { id: string; name: string; icon?: string | null }>>(
+    () => new Map((agents ?? []).map((agent) => [agent.id, { id: agent.id, name: agent.name, icon: agent.icon }])),
+    [agents],
+  );
+  const projectById = useMemo<Map<string, { id: string; name: string; color?: string | null }>>(
+    () =>
+      new Map(
+        (projects ?? []).map((project) => [project.id, { id: project.id, name: project.name, color: project.color }]),
+      ),
+    [projects],
+  );
 
   if (!selectedCompanyId) {
     return <EmptyState icon={Repeat} message="Select a company to view routines." />;
@@ -212,10 +224,8 @@ export function Routines() {
         onSubmit={() => createRoutine.mutate()}
         assigneeOptions={assigneeOptions}
         projectOptions={projectOptions}
-        // biome-ignore lint/suspicious/noExplicitAny: full Agent/Project objects structurally satisfy the narrow {id,name,icon?} Map-value shape the child expects
-        agentById={agentById as any}
-        // biome-ignore lint/suspicious/noExplicitAny: full Agent/Project objects structurally satisfy the narrow {id,name,icon?} Map-value shape the child expects
-        projectById={projectById as any}
+        agentById={agentById}
+        projectById={projectById}
         onTrackAssignee={trackRecentAssignee}
         descriptionEditorRef={descriptionEditorRef}
       />
@@ -244,10 +254,9 @@ export function Routines() {
 
       {routineViewMode === "calendar" && (routines ?? []).length > 0 && (
         <ScheduleCalendarView
-          // biome-ignore lint/suspicious/noExplicitAny: routines server payload has a wider shape than the view's RoutineSummary; widening subset passes structurally
+          // biome-ignore lint/suspicious/noExplicitAny: RoutineListItem.triggers[].nextRunAt is Date|null in the type, but string|null at runtime (JSON serialization); calendar/table types accept the runtime shape — refactor would touch the shared types layer
           routines={(routines ?? []) as any}
-          // biome-ignore lint/suspicious/noExplicitAny: full Agent objects structurally satisfy the narrow {id,name,icon?} Map-value shape the child expects
-          agentById={agentById as any}
+          agentById={agentById}
           onRoutineClick={(id) => navigate(`/routines/${id}`)}
         />
       )}
@@ -263,15 +272,13 @@ export function Routines() {
         ) : (
           <div className={cn("", routineViewMode === "calendar" && "hidden")}>
             <RoutineListTable
-              // biome-ignore lint/suspicious/noExplicitAny: routines server payload has a wider shape than the table's RoutineSummary; widening subset passes structurally
+              // biome-ignore lint/suspicious/noExplicitAny: RoutineListItem.triggers[].nextRunAt is Date|null in the type, but string|null at runtime (JSON serialization); table props accept the runtime shape — refactor would touch the shared types layer
               routines={(routines ?? []) as any}
               routineSearch={routineSearch}
               statusFilter={statusFilter}
               agentFilter={agentFilter}
-              // biome-ignore lint/suspicious/noExplicitAny: full Agent/Project objects structurally satisfy the narrow {id,name,icon?} Map-value shape the child expects
-              agentById={agentById as any}
-              // biome-ignore lint/suspicious/noExplicitAny: full Agent/Project objects structurally satisfy the narrow {id,name,icon?} Map-value shape the child expects
-              projectById={projectById as any}
+              agentById={agentById}
+              projectById={projectById}
               runningRoutineId={runningRoutineId}
               statusMutationRoutineId={statusMutationRoutineId}
               onNavigate={navigate}

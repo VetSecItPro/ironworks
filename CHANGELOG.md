@@ -182,6 +182,28 @@ All notable changes to IronWorks are documented in this file.
   `allowedHeaders`. 12 unit tests in `cors-config.test.ts`.
 
 ### Changed
+- **`as any` audit in non-test source code; `noExplicitAny` elevated to `error`**
+  (`biome.json`, `ui/src/pages/Routines.tsx`). Audited the 28 non-test `as any`
+  instances. Tightened: 5 in `ui/src/pages/Routines.tsx` (`agentById`/`projectById`
+  casts) eliminated by projecting full Agent/Project rows into the narrow
+  `{id, name, icon?|color?}` Map-value shape the child components declare; this
+  removes the casts at every call site rather than annotating each one. Kept +
+  re-annotated: 2 in `Routines.tsx` for the `routines` prop where
+  `RoutineListItem.triggers[].nextRunAt` is typed `Date | null` but arrives as
+  `string | null` post-JSON-serialization (real type mismatch, fixing it requires
+  touching the shared types layer — out of scope). Kept (already annotated): 10
+  in `server/src/index.ts` (Db type doesn't unify across service overloads),
+  7 in `server/src/middleware/logger.ts` (custom Express Response props),
+  2 in `server/src/middleware/error-handler.ts` (same), 2 in
+  `server/src/routes/channels.ts` (Drizzle Db overloads + WakeupOptions
+  cross-shape bridge). All 23 surviving non-test `as any` carry a
+  `// biome-ignore lint/suspicious/noExplicitAny: <reason>` line. Elevated
+  `linter.rules.suspicious.noExplicitAny` from `warn` to `error` repo-wide,
+  with a test-file override (`**/*.test.ts`, `**/*.test.tsx`, `**/__tests__/**`,
+  `**/test/**`, `**/tests/**`) that drops it back to `warn` so the cheap-mock
+  pattern in tests stays unblocked and existing biome-ignore comments in tests
+  remain valid suppressions. Net effect: a new `as any` in production code now
+  fails CI; tests are unaffected.
 - **Release smoke now gates the canary channel** (`.github/workflows/release.yml`).
   Previously `release-smoke.yml` was workflow_dispatch only and ran post-facto
   against an already-published canary, with no automated rollback. The release
