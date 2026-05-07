@@ -20,6 +20,29 @@ All notable changes to IronWorks are documented in this file.
   Wired into `heap-monitor.ts` (auto-snapshot path) and
   `lib/error-tracking.ts` (`uncaughtException` + `unhandledRejection`
   handlers). +9 tests in `alerter.test.ts`.
+- **Prometheus `/metrics` endpoint** (`server/src/observability/metrics.ts`).
+  BasicAuth-gated Prometheus text-format endpoint for operator dashboards.
+  Default OFF: returns 404 unless `IRONWORKS_METRICS_BASIC_AUTH=user:password`
+  is set in the environment. Emits:
+  - **Process**: `nodejs_heap_size_bytes`, `nodejs_external_memory_bytes`,
+    `nodejs_eventloop_lag_seconds`, `process_cpu_user_seconds_total`,
+    `process_cpu_system_seconds_total`, `process_uptime_seconds` (default Node
+    metrics from `prom-client`).
+  - **HTTP**: `http_requests_total{method,route,status_class}` — counter labeled
+    by the matched Express route pattern (e.g. `/api/issues/:id`), not the raw
+    path, so cardinality stays bounded by the route table.
+  - **Heartbeat**: `ironworks_runs_total{status}` (counter, incremented in
+    `setRunStatus` on terminal transitions: succeeded/failed/cancelled/timed_out)
+    and `ironworks_active_runs` (gauge, sampled per scrape).
+  - **LLM cost**: `ironworks_llm_cost_usd_total{provider,model}` (counter,
+    incremented in `updateRuntimeState` from the existing `result.costUsd`
+    telemetry).
+  - **Queue depth**: `ironworks_run_queue_depth` (gauge, sampled per scrape via
+    `SELECT count(*) FROM heartbeat_runs WHERE status='queued'`).
+
+  New env var: `IRONWORKS_METRICS_BASIC_AUTH=<user>:<password>`. Adds
+  `prom-client` server dependency. 8 unit tests cover BasicAuth gating,
+  HTTP-counter cardinality discipline, and counter accumulation.
 - **Anthropic context compaction in claude-local** (`packages/adapters/claude-local/src/server/execute.ts`).
   The Claude CLI's `--betas <name>` flag (v2.1.132+) now passes through `compact-2026-01-12`
   to the Anthropic API for API-key authenticated runs (`ANTHROPIC_API_KEY` set).

@@ -15,6 +15,7 @@ import { cacheControl, etag } from "./middleware/cache.js";
 import { errorHandler, httpLogger } from "./middleware/index.js";
 import { privateHostnameGuard, resolvePrivateHostnameAllowSet } from "./middleware/private-hostname-guard.js";
 import { enforcePlaybookRunLimit, enforceProjectLimit, enforceStorageLimit } from "./middleware/tier-limits.js";
+import { httpRequestsMiddleware, metricsHandler } from "./observability/metrics.js";
 import { accessRoutes } from "./routes/access.js";
 import { activityRoutes } from "./routes/activity.js";
 import { adapterCallRoutes } from "./routes/adapter-calls.js";
@@ -239,6 +240,12 @@ export async function createApp(
     }),
   );
   app.use(httpLogger);
+  // ── Prometheus metrics ──
+  // /metrics endpoint mounted BEFORE /api so it isn't swallowed by the
+  // catch-all 404 below. Default OFF: returns 404 unless
+  // IRONWORKS_METRICS_BASIC_AUTH=user:password is set in the environment.
+  app.use(httpRequestsMiddleware);
+  app.get("/metrics", metricsHandler(db));
   const privateHostnameGateEnabled = opts.deploymentMode === "authenticated" && opts.deploymentExposure === "private";
   const privateHostnameAllowSet = resolvePrivateHostnameAllowSet({
     allowedHostnames: opts.allowedHostnames,

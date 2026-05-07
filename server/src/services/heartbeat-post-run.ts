@@ -13,6 +13,7 @@ import type { AdapterExecutionResult } from "../adapters/index.js";
 import { parseObject } from "../adapters/utils.js";
 import { extractChannelMessages } from "../lib/channel-extraction.js";
 import { logger } from "../middleware/logger.js";
+import { llmCostCounter } from "../observability/metrics.js";
 import type { BudgetEnforcementScope } from "./budgets.js";
 import { ensureProjectChannel, findAgentDepartmentChannel, postMessage as postChannelMessage } from "./channels.js";
 import { costService } from "./costs.js";
@@ -73,6 +74,12 @@ export async function updateRuntimeState(
       updatedAt: new Date(),
     })
     .where(eq(agentRuntimeState.agentId, agent.id));
+
+  // Prometheus: emit USD spend for this run. Use the raw costUsd (not the
+  // cents-rounded billed amount) so dashboards reflect actual provider spend.
+  if (typeof result.costUsd === "number" && result.costUsd > 0) {
+    llmCostCounter.inc({ provider, model: result.model ?? "unknown" }, result.costUsd);
+  }
 
   if (additionalCostCents > 0 || hasTokenUsage) {
     const costs = costService(db, budgetHooks);
