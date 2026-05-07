@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bot, CircleDot, DollarSign, PauseCircle, ShieldCheck, Swords, UserPlus, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "@/lib/router";
-import { PluginSlotOutlet } from "@/plugins/slots";
 import { activityApi } from "../api/activity";
 import { agentsApi } from "../api/agents";
 import { announcementsApi } from "../api/announcements";
@@ -637,13 +636,6 @@ export function Dashboard() {
 
           {/* 5b. VELOCITY + DEPARTMENT */}
           <VelocityDepartmentSection velocity={velocity} departmentBreakdown={departmentBreakdown} />
-
-          <PluginSlotOutlet
-            slotTypes={["dashboardWidget"]}
-            context={{ companyId: selectedCompanyId }}
-            className="grid gap-4 md:grid-cols-2"
-            itemClassName="rounded-lg border bg-card p-4 shadow-sm"
-          />
 
           {/* Quick Links + Recent Deliverables */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -20,8 +20,6 @@ import {
 interface CommentThreadProps {
   comments: CommentWithRunMeta[];
   linkedRuns?: LinkedRunItem[];
-  companyId?: string | null;
-  projectId?: string | null;
   onAdd: (
     body: string,
     reopen?: boolean,
@@ -47,8 +45,6 @@ interface CommentThreadProps {
 export function CommentThread({
   comments,
   linkedRuns = [],
-  companyId,
-  projectId,
   onAdd,
   agentMap,
   imageUploadHandler,
@@ -276,8 +272,6 @@ export function CommentThread({
       <TimelineList
         timeline={timeline}
         agentMap={agentMap}
-        companyId={companyId}
-        projectId={projectId}
         highlightCommentId={highlightCommentId}
         reactions={reactions}
         onToggleReaction={toggleReaction}

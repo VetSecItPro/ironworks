@@ -60,7 +60,6 @@ vi.mock("../services/index.js", async () => {
 
 vi.mock("../services/activity-log.js", () => ({
   logActivity: vi.fn(),
-  setPluginEventBus: vi.fn(),
 }));
 
 vi.mock("../redaction.js", () => ({

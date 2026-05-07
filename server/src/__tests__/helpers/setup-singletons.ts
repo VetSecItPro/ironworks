@@ -29,7 +29,6 @@ import { beforeEach } from "vitest";
  *
  * MUTABLE — reset required (Tier 1 — original set)
  *   services/activity-log.ts
- *     · _pluginEventBus         — let, nullable ref; registration order matters
  *     · cachedGeneralSettings   — let, timed cache; stale data across tests
  *     · _lastHashByCompany      — Map<string,string>; integrity chain anchor
  *
@@ -115,13 +114,11 @@ import { beforeEach } from "vitest";
  * can call it in their own beforeEach/afterEach.
  *
  * IMMUTABLE / SAFELY MOCKED — no reset needed
- *   services/activity-log.ts      PLUGIN_EVENT_SET  (ReadonlySet, frozen)
  *   services/agent-instructions.ts IGNORED_* Sets   (frozen enum sets)
  *   services/agent-reflection.ts  KEYWORD_STOP_WORDS (frozen)
  *   services/channels.ts          STOP_WORDS         (frozen)
  *   services/issues.ts            TERMINAL_HEARTBEAT_RUN_STATUSES (frozen)
  *   services/model-council.ts     _C_SUITE_ROLES     (frozen)
- *   services/plugin-host-services.ts ALLOWED_PROTOCOLS, PINO_RESERVED_KEYS (frozen)
  *   services/routines.ts          _TERMINAL_ISSUE_STATUSES (frozen)
  *   services/secrets.ts           HTTP_PROVIDER_TYPES (frozen)
  *   services/session-state.ts     DRIFT_STOP_WORDS   (frozen)

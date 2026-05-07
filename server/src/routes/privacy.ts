@@ -48,7 +48,6 @@ import {
   messagingBridges,
   playbookRuns,
   playbooks,
-  pluginCompanySettings,
   principalPermissionGrants,
   projectGoals,
   projects,
@@ -508,7 +507,6 @@ export async function deleteCompanyData(db: Db, companyId: string): Promise<void
   await db.delete(principalPermissionGrants).where(eq(principalPermissionGrants.companyId, companyId));
   await db.delete(joinRequests).where(eq(joinRequests.companyId, companyId));
   await db.delete(invites).where(eq(invites.companyId, companyId));
-  await db.delete(pluginCompanySettings).where(eq(pluginCompanySettings.companyId, companyId));
   await db.delete(companyLogos).where(eq(companyLogos.companyId, companyId));
 
   // ── Tier 19: subscriptions and memberships (before company row) ──────────

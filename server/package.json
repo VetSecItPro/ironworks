@@ -40,9 +40,8 @@
     "postpack": "rm -rf ui-dist",
     "clean": "rm -rf dist",
     "start": "node dist/index.js",
-    "pretest": "pnpm --filter @ironworksai/plugin-sdk build",
     "test": "vitest",
-    "typecheck": "pnpm --filter @ironworksai/plugin-sdk build && tsc --noEmit"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1032.0",
@@ -60,7 +59,6 @@
     "@ironworksai/adapter-utils": "workspace:*",
     "@ironworksai/db": "workspace:*",
     "@ironworksai/mcp-client": "workspace:^",
-    "@ironworksai/plugin-sdk": "workspace:*",
     "@ironworksai/shared": "workspace:*",
     "@types/cors": "^2.8.19",
     "ajv": "^8.18.0",

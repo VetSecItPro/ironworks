@@ -2,7 +2,6 @@ import type { Agent } from "@ironworksai/shared";
 import { Reply } from "lucide-react";
 import { memo } from "react";
 import { Link } from "react-router-dom";
-import { PluginSlotOutlet } from "@/plugins/slots";
 import { formatDateTime } from "../../lib/utils";
 import { Identity } from "../Identity";
 import { MarkdownBody } from "../MarkdownBody";
@@ -17,8 +16,6 @@ import { CopyMarkdownButton, ReactionBar } from "./comment-thread-utils";
 export function CommentCard({
   comment,
   agentMap,
-  companyId,
-  projectId,
   highlightCommentId,
   reactions,
   onToggleReaction,
@@ -27,8 +24,6 @@ export function CommentCard({
 }: {
   comment: CommentWithRunMeta;
   agentMap?: Map<string, Agent>;
-  companyId?: string | null;
-  projectId?: string | null;
   highlightCommentId?: string | null;
   reactions: ReactionMap;
   onToggleReaction: (commentId: string, emoji: string) => void;
@@ -53,22 +48,6 @@ export function CommentCard({
           <Identity name="You" size="sm" />
         )}
         <span className="flex items-center gap-1.5">
-          {companyId ? (
-            <PluginSlotOutlet
-              slotTypes={["commentContextMenuItem"]}
-              entityType="comment"
-              context={{
-                companyId,
-                projectId: projectId ?? null,
-                entityId: comment.id,
-                entityType: "comment",
-                parentEntityId: comment.issueId,
-              }}
-              className="flex flex-wrap items-center gap-1.5"
-              itemClassName="inline-flex"
-              missingBehavior="placeholder"
-            />
-          ) : null}
           {onReply && depth === 0 && (
             <button
               type="button"
@@ -90,24 +69,6 @@ export function CommentCard({
       </div>
       <MarkdownBody className="text-sm">{comment.body}</MarkdownBody>
       <ReactionBar commentId={comment.id} reactions={reactions[comment.id]} onToggle={onToggleReaction} />
-      {companyId ? (
-        <div className="mt-2 space-y-2">
-          <PluginSlotOutlet
-            slotTypes={["commentAnnotation"]}
-            entityType="comment"
-            context={{
-              companyId,
-              projectId: projectId ?? null,
-              entityId: comment.id,
-              entityType: "comment",
-              parentEntityId: comment.issueId,
-            }}
-            className="space-y-2"
-            itemClassName="rounded-md"
-            missingBehavior="placeholder"
-          />
-        </div>
-      ) : null}
       {comment.runId && (
         <div className="mt-2 pt-2 border-t border-border/60">
           {comment.runAgentId ? (
@@ -135,8 +96,6 @@ export function CommentCard({
 export const TimelineList = memo(function TimelineList({
   timeline,
   agentMap,
-  companyId,
-  projectId,
   highlightCommentId,
   reactions,
   onToggleReaction,
@@ -145,8 +104,6 @@ export const TimelineList = memo(function TimelineList({
 }: {
   timeline: TimelineItem[];
   agentMap?: Map<string, Agent>;
-  companyId?: string | null;
-  projectId?: string | null;
   highlightCommentId?: string | null;
   reactions: ReactionMap;
   onToggleReaction: (commentId: string, emoji: string) => void;
@@ -194,8 +151,6 @@ export const TimelineList = memo(function TimelineList({
             <CommentCard
               comment={comment}
               agentMap={agentMap}
-              companyId={companyId}
-              projectId={projectId}
               highlightCommentId={highlightCommentId}
               reactions={reactions}
               onToggleReaction={onToggleReaction}
@@ -207,8 +162,6 @@ export const TimelineList = memo(function TimelineList({
                 key={reply.id}
                 comment={reply}
                 agentMap={agentMap}
-                companyId={companyId}
-                projectId={projectId}
                 highlightCommentId={highlightCommentId}
                 reactions={reactions}
                 onToggleReaction={onToggleReaction}

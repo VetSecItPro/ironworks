@@ -183,14 +183,4 @@ export const queryKeys = {
     quorum: (companyId: string, channelId: string, messageId: string) =>
       ["channels", companyId, channelId, "quorum", messageId] as const,
   },
-  plugins: {
-    all: ["plugins"] as const,
-    examples: ["plugins", "examples"] as const,
-    detail: (pluginId: string) => ["plugins", pluginId] as const,
-    health: (pluginId: string) => ["plugins", pluginId, "health"] as const,
-    uiContributions: ["plugins", "ui-contributions"] as const,
-    config: (pluginId: string) => ["plugins", pluginId, "config"] as const,
-    dashboard: (pluginId: string) => ["plugins", pluginId, "dashboard"] as const,
-    logs: (pluginId: string) => ["plugins", pluginId, "logs"] as const,
-  },
 };

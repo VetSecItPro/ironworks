@@ -7,7 +7,6 @@ import { ChevronRight, Plus } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { NavLink, useLocation } from "@/lib/router";
-import { PluginSlotMount, usePluginSlots } from "@/plugins/slots";
 import { authApi } from "../api/auth";
 import { projectsApi } from "../api/projects";
 import { useCompany } from "../context/CompanyContext";
@@ -18,23 +17,15 @@ import { queryKeys } from "../lib/queryKeys";
 import { cn, projectRouteRef } from "../lib/utils";
 import { BudgetSidebarMarker } from "./BudgetSidebarMarker";
 
-type ProjectSidebarSlot = ReturnType<typeof usePluginSlots>["slots"][number];
-
 function SortableProjectItem({
   activeProjectRef,
-  companyId,
-  companyPrefix,
   isMobile,
   project,
-  projectSidebarSlots,
   setSidebarOpen,
 }: {
   activeProjectRef: string | null;
-  companyId: string | null;
-  companyPrefix: string | null;
   isMobile: boolean;
   project: Project;
-  projectSidebarSlots: ProjectSidebarSlot[];
   setSidebarOpen: (open: boolean) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: project.id });
@@ -70,25 +61,6 @@ function SortableProjectItem({
           <span className="flex-1 truncate">{project.name}</span>
           {project.pauseReason === "budget" ? <BudgetSidebarMarker title="Project paused by budget" /> : null}
         </NavLink>
-        {projectSidebarSlots.length > 0 && (
-          <div className="ml-5 flex flex-col gap-0.5">
-            {projectSidebarSlots.map((slot) => (
-              <PluginSlotMount
-                key={`${project.id}:${slot.pluginKey}:${slot.id}`}
-                slot={slot}
-                context={{
-                  companyId,
-                  companyPrefix,
-                  projectId: project.id,
-                  projectRef: routeRef,
-                  entityId: project.id,
-                  entityType: "project",
-                }}
-                missingBehavior="placeholder"
-              />
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
@@ -96,7 +68,7 @@ function SortableProjectItem({
 
 export function SidebarProjects() {
   const [open, setOpen] = useState(true);
-  const { selectedCompany, selectedCompanyId } = useCompany();
+  const { selectedCompanyId } = useCompany();
   const { openNewProject } = useDialog();
   const { isMobile, setSidebarOpen } = useSidebar();
   const location = useLocation();
@@ -109,12 +81,6 @@ export function SidebarProjects() {
   const { data: session } = useQuery({
     queryKey: queryKeys.auth.session,
     queryFn: () => authApi.getSession(),
-  });
-  const { slots: projectSidebarSlots } = usePluginSlots({
-    slotTypes: ["projectSidebarItem"],
-    entityType: "project",
-    companyId: selectedCompanyId,
-    enabled: !!selectedCompanyId,
   });
 
   const currentUserId = session?.user?.id ?? session?.session?.userId ?? null;
@@ -184,11 +150,8 @@ export function SidebarProjects() {
                 <SortableProjectItem
                   key={project.id}
                   activeProjectRef={activeProjectRef}
-                  companyId={selectedCompanyId}
-                  companyPrefix={selectedCompany?.issuePrefix ?? null}
                   isMobile={isMobile}
                   project={project}
-                  projectSidebarSlots={projectSidebarSlots}
                   setSidebarOpen={setSidebarOpen}
                 />
               ))}

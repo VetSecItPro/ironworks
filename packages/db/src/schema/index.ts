@@ -69,14 +69,6 @@ export { type McpServer, mcpServers, type NewMcpServer } from "./mcp_servers.js"
 export { messagingBridges } from "./messaging_bridges.js";
 export { playbookRunSteps, playbookRuns } from "./playbook_runs.js";
 export { playbookSteps, playbooks } from "./playbooks.js";
-export { pluginCompanySettings } from "./plugin_company_settings.js";
-export { pluginConfig } from "./plugin_config.js";
-export { pluginEntities } from "./plugin_entities.js";
-export { pluginJobRuns, pluginJobs } from "./plugin_jobs.js";
-export { pluginLogs } from "./plugin_logs.js";
-export { pluginState } from "./plugin_state.js";
-export { pluginWebhookDeliveries } from "./plugin_webhooks.js";
-export { plugins } from "./plugins.js";
 export { principalPermissionGrants } from "./principal_permission_grants.js";
 export { projectGoals } from "./project_goals.js";
 export { projectWorkspaces } from "./project_workspaces.js";

@@ -65,7 +65,6 @@ vi.mock("../services/index.js", async () => {
 
 vi.mock("../services/activity-log.js", () => ({
   logActivity: mockLogActivity,
-  setPluginEventBus: vi.fn(),
 }));
 
 vi.mock("../services/analytics.js", () => ({

@@ -1,19 +1,11 @@
 import { createHash, randomUUID } from "node:crypto";
 import type { Db } from "@ironworksai/db";
 import { activityLog } from "@ironworksai/db";
-import type { PluginEvent } from "@ironworksai/plugin-sdk";
-import { PLUGIN_EVENT_TYPES, type PluginEventType } from "@ironworksai/shared";
 import { desc, eq } from "drizzle-orm";
 import { redactCurrentUserValue } from "../log-redaction.js";
-import { logger } from "../middleware/logger.js";
 import { sanitizeRecord } from "../redaction.js";
 import { instanceSettingsService } from "./instance-settings.js";
 import { publishLiveEvent } from "./live-events.js";
-import type { PluginEventBus } from "./plugin-event-bus.js";
-
-const PLUGIN_EVENT_SET: ReadonlySet<string> = new Set(PLUGIN_EVENT_TYPES);
-
-let _pluginEventBus: PluginEventBus | null = null;
 
 // ── getGeneral() cache ────────────────────────────────────────────────────────
 // logActivity is a hot path; cache the settings to avoid a DB round-trip per call.
@@ -27,14 +19,6 @@ async function getCachedGeneralSettings(db: Db) {
   const data = await instanceSettingsService(db).getGeneral();
   cachedGeneralSettings = { data, cachedAt: Date.now() };
   return data;
-}
-
-/** Wire the plugin event bus so domain events are forwarded to plugins. */
-export function setPluginEventBus(bus: PluginEventBus): void {
-  if (_pluginEventBus) {
-    logger.warn("setPluginEventBus called more than once, replacing existing bus");
-  }
-  _pluginEventBus = bus;
 }
 
 export interface LogActivityInput {
@@ -181,35 +165,6 @@ export async function logActivity(db: Db, input: LogActivityInput) {
       details: redactedDetails,
     },
   });
-
-  if (_pluginEventBus && PLUGIN_EVENT_SET.has(input.action)) {
-    const event: PluginEvent = {
-      eventId: randomUUID(),
-      eventType: input.action as PluginEventType,
-      occurredAt: new Date().toISOString(),
-      actorId: input.actorId,
-      // SEC-CHAOS-002: plugin SDK actorType union doesn't include "bridge"; map
-      // bridge-driven events to "system" for the external plugin contract while
-      // keeping the precise actorType in our internal activity_log row.
-      actorType: input.actorType === "bridge" ? "system" : input.actorType,
-      entityId: input.entityId,
-      entityType: input.entityType,
-      companyId: input.companyId,
-      payload: {
-        ...redactedDetails,
-        agentId: input.agentId ?? null,
-        runId: input.runId ?? null,
-      },
-    };
-    void _pluginEventBus
-      .emit(event)
-      .then(({ errors }) => {
-        for (const { pluginId, error } of errors) {
-          logger.warn({ pluginId, eventType: event.eventType, err: error }, "plugin event handler failed");
-        }
-      })
-      .catch(() => {});
-  }
 }
 
 /**
@@ -217,7 +172,6 @@ export async function logActivity(db: Db, input: LogActivityInput) {
  * Called by the vitest setup file; never invoke in production code paths.
  */
 export function _resetSingletonsForTest(): void {
-  _pluginEventBus = null;
   cachedGeneralSettings = null;
   _lastHashByCompany.clear();
 }

@@ -4,6 +4,52 @@ All notable changes to IronWorks are documented in this file.
 
 ## [Unreleased]
 
+### Removed
+- **Plugin system** (full deletion). The plugin extension framework was disabled
+  for V1 productization (no plugin routes mounted, no worker processes started)
+  and now removed entirely from the codebase. There were no customer plugins
+  installed; this is a no-op for end users.
+  - Deleted server services: `plugin-registry`, `plugin-event-bus`, `plugin-loader`,
+    `plugin-worker-manager`, `plugin-job-coordinator`, `plugin-job-scheduler`,
+    `plugin-job-store`, `plugin-lifecycle`, `plugin-tool-registry`,
+    `plugin-tool-dispatcher`, `plugin-state-store`, `plugin-secrets-handler`,
+    `plugin-host-services`, `plugin-host-service-cleanup`, `plugin-runtime-sandbox`,
+    `plugin-stream-bus`, `plugin-log-retention`, `plugin-dev-watcher`,
+    `plugin-manifest-validator`, `plugin-config-validator`, `plugin-capability-validator`.
+  - Deleted server routes: `routes/plugins`, `routes/plugin-ui-static`.
+  - Deleted UI surfaces: `pages/PluginManager`, `pages/PluginSettings`, `pages/PluginPage`,
+    `components/plugin-manager/*`, `components/plugin-settings/*`, `plugins/bridge`,
+    `plugins/bridge-init`, `plugins/launchers`, `plugins/slots`, `api/plugins`.
+    Plugin-extension mount points removed from `Sidebar`, `SidebarProjects`,
+    `BreadcrumbBar`, `Dashboard`, `ProjectDetail`, `IssueDetail`,
+    `comment-thread/CommentCards`, `useIssueDetailData`, `InstanceSidebar`.
+  - Deleted CLI: `cli/commands/client/plugin` (`ironworksai plugin ...` subcommands).
+  - Deleted workspace packages: entire `packages/plugins/` tree
+    (`@ironworksai/plugin-sdk`, `create-ironworks-plugin`, all
+    `plugin-*-example` packages). Removed from `pnpm-workspace.yaml`.
+  - Deleted DB schema entries: `plugins`, `plugin_company_settings`, `plugin_config`,
+    `plugin_entities`, `plugin_jobs`, `plugin_logs`, `plugin_state`, `plugin_webhooks`.
+    A forward-only DROP migration (`0094_drop_plugin_tables.sql`) tears the tables
+    down on existing databases; the original CREATE migrations are intentionally
+    untouched so historical migration runs on pristine databases still apply
+    cleanly.
+  - Deleted shared types/validators: `packages/shared/src/types/plugin.ts`,
+    `packages/shared/src/validators/plugin.ts`, all `Plugin*` constants/enums in
+    `constants.ts`, and the `plugin.ui.updated` / `plugin.worker.crashed` /
+    `plugin.worker.restarted` entries from `LIVE_EVENT_TYPES`.
+  - Deleted plugin event bus wiring from `services/activity-log.ts`
+    (`setPluginEventBus`, `_pluginEventBus`, `PLUGIN_EVENT_SET`).
+  - Deleted documentation: `doc/plugins/` (`PLUGIN_SPEC.md`,
+    `PLUGIN_AUTHORING_GUIDE.md`, `ideas-from-opencode.md`),
+    `docs/phase-i-verification.md`.
+- **Plugin-flavored helpers in `services/tool-cache.ts`** (`buildCacheKey`,
+  `cacheGet`, `cacheSet`, `PluginToolCacheConfig` import) - their only consumer
+  was `plugin-tool-registry`. The first-party / framework helpers
+  (`buildFrameworkCacheKey`, `frameworkCacheGet`, `frameworkCacheSet`,
+  `FrameworkToolCacheConfig`, `createToolCache`, `ToolCache`, etc.) are
+  unchanged - they are still consumed by `heartbeat`, `skill-matching`, and
+  `company-skills`.
+
 ### Security
 - **Email webhook provider signature verification** (`server/src/routes/messaging.ts`,
   `server/src/lib/webhook-signatures.ts`): inbound `/api/webhooks/email` now verifies
