@@ -1,8 +1,12 @@
 # Agent Chat Architecture - Implementation Plan
 
-**Status:** PLANNING - Do not implement until plan is approved
+**Status:** IMPLEMENTED 2026-05-07 (router shipped earlier; safeguards in PR for #21+#22 close-out)
 **Author:** Claude + Anouar
 **Date:** 2026-04-08
+
+## What landed vs what was speculative
+
+The channel response router (`server/src/services/channel-router.ts`), the score-based agent selection, the 10-min / 3-response soft cap, and the agent-message prefix strip all shipped in earlier PRs alongside migration `0080_channel_response_state.sql`. The two remaining Layer 3 safeguards from this plan - the **per-agent 5-min cooldown** and the **hard 20-responses-per-channel-per-hour circuit breaker** - shipped in PR `feat/channel-router-safeguards` (migration `0095_channel_response_state_safeguards.sql`). The Matrix room mapping bullet was struck rather than implemented: no Matrix bridge exists in `server/src/bridges/`, and the bullet was speculative scaffolding for an integration that was never built. Tasks #21 and #22 close as done with this PR.
 
 ---
 

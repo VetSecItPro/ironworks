@@ -5,17 +5,62 @@ All notable changes to IronWorks are documented in this file.
 ## [Unreleased]
 
 ### Added
-- **Expanded route-layer integration test coverage** for `agents.ts`, `issues.ts`,
-  and `access.ts` — three of the largest route files (3,365 / 2,032 / 2,722 LOC
-  respectively). Net +45 tests across `server/src/__tests__/agents.test.ts`
-  (7 → 24), `issues.test.ts` (9 → 24), and `access.test.ts` (5 → 18). New
-  coverage targets the highest-traffic endpoints: agent pause/resume/delete,
-  agent API key create/revoke, agent config-revisions, agent list filters;
-  issue PATCH (incl. blocker-gating 422), DELETE, comments list/create with
-  pagination, label CRUD; access member removal (incl. self-removal 409
-  guard), instance-admin promote/demote, CLI auth challenge create + me,
-  and the public skills/available endpoint. All tests use the existing
-  supertest+vi.hoisted mock harness; no source code changes.
+- **Channel router safeguards: per-agent cooldown + hourly circuit breaker**
+  (`server/src/services/channel-router.ts`,
+  `packages/db/src/schema/channel_response_state.ts`,
+  `packages/db/src/migrations/0095_channel_response_state_safeguards.sql`).
+  Closes the remaining Layer 3 loop-prevention rules from `agent-chat-plan.md`
+  that the original router shipped without: (1) a per-agent 5-min cooldown
+  filter so a chatty agent cannot monopolize a channel via repeated
+  re-wakeups - applied to both the @mention path and the relevance-scoring
+  path, explicit mentions do not override; (2) a hard 20-responses-per-channel
+  hourly circuit breaker that fires before @mention extraction and is
+  independent of human activity (the existing 10-min soft cap is reset by
+  human messages; this hard ceiling is not). Migration 0095 adds three
+  columns to `channel_response_state` via `ADD COLUMN IF NOT EXISTS`
+  (idempotent, forward-only, defaults backfill existing rows):
+  `hourly_agent_response_count`, `hourly_window_start`,
+  `agent_last_responded_at` (jsonb agentId -> ISO timestamp map, pruned to
+  last 60 min on every write to keep payload bounded). `recordAgentResponse`
+  now requires an `agentId` parameter; the single caller in `channels.ts`
+  passes `opts.authorAgentId`. Adds 19 unit + integration tests in
+  `server/src/services/channel-router.test.ts` (per-agent filter,
+  circuit-breaker hit/recover, mentioned-agent override blocked, counter
+  increment / reset / prune, 21-message integration that proves the hard
+  cap fires at exactly 20 wakeups). All existing 9 channel route tests stay
+  green. Closes tasks #21 and #22 from the agent-chat backlog.
+- **E2E Playwright specs for top user flows** (`tests/e2e/issue-lifecycle.spec.ts`,
+  `tests/e2e/approvals.spec.ts`, `tests/e2e/agent-chat.spec.ts`). Adds the
+  three top-flow specs called for by the audit on top of the existing
+  onboarding + docker-auth-onboarding coverage. `issue-lifecycle` drives an
+  issue from backlog -> in_progress -> done with a comment and verifies the
+  IssueDetail page renders; `approvals` creates two synthetic `quality_gate`
+  approvals and drives one through approve and the other through reject,
+  asserting the list reflects both transitions and the Approvals page
+  renders; `agent-chat` posts a human message into the auto-created
+  `#company` channel and reads it back from both the API feed and the
+  ChannelView UI. All specs run in `IRONWORKS_E2E_SKIP_LLM=true` mode (no
+  LLM API keys required) and complete inside the existing 60s per-test
+  budget. Specs follow the onboarding.spec.ts pattern: API-first state
+  drive, UI-last sanity assertion, unique IDs via `Date.now()`,
+  `expect(...).toBeVisible({ timeout: 15_000+ })` for slow renders.
+  Playwright now lists 4 specs across 4 files (was 1 spec across 1 file
+  for the top-flows; the docker-auth spec already existed).
+- **Middleware unit tests for rate limiter + security headers**
+  (`server/src/middleware/rate-limit.test.ts`,
+  `server/src/middleware/security-headers.test.ts`). The in-memory rate limiter
+  and the hand-rolled security-headers middleware were previously inline in
+  `app.ts` with no isolated coverage. Both are now extracted into their own
+  modules (`middleware/rate-limit.ts` + `middleware/security-headers.ts`) with
+  identical runtime behavior, mounted on a tiny supertest harness, and covered
+  by 13 new tests: rate-limit allows up-to-N, returns 429 over-limit, isolates
+  per-IP buckets, resets after window expiry, exempts `/api/health` and
+  heartbeat routes, skips OPTIONS preflights, and handles the unknown-IP
+  fallback; security-headers emits the four standard hardening headers on
+  every response, gates CSP on the vite-dev flag, and pins the SEC-HDR-001
+  inline-script SHA-256 as a regression guard. Existing `actorMiddleware`
+  coverage in `auth.test.ts` (34 tests) is preserved. Total middleware suite
+  is now 47 tests across 3 files.
 - **Adapter startup smoke tests for codex-local, cursor-local, gemini-local**
   (`packages/adapters/{codex,cursor,gemini}-local/src/server/*.test.ts`).
   These three CLI process adapters previously had zero unit-test coverage. Each
