@@ -5,23 +5,20 @@ All notable changes to IronWorks are documented in this file.
 ## [Unreleased]
 
 ### Added
-- **E2E Playwright specs for top user flows** (`tests/e2e/issue-lifecycle.spec.ts`,
-  `tests/e2e/approvals.spec.ts`, `tests/e2e/agent-chat.spec.ts`). Adds the
-  three top-flow specs called for by the audit on top of the existing
-  onboarding + docker-auth-onboarding coverage. `issue-lifecycle` drives an
-  issue from backlog -> in_progress -> done with a comment and verifies the
-  IssueDetail page renders; `approvals` creates two synthetic `quality_gate`
-  approvals and drives one through approve and the other through reject,
-  asserting the list reflects both transitions and the Approvals page
-  renders; `agent-chat` posts a human message into the auto-created
-  `#company` channel and reads it back from both the API feed and the
-  ChannelView UI. All specs run in `IRONWORKS_E2E_SKIP_LLM=true` mode (no
-  LLM API keys required) and complete inside the existing 60s per-test
-  budget. Specs follow the onboarding.spec.ts pattern: API-first state
-  drive, UI-last sanity assertion, unique IDs via `Date.now()`,
-  `expect(...).toBeVisible({ timeout: 15_000+ })` for slow renders.
-  Playwright now lists 4 specs across 4 files (was 1 spec across 1 file
-  for the top-flows; the docker-auth spec already existed).
+- **Settings > Secrets vault UI** (`ui/src/pages/Settings/Secrets.tsx`,
+  `ui/src/components/secrets/`). Board members can now manage company-scoped
+  vault entries (webhook signing secrets, third-party API keys, MCP server
+  tokens) directly from the Settings panel. Backed by the existing generic
+  `/companies/:companyId/secrets` API. Features: create with provider picker
+  (defaults to `local_encrypted`), rotate, delete with confirm, empty state
+  CTA, password-style inputs with show/hide toggle, client-side duplicate-name
+  validation. Plaintext is never echoed back: the table shows only metadata
+  (name, provider, version, last rotated, created). Wired as a new tab in
+  `SettingsProviderNav` and routed at `/:companyPrefix/settings/secrets`.
+  Tests: SSR static-render coverage for heading, loading skeleton, empty
+  state, populated table, and plaintext-leakage guard. Components extracted
+  per CLAUDE.md component-first rule (`SecretsTable`, `CreateSecretDialog`,
+  `RotateSecretDialog`).
 - **Middleware unit tests for rate limiter + security headers**
   (`server/src/middleware/rate-limit.test.ts`,
   `server/src/middleware/security-headers.test.ts`). The in-memory rate limiter

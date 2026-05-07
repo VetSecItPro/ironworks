@@ -15,6 +15,7 @@ interface NavTab {
 
 const TABS: NavTab[] = [
   { label: "Providers", suffix: "providers" },
+  { label: "Secrets", suffix: "secrets" },
   { label: "Playground", suffix: "playground" },
   { label: "Explorer", suffix: "explorer" },
   { label: "Costs", suffix: "costs" },
