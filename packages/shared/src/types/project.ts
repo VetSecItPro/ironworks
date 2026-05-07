@@ -50,7 +50,11 @@ export interface Project {
   id: string;
   companyId: string;
   urlKey: string;
-  /** @deprecated Use goalIds / goals instead */
+  /**
+   * @deprecated Prefer `goalIds` / `goals`. Mirrors the legacy `projects.goalId` DB
+   * column still maintained for single-goal back-compat (UI ClientPortal + older
+   * REST consumers). Removal blocked until DB column drop + consumer migration.
+   */
   goalId: string | null;
   goalIds: string[];
   goals: ProjectGoalRef[];

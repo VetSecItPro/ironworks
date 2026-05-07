@@ -12,7 +12,13 @@ export type { BackupRetentionPolicy } from "./backup-retention.js";
 export type RunDatabaseBackupOptions = {
   connectionString: string;
   backupDir: string;
-  /** @deprecated Use retentionPolicy instead. Kept for backward compatibility. */
+  /**
+   * @deprecated Prefer `retentionPolicy` (tiered daily/weekly/monthly retention via
+   * `BackupRetentionPolicy`). Kept for backward compatibility with `ironworks.config.json`
+   * files written before tiered retention. When both are set, `retentionPolicy` wins
+   * (see `resolveBackupRetention` in `backup-retention.ts`). Removal blocked until on-disk
+   * configs are migrated by users on next major version.
+   */
   retentionDays?: number;
   retentionPolicy?: BackupRetentionPolicy;
   filenamePrefix?: string;
