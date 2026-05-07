@@ -31,6 +31,27 @@ All notable changes to IronWorks are documented in this file.
   signature headers (Mailgun, Twilio/SendGrid, Ironworks) are pre-listed in
   `allowedHeaders`. 12 unit tests in `cors-config.test.ts`.
 
+### Changed
+- Documented `@deprecated` symbols with explicit migration paths and removal-blocker
+  rationale (no behavior change). Audited candidates:
+  - `RunDatabaseBackupOptions.retentionDays` (`packages/db/src/backup-lib.ts`) - KEPT,
+    backward-compat for on-disk `ironworks.config.json` files. Removal scheduled for
+    next major version (config migration required).
+  - `databaseBackupConfigSchema.retentionDays` (`packages/shared/src/config-schema.ts`)
+    - KEPT, same reason.
+  - `BOOTSTRAP_PROMPT_KEY` / `bootstrapPromptTemplate`
+    (`server/src/services/agent-instructions.ts`) - KEPT, six adapters
+    (claude/codex/cursor/gemini/opencode/pi) still read it as a legacy fallback for
+    bootstrap prompts on resumed sessions. Removal blocked until adapter cleanup.
+  - `Project.goalId` type + `projectFields.goalId` schema
+    (`packages/shared/src/types/project.ts`, `packages/shared/src/validators/project.ts`)
+    - KEPT, legacy `projects.goalId` DB column still written by `services/projects.ts`
+    for single-goal back-compat (UI ClientPortal + older REST consumers).
+  Follow-up tickets recommended for: (1) config-file migration tool to drop
+  `retentionDays`, (2) drop `bootstrapPromptTemplate` from all adapters once managed
+  bundles are universal, (3) drop `projects.goalId` DB column once all callers use
+  `goalIds`.
+
 ### Added - HTTP Adapter Family (2026-04-20)
 - **Four production HTTP adapters**: `poe-api`, `anthropic-api`, `openai-api`,
   `openrouter-api`. Agents can now call external LLM APIs without a local CLI installed.

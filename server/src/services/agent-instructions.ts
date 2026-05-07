@@ -9,7 +9,13 @@ const ROOT_KEY = "instructionsRootPath";
 const ENTRY_KEY = "instructionsEntryFile";
 const FILE_KEY = "instructionsFilePath";
 const PROMPT_KEY = "promptTemplate";
-/** @deprecated Use the managed instructions bundle system instead. */
+/**
+ * @deprecated Replaced by the managed instructions bundle system (see `MODE_KEY` /
+ * `ROOT_KEY` / `ENTRY_KEY` above and the `materializeManagedBundle` flow). Still read
+ * by per-adapter `execute.ts` files (claude/codex/cursor/gemini/opencode/pi) as a
+ * fallback bootstrap prompt for legacy agent configs and during onboarding migration.
+ * Removal blocked until all adapters drop the fallback path.
+ */
 const BOOTSTRAP_PROMPT_KEY = "bootstrapPromptTemplate";
 const LEGACY_PROMPT_TEMPLATE_PATH = "promptTemplate.legacy.md";
 const IGNORED_INSTRUCTIONS_FILE_NAMES = new Set([".DS_Store", "Thumbs.db", "Desktop.ini"]);

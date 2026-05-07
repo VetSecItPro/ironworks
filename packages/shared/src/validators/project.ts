@@ -91,7 +91,12 @@ export const updateProjectWorkspaceSchema = z
 export type UpdateProjectWorkspace = z.infer<typeof updateProjectWorkspaceSchema>;
 
 const projectFields = {
-  /** @deprecated Use goalIds instead */
+  /**
+   * @deprecated Prefer `goalIds` (multi-goal support). Kept because the `projects`
+   * table still has a legacy `goalId` column written by `services/projects.ts` for
+   * single-goal back-compat (older API consumers + ClientPortal). Removal blocked
+   * until DB column drop + consumer migration.
+   */
   goalId: z.string().uuid().optional().nullable(),
   goalIds: z.array(z.string().uuid()).optional(),
   name: z.string().min(1),
