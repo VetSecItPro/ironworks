@@ -21,6 +21,15 @@ All notable changes to IronWorks are documented in this file.
   `companySecrets`-backed encrypted secret storage. No schema change needed; the proposed
   inline `hmac_secret TEXT` column was rejected as a regression vs. the existing
   encrypted-secret reference design.
+- **Explicit CORS allowlist** (`server/src/lib/cors-config.ts`, wired in `server/src/app.ts`).
+  Previously the server inherited Express defaults (effectively allow-all). Now the
+  allowlist is driven by `IRONWORKS_ALLOWED_ORIGINS` (comma-separated). Same-origin /
+  no-origin requests (curl, server-to-server) always pass. `credentials: true` is set
+  for cookie-based session auth. Backward-compatible: when the env var is unset,
+  development allows all origins; production reflects the request origin and emits a
+  loud startup warning so unconfigured deploys aren't silently broken. Webhook
+  signature headers (Mailgun, Twilio/SendGrid, Ironworks) are pre-listed in
+  `allowedHeaders`. 12 unit tests in `cors-config.test.ts`.
 
 ### Added - HTTP Adapter Family (2026-04-20)
 - **Four production HTTP adapters**: `poe-api`, `anthropic-api`, `openai-api`,
