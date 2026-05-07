@@ -445,7 +445,7 @@ export async function postMessage(
   } else if (opts.authorAgentId) {
     // Agent posted - record for rate limiting
     try {
-      await recordAgentResponse(db, opts.channelId, opts.companyId);
+      await recordAgentResponse(db, opts.channelId, opts.companyId, opts.authorAgentId);
 
       // Check for @mentions in agent message - wake ONLY mentioned agents
       const mentionPattern = /@(\w[\w\s]*?)(?=[\s,.!?]|$)/g;
