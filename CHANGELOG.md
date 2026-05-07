@@ -5,6 +5,21 @@ All notable changes to IronWorks are documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Webhook alerter for observability events** (`server/src/observability/alerter.ts`).
+  Heap-monitor auto-snapshot triggers and uncaught exceptions/rejections now
+  POST to an operator-configurable incoming webhook (Slack-compatible by
+  default, Discord and most generic endpoints accept the same shape). Without
+  this, operators had to tail container logs to notice a heap-grow trigger or
+  a fatal error - off-box visibility is now opt-in via env vars. New env vars:
+  `IRONWORKS_ALERT_WEBHOOK_URL` (when unset, alerter is a no-op; when set,
+  every alert posts here) and `IRONWORKS_ALERT_FORMAT=raw` (optional; skips
+  the Slack `{text}` wrapper and posts the AlertEvent JSON directly for
+  custom collectors). Alerter is rate-limited at 1 alert per (source,
+  severity) per 5 minutes to prevent loop-storms drowning the channel, and
+  uses Node 24's built-in fetch + `AbortSignal.timeout(5000)` - no new deps.
+  Wired into `heap-monitor.ts` (auto-snapshot path) and
+  `lib/error-tracking.ts` (`uncaughtException` + `unhandledRejection`
+  handlers). +9 tests in `alerter.test.ts`.
 - **Anthropic context compaction in claude-local** (`packages/adapters/claude-local/src/server/execute.ts`).
   The Claude CLI's `--betas <name>` flag (v2.1.132+) now passes through `compact-2026-01-12`
   to the Anthropic API for API-key authenticated runs (`ANTHROPIC_API_KEY` set).

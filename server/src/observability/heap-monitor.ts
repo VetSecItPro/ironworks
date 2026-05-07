@@ -4,6 +4,8 @@ import { writeHeapSnapshot } from "node:v8";
 
 import { logger } from "../middleware/logger.js";
 
+import { postAlert } from "./alerter.js";
+
 // SEC-HEAP-001: V8 heap snapshots contain the entire process memory by
 // definition — including decrypted workspaceProviderSecrets, JWT signing
 // material, telegram bot tokens, and OAuth credentials. Treat every
@@ -201,6 +203,16 @@ export function installHeapMonitor(opts?: { snapshotDir?: string }): () => void 
     lastAutoSnapshotAt = Date.now();
     logger.warn({ reason }, "heap-monitor auto-snapshot triggered");
     takeHeapSnapshot(snapshotDir);
+    // Off-box alert (no-op when IRONWORKS_ALERT_WEBHOOK_URL is unset). Fire-
+    // and-forget — the alerter swallows its own errors, but we add an extra
+    // .catch() so a future bug in the alerter cannot ever propagate up here
+    // and break the monitor's hot path.
+    postAlert({
+      severity: "warn",
+      source: "heap-monitor",
+      message: "Auto heap snapshot triggered",
+      details: { reason, snapshotDir, mem: process.memoryUsage() },
+    }).catch(() => undefined);
   }
 
   function tick() {

@@ -4,6 +4,7 @@
  * a foundation for future Sentry/Datadog integration.
  */
 import { logger } from "../middleware/logger.js";
+import { postAlert } from "../observability/alerter.js";
 
 interface ErrorContext {
   route?: string;
@@ -55,11 +56,30 @@ export function getErrorStats(): { totalErrors: number; lastErrorAt: string | nu
 export function installGlobalErrorHandlers(): void {
   process.on("unhandledRejection", (reason) => {
     captureError(reason, { extra: { type: "unhandledRejection" } });
+    // Off-box alert (no-op when IRONWORKS_ALERT_WEBHOOK_URL is unset). Rate-
+    // limited inside the alerter so a flapping rejection loop can't drown
+    // the channel. .catch() guards against any future alerter regression
+    // throwing into the global handler.
+    postAlert({
+      severity: "error",
+      source: "uncaught",
+      message: reason instanceof Error ? reason.message : String(reason),
+      details: { type: "unhandledRejection" },
+    }).catch(() => undefined);
   });
 
   process.on("uncaughtException", (err) => {
     captureError(err, { extra: { type: "uncaughtException" } });
-    // Give logger time to flush, then exit (uncaught exceptions are fatal)
+    postAlert({
+      severity: "error",
+      source: "uncaught",
+      message: err instanceof Error ? err.message : String(err),
+      details: { type: "uncaughtException", stack: err instanceof Error ? err.stack : undefined },
+    }).catch(() => undefined);
+    // Give logger + alerter time to flush, then exit (uncaught exceptions
+    // are fatal). The 1s window is the same delay used pre-alerter so we
+    // don't slow shutdown — alerter has a 5s internal timeout but practice
+    // shows Slack/Discord respond well under 1s.
     setTimeout(() => process.exit(1), 1000);
   });
 
