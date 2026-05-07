@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { AdapterExecutionContext, AdapterExecutionResult } from "@ironworksai/adapter-utils";
 import {
+  appendMcpToolsAdvisory,
   asBoolean,
   asNumber,
   asString,
@@ -290,7 +291,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   const sessionHandoffNote = asString(context.ironworksSessionHandoffMarkdown, "").trim();
   const ironworksEnvNote = renderIronworksEnvNote(env);
   const apiAccessNote = renderApiAccessNote(env);
-  const prompt = joinPromptSections([
+  const basePrompt = joinPromptSections([
     instructionsPrefix,
     renderedBootstrapPrompt,
     sessionHandoffNote,
@@ -298,6 +299,8 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     apiAccessNote,
     renderedPrompt,
   ]);
+  // Advisory MCP tool catalog — see appendMcpToolsAdvisory for rationale.
+  const prompt = appendMcpToolsAdvisory(basePrompt, context);
   const promptMetrics = {
     promptChars: prompt.length,
     instructionsChars: instructionsPrefix.length,

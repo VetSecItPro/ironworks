@@ -8,6 +8,7 @@ import {
   inferOpenAiCompatibleBiller,
 } from "@ironworksai/adapter-utils";
 import {
+  appendMcpToolsAdvisory,
   asNumber,
   asString,
   asStringArray,
@@ -352,13 +353,15 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       : "";
   const sessionHandoffNote = asString(context.ironworksSessionHandoffMarkdown, "").trim();
   const ironworksEnvNote = renderIronworksEnvNote(env);
-  const prompt = joinPromptSections([
+  const basePrompt = joinPromptSections([
     instructionsPrefix,
     renderedBootstrapPrompt,
     sessionHandoffNote,
     ironworksEnvNote,
     renderedPrompt,
   ]);
+  // Advisory MCP tool catalog — see appendMcpToolsAdvisory for rationale.
+  const prompt = appendMcpToolsAdvisory(basePrompt, context);
   const promptMetrics = {
     promptChars: prompt.length,
     instructionsChars,

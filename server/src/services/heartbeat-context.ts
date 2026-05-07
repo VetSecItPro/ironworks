@@ -846,11 +846,15 @@ export async function injectPlaybookGuidance(
  * Best-effort: discovery failures for individual servers are logged and skipped
  * so a broken server config never blocks agent execution.
  *
- * MCP_INTEGRATION_TODO: Process adapters (claude, codex, etc.) receive context
- * only via env vars and subprocess stdio — they do not read this context key.
- * Full tool dispatch for process adapters requires either a sidecar proxy or
- * extending IRONWORKS_CONTEXT env serialization. HTTP adapters (ollama-cloud,
- * openai-api, etc.) read ironworksMcpTools and include it in the system prompt.
+ * Process adapters (claude, codex, gemini, cursor, opencode, pi) consume this
+ * key via `appendMcpToolsAdvisory()` (in @ironworksai/adapter-utils) which
+ * appends the catalog to the agent prompt as a READ-ONLY advisory section —
+ * the agent sees what's available but cannot dispatch calls (the CLIs they
+ * shell out to drive their own tool loops we don't control). HTTP adapters
+ * (ollama-cloud, openai-api, etc.) read ironworksMcpTools as a system message
+ * directly. Full bidirectional dispatch for process adapters is tracked as
+ * follow-up — it requires either a sidecar proxy or per-adapter stdout-marker
+ * parsing + synthetic-turn injection, neither of which fits this PR.
  */
 export async function injectMcpTools(
   db: Db,
