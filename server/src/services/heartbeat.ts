@@ -36,6 +36,7 @@ import { notFound } from "../errors.js";
 import { resolveDefaultAgentWorkspaceDir, resolveManagedProjectWorkspaceDir } from "../home-paths.js";
 import { redactCurrentUserText, redactCurrentUserValue } from "../log-redaction.js";
 import { logger } from "../middleware/logger.js";
+import { runsCounter } from "../observability/metrics.js";
 import { ROLE_TEMPLATES, TEAM_DIRECTORY_PLACEHOLDER } from "../onboarding-assets/role-templates.js";
 import { logActivity } from "./activity-log.js";
 import { injectSkillRecipes } from "./agent-learning.js";
@@ -1042,6 +1043,12 @@ export function heartbeatService(db: Db) {
       .then((rows) => rows[0] ?? null);
 
     if (updated) {
+      // Prometheus: count terminal-state transitions only. Non-terminal updates
+      // (queued -> running, etc.) would double-count the same logical run.
+      const TERMINAL = new Set(["succeeded", "failed", "cancelled", "timed_out"]);
+      if (TERMINAL.has(status)) {
+        runsCounter.inc({ status });
+      }
       publishLiveEvent({
         companyId: updated.companyId,
         type: "heartbeat.run.status",
