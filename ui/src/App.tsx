@@ -80,6 +80,8 @@ const NotificationSettings = lazy(() =>
 const BillingSettingsPage = lazy(() => import("./pages/BillingSettings").then((m) => ({ default: m.BillingSettings })));
 // Settings > Providers — API key management for HTTP adapter providers
 const SettingsProviders = lazy(() => import("./pages/Settings/Providers").then((m) => ({ default: m.ProvidersPage })));
+// Settings > Secrets — generic vault for company-scoped secrets (webhook keys, integration tokens, etc.)
+const SettingsSecrets = lazy(() => import("./pages/Settings/Secrets").then((m) => ({ default: m.SecretsPage })));
 // Settings > Adapter Playground — fire a test prompt against any configured adapter
 const SettingsPlayground = lazy(() =>
   import("./pages/Settings/AdapterPlayground").then((m) => ({ default: m.AdapterPlayground })),
@@ -314,6 +316,14 @@ function boardRoutes() {
         element={
           <LazyPage>
             <ProvidersRoute />
+          </LazyPage>
+        }
+      />
+      <Route
+        path="settings/secrets"
+        element={
+          <LazyPage>
+            <SecretsRoute />
           </LazyPage>
         }
       />
@@ -770,6 +780,20 @@ function ProvidersRoute() {
     : null;
   if (!matchedCompany) return null;
   return <SettingsProviders companyId={matchedCompany.id} />;
+}
+
+/**
+ * Resolves :companyPrefix to a real company UUID, then renders the Secrets vault page.
+ * Mirrors the ProvidersRoute pattern.
+ */
+function SecretsRoute() {
+  const { companies } = useCompany();
+  const { companyPrefix } = useParams<{ companyPrefix?: string }>();
+  const matchedCompany = companyPrefix
+    ? (companies.find((company) => company.issuePrefix.toUpperCase() === companyPrefix.toUpperCase()) ?? null)
+    : null;
+  if (!matchedCompany) return null;
+  return <SettingsSecrets companyId={matchedCompany.id} />;
 }
 
 /**
