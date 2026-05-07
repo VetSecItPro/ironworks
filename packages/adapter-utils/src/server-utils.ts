@@ -180,6 +180,54 @@ export function joinPromptSections(sections: Array<string | null | undefined>, s
     .join(separator);
 }
 
+// ── MCP tool advisory injection (process adapters) ──────────────────────────
+//
+// Process adapters (claude, codex, gemini, cursor, opencode, pi) shell out to
+// CLI tools that drive their OWN tool dispatch loop — we don't control their
+// stdout protocol, so we can't intercept tool calls and bridge them to the
+// MCP client today. (HTTP adapters consume `ironworksMcpTools` directly as a
+// system message because they own the request stream.)
+//
+// As a shippable v1, we surface the MCP tool catalog INTO the agent's prompt
+// as an advisory section. The agent sees the list, names, and descriptions
+// and can route work accordingly (e.g., "ask the user to run mcp__X__Y" or
+// "describe what mcp__X__Y would return"). It cannot actually invoke them.
+//
+// The advisory header is explicit so a well-aligned agent doesn't hallucinate
+// a successful call. Bidirectional dispatch (Approach B in PR #167 spec) is
+// tracked as follow-up — it requires either a sidecar proxy or per-adapter
+// stdout-marker parsing, neither of which fits a single PR.
+//
+// `getMcpToolsAdvisorySection` returns the section text (or empty string),
+// `appendMcpToolsAdvisory` appends it to an existing prompt with the standard
+// section separator. Pass the heartbeat `context` directly.
+const MCP_ADVISORY_HEADER =
+  "## Available MCP Tools (advisory only)\n\n" +
+  "These external MCP tools are configured for your company. The current process-adapter " +
+  "runtime cannot dispatch them on your behalf — invoking them directly will fail silently. " +
+  "Treat this as a catalog: reference tool names when planning, ask a human operator to run " +
+  "them when needed, and describe expected results rather than fabricating outputs.\n\n";
+
+export function getMcpToolsAdvisorySection(context: Record<string, unknown> | null | undefined): string {
+  if (!context) return "";
+  const raw = context.ironworksMcpTools;
+  if (typeof raw !== "string") return "";
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+  return `${MCP_ADVISORY_HEADER}${trimmed}`;
+}
+
+export function appendMcpToolsAdvisory(
+  prompt: string,
+  context: Record<string, unknown> | null | undefined,
+  separator = "\n\n",
+): string {
+  const section = getMcpToolsAdvisorySection(context);
+  if (!section) return prompt;
+  if (!prompt) return section;
+  return `${prompt}${separator}${section}`;
+}
+
 export function redactEnvForLogs(env: Record<string, string>): Record<string, string> {
   const redacted: Record<string, string> = {};
   for (const [key, value] of Object.entries(env)) {

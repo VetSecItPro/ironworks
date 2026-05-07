@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import type { AdapterExecutionContext, AdapterExecutionResult } from "@ironworksai/adapter-utils";
 import type { RunProcessResult } from "@ironworksai/adapter-utils/server-utils";
 import {
+  appendMcpToolsAdvisory,
   asBoolean,
   asNumber,
   asString,
@@ -473,7 +474,10 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       ? renderTemplate(bootstrapPromptTemplate, templateData).trim()
       : "";
   const sessionHandoffNote = asString(context.ironworksSessionHandoffMarkdown, "").trim();
-  const prompt = joinPromptSections([renderedBootstrapPrompt, sessionHandoffNote, renderedPrompt]);
+  const basePrompt = joinPromptSections([renderedBootstrapPrompt, sessionHandoffNote, renderedPrompt]);
+  // Append MCP tool catalog (advisory only — process adapters can't dispatch
+  // MCP calls today; the agent gets read-only awareness of available tools).
+  const prompt = appendMcpToolsAdvisory(basePrompt, context);
   const promptMetrics = {
     promptChars: prompt.length,
     bootstrapPromptChars: renderedBootstrapPrompt.length,

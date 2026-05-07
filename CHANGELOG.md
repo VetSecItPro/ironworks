@@ -14,6 +14,18 @@ All notable changes to IronWorks are documented in this file.
   with 8 unit tests in `execute.test.ts`. Prompt-cache breakpoints (line-69 TODO) are
   still blocked — Claude CLI doesn't yet expose a `--cache-control` / `--cache-breakpoints`
   flag.
+- **MCP tool catalog injection for process adapters** (claude-local, codex-local,
+  gemini-local, cursor-local, opencode-local, pi-local). The MCP tools discovered
+  by `injectMcpTools()` in heartbeat-context now reach process adapters via the
+  prompt itself (advisory section), where previously only HTTP adapters consumed
+  `ironworksMcpTools`. Process-adapter agents now see the full namespaced tool
+  catalog (`mcp__<server>__<tool>`) with descriptions and can reference tools in
+  their planning. Dispatch is NOT yet bidirectional for process adapters — the
+  CLIs they shell out to drive their own tool loops, which we don't control.
+  Full dispatch (sidecar proxy or stdout-marker bridge) is tracked as follow-up.
+  Implemented via shared `appendMcpToolsAdvisory()` helper in
+  `@ironworksai/adapter-utils/server-utils` so all six adapters use identical
+  injection semantics. (+8 unit tests covering the helper.)
 
 ### Removed
 - **Plugin system** (full deletion). The plugin extension framework was disabled
