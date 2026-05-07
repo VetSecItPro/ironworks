@@ -77,6 +77,10 @@ jobs:
     permissions:
       contents: write
       id-token: write
+    # Surface the prior canary version so smoke_canary can roll the dist-tag
+    # back if the freshly-published canary fails its post-publish smoke.
+    outputs:
+      prior_canary_version: ${{ steps.capture_prior.outputs.prior }}
 
     steps:
       - name: Checkout repository
@@ -106,6 +110,16 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+      - name: Capture prior canary version (pre-publish)
+        id: capture_prior
+        # Recorded BEFORE we publish so smoke_canary can repoint the canary
+        # dist-tag back to the last-known-good version on smoke failure.
+        # Empty string is acceptable — no previous canary means no rollback target.
+        run: |
+          prior="$(npm view ironworksai dist-tags.canary 2>/dev/null || true)"
+          echo "Prior canary dist-tag: ${prior:-<none>}"
+          echo "prior=${prior}" >>"$GITHUB_OUTPUT"
+
       - name: Publish canary
         env:
           GITHUB_ACTIONS: "true"
@@ -119,6 +133,92 @@ jobs:
             exit 1
           fi
           git push origin "refs/tags/${tag}"
+
+  smoke_canary:
+    # Post-publish smoke gate. The canary npm package is already up by the time
+    # we get here, so a smoke failure means the canary dist-tag points at a bad
+    # build. The rollback step below repoints it to the prior canary version
+    # (captured in publish_canary.outputs.prior_canary_version) so consumers
+    # pinning `npx ironworksai@canary` get the last-known-good build.
+    if: github.event_name == 'push'
+    needs: publish_canary
+    uses: ./.github/workflows/release-smoke.yml
+    with:
+      ironworks_version: canary
+      artifact_name: release-smoke-canary
+
+  rollback_canary_on_smoke_failure:
+    if: github.event_name == 'push' && needs.smoke_canary.result == 'failure' && needs.publish_canary.outputs.prior_canary_version != ''
+    needs: [publish_canary, smoke_canary]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: npm-canary
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@cb9c4fdd700176d874d52d64ce3b7418842cf6d3 # v6
+        with:
+          version: 9.15.4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: 24
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Repoint canary dist-tag to prior canary
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          PRIOR: ${{ needs.publish_canary.outputs.prior_canary_version }}
+        run: |
+          echo "Smoke failed for the just-published canary. Repointing canary -> ${PRIOR}"
+          # Walk every public workspace package and repoint its canary dist-tag.
+          # This mirrors scripts/rollback-latest.sh (which targets the `latest`
+          # dist-tag) but for the `canary` channel.
+          node -e '
+            const fs = require("fs");
+            const path = require("path");
+            const root = process.cwd();
+            const roots = ["packages", "server", "ui", "cli"];
+            const seen = new Set();
+            function walk(dir) {
+              const abs = path.join(root, dir);
+              const pj = path.join(abs, "package.json");
+              if (fs.existsSync(pj)) {
+                const p = JSON.parse(fs.readFileSync(pj, "utf8"));
+                if (!p.private && !seen.has(p.name)) {
+                  seen.add(p.name);
+                  process.stdout.write(p.name + "\n");
+                }
+                return;
+              }
+              if (!fs.existsSync(abs)) return;
+              for (const e of fs.readdirSync(abs, { withFileTypes: true })) {
+                if (!e.isDirectory()) continue;
+                if (["node_modules", "dist", ".git"].includes(e.name)) continue;
+                walk(path.join(dir, e.name));
+              }
+            }
+            for (const r of roots) walk(r);
+          ' | while IFS= read -r pkg; do
+            [ -z "$pkg" ] && continue
+            echo "npm dist-tag add ${pkg}@${PRIOR} canary"
+            npm dist-tag add "${pkg}@${PRIOR}" canary || echo "warn: rollback failed for ${pkg}"
+          done
+
+      - name: Fail the workflow loudly
+        run: |
+          echo "::error::Canary smoke failed — canary dist-tag was rolled back to ${{ needs.publish_canary.outputs.prior_canary_version }}. Investigate before promoting to stable."
+          exit 1
 
   verify_stable:
     if: github.event_name == 'workflow_dispatch'
