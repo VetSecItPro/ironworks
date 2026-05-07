@@ -5,6 +5,19 @@ All notable changes to IronWorks are documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Adapter startup smoke tests for codex-local, cursor-local, gemini-local**
+  (`packages/adapters/{codex,cursor,gemini}-local/src/server/*.test.ts`).
+  These three CLI process adapters previously had zero unit-test coverage. Each
+  package now ships its own `vitest.config.ts` (registered in the root
+  `vitest.config.ts` `projects[]` array, alongside pi-local which had a config
+  but wasn't wired into the root project list either). New tests cover: module
+  imports without throwing, JSONL stream parser happy/error/malformed paths,
+  unknown-session-error matchers, sessionCodec round-trips, and pure helpers
+  (`resolveSharedCodexHomeDir` / `resolveManagedCodexHomeDir` for codex,
+  `firstNonEmptyLine` + `isGeminiTurnLimitResult` for gemini). 39 new tests
+  total across 8 files. Adapters do NOT spawn the underlying CLI binary —
+  these are protocol/parser smoke tests, not integration tests, so they run in
+  under a second with no env dependencies.
 - **Webhook alerter for observability events** (`server/src/observability/alerter.ts`).
   Heap-monitor auto-snapshot triggers and uncaught exceptions/rejections now
   POST to an operator-configurable incoming webhook (Slack-compatible by
