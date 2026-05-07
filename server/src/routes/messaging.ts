@@ -10,7 +10,11 @@ import {
   stopTelegramBridge,
   testTelegramToken,
 } from "../bridges/telegram.js";
-import { verifyHmacSha256, verifySendgridSignature, warnIfWebhookSigningDisabledOnce } from "../lib/webhook-signatures.js";
+import {
+  verifyHmacSha256,
+  verifySendgridSignature,
+  warnIfWebhookSigningDisabledOnce,
+} from "../lib/webhook-signatures.js";
 import { logger } from "../middleware/logger.js";
 import { companyService, logActivity, secretService } from "../services/index.js";
 import { messagingBridgeService } from "../services/messaging-bridges.js";
