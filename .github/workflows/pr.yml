@@ -168,6 +168,14 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Audit production dependencies
+        # Supply-chain gate: fail PRs that would land HIGH or CRITICAL CVEs in
+        # production dependencies. Dev-only deps are excluded (--prod).
+        # Exit code 0 = no advisories at or above level; non-zero = block.
+        # To unblock a known-safe advisory, document in CHANGELOG and add to
+        # pnpm overrides in package.json (see existing overrides for pattern).
+        run: pnpm audit --prod --audit-level high
+
       - name: Release canary dry run
         run: |
           git checkout -B master HEAD
