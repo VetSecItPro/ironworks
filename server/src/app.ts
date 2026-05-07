@@ -4,9 +4,11 @@ import { fileURLToPath } from "node:url";
 import { createBrotliCompress, createDeflate, createGzip } from "node:zlib";
 import { authUsers, type Db } from "@ironworksai/db";
 import type { DeploymentExposure, DeploymentMode } from "@ironworksai/shared";
+import cors from "cors";
 import { eq } from "drizzle-orm";
 import express, { type Request as ExpressRequest, Router } from "express";
 import type { BetterAuthSessionResult } from "./auth/better-auth.js";
+import { buildCorsOptions } from "./lib/cors-config.js";
 import { actorMiddleware } from "./middleware/auth.js";
 import { boardMutationGuard } from "./middleware/board-mutation-guard.js";
 import { cacheControl, etag } from "./middleware/cache.js";
@@ -103,6 +105,20 @@ export async function createApp(
   },
 ) {
   const app = express();
+
+  // ── CORS (explicit allowlist) ──
+  // Placed first so OPTIONS preflights short-circuit before rate-limit / auth /
+  // body-parse work. Allowlist comes from IRONWORKS_ALLOWED_ORIGINS (comma-
+  // separated). When unset: dev allows all; production reflects origin and
+  // emits a startup warning so unconfigured deploys aren't silently broken.
+  const corsResult = buildCorsOptions({
+    ALLOWED_ORIGINS: process.env.IRONWORKS_ALLOWED_ORIGINS,
+    NODE_ENV: process.env.NODE_ENV,
+  });
+  if (corsResult.warning) {
+    console.warn(corsResult.warning);
+  }
+  app.use(cors(corsResult.options));
 
   // ── Global Rate Limiting (SEC-ADV-013) ──
   // Simple in-memory sliding window rate limiter. No external dependency.
