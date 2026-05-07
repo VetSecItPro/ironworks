@@ -4,6 +4,7 @@ export default defineConfig({
   test: {
     projects: [
       "packages/db",
+      "packages/adapters/claude-local",
       "packages/adapters/opencode-local",
       "packages/adapters/poe-api",
       "packages/adapters/anthropic-api",

@@ -90,18 +90,19 @@ export function injectCacheBreakpoints(config: Record<string, unknown>): Record<
 // The Anthropic API supports automatic context compaction via:
 //   anthropic-beta: compact-2026-01-12
 //
-// LIMITATION: Same as above - the claude-local adapter shells out to the CLI
-// which manages API headers internally. The CLI has its own compaction logic
-// (--max-turns, session management). Direct header injection is not possible
-// from this layer.
-//
-// TODO(compaction): If/when the Claude CLI exposes --enable-compaction or a
-// beta-header passthrough, wire enableCompaction from config into the args.
+// As of Claude CLI v2.1.132 the `--betas <name>` flag passes through arbitrary
+// beta header values to the Anthropic API. The CLI doc explicitly restricts
+// `--betas` to API-key authenticated users (subscription/OAuth sessions skip
+// the header server-side). We therefore:
+//   1. Only emit `--betas compact-2026-01-12` when ANTHROPIC_API_KEY is set
+//      (resolveClaudeBillingType() === "api"), AND
+//   2. Only when resolveCompactionEnabled(config) returns true.
+// Subscription users continue to rely on the CLI's internal session management
+// and do not get the API beta header.
 
 /**
  * Return true when automatic context compaction should be enabled for this run.
  * The model string is checked for Anthropic model identifiers.
- * Currently informational only; see the compaction limitation note above.
  */
 export function resolveCompactionEnabled(config: Record<string, unknown>): boolean {
   const explicit = config.enableCompaction;
@@ -109,6 +110,19 @@ export function resolveCompactionEnabled(config: Record<string, unknown>): boole
   // Default: enable for Anthropic models
   const model = typeof config.model === "string" ? config.model.toLowerCase() : "";
   return model.startsWith("claude") || model === "";
+}
+
+/**
+ * Build the CLI args needed to enable Anthropic context compaction.
+ * Returns an empty array when compaction is off OR when auth is subscription-mode
+ * (the Claude CLI restricts `--betas` to API-key users).
+ *
+ * Pure function — easy to unit test without spawning a real process.
+ */
+export function buildCompactionArgs(compactionEnabled: boolean, billingType: "api" | "subscription"): string[] {
+  if (!compactionEnabled) return [];
+  if (billingType !== "api") return [];
+  return ["--betas", "compact-2026-01-12"];
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -399,13 +413,14 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   // See the limitation notes above: these are informational/metadata flags
   // until the Claude CLI exposes mechanisms to pass them to the API layer.
   const configWithCacheHints = injectCacheBreakpoints(config);
-  const _compactionEnabled = resolveCompactionEnabled(configWithCacheHints);
+  const compactionEnabled = resolveCompactionEnabled(configWithCacheHints);
   const effectiveEnv = Object.fromEntries(
     Object.entries({ ...process.env, ...env }).filter(
       (entry): entry is [string, string] => typeof entry[1] === "string",
     ),
   );
   const billingType = resolveClaudeBillingType(effectiveEnv);
+  const compactionArgs = buildCompactionArgs(compactionEnabled, billingType);
   const skillsDir = await buildSkillsDir(config);
 
   // When instructionsFilePath is configured, create a combined temp file that
@@ -479,6 +494,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       args.push("--append-system-prompt-file", effectiveInstructionsFilePath);
     }
     args.push("--add-dir", skillsDir);
+    if (compactionArgs.length > 0) args.push(...compactionArgs);
     if (extraArgs.length > 0) args.push(...extraArgs);
     return args;
   };
