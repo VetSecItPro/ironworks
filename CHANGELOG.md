@@ -5,36 +5,38 @@ All notable changes to IronWorks are documented in this file.
 ## [Unreleased]
 
 ### Added
-- **Email verification step in onboarding** (`server/src/auth/better-auth.ts`,
-  `server/src/services/email.ts`, `server/src/middleware/auth.ts`,
-  `server/src/routes/authz.ts`, `server/src/routes/companies.ts`,
-  `server/src/app.ts`, `ui/src/components/EmailVerificationBanner.tsx`).
-  Password+email signups are now sent through better-auth's email verification
-  flow (`emailVerification.sendOnSignUp: true`, 24h expiry, auto-sign-in on
-  verify). Until the user clicks the verification link, `POST /api/companies`
-  and `POST /api/companies/onboard` return `403` with
-  `{ details: { code: "email_verification_required" } }`, blocking the
-  identity-spoof signup path where a bad actor could create an account
-  using someone else's email and immediately spin up a company. The actor
-  middleware now reads `emailVerified` off the user row on every session-
-  backed request so the gate cannot be bypassed by a stale session cookie.
-  `local_implicit` (loopback dev mode), agent JWTs, and board API keys are
-  permissively `undefined` and bypass the gate as before. A new endpoint
-  `POST /api/auth/resend-verification` (alias of better-auth's
-  `/send-verification-email`, rate-limited to 3/hour per IP+email) lets the
-  UI banner re-issue the mail. Existing user rows keep their current
-  `emailVerified` value (no migration churn). The default email transport
-  is `console` (logs the verification URL via the structured logger) so
-  dev/local works out of the box; production deploys configure a real
-  transport via `setEmailService()` once a provider integration is wired
-  in. UI: a new `EmailVerificationBanner` component shows on the Dashboard
-  and on the onboarding wizard's Launch step for unverified users, with a
-  Resend button that auto-throttles client-side. Tests: +4 (3 in
-  `email-verification-gate.test.ts` covering the assert helper +
-  permissive paths, +1 in `companies-onboard-route.test.ts` covering the
-  onboard 403 + no-row-side-effect contract). New env var:
-  `IRONWORKS_EMAIL_TRANSPORT` (reserved; current implementation only honors
-  the default `console` transport — provider transports are a follow-up).
+- **E2E Playwright specs for top user flows** (`tests/e2e/issue-lifecycle.spec.ts`,
+  `tests/e2e/approvals.spec.ts`, `tests/e2e/agent-chat.spec.ts`). Adds the
+  three top-flow specs called for by the audit on top of the existing
+  onboarding + docker-auth-onboarding coverage. `issue-lifecycle` drives an
+  issue from backlog -> in_progress -> done with a comment and verifies the
+  IssueDetail page renders; `approvals` creates two synthetic `quality_gate`
+  approvals and drives one through approve and the other through reject,
+  asserting the list reflects both transitions and the Approvals page
+  renders; `agent-chat` posts a human message into the auto-created
+  `#company` channel and reads it back from both the API feed and the
+  ChannelView UI. All specs run in `IRONWORKS_E2E_SKIP_LLM=true` mode (no
+  LLM API keys required) and complete inside the existing 60s per-test
+  budget. Specs follow the onboarding.spec.ts pattern: API-first state
+  drive, UI-last sanity assertion, unique IDs via `Date.now()`,
+  `expect(...).toBeVisible({ timeout: 15_000+ })` for slow renders.
+  Playwright now lists 4 specs across 4 files (was 1 spec across 1 file
+  for the top-flows; the docker-auth spec already existed).
+- **Middleware unit tests for rate limiter + security headers**
+  (`server/src/middleware/rate-limit.test.ts`,
+  `server/src/middleware/security-headers.test.ts`). The in-memory rate limiter
+  and the hand-rolled security-headers middleware were previously inline in
+  `app.ts` with no isolated coverage. Both are now extracted into their own
+  modules (`middleware/rate-limit.ts` + `middleware/security-headers.ts`) with
+  identical runtime behavior, mounted on a tiny supertest harness, and covered
+  by 13 new tests: rate-limit allows up-to-N, returns 429 over-limit, isolates
+  per-IP buckets, resets after window expiry, exempts `/api/health` and
+  heartbeat routes, skips OPTIONS preflights, and handles the unknown-IP
+  fallback; security-headers emits the four standard hardening headers on
+  every response, gates CSP on the vite-dev flag, and pins the SEC-HDR-001
+  inline-script SHA-256 as a regression guard. Existing `actorMiddleware`
+  coverage in `auth.test.ts` (34 tests) is preserved. Total middleware suite
+  is now 47 tests across 3 files.
 - **Adapter startup smoke tests for codex-local, cursor-local, gemini-local**
   (`packages/adapters/{codex,cursor,gemini}-local/src/server/*.test.ts`).
   These three CLI process adapters previously had zero unit-test coverage. Each
