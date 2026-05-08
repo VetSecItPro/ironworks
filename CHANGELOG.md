@@ -135,6 +135,25 @@ All notable changes to IronWorks are documented in this file.
   injection semantics. (+8 unit tests covering the helper.)
 
 ### Changed
+- **Refactored `server/src/routes/agents.ts`** — split the 3,365-LOC,
+  61-route monolith into four domain sub-routers composed via
+  `Router.use()`: `agent-routes-crud.ts` (33 routes — agent CRUD,
+  configuration, revisions, runtime state, instructions, skills, keys,
+  prompt versions, adapter models), `agent-routes-lifecycle.ts`
+  (13 routes — list/hire/create/team-pack, pause/resume/terminate,
+  delete, headcount, org chart) plus the `defaultBudgetCentsForRole`
+  helper, `agent-routes-runs.ts` (11 routes — scheduler heartbeats,
+  heartbeat runs, live runs, workspace operations, issue runs), and
+  `agent-routes-chat.ts` (4 routes — messages, chat, chat/issue,
+  feedback). `agents.ts` becomes a 24-LOC orchestrator that preserves
+  the `agentRoutes(db)` factory signature so all external callers
+  (`app.ts`, three `__tests__/` suites) keep working unchanged. Pure
+  file move with route-handler bodies preserved verbatim; zero semantic
+  change, zero new dependencies. Per-method+path collision check
+  confirms no overlap across the four sub-routers (mount order is
+  informational). All 24 tests in `__tests__/agents.test.ts` plus the
+  related agent route suites stay green. Approach A from the
+  2026-05-07 agents-routes-split design spec.
 - **Refactored `server/src/services/heartbeat.ts`** — extracted ~330 LOC of
   module-level helpers into three new sibling files:
   `heartbeat-team-directory.ts` (per-company colleague directory + 5min cache),

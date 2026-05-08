@@ -4,7 +4,7 @@ import { and, desc, eq, inArray } from "drizzle-orm";
 import { notFound, unprocessable } from "../errors.js";
 import { redactEventPayload } from "../redaction.js";
 
-interface LinkActor {
+export interface LinkActor {
   agentId?: string | null;
   userId?: string | null;
 }

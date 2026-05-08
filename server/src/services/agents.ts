@@ -41,14 +41,14 @@ const CONFIG_REVISION_FIELDS = [
 type ConfigRevisionField = (typeof CONFIG_REVISION_FIELDS)[number];
 type AgentConfigSnapshot = Pick<typeof agents.$inferSelect, ConfigRevisionField>;
 
-interface RevisionMetadata {
+export interface RevisionMetadata {
   createdByAgentId?: string | null;
   createdByUserId?: string | null;
   source?: string;
   rolledBackFromRevisionId?: string | null;
 }
 
-interface UpdateAgentOptions {
+export interface UpdateAgentOptions {
   recordRevision?: RevisionMetadata;
 }
 
