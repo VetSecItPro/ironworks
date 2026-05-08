@@ -135,25 +135,16 @@ All notable changes to IronWorks are documented in this file.
   injection semantics. (+8 unit tests covering the helper.)
 
 ### Changed
-- **Refactored `server/src/services/company-portability-shared.ts`** — split
-  the 2,660-LOC, 119-export grab-bag service module into six domain-focused
-  files behind a re-export barrel: `company-portability-types.ts` (10 type
-  exports), `company-portability-defaults.ts` (constants + primitive type
-  guards + mode resolvers + bundled-skills commit cache, 18 exports),
-  `company-portability-skill-helpers.ts` (skill key/slug derivation, org
-  tree, source entries, 8 exports), `company-portability-path-helpers.ts`
-  (path normalization, namespace derivation, GitHub URL parsing, 12
-  exports), `company-portability-env-helpers.ts` (env-key handling,
-  `execFileAsync`, env-input builders, 7 exports), and
-  `company-portability-manifest-helpers.ts` (YAML/markdown parse+render,
-  manifest builder, routine/recurrence logic, workspace + file-map
-  utilities, network helpers, 64 exports). The original
-  `company-portability-shared.ts` shrinks to ~20 LOC of `export *` lines.
-  Pure refactor: zero semantic change, zero caller modifications - all
-  119 symbols remain importable through the barrel path used by
-  `company-portability.ts`, `company-portability-export.ts`,
-  `company-portability-import.ts`, and `agent-yaml-io.ts`. All 1,673
-  server tests remain green.
+- **Refactored `server/src/services/knowledge-seeds.ts`** — split the
+  3,256-LOC pure-data file into 8 domain-grouped modules
+  (`knowledge-seeds-operating.ts`, `-strategy.ts`, `-people.ts`,
+  `-engineering.ts`, `-agents.ts`, `-compliance.ts`, `-finance.ts`,
+  `-sops.ts`) and reduced the original to a 28-LOC aggregator that
+  preserves the `getKnowledgeSeeds()` public API + `KnowledgeSeed`
+  type export. All 42 seeds + 3 SOP templates moved byte-identical
+  (sha256 verified across the full set). Caller `knowledge.ts` is
+  unchanged. Closes the last item of the original 30-task audit
+  backlog (#18). Pure file split, zero behavior change.
 - **Refactored `server/src/routes/agents.ts`** — split the 3,365-LOC,
   61-route monolith into four domain sub-routers composed via
   `Router.use()`: `agent-routes-crud.ts` (33 routes — agent CRUD,
