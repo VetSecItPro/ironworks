@@ -6,6 +6,7 @@ All notable changes to IronWorks are documented in this file.
 
 ### Added
 
+- **Cross-doc link graph (P1).** `[[slug]]` and `[[slug#anchor]]` wikilink syntax in knowledge pages now parsed on save and stored as graph edges in `knowledge_page_links`. Frontmatter `aliases: []` lets renamed pages keep accepting incoming links. Unresolved slugs persist as broken-link placeholders that auto-rebind when the target page is created. New endpoints: `GET /api/knowledge-pages/:id/backlinks` and `GET /api/knowledge-pages/:id/graph?hops=1|2`. UI: backlinks sidebar + 1-2 hop force-directed graph view (`@xyflow/react`) on `KnowledgePageViewer`. Backfill script: `scripts/backfill-knowledge-links.ts`.
 - **Memory + Knowledge embeddings pipeline (P0).** Async queue (`embedding_jobs`, `chunking_jobs`) drained by in-process `EmbeddingsWorker` writes pgvector embeddings on every memory entry create/update and knowledge_pages chunk on save. Polymorphic `EmbeddingProvider` abstraction (OpenAI default for memory at 1536d, Ollama default for chunks at 768d, NoOp for tests/missing-config). Tier-3 cosine-similarity retrieval activated in `getContextualMemories` and `findRelevantMemories` — agents now find semantically-related context. Backfill: `scripts/backfill-embeddings.ts --target=memory|chunks|both`. New Prometheus metrics: `ironworks_embedding_jobs_pending`, `ironworks_embedding_jobs_failed_total`, `ironworks_embedding_provider_latency_seconds`, `ironworks_embedding_provider_errors_total`.
 - **Canonical Frontmatter types module** at `packages/shared/src/types/frontmatter/` — 7 entity-typed shapes (knowledge, decision, skill, agent, project, issue, run) + render/parse helpers. Reachable via `@ironworksai/shared` and re-exported through `company-portability-shared.ts` for future vault export.
 - **Provider env vars:** `IRONWORKS_MEMORY_EMBEDDING_PROVIDER`, `IRONWORKS_MEMORY_EMBEDDING_MODEL`, `IRONWORKS_CHUNK_EMBEDDING_PROVIDER`, `IRONWORKS_CHUNK_EMBEDDING_MODEL`, `IRONWORKS_EMBEDDINGS_TICK_INTERVAL_MS`. Provider env IS the kill switch — `=noop` disables embeddings without redeploy.
@@ -141,6 +142,8 @@ All notable changes to IronWorks are documented in this file.
 
 ### Changed
 
+- `knowledge_pages` now has an `aliases text[]` column (default `'{}'`) for fast slug-alias resolution.
+- `knowledge.create/update/revertToRevision` now run wikilink extraction + sync inside the page write transaction; the rebind janitor also runs after create and on slug/aliases changes.
 - `agent-memory.ts` write paths (`extractMemoriesFromIssue`, `consolidateMemories`) and `knowledge.ts` write paths (`create`, `update`) now enqueue async embedding jobs after each successful insert/content-change. Tier-3 vector retrieval replaces prior log-and-bail placeholder.
 
 - **Refactored `server/src/services/knowledge-seeds.ts`** — split the

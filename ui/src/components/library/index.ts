@@ -4,6 +4,8 @@ export { FileDiffViewer } from "./FileDiffViewer";
 export { EventHistory, UsageAnalyticsPanel } from "./FileHistory";
 export { FileMetaBar } from "./FileMetaBar";
 export { FileViewer } from "./FileViewer";
+export { KnowledgePageBacklinks } from "./KnowledgePageBacklinks";
+export { KnowledgePageGraph } from "./KnowledgePageGraph";
 export { KnowledgePageViewer } from "./KnowledgePageViewer";
 export { AutoBadge, DocTypeBadge } from "./LibraryBadges";
 export { TreeNode } from "./LibraryFileTree";

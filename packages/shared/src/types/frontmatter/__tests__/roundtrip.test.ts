@@ -33,6 +33,19 @@ const samples: AnyFrontmatter[] = [
     project_id: "project-1",
   } satisfies KnowledgeFrontmatter,
   {
+    id: "k2",
+    type: "knowledge",
+    title: "Knowledge with aliases",
+    created_at: ts,
+    updated_at: ts,
+    tags: [],
+    visibility: "company",
+    slug: "current-slug",
+    aliases: ["old-slug", "even-older"],
+    auto_generated: false,
+    revision_number: 1,
+  } satisfies KnowledgeFrontmatter,
+  {
     id: "d1",
     type: "decision",
     title: "Adopt Postgres pgvector",
@@ -132,6 +145,51 @@ describe("renderFrontmatter -> parseFrontmatter round-trip", () => {
       expect(body).toBe("# Body\n\nSome content.");
     });
   }
+
+  describe("knowledge aliases field", () => {
+    const baseKnowledge = {
+      id: "k-aliases",
+      type: "knowledge" as const,
+      title: "Aliases test",
+      created_at: ts,
+      updated_at: ts,
+      tags: [],
+      visibility: "company" as const,
+      slug: "current",
+      auto_generated: false,
+      revision_number: 0,
+    };
+
+    it("round-trips aliases: ['old-slug', 'even-older'] intact", () => {
+      const fm: KnowledgeFrontmatter = {
+        ...baseKnowledge,
+        aliases: ["old-slug", "even-older"],
+      };
+      const md = `${renderFrontmatter(fm)}# B`;
+      const { fm: parsed } = parseFrontmatter(md);
+      expect(parsed).toEqual(fm);
+      expect((parsed as KnowledgeFrontmatter).aliases).toEqual(["old-slug", "even-older"]);
+    });
+
+    it("empty aliases: [] round-trips as empty array (js-yaml emits `aliases: []`)", () => {
+      const fm: KnowledgeFrontmatter = { ...baseKnowledge, aliases: [] };
+      const rendered = renderFrontmatter(fm);
+      // js-yaml emits flow-style `[]` for empty arrays — assert it's there + parses cleanly.
+      expect(rendered).toContain("aliases: []");
+      const { fm: parsed } = parseFrontmatter(`${rendered}# B`);
+      expect((parsed as KnowledgeFrontmatter).aliases).toEqual([]);
+    });
+
+    it("YAML without aliases parses to aliases: undefined", () => {
+      // Render a sample that has no aliases set — stripUndefined drops the key.
+      const fm: KnowledgeFrontmatter = { ...baseKnowledge, title: "No alias key" };
+      const rendered = renderFrontmatter(fm);
+      // Match the YAML key form specifically, not substring (title etc. could contain the word).
+      expect(rendered).not.toMatch(/^aliases:/m);
+      const { fm: parsed } = parseFrontmatter(`${rendered}# B`);
+      expect((parsed as KnowledgeFrontmatter).aliases).toBeUndefined();
+    });
+  });
 
   it("body is preserved verbatim when concatenated with rendered frontmatter", () => {
     const fm = samples[0];

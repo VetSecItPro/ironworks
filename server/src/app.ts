@@ -48,6 +48,7 @@ import { hiringRoutes } from "./routes/hiring.js";
 import { instanceSettingsRoutes } from "./routes/instance-settings.js";
 import { issueRoutes } from "./routes/issues.js";
 import { knowledgeRoutes } from "./routes/knowledge.js";
+import { knowledgeLinksRoutes } from "./routes/knowledge-links.js";
 import { libraryRoutes } from "./routes/library.js";
 import { llmRoutes } from "./routes/llms.js";
 import { mcpServerRoutes } from "./routes/mcp-servers.js";
@@ -372,6 +373,7 @@ export async function createApp(
   api.use(libraryRoutes(db));
   api.use(playbookRoutes(db));
   api.use(knowledgeRoutes(db));
+  api.use(knowledgeLinksRoutes(db));
   api.use(hiringRoutes(db));
   api.use(agentMemoryRoutes(db));
   api.use(announcementRoutes(db));

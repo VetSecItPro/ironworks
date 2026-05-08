@@ -41,6 +41,12 @@ export const knowledgePages = pgTable(
      * Set automatically when document_type is a deliverable type and auto_generated = true.
      */
     deliverableStatus: text("deliverable_status"),
+    /**
+     * Author-controlled aliases parsed from YAML frontmatter.
+     * Used by the wikilink resolver to match `[[slug]]` against alternate names.
+     * Persisted by knowledge.create/update write paths after frontmatter parse.
+     */
+    aliases: text("aliases").array().notNull().default([]),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

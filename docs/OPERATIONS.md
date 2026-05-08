@@ -278,6 +278,46 @@ A worker that crashes mid-tick has its claimed jobs reclaimed automatically afte
 
 ---
 
+## Knowledge link graph
+
+### Backfill
+
+After deploying P1 (link graph), backfill existing pages once:
+
+```bash
+pnpm tsx scripts/backfill-knowledge-links.ts
+```
+
+This iterates every `knowledge_pages` row, parses `[[wikilinks]]` in the body, and populates `knowledge_page_links` rows. Idempotent - safe to re-run.
+
+### Investigating broken links
+
+Find every unresolved link in a company:
+
+```sql
+SELECT kpl.unresolved_slug, kp.slug AS source_page, kp.title
+FROM knowledge_page_links kpl
+JOIN knowledge_pages kp ON kp.id = kpl.from_id
+WHERE kpl.company_id = '<company-id>' AND kpl.to_id IS NULL
+ORDER BY kpl.created_at DESC;
+```
+
+Broken links auto-resolve when a page is created with the matching slug or alias.
+
+### Pages with most inbound links
+
+```sql
+SELECT kp.slug, kp.title, count(*) AS inbound
+FROM knowledge_page_links kpl
+JOIN knowledge_pages kp ON kp.id = kpl.to_id
+WHERE kpl.company_id = '<company-id>'
+GROUP BY kp.id, kp.slug, kp.title
+ORDER BY inbound DESC
+LIMIT 20;
+```
+
+---
+
 ## 9. Filing an incident
 
 When something genuinely breaks in prod:
