@@ -1,6 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { parseFrontmatter } from "../parse.js";
-import { renderFrontmatter } from "../render.js";
 import type {
   AgentFrontmatter,
   AnyFrontmatter,
@@ -11,6 +9,8 @@ import type {
   RunFrontmatter,
   SkillFrontmatter,
 } from "../index.js";
+import { parseFrontmatter } from "../parse.js";
+import { renderFrontmatter } from "../render.js";
 
 const ts = "2026-05-08T12:00:00.000Z";
 

@@ -21,7 +21,7 @@
  * the terminal `failed` state and stops being claimed.
  */
 
-import { type Db, chunkingJobs, embeddingJobs } from "@ironworksai/db";
+import { chunkingJobs, type Db, embeddingJobs } from "@ironworksai/db";
 import { and, eq, lt, sql } from "drizzle-orm";
 
 export type EmbeddingJobTarget = "memory" | "chunk";
@@ -79,10 +79,7 @@ export async function enqueueEmbeddingJob(
  * the column for symmetry with embedding_jobs and to make future target
  * kinds (e.g. `'document'`) cheap.
  */
-export async function enqueueChunkingJob(
-  db: Db,
-  args: { pageId: string; companyId: string },
-): Promise<void> {
+export async function enqueueChunkingJob(db: Db, args: { pageId: string; companyId: string }): Promise<void> {
   await db
     .insert(chunkingJobs)
     .values({

@@ -1,9 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  __resetEmbeddingFactoryWarnings,
-  getChunkProvider,
-  getMemoryProvider,
-} from "../factory.js";
+import { __resetEmbeddingFactoryWarnings, getChunkProvider, getMemoryProvider } from "../factory.js";
 import { NoOpProvider } from "../providers/noop.js";
 import { OllamaProvider } from "../providers/ollama.js";
 import { OpenAIProvider } from "../providers/openai.js";

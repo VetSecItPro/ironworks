@@ -1,14 +1,13 @@
-export type { BaseFrontmatter, EntityType } from "./base.js";
-export type { KnowledgeFrontmatter } from "./knowledge.js";
-export type { DecisionFrontmatter } from "./decision.js";
-export type { SkillFrontmatter } from "./skill.js";
 export type { AgentFrontmatter } from "./agent.js";
-export type { ProjectFrontmatter } from "./project.js";
+export type { BaseFrontmatter, EntityType } from "./base.js";
+export type { DecisionFrontmatter } from "./decision.js";
 export type { IssueFrontmatter } from "./issue.js";
-export type { RunFrontmatter } from "./run.js";
-
-export { renderFrontmatter } from "./render.js";
+export type { KnowledgeFrontmatter } from "./knowledge.js";
 export { parseFrontmatter } from "./parse.js";
+export type { ProjectFrontmatter } from "./project.js";
+export { renderFrontmatter } from "./render.js";
+export type { RunFrontmatter } from "./run.js";
+export type { SkillFrontmatter } from "./skill.js";
 
 import type { AgentFrontmatter } from "./agent.js";
 import type { DecisionFrontmatter } from "./decision.js";

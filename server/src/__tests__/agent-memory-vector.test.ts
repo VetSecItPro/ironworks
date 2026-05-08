@@ -251,7 +251,8 @@ describe("agent-memory tier-3 vector retrieval", () => {
       const db = {
         execute: vi.fn().mockImplementation(() => Promise.resolve([{ "?column?": 1 }])),
         select: vi.fn().mockImplementation((projection: unknown) => {
-          const keys = projection && typeof projection === "object" ? Object.keys(projection as Record<string, unknown>) : [];
+          const keys =
+            projection && typeof projection === "object" ? Object.keys(projection as Record<string, unknown>) : [];
           const c: Record<string, unknown> = {};
           c.from = vi.fn().mockReturnValue(c);
           c.where = vi.fn().mockReturnValue(c);

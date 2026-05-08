@@ -1,14 +1,11 @@
 import { randomUUID } from "node:crypto";
-import {
-  type ChunkingJob,
-  chunkingJobs,
-  companies,
-  createDb,
-  type EmbeddingJob,
-  embeddingJobs,
-} from "@ironworksai/db";
+import { type ChunkingJob, chunkingJobs, companies, createDb, type EmbeddingJob, embeddingJobs } from "@ironworksai/db";
 import { eq } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import {
+  getEmbeddedPostgresTestSupport,
+  startEmbeddedPostgresTestDatabase,
+} from "../../../__tests__/helpers/embedded-postgres.js";
 import {
   claimChunkingJobs,
   claimEmbeddingJobs,
@@ -16,26 +13,20 @@ import {
   enqueueEmbeddingJob,
   getChunkingJobStats,
   getEmbeddingJobStats,
+  MAX_ATTEMPTS,
   markChunkingJobDone,
   markChunkingJobError,
   markEmbeddingJobDone,
   markEmbeddingJobError,
-  MAX_ATTEMPTS,
   reclaimStaleChunkingJobs,
   reclaimStaleEmbeddingJobs,
 } from "../queue.js";
-import {
-  getEmbeddedPostgresTestSupport,
-  startEmbeddedPostgresTestDatabase,
-} from "../../../__tests__/helpers/embedded-postgres.js";
 
 const support = await getEmbeddedPostgresTestSupport();
 const describeIfSupported = support.supported ? describe : describe.skip;
 
 if (!support.supported) {
-  console.warn(
-    `Skipping embedding queue tests on this host: ${support.reason ?? "unsupported environment"}`,
-  );
+  console.warn(`Skipping embedding queue tests on this host: ${support.reason ?? "unsupported environment"}`);
 }
 
 describeIfSupported("embeddings queue", () => {
@@ -138,10 +129,7 @@ describeIfSupported("embeddings queue", () => {
     await enqueueEmbeddingJob(db, { targetType: "memory", targetId: exhaustedId, companyId });
 
     // Manually pin the second row to exhausted-but-status-pending (defensive case).
-    await db
-      .update(embeddingJobs)
-      .set({ attempts: MAX_ATTEMPTS })
-      .where(eq(embeddingJobs.targetId, exhaustedId));
+    await db.update(embeddingJobs).set({ attempts: MAX_ATTEMPTS }).where(eq(embeddingJobs.targetId, exhaustedId));
 
     const claimed = await claimEmbeddingJobs(db, 10);
     expect(claimed).toHaveLength(1);
@@ -221,10 +209,7 @@ describeIfSupported("embeddings queue", () => {
 
     // Backdate the stale row's claimed_at by an hour.
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    await db
-      .update(embeddingJobs)
-      .set({ claimedAt: oneHourAgo })
-      .where(eq(embeddingJobs.targetId, staleId));
+    await db.update(embeddingJobs).set({ claimedAt: oneHourAgo }).where(eq(embeddingJobs.targetId, staleId));
 
     // Reclaim with 5-minute staleness window.
     const reclaimed = await reclaimStaleEmbeddingJobs(db, 5 * 60 * 1000);
@@ -280,10 +265,7 @@ describeIfSupported("embeddings queue", () => {
   it("enqueueChunkingJob is idempotent on (target_type, target_id)", async () => {
     const pageId = randomUUID();
     await enqueueChunkingJob(db, { pageId, companyId });
-    await db
-      .update(chunkingJobs)
-      .set({ attempts: 2, lastError: "x" })
-      .where(eq(chunkingJobs.targetId, pageId));
+    await db.update(chunkingJobs).set({ attempts: 2, lastError: "x" }).where(eq(chunkingJobs.targetId, pageId));
 
     await enqueueChunkingJob(db, { pageId, companyId });
 
@@ -345,10 +327,7 @@ async function fetchOneEmbedding(db: ReturnType<typeof createDb>, id: string): P
   return rows[0];
 }
 
-async function fetchOneByTarget(
-  db: ReturnType<typeof createDb>,
-  targetId: string,
-): Promise<EmbeddingJob> {
+async function fetchOneByTarget(db: ReturnType<typeof createDb>, targetId: string): Promise<EmbeddingJob> {
   const rows = await db.select().from(embeddingJobs).where(eq(embeddingJobs.targetId, targetId));
   if (!rows[0]) throw new Error(`embedding_jobs row not found by target: ${targetId}`);
   return rows[0];
@@ -360,10 +339,7 @@ async function fetchOneChunking(db: ReturnType<typeof createDb>, id: string): Pr
   return rows[0];
 }
 
-async function fetchOneByTargetChunking(
-  db: ReturnType<typeof createDb>,
-  targetId: string,
-): Promise<ChunkingJob> {
+async function fetchOneByTargetChunking(db: ReturnType<typeof createDb>, targetId: string): Promise<ChunkingJob> {
   const rows = await db.select().from(chunkingJobs).where(eq(chunkingJobs.targetId, targetId));
   if (!rows[0]) throw new Error(`chunking_jobs row not found by target: ${targetId}`);
   return rows[0];

@@ -1,6 +1,5 @@
-import { describe, expect, it } from "vitest";
 import yaml from "js-yaml";
-import { renderFrontmatter } from "../render.js";
+import { describe, expect, it } from "vitest";
 import type {
   AgentFrontmatter,
   DecisionFrontmatter,
@@ -10,6 +9,7 @@ import type {
   RunFrontmatter,
   SkillFrontmatter,
 } from "../index.js";
+import { renderFrontmatter } from "../render.js";
 
 const ts = "2026-05-08T12:00:00.000Z";
 

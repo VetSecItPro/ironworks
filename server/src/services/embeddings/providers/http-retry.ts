@@ -34,11 +34,7 @@ const defaultSleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
  * `Response` on success (caller parses body); throws if all retries are
  * exhausted or the failure is non-retriable.
  */
-export async function fetchWithRetry(
-  url: string,
-  init: RequestInit,
-  opts: RetryOptions,
-): Promise<Response> {
+export async function fetchWithRetry(url: string, init: RequestInit, opts: RetryOptions): Promise<Response> {
   const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const sleep = opts.sleep ?? defaultSleep;
 
@@ -58,27 +54,19 @@ export async function fetchWithRetry(
       if (res.status === 429) {
         if (attempt < MAX_ATTEMPTS - 1) {
           await sleep(RATE_LIMIT_BACKOFF_MS[attempt] ?? 60_000);
-          lastErr = new Error(
-            `${opts.providerName} 429 rate-limited (attempt ${attempt + 1}): ${errText}`,
-          );
+          lastErr = new Error(`${opts.providerName} 429 rate-limited (attempt ${attempt + 1}): ${errText}`);
           continue;
         }
-        throw new Error(
-          `${opts.providerName} 429 rate-limited after ${MAX_ATTEMPTS} attempts: ${errText}`,
-        );
+        throw new Error(`${opts.providerName} 429 rate-limited after ${MAX_ATTEMPTS} attempts: ${errText}`);
       }
 
       if (res.status >= 500) {
         if (attempt < MAX_ATTEMPTS - 1) {
           await sleep(STANDARD_BACKOFF_MS[attempt] ?? 4_000);
-          lastErr = new Error(
-            `${opts.providerName} ${res.status} (attempt ${attempt + 1}): ${errText}`,
-          );
+          lastErr = new Error(`${opts.providerName} ${res.status} (attempt ${attempt + 1}): ${errText}`);
           continue;
         }
-        throw new Error(
-          `${opts.providerName} ${res.status} after ${MAX_ATTEMPTS} attempts: ${errText}`,
-        );
+        throw new Error(`${opts.providerName} ${res.status} after ${MAX_ATTEMPTS} attempts: ${errText}`);
       }
 
       // 4xx (not 429) - client error, no retry.
@@ -90,21 +78,15 @@ export async function fetchWithRetry(
         // Timeout - treat like 5xx and retry.
         if (attempt < MAX_ATTEMPTS - 1) {
           await sleep(STANDARD_BACKOFF_MS[attempt] ?? 4_000);
-          lastErr = new Error(
-            `${opts.providerName} request timed out after ${timeoutMs}ms (attempt ${attempt + 1})`,
-          );
+          lastErr = new Error(`${opts.providerName} request timed out after ${timeoutMs}ms (attempt ${attempt + 1})`);
           continue;
         }
-        throw new Error(
-          `${opts.providerName} request timed out after ${MAX_ATTEMPTS} attempts (${timeoutMs}ms each)`,
-        );
+        throw new Error(`${opts.providerName} request timed out after ${MAX_ATTEMPTS} attempts (${timeoutMs}ms each)`);
       }
       // Non-retriable thrown error (e.g. 4xx synth above) - bubble.
       throw err;
     }
   }
   // Unreachable in practice, but TS needs it.
-  throw lastErr instanceof Error
-    ? lastErr
-    : new Error(`${opts.providerName}: exhausted retries`);
+  throw lastErr instanceof Error ? lastErr : new Error(`${opts.providerName}: exhausted retries`);
 }

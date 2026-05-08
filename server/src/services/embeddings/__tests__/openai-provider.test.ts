@@ -55,9 +55,7 @@ describe("OpenAIProvider", () => {
       dims: 4,
       sleep: async () => {},
     });
-    fetchSpy.mockResolvedValueOnce(
-      mockResponse(200, { data: [{ embedding: [0.1, 0.2, 0.3, 0.4], index: 0 }] }),
-    );
+    fetchSpy.mockResolvedValueOnce(mockResponse(200, { data: [{ embedding: [0.1, 0.2, 0.3, 0.4], index: 0 }] }));
     const out = await p.embed("hello");
     expect(out).toEqual([0.1, 0.2, 0.3, 0.4]);
 
@@ -80,9 +78,7 @@ describe("OpenAIProvider", () => {
       dims: 4,
       sleep: async () => {},
     });
-    fetchSpy.mockResolvedValueOnce(
-      mockResponse(200, { data: [{ embedding: [0.1, 0.2] }] }),
-    );
+    fetchSpy.mockResolvedValueOnce(mockResponse(200, { data: [{ embedding: [0.1, 0.2] }] }));
     await expect(p.embed("x")).rejects.toThrow(/dim mismatch.*got 2.*expected 4/);
   });
 
@@ -112,9 +108,7 @@ describe("OpenAIProvider", () => {
     fetchSpy
       .mockResolvedValueOnce(mockResponse(500, { error: "boom" }))
       .mockResolvedValueOnce(mockResponse(503, { error: "still" }))
-      .mockResolvedValueOnce(
-        mockResponse(200, { data: [{ embedding: vec(4, 0.5) }] }),
-      );
+      .mockResolvedValueOnce(mockResponse(200, { data: [{ embedding: vec(4, 0.5) }] }));
     const out = await p.embed("x");
     expect(out).toEqual([0.5, 0.5, 0.5, 0.5]);
     expect(fetchSpy).toHaveBeenCalledTimes(3);
@@ -164,9 +158,7 @@ describe("OpenAIProvider", () => {
           });
         });
       }
-      return Promise.resolve(
-        mockResponse(200, { data: [{ embedding: vec(4, 1) }] }),
-      );
+      return Promise.resolve(mockResponse(200, { data: [{ embedding: vec(4, 1) }] }));
     });
     const out = await p.embed("x");
     expect(out).toEqual([1, 1, 1, 1]);
@@ -217,9 +209,7 @@ describe("OpenAIProvider", () => {
       dims: 2,
       sleep: async () => {},
     });
-    fetchSpy.mockResolvedValueOnce(
-      mockResponse(200, { data: [{ embedding: [1, 2] }] }),
-    );
+    fetchSpy.mockResolvedValueOnce(mockResponse(200, { data: [{ embedding: [1, 2] }] }));
     await expect(p.embedBatch(["a", "b"])).rejects.toThrow(/returned 1 .* for 2/);
   });
 

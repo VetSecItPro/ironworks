@@ -63,8 +63,7 @@ function resolve(opts: ResolveOptions): EmbeddingProvider {
       return new OpenAIProvider(key, model);
     }
     case "ollama": {
-      const url =
-        process.env.OLLAMA_CLOUD_URL ?? "http://localhost:11434/api/embeddings";
+      const url = process.env.OLLAMA_CLOUD_URL ?? "http://localhost:11434/api/embeddings";
       const apiKey = process.env.OLLAMA_API_KEY;
       return new OllamaProvider(url, model, apiKey);
     }

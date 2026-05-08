@@ -1,20 +1,6 @@
 export { deriveAgentUrlKey, isUuidLike, normalizeAgentUrlKey } from "./agent-url-key.js";
 export { API, API_PREFIX } from "./api.js";
 export {
-  type AgentFrontmatter,
-  type AnyFrontmatter,
-  type BaseFrontmatter,
-  type DecisionFrontmatter,
-  type EntityType,
-  type IssueFrontmatter,
-  type KnowledgeFrontmatter,
-  parseFrontmatter,
-  type ProjectFrontmatter,
-  renderFrontmatter as renderEntityFrontmatter,
-  type RunFrontmatter,
-  type SkillFrontmatter,
-} from "./types/frontmatter/index.js";
-export {
   type AuthConfig,
   authConfigSchema,
   type ConfigMeta,
@@ -217,6 +203,20 @@ export {
   parseProjectMentionHref,
 } from "./project-mentions.js";
 export { deriveProjectUrlKey, normalizeProjectUrlKey } from "./project-url-key.js";
+export {
+  type AgentFrontmatter,
+  type AnyFrontmatter,
+  type BaseFrontmatter,
+  type DecisionFrontmatter,
+  type EntityType,
+  type IssueFrontmatter,
+  type KnowledgeFrontmatter,
+  type ProjectFrontmatter,
+  parseFrontmatter,
+  type RunFrontmatter,
+  renderFrontmatter as renderEntityFrontmatter,
+  type SkillFrontmatter,
+} from "./types/frontmatter/index.js";
 export type {
   ActivityEvent,
   AdapterEnvironmentCheck,

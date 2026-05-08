@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { parseFrontmatter } from "../parse.js";
 import type { KnowledgeFrontmatter } from "../index.js";
+import { parseFrontmatter } from "../parse.js";
 
 describe("parseFrontmatter", () => {
   it("parses a document with frontmatter into fm + body", () => {

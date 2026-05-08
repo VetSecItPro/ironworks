@@ -551,10 +551,7 @@ function formatVectorLiteral(vec: number[]): string {
  * Errors are logged at debug level — provider misconfiguration already
  * warn-once'd at the factory layer; we don't want every read to re-shout.
  */
-async function embedQueryText(
-  provider: EmbeddingProvider,
-  queryText: string,
-): Promise<number[] | null> {
+async function embedQueryText(provider: EmbeddingProvider, queryText: string): Promise<number[] | null> {
   if (provider.name === "noop") return null;
   try {
     const vec = await provider.embed(queryText);

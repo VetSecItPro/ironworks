@@ -47,12 +47,7 @@ export class OllamaProvider implements EmbeddingProvider {
   private readonly apiKey: string | undefined;
   private readonly retryOpts: RetryOptions;
 
-  constructor(
-    baseUrl: string,
-    model: string = DEFAULT_MODEL,
-    apiKey?: string,
-    options: OllamaProviderOptions = {},
-  ) {
+  constructor(baseUrl: string, model: string = DEFAULT_MODEL, apiKey?: string, options: OllamaProviderOptions = {}) {
     if (!baseUrl) {
       throw new Error("OllamaProvider requires a non-empty baseUrl");
     }

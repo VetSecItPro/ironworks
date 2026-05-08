@@ -57,7 +57,6 @@ import { oauthLoginRoutes } from "./routes/oauth-login.js";
 import { playbookRoutes } from "./routes/playbooks.js";
 import { playgroundRoutes } from "./routes/playground.js";
 import { privacyRoutes, startRetentionScheduler } from "./routes/privacy.js";
-import { startEmbeddingsScheduler } from "./services/embeddings/scheduler.js";
 import { projectRoutes } from "./routes/projects.js";
 import { providerRoutes } from "./routes/providers.js";
 import { roleTemplateRoutes } from "./routes/role-templates.js";
@@ -71,6 +70,7 @@ import { slimRoutes } from "./routes/slim.js";
 import { sseRoutes } from "./routes/sse.js";
 import { supportPublicRoutes } from "./routes/support.js";
 import { teamTemplateRoutes } from "./routes/team-templates.js";
+import { startEmbeddingsScheduler } from "./services/embeddings/scheduler.js";
 import type { StorageService } from "./storage/types.js";
 import { applyUiBranding } from "./ui-branding.js";
 

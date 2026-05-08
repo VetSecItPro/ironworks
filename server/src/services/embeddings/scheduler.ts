@@ -17,9 +17,7 @@
 
 import type { Db } from "@ironworksai/db";
 import { logger } from "../../middleware/logger.js";
-import {
-  embeddingJobsPending,
-} from "../../observability/metrics.js";
+import { embeddingJobsPending } from "../../observability/metrics.js";
 import { getChunkingJobStats, getEmbeddingJobStats } from "./queue.js";
 import { tickEmbeddingWorker } from "./worker.js";
 

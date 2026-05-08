@@ -14,8 +14,7 @@ export class NoOpProvider implements EmbeddingProvider {
   readonly model = "noop" as const;
   readonly dims = 0;
 
-  private static readonly MESSAGE =
-    "EmbeddingProvider not configured (provider=noop)";
+  private static readonly MESSAGE = "EmbeddingProvider not configured (provider=noop)";
 
   async embed(_text: string): Promise<number[]> {
     throw new Error(NoOpProvider.MESSAGE);

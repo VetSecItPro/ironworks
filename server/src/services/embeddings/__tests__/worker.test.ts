@@ -26,20 +26,14 @@ import {
 import { __resetMetricsForTests, getRegistry } from "../../../observability/metrics.js";
 import type { EmbeddingProvider } from "../provider.js";
 import { enqueueChunkingJob, enqueueEmbeddingJob, MAX_ATTEMPTS } from "../queue.js";
-import {
-  __getEmbeddingsSchedulerState,
-  startEmbeddingsScheduler,
-  stopEmbeddingsScheduler,
-} from "../scheduler.js";
+import { __getEmbeddingsSchedulerState, startEmbeddingsScheduler, stopEmbeddingsScheduler } from "../scheduler.js";
 import { __resetWorkerNoopWarnings, classifyError, tickEmbeddingWorker } from "../worker.js";
 
 const support = await getEmbeddedPostgresTestSupport();
 const describeIfSupported = support.supported ? describe : describe.skip;
 
 if (!support.supported) {
-  console.warn(
-    `Skipping embedding worker tests on this host: ${support.reason ?? "unsupported environment"}`,
-  );
+  console.warn(`Skipping embedding worker tests on this host: ${support.reason ?? "unsupported environment"}`);
 }
 
 // Stable 1536-dim vector factory (matches agent_memory_entries.embedding column).
@@ -194,10 +188,7 @@ describeIfSupported("embeddings worker", () => {
     expect(provider.embedBatchCount).toBe(1);
 
     for (const id of ids) {
-      const [row] = await db
-        .select()
-        .from(agentMemoryEntries)
-        .where(eq(agentMemoryEntries.id, id));
+      const [row] = await db.select().from(agentMemoryEntries).where(eq(agentMemoryEntries.id, id));
       expect(row?.embedding).toBeTruthy();
       expect(row?.embedding?.length).toBe(1536);
       const job = await fetchEmbedJobByTarget(db, id);
@@ -273,10 +264,7 @@ describeIfSupported("embeddings worker", () => {
     expect(result.chunkDone).toBe(1);
     expect(provider.embedBatchCount).toBe(1);
 
-    const chunks = await db
-      .select()
-      .from(knowledgeChunks)
-      .where(eq(knowledgeChunks.pageId, pageId));
+    const chunks = await db.select().from(knowledgeChunks).where(eq(knowledgeChunks.pageId, pageId));
     expect(chunks).toHaveLength(2);
     for (const c of chunks) {
       expect(c.embedding?.length).toBe(768);
@@ -308,10 +296,7 @@ describeIfSupported("embeddings worker", () => {
       chunkProvider: new FakeChunkProvider(),
     });
 
-    const secondRun = await db
-      .select()
-      .from(knowledgeChunks)
-      .where(eq(knowledgeChunks.pageId, pageId));
+    const secondRun = await db.select().from(knowledgeChunks).where(eq(knowledgeChunks.pageId, pageId));
     expect(secondRun).toHaveLength(2);
     // Ensure the original chunk row is gone (no UUID overlap).
     const originalIds = new Set(firstRun.map((c) => c.id));
@@ -509,11 +494,7 @@ async function seedMemory(
   return id;
 }
 
-async function seedPage(
-  db: ReturnType<typeof createDb>,
-  companyId: string,
-  body: string,
-): Promise<string> {
+async function seedPage(db: ReturnType<typeof createDb>, companyId: string, body: string): Promise<string> {
   const id = randomUUID();
   await db.insert(knowledgePages).values({
     id,

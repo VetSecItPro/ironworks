@@ -21,7 +21,7 @@
  * and trivial to restart on crash.
  */
 
-import { type Db, agentMemoryEntries, knowledgeChunks, knowledgePages } from "@ironworksai/db";
+import { agentMemoryEntries, type Db, knowledgeChunks, knowledgePages } from "@ironworksai/db";
 import { eq, inArray } from "drizzle-orm";
 import { logger } from "../../middleware/logger.js";
 import {
@@ -77,10 +77,7 @@ export function __resetWorkerNoopWarnings(): void {
  * Run a single tick across both queues. Returns counts so callers (the
  * scheduler / tests / metrics) can observe progress.
  */
-export async function tickEmbeddingWorker(
-  db: Db,
-  config: WorkerConfig = {},
-): Promise<WorkerTickResult> {
+export async function tickEmbeddingWorker(db: Db, config: WorkerConfig = {}): Promise<WorkerTickResult> {
   const batchSize = config.batchSize ?? DEFAULT_BATCH_SIZE;
   const memoryProvider = config.memoryProvider ?? getMemoryProvider();
   const chunkProvider = config.chunkProvider ?? getChunkProvider();
@@ -218,10 +215,7 @@ async function processMemoryQueue(
     const { job } = live[i];
     const vec = embeddings[i];
     try {
-      await db
-        .update(agentMemoryEntries)
-        .set({ embedding: vec })
-        .where(eq(agentMemoryEntries.id, job.targetId));
+      await db.update(agentMemoryEntries).set({ embedding: vec }).where(eq(agentMemoryEntries.id, job.targetId));
       await markEmbeddingJobDone(db, job.id);
       done += 1;
     } catch (err) {
@@ -271,10 +265,7 @@ async function processChunkingQueue(
           error_class: errorClass,
         });
       }
-      logger.warn(
-        { err: message, jobId: job.id, pageId: job.targetId },
-        "embeddings worker: chunking job failed",
-      );
+      logger.warn({ err: message, jobId: job.id, pageId: job.targetId }, "embeddings worker: chunking job failed");
       await markChunkingJobError(db, { id: job.id, error: message, isTerminal });
       if (isTerminal) embeddingJobsFailedTotal.inc({ target_type: "page" });
       failed += 1;
@@ -292,16 +283,8 @@ async function processChunkingQueue(
  * Reuses the existing `parsePlaybook` splitter from playbook-chunker.ts so
  * worker output stays format-compatible with the legacy reindex path.
  */
-async function processOneChunkingJob(
-  db: Db,
-  provider: EmbeddingProvider,
-  job: ChunkingJobRow,
-): Promise<void> {
-  const [page] = await db
-    .select()
-    .from(knowledgePages)
-    .where(eq(knowledgePages.id, job.targetId))
-    .limit(1);
+async function processOneChunkingJob(db: Db, provider: EmbeddingProvider, job: ChunkingJobRow): Promise<void> {
+  const [page] = await db.select().from(knowledgePages).where(eq(knowledgePages.id, job.targetId)).limit(1);
   if (!page) {
     throw new Error("target_gone");
   }
@@ -323,8 +306,7 @@ async function processOneChunkingJob(
     department: (typeof fm.department === "string" ? fm.department : null) ?? page.department ?? null,
     ownerRole: typeof fm.owner_role === "string" ? fm.owner_role : null,
     audience: typeof fm.audience === "string" ? fm.audience : null,
-    documentType:
-      (typeof fm.document_type === "string" ? fm.document_type : null) ?? page.documentType ?? null,
+    documentType: (typeof fm.document_type === "string" ? fm.document_type : null) ?? page.documentType ?? null,
     anchor: chunk.anchor,
     heading: chunk.heading,
     headingPath: chunk.headingPath,
@@ -337,10 +319,7 @@ async function processOneChunkingJob(
   // Insert chunk rows first (without embeddings); then embed and update each
   // - matches the legacy reindexPage shape so partial failures still leave
   // FTS-searchable rows behind.
-  const inserted = await db
-    .insert(knowledgeChunks)
-    .values(baseRows)
-    .returning({ id: knowledgeChunks.id });
+  const inserted = await db.insert(knowledgeChunks).values(baseRows).returning({ id: knowledgeChunks.id });
 
   if (provider.name === "noop") {
     // No embedding backend; chunks-only is acceptable, FTS will still serve.
@@ -358,9 +337,7 @@ async function processOneChunkingJob(
   }
 
   if (embeddings.length !== inserted.length) {
-    throw new Error(
-      `embedBatch returned ${embeddings.length} vectors for ${inserted.length} chunks`,
-    );
+    throw new Error(`embedBatch returned ${embeddings.length} vectors for ${inserted.length} chunks`);
   }
 
   for (let i = 0; i < inserted.length; i++) {
@@ -406,13 +383,7 @@ function warnOnce(key: string, msg: string): void {
  *   "openai: embedding dim mismatch - got 1024, expected 1536 ..."
  * This is a best-effort string match; the cardinality is deliberately small.
  */
-export type EmbeddingErrorClass =
-  | "rate_limit"
-  | "server_error"
-  | "client_error"
-  | "timeout"
-  | "dim_mismatch"
-  | "other";
+export type EmbeddingErrorClass = "rate_limit" | "server_error" | "client_error" | "timeout" | "dim_mismatch" | "other";
 
 export function classifyError(message: string): EmbeddingErrorClass {
   const m = message.toLowerCase();

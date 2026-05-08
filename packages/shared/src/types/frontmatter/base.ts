@@ -3,14 +3,7 @@
  * one of these literals so downstream code (export, import, vault render)
  * can route via a discriminated union.
  */
-export type EntityType =
-  | "knowledge"
-  | "decision"
-  | "skill"
-  | "agent"
-  | "project"
-  | "issue"
-  | "run";
+export type EntityType = "knowledge" | "decision" | "skill" | "agent" | "project" | "issue" | "run";
 
 /**
  * Fields shared by every entity's frontmatter. All other Frontmatter

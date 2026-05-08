@@ -48,11 +48,7 @@ export class OpenAIProvider implements EmbeddingProvider {
   private readonly apiKey: string;
   private readonly retryOpts: RetryOptions;
 
-  constructor(
-    apiKey: string,
-    model: string = "text-embedding-3-small",
-    options: OpenAIProviderOptions = {},
-  ) {
+  constructor(apiKey: string, model: string = "text-embedding-3-small", options: OpenAIProviderOptions = {}) {
     if (!apiKey) {
       throw new Error("OpenAIProvider requires a non-empty apiKey");
     }
@@ -85,15 +81,11 @@ export class OpenAIProvider implements EmbeddingProvider {
       const res = await this.request({ input: chunk, model: this.model });
       const data = res.data ?? [];
       if (data.length !== chunk.length) {
-        throw new Error(
-          `openai: batch returned ${data.length} embeddings for ${chunk.length} inputs`,
-        );
+        throw new Error(`openai: batch returned ${data.length} embeddings for ${chunk.length} inputs`);
       }
       // OpenAI's response includes an `index` field; sort by it just in case
       // upstream ever returns out of order. Default index is positional.
-      const sorted = [...data].sort(
-        (a, b) => (a.index ?? 0) - (b.index ?? 0),
-      );
+      const sorted = [...data].sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
       for (const item of sorted) {
         if (!item.embedding) {
           throw new Error("openai: batch response had a missing embedding");
