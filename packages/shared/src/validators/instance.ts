@@ -15,6 +15,17 @@ export const schedulerSettingsSchema = z.object({
   heartbeatSafetyNetMinutes: z.number().int().min(5).max(60).default(30),
 });
 
+/**
+ * Instance-wide note persistence preferences. When `persistRunNotes` is true,
+ * agent run notes are written to the vault as markdown alongside frontmatter;
+ * when false (default), they stay ephemeral. `persistDecisionNotes` defaults
+ * to true because decisions are higher-signal and worth persisting by default.
+ */
+export const instanceNotesSettingsSchema = z.object({
+  persistRunNotes: z.boolean().default(false),
+  persistDecisionNotes: z.boolean().default(true),
+});
+
 export const instanceGeneralSettingsSchema = z
   .object({
     censorUsernameInLogs: z.boolean().default(false),
@@ -28,6 +39,7 @@ export const instanceGeneralSettingsSchema = z
      * Empty/absent → no prepend, behavior unchanged.
      */
     promptPreamble: z.string().max(4000).optional(),
+    notes: instanceNotesSettingsSchema.optional(),
   })
   .strict();
 
@@ -35,9 +47,17 @@ export const instanceGeneralSettingsSchema = z
 // absent fields into the parsed body — the service layer uses key presence to
 // determine which columns to write. We redeclare the defaulted fields without
 // defaults so the parsed object only contains keys the caller actually sent.
+// Patch variant for `notes`: redeclare without defaults so absent inner keys
+// don't get materialized at parse time — service-layer merging owns defaults.
+export const patchInstanceNotesSettingsSchema = z.object({
+  persistRunNotes: z.boolean().optional(),
+  persistDecisionNotes: z.boolean().optional(),
+});
+
 export const patchInstanceGeneralSettingsSchema = instanceGeneralSettingsSchema.partial().extend({
   censorUsernameInLogs: z.boolean().optional(),
   promptPreamble: z.string().max(4000).optional(),
+  notes: patchInstanceNotesSettingsSchema.optional(),
 });
 
 export const instanceExperimentalSettingsSchema = z
@@ -53,6 +73,8 @@ export const patchInstanceExperimentalSettingsSchema = instanceExperimentalSetti
 });
 
 export type SchedulerSettings = z.infer<typeof schedulerSettingsSchema>;
+export type InstanceNotesSettings = z.infer<typeof instanceNotesSettingsSchema>;
+export type PatchInstanceNotesSettings = z.infer<typeof patchInstanceNotesSettingsSchema>;
 export type InstanceGeneralSettings = z.infer<typeof instanceGeneralSettingsSchema>;
 export type PatchInstanceGeneralSettings = z.infer<typeof patchInstanceGeneralSettingsSchema>;
 export type InstanceExperimentalSettings = z.infer<typeof instanceExperimentalSettingsSchema>;

@@ -112,6 +112,13 @@ export interface KnowledgePageInput {
   department?: string | null;
   /** Optional folder prefix for the slug (e.g. "hr", "engineering", "projects/my-project"). */
   folder?: string | null;
+  /**
+   * Optional explicit slug. When provided, bypasses title-based slugification
+   * and folder prefix logic. Used by periodic-note emitters (run-notes,
+   * decision-notes, cost-rollups) which need deterministic, structured slugs
+   * like `agents/<slug>/runs/<date>/<id>`. Still subject to uniqueness check.
+   */
+  slug?: string;
 }
 
 export interface KnowledgePageUpdateInput {
@@ -170,9 +177,15 @@ export function knowledgeService(db: Db) {
         throw new Error("Page body exceeds 100KB limit");
       }
 
-      const baseSlug = slugify(input.title);
-      const folderPrefix = input.folder?.trim().replace(/\/+$/, "");
-      const rawSlug = folderPrefix ? `${folderPrefix}/${baseSlug}` : baseSlug;
+      let rawSlug: string;
+      if (input.slug) {
+        // Explicit slug override (e.g. periodic-note emitters needing structured paths).
+        rawSlug = input.slug;
+      } else {
+        const baseSlug = slugify(input.title);
+        const folderPrefix = input.folder?.trim().replace(/\/+$/, "");
+        rawSlug = folderPrefix ? `${folderPrefix}/${baseSlug}` : baseSlug;
+      }
       const slug = await ensureUniqueSlug(db, companyId, rawSlug);
       const aliases = extractAliases(body);
 

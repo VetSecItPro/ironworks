@@ -6,6 +6,7 @@ All notable changes to IronWorks are documented in this file.
 
 ### Added
 
+- **Periodic notes + cost rollups (P2).** Agent run completions optionally emit knowledge pages at `agents/<slug>/runs/<YYYY-MM-DD>/<run-id>.md` (opt-in via `instanceGeneralSettings.notes.persistRunNotes`). Decisions logged via `logDecisions` auto-emit `decisions/<decision-id>.md` pages with `[[wikilinks]]` to source issue/agent/project (default on, toggle via `notes.persistDecisionNotes`). Weekly + monthly cost rollup pages emit at `finance/cost-rollups/{weekly,monthly}/<period>.md` via cron (Sunday 00:30 CT and 1st 00:30 CT). All notes use canonical Frontmatter types with new `CostRollupFrontmatter`. Periodic-notes scheduler boots in `app.ts` next to embeddings scheduler.
 - **Cross-doc link graph (P1).** `[[slug]]` and `[[slug#anchor]]` wikilink syntax in knowledge pages now parsed on save and stored as graph edges in `knowledge_page_links`. Frontmatter `aliases: []` lets renamed pages keep accepting incoming links. Unresolved slugs persist as broken-link placeholders that auto-rebind when the target page is created. New endpoints: `GET /api/knowledge-pages/:id/backlinks` and `GET /api/knowledge-pages/:id/graph?hops=1|2`. UI: backlinks sidebar + 1-2 hop force-directed graph view (`@xyflow/react`) on `KnowledgePageViewer`. Backfill script: `scripts/backfill-knowledge-links.ts`.
 - **Memory + Knowledge embeddings pipeline (P0).** Async queue (`embedding_jobs`, `chunking_jobs`) drained by in-process `EmbeddingsWorker` writes pgvector embeddings on every memory entry create/update and knowledge_pages chunk on save. Polymorphic `EmbeddingProvider` abstraction (OpenAI default for memory at 1536d, Ollama default for chunks at 768d, NoOp for tests/missing-config). Tier-3 cosine-similarity retrieval activated in `getContextualMemories` and `findRelevantMemories` — agents now find semantically-related context. Backfill: `scripts/backfill-embeddings.ts --target=memory|chunks|both`. New Prometheus metrics: `ironworks_embedding_jobs_pending`, `ironworks_embedding_jobs_failed_total`, `ironworks_embedding_provider_latency_seconds`, `ironworks_embedding_provider_errors_total`.
 - **Canonical Frontmatter types module** at `packages/shared/src/types/frontmatter/` — 7 entity-typed shapes (knowledge, decision, skill, agent, project, issue, run) + render/parse helpers. Reachable via `@ironworksai/shared` and re-exported through `company-portability-shared.ts` for future vault export.
@@ -142,6 +143,9 @@ All notable changes to IronWorks are documented in this file.
 
 ### Changed
 
+- `instanceGeneralSettingsSchema` extended with `notes: { persistRunNotes (default false), persistDecisionNotes (default true) }` section.
+- `EntityType` union and `AnyFrontmatter` discriminated union extended with `cost_rollup` entity type.
+- `KnowledgePageInput` allows optional explicit `slug` for emitters that need deterministic structured slugs (e.g. cost rollups, decisions, runs).
 - `knowledge_pages` now has an `aliases text[]` column (default `'{}'`) for fast slug-alias resolution.
 - `knowledge.create/update/revertToRevision` now run wikilink extraction + sync inside the page write transaction; the rebind janitor also runs after create and on slug/aliases changes.
 - `agent-memory.ts` write paths (`extractMemoriesFromIssue`, `consolidateMemories`) and `knowledge.ts` write paths (`create`, `update`) now enqueue async embedding jobs after each successful insert/content-change. Tier-3 vector retrieval replaces prior log-and-bail placeholder.

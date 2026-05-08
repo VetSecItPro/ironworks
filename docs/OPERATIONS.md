@@ -318,6 +318,67 @@ LIMIT 20;
 
 ---
 
+## Periodic notes + cost rollups (P2)
+
+### Configuration
+
+`instanceGeneralSettings.notes` controls which periodic notes get emitted. Update via Settings → General or PATCH `/api/instance-settings/general`:
+
+| Field | Default | Effect |
+|---|---|---|
+| `persistRunNotes` | `false` | When `true`, every agent run completion emits a knowledge page at `agents/<slug>/runs/<YYYY-MM-DD>/<run-id>.md` |
+| `persistDecisionNotes` | `true` | When `true`, every logged decision emits `decisions/<id>.md` with backlinks to the source issue/agent/project |
+
+Cost rollups always run (no toggle); they're cheap and produce one page per company per period.
+
+### Cron schedules
+
+- Weekly cost rollup: every Sunday 00:30 America/Chicago
+- Monthly cost rollup: 1st of every month 00:30 America/Chicago
+
+Both compute the previous full period (last week / last month) and emit pages with by-agent + by-provider breakdowns. Idempotent - re-running for the same period updates the existing page.
+
+### Investigating periodic notes
+
+Find every run note for an agent in the last 7 days:
+
+```sql
+SELECT slug, title, updated_at
+FROM knowledge_pages
+WHERE company_id = '<company-id>'
+  AND slug LIKE 'agents/<agent-slug>/runs/%'
+  AND updated_at > now() - interval '7 days'
+ORDER BY updated_at DESC;
+```
+
+Find every cost rollup page:
+
+```sql
+SELECT slug, title, updated_at
+FROM knowledge_pages
+WHERE company_id = '<company-id>'
+  AND slug LIKE 'finance/cost-rollups/%'
+ORDER BY updated_at DESC
+LIMIT 24;
+```
+
+Find every decision page emitted in the last 24h:
+
+```sql
+SELECT slug, title, created_at
+FROM knowledge_pages
+WHERE company_id = '<company-id>'
+  AND slug LIKE 'decisions/%'
+  AND created_at > now() - interval '24 hours'
+ORDER BY created_at DESC;
+```
+
+### Disabling periodic notes
+
+Set `notes.persistRunNotes = false` and/or `notes.persistDecisionNotes = false` via Settings → General. Cost rollups don't have a toggle but the scheduler can be commented out in `server/src/app.ts` if needed (rare).
+
+---
+
 ## 9. Filing an incident
 
 When something genuinely breaks in prod:

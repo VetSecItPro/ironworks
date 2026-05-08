@@ -128,6 +128,7 @@ export type {
   BackupRetentionPolicy,
   InstanceExperimentalSettings,
   InstanceGeneralSettings,
+  InstanceNotesSettings,
   InstanceSettings,
   SchedulerSettings,
 } from "./instance.js";

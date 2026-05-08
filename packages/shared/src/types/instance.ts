@@ -13,6 +13,15 @@ export interface SchedulerSettings {
   heartbeatSafetyNetMinutes: number;
 }
 
+/**
+ * Instance-wide note persistence preferences. See validator
+ * `instanceNotesSettingsSchema` for the canonical defaults.
+ */
+export interface InstanceNotesSettings {
+  persistRunNotes: boolean;
+  persistDecisionNotes: boolean;
+}
+
 export interface InstanceGeneralSettings {
   censorUsernameInLogs: boolean;
   backupRetention?: BackupRetentionPolicy;
@@ -24,6 +33,7 @@ export interface InstanceGeneralSettings {
    * Empty/absent → no prepend, behavior unchanged.
    */
   promptPreamble?: string;
+  notes?: InstanceNotesSettings;
 }
 
 export interface InstanceExperimentalSettings {

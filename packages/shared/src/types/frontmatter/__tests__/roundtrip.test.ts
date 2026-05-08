@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type {
   AgentFrontmatter,
   AnyFrontmatter,
+  CostRollupFrontmatter,
   DecisionFrontmatter,
   IssueFrontmatter,
   KnowledgeFrontmatter,
@@ -132,6 +133,25 @@ const samples: AnyFrontmatter[] = [
     finished_at: ts,
     exit_code: 0,
   } satisfies RunFrontmatter,
+  {
+    id: "cr1",
+    type: "cost_rollup",
+    title: "Cost rollup 2026-W18",
+    created_at: ts,
+    updated_at: ts,
+    period_start: "2026-04-27",
+    period_end: "2026-05-03",
+    granularity: "weekly",
+    total_usd: 12.34,
+    by_agent: [
+      { agent_slug: "ada", total_usd: 7.5 },
+      { agent_slug: "linus", total_usd: 4.84 },
+    ],
+    by_provider: [
+      { provider: "anthropic", total_usd: 10.0 },
+      { provider: "openai", total_usd: 2.34 },
+    ],
+  } satisfies CostRollupFrontmatter,
 ];
 
 describe("renderFrontmatter -> parseFrontmatter round-trip", () => {
