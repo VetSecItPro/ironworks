@@ -1,12 +1,5 @@
-import { execFile as execFileCallback } from "node:child_process";
 import fs from "node:fs/promises";
-import path from "node:path";
-import { promisify } from "node:util";
-import {
-  hasSessionCompactionThresholds,
-  resolveSessionCompactionPolicy,
-  type SessionCompactionPolicy,
-} from "@ironworksai/adapter-utils";
+import { hasSessionCompactionThresholds } from "@ironworksai/adapter-utils";
 import type { Db } from "@ironworksai/db";
 import {
   agentRuntimeState,
@@ -25,15 +18,14 @@ import {
   projectWorkspaces,
   skillInvocations,
 } from "@ironworksai/db";
-import type { OutputTokenCategory } from "@ironworksai/shared";
-import { DEFAULT_OUTPUT_TOKEN_LIMITS, WESTERN_COUNCIL_MODELS } from "@ironworksai/shared";
+import { WESTERN_COUNCIL_MODELS } from "@ironworksai/shared";
 import { and, asc, desc, eq, gt, gte, inArray, sql } from "drizzle-orm";
 import type { AdapterExecutionResult, AdapterInvocationMeta } from "../adapters/index.js";
 import { getServerAdapter } from "../adapters/index.js";
 import { parseObject } from "../adapters/utils.js";
 import { createLocalAgentJwt } from "../agent-auth-jwt.js";
 import { notFound } from "../errors.js";
-import { resolveDefaultAgentWorkspaceDir, resolveManagedProjectWorkspaceDir } from "../home-paths.js";
+import { resolveDefaultAgentWorkspaceDir } from "../home-paths.js";
 import { redactCurrentUserText, redactCurrentUserValue } from "../log-redaction.js";
 import { logger } from "../middleware/logger.js";
 import { runsCounter } from "../observability/metrics.js";
@@ -104,23 +96,22 @@ import {
   tickTimers as tickTimersModule,
   withAgentStartLock,
 } from "./heartbeat-scheduling.js";
+import { parseSessionCompactionPolicy, resolveMaxOutputTokens } from "./heartbeat-session-policy.js";
+import { renderTeamDirectory } from "./heartbeat-team-directory.js";
 import {
   appendExcerpt,
   COMPLETION_MARKERS,
   DETACHED_PROCESS_ERROR_CODE,
   deriveNormalizedUsageDelta,
-  deriveTaskKey,
   deriveTaskKeyWithHeartbeatFallback,
   describeSessionResetReason,
   formatCount,
   formatRuntimeWorkspaceWarningLog,
-  MANAGED_WORKSPACE_GIT_CLONE_TIMEOUT_MS,
   MAX_LIVE_LOG_CHUNK_BYTES,
   normalizeAgentNameKey,
   normalizeLedgerBillingType,
   normalizeSessionParams,
   normalizeUsageTotals,
-  type ProjectWorkspaceCandidate,
   parseIssueAssigneeAdapterOverrides,
   REPO_ONLY_CWD_SENTINEL,
   readNonEmptyString,
@@ -133,6 +124,12 @@ import {
   type UsageTotals,
   type WakeupOptions,
 } from "./heartbeat-types.js";
+import {
+  ensureManagedProjectWorkspace,
+  prioritizeProjectWorkspaceCandidatesForRun,
+  type ResolvedWorkspaceForRun,
+  resolveRuntimeSessionParamsForWorkspace,
+} from "./heartbeat-workspace.js";
 import { instanceSettingsService } from "./instance-settings.js";
 import { issueService } from "./issues.js";
 import { publishLiveEvent } from "./live-events.js";
@@ -154,7 +151,7 @@ import {
 import { getRunLogStore, type RunLogHandle } from "./run-log-store.js";
 import { secretService } from "./secrets.js";
 import { type MatchedRecipe, matchSkillsForRun } from "./skill-matching.js";
-import { type FrameworkToolCacheConfig, frameworkCacheGet, frameworkCacheSet, getCacheStats } from "./tool-cache.js";
+import { getCacheStats } from "./tool-cache.js";
 import { workspaceOperationService } from "./workspace-operations.js";
 import {
   buildWorkspaceReadyComment,
@@ -163,133 +160,7 @@ import {
   persistAdapterManagedRuntimeServices,
   realizeExecutionWorkspace,
   releaseRuntimeServicesForRun,
-  sanitizeRuntimeServiceBaseEnv,
 } from "./workspace-runtime.js";
-
-const execFile = promisify(execFileCallback);
-
-// ---------------------------------------------------------------------------
-// First-party read cache configurations
-// ---------------------------------------------------------------------------
-
-/**
- * Team directory: per-agent view of colleagues, sorted by name.
- *
- * TTL 300s — the agent roster changes only on operator action (hire, rename,
- * terminate). A 5-minute window catches any roster change before the next
- * heartbeat while eliminating the 13 identical DB reads that fire when all
- * 13 Atlas Ops agents wake simultaneously. Key includes `currentAgentId`
- * because each agent sees every colleague EXCEPT itself.
- */
-const TEAM_DIRECTORY_CACHE: FrameworkToolCacheConfig = {
-  ttlSeconds: 300,
-  keyFields: ["companyId", "currentAgentId"],
-};
-
-/**
- * Render a per-company colleague directory for substitution into the shared
- * `{{TEAM_DIRECTORY}}` placeholder in COMMON_AGENT_PREAMBLE. Each line is one
- * colleague (excluding self). Falls back to a "no colleagues" stub when the
- * agent is the only one in the company — keeps the prompt structurally valid
- * even on pre-fleet installs.
- *
- * Result is cached for 300 seconds: the colleague list only changes on
- * operator action (hire, rename, terminate), so within a heartbeat cycle
- * all agents beyond the first get a cache hit. Staleness is bounded to
- * one heartbeat cycle at most (default 4-hour interval).
- */
-async function renderTeamDirectory(db: Db, companyId: string, currentAgentId: string): Promise<string> {
-  const cached = frameworkCacheGet<string>(
-    companyId,
-    "renderTeamDirectory",
-    { companyId, currentAgentId },
-    TEAM_DIRECTORY_CACHE,
-  );
-  if (cached.hit) return cached.value;
-
-  const colleagues = await db
-    .select({ name: agents.name, title: agents.title, role: agents.role })
-    .from(agents)
-    .where(
-      and(eq(agents.companyId, companyId), sql`${agents.id} <> ${currentAgentId}`, sql`${agents.terminatedAt} IS NULL`),
-    );
-  const result =
-    colleagues.length === 0
-      ? "_(no other agents on this team yet)_"
-      : colleagues.map((c) => `- ${c.name} (${c.title ?? c.role})`).join("\n");
-
-  frameworkCacheSet(companyId, "renderTeamDirectory", { companyId, currentAgentId }, TEAM_DIRECTORY_CACHE, result);
-  return result;
-}
-
-function deriveRepoNameFromRepoUrl(repoUrl: string | null): string | null {
-  const trimmed = repoUrl?.trim() ?? "";
-  if (!trimmed) return null;
-  try {
-    const parsed = new URL(trimmed);
-    const cleanedPath = parsed.pathname.replace(/\/+$/, "");
-    const repoName =
-      cleanedPath
-        .split("/")
-        .filter(Boolean)
-        .pop()
-        ?.replace(/\.git$/i, "") ?? "";
-    return repoName || null;
-  } catch {
-    return null;
-  }
-}
-
-async function ensureManagedProjectWorkspace(input: {
-  companyId: string;
-  projectId: string;
-  repoUrl: string | null;
-}): Promise<{ cwd: string; warning: string | null }> {
-  const cwd = resolveManagedProjectWorkspaceDir({
-    companyId: input.companyId,
-    projectId: input.projectId,
-    repoName: deriveRepoNameFromRepoUrl(input.repoUrl),
-  });
-  await fs.mkdir(path.dirname(cwd), { recursive: true });
-  const stats = await fs.stat(cwd).catch(() => null);
-
-  if (!input.repoUrl) {
-    if (!stats) {
-      await fs.mkdir(cwd, { recursive: true });
-    }
-    return { cwd, warning: null };
-  }
-
-  const gitDirExists = await fs
-    .stat(path.resolve(cwd, ".git"))
-    .then((entry) => entry.isDirectory())
-    .catch(() => false);
-  if (gitDirExists) {
-    return { cwd, warning: null };
-  }
-
-  if (stats) {
-    const entries = await fs.readdir(cwd).catch(() => []);
-    if (entries.length > 0) {
-      return {
-        cwd,
-        warning: `Managed workspace path "${cwd}" already exists but is not a git checkout. Using it as-is.`,
-      };
-    }
-    await fs.rm(cwd, { recursive: true, force: true });
-  }
-
-  try {
-    await execFile("git", ["clone", input.repoUrl, cwd], {
-      env: sanitizeRuntimeServiceBaseEnv(process.env),
-      timeout: MANAGED_WORKSPACE_GIT_CLONE_TIMEOUT_MS,
-    });
-    return { cwd, warning: null };
-  } catch (error) {
-    const reason = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to prepare managed checkout for "${input.repoUrl}" at "${cwd}": ${reason}`);
-  }
-}
 
 const heartbeatRunListColumns = {
   id: heartbeatRuns.id,
@@ -326,131 +197,11 @@ const heartbeatRunListColumns = {
   updatedAt: heartbeatRuns.updatedAt,
 } as const;
 
-export type ResolvedWorkspaceForRun = {
-  cwd: string;
-  source: "project_primary" | "task_session" | "agent_home";
-  projectId: string | null;
-  workspaceId: string | null;
-  repoUrl: string | null;
-  repoRef: string | null;
-  workspaceHints: Array<{
-    workspaceId: string;
-    cwd: string | null;
-    repoUrl: string | null;
-    repoRef: string | null;
-  }>;
-  warnings: string[];
-};
-
-// ProjectWorkspaceCandidate, prioritizeProjectWorkspaceCandidatesForRun, readNonEmptyString,
-// normalizeLedgerBillingType, resolveLedgerBiller, normalizeBilledCostCents,
-// normalizeUsageTotals, readRawUsageTotals, deriveNormalizedUsageDelta, formatCount,
-// buildExplicitResumeSessionOverride are all imported from heartbeat-types.ts
-
-export function prioritizeProjectWorkspaceCandidatesForRun<T extends ProjectWorkspaceCandidate>(
-  rows: T[],
-  preferredWorkspaceId: string | null | undefined,
-): T[] {
-  if (!preferredWorkspaceId) return rows;
-  const preferredIndex = rows.findIndex((row) => row.id === preferredWorkspaceId);
-  if (preferredIndex <= 0) return rows;
-  return [rows[preferredIndex]!, ...rows.slice(0, preferredIndex), ...rows.slice(preferredIndex + 1)];
-}
-
-async function _resolveLedgerScopeForRun(db: Db, companyId: string, run: typeof heartbeatRuns.$inferSelect) {
-  const context = parseObject(run.contextSnapshot);
-  const contextIssueId = readNonEmptyString(context.issueId);
-  const contextProjectId = readNonEmptyString(context.projectId);
-
-  if (!contextIssueId) {
-    return {
-      issueId: null,
-      projectId: contextProjectId,
-    };
-  }
-
-  const issue = await db
-    .select({
-      id: issues.id,
-      projectId: issues.projectId,
-    })
-    .from(issues)
-    .where(and(eq(issues.id, contextIssueId), eq(issues.companyId, companyId)))
-    .then((rows) => rows[0] ?? null);
-
-  return {
-    issueId: issue?.id ?? null,
-    projectId: issue?.projectId ?? contextProjectId,
-  };
-}
-
-export function parseSessionCompactionPolicy(agent: typeof agents.$inferSelect): SessionCompactionPolicy {
-  return resolveSessionCompactionPolicy(agent.adapterType, agent.runtimeConfig).policy;
-}
-
-export function resolveRuntimeSessionParamsForWorkspace(input: {
-  agentId: string;
-  previousSessionParams: Record<string, unknown> | null;
-  resolvedWorkspace: ResolvedWorkspaceForRun;
-}) {
-  const { agentId, previousSessionParams, resolvedWorkspace } = input;
-  const previousSessionId = readNonEmptyString(previousSessionParams?.sessionId);
-  const previousCwd = readNonEmptyString(previousSessionParams?.cwd);
-  if (!previousSessionId || !previousCwd) {
-    return {
-      sessionParams: previousSessionParams,
-      warning: null as string | null,
-    };
-  }
-  if (resolvedWorkspace.source !== "project_primary") {
-    return {
-      sessionParams: previousSessionParams,
-      warning: null as string | null,
-    };
-  }
-  const projectCwd = readNonEmptyString(resolvedWorkspace.cwd);
-  if (!projectCwd) {
-    return {
-      sessionParams: previousSessionParams,
-      warning: null as string | null,
-    };
-  }
-  const fallbackAgentHomeCwd = resolveDefaultAgentWorkspaceDir(agentId);
-  if (path.resolve(previousCwd) !== path.resolve(fallbackAgentHomeCwd)) {
-    return {
-      sessionParams: previousSessionParams,
-      warning: null as string | null,
-    };
-  }
-  if (path.resolve(projectCwd) === path.resolve(previousCwd)) {
-    return {
-      sessionParams: previousSessionParams,
-      warning: null as string | null,
-    };
-  }
-  const previousWorkspaceId = readNonEmptyString(previousSessionParams?.workspaceId);
-  if (previousWorkspaceId && resolvedWorkspace.workspaceId && previousWorkspaceId !== resolvedWorkspace.workspaceId) {
-    return {
-      sessionParams: previousSessionParams,
-      warning: null as string | null,
-    };
-  }
-
-  const migratedSessionParams: Record<string, unknown> = {
-    ...(previousSessionParams ?? {}),
-    cwd: projectCwd,
-  };
-  if (resolvedWorkspace.workspaceId) migratedSessionParams.workspaceId = resolvedWorkspace.workspaceId;
-  if (resolvedWorkspace.repoUrl) migratedSessionParams.repoUrl = resolvedWorkspace.repoUrl;
-  if (resolvedWorkspace.repoRef) migratedSessionParams.repoRef = resolvedWorkspace.repoRef;
-
-  return {
-    sessionParams: migratedSessionParams,
-    warning:
-      `Project workspace "${projectCwd}" is now available. ` +
-      `Attempting to resume session "${previousSessionId}" that was previously saved in fallback workspace "${previousCwd}".`,
-  };
-}
+// ProjectWorkspaceCandidate, readNonEmptyString, normalizeLedgerBillingType,
+// resolveLedgerBiller, normalizeBilledCostCents, normalizeUsageTotals,
+// readRawUsageTotals, deriveNormalizedUsageDelta, formatCount,
+// buildExplicitResumeSessionOverride are imported from heartbeat-types.ts.
+// prioritizeProjectWorkspaceCandidatesForRun was moved to heartbeat-workspace.ts.
 
 // parseIssueAssigneeAdapterOverrides, HEARTBEAT_TASK_KEY, deriveTaskKey,
 // deriveTaskKeyWithHeartbeatFallback, shouldResetTaskSessionForWake,
@@ -460,6 +211,7 @@ export function resolveRuntimeSessionParamsForWorkspace(input: {
 // truncateDisplayId, normalizeAgentNameKey, normalizeSessionParams,
 // resolveNextSessionState are all imported from heartbeat-types.ts
 
+export { parseSessionCompactionPolicy } from "./heartbeat-session-policy.js";
 // Re-export the functions that are part of the public API of this module
 export {
   buildExplicitResumeSessionOverride,
@@ -468,64 +220,13 @@ export {
   formatRuntimeWorkspaceWarningLog,
   shouldResetTaskSessionForWake,
 } from "./heartbeat-types.js";
-
-function _runTaskKey(run: typeof heartbeatRuns.$inferSelect) {
-  return deriveTaskKey(run.contextSnapshot as Record<string, unknown> | null, null);
-}
-
-/**
- * Classify the output token category for a heartbeat run based on context.
- * Returns the appropriate max_tokens limit from DEFAULT_OUTPUT_TOKEN_LIMITS.
- */
-function classifyOutputTokenCategory(context: Record<string, unknown>, source: string | null): OutputTokenCategory {
-  const issueId = readNonEmptyString(context.issueId);
-  const commentId = readNonEmptyString(context.wakeCommentId) ?? readNonEmptyString(context.commentId);
-  const wakeReason = readNonEmptyString(context.wakeReason);
-
-  // Routine heartbeat with no new work - keep it brief
-  if (source === "timer" && !issueId && !commentId) {
-    return "heartbeat_status";
-  }
-
-  // Responding to a comment - moderate output
-  if (commentId || wakeReason === "issue_comment_mentioned") {
-    return "simple_response";
-  }
-
-  // Working on an issue (code generation / analysis)
-  if (issueId) {
-    return "code_generation";
-  }
-
-  // Default for other wake types (on_demand, assignment, automation)
-  return "code_generation";
-}
-
-/**
- * Resolve the max_tokens value for an agent run.
- * Checks agent runtimeConfig for an explicit override, then falls back to
- * the category-based default from DEFAULT_OUTPUT_TOKEN_LIMITS.
- */
-function resolveMaxOutputTokens(
-  config: Record<string, unknown>,
-  context: Record<string, unknown>,
-  source: string | null,
-): number {
-  // Budget throttle: if 80% of daily gate was hit, the cap was stored in context
-  const throttledCap =
-    typeof context.ironworksBudgetThrottledTokenCap === "number" && context.ironworksBudgetThrottledTokenCap > 0
-      ? context.ironworksBudgetThrottledTokenCap
-      : null;
-  if (throttledCap) return throttledCap;
-
-  // Allow per-agent override via adapterConfig.maxOutputTokens
-  const explicit =
-    typeof config.maxOutputTokens === "number" && config.maxOutputTokens > 0 ? config.maxOutputTokens : null;
-  if (explicit) return explicit;
-
-  const category = classifyOutputTokenCategory(context, source);
-  return DEFAULT_OUTPUT_TOKEN_LIMITS[category];
-}
+// Re-export helpers moved into sibling modules so external callers (and tests)
+// can keep importing them through `services/heartbeat.js`.
+export {
+  prioritizeProjectWorkspaceCandidatesForRun,
+  type ResolvedWorkspaceForRun,
+  resolveRuntimeSessionParamsForWorkspace,
+} from "./heartbeat-workspace.js";
 
 export function heartbeatService(db: Db) {
   const instanceSettings = instanceSettingsService(db);
