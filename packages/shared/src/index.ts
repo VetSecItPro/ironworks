@@ -1,6 +1,20 @@
 export { deriveAgentUrlKey, isUuidLike, normalizeAgentUrlKey } from "./agent-url-key.js";
 export { API, API_PREFIX } from "./api.js";
 export {
+  type AgentFrontmatter,
+  type AnyFrontmatter,
+  type BaseFrontmatter,
+  type DecisionFrontmatter,
+  type EntityType,
+  type IssueFrontmatter,
+  type KnowledgeFrontmatter,
+  parseFrontmatter,
+  type ProjectFrontmatter,
+  renderFrontmatter as renderEntityFrontmatter,
+  type RunFrontmatter,
+  type SkillFrontmatter,
+} from "./types/frontmatter/index.js";
+export {
   type AuthConfig,
   authConfigSchema,
   type ConfigMeta,

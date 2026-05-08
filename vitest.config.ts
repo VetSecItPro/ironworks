@@ -4,6 +4,7 @@ export default defineConfig({
   test: {
     projects: [
       "packages/db",
+      "packages/shared",
       "packages/adapters/anthropic-api",
       "packages/adapters/claude-local",
       "packages/adapters/codex-local",

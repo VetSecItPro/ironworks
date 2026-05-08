@@ -5,6 +5,11 @@ All notable changes to IronWorks are documented in this file.
 ## [Unreleased]
 
 ### Added
+
+- **Memory + Knowledge embeddings pipeline (P0).** Async queue (`embedding_jobs`, `chunking_jobs`) drained by in-process `EmbeddingsWorker` writes pgvector embeddings on every memory entry create/update and knowledge_pages chunk on save. Polymorphic `EmbeddingProvider` abstraction (OpenAI default for memory at 1536d, Ollama default for chunks at 768d, NoOp for tests/missing-config). Tier-3 cosine-similarity retrieval activated in `getContextualMemories` and `findRelevantMemories` — agents now find semantically-related context. Backfill: `scripts/backfill-embeddings.ts --target=memory|chunks|both`. New Prometheus metrics: `ironworks_embedding_jobs_pending`, `ironworks_embedding_jobs_failed_total`, `ironworks_embedding_provider_latency_seconds`, `ironworks_embedding_provider_errors_total`.
+- **Canonical Frontmatter types module** at `packages/shared/src/types/frontmatter/` — 7 entity-typed shapes (knowledge, decision, skill, agent, project, issue, run) + render/parse helpers. Reachable via `@ironworksai/shared` and re-exported through `company-portability-shared.ts` for future vault export.
+- **Provider env vars:** `IRONWORKS_MEMORY_EMBEDDING_PROVIDER`, `IRONWORKS_MEMORY_EMBEDDING_MODEL`, `IRONWORKS_CHUNK_EMBEDDING_PROVIDER`, `IRONWORKS_CHUNK_EMBEDDING_MODEL`, `IRONWORKS_EMBEDDINGS_TICK_INTERVAL_MS`. Provider env IS the kill switch — `=noop` disables embeddings without redeploy.
+
 - **Channel router safeguards: per-agent cooldown + hourly circuit breaker**
   (`server/src/services/channel-router.ts`,
   `packages/db/src/schema/channel_response_state.ts`,
@@ -135,6 +140,9 @@ All notable changes to IronWorks are documented in this file.
   injection semantics. (+8 unit tests covering the helper.)
 
 ### Changed
+
+- `agent-memory.ts` write paths (`extractMemoriesFromIssue`, `consolidateMemories`) and `knowledge.ts` write paths (`create`, `update`) now enqueue async embedding jobs after each successful insert/content-change. Tier-3 vector retrieval replaces prior log-and-bail placeholder.
+
 - **Refactored `server/src/services/knowledge-seeds.ts`** — split the
   3,256-LOC pure-data file into 8 domain-grouped modules
   (`knowledge-seeds-operating.ts`, `-strategy.ts`, `-people.ts`,

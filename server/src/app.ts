@@ -57,6 +57,7 @@ import { oauthLoginRoutes } from "./routes/oauth-login.js";
 import { playbookRoutes } from "./routes/playbooks.js";
 import { playgroundRoutes } from "./routes/playground.js";
 import { privacyRoutes, startRetentionScheduler } from "./routes/privacy.js";
+import { startEmbeddingsScheduler } from "./services/embeddings/scheduler.js";
 import { projectRoutes } from "./routes/projects.js";
 import { providerRoutes } from "./routes/providers.js";
 import { roleTemplateRoutes } from "./routes/role-templates.js";
@@ -395,6 +396,11 @@ export async function createApp(
 
   // Start daily data retention cleanup
   startRetentionScheduler(db);
+
+  // Start the embeddings worker scheduler — drains embedding_jobs +
+  // chunking_jobs queues. No-op if already started; tunable via
+  // IRONWORKS_EMBEDDINGS_TICK_INTERVAL_MS.
+  startEmbeddingsScheduler(db);
 
   api.use(
     accessRoutes(db, {
