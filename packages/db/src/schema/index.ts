@@ -63,6 +63,11 @@ export { issueWorkProducts } from "./issue_work_products.js";
 export { issues } from "./issues.js";
 export { joinRequests } from "./join_requests.js";
 export { knowledgeChunks } from "./knowledge_chunks.js";
+export {
+  type KnowledgePageLink,
+  knowledgePageLinks,
+  type NewKnowledgePageLink,
+} from "./knowledge_page_links.js";
 export { knowledgePageRevisions, knowledgePages } from "./knowledge_pages.js";
 export { labels } from "./labels.js";
 export { libraryFileEvents } from "./library_file_events.js";

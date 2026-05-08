@@ -1,9 +1,41 @@
 import type { Db } from "@ironworksai/db";
 import { knowledgePageRevisions, knowledgePages } from "@ironworksai/db";
+import { parseFrontmatter } from "@ironworksai/shared";
 import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { notFound } from "../errors.js";
 import { enqueueChunkingJob } from "./embeddings/queue.js";
+import { rebindUnresolvedLinks } from "./knowledge-links/janitor.js";
+import { extractWikilinks } from "./knowledge-links/parser.js";
+import { resolveLinks } from "./knowledge-links/resolver.js";
+import { syncPageLinks } from "./knowledge-links/sync.js";
 import { getKnowledgeSeeds } from "./knowledge-seeds.js";
+
+/**
+ * Extract `aliases` from a markdown body's YAML frontmatter.
+ *
+ * Returns `[]` when frontmatter is missing, `aliases` is absent, or the value
+ * isn't an array of strings. Non-string entries are filtered out (defensive
+ * against malformed frontmatter).
+ */
+function extractAliases(body: string): string[] {
+  // parseFrontmatter is generic over AnyFrontmatter; we read a single optional
+  // field and validate at runtime, so the parsed shape is intentionally loose.
+  const { fm } = parseFrontmatter(body) as { fm: { aliases?: unknown } | null };
+  if (!fm || !Array.isArray(fm.aliases)) return [];
+  return fm.aliases.filter((a): a is string => typeof a === "string");
+}
+
+/**
+ * Drizzle's `db.transaction` callback receives a `PgTransaction` which is
+ * structurally a `Db` minus the connection-pool handle (`$client`). The
+ * link-sync helpers only ever call query methods on their `db` argument, so
+ * passing a transaction is safe at runtime — but TS treats `Db` as nominally
+ * distinct. This narrow alias documents the intent and isolates the cast.
+ */
+type DbOrTx = Parameters<Parameters<Db["transaction"]>[0]>[0];
+function asDb(tx: DbOrTx): Db {
+  return tx as unknown as Db;
+}
 
 const MAX_BODY_BYTES = 102_400; // 100KB
 
@@ -142,35 +174,60 @@ export function knowledgeService(db: Db) {
       const folderPrefix = input.folder?.trim().replace(/\/+$/, "");
       const rawSlug = folderPrefix ? `${folderPrefix}/${baseSlug}` : baseSlug;
       const slug = await ensureUniqueSlug(db, companyId, rawSlug);
+      const aliases = extractAliases(body);
 
-      const [page] = await db
-        .insert(knowledgePages)
-        .values({
+      // Atomic: page row, initial revision, and link sync all live in one
+      // transaction. If link sync fails the page write is rolled back so
+      // we never leave a page persisted without its derived link edges.
+      const page = await db.transaction(async (tx) => {
+        const [inserted] = await tx
+          .insert(knowledgePages)
+          .values({
+            companyId,
+            slug,
+            title: input.title.trim(),
+            body,
+            aliases,
+            visibility: input.visibility ?? "company",
+            projectId: input.projectId ?? null,
+            department: input.department ?? null,
+            revisionNumber: 1,
+            createdByAgentId: actor.agentId ?? null,
+            createdByUserId: actor.userId ?? null,
+            updatedByAgentId: actor.agentId ?? null,
+            updatedByUserId: actor.userId ?? null,
+          })
+          .returning();
+
+        // Create initial revision
+        await tx.insert(knowledgePageRevisions).values({
+          pageId: inserted.id,
           companyId,
-          slug,
-          title: input.title.trim(),
-          body,
-          visibility: input.visibility ?? "company",
-          projectId: input.projectId ?? null,
-          department: input.department ?? null,
           revisionNumber: 1,
-          createdByAgentId: actor.agentId ?? null,
-          createdByUserId: actor.userId ?? null,
-          updatedByAgentId: actor.agentId ?? null,
-          updatedByUserId: actor.userId ?? null,
-        })
-        .returning();
+          title: inserted.title,
+          body: inserted.body,
+          changeSummary: "Created page",
+          editedByAgentId: actor.agentId ?? null,
+          editedByUserId: actor.userId ?? null,
+        });
 
-      // Create initial revision
-      await db.insert(knowledgePageRevisions).values({
-        pageId: page.id,
-        companyId,
-        revisionNumber: 1,
-        title: page.title,
-        body: page.body,
-        changeSummary: "Created page",
-        editedByAgentId: actor.agentId ?? null,
-        editedByUserId: actor.userId ?? null,
+        // T5: wikilink resolution + sync. syncPageLinks opens its own nested
+        // transaction (Postgres savepoint under our outer tx); a failure
+        // propagates and rolls the entire create back.
+        const parsed = extractWikilinks(body);
+        const resolved = await resolveLinks(asDb(tx), companyId, parsed);
+        await syncPageLinks(asDb(tx), { fromPageId: inserted.id, companyId, resolved });
+
+        // Rebind any pre-existing unresolved links pointing at this page's
+        // slug or aliases. New page → previously broken refs latch on.
+        await rebindUnresolvedLinks(asDb(tx), {
+          pageId: inserted.id,
+          companyId,
+          slug: inserted.slug,
+          aliases,
+        });
+
+        return inserted;
       });
 
       // T7: enqueue async chunking. Idempotent on (target_type, target_id);
@@ -196,34 +253,65 @@ export function knowledgeService(db: Db) {
       const nextSlug = input.title
         ? await ensureUniqueSlug(db, existing.companyId, slugify(nextTitle), id)
         : existing.slug;
+      const nextAliases = extractAliases(nextBody);
 
-      const [updated] = await db
-        .update(knowledgePages)
-        .set({
-          slug: nextSlug,
+      // Detect changes that require rebinding pre-existing unresolved links.
+      // A page acquires new "addressable identities" when its slug changes or
+      // its aliases set changes — both can satisfy previously-broken refs.
+      const prevAliases = (existing.aliases ?? []) as string[];
+      const slugChanged = nextSlug !== existing.slug;
+      const aliasesChanged =
+        prevAliases.length !== nextAliases.length || prevAliases.some((a, i) => a !== nextAliases[i]);
+
+      const updated = await db.transaction(async (tx) => {
+        const [row] = await tx
+          .update(knowledgePages)
+          .set({
+            slug: nextSlug,
+            title: nextTitle,
+            body: nextBody,
+            aliases: nextAliases,
+            visibility: input.visibility ?? existing.visibility,
+            projectId: input.projectId === undefined ? existing.projectId : input.projectId,
+            department: input.department === undefined ? existing.department : input.department,
+            revisionNumber: nextRevision,
+            updatedByAgentId: actor.agentId ?? null,
+            updatedByUserId: actor.userId ?? null,
+            updatedAt: new Date(),
+          })
+          .where(eq(knowledgePages.id, id))
+          .returning();
+
+        // Create revision record
+        await tx.insert(knowledgePageRevisions).values({
+          pageId: id,
+          companyId: existing.companyId,
+          revisionNumber: nextRevision,
           title: nextTitle,
           body: nextBody,
-          visibility: input.visibility ?? existing.visibility,
-          projectId: input.projectId === undefined ? existing.projectId : input.projectId,
-          department: input.department === undefined ? existing.department : input.department,
-          revisionNumber: nextRevision,
-          updatedByAgentId: actor.agentId ?? null,
-          updatedByUserId: actor.userId ?? null,
-          updatedAt: new Date(),
-        })
-        .where(eq(knowledgePages.id, id))
-        .returning();
+          changeSummary: input.changeSummary ?? null,
+          editedByAgentId: actor.agentId ?? null,
+          editedByUserId: actor.userId ?? null,
+        });
 
-      // Create revision record
-      await db.insert(knowledgePageRevisions).values({
-        pageId: id,
-        companyId: existing.companyId,
-        revisionNumber: nextRevision,
-        title: nextTitle,
-        body: nextBody,
-        changeSummary: input.changeSummary ?? null,
-        editedByAgentId: actor.agentId ?? null,
-        editedByUserId: actor.userId ?? null,
+        // T5: re-resolve outgoing links from this page's new body.
+        const parsed = extractWikilinks(nextBody);
+        const resolved = await resolveLinks(asDb(tx), existing.companyId, parsed);
+        await syncPageLinks(asDb(tx), { fromPageId: id, companyId: existing.companyId, resolved });
+
+        // Rebind only when the page's addressable identity changed. Body-only
+        // edits don't expose new slugs/aliases for other pages to latch onto,
+        // so skipping the UPDATE here saves a no-op write on the hot path.
+        if (slugChanged || aliasesChanged) {
+          await rebindUnresolvedLinks(asDb(tx), {
+            pageId: id,
+            companyId: existing.companyId,
+            slug: nextSlug,
+            aliases: nextAliases,
+          });
+        }
+
+        return row;
       });
 
       // T7: enqueue async chunking on every update (title or body changes

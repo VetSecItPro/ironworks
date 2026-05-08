@@ -81,4 +81,40 @@ export const knowledgeApi = {
 
   seed: (companyId: string) =>
     api.post<{ seeded: boolean; count: number }>(`/companies/${companyId}/knowledge/seed`, {}),
+
+  getBacklinks: async (pageId: string): Promise<BacklinkRow[]> => {
+    const { backlinks } = await api.get<{ backlinks: BacklinkRow[] }>(`/knowledge-pages/${pageId}/backlinks`);
+    return backlinks;
+  },
+
+  getGraph: (pageId: string, hops: 1 | 2 = 2) => api.get<GraphResult>(`/knowledge-pages/${pageId}/graph?hops=${hops}`),
 };
+
+export interface BacklinkRow {
+  pageId: string;
+  slug: string;
+  title: string;
+  anchor: string | null;
+  documentType: string | null;
+  updatedAt: string;
+}
+
+export interface GraphNode {
+  id: string;
+  slug: string;
+  title: string;
+  isCurrent: boolean;
+  documentType: string | null;
+}
+
+export interface GraphEdge {
+  fromId: string;
+  toId: string | null;
+  unresolvedSlug: string | null;
+  anchor: string | null;
+}
+
+export interface GraphResult {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+}
