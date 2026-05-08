@@ -2,6 +2,9 @@ import type { Db } from "@ironworksai/db";
 import { agentMemoryEntries } from "@ironworksai/db";
 import { and, asc, desc, eq, gt, isNotNull, isNull, lt, lte, sql } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
+import { getMemoryProvider } from "./embeddings/factory.js";
+import type { EmbeddingProvider } from "./embeddings/provider.js";
+import { enqueueEmbeddingJob } from "./embeddings/queue.js";
 
 // Re-export AgentMemoryEntry type for callers (without embedding - optional pgvector column)
 export type AgentMemoryEntry = Omit<typeof agentMemoryEntries.$inferSelect, "embedding">;
@@ -113,16 +116,26 @@ export async function extractMemoriesFromIssue(
 
   // Always create a task history entry with role-specific category
   const taskCategory = resolveRoleCategoriesForTaskHistory(role);
-  await db.insert(agentMemoryEntries).values({
-    agentId,
-    companyId,
-    memoryType: "episodic",
-    category: taskCategory,
-    content: `Completed: ${issueTitle}. Outcome: ${issueOutcome}`,
-    sourceIssueId: issueId,
-    confidence: 80,
-    lastAccessedAt: now,
-  });
+  const [taskInserted] = await db
+    .insert(agentMemoryEntries)
+    .values({
+      agentId,
+      companyId,
+      memoryType: "episodic",
+      category: taskCategory,
+      content: `Completed: ${issueTitle}. Outcome: ${issueOutcome}`,
+      sourceIssueId: issueId,
+      confidence: 80,
+      lastAccessedAt: now,
+    })
+    .returning({ id: agentMemoryEntries.id, companyId: agentMemoryEntries.companyId });
+  if (taskInserted) {
+    await enqueueEmbeddingJob(db, {
+      targetType: "memory",
+      targetId: taskInserted.id,
+      companyId: taskInserted.companyId,
+    });
+  }
 
   // Create a secondary entry if the description suggests domain-specific work
   const technicalTerms = [
@@ -156,16 +169,26 @@ export async function extractMemoriesFromIssue(
 
   if (hasTechnicalContent) {
     const techCategory = resolveRoleCategoriesForTechnical(role);
-    await db.insert(agentMemoryEntries).values({
-      agentId,
-      companyId,
-      memoryType: "episodic",
-      category: techCategory,
-      content: `Technical work on: ${issueTitle}. Details: ${issueOutcome}`,
-      sourceIssueId: issueId,
-      confidence: 75,
-      lastAccessedAt: now,
-    });
+    const [techInserted] = await db
+      .insert(agentMemoryEntries)
+      .values({
+        agentId,
+        companyId,
+        memoryType: "episodic",
+        category: techCategory,
+        content: `Technical work on: ${issueTitle}. Details: ${issueOutcome}`,
+        sourceIssueId: issueId,
+        confidence: 75,
+        lastAccessedAt: now,
+      })
+      .returning({ id: agentMemoryEntries.id, companyId: agentMemoryEntries.companyId });
+    if (techInserted) {
+      await enqueueEmbeddingJob(db, {
+        targetType: "memory",
+        targetId: techInserted.id,
+        companyId: techInserted.companyId,
+      });
+    }
   }
 
   logger.info({ agentId, issueId, hasTechnicalContent, taskCategory }, "extracted memories from completed issue");
@@ -260,6 +283,15 @@ export async function consolidateMemories(db: Db, agentId: string): Promise<void
 
   const companyId = oldEpisodic[0]!.companyId;
 
+  // Collect ids of newly-consolidated semantic entries so we can enqueue
+  // their embedding jobs after the transaction commits. Enqueueing inside
+  // the transaction would require the embedding-jobs queue to accept a
+  // tx-scoped db handle, which it does not (the queue takes a top-level
+  // Db). Idempotent enqueue (per T4) means a missed enqueue can be
+  // retried safely; doing it post-commit keeps the consolidation
+  // transaction lean.
+  const consolidatedIds: Array<{ id: string; companyId: string }> = [];
+
   await db.transaction(async (tx) => {
     for (const [category, entries] of groups) {
       if (entries.length === 0) continue;
@@ -267,15 +299,21 @@ export async function consolidateMemories(db: Db, agentId: string): Promise<void
       // Create consolidated semantic entry using LLM summarization (or fallback)
       const summary = await summarizeWithLLM(entries, category);
 
-      await tx.insert(agentMemoryEntries).values({
-        agentId,
-        companyId,
-        memoryType: "semantic",
-        category,
-        content: `[Consolidated from ${entries.length} entries] ${summary}`,
-        confidence: 70,
-        lastAccessedAt: now,
-      });
+      const [consolidatedInserted] = await tx
+        .insert(agentMemoryEntries)
+        .values({
+          agentId,
+          companyId,
+          memoryType: "semantic",
+          category,
+          content: `[Consolidated from ${entries.length} entries] ${summary}`,
+          confidence: 70,
+          lastAccessedAt: now,
+        })
+        .returning({ id: agentMemoryEntries.id, companyId: agentMemoryEntries.companyId });
+      if (consolidatedInserted) {
+        consolidatedIds.push(consolidatedInserted);
+      }
 
       // Archive the originals
       const entryIds = entries.map((e) => e.id);
@@ -284,6 +322,15 @@ export async function consolidateMemories(db: Db, agentId: string): Promise<void
       }
     }
   });
+
+  // Post-commit: enqueue embedding jobs for the new semantic entries.
+  for (const row of consolidatedIds) {
+    await enqueueEmbeddingJob(db, {
+      targetType: "memory",
+      targetId: row.id,
+      companyId: row.companyId,
+    });
+  }
 
   logger.info(
     { agentId, consolidatedCategories: groups.size, totalEntries: oldEpisodic.length },
@@ -483,47 +530,153 @@ async function isPgvectorAvailable(db: Db): Promise<boolean> {
 }
 
 /**
- * Find memory entries relevant to a query using either pgvector cosine
- * similarity (when available) or Postgres full-text search as fallback.
+ * Format a number[] embedding for pgvector's text input syntax: `[v1,v2,...]`.
+ * Used when binding a query vector as a SQL parameter for the `<=>` operator.
  *
- * No external API calls are made. Embeddings are populated by a separate
- * background pipeline. Until then, only the full-text path is active.
+ * Mirrors the format used by the schema's `vectorColumn.toDriver`. We can't
+ * reuse that helper directly because Drizzle invokes it on writes only —
+ * for raw `sql\`...\`` reads we have to format explicitly.
+ */
+function formatVectorLiteral(vec: number[]): string {
+  return `[${vec.join(",")}]`;
+}
+
+/**
+ * Generate an embedding for the query text using the configured memory
+ * provider. Returns:
+ *   - the vector on success
+ *   - null when provider is NoOp (caller should skip vector path)
+ *   - null on any provider error (caller falls back to FTS)
+ *
+ * Errors are logged at debug level — provider misconfiguration already
+ * warn-once'd at the factory layer; we don't want every read to re-shout.
+ */
+async function embedQueryText(provider: EmbeddingProvider, queryText: string): Promise<number[] | null> {
+  if (provider.name === "noop") return null;
+  try {
+    const vec = await provider.embed(queryText);
+    if (!Array.isArray(vec) || vec.length === 0) return null;
+    return vec;
+  } catch (err) {
+    logger.debug({ err, provider: provider.name }, "vector retrieval: query embed failed, falling back to FTS");
+    return null;
+  }
+}
+
+/**
+ * Cosine-similarity retrieval against `agent_memory_entries.embedding`.
+ *
+ * Uses pgvector's `<=>` operator (cosine distance: lower = more similar).
+ * Caller is responsible for ensuring pgvector is available + the query
+ * vector was generated successfully.
+ *
+ * Defines a local projection (NOT `memoryColumns`) so we can include the
+ * cosine-distance score for ordering. The returned `AgentMemoryEntry`
+ * shape strips the score before handing back to callers — embedding column
+ * itself is also not returned (matches `memoryColumns` contract).
+ */
+async function findRelevantMemoriesByVector(
+  db: Db,
+  agentId: string,
+  queryVec: number[],
+  limit: number,
+): Promise<AgentMemoryEntry[]> {
+  const vectorLiteral = formatVectorLiteral(queryVec);
+
+  try {
+    const rows = await db
+      .select({
+        id: agentMemoryEntries.id,
+        agentId: agentMemoryEntries.agentId,
+        companyId: agentMemoryEntries.companyId,
+        memoryType: agentMemoryEntries.memoryType,
+        category: agentMemoryEntries.category,
+        content: agentMemoryEntries.content,
+        sourceIssueId: agentMemoryEntries.sourceIssueId,
+        sourceProjectId: agentMemoryEntries.sourceProjectId,
+        confidence: agentMemoryEntries.confidence,
+        accessCount: agentMemoryEntries.accessCount,
+        lastAccessedAt: agentMemoryEntries.lastAccessedAt,
+        expiresAt: agentMemoryEntries.expiresAt,
+        archivedAt: agentMemoryEntries.archivedAt,
+        createdAt: agentMemoryEntries.createdAt,
+        // Cosine distance: 0 = identical, 2 = opposite. Lower is better.
+        distance: sql<number>`${agentMemoryEntries.embedding} <=> ${vectorLiteral}::vector`.as("distance"),
+      })
+      .from(agentMemoryEntries)
+      .where(
+        and(
+          eq(agentMemoryEntries.agentId, agentId),
+          isNull(agentMemoryEntries.archivedAt),
+          sql`${agentMemoryEntries.embedding} IS NOT NULL`,
+        ),
+      )
+      .orderBy(sql`distance ASC`)
+      .limit(limit);
+
+    return rows.map(({ distance: _distance, ...entry }) => entry);
+  } catch (err) {
+    logger.debug({ err, agentId }, "vector similarity query failed, returning empty");
+    return [];
+  }
+}
+
+/**
+ * Count how many active entries for this agent have a non-null embedding.
+ * Centralized so we don't run the same probe twice per request.
+ */
+async function countAgentEmbeddings(db: Db, agentId: string): Promise<number> {
+  try {
+    const [row] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(agentMemoryEntries)
+      .where(
+        and(
+          eq(agentMemoryEntries.agentId, agentId),
+          isNull(agentMemoryEntries.archivedAt),
+          sql`${agentMemoryEntries.embedding} IS NOT NULL`,
+        ),
+      );
+    return Number(row?.count ?? 0);
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Find memory entries relevant to a query using either pgvector cosine
+ * similarity (when available + provider configured) or Postgres full-text
+ * search as fallback.
+ *
+ * Vector path is taken when ALL of these hold:
+ *   - pgvector extension installed
+ *   - memory provider is configured (not NoOp)
+ *   - query embedding generation succeeds
+ *   - at least one row for this agent has a populated embedding
+ *
+ * Otherwise: FTS. The `provider` arg is for DI in tests; production callers
+ * leave it undefined and the factory resolves from env.
  */
 export async function findRelevantMemories(
   db: Db,
   agentId: string,
   queryText: string,
   limit = 5,
+  provider?: EmbeddingProvider,
 ): Promise<AgentMemoryEntry[]> {
   const vectorAvailable = await isPgvectorAvailable(db);
 
   if (vectorAvailable) {
-    // Vector path: attempt similarity search. Falls back to FTS if this agent
-    // has no embeddings yet (embedding IS NULL for all entries).
-    try {
-      const withEmbeddings = await db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(agentMemoryEntries)
-        .where(
-          and(
-            eq(agentMemoryEntries.agentId, agentId),
-            isNull(agentMemoryEntries.archivedAt),
-            sql`${agentMemoryEntries.embedding} IS NOT NULL`,
-          ),
-        );
-
-      const embeddingCount = Number(withEmbeddings[0]?.count ?? 0);
+    const resolvedProvider = provider ?? getMemoryProvider();
+    if (resolvedProvider.name !== "noop") {
+      const embeddingCount = await countAgentEmbeddings(db, agentId);
       if (embeddingCount > 0) {
-        // Embeddings exist - run cosine similarity search.
-        // This branch is used once the embedding pipeline populates the column.
-        // For now we pass through to FTS since no embeddings are generated yet.
-        logger.debug(
-          { agentId, embeddingCount },
-          "vector search available but embedding pipeline not yet active; using FTS",
-        );
+        const queryVec = await embedQueryText(resolvedProvider, queryText);
+        if (queryVec !== null) {
+          const vectorRows = await findRelevantMemoriesByVector(db, agentId, queryVec, limit);
+          if (vectorRows.length > 0) return vectorRows;
+        }
       }
-    } catch (err) {
-      logger.debug({ err, agentId }, "vector similarity check failed, falling back to FTS");
     }
   }
 
@@ -677,6 +830,7 @@ export async function getContextualMemories(
   agentId: string,
   taskContext: string,
   maxEntries = 10,
+  provider?: EmbeddingProvider,
 ): Promise<AgentMemoryEntry[]> {
   const seen = new Set<string>();
   const results: AgentMemoryEntry[] = [];
@@ -718,28 +872,34 @@ export async function getContextualMemories(
     logger.warn({ err, agentId }, "tier-2 semantic memory retrieval failed");
   }
 
-  // Tier 3: Vector memory - similarity search when pgvector is available
+  // Tier 3: Vector memory - cosine-similarity search when pgvector + provider
+  // are both available. Falls back silently to whatever tier 1+2 produced if
+  // any precondition fails (NoOp provider, no rows with embeddings, query
+  // embed throws, SQL error). The `add()` helper dedupes against tier-2 hits.
+  //
+  // Note on caching: the spec calls for query-text-hash caching across the
+  // request lifetime. The current call graph passes no per-request context
+  // through, so request-lifetime caching would require plumbing an extra
+  // arg through every call site. We instead memoize within this single
+  // `getContextualMemories` call (one provider.embed() per invocation) —
+  // that's the dominant case anyway since findRelevantMemories isn't
+  // separately invoked alongside this function in production paths.
   const vectorAvailable = await isPgvectorAvailable(db).catch(() => false);
   if (vectorAvailable) {
-    try {
-      // Only run vector search if embeddings are populated
-      const [embRow] = await db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(agentMemoryEntries)
-        .where(
-          and(
-            eq(agentMemoryEntries.agentId, agentId),
-            isNull(agentMemoryEntries.archivedAt),
-            sql`${agentMemoryEntries.embedding} IS NOT NULL`,
-          ),
-        );
-      if (Number(embRow?.count ?? 0) > 0) {
-        // Vector similarity search is active once embeddings are populated.
-        // Placeholder: embedding pipeline will inject embeddings separately.
-        logger.debug({ agentId }, "tier-3 vector search: embeddings present but pipeline not yet wired");
+    const resolvedProvider = provider ?? getMemoryProvider();
+    if (resolvedProvider.name !== "noop") {
+      try {
+        const embeddingCount = await countAgentEmbeddings(db, agentId);
+        if (embeddingCount > 0) {
+          const queryVec = await embedQueryText(resolvedProvider, taskContext);
+          if (queryVec !== null) {
+            const vectorRows = await findRelevantMemoriesByVector(db, agentId, queryVec, 5);
+            add(vectorRows);
+          }
+        }
+      } catch (err) {
+        logger.debug({ err, agentId }, "tier-3 vector retrieval failed, continuing with tier 1+2");
       }
-    } catch (err) {
-      logger.debug({ err, agentId }, "tier-3 vector check failed, skipping");
     }
   }
 

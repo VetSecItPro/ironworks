@@ -212,6 +212,72 @@ When in doubt: check `CHANGELOG.md` (what shipped recently) before assuming some
 
 ---
 
+## 8a. Embeddings pipeline
+
+### Configuration
+
+The async embeddings pipeline writes pgvector embeddings for agent memory entries (1536d) and knowledge page chunks (768d). Provider is selected per env:
+
+- `IRONWORKS_MEMORY_EMBEDDING_PROVIDER` — `openai` (default model: text-embedding-3-small) | `ollama` | `noop`. Default: `noop` (disabled).
+- `IRONWORKS_CHUNK_EMBEDDING_PROVIDER` — same values. Default: `ollama` (preserves existing knowledge_chunks behavior).
+- Set `=noop` on either to disable that pipeline without redeploy. The kill switch is the env var, not a feature flag in code.
+
+If a provider is configured but the API key is missing, the factory degrades to NoOp with a warn-once log entry.
+
+### Operating the queue
+
+Pending and failed counts:
+
+```sql
+SELECT status, count(*) FROM embedding_jobs GROUP BY status;
+SELECT status, count(*) FROM chunking_jobs GROUP BY status;
+```
+
+Failed jobs (terminal - exhausted retries or non-retryable error):
+
+```sql
+SELECT id, target_type, target_id, attempts, last_error, completed_at
+FROM embedding_jobs
+WHERE status = 'failed'
+ORDER BY completed_at DESC
+LIMIT 50;
+```
+
+Re-queue a failed job:
+
+```sql
+UPDATE embedding_jobs
+SET status = 'pending', attempts = 0, last_error = NULL, claimed_at = NULL
+WHERE id = '<job-id>';
+```
+
+### Prometheus metrics
+
+- `ironworks_embedding_jobs_pending{status, target_type}` - gauge of queue depth
+- `ironworks_embedding_jobs_failed_total{target_type}` - counter of terminal failures
+- `ironworks_embedding_provider_latency_seconds{provider, model, operation}` - histogram of provider call latency
+- `ironworks_embedding_provider_errors_total{provider, model, error_class}` - counter of provider errors (rate_limit / server_error / client_error / timeout / dim_mismatch / other)
+
+### Backfill
+
+After enabling a provider on an existing deploy, run the backfill script to populate embeddings on existing rows:
+
+```bash
+pnpm tsx scripts/backfill-embeddings.ts --target=both
+```
+
+Or by target: `--target=memory` or `--target=chunks`. Add `--batch-size=N` (default 50) and `--dry-run` for safety.
+
+The backfill is idempotent - rows with embeddings already present are skipped at the SELECT level. Safe to re-run.
+
+### Scaling
+
+Multiple worker processes are safe via `FOR UPDATE SKIP LOCKED`. To scale out: deploy more app instances; each runs its own scheduler tick. No coordination required.
+
+A worker that crashes mid-tick has its claimed jobs reclaimed automatically after 5 minutes (configurable in `queue.ts:DEFAULT_STALE_MS`).
+
+---
+
 ## 9. Filing an incident
 
 When something genuinely breaks in prod:

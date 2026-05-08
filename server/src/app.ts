@@ -70,6 +70,7 @@ import { slimRoutes } from "./routes/slim.js";
 import { sseRoutes } from "./routes/sse.js";
 import { supportPublicRoutes } from "./routes/support.js";
 import { teamTemplateRoutes } from "./routes/team-templates.js";
+import { startEmbeddingsScheduler } from "./services/embeddings/scheduler.js";
 import type { StorageService } from "./storage/types.js";
 import { applyUiBranding } from "./ui-branding.js";
 
@@ -395,6 +396,11 @@ export async function createApp(
 
   // Start daily data retention cleanup
   startRetentionScheduler(db);
+
+  // Start the embeddings worker scheduler — drains embedding_jobs +
+  // chunking_jobs queues. No-op if already started; tunable via
+  // IRONWORKS_EMBEDDINGS_TICK_INTERVAL_MS.
+  startEmbeddingsScheduler(db);
 
   api.use(
     accessRoutes(db, {

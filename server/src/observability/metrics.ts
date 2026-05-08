@@ -14,7 +14,7 @@ import type { Db } from "@ironworksai/db";
 import { heartbeatRuns } from "@ironworksai/db";
 import { eq, sql } from "drizzle-orm";
 import type { NextFunction, Request, RequestHandler, Response } from "express";
-import { Counter, collectDefaultMetrics, Gauge, Registry } from "prom-client";
+import { Counter, collectDefaultMetrics, Gauge, Histogram, Registry } from "prom-client";
 
 let registry: Registry | null = null;
 let httpRequestsCounter: Counter<"method" | "route" | "status_class">;
@@ -22,6 +22,10 @@ let runsCounter: Counter<"status">;
 let activeRunsGauge: Gauge<string>;
 let llmCostCounter: Counter<"provider" | "model">;
 let runQueueDepthGauge: Gauge<string>;
+let embeddingJobsPending: Gauge<"status" | "target_type">;
+let embeddingJobsFailedTotal: Counter<"target_type">;
+let embeddingProviderLatency: Histogram<"provider" | "model" | "operation">;
+let embeddingProviderErrorsTotal: Counter<"provider" | "model" | "error_class">;
 
 function buildRegistry(): Registry {
   const reg = new Registry();
@@ -60,6 +64,40 @@ function buildRegistry(): Registry {
     registers: [reg],
   });
 
+  // ── Embeddings worker (P0 memory upgrade) ────────────────────────────────
+  // These metrics track the embedding_jobs + chunking_jobs queues drained by
+  // the worker in services/embeddings. Cardinality is deliberately small:
+  // status × target_type (~12 series), provider × model × operation (~6),
+  // provider × model × error_class (~30).
+  embeddingJobsPending = new Gauge({
+    name: "ironworks_embedding_jobs_pending",
+    help: "Number of embedding/chunking jobs by status and target type. Sampled per worker tick.",
+    labelNames: ["status", "target_type"] as const,
+    registers: [reg],
+  });
+
+  embeddingJobsFailedTotal = new Counter({
+    name: "ironworks_embedding_jobs_failed_total",
+    help: "Embedding/chunking jobs parked in terminal 'failed' status (exceeded retries).",
+    labelNames: ["target_type"] as const,
+    registers: [reg],
+  });
+
+  embeddingProviderLatency = new Histogram({
+    name: "ironworks_embedding_provider_latency_seconds",
+    help: "Embedding-provider call latency in seconds, labeled by provider/model/operation.",
+    labelNames: ["provider", "model", "operation"] as const,
+    buckets: [0.1, 0.25, 0.5, 1, 2, 5, 10, 30],
+    registers: [reg],
+  });
+
+  embeddingProviderErrorsTotal = new Counter({
+    name: "ironworks_embedding_provider_errors_total",
+    help: "Embedding-provider errors classified into a coarse error_class.",
+    labelNames: ["provider", "model", "error_class"] as const,
+    registers: [reg],
+  });
+
   return reg;
 }
 
@@ -73,7 +111,17 @@ export function getRegistry(): Registry {
 // Force initialization so module-level exports below are never undefined.
 getRegistry();
 
-export { activeRunsGauge, httpRequestsCounter, llmCostCounter, runQueueDepthGauge, runsCounter };
+export {
+  activeRunsGauge,
+  embeddingJobsFailedTotal,
+  embeddingJobsPending,
+  embeddingProviderErrorsTotal,
+  embeddingProviderLatency,
+  httpRequestsCounter,
+  llmCostCounter,
+  runQueueDepthGauge,
+  runsCounter,
+};
 
 /**
  * Express middleware: counts every request after response-finish.

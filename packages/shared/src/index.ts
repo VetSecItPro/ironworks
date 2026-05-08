@@ -203,6 +203,20 @@ export {
   parseProjectMentionHref,
 } from "./project-mentions.js";
 export { deriveProjectUrlKey, normalizeProjectUrlKey } from "./project-url-key.js";
+export {
+  type AgentFrontmatter,
+  type AnyFrontmatter,
+  type BaseFrontmatter,
+  type DecisionFrontmatter,
+  type EntityType,
+  type IssueFrontmatter,
+  type KnowledgeFrontmatter,
+  type ProjectFrontmatter,
+  parseFrontmatter,
+  type RunFrontmatter,
+  renderFrontmatter as renderEntityFrontmatter,
+  type SkillFrontmatter,
+} from "./types/frontmatter/index.js";
 export type {
   ActivityEvent,
   AdapterEnvironmentCheck,

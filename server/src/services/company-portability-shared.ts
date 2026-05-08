@@ -12,6 +12,29 @@
 //   - manifest-helpers.ts : YAML/markdown parsing+rendering, manifest builder, routines,
 //                           workspaces, file-map utilities, network helpers
 
+// Canonical entity-Frontmatter types + helpers (T2 module). Re-exported here so
+// callers that only know the company-portability-shared.ts surface can reach
+// the canonical module without a separate import. Note: `renderFrontmatter`
+// in this barrel still refers to the legacy agentcompanies/v1 package-manifest
+// emitter (different schema, different YAML quirks pinned by tests). The
+// canonical entity emitter is exposed as `renderEntityFrontmatter` to avoid
+// shadowing — entity files (knowledge/decision/skill/agent/project/issue/run)
+// use that one; package-manifest files (COMPANY/AGENT/PROJECT/TASK.md) keep
+// the legacy emitter.
+export {
+  type AgentFrontmatter,
+  type AnyFrontmatter,
+  type BaseFrontmatter,
+  type DecisionFrontmatter,
+  type EntityType,
+  type IssueFrontmatter,
+  type KnowledgeFrontmatter,
+  type ProjectFrontmatter,
+  parseFrontmatter,
+  type RunFrontmatter,
+  renderEntityFrontmatter,
+  type SkillFrontmatter,
+} from "@ironworksai/shared";
 export * from "./company-portability-defaults.js";
 export * from "./company-portability-env-helpers.js";
 export * from "./company-portability-manifest-helpers.js";

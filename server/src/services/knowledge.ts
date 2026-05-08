@@ -2,6 +2,7 @@ import type { Db } from "@ironworksai/db";
 import { knowledgePageRevisions, knowledgePages } from "@ironworksai/db";
 import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { notFound } from "../errors.js";
+import { enqueueChunkingJob } from "./embeddings/queue.js";
 import { getKnowledgeSeeds } from "./knowledge-seeds.js";
 
 const MAX_BODY_BYTES = 102_400; // 100KB
@@ -172,6 +173,12 @@ export function knowledgeService(db: Db) {
         editedByUserId: actor.userId ?? null,
       });
 
+      // T7: enqueue async chunking. Idempotent on (target_type, target_id);
+      // safe to call after every content-changing write. The worker
+      // (services/embeddings/worker.ts) re-runs parsePlaybook to regenerate
+      // chunks and enqueue per-chunk embedding jobs.
+      await enqueueChunkingJob(db, { pageId: page.id, companyId });
+
       return page;
     },
 
@@ -218,6 +225,11 @@ export function knowledgeService(db: Db) {
         editedByAgentId: actor.agentId ?? null,
         editedByUserId: actor.userId ?? null,
       });
+
+      // T7: enqueue async chunking on every update (title or body changes
+      // both affect heading-based chunk boundaries). revertToRevision goes
+      // through this path too, so reverts are covered.
+      await enqueueChunkingJob(db, { pageId: id, companyId: existing.companyId });
 
       return updated;
     },

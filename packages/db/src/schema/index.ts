@@ -27,6 +27,7 @@ export {
 export { channelMemberships } from "./channel_memberships.js";
 export { channelMessages } from "./channel_messages.js";
 export { channelResponseState } from "./channel_response_state.js";
+export { type ChunkingJob, chunkingJobs, type NewChunkingJob } from "./chunking_jobs.js";
 export { cliAuthChallenges } from "./cli_auth_challenges.js";
 export { companies } from "./companies.js";
 export { companyLogos } from "./company_logos.js";
@@ -38,6 +39,7 @@ export { costEvents } from "./cost_events.js";
 export { type CostRollupDaily, costRollupDaily, type NewCostRollupDaily } from "./cost_rollup_daily.js";
 export { documentRevisions } from "./document_revisions.js";
 export { documents } from "./documents.js";
+export { type EmbeddingJob, embeddingJobs, type NewEmbeddingJob } from "./embedding_jobs.js";
 export { executionWorkspaces } from "./execution_workspaces.js";
 export { financeEvents } from "./finance_events.js";
 export { goalCheckIns } from "./goal_check_ins.js";
