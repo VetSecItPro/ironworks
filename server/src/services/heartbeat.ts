@@ -148,6 +148,7 @@ import {
   selectModelForComplexity,
   shouldEscalateModel,
 } from "./model-routing.js";
+import { emitRunNote } from "./periodic-notes/run-notes.js";
 import { getRunLogStore, type RunLogHandle } from "./run-log-store.js";
 import { secretService } from "./secrets.js";
 import { type MatchedRecipe, matchSkillsForRun } from "./skill-matching.js";
@@ -2835,6 +2836,71 @@ export function heartbeatService(db: Db) {
         // Extract and log agent decisions from the run result
         if (finalizedRun && outcome === "succeeded" && adapterResult.resultJson) {
           await extractAndLogDecisions(db, agent, finalizedRun, adapterResult.resultJson);
+        }
+
+        // P2: Periodic-notes — emit a per-run knowledge page when the operator
+        // has enabled `notes.persistRunNotes` (default false). Non-fatal: any
+        // failure is logged but does not affect run finalize. Resolves the
+        // linked issue's identifier (human-readable ref) when an issue is
+        // attached to the run, so the rendered note can wikilink it.
+        if (finalizedRun) {
+          try {
+            const generalSettings = await instanceSettings.getGeneral();
+            if (generalSettings.notes?.persistRunNotes === true) {
+              const startedAt = finalizedRun.startedAt ?? new Date();
+              const completedAt = finalizedRun.finishedAt ?? new Date();
+              const noteStatus: "succeeded" | "failed" | "cancelled" | "timed_out" =
+                outcome === "succeeded"
+                  ? "succeeded"
+                  : outcome === "cancelled"
+                    ? "cancelled"
+                    : outcome === "timed_out"
+                      ? "timed_out"
+                      : "failed";
+
+              // Resolve linked issue ref + identifier, if any. Failure here
+              // degrades to null (run note still emits without issue link).
+              let linkedIssueRef: string | null = null;
+              let linkedIssueSlug: string | null = null;
+              if (issueId) {
+                try {
+                  const [row] = await db
+                    .select({ id: issues.id, identifier: issues.identifier })
+                    .from(issues)
+                    .where(eq(issues.id, issueId))
+                    .limit(1);
+                  if (row) {
+                    linkedIssueRef = row.identifier ?? row.id;
+                    linkedIssueSlug = row.identifier ?? null;
+                  }
+                } catch (issueLookupErr) {
+                  logger.debug({ err: issueLookupErr, issueId }, "[periodic-notes] linked issue lookup failed");
+                }
+              }
+
+              await emitRunNote(db, {
+                companyId: agent.companyId,
+                agentId: agent.id,
+                agentSlug: agent.name ?? null,
+                agentTitle: agent.title ?? agent.name ?? "Agent",
+                runId: finalizedRun.id,
+                status: noteStatus,
+                startedAt,
+                completedAt,
+                costUsd: adapterResult.costUsd ?? null,
+                linkedIssueRef,
+                linkedIssueSlug,
+                summary: adapterResult.summary ?? null,
+              }).catch((err) => {
+                logger.warn({ err, runId: finalizedRun.id }, "[periodic-notes] run note emit failed");
+              });
+            }
+          } catch (settingsErr) {
+            logger.warn(
+              { err: settingsErr, runId: finalizedRun.id },
+              "[periodic-notes] run note emit aborted (settings read failed)",
+            );
+          }
         }
 
         if (finalizedRun) {

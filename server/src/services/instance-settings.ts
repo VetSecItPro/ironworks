@@ -16,11 +16,20 @@ const DEFAULT_SINGLETON_KEY = "default";
 function normalizeGeneralSettings(raw: unknown): InstanceGeneralSettings {
   const parsed = instanceGeneralSettingsSchema.safeParse(raw ?? {});
   if (parsed.success) {
+    // Always materialize `notes` with both inner keys populated. Defaults
+    // (persistRunNotes=false, persistDecisionNotes=true) apply when the
+    // persisted blob is absent or partial, so consumers (UI toggles, runtime
+    // checks) always read a fully-populated section.
+    const notes = {
+      persistRunNotes: parsed.data.notes?.persistRunNotes ?? false,
+      persistDecisionNotes: parsed.data.notes?.persistDecisionNotes ?? true,
+    };
     return {
       censorUsernameInLogs: parsed.data.censorUsernameInLogs ?? false,
       backupRetention: parsed.data.backupRetention,
       scheduler: parsed.data.scheduler,
       promptPreamble: parsed.data.promptPreamble,
+      notes,
     };
   }
   return {
@@ -97,9 +106,24 @@ export function instanceSettingsService(db: Db) {
 
     updateGeneral: async (patch: PatchInstanceGeneralSettings): Promise<InstanceSettings> => {
       const current = await getOrCreateRow();
+      const currentGeneral = normalizeGeneralSettings(current.general);
+      // Nested merge for `notes`: a partial patch like `{ notes: { persistRunNotes: true } }`
+      // must preserve the previously-set `persistDecisionNotes`. Shallow spread alone would
+      // overwrite the whole sub-object. Other top-level keys keep shallow-replacement
+      // semantics — they're either scalars or whole-object replacements (backupRetention,
+      // scheduler) where the caller is expected to send the full sub-object.
+      const mergedNotes =
+        patch.notes !== undefined
+          ? {
+              persistRunNotes: patch.notes.persistRunNotes ?? currentGeneral.notes?.persistRunNotes ?? false,
+              persistDecisionNotes:
+                patch.notes.persistDecisionNotes ?? currentGeneral.notes?.persistDecisionNotes ?? true,
+            }
+          : currentGeneral.notes;
       const nextGeneral = normalizeGeneralSettings({
-        ...normalizeGeneralSettings(current.general),
+        ...currentGeneral,
         ...patch,
+        notes: mergedNotes,
       });
       const now = new Date();
       const [updated] = await db

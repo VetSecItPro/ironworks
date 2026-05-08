@@ -72,6 +72,7 @@ import { sseRoutes } from "./routes/sse.js";
 import { supportPublicRoutes } from "./routes/support.js";
 import { teamTemplateRoutes } from "./routes/team-templates.js";
 import { startEmbeddingsScheduler } from "./services/embeddings/scheduler.js";
+import { startPeriodicNotesScheduler } from "./services/periodic-notes/cron.js";
 import type { StorageService } from "./storage/types.js";
 import { applyUiBranding } from "./ui-branding.js";
 
@@ -403,6 +404,13 @@ export async function createApp(
   // chunking_jobs queues. No-op if already started; tunable via
   // IRONWORKS_EMBEDDINGS_TICK_INTERVAL_MS.
   startEmbeddingsScheduler(db);
+
+  // Start the periodic-notes scheduler — emits weekly (Sun 00:30 CT) +
+  // monthly (1st 00:30 CT) cost-rollup knowledge pages. Idempotent.
+  // Note: not currently wired into graceful shutdown (mirrors the
+  // embeddings scheduler) — timers are unref()'d so they don't hold the
+  // event loop open, and in-process restart would re-arm cleanly.
+  startPeriodicNotesScheduler(db);
 
   api.use(
     accessRoutes(db, {

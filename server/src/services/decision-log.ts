@@ -1,6 +1,10 @@
 import type { Db } from "@ironworksai/db";
+import { agents, issues } from "@ironworksai/db";
+import { eq } from "drizzle-orm";
 import { logger } from "../middleware/logger.js";
 import { logActivity } from "./activity-log.js";
+import { instanceSettingsService } from "./instance-settings.js";
+import { type DecisionInput, emitDecisionNotes } from "./periodic-notes/decision-notes.js";
 
 /**
  * Decision Log Service
@@ -107,4 +111,88 @@ export async function logDecisions(
       logger.warn({ err, agentId: opts.agentId, runId: opts.runId }, "Failed to log agent decision");
     }
   }
+
+  // P2: Periodic-notes — emit a knowledge-page per decision when enabled
+  // (default true). Wrapped in catch-and-swallow so this never blocks the
+  // primary activity-log write above. Settings fetch + agent/issue slug
+  // lookups are only performed when there are decisions to emit.
+  if (opts.decisions.length === 0) return;
+
+  try {
+    const settings = await instanceSettingsService(db).getGeneral();
+    if (settings.notes?.persistDecisionNotes !== true) return;
+
+    // Resolve agent slug once (all decisions share the same agentId in this batch).
+    let decidedByAgentSlug: string | null = null;
+    try {
+      const agentRow = await db
+        .select({ name: agents.name })
+        .from(agents)
+        .where(eq(agents.id, opts.agentId))
+        .limit(1)
+        .then((rows) => rows[0] ?? null);
+      decidedByAgentSlug = agentRow?.name ?? null;
+    } catch (lookupErr) {
+      logger.debug({ err: lookupErr, agentId: opts.agentId }, "[periodic-notes] agent slug lookup failed");
+    }
+
+    // Resolve unique issue identifiers in one query (decisions may share issue).
+    const issueIdSet = new Set<string>();
+    for (const d of opts.decisions) {
+      if (d.issueId) issueIdSet.add(d.issueId);
+    }
+    const issueSlugById = new Map<string, string | null>();
+    if (issueIdSet.size > 0) {
+      try {
+        const rows = await db
+          .select({ id: issues.id, identifier: issues.identifier })
+          .from(issues)
+          .where(eq(issues.companyId, opts.companyId));
+        for (const r of rows) {
+          if (issueIdSet.has(r.id)) issueSlugById.set(r.id, r.identifier ?? null);
+        }
+      } catch (lookupErr) {
+        logger.debug({ err: lookupErr }, "[periodic-notes] issue slug lookup failed");
+      }
+    }
+
+    const mappedInputs: DecisionInput[] = opts.decisions.map((d) => {
+      const decisionId = `${opts.runId}-${Math.abs(hashString(d.decision)).toString(36).slice(0, 8)}`;
+      return {
+        decisionId,
+        title: d.decision.length > 80 ? `${d.decision.slice(0, 77)}...` : d.decision,
+        rationale: d.reasoning,
+        // The DecisionEntry shape doesn't carry a lifecycle status; treat all
+        // emitted decisions as "accepted" since they were captured from a
+        // succeeded run's result. Future spec iterations can plumb a real
+        // status through extractDecisions if needed.
+        status: "accepted",
+        contextIssueSlug: d.issueId ? (issueSlugById.get(d.issueId) ?? null) : null,
+        decidedByAgentSlug,
+        // No project plumbed through DecisionEntry today; leave null.
+        projectSlug: null,
+        alternatives: d.alternativesConsidered,
+        // Consequences not captured in current DecisionEntry shape.
+        consequences: null,
+      };
+    });
+
+    await emitDecisionNotes(db, { companyId: opts.companyId, decisions: mappedInputs });
+  } catch (err) {
+    logger.warn({ err, agentId: opts.agentId, runId: opts.runId }, "[periodic-notes] decision notes emit failed");
+  }
+}
+
+/**
+ * Tiny non-cryptographic hash for stable per-decision IDs derived from
+ * (runId, decision text). Collisions across decisions in the same run are
+ * vanishingly rare given the 8-char base36 suffix; on collision the second
+ * write hits the existing slug and `emitDecisionNotes` updates in place.
+ */
+function hashString(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (h * 31 + s.charCodeAt(i)) | 0;
+  }
+  return h;
 }
