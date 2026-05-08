@@ -134,6 +134,23 @@ All notable changes to IronWorks are documented in this file.
   `@ironworksai/adapter-utils/server-utils` so all six adapters use identical
   injection semantics. (+8 unit tests covering the helper.)
 
+### Changed
+- **Refactored `server/src/services/heartbeat.ts`** — extracted ~330 LOC of
+  module-level helpers into three new sibling files:
+  `heartbeat-team-directory.ts` (per-company colleague directory + 5min cache),
+  `heartbeat-workspace.ts` (workspace path resolution, session params,
+  ledger scope, run task key), and `heartbeat-session-policy.ts` (compaction
+  policy, output-token classification, max-token resolution). The
+  `heartbeatService(db)` factory closure is unchanged. Pure file move with
+  mechanical import rewiring; zero semantic change. `heartbeat.ts` shrinks
+  from 3,554 to ~3,255 LOC. External imports keep working via re-export
+  shims (`prioritizeProjectWorkspaceCandidatesForRun`,
+  `resolveRuntimeSessionParamsForWorkspace`, `parseSessionCompactionPolicy`,
+  `ResolvedWorkspaceForRun` are still importable from
+  `services/heartbeat.js`). Approach A from the
+  2026-05-07 helpers-extraction design spec; Approach B (closure-internal
+  split) and C (executeRun split) deferred.
+
 ### Removed
 - **Plugin system** (full deletion). The plugin extension framework was disabled
   for V1 productization (no plugin routes mounted, no worker processes started)
