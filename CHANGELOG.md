@@ -135,30 +135,25 @@ All notable changes to IronWorks are documented in this file.
   injection semantics. (+8 unit tests covering the helper.)
 
 ### Changed
-- **Refactored `server/src/routes/access.ts`** — split the 2,722-LOC, 37-route
-  monolith into five domain sub-routers composed via `Router.use()`:
-  `access-routes-board-claim.ts` (2 routes), `access-routes-cli-auth.ts`
-  (6 routes), `access-routes-skills.ts` (3 routes), `access-routes-invites.ts`
-  (17 routes — agent invites, OpenClaw invite-prompt, user invites,
-  join-requests, claim-api-key), and `access-routes-membership.ts`
-  (9 routes — members, admin, /me/access). Module-level helpers and the
-  closure-scoped `assertInstanceAdmin` / `assertCompanyPermission` predicates
-  are extracted into `access-route-helpers.ts` exposing
-  `buildAccessRouteContext(db, opts)` so every sub-router shares one
-  `accessService` / `boardAuthService` / `agentService` / `userInviteService`
-  / `budgetService` instance. `access.ts` becomes a 41-LOC orchestrator that
-  preserves the `accessRoutes(db, opts)` factory signature plus re-export
-  shims for `companyInviteExpiresAt`, `buildInviteOnboardingTextDocument`,
-  `buildJoinDefaultsPayloadForAccept`, `mergeJoinDefaultsPayloadForReplay`,
-  `canReplayOpenClawGatewayInviteAccept`, `normalizeAgentDefaultsForJoin`,
-  `agentJoinGrantsFromDefaults`, `resolveJoinRequestAgentManagerId` so all
-  external callers (8 test suites + `app.ts`) keep working unchanged. Pure
-  file move with route-handler bodies preserved verbatim; zero semantic
-  change, zero new dependencies. Per-method+path collision check confirms
-  no overlap across the five sub-routers. All 18 tests in
-  `__tests__/access.test.ts` plus 22 related access tests stay green; full
-  server suite still 1673/1673. Approach A from the 2026-05-07
-  access-routes-split design spec.
+- **Refactored `server/src/services/company-portability-shared.ts`** — split
+  the 2,660-LOC, 119-export grab-bag service module into six domain-focused
+  files behind a re-export barrel: `company-portability-types.ts` (10 type
+  exports), `company-portability-defaults.ts` (constants + primitive type
+  guards + mode resolvers + bundled-skills commit cache, 18 exports),
+  `company-portability-skill-helpers.ts` (skill key/slug derivation, org
+  tree, source entries, 8 exports), `company-portability-path-helpers.ts`
+  (path normalization, namespace derivation, GitHub URL parsing, 12
+  exports), `company-portability-env-helpers.ts` (env-key handling,
+  `execFileAsync`, env-input builders, 7 exports), and
+  `company-portability-manifest-helpers.ts` (YAML/markdown parse+render,
+  manifest builder, routine/recurrence logic, workspace + file-map
+  utilities, network helpers, 64 exports). The original
+  `company-portability-shared.ts` shrinks to ~20 LOC of `export *` lines.
+  Pure refactor: zero semantic change, zero caller modifications - all
+  119 symbols remain importable through the barrel path used by
+  `company-portability.ts`, `company-portability-export.ts`,
+  `company-portability-import.ts`, and `agent-yaml-io.ts`. All 1,673
+  server tests remain green.
 - **Refactored `server/src/routes/agents.ts`** — split the 3,365-LOC,
   61-route monolith into four domain sub-routers composed via
   `Router.use()`: `agent-routes-crud.ts` (33 routes — agent CRUD,
