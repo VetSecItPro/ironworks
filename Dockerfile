@@ -46,7 +46,6 @@ COPY packages/adapters/opencode-local/package.json packages/adapters/opencode-lo
 COPY packages/adapters/openrouter-api/package.json packages/adapters/openrouter-api/
 COPY packages/adapters/pi-local/package.json packages/adapters/pi-local/
 COPY packages/adapters/poe-api/package.json packages/adapters/poe-api/
-COPY packages/plugins/sdk/package.json packages/plugins/sdk/
 COPY patches/ patches/
 
 RUN pnpm install --no-frozen-lockfile
@@ -58,7 +57,6 @@ COPY . .
 RUN pnpm --filter @ironworksai/shared build
 RUN pnpm --filter @ironworksai/db build
 RUN pnpm --filter @ironworksai/ui build
-RUN pnpm --filter @ironworksai/plugin-sdk build
 RUN pnpm --filter @ironworksai/server build
 RUN test -f server/dist/index.js || (echo "ERROR: server build output missing" && exit 1)
 
