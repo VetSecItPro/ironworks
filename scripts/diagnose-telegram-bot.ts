@@ -12,10 +12,11 @@
  * After running with --fix, restart the server (or wait for the supervisor) so the bot
  * polling loop can pick up the cleared state.
  */
-import { drizzle } from "drizzle-orm/postgres-js";
-import { eq } from "drizzle-orm";
-import postgres from "postgres";
+
 import { companies, companySecrets } from "@ironworksai/db";
+import { eq } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import { secretService } from "../server/src/services/secrets.js";
 
 const TELEGRAM_API = "https://api.telegram.org";
