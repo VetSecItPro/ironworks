@@ -10,10 +10,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const emitWeeklyMock = vi.fn(async () => ({ pagesEmitted: 0 }));
 const emitMonthlyMock = vi.fn(async () => ({ pagesEmitted: 0 }));
+const runVaultSnapshotMock = vi.fn(async () => ({
+  attempted: 0,
+  succeeded: 0,
+  failed: 0,
+  skipped: 0,
+}));
 
 vi.mock("../cost-rollups.js", () => ({
   emitWeeklyCostRollup: emitWeeklyMock,
   emitMonthlyCostRollup: emitMonthlyMock,
+}));
+
+vi.mock("../../vault-snapshot/index.js", () => ({
+  runVaultSnapshotCron: runVaultSnapshotMock,
 }));
 
 // Imported AFTER vi.mock so the module picks up the mocked emitters.
@@ -22,6 +32,8 @@ const {
   stopPeriodicNotesScheduler,
   msUntilNextWeeklyFire,
   msUntilNextMonthlyFire,
+  msUntilNextDailyVaultFire,
+  msUntilNextWeeklyVaultFire,
   __getPeriodicNotesSchedulerState,
 } = await import("../cron.js");
 
@@ -92,13 +104,69 @@ describe("msUntilNextMonthlyFire", () => {
   });
 });
 
+describe("msUntilNextDailyVaultFire", () => {
+  it("from 02:00 CT, fires same day at 03:00 (~1h)", () => {
+    // 2026-05-06 02:00 CDT = 07:00 UTC.
+    const before = new Date("2026-05-06T07:00:00Z");
+    const ms = msUntilNextDailyVaultFire(before);
+    expect(ms).toBeGreaterThan(55 * 60 * 1000);
+    expect(ms).toBeLessThan(65 * 60 * 1000);
+  });
+
+  it("from 03:01 CT, fires next day at 03:00 (~23h59m)", () => {
+    // 2026-05-06 03:01 CDT = 08:01 UTC.
+    const after = new Date("2026-05-06T08:01:00Z");
+    const ms = msUntilNextDailyVaultFire(after);
+    expect(ms).toBeGreaterThan(23 * HOUR_MS);
+    expect(ms).toBeLessThan(24 * HOUR_MS);
+  });
+
+  it("returns positive ms within a day from arbitrary anchor", () => {
+    const wed = new Date("2026-05-06T18:00:00Z");
+    const ms = msUntilNextDailyVaultFire(wed);
+    expect(ms).toBeGreaterThan(0);
+    expect(ms).toBeLessThanOrEqual(DAY_MS);
+  });
+});
+
+describe("msUntilNextWeeklyVaultFire", () => {
+  it("from Sunday 03:00 CT, fires same day at 03:30 (~30m)", () => {
+    // 2026-05-10 03:00 CDT = 08:00 UTC.
+    const sunBefore = new Date("2026-05-10T08:00:00Z");
+    const ms = msUntilNextWeeklyVaultFire(sunBefore);
+    expect(ms).toBeGreaterThan(29 * 60 * 1000);
+    expect(ms).toBeLessThan(31 * 60 * 1000);
+  });
+
+  it("from Sunday 03:31 CT, fires next Sunday (~6.99 days)", () => {
+    const sunAfter = new Date("2026-05-10T08:31:00Z");
+    const ms = msUntilNextWeeklyVaultFire(sunAfter);
+    expect(ms).toBeGreaterThan(WEEK_MS - 2 * 60 * 1000);
+    expect(ms).toBeLessThan(WEEK_MS);
+  });
+
+  it("returns positive ms within a week from a Wednesday", () => {
+    const wed = new Date("2026-05-06T18:00:00Z");
+    const ms = msUntilNextWeeklyVaultFire(wed);
+    expect(ms).toBeGreaterThan(0);
+    expect(ms).toBeLessThan(WEEK_MS);
+  });
+});
+
 describe("scheduler lifecycle", () => {
   beforeEach(() => {
     emitWeeklyMock.mockReset();
     emitMonthlyMock.mockReset();
+    runVaultSnapshotMock.mockReset();
     // Default: emitters resolve immediately (overridden per-test as needed).
     emitWeeklyMock.mockResolvedValue({ pagesEmitted: 0 });
     emitMonthlyMock.mockResolvedValue({ pagesEmitted: 0 });
+    runVaultSnapshotMock.mockResolvedValue({
+      attempted: 0,
+      succeeded: 0,
+      failed: 0,
+      skipped: 0,
+    });
     vi.useFakeTimers();
     // Anchor fake clock to a known instant (Wed mid-day) so timer math is
     // deterministic and well below either fire boundary.
@@ -110,11 +178,13 @@ describe("scheduler lifecycle", () => {
     vi.useRealTimers();
   });
 
-  it("start arms both timers", () => {
+  it("start arms all four timers", () => {
     startPeriodicNotesScheduler(fakeDb);
     const s = __getPeriodicNotesSchedulerState();
     expect(s.weeklyRunning).toBe(true);
     expect(s.monthlyRunning).toBe(true);
+    expect(s.dailyVaultRunning).toBe(true);
+    expect(s.weeklyVaultRunning).toBe(true);
   });
 
   it("start is idempotent (second call is a no-op)", () => {
@@ -123,18 +193,20 @@ describe("scheduler lifecycle", () => {
     startPeriodicNotesScheduler(fakeDb);
     const after = __getPeriodicNotesSchedulerState();
     expect(after).toEqual(before);
-    // Pending timers count should be 2 (weekly + monthly), not 4.
-    expect(vi.getTimerCount()).toBe(2);
+    // Pending timers count should be 4 (weekly + monthly + daily-vault + weekly-vault), not 8.
+    expect(vi.getTimerCount()).toBe(4);
   });
 
-  it("stop clears timers and resets state", async () => {
+  it("stop clears all timers and resets state", async () => {
     startPeriodicNotesScheduler(fakeDb);
-    expect(vi.getTimerCount()).toBe(2);
+    expect(vi.getTimerCount()).toBe(4);
     await stopPeriodicNotesScheduler();
     expect(vi.getTimerCount()).toBe(0);
     const s = __getPeriodicNotesSchedulerState();
     expect(s.weeklyRunning).toBe(false);
     expect(s.monthlyRunning).toBe(false);
+    expect(s.dailyVaultRunning).toBe(false);
+    expect(s.weeklyVaultRunning).toBe(false);
   });
 
   // Anchors picked so the next-fire is small (~30 min) - keeps fake-timer
@@ -187,6 +259,62 @@ describe("scheduler lifecycle", () => {
     await vi.advanceTimersByTimeAsync(32 * 60 * 1000);
     expect(emitWeeklyMock).toHaveBeenCalledTimes(1);
     expect(__getPeriodicNotesSchedulerState().weeklyRunning).toBe(true);
+  });
+
+  it("daily vault timer fires runVaultSnapshotCron with cadence=daily", async () => {
+    // 2026-06-30 02:59 CDT = 07:59 UTC → daily vault fires in ~1 min. We
+    // hold the cron-tick promise pending so the timer-loop never re-arms;
+    // mirrors the pattern used by "monthly timer fires emitter" above.
+    // Anchor chosen so ALL four timers' next-fire is < 24 days, avoiding
+    // setTimeout's 32-bit (≈24.85d) overflow that would otherwise fire the
+    // monthly timer immediately under fake-timer simulation.
+    vi.setSystemTime(new Date("2026-06-30T07:59:00Z"));
+    let releaseDaily: () => void = () => {};
+    emitWeeklyMock.mockImplementation(() => new Promise(() => {}));
+    emitMonthlyMock.mockImplementation(() => new Promise(() => {}));
+    runVaultSnapshotMock.mockImplementationOnce(
+      () =>
+        new Promise<{
+          attempted: number;
+          succeeded: number;
+          failed: number;
+          skipped: number;
+        }>((resolve) => {
+          releaseDaily = () => resolve({ attempted: 0, succeeded: 0, failed: 0, skipped: 0 });
+        }),
+    );
+    startPeriodicNotesScheduler(fakeDb);
+    await vi.advanceTimersByTimeAsync(2 * 60 * 1000);
+    expect(runVaultSnapshotMock).toHaveBeenCalledTimes(1);
+    expect(runVaultSnapshotMock).toHaveBeenCalledWith(fakeDb, { cadence: "daily" });
+    // Resolve so afterEach's stop can drain.
+    releaseDaily();
+  });
+
+  it("weekly vault timer fires runVaultSnapshotCron with cadence=weekly", async () => {
+    // Sunday 2026-05-10 03:29 CDT = 08:29 UTC → weekly vault fires in ~1 min.
+    // Weekly cost rollup (Sun 00:30) fires 3 hours BEFORE this anchor; daily
+    // vault fires at 03:00 (~29 min before). Both emitters block so re-arms
+    // never happen and the only call we observe is the weekly-vault tick.
+    vi.setSystemTime(new Date("2026-05-10T08:29:00Z"));
+    let releaseWeekly: () => void = () => {};
+    emitWeeklyMock.mockImplementation(() => new Promise(() => {}));
+    emitMonthlyMock.mockImplementation(() => new Promise(() => {}));
+    runVaultSnapshotMock.mockImplementation(
+      () =>
+        new Promise<{
+          attempted: number;
+          succeeded: number;
+          failed: number;
+          skipped: number;
+        }>((resolve) => {
+          releaseWeekly = () => resolve({ attempted: 0, succeeded: 0, failed: 0, skipped: 0 });
+        }),
+    );
+    startPeriodicNotesScheduler(fakeDb);
+    await vi.advanceTimersByTimeAsync(2 * 60 * 1000);
+    expect(runVaultSnapshotMock).toHaveBeenCalledWith(fakeDb, { cadence: "weekly" });
+    releaseWeekly();
   });
 
   it("stop drains in-flight weekly emit", async () => {

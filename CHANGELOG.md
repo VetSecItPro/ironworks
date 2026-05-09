@@ -6,6 +6,7 @@ All notable changes to IronWorks are documented in this file.
 
 ### Added
 
+- **Scheduled R2 vault snapshot cron (P3.2).** Per-company opt-in via `instanceGeneralSettings.vaultSnapshot` section. Daily (03:00 CT) and weekly (Sunday 03:30 CT) crons iterate enabled companies, generate the vault zip via the P3.1 export pipeline, and PUT to a customer-configured Cloudflare R2 bucket (S3-compatible API, uses existing `@aws-sdk/client-s3`). Idempotent on object key (overwrite). New metric `ironworks_vault_snapshots_total{cadence,status}` for ops visibility. Per-company failures are isolated - one company's snapshot failure doesn't break the batch.
 - **Vault export endpoint (P3).** `GET /api/companies/:companyId/vault-export.zip` streams an Obsidian-compatible folder-tree zip with all knowledge pages (P0+P1+P2 outputs already shaped right), agent profiles, issues with comments, skills, and a minimal `.obsidian/app.json` config. Reuses canonical Frontmatter types throughout. `[[wikilinks]]` work in Obsidian without modification. Uses streaming (archiver) so 10K+ page KBs export without buffering in memory.
 - **Periodic notes + cost rollups (P2).** Agent run completions optionally emit knowledge pages at `agents/<slug>/runs/<YYYY-MM-DD>/<run-id>.md` (opt-in via `instanceGeneralSettings.notes.persistRunNotes`). Decisions logged via `logDecisions` auto-emit `decisions/<decision-id>.md` pages with `[[wikilinks]]` to source issue/agent/project (default on, toggle via `notes.persistDecisionNotes`). Weekly + monthly cost rollup pages emit at `finance/cost-rollups/{weekly,monthly}/<period>.md` via cron (Sunday 00:30 CT and 1st 00:30 CT). All notes use canonical Frontmatter types with new `CostRollupFrontmatter`. Periodic-notes scheduler boots in `app.ts` next to embeddings scheduler.
 - **Cross-doc link graph (P1).** `[[slug]]` and `[[slug#anchor]]` wikilink syntax in knowledge pages now parsed on save and stored as graph edges in `knowledge_page_links`. Frontmatter `aliases: []` lets renamed pages keep accepting incoming links. Unresolved slugs persist as broken-link placeholders that auto-rebind when the target page is created. New endpoints: `GET /api/knowledge-pages/:id/backlinks` and `GET /api/knowledge-pages/:id/graph?hops=1|2`. UI: backlinks sidebar + 1-2 hop force-directed graph view (`@xyflow/react`) on `KnowledgePageViewer`. Backfill script: `scripts/backfill-knowledge-links.ts`.
@@ -144,6 +145,8 @@ All notable changes to IronWorks are documented in this file.
 
 ### Changed
 
+- `instanceGeneralSettingsSchema` extended with `vaultSnapshot` section: `{ enabled, bucketName, endpoint, accessKeyIdSecretId, secretAccessKeySecretId, keyPrefix, cadence: daily|weekly|off }`. Credentials stored as company secrets, referenced by id.
+- Periodic-notes scheduler now manages 4 timers (weekly + monthly cost rollup, daily + weekly vault snapshot).
 - `instanceGeneralSettingsSchema` extended with `notes: { persistRunNotes (default false), persistDecisionNotes (default true) }` section.
 - `EntityType` union and `AnyFrontmatter` discriminated union extended with `cost_rollup` entity type.
 - `KnowledgePageInput` allows optional explicit `slug` for emitters that need deterministic structured slugs (e.g. cost rollups, decisions, runs).

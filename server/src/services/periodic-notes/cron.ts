@@ -1,11 +1,17 @@
 /**
  * Periodic-notes scheduler.
  *
- * Boots two long-period timers that emit weekly + monthly cost rollup pages.
+ * Boots four long-period timers:
+ *   - Weekly cost rollup:  every Sunday at 00:30 CT (covers prior Mon-Sun ISO week).
+ *   - Monthly cost rollup: the 1st of every month at 00:30 CT (covers prior calendar month).
+ *   - Daily vault snapshot:   every day at 03:00 CT (P3.2).
+ *   - Weekly vault snapshot:  every Sunday at 03:30 CT (P3.2).
  *
- * Schedule (project standard - all crons in America/Chicago):
- *   - Weekly:  every Sunday at 00:30 CT (covers prior Mon-Sun ISO week).
- *   - Monthly: the 1st of every month at 00:30 CT (covers prior calendar month).
+ * The vault-snapshot timers are spaced ~3 hours after the cost-rollup ones to
+ * avoid load contention on the same DB at the boundary. `runVaultSnapshotCron`
+ * itself never throws (it returns CronResult and isolates per-company
+ * failures), but the tick is still wrapped in try/catch as a belt-and-suspenders
+ * guard against unexpected programming errors.
  *
  * Pattern (mirrors `services/embeddings/scheduler.ts`):
  *   - Idempotent start (calling twice is a no-op).
@@ -13,7 +19,7 @@
  *     `setTimeout` self-re-arms only after the prior tick resolves.
  *   - `unref()` so timers don't hold the event loop open during graceful
  *     shutdown.
- *   - `stopPeriodicNotesScheduler` clears both timers AND awaits any in-flight
+ *   - `stopPeriodicNotesScheduler` clears all timers AND awaits any in-flight
  *     emit so the caller can rely on "no DB writes after this resolves".
  *
  * Time-zone math: Intl APIs are used to read "now" as CT calendar parts,
@@ -23,26 +29,40 @@
  */
 import type { Db } from "@ironworksai/db";
 import { logger } from "../../middleware/logger.js";
+import { runVaultSnapshotCron } from "../vault-snapshot/index.js";
 import { emitMonthlyCostRollup, emitWeeklyCostRollup } from "./cost-rollups.js";
 
 const TZ = "America/Chicago";
 const FIRE_HOUR = 0;
 const FIRE_MINUTE = 30;
+// Vault-snapshot fire times: 03:00 CT daily, 03:30 CT Sunday.
+const DAILY_VAULT_HOUR = 3;
+const DAILY_VAULT_MINUTE = 0;
+const WEEKLY_VAULT_HOUR = 3;
+const WEEKLY_VAULT_MINUTE = 30;
 
 interface SchedulerState {
   weeklyTimer: NodeJS.Timeout | null;
   monthlyTimer: NodeJS.Timeout | null;
+  dailyVaultTimer: NodeJS.Timeout | null;
+  weeklyVaultTimer: NodeJS.Timeout | null;
   stopping: boolean;
   inFlightWeekly: Promise<unknown> | null;
   inFlightMonthly: Promise<unknown> | null;
+  inFlightDailyVault: Promise<unknown> | null;
+  inFlightWeeklyVault: Promise<unknown> | null;
 }
 
 const state: SchedulerState = {
   weeklyTimer: null,
   monthlyTimer: null,
+  dailyVaultTimer: null,
+  weeklyVaultTimer: null,
   stopping: false,
   inFlightWeekly: null,
   inFlightMonthly: null,
+  inFlightDailyVault: null,
+  inFlightWeeklyVault: null,
 };
 
 // ── CT calendar helpers ──────────────────────────────────────────────────────
@@ -180,6 +200,47 @@ export function msUntilNextMonthlyFire(now: Date = new Date()): number {
   return Math.max(0, targetUtc.getTime() - now.getTime());
 }
 
+/** Compute ms until next 03:00 CT (daily). */
+export function msUntilNextDailyVaultFire(now: Date = new Date()): number {
+  const ct = getCtParts(now);
+  let daysAhead = 0;
+  const isBeforeFire = ct.hour < DAILY_VAULT_HOUR || (ct.hour === DAILY_VAULT_HOUR && ct.minute < DAILY_VAULT_MINUTE);
+  if (!isBeforeFire) daysAhead = 1;
+  const anchor = new Date(Date.UTC(ct.year, ct.month - 1, ct.day, 12, 0, 0));
+  anchor.setUTCDate(anchor.getUTCDate() + daysAhead);
+  const targetUtc = ctWallClockToUtc(
+    anchor.getUTCFullYear(),
+    anchor.getUTCMonth() + 1,
+    anchor.getUTCDate(),
+    DAILY_VAULT_HOUR,
+    DAILY_VAULT_MINUTE,
+  );
+  return Math.max(0, targetUtc.getTime() - now.getTime());
+}
+
+/** Compute ms until next Sunday 03:30 CT. */
+export function msUntilNextWeeklyVaultFire(now: Date = new Date()): number {
+  const ct = getCtParts(now);
+  let daysAhead: number;
+  if (ct.weekday === 7) {
+    const isBeforeFire =
+      ct.hour < WEEKLY_VAULT_HOUR || (ct.hour === WEEKLY_VAULT_HOUR && ct.minute < WEEKLY_VAULT_MINUTE);
+    daysAhead = isBeforeFire ? 0 : 7;
+  } else {
+    daysAhead = 7 - ct.weekday;
+  }
+  const anchor = new Date(Date.UTC(ct.year, ct.month - 1, ct.day, 12, 0, 0));
+  anchor.setUTCDate(anchor.getUTCDate() + daysAhead);
+  const targetUtc = ctWallClockToUtc(
+    anchor.getUTCFullYear(),
+    anchor.getUTCMonth() + 1,
+    anchor.getUTCDate(),
+    WEEKLY_VAULT_HOUR,
+    WEEKLY_VAULT_MINUTE,
+  );
+  return Math.max(0, targetUtc.getTime() - now.getTime());
+}
+
 // ── Timer plumbing ───────────────────────────────────────────────────────────
 
 function scheduleNextWeekly(db: Db): void {
@@ -226,19 +287,69 @@ function scheduleNextMonthly(db: Db): void {
   logger.info({ msUntilNextMonthlyFire: ms }, "[periodic-notes] monthly cost rollup scheduled");
 }
 
+function scheduleNextDailyVault(db: Db): void {
+  const ms = msUntilNextDailyVaultFire();
+  const t = setTimeout(() => {
+    if (state.stopping) return;
+    state.inFlightDailyVault = (async () => {
+      try {
+        const result = await runVaultSnapshotCron(db, { cadence: "daily" });
+        logger.info({ ...result, cadence: "daily" }, "[periodic-notes] daily vault snapshot cron tick complete");
+      } catch (err) {
+        // runVaultSnapshotCron handles its own per-company errors - this only
+        // catches programmer errors (e.g. settings-service throws unexpectedly).
+        logger.error({ err }, "[periodic-notes] daily vault snapshot tick failed");
+      }
+    })();
+    void state.inFlightDailyVault.finally(() => {
+      state.inFlightDailyVault = null;
+      if (!state.stopping) scheduleNextDailyVault(db);
+    });
+  }, ms);
+  t.unref?.();
+  state.dailyVaultTimer = t;
+  logger.info({ msUntilNextDailyVaultFire: ms }, "[periodic-notes] daily vault snapshot scheduled");
+}
+
+function scheduleNextWeeklyVault(db: Db): void {
+  const ms = msUntilNextWeeklyVaultFire();
+  const t = setTimeout(() => {
+    if (state.stopping) return;
+    state.inFlightWeeklyVault = (async () => {
+      try {
+        const result = await runVaultSnapshotCron(db, { cadence: "weekly" });
+        logger.info({ ...result, cadence: "weekly" }, "[periodic-notes] weekly vault snapshot cron tick complete");
+      } catch (err) {
+        logger.error({ err }, "[periodic-notes] weekly vault snapshot tick failed");
+      }
+    })();
+    void state.inFlightWeeklyVault.finally(() => {
+      state.inFlightWeeklyVault = null;
+      if (!state.stopping) scheduleNextWeeklyVault(db);
+    });
+  }, ms);
+  t.unref?.();
+  state.weeklyVaultTimer = t;
+  logger.info({ msUntilNextWeeklyVaultFire: ms }, "[periodic-notes] weekly vault snapshot scheduled");
+}
+
 /**
  * Start the periodic-notes scheduler. Idempotent - calling twice is a no-op.
  * Boot caller should invoke once after the DB is ready.
  */
 export function startPeriodicNotesScheduler(db: Db): void {
-  if (state.weeklyTimer || state.monthlyTimer) return;
+  if (state.weeklyTimer || state.monthlyTimer || state.dailyVaultTimer || state.weeklyVaultTimer) {
+    return;
+  }
   state.stopping = false;
   scheduleNextWeekly(db);
   scheduleNextMonthly(db);
+  scheduleNextDailyVault(db);
+  scheduleNextWeeklyVault(db);
 }
 
 /**
- * Stop the scheduler. Clears both timers + awaits any in-flight emit so
+ * Stop the scheduler. Clears all timers + awaits any in-flight emit so
  * callers can rely on "no DB writes after this resolves".
  */
 export async function stopPeriodicNotesScheduler(): Promise<void> {
@@ -250,6 +361,14 @@ export async function stopPeriodicNotesScheduler(): Promise<void> {
   if (state.monthlyTimer) {
     clearTimeout(state.monthlyTimer);
     state.monthlyTimer = null;
+  }
+  if (state.dailyVaultTimer) {
+    clearTimeout(state.dailyVaultTimer);
+    state.dailyVaultTimer = null;
+  }
+  if (state.weeklyVaultTimer) {
+    clearTimeout(state.weeklyVaultTimer);
+    state.weeklyVaultTimer = null;
   }
   if (state.inFlightWeekly) {
     try {
@@ -265,8 +384,24 @@ export async function stopPeriodicNotesScheduler(): Promise<void> {
       // already logged
     }
   }
+  if (state.inFlightDailyVault) {
+    try {
+      await state.inFlightDailyVault;
+    } catch {
+      // already logged
+    }
+  }
+  if (state.inFlightWeeklyVault) {
+    try {
+      await state.inFlightWeeklyVault;
+    } catch {
+      // already logged
+    }
+  }
   state.inFlightWeekly = null;
   state.inFlightMonthly = null;
+  state.inFlightDailyVault = null;
+  state.inFlightWeeklyVault = null;
   // Reset for tests / restart-in-process scenarios.
   state.stopping = false;
   logger.info("[periodic-notes] scheduler stopped");
@@ -276,13 +411,21 @@ export async function stopPeriodicNotesScheduler(): Promise<void> {
 export function __getPeriodicNotesSchedulerState(): {
   weeklyRunning: boolean;
   monthlyRunning: boolean;
+  dailyVaultRunning: boolean;
+  weeklyVaultRunning: boolean;
   inFlightWeekly: boolean;
   inFlightMonthly: boolean;
+  inFlightDailyVault: boolean;
+  inFlightWeeklyVault: boolean;
 } {
   return {
     weeklyRunning: state.weeklyTimer !== null,
     monthlyRunning: state.monthlyTimer !== null,
+    dailyVaultRunning: state.dailyVaultTimer !== null,
+    weeklyVaultRunning: state.weeklyVaultTimer !== null,
     inFlightWeekly: state.inFlightWeekly !== null,
     inFlightMonthly: state.inFlightMonthly !== null,
+    inFlightDailyVault: state.inFlightDailyVault !== null,
+    inFlightWeeklyVault: state.inFlightWeeklyVault !== null,
   };
 }

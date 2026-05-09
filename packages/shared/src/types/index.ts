@@ -130,6 +130,7 @@ export type {
   InstanceGeneralSettings,
   InstanceNotesSettings,
   InstanceSettings,
+  InstanceVaultSnapshotSettings,
   SchedulerSettings,
 } from "./instance.js";
 export type {

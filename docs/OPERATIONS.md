@@ -407,9 +407,58 @@ Open the unpacked folder in Obsidian to get the full graph view + backlinks pane
 - **Stream truncated mid-download**: Network drop. Retry from start (no resumable downloads in v1).
 - **Empty zip**: Company has zero rows in all tables. Still valid; opens in Obsidian as an empty vault.
 
-### Future: scheduled snapshot to R2 (P3.2)
+## Scheduled R2 vault snapshots (P3.2)
 
-Not yet implemented. When it lands, customers will be able to configure a Cloudflare R2 bucket + key prefix and have the vault snapshot daily/weekly. Same renderer + composer code; just adds an R2 client + cron registration.
+### Configuration
+
+Per-company opt-in via Settings → General → vaultSnapshot:
+
+| Field | Description |
+|---|---|
+| `enabled` | Set to `true` to enable scheduled snapshots for this company |
+| `bucketName` | R2 bucket name |
+| `endpoint` | R2 endpoint URL (e.g. `https://<account>.r2.cloudflarestorage.com`) |
+| `accessKeyIdSecretId` | Reference to a `company_secrets` row holding the R2 access key id |
+| `secretAccessKeySecretId` | Reference to a `company_secrets` row holding the R2 secret access key |
+| `keyPrefix` | Optional path prefix inside bucket (e.g. `backups/ironworks`) |
+| `cadence` | `daily` (03:00 CT every day), `weekly` (Sunday 03:30 CT), or `off` |
+
+### Cron schedule
+
+- Daily snapshot: 03:00 America/Chicago every day
+- Weekly snapshot: Sunday 03:30 America/Chicago
+
+Both spaced from cost-rollup crons (00:30 CT) to avoid load contention.
+
+### Object key format
+
+```
+<keyPrefix>/<YYYY-MM-DD>/<company-name-slug>-vault.zip
+```
+
+If `keyPrefix` is empty, the key starts at the date directory.
+
+### Verifying snapshots
+
+```bash
+aws s3 ls s3://<bucketName>/<keyPrefix>/$(date +%Y-%m-%d)/ \
+  --endpoint-url <endpoint>
+```
+
+### Prometheus metric
+
+`ironworks_vault_snapshots_total{cadence, status}` where status is one of `succeeded`, `failed`, `skipped`.
+
+```promql
+# Failure rate over last hour
+sum by (cadence) (rate(ironworks_vault_snapshots_total{status="failed"}[1h]))
+```
+
+### Troubleshooting
+
+- **All snapshots failing with 403**: bad credentials. Re-check the `accessKeyIdSecretId` + `secretAccessKeySecretId` refs and underlying secret values.
+- **All snapshots failing with 404**: bucket doesn't exist or wrong endpoint. Verify R2 dashboard.
+- **Skipped (not failing)**: `enabled=false` or `cadence` doesn't match the cron run, or credentials missing.
 
 ---
 

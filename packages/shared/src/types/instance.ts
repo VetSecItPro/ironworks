@@ -22,6 +22,21 @@ export interface InstanceNotesSettings {
   persistDecisionNotes: boolean;
 }
 
+/**
+ * Scheduled R2 vault-snapshot config (P3.2). Credentials are referenced by
+ * `company_secrets` row IDs; the cron resolves them via `secretService` at
+ * run time. See `vaultSnapshotSettingsSchema` for the canonical defaults.
+ */
+export interface InstanceVaultSnapshotSettings {
+  enabled: boolean;
+  bucketName?: string;
+  endpoint?: string;
+  accessKeyIdSecretId?: string;
+  secretAccessKeySecretId?: string;
+  keyPrefix: string;
+  cadence: "daily" | "weekly" | "off";
+}
+
 export interface InstanceGeneralSettings {
   censorUsernameInLogs: boolean;
   backupRetention?: BackupRetentionPolicy;
@@ -34,6 +49,7 @@ export interface InstanceGeneralSettings {
    */
   promptPreamble?: string;
   notes?: InstanceNotesSettings;
+  vaultSnapshot?: InstanceVaultSnapshotSettings;
 }
 
 export interface InstanceExperimentalSettings {
