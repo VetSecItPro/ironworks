@@ -867,11 +867,39 @@ export async function testTelegramToken(token: string): Promise<string> {
 }
 
 /**
+ * Clear any stale webhook on the bot token.
+ *
+ * Long-polling and webhooks are mutually exclusive on the Telegram side - if a
+ * webhook is registered, getUpdates returns 409 Conflict and silently fails
+ * forever. This call is safe and idempotent: deleteWebhook on a bot with no
+ * webhook is a no-op success.
+ *
+ * Defends against the class of bug where a stale webhook (left over from a
+ * past test, migration, or wrong-environment registration) silently breaks
+ * the polling loop with no surfaced error.
+ */
+async function clearStaleWebhook(token: string, companyId: string): Promise<void> {
+  try {
+    const info = await tgApi(token, "getWebhookInfo", {});
+    const url = (info.result as { url?: string })?.url ?? "";
+    if (url) {
+      logger.warn({ companyId, staleWebhookUrl: url }, "[telegram-bridge] clearing stale webhook before polling");
+      await tgApi(token, "deleteWebhook", { drop_pending_updates: false });
+    }
+  } catch (err) {
+    logger.warn({ err, companyId }, "[telegram-bridge] webhook precheck failed - continuing anyway");
+  }
+}
+
+/**
  * Start a Telegram bot instance for a company.
  */
 export async function startTelegramBridge(db: Db, companyId: string, token: string): Promise<void> {
   // Stop existing instance if any
   await stopTelegramBridge(companyId);
+
+  // Clear any stale webhook that would block long-polling with 409 Conflict.
+  await clearStaleWebhook(token, companyId);
 
   const ceoAgentId = await findCeoAgent(db, companyId);
 
