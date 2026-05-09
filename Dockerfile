@@ -57,7 +57,6 @@ COPY . .
 RUN pnpm --filter @ironworksai/shared build
 RUN pnpm --filter @ironworksai/db build
 RUN pnpm --filter @ironworksai/ui build
-RUN pnpm --filter @ironworksai/plugin-sdk build
 RUN pnpm --filter @ironworksai/server build
 RUN test -f server/dist/index.js || (echo "ERROR: server build output missing" && exit 1)
 

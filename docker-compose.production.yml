@@ -64,6 +64,8 @@ services:
       OLLAMA_API_KEY: "${OLLAMA_API_KEY:-}"
       OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-}"
       POE_API_KEY: "${POE_API_KEY:-}"
+      # Telegram bridge fallback token (see docker-compose.yml comment).
+      TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN:-}"
       IRONWORKS_DEPLOYMENT_MODE: "authenticated"
       IRONWORKS_DEPLOYMENT_EXPOSURE: "private"
       IRONWORKS_PUBLIC_URL: "${IRONWORKS_PUBLIC_URL:-http://localhost:3100}"

@@ -74,6 +74,12 @@ services:
       OLLAMA_API_KEY: "${OLLAMA_API_KEY:-}"
       OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-}"
       POE_API_KEY: "${POE_API_KEY:-}"
+      # Telegram bridge fallback token. The bridge prefers the encrypted
+      # secret in company_secrets, but falls back to this env var when
+      # decryption fails (e.g. master-key rotation across a deployment
+      # migration). Without this passthrough the fallback silently
+      # produces null and the bridge never starts.
+      TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN:-}"
     volumes:
       - ironworks-data:/ironworks
     depends_on:
