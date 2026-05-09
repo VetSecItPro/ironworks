@@ -379,6 +379,40 @@ Set `notes.persistRunNotes = false` and/or `notes.persistDecisionNotes = false` 
 
 ---
 
+## Vault export (P3)
+
+Customers can download their full company KB as an Obsidian-compatible zip:
+
+```bash
+curl -H "Authorization: Bearer <token>" \
+     -o my-company-vault.zip \
+     https://app.example.com/api/companies/<company-id>/vault-export.zip
+```
+
+The zip contains:
+- `knowledge/` - authored knowledge pages (any slug not under a top-level entity prefix)
+- `decisions/` - decision pages (P2-emitted)
+- `agents/<slug>/` - agent profile + run notes
+- `finance/cost-rollups/{weekly,monthly}/` - period rollup pages (P2-emitted)
+- `issues/` - issue records with comments
+- `skills/` - skill bodies
+- `.obsidian/app.json` - minimal Obsidian config so wikilinks resolve immediately
+- `index.md` - vault TOC + stats
+
+Open the unpacked folder in Obsidian to get the full graph view + backlinks panel.
+
+### Troubleshooting
+
+- **404**: Company id mismatch or actor not a member of the company
+- **Stream truncated mid-download**: Network drop. Retry from start (no resumable downloads in v1).
+- **Empty zip**: Company has zero rows in all tables. Still valid; opens in Obsidian as an empty vault.
+
+### Future: scheduled snapshot to R2 (P3.2)
+
+Not yet implemented. When it lands, customers will be able to configure a Cloudflare R2 bucket + key prefix and have the vault snapshot daily/weekly. Same renderer + composer code; just adds an R2 client + cron registration.
+
+---
+
 ## 9. Filing an incident
 
 When something genuinely breaks in prod:

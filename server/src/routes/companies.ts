@@ -36,6 +36,7 @@ import {
 } from "../services/index.js";
 import { knowledgeService } from "../services/knowledge.js";
 import { ROLE_DEFAULT_CAPABILITIES } from "../services/role-defaults.js";
+import { streamVaultExport } from "../services/vault-export/index.js";
 import type { StorageService } from "../storage/types.js";
 import { assertBoard, assertCompanyAccess, assertEmailVerified, assertInstanceAdmin, getActorInfo } from "./authz.js";
 
@@ -185,6 +186,31 @@ export function companyRoutes(db: Db, storage?: StorageService) {
       return;
     }
     res.json(company);
+  });
+
+  // P3: Obsidian-compatible vault export. Streams a zipped folder tree of
+  // knowledge pages, agent profiles, issues, skills, and a minimal
+  // `.obsidian/app.json` config so customers can drop the unpacked folder
+  // into Obsidian and immediately get wikilink resolution + graph view.
+  // Streaming via archiver so 10K+ page KBs export without buffering.
+  router.get("/:companyId/vault-export.zip", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+
+    const company = await svc.getById(companyId);
+    if (!company) {
+      res.status(404).json({ error: "Company not found" });
+      return;
+    }
+
+    await streamVaultExport(
+      { db },
+      {
+        companyId,
+        companyName: company.name,
+        res,
+      },
+    );
   });
 
   router.post("/:companyId/export", validate(companyPortabilityExportSchema), async (req, res) => {
