@@ -45,6 +45,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1032.0",
+    "archiver": "^8.0.0",
     "@ironworksai/adapter-anthropic-api": "workspace:*",
     "@ironworksai/adapter-claude-local": "workspace:*",
     "@ironworksai/adapter-codex-local": "workspace:*",
@@ -85,6 +86,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@types/archiver": "^7.0.0",
     "@types/express": "^5.0.6",
     "@types/express-serve-static-core": "^5.1.1",
     "@types/jsdom": "^28.0.1",
