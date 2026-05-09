@@ -26,6 +26,7 @@ let embeddingJobsPending: Gauge<"status" | "target_type">;
 let embeddingJobsFailedTotal: Counter<"target_type">;
 let embeddingProviderLatency: Histogram<"provider" | "model" | "operation">;
 let embeddingProviderErrorsTotal: Counter<"provider" | "model" | "error_class">;
+let vaultSnapshotsTotal: Counter<"cadence" | "status">;
 
 function buildRegistry(): Registry {
   const reg = new Registry();
@@ -98,6 +99,15 @@ function buildRegistry(): Registry {
     registers: [reg],
   });
 
+  // ── Scheduled vault snapshot (P3.2) ──────────────────────────────────────
+  // Cardinality: cadence (daily|weekly) × status (succeeded|failed|skipped) = 6.
+  vaultSnapshotsTotal = new Counter({
+    name: "ironworks_vault_snapshots_total",
+    help: "Vault snapshot upload attempts and outcomes",
+    labelNames: ["cadence", "status"] as const,
+    registers: [reg],
+  });
+
   return reg;
 }
 
@@ -121,6 +131,7 @@ export {
   llmCostCounter,
   runQueueDepthGauge,
   runsCounter,
+  vaultSnapshotsTotal,
 };
 
 /**

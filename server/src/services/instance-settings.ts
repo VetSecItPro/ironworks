@@ -24,12 +24,27 @@ function normalizeGeneralSettings(raw: unknown): InstanceGeneralSettings {
       persistRunNotes: parsed.data.notes?.persistRunNotes ?? false,
       persistDecisionNotes: parsed.data.notes?.persistDecisionNotes ?? true,
     };
+    // Materialize `vaultSnapshot` with full defaults so the cron + UI always
+    // read a populated section. Defaults: enabled=false, cadence="off",
+    // keyPrefix="" — cron skips by default. Optional credential refs stay
+    // undefined until the operator wires them up.
+    const vs = parsed.data.vaultSnapshot;
+    const vaultSnapshot = {
+      enabled: vs?.enabled ?? false,
+      bucketName: vs?.bucketName,
+      endpoint: vs?.endpoint,
+      accessKeyIdSecretId: vs?.accessKeyIdSecretId,
+      secretAccessKeySecretId: vs?.secretAccessKeySecretId,
+      keyPrefix: vs?.keyPrefix ?? "",
+      cadence: vs?.cadence ?? ("off" as const),
+    };
     return {
       censorUsernameInLogs: parsed.data.censorUsernameInLogs ?? false,
       backupRetention: parsed.data.backupRetention,
       scheduler: parsed.data.scheduler,
       promptPreamble: parsed.data.promptPreamble,
       notes,
+      vaultSnapshot,
     };
   }
   return {
@@ -120,10 +135,30 @@ export function instanceSettingsService(db: Db) {
                 patch.notes.persistDecisionNotes ?? currentGeneral.notes?.persistDecisionNotes ?? true,
             }
           : currentGeneral.notes;
+      // Same nested-merge rationale for `vaultSnapshot`: a partial patch like
+      // `{ vaultSnapshot: { enabled: true } }` must preserve previously-set
+      // bucketName / endpoint / cadence / credential refs. The patch validator
+      // strips inner-field defaults so unset keys arrive as `undefined`, and
+      // the `??` chain falls through to the prior value.
+      const currentVs = currentGeneral.vaultSnapshot;
+      const mergedVaultSnapshot =
+        patch.vaultSnapshot !== undefined
+          ? {
+              enabled: patch.vaultSnapshot.enabled ?? currentVs?.enabled ?? false,
+              bucketName: patch.vaultSnapshot.bucketName ?? currentVs?.bucketName,
+              endpoint: patch.vaultSnapshot.endpoint ?? currentVs?.endpoint,
+              accessKeyIdSecretId: patch.vaultSnapshot.accessKeyIdSecretId ?? currentVs?.accessKeyIdSecretId,
+              secretAccessKeySecretId:
+                patch.vaultSnapshot.secretAccessKeySecretId ?? currentVs?.secretAccessKeySecretId,
+              keyPrefix: patch.vaultSnapshot.keyPrefix ?? currentVs?.keyPrefix ?? "",
+              cadence: patch.vaultSnapshot.cadence ?? currentVs?.cadence ?? ("off" as const),
+            }
+          : currentVs;
       const nextGeneral = normalizeGeneralSettings({
         ...currentGeneral,
         ...patch,
         notes: mergedNotes,
+        vaultSnapshot: mergedVaultSnapshot,
       });
       const now = new Date();
       const [updated] = await db

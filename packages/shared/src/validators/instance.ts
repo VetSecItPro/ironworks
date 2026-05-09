@@ -26,6 +26,24 @@ export const instanceNotesSettingsSchema = z.object({
   persistDecisionNotes: z.boolean().default(true),
 });
 
+/**
+ * Scheduled R2 vault-snapshot settings (P3.2).
+ *
+ * Credentials are NOT stored inline — the schema references `company_secrets`
+ * row IDs, and the cron resolves the actual values via `secretService` at run
+ * time. `cadence: "off"` (the default) means the cron skips this instance
+ * entirely; "daily"/"weekly" gate the per-cadence cron tick.
+ */
+export const vaultSnapshotSettingsSchema = z.object({
+  enabled: z.boolean().default(false),
+  bucketName: z.string().min(1).optional(),
+  endpoint: z.string().url().optional(),
+  accessKeyIdSecretId: z.string().uuid().optional(),
+  secretAccessKeySecretId: z.string().uuid().optional(),
+  keyPrefix: z.string().default(""),
+  cadence: z.enum(["daily", "weekly", "off"]).default("off"),
+});
+
 export const instanceGeneralSettingsSchema = z
   .object({
     censorUsernameInLogs: z.boolean().default(false),
@@ -40,6 +58,7 @@ export const instanceGeneralSettingsSchema = z
      */
     promptPreamble: z.string().max(4000).optional(),
     notes: instanceNotesSettingsSchema.optional(),
+    vaultSnapshot: vaultSnapshotSettingsSchema.optional(),
   })
   .strict();
 
@@ -54,10 +73,24 @@ export const patchInstanceNotesSettingsSchema = z.object({
   persistDecisionNotes: z.boolean().optional(),
 });
 
+// Patch variant for `vaultSnapshot`: same rationale as `notes` — strip the
+// inner-field defaults so a partial PATCH only carries keys the caller sent.
+// The service layer merges with current persisted values.
+export const patchVaultSnapshotSettingsSchema = z.object({
+  enabled: z.boolean().optional(),
+  bucketName: z.string().min(1).optional(),
+  endpoint: z.string().url().optional(),
+  accessKeyIdSecretId: z.string().uuid().optional(),
+  secretAccessKeySecretId: z.string().uuid().optional(),
+  keyPrefix: z.string().optional(),
+  cadence: z.enum(["daily", "weekly", "off"]).optional(),
+});
+
 export const patchInstanceGeneralSettingsSchema = instanceGeneralSettingsSchema.partial().extend({
   censorUsernameInLogs: z.boolean().optional(),
   promptPreamble: z.string().max(4000).optional(),
   notes: patchInstanceNotesSettingsSchema.optional(),
+  vaultSnapshot: patchVaultSnapshotSettingsSchema.optional(),
 });
 
 export const instanceExperimentalSettingsSchema = z
@@ -75,6 +108,8 @@ export const patchInstanceExperimentalSettingsSchema = instanceExperimentalSetti
 export type SchedulerSettings = z.infer<typeof schedulerSettingsSchema>;
 export type InstanceNotesSettings = z.infer<typeof instanceNotesSettingsSchema>;
 export type PatchInstanceNotesSettings = z.infer<typeof patchInstanceNotesSettingsSchema>;
+export type InstanceVaultSnapshotSettings = z.infer<typeof vaultSnapshotSettingsSchema>;
+export type PatchInstanceVaultSnapshotSettings = z.infer<typeof patchVaultSnapshotSettingsSchema>;
 export type InstanceGeneralSettings = z.infer<typeof instanceGeneralSettingsSchema>;
 export type PatchInstanceGeneralSettings = z.infer<typeof patchInstanceGeneralSettingsSchema>;
 export type InstanceExperimentalSettings = z.infer<typeof instanceExperimentalSettingsSchema>;
