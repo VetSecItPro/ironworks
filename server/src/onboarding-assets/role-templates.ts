@@ -121,7 +121,7 @@ export const ROLE_TEMPLATES: RoleTemplate[] = [
     roleLevel: "executive",
     defaultIcon: "crown",
     suggestedAdapter: "claude_local",
-    modelPrimary: "openai/gpt-oss-120b:free",
+    modelPrimary: "meta-llama/llama-3.3-70b-instruct:free",
     modelFallback: "nousresearch/hermes-3-llama-3.1-405b:free",
     skills: ["ironworks", "ironworks-create-agent", "para-memory-files"],
     soul: `# SOUL.md — CEO
@@ -266,7 +266,7 @@ You own #operations. Post weekly execution summaries. When a department misses a
     roleLevel: "executive",
     defaultIcon: "code",
     suggestedAdapter: "claude_local",
-    modelPrimary: "openai/gpt-oss-120b:free",
+    modelPrimary: "meta-llama/llama-3.3-70b-instruct:free",
     modelFallback: "nousresearch/hermes-3-llama-3.1-405b:free",
     skills: ["ironworks", "ironworks-create-agent", "para-memory-files"],
     soul: `# SOUL.md — CTO
@@ -581,8 +581,8 @@ Post weekly cost summaries to #company. Post budget alerts immediately when thre
     roleLevel: "staff",
     defaultIcon: "terminal",
     suggestedAdapter: "claude_local",
-    modelPrimary: "openai/gpt-oss-120b:free",
-    modelFallback: "meta-llama/llama-3.3-70b-instruct:free",
+    modelPrimary: "meta-llama/llama-3.3-70b-instruct:free",
+    modelFallback: "nousresearch/hermes-3-llama-3.1-405b:free",
     skills: ["ironworks", "para-memory-files"],
     soul: `# SOUL.md — Senior Engineer
 
@@ -645,8 +645,8 @@ Participate in #engineering. Post status updates when you complete significant w
     roleLevel: "staff",
     defaultIcon: "server",
     suggestedAdapter: "claude_local",
-    modelPrimary: "openai/gpt-oss-120b:free",
-    modelFallback: "meta-llama/llama-3.3-70b-instruct:free",
+    modelPrimary: "meta-llama/llama-3.3-70b-instruct:free",
+    modelFallback: "nousresearch/hermes-3-llama-3.1-405b:free",
     skills: ["ironworks", "para-memory-files"],
     soul: `# SOUL.md — DevOps Engineer
 
@@ -712,8 +712,8 @@ Participate in #engineering. Post production incident notifications immediately 
     roleLevel: "staff",
     defaultIcon: "shield",
     suggestedAdapter: "claude_local",
-    modelPrimary: "openai/gpt-oss-120b:free",
-    modelFallback: "meta-llama/llama-3.3-70b-instruct:free",
+    modelPrimary: "meta-llama/llama-3.3-70b-instruct:free",
+    modelFallback: "nousresearch/hermes-3-llama-3.1-405b:free",
     skills: ["ironworks", "para-memory-files"],
     soul: `# SOUL.md — Security Engineer
 
@@ -780,7 +780,7 @@ Participate in #engineering with monitoring interest in all channels. Post secur
     defaultIcon: "scale",
     suggestedAdapter: "claude_local",
     modelPrimary: "google/gemma-4-31b-it:free",
-    modelFallback: "openai/gpt-oss-120b:free",
+    modelFallback: "meta-llama/llama-3.3-70b-instruct:free",
     skills: ["ironworks", "para-memory-files"],
     soul: `# SOUL.md — Compliance Director
 
@@ -845,7 +845,7 @@ Monitor all channels for compliance-relevant activity: PII handling, data retent
     defaultIcon: "gavel",
     suggestedAdapter: "claude_local",
     modelPrimary: "google/gemma-4-31b-it:free",
-    modelFallback: "openai/gpt-oss-120b:free",
+    modelFallback: "meta-llama/llama-3.3-70b-instruct:free",
     skills: ["ironworks", "para-memory-files"],
     soul: `# SOUL.md - Legal Counsel
 
