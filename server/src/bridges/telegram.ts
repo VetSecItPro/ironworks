@@ -36,11 +36,28 @@ function bridgeActorId(actor: BridgeActor): string {
 // workspace that has an OPENROUTER_API_KEY configured (the dominant case
 // for free-Western model usage).
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const FALLBACK_CHAT_MODEL = "openai/gpt-oss-120b:free";
+// First entry of the fallback chain is the default for agents whose adapter_config has no model.
+// Kept as named constant for clarity; the bridge call site walks LLM_FALLBACK_CHAIN on failure.
+const FALLBACK_CHAT_MODEL = "meta-llama/llama-3.3-70b-instruct:free";
 
 const TELEGRAM_API = "https://api.telegram.org";
 const POLL_INTERVAL_MS = 10_000;
 const MAX_TELEGRAM_MSG_LENGTH = 4000; // leave buffer under 4096 limit
+
+// LLM fallback chain. Free Western models with non-training providers, ordered by capability.
+// When the primary model returns 404 (privacy gate / no available endpoint) or 429
+// (provider rate-limited), the bridge walks down this list. The last entry is a small
+// always-available model so Marcus always has SOMETHING to reply with.
+//
+// As of 2026-05-08, free OpenRouter providers churn frequently. Pinning a single model
+// risks getting stranded when its only non-training provider drops. The chain is the
+// resilience mechanism - update when better Western free models surface.
+const LLM_FALLBACK_CHAIN: readonly string[] = [
+  "meta-llama/llama-3.3-70b-instruct:free", // 70B, Venice provider, non-training
+  "nousresearch/hermes-3-llama-3.1-405b:free", // 405B when accessible, Venice
+  "google/gemma-4-31b-it:free", // 31B Gemma
+  "liquid/lfm-2.5-1.2b-instruct:free", // 1.2B safety net - always answers
+];
 
 // ── Intent classification ──
 
@@ -297,30 +314,51 @@ ${workspaceContext}
   const safeUserMessage = sanitizeUserMessage(userMessage);
   const messages: Turn[] = [...history, { role: "user", content: safeUserMessage }];
 
-  let raw: string;
-  try {
-    const apiKey = process.env.ADAPTER_OPENROUTER_API_KEY ?? process.env.OPENROUTER_API_KEY ?? "";
-    const res = await fetch(OPENROUTER_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: "system", content: systemPrompt }, ...messages],
-        max_tokens: 800,
-      }),
-    });
-    if (!res.ok) {
-      logger.warn({ status: res.status }, "[telegram-bridge] CEO turn failed, returning fallback");
-      return {
-        reply: "Got it.",
-        raw: "",
-        actions: { createTasks: [], closeTasks: [], closeAllFromChat: null, reassigns: [], addComments: [] },
-      };
+  // Build the candidate chain: configured model first, then unique fallbacks.
+  // De-dup so the configured model isn't tried twice if it overlaps the chain.
+  const candidates: string[] = [];
+  const seen = new Set<string>();
+  for (const m of [model, ...LLM_FALLBACK_CHAIN]) {
+    if (m && !seen.has(m)) {
+      candidates.push(m);
+      seen.add(m);
     }
-    const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
-    raw = (data.choices?.[0]?.message?.content ?? "").trim();
-  } catch (err) {
-    logger.warn({ err }, "[telegram-bridge] CEO turn error, returning fallback");
+  }
+
+  const apiKey = process.env.ADAPTER_OPENROUTER_API_KEY ?? process.env.OPENROUTER_API_KEY ?? "";
+  let raw: string | null = null;
+  const attempts: Array<{ model: string; status: number | string }> = [];
+
+  for (const candidate of candidates) {
+    try {
+      const res = await fetch(OPENROUTER_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model: candidate,
+          messages: [{ role: "system", content: systemPrompt }, ...messages],
+          max_tokens: 800,
+        }),
+      });
+      attempts.push({ model: candidate, status: res.status });
+      if (res.ok) {
+        const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
+        raw = (data.choices?.[0]?.message?.content ?? "").trim();
+        if (raw.length > 0) break;
+        // Empty body - try next candidate (rare; some providers return 200 with nothing)
+        raw = null;
+      }
+      // 4xx-not-429: privacy/auth/model issue - try next candidate
+      // 429: upstream rate-limited - try next candidate
+      // 5xx: provider error - try next candidate
+    } catch (err) {
+      attempts.push({ model: candidate, status: "exception" });
+      logger.debug({ err, candidate }, "[telegram-bridge] candidate threw, trying next");
+    }
+  }
+
+  if (raw === null) {
+    logger.warn({ attempts }, "[telegram-bridge] all LLM candidates exhausted, returning fallback");
     return {
       reply: "Got it.",
       raw: "",
