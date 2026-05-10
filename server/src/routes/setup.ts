@@ -14,7 +14,7 @@
 
 import { randomUUID } from "node:crypto";
 import type { Db } from "@ironworksai/db";
-import { authAccounts, authSessions, authUsers, companySubscriptions, instanceUserRoles } from "@ironworksai/db";
+import { authAccounts, authSessions, authUsers, companySubscriptions } from "@ironworksai/db";
 import { eq } from "drizzle-orm";
 import { Router } from "express";
 import { z } from "zod";
@@ -288,19 +288,26 @@ export function setupRoutes(db: Db) {
       updatedAt: now,
     });
 
-    // 5. Grant instance admin (first user on their company is the admin)
-    await db.insert(instanceUserRoles).values({
-      userId,
-      role: "instance_admin",
-    });
-
-    // 6. Create company
+    // 5. Create company
     const company = await companySvc.create({ name: companyName });
 
-    // 7. Set user as company owner
+    // 6. Set user as company owner.
+    //
+    // SEC-AUTH-CRIT-001 fix (2026-05-09): previously this flow ALSO inserted
+    // an instance_admin row in instanceUserRoles, granting every paying
+    // signup full cross-tenant admin (read every other company's users /
+    // dashboard / audit log, pause/resume any company, modify instance
+    // settings). The original comment misread the role - it conflated
+    // "first user on their company" (company-scoped owner, granted below)
+    // with "instance admin" (deployment-scoped). Self-serve signups must
+    // never auto-grant instance-tier authority.
+    //
+    // Bootstrap (no admin exists yet) is covered by:
+    //   - local_trusted dev mode (middleware/auth.ts auto-elevates)
+    //   - board-claim.ts manual claim flow for production
     await access.ensureMembership(company.id, "user", userId, "owner", "active");
 
-    // 8. Create subscription record linking company to Polar
+    // 7. Create subscription record linking company to Polar
     const polarCustomerId = (checkout.metadata?.polarCustomerId as string | undefined) ?? null;
 
     await billingSvc.getOrCreateSubscription(company.id);
@@ -316,7 +323,7 @@ export function setupRoutes(db: Db) {
       })
       .where(eq(companySubscriptions.companyId, company.id));
 
-    // 9. Seed defaults (non-fatal)
+    // 8. Seed defaults (non-fatal)
     try {
       await playbookSvc.seedDefaults(company.id);
       await routineSvc.seedDefaults(company.id);
