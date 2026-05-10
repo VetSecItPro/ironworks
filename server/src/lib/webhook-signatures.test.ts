@@ -57,6 +57,10 @@ describe("verifySendgridSignature", () => {
 
   const BODY = Buffer.from(JSON.stringify([{ event: "delivered" }]));
   const TIMESTAMP = "1700000000";
+  // Pin "now" to the fixture timestamp so the freshness check (5-min window
+  // added in SEC-WEBHOOK-REPLAY-002 fix) accepts the fixed test timestamp.
+  // Without this, fixtures dated 2023 would be rejected as stale at test time.
+  const NOW_AT_FIXTURE = () => 1700000000000;
 
   function sign(ts: string, body: Buffer): string {
     const message = Buffer.concat([Buffer.from(ts, "utf8"), body]);
@@ -65,36 +69,70 @@ describe("verifySendgridSignature", () => {
 
   it("accepts a correctly-signed payload with full PEM key", () => {
     const sig = sign(TIMESTAMP, BODY);
-    expect(verifySendgridSignature(BODY, TIMESTAMP, sig, publicKeyPem)).toBe(true);
+    expect(verifySendgridSignature(BODY, TIMESTAMP, sig, publicKeyPem, { now: NOW_AT_FIXTURE })).toBe(true);
   });
 
   it("accepts a correctly-signed payload with bare base64 DER key (SendGrid UI form)", () => {
     const sig = sign(TIMESTAMP, BODY);
-    expect(verifySendgridSignature(BODY, TIMESTAMP, sig, publicKeyBareB64)).toBe(true);
+    expect(verifySendgridSignature(BODY, TIMESTAMP, sig, publicKeyBareB64, { now: NOW_AT_FIXTURE })).toBe(true);
   });
 
   it("rejects tampered body", () => {
     const sig = sign(TIMESTAMP, BODY);
-    expect(verifySendgridSignature(Buffer.from("tampered"), TIMESTAMP, sig, publicKeyPem)).toBe(false);
+    expect(
+      verifySendgridSignature(Buffer.from("tampered"), TIMESTAMP, sig, publicKeyPem, { now: NOW_AT_FIXTURE }),
+    ).toBe(false);
   });
 
   it("rejects tampered timestamp", () => {
     const sig = sign(TIMESTAMP, BODY);
-    expect(verifySendgridSignature(BODY, "1700000001", sig, publicKeyPem)).toBe(false);
+    expect(verifySendgridSignature(BODY, "1700000001", sig, publicKeyPem, { now: NOW_AT_FIXTURE })).toBe(false);
   });
 
   it("rejects empty inputs", () => {
-    expect(verifySendgridSignature(BODY, "", "sig", publicKeyPem)).toBe(false);
-    expect(verifySendgridSignature(BODY, TIMESTAMP, "", publicKeyPem)).toBe(false);
-    expect(verifySendgridSignature(BODY, TIMESTAMP, "sig", "")).toBe(false);
+    expect(verifySendgridSignature(BODY, "", "sig", publicKeyPem, { now: NOW_AT_FIXTURE })).toBe(false);
+    expect(verifySendgridSignature(BODY, TIMESTAMP, "", publicKeyPem, { now: NOW_AT_FIXTURE })).toBe(false);
+    expect(verifySendgridSignature(BODY, TIMESTAMP, "sig", "", { now: NOW_AT_FIXTURE })).toBe(false);
   });
 
   it("rejects malformed key without throwing", () => {
     const sig = sign(TIMESTAMP, BODY);
-    expect(verifySendgridSignature(BODY, TIMESTAMP, sig, "not-a-key")).toBe(false);
+    expect(verifySendgridSignature(BODY, TIMESTAMP, sig, "not-a-key", { now: NOW_AT_FIXTURE })).toBe(false);
   });
 
   it("rejects malformed signature without throwing", () => {
-    expect(verifySendgridSignature(BODY, TIMESTAMP, "!!!not-base64-but-decodes-to-junk!!!", publicKeyPem)).toBe(false);
+    expect(
+      verifySendgridSignature(BODY, TIMESTAMP, "!!!not-base64-but-decodes-to-junk!!!", publicKeyPem, {
+        now: NOW_AT_FIXTURE,
+      }),
+    ).toBe(false);
+  });
+
+  // SEC-WEBHOOK-REPLAY-002 regression coverage
+  it("rejects stale timestamp outside replay window (default 5 min)", () => {
+    const sig = sign(TIMESTAMP, BODY);
+    // 6 minutes after the signed timestamp = outside the 5-minute window
+    const sixMinLater = () => 1700000000000 + 6 * 60 * 1000;
+    expect(verifySendgridSignature(BODY, TIMESTAMP, sig, publicKeyPem, { now: sixMinLater })).toBe(false);
+  });
+
+  it("rejects future-dated timestamp outside replay window", () => {
+    const sig = sign(TIMESTAMP, BODY);
+    // "Now" is 6 minutes BEFORE the signed timestamp
+    const sixMinBefore = () => 1700000000000 - 6 * 60 * 1000;
+    expect(verifySendgridSignature(BODY, TIMESTAMP, sig, publicKeyPem, { now: sixMinBefore })).toBe(false);
+  });
+
+  it("accepts a fresh timestamp inside custom replay window", () => {
+    const sig = sign(TIMESTAMP, BODY);
+    const oneHourLater = () => 1700000000000 + 60 * 60 * 1000;
+    expect(
+      verifySendgridSignature(BODY, TIMESTAMP, sig, publicKeyPem, { now: oneHourLater, replayWindowSec: 7200 }),
+    ).toBe(true);
+  });
+
+  it("rejects non-numeric timestamp", () => {
+    const sig = sign(TIMESTAMP, BODY);
+    expect(verifySendgridSignature(BODY, "not-a-number", sig, publicKeyPem, { now: NOW_AT_FIXTURE })).toBe(false);
   });
 });

@@ -168,12 +168,25 @@ export function executiveRoutes(db: Db) {
     const data = await analytics.complianceExport(companyId, from, to);
 
     if (format === "csv") {
-      // Convert to CSV: flatten all actions into rows
+      // SEC-CSV-HIGH-005 fix (2026-05-09): per-cell escape against:
+      //   - delimiter / quote / newline (RFC 4180 standard CSV escape)
+      //   - formula injection: `=`, `+`, `-`, `@`, tab, CR as leading char
+      //     would execute on Excel/Numbers/Sheets render (CWE-1236).
+      // Prefix dangerous starts with a single quote to neutralize the
+      // formula context while keeping the value visually identical.
+      const escapeCsvCell = (raw: unknown): string => {
+        const value = raw === null || raw === undefined ? "" : String(raw);
+        const formulaRisk = /^[=+\-@\t\r]/.test(value);
+        const safe = formulaRisk ? `'${value}` : value;
+        // Always quote + double-up internal quotes to neutralize delimiter/newline.
+        return `"${safe.replace(/"/g, '""')}"`;
+      };
+
       const rows: string[] = [];
       rows.push("timestamp,actor_type,actor_id,action,entity_type,entity_id,agent_id,details");
 
       for (const entry of data.allActions) {
-        const detailsStr = entry.details ? JSON.stringify(entry.details).replace(/"/g, '""') : "";
+        const detailsStr = entry.details ? JSON.stringify(entry.details) : "";
         rows.push(
           [
             entry.createdAt instanceof Date ? entry.createdAt.toISOString() : String(entry.createdAt),
@@ -183,8 +196,10 @@ export function executiveRoutes(db: Db) {
             entry.entityType,
             entry.entityId,
             entry.agentId ?? "",
-            `"${detailsStr}"`,
-          ].join(","),
+            detailsStr,
+          ]
+            .map(escapeCsvCell)
+            .join(","),
         );
       }
 
@@ -193,7 +208,8 @@ export function executiveRoutes(db: Db) {
         "Content-Disposition",
         `attachment; filename="compliance-export-${from.toISOString().slice(0, 10)}-to-${to.toISOString().slice(0, 10)}.csv"`,
       );
-      res.send(rows.join("\n"));
+      // Use CRLF per RFC 4180.
+      res.send(rows.join("\r\n"));
       return;
     }
 

@@ -38,10 +38,12 @@ describe("buildCorsOptions", () => {
     expect(result.options.credentials).toBe(true);
   });
 
-  it("production + empty → reflective + warning", () => {
+  it("production + empty → fail-closed + warning (SEC-CORS-HIGH-004)", () => {
+    // Previously: reflective allow-all. Now: refuses cross-origin requests
+    // entirely when allowlist is empty in production. Same-origin / curl /
+    // server-to-server (no Origin header) still allowed.
     const result = buildCorsOptions({ NODE_ENV: "production" });
     expect(result.warning).toContain("IRONWORKS_ALLOWED_ORIGINS");
-    // Reflective: origin function that echoes whatever's passed
     expect(typeof result.options.origin).toBe("function");
     const originFn = result.options.origin as (
       origin: string | undefined,
@@ -49,7 +51,7 @@ describe("buildCorsOptions", () => {
     ) => void;
     originFn("https://anything.example", (err, allow) => {
       expect(err).toBeNull();
-      expect(allow).toBe("https://anything.example");
+      expect(allow).toBe(false);
     });
     originFn(undefined, (err, allow) => {
       expect(err).toBeNull();

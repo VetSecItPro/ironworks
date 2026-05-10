@@ -87,19 +87,26 @@ export function buildCorsOptions(env: { ALLOWED_ORIGINS?: string; NODE_ENV?: str
   }
 
   if (isProduction) {
+    // SEC-CORS-HIGH-004 fix (2026-05-09): previously this branch fell back to
+    // reflective allow-all with credentials enabled, with only a startup
+    // warning. That meant any attacker-controlled site could read
+    // authenticated responses + drive mutations from logged-in users'
+    // browsers. Now we fail-closed: an empty/missing IRONWORKS_ALLOWED_ORIGINS
+    // in prod refuses every cross-origin request.
     return {
       options: {
         ...baseOptions,
         origin: (origin, callback) => {
-          // Reflect whatever the request sent. Effectively allow-all but with
-          // credentials this is dangerous — hence the startup warning.
+          // No origin = same-origin, curl, server-to-server. Always allowed.
           if (!origin) return callback(null, true);
-          return callback(null, origin);
+          // Cross-origin in prod with no allowlist configured = refused.
+          // The cors middleware omits ACAO; the browser blocks the response.
+          return callback(null, false);
         },
       },
       warning:
-        "[cors] IRONWORKS_ALLOWED_ORIGINS is unset in production. Falling back to reflective allow-all. " +
-        "Set IRONWORKS_ALLOWED_ORIGINS to a comma-separated list of trusted origins to lock this down.",
+        "[cors] IRONWORKS_ALLOWED_ORIGINS is unset in production. Refusing all cross-origin requests. " +
+        "Set IRONWORKS_ALLOWED_ORIGINS to a comma-separated list of trusted origins to enable cross-origin browser access.",
     };
   }
 
