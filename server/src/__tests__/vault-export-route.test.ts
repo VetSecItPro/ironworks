@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { makeChainableDb } from "./helpers/drizzle-mock.js";
 
 const COMPANY_ID = randomUUID();
 const OTHER_COMPANY_ID = randomUUID();
@@ -73,7 +74,7 @@ async function createApp(actor: Record<string, unknown> | null) {
     next();
   });
   // biome-ignore lint/suspicious/noExplicitAny: stub Drizzle DB; queries are mocked
-  app.use("/api/companies", companyRoutes({} as any));
+  app.use("/api/companies", companyRoutes(makeChainableDb([]) as any));
   app.use(errorHandler);
   return app;
 }
