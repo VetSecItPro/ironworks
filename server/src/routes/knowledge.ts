@@ -4,7 +4,7 @@ import { logActivity } from "../services/activity-log.js";
 import { knowledgeService } from "../services/knowledge.js";
 import { auditAgentRun } from "../services/playbook-audit.js";
 import { lookupPlaybook, reindexAllPlaybooks, reindexPage } from "../services/playbook-rag.js";
-import { assertCompanyAccess, getActorInfo } from "./authz.js";
+import { assertCanWrite, assertCompanyAccess, getActorInfo } from "./authz.js";
 
 function actorForService(actor: ReturnType<typeof getActorInfo>) {
   return {
@@ -55,7 +55,7 @@ export function knowledgeRoutes(db: Db) {
   // Create a new page
   router.post("/companies/:companyId/knowledge", async (req, res) => {
     const companyId = req.params.companyId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
     const actor = getActorInfo(req);
     const { title, body, visibility, projectId, department, folder } = req.body;
     if (!title || typeof title !== "string" || title.trim().length === 0) {
@@ -90,7 +90,7 @@ export function knowledgeRoutes(db: Db) {
       res.status(404).json({ error: "Page not found" });
       return;
     }
-    assertCompanyAccess(req, page.companyId);
+    await assertCanWrite(req, page.companyId, db);
 
     // HR document immutability: auto-generated personnel records cannot be modified
     const immutableDocumentTypes = new Set(["hiring-record", "termination-record", "employment_history"]);
@@ -125,7 +125,7 @@ export function knowledgeRoutes(db: Db) {
       res.status(404).json({ error: "Page not found" });
       return;
     }
-    assertCompanyAccess(req, page.companyId);
+    await assertCanWrite(req, page.companyId, db);
     const actor = getActorInfo(req);
     await svc.remove(page.id);
     await logActivity(db, {
@@ -175,7 +175,7 @@ export function knowledgeRoutes(db: Db) {
       res.status(404).json({ error: "Page not found" });
       return;
     }
-    assertCompanyAccess(req, page.companyId);
+    await assertCanWrite(req, page.companyId, db);
     const actor = getActorInfo(req);
     const revNum = parseInt(req.params.revisionNumber as string, 10);
     const updated = await svc.revertToRevision(page.id, revNum, actorForService(actor));
@@ -194,7 +194,7 @@ export function knowledgeRoutes(db: Db) {
   // Seed default pages
   router.post("/companies/:companyId/knowledge/seed", async (req, res) => {
     const companyId = req.params.companyId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
     const result = await svc.seedDefaults(companyId);
     res.json(result);
   });
@@ -206,7 +206,7 @@ export function knowledgeRoutes(db: Db) {
   // Semantic lookup — returns top-K chunks by cosine similarity
   router.post("/companies/:companyId/knowledge/lookup", async (req, res) => {
     const companyId = req.params.companyId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
     const body = req.body as {
       query?: string;
       department?: string;
@@ -242,7 +242,7 @@ export function knowledgeRoutes(db: Db) {
       res.status(404).json({ error: "Page not found" });
       return;
     }
-    assertCompanyAccess(req, page.companyId);
+    await assertCanWrite(req, page.companyId, db);
     const chunks = await reindexPage(db, pageId);
     res.json({ pageId, chunks });
   });
@@ -250,7 +250,7 @@ export function knowledgeRoutes(db: Db) {
   // Reindex all playbooks for a company (admin only — bulk rebuild)
   router.post("/companies/:companyId/knowledge/reindex-all", async (req, res) => {
     const companyId = req.params.companyId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
     const result = await reindexAllPlaybooks(db, companyId);
     res.json(result);
   });
@@ -260,7 +260,7 @@ export function knowledgeRoutes(db: Db) {
   // (no playbook chunks, model unreachable, etc.). See playbook-audit.ts.
   router.post("/companies/:companyId/knowledge/audit", async (req, res) => {
     const companyId = req.params.companyId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
     const body = req.body as {
       agentId?: string;
       agentName?: string;

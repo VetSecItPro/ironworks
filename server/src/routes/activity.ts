@@ -7,7 +7,7 @@ import { validate } from "../middleware/validate.js";
 import { sanitizeRecord } from "../redaction.js";
 import { activityService } from "../services/activity.js";
 import { issueService } from "../services/index.js";
-import { assertBoard, assertCompanyAccess } from "./authz.js";
+import { assertBoard, assertCanWrite, assertCompanyAccess } from "./authz.js";
 
 const createActivitySchema = z.object({
   actorType: z.enum(["agent", "user", "system"]).optional().default("system"),
@@ -52,7 +52,7 @@ export function activityRoutes(db: Db) {
   router.post("/companies/:companyId/activity", validate(createActivitySchema), async (req, res) => {
     assertBoard(req);
     const companyId = req.params.companyId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
     const event = await svc.create({
       companyId,
       ...req.body,

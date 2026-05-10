@@ -38,7 +38,14 @@ import { knowledgeService } from "../services/knowledge.js";
 import { ROLE_DEFAULT_CAPABILITIES } from "../services/role-defaults.js";
 import { streamVaultExport } from "../services/vault-export/index.js";
 import type { StorageService } from "../storage/types.js";
-import { assertBoard, assertCompanyAccess, assertEmailVerified, assertInstanceAdmin, getActorInfo } from "./authz.js";
+import {
+  assertBoard,
+  assertCanWrite,
+  assertCompanyAccess,
+  assertEmailVerified,
+  assertInstanceAdmin,
+  getActorInfo,
+} from "./authz.js";
 
 export function companyRoutes(db: Db, storage?: StorageService) {
   const router = Router();
@@ -115,7 +122,8 @@ export function companyRoutes(db: Db, storage?: StorageService) {
   }
 
   async function assertCanUpdateBranding(req: Request, companyId: string) {
-    assertCompanyAccess(req, companyId);
+    // SEC-AUTH-HIGH-002: viewer-write protection — branding update is a write.
+    await assertCanWrite(req, companyId, db);
     if (req.actor.type === "board") return;
     if (!req.actor.agentId) throw forbidden("Agent authentication required");
 
@@ -129,7 +137,8 @@ export function companyRoutes(db: Db, storage?: StorageService) {
   }
 
   async function assertCanManagePortability(req: Request, companyId: string, capability: "imports" | "exports") {
-    assertCompanyAccess(req, companyId);
+    // SEC-AUTH-HIGH-002: viewer-write protection — exports reveal full data, imports write data.
+    await assertCanWrite(req, companyId, db);
     if (req.actor.type === "board") return;
     if (!req.actor.agentId) throw forbidden("Agent authentication required");
 
@@ -215,7 +224,7 @@ export function companyRoutes(db: Db, storage?: StorageService) {
 
   router.post("/:companyId/export", validate(companyPortabilityExportSchema), async (req, res) => {
     const companyId = req.params.companyId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
     const result = await portability.exportBundle(companyId, req.body);
     res.json(result);
   });
@@ -724,7 +733,7 @@ export function companyRoutes(db: Db, storage?: StorageService) {
 
   router.patch("/:companyId", async (req, res) => {
     const companyId = req.params.companyId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
 
     const actor = getActorInfo(req);
     let body: Record<string, unknown>;
@@ -790,7 +799,7 @@ export function companyRoutes(db: Db, storage?: StorageService) {
   router.post("/:companyId/archive", async (req, res) => {
     assertBoard(req);
     const companyId = req.params.companyId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
     const company = await svc.archive(companyId);
     if (!company) {
       res.status(404).json({ error: "Company not found" });
@@ -810,7 +819,7 @@ export function companyRoutes(db: Db, storage?: StorageService) {
   router.delete("/:companyId", async (req, res) => {
     assertBoard(req);
     const companyId = req.params.companyId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
     const company = await svc.remove(companyId);
     if (!company) {
       res.status(404).json({ error: "Company not found" });
@@ -840,7 +849,7 @@ export function companyRoutes(db: Db, storage?: StorageService) {
     const companyId = req.params.companyId as string;
     // `:agentId` is kept for API compatibility / activity-log context only.
     const agentId = req.params.agentId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
 
     const { targetAgentId, capability, value, temporary } = req.body as {
       targetAgentId?: unknown;

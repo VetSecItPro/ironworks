@@ -130,7 +130,7 @@ export function agentChatRoutes(db: Db): Router {
   router.post("/companies/:companyId/agents/:agentId/chat", async (req, res) => {
     const companyId = req.params.companyId as string;
     const agentIdParam = req.params.agentId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
 
     if (req.actor.type !== "board") {
       res.status(403).json({ error: "Board authentication required for chat" });
@@ -242,7 +242,7 @@ export function agentChatRoutes(db: Db): Router {
   // POST /companies/:companyId/agents/:agentId/feedback
   router.post("/companies/:companyId/agents/:agentId/feedback", async (req, res) => {
     const { companyId, agentId } = req.params;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
 
     const { issueId, feedbackType, content } = req.body as {
       issueId?: string;

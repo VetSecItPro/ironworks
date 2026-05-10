@@ -9,7 +9,7 @@ import { badRequest, notFound } from "../errors.js";
 import { resolveIronworksInstanceRoot } from "../home-paths.js";
 import { libraryService } from "../services/library.js";
 import { getAgentProjectIds, resolveVisibleOwnerAgentIds } from "../services/org-visibility.js";
-import { assertCompanyAccess, getActorInfo } from "./authz.js";
+import { assertCanWrite, assertCompanyAccess, getActorInfo } from "./authz.js";
 
 /** Characters allowed in library path segments to prevent traversal. */
 const SAFE_SEGMENT = /^[a-zA-Z0-9._-]+$/;
@@ -415,7 +415,7 @@ export function libraryRoutes(db: Db) {
   // ─── Scan: sync filesystem → DB ─────────────────────────────────────
   router.post("/companies/:companyId/library/scan", async (req, res) => {
     const companyId = req.params.companyId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
 
     await ensureLibraryRoot(libraryRoot);
 
@@ -499,7 +499,7 @@ export function libraryRoutes(db: Db) {
   // ─── Register file (for agents to call explicitly) ───────────────────
   router.post("/companies/:companyId/library/register", async (req, res) => {
     const companyId = req.params.companyId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
     const actor = getActorInfo(req);
 
     const { filePath, title, projectId, issueId, changeSummary } = req.body as {

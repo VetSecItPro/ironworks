@@ -128,7 +128,7 @@ export function playbookRoutes(db: Db) {
   /** Notify that an issue was completed — triggers dependency resolution. */
   router.post("/companies/:companyId/playbook-runs/issue-completed", async (req, res) => {
     const companyId = req.params.companyId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
 
     const { issueId } = req.body as { issueId: string };
     if (!issueId) throw badRequest("issueId is required");

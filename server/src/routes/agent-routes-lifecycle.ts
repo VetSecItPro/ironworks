@@ -317,7 +317,7 @@ export function agentLifecycleRoutes(db: Db): Router {
 
   router.post("/companies/:companyId/agents", validate(createAgentSchema), async (req, res) => {
     const companyId = req.params.companyId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
 
     if (req.actor.type === "agent") {
       assertBoard(req);
@@ -500,7 +500,7 @@ export function agentLifecycleRoutes(db: Db): Router {
   // issue assigned to the CEO agent (Item 5: CEO welcome task on team pack).
   router.post("/companies/:companyId/agents/team-pack", async (req, res) => {
     const companyId = req.params.companyId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
 
     if (req.actor.type === "agent") {
       assertBoard(req);
@@ -678,6 +678,13 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
   router.post("/agents/:id/pause", async (req, res) => {
     assertBoard(req);
     const id = req.params.id as string;
+    const existing = await svc.getById(id);
+    if (!existing) {
+      res.status(404).json({ error: "Agent not found" });
+      return;
+    }
+    // SEC-AUTH-HIGH-002: viewer-write protection — block viewer board members.
+    await assertCanWrite(req, existing.companyId, db);
     const agent = await svc.pause(id);
     if (!agent) {
       res.status(404).json({ error: "Agent not found" });
@@ -701,6 +708,13 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
   router.post("/agents/:id/resume", async (req, res) => {
     assertBoard(req);
     const id = req.params.id as string;
+    const existing = await svc.getById(id);
+    if (!existing) {
+      res.status(404).json({ error: "Agent not found" });
+      return;
+    }
+    // SEC-AUTH-HIGH-002: viewer-write protection — block viewer board members.
+    await assertCanWrite(req, existing.companyId, db);
     const agent = await svc.resume(id);
     if (!agent) {
       res.status(404).json({ error: "Agent not found" });
@@ -722,6 +736,13 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
   router.post("/agents/:id/terminate", async (req, res) => {
     assertBoard(req);
     const id = req.params.id as string;
+    const existing = await svc.getById(id);
+    if (!existing) {
+      res.status(404).json({ error: "Agent not found" });
+      return;
+    }
+    // SEC-AUTH-HIGH-002: viewer-write protection — block viewer board members.
+    await assertCanWrite(req, existing.companyId, db);
     const agent = await svc.terminate(id);
     if (!agent) {
       res.status(404).json({ error: "Agent not found" });
@@ -783,6 +804,13 @@ Your team is ready to work. Assign tasks by creating issues and setting an assig
   router.delete("/agents/:id", async (req, res) => {
     assertBoard(req);
     const id = req.params.id as string;
+    const existing = await svc.getById(id);
+    if (!existing) {
+      res.status(404).json({ error: "Agent not found" });
+      return;
+    }
+    // SEC-AUTH-HIGH-002: viewer-write protection — block viewer board members.
+    await assertCanWrite(req, existing.companyId, db);
     const agent = await svc.remove(id);
     if (!agent) {
       res.status(404).json({ error: "Agent not found" });

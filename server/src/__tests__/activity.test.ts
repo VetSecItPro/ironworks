@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { makeChainableDb } from "./helpers/drizzle-mock.js";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -84,16 +85,10 @@ async function createApp(actor: Record<string, unknown>) {
     (req as any).actor = actor;
     next();
   });
-  const fakeDb = {
-    select: vi.fn().mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        where: vi.fn().mockReturnValue({
-          limit: vi.fn().mockResolvedValue([{ companyId: COMPANY_ID }]),
-        }),
-      }),
-    }),
-    // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
-  } as any;
+  // SEC-AUTH-HIGH-002: assertCanWrite queries memberships via .then(); empty rows → not a viewer.
+  // Bare chainable also satisfies the prior `.limit()` resolved query (chain returns itself).
+  // biome-ignore lint/suspicious/noExplicitAny: type assertion on mock/test object whose full shape is irrelevant to test logic
+  const fakeDb = makeChainableDb([{ companyId: COMPANY_ID }]) as any;
   app.use("/api", activityRoutes(fakeDb));
   app.use(errorHandler);
   return app;

@@ -22,7 +22,7 @@ import type { Db } from "@ironworksai/db";
 import { Router } from "express";
 import { badRequest, notFound } from "../errors.js";
 import { skillRecipeService } from "../services/skill-recipe-service.js";
-import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
+import { assertBoard, assertCanWrite, assertCompanyAccess, getActorInfo } from "./authz.js";
 
 const VALID_STATUSES = new Set(["proposed", "approved", "rejected", "active", "archived", "paused"]);
 
@@ -73,7 +73,7 @@ export function skillRecipeRoutes(db: Db) {
     if (!recipe) {
       throw notFound("Skill recipe not found");
     }
-    assertCompanyAccess(req, recipe.companyId);
+    await assertCanWrite(req, recipe.companyId, db);
 
     const { title, triggerPattern, procedureMarkdown } = req.body as Record<string, unknown>;
 
@@ -112,7 +112,7 @@ export function skillRecipeRoutes(db: Db) {
     if (!recipe) {
       throw notFound("Skill recipe not found");
     }
-    assertCompanyAccess(req, recipe.companyId);
+    await assertCanWrite(req, recipe.companyId, db);
 
     const actor = getActorInfo(req);
     const result = await svc.approveRecipe(id, actor.actorId);
@@ -133,7 +133,7 @@ export function skillRecipeRoutes(db: Db) {
     if (!recipe) {
       throw notFound("Skill recipe not found");
     }
-    assertCompanyAccess(req, recipe.companyId);
+    await assertCanWrite(req, recipe.companyId, db);
 
     const { reason } = req.body as Record<string, unknown>;
     if (typeof reason !== "string" || reason.trim().length === 0) {
@@ -159,7 +159,7 @@ export function skillRecipeRoutes(db: Db) {
     if (!recipe) {
       throw notFound("Skill recipe not found");
     }
-    assertCompanyAccess(req, recipe.companyId);
+    await assertCanWrite(req, recipe.companyId, db);
 
     const actor = getActorInfo(req);
     const updated = await svc.archiveRecipe(id, actor.actorId);
@@ -184,7 +184,7 @@ export function skillRecipeRoutes(db: Db) {
     if (!recipe) {
       throw notFound("Skill recipe not found");
     }
-    assertCompanyAccess(req, recipe.companyId);
+    await assertCanWrite(req, recipe.companyId, db);
 
     const actor = getActorInfo(req);
     const updated = await svc.pauseRecipe(id, actor.actorId);
@@ -205,7 +205,7 @@ export function skillRecipeRoutes(db: Db) {
     if (!recipe) {
       throw notFound("Skill recipe not found");
     }
-    assertCompanyAccess(req, recipe.companyId);
+    await assertCanWrite(req, recipe.companyId, db);
 
     const actor = getActorInfo(req);
     const updated = await svc.resumeRecipe(id, actor.actorId);

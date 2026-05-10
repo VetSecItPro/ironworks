@@ -5,7 +5,7 @@ import { Router } from "express";
 import { logger } from "../middleware/logger.js";
 import { getAgentLessons } from "../services/agent-learning.js";
 import { checkAllAgentDrift, detectQualityDrift } from "../services/quality-drift.js";
-import { assertCompanyAccess } from "./authz.js";
+import { assertCanWrite, assertCompanyAccess } from "./authz.js";
 
 // ── Nolan Integration Points (REQ-12) ─────────────────────────────────────
 //
@@ -110,7 +110,7 @@ export function nolanIntegrationRoutes(db: Db) {
   // ── POST /companies/:companyId/nolan/feedback ──
   router.post("/companies/:companyId/nolan/feedback", async (req, res) => {
     const { companyId } = req.params;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
 
     const { agentId, issueId, feedbackType, content } = req.body as {
       agentId?: string;

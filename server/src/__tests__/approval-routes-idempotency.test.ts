@@ -3,6 +3,7 @@ import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { errorHandler } from "../middleware/index.js";
 import { approvalRoutes } from "../routes/approvals.js";
+import { makeChainableDb } from "./helpers/drizzle-mock.js";
 
 const mockApprovalService = vi.hoisted(() => ({
   list: vi.fn(),
@@ -65,8 +66,9 @@ function createApp() {
     };
     next();
   });
+  // SEC-AUTH-HIGH-002: assertCanWrite queries memberships; empty rows → not a viewer.
   // biome-ignore lint/suspicious/noExplicitAny: mock Drizzle DB or storage object for unit tests; real type requires full schema-aware Drizzle instance
-  app.use("/api", approvalRoutes({} as any));
+  app.use("/api", approvalRoutes(makeChainableDb([]) as any));
   app.use(errorHandler);
   return app;
 }

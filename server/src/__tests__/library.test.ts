@@ -2,6 +2,8 @@ import { randomUUID } from "node:crypto";
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { Db } from "@ironworksai/db";
+import { makeChainableDb } from "./helpers/drizzle-mock.js";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
 
@@ -85,7 +87,8 @@ async function createApp(actor: Record<string, unknown>) {
     next();
   });
   // biome-ignore lint/suspicious/noExplicitAny: mock Drizzle DB or storage object for unit tests; real type requires full schema-aware Drizzle instance
-  const fakeDb = {} as any;
+  // SEC-AUTH-HIGH-002: assertCanWrite queries memberships; empty rows → not a viewer.
+  const fakeDb = makeChainableDb([]) as unknown as Db;
   app.use("/api", libraryRoutes(fakeDb));
   app.use(errorHandler);
   return app;

@@ -498,7 +498,7 @@ export function agentCrudRoutes(db: Db): Router {
       res.status(404).json({ error: "Agent not found" });
       return;
     }
-    assertCompanyAccess(req, agent.companyId);
+    await assertCanWrite(req, agent.companyId, db);
 
     const taskKey =
       typeof req.body.taskKey === "string" && req.body.taskKey.trim().length > 0 ? req.body.taskKey.trim() : null;
@@ -524,7 +524,7 @@ export function agentCrudRoutes(db: Db): Router {
       res.status(404).json({ error: "Agent not found" });
       return;
     }
-    assertCompanyAccess(req, existing.companyId);
+    await assertCanWrite(req, existing.companyId, db);
 
     if (req.actor.type === "agent") {
       const actorAgent = req.actor.agentId ? await svc.getById(req.actor.agentId) : null;
@@ -1084,6 +1084,13 @@ export function agentCrudRoutes(db: Db): Router {
   router.post("/agents/:id/keys", validate(createAgentKeySchema), async (req, res) => {
     assertBoard(req);
     const id = req.params.id as string;
+    const existingAgent = await svc.getById(id);
+    if (!existingAgent) {
+      res.status(404).json({ error: "Agent not found" });
+      return;
+    }
+    // SEC-AUTH-HIGH-002: viewer-write protection — minting agent API keys is a write.
+    await assertCanWrite(req, existingAgent.companyId, db);
     const key = await svc.createApiKey(id, req.body.name);
 
     const agent = await svc.getById(id);
@@ -1104,7 +1111,15 @@ export function agentCrudRoutes(db: Db): Router {
 
   router.delete("/agents/:id/keys/:keyId", async (req, res) => {
     assertBoard(req);
+    const id = req.params.id as string;
     const keyId = req.params.keyId as string;
+    const existingAgent = await svc.getById(id);
+    if (!existingAgent) {
+      res.status(404).json({ error: "Agent not found" });
+      return;
+    }
+    // SEC-AUTH-HIGH-002: viewer-write protection — revoking agent API keys is a write.
+    await assertCanWrite(req, existingAgent.companyId, db);
     const revoked = await svc.revokeKey(keyId);
     if (!revoked) {
       res.status(404).json({ error: "Key not found" });
@@ -1129,7 +1144,7 @@ export function agentCrudRoutes(db: Db): Router {
       res.status(404).json({ error: "Agent not found" });
       return;
     }
-    assertCompanyAccess(req, agent.companyId);
+    await assertCanWrite(req, agent.companyId, db);
 
     if (req.actor.type === "agent" && req.actor.agentId !== id) {
       res.status(403).json({ error: "Agent can only invoke itself" });
@@ -1179,7 +1194,7 @@ export function agentCrudRoutes(db: Db): Router {
       res.status(404).json({ error: "Agent not found" });
       return;
     }
-    assertCompanyAccess(req, agent.companyId);
+    await assertCanWrite(req, agent.companyId, db);
 
     if (req.actor.type === "agent" && req.actor.agentId !== id) {
       res.status(403).json({ error: "Agent can only invoke itself" });
@@ -1229,7 +1244,7 @@ export function agentCrudRoutes(db: Db): Router {
       res.status(404).json({ error: "Agent not found" });
       return;
     }
-    assertCompanyAccess(req, agent.companyId);
+    await assertCanWrite(req, agent.companyId, db);
     if (agent.adapterType !== "claude_local") {
       res.status(400).json({ error: "Login is only supported for claude_local agents" });
       return;

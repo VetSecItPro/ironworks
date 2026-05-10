@@ -79,7 +79,7 @@ import {
   runAllTeamRetrospectives,
   runAllWeeklyReports,
 } from "../services/weekly-reports.js";
-import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
+import { assertBoard, assertCanWrite, assertCompanyAccess, getActorInfo } from "./authz.js";
 
 /* ─── Data Retention Defaults (configurable) ──────────────────────── */
 
@@ -271,7 +271,7 @@ export function privacyRoutes(db: Db) {
    */
   router.post("/companies/:companyId/privacy/erasure-request", async (req, res) => {
     const companyId = req.params.companyId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
     assertBoard(req);
 
     const actor = getActorInfo(req);

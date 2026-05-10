@@ -23,7 +23,7 @@ import { channelAnalytics } from "../services/executive-analytics.js";
 import { heartbeatService } from "../services/index.js";
 import { issueService } from "../services/issues.js";
 import { publishLiveEvent } from "../services/live-events.js";
-import { assertCompanyAccess, getActorInfo } from "./authz.js";
+import { assertCanWrite, assertCompanyAccess, getActorInfo } from "./authz.js";
 
 export function channelRoutes(db: Db) {
   const router = Router();
@@ -73,7 +73,7 @@ export function channelRoutes(db: Db) {
   router.post("/companies/:companyId/channels/:channelId/messages", async (req, res) => {
     const companyId = req.params.companyId as string;
     const channelId = req.params.channelId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
 
     // Verify the channel belongs to this company
     const channel = await db
@@ -172,7 +172,7 @@ export function channelRoutes(db: Db) {
     const companyId = req.params.companyId as string;
     const channelId = req.params.channelId as string;
     const messageId = req.params.messageId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
 
     const channel = await db
       .select({ id: agentChannels.id, companyId: agentChannels.companyId })
@@ -197,7 +197,7 @@ export function channelRoutes(db: Db) {
     const companyId = req.params.companyId as string;
     const channelId = req.params.channelId as string;
     const messageId = req.params.messageId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
 
     const channel = await db
       .select({ id: agentChannels.id, companyId: agentChannels.companyId })
@@ -246,7 +246,7 @@ export function channelRoutes(db: Db) {
   router.post("/companies/:companyId/channels/:channelId/deliberate", async (req, res) => {
     const companyId = req.params.companyId as string;
     const channelId = req.params.channelId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
 
     const channel = await db
       .select({ id: agentChannels.id, companyId: agentChannels.companyId })
@@ -303,7 +303,7 @@ export function channelRoutes(db: Db) {
     const companyId = req.params.companyId as string;
     const channelId = req.params.channelId as string;
     const deliberationId = req.params.deliberationId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
 
     const channel = await db
       .select({ id: agentChannels.id })
@@ -346,7 +346,7 @@ export function channelRoutes(db: Db) {
   router.post("/companies/:companyId/channels/:channelId/fork-and-test", async (req, res) => {
     const companyId = req.params.companyId as string;
     const channelId = req.params.channelId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
 
     const channel = await db
       .select({ id: agentChannels.id, companyId: agentChannels.companyId })
@@ -469,7 +469,7 @@ export function channelRoutes(db: Db) {
     const companyId = req.params.companyId as string;
     const channelId = req.params.channelId as string;
     const messageId = req.params.messageId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
 
     const channel = await db
       .select({ id: agentChannels.id, companyId: agentChannels.companyId })

@@ -10,7 +10,7 @@ import {
   cleanupExecutionWorkspaceArtifacts,
   stopRuntimeServicesForExecutionWorkspace,
 } from "../services/workspace-runtime.js";
-import { assertCompanyAccess, getActorInfo } from "./authz.js";
+import { assertCanWrite, assertCompanyAccess, getActorInfo } from "./authz.js";
 
 const TERMINAL_ISSUE_STATUSES = new Set(["done", "cancelled"]);
 
@@ -50,7 +50,7 @@ export function executionWorkspaceRoutes(db: Db) {
       res.status(404).json({ error: "Execution workspace not found" });
       return;
     }
-    assertCompanyAccess(req, existing.companyId);
+    await assertCanWrite(req, existing.companyId, db);
     const patch: Record<string, unknown> = {
       ...req.body,
       ...(req.body.cleanupEligibleAt ? { cleanupEligibleAt: new Date(req.body.cleanupEligibleAt) } : {}),

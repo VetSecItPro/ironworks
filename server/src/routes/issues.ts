@@ -82,7 +82,8 @@ export function issueRoutes(db: Db, storage: StorageService) {
   }
 
   async function assertCanManageIssueApprovalLinks(req: Request, res: Response, companyId: string) {
-    assertCompanyAccess(req, companyId);
+    // SEC-AUTH-HIGH-002: viewer-write protection — both callers are mutation paths.
+    await assertCanWrite(req, companyId, db);
     if (req.actor.type === "board") return true;
     if (!req.actor.agentId) {
       res.status(403).json({ error: "Agent authentication required" });
@@ -298,7 +299,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
 
   router.post("/companies/:companyId/labels", validate(createIssueLabelSchema), async (req, res) => {
     const companyId = req.params.companyId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
     const label = await svc.createLabel(companyId, req.body);
     const actor = getActorInfo(req);
     await logActivity(db, {
@@ -322,7 +323,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       res.status(404).json({ error: "Label not found" });
       return;
     }
-    assertCompanyAccess(req, existing.companyId);
+    await assertCanWrite(req, existing.companyId, db);
     const removed = await svc.deleteLabel(labelId);
     if (!removed) {
       res.status(404).json({ error: "Label not found" });
@@ -502,7 +503,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       res.status(404).json({ error: "Issue not found" });
       return;
     }
-    assertCompanyAccess(req, issue.companyId);
+    await assertCanWrite(req, issue.companyId, db);
     const keyParsed = issueDocumentKeySchema.safeParse(
       String(req.params.key ?? "")
         .trim()
@@ -576,7 +577,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       res.status(404).json({ error: "Issue not found" });
       return;
     }
-    assertCompanyAccess(req, issue.companyId);
+    await assertCanWrite(req, issue.companyId, db);
     if (req.actor.type !== "board") {
       res.status(403).json({ error: "Board authentication required" });
       return;
@@ -621,7 +622,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       res.status(404).json({ error: "Issue not found" });
       return;
     }
-    assertCompanyAccess(req, issue.companyId);
+    await assertCanWrite(req, issue.companyId, db);
     const product = await workProductsSvc.createForIssue(issue.id, issue.companyId, {
       ...req.body,
       projectId: req.body.projectId ?? issue.projectId ?? null,
@@ -652,7 +653,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       res.status(404).json({ error: "Work product not found" });
       return;
     }
-    assertCompanyAccess(req, existing.companyId);
+    await assertCanWrite(req, existing.companyId, db);
     const product = await workProductsSvc.update(id, req.body);
     if (!product) {
       res.status(404).json({ error: "Work product not found" });
@@ -680,7 +681,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       res.status(404).json({ error: "Work product not found" });
       return;
     }
-    assertCompanyAccess(req, existing.companyId);
+    await assertCanWrite(req, existing.companyId, db);
     const removed = await workProductsSvc.remove(id);
     if (!removed) {
       res.status(404).json({ error: "Work product not found" });
@@ -708,7 +709,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       res.status(404).json({ error: "Issue not found" });
       return;
     }
-    assertCompanyAccess(req, issue.companyId);
+    await assertCanWrite(req, issue.companyId, db);
     if (req.actor.type !== "board") {
       res.status(403).json({ error: "Board authentication required" });
       return;
@@ -740,7 +741,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       res.status(404).json({ error: "Issue not found" });
       return;
     }
-    assertCompanyAccess(req, issue.companyId);
+    await assertCanWrite(req, issue.companyId, db);
     if (req.actor.type !== "board") {
       res.status(403).json({ error: "Board authentication required" });
       return;
@@ -772,7 +773,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       res.status(404).json({ error: "Issue not found" });
       return;
     }
-    assertCompanyAccess(req, issue.companyId);
+    await assertCanWrite(req, issue.companyId, db);
     if (req.actor.type !== "board") {
       res.status(403).json({ error: "Board authentication required" });
       return;
@@ -803,7 +804,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
    */
   router.post("/companies/:companyId/inbox/bulk-archive", async (req, res) => {
     const companyId = req.params.companyId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
     if (req.actor.type !== "board") {
       res.status(403).json({ error: "Board authentication required" });
       return;
@@ -1399,7 +1400,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       res.status(404).json({ error: "Issue not found" });
       return;
     }
-    assertCompanyAccess(req, issue.companyId);
+    await assertCanWrite(req, issue.companyId, db);
 
     if (issue.projectId) {
       const project = await projectsSvc.getById(issue.projectId);
@@ -1467,7 +1468,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       res.status(404).json({ error: "Issue not found" });
       return;
     }
-    assertCompanyAccess(req, existing.companyId);
+    await assertCanWrite(req, existing.companyId, db);
     if (!(await assertAgentRunCheckoutOwnership(req, res, existing))) return;
     const actorRunId = requireAgentRunId(req, res);
     if (req.actor.type === "agent" && !actorRunId) return;
@@ -1547,7 +1548,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       res.status(404).json({ error: "Issue not found" });
       return;
     }
-    assertCompanyAccess(req, issue.companyId);
+    await assertCanWrite(req, issue.companyId, db);
     if (!(await assertAgentRunCheckoutOwnership(req, res, issue))) return;
 
     const actor = getActorInfo(req);
@@ -1813,7 +1814,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
   router.post("/companies/:companyId/issues/:issueId/attachments", async (req, res) => {
     const companyId = req.params.companyId as string;
     const issueId = req.params.issueId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
     const issue = await svc.getById(issueId);
     if (!issue) {
       res.status(404).json({ error: "Issue not found" });
@@ -1931,7 +1932,7 @@ export function issueRoutes(db: Db, storage: StorageService) {
       res.status(404).json({ error: "Attachment not found" });
       return;
     }
-    assertCompanyAccess(req, attachment.companyId);
+    await assertCanWrite(req, attachment.companyId, db);
 
     try {
       await storage.deleteObject(attachment.companyId, attachment.objectKey);
