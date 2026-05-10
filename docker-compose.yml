@@ -8,7 +8,8 @@ services:
     # pgvector/pgvector:pg17 = postgres 17 + pgvector built in.
     # Required by knowledge_chunks (RAG) and agent_memory_entries (semantic memory).
     # Plain postgres:17-alpine does NOT include pgvector; do not swap back.
-    image: pgvector/pgvector:pg17
+    # SEC-INFRA-AGENT13-003 (2026-05-09): digest-pinned. Captured 2026-05-10.
+    image: pgvector/pgvector:pg17@sha256:494dff7e67e7bc2c826b94c331364978d145ebb86fd338154138b084223b7f67
     environment:
       # DEV DEFAULTS ONLY - these are plaintext fallbacks for local development.
       # NEVER use these defaults in production. Production must use docker-compose.production.yml

@@ -204,7 +204,12 @@ export function companyRoutes(db: Db, storage?: StorageService) {
   // Streaming via archiver so 10K+ page KBs export without buffering.
   router.get("/:companyId/vault-export.zip", async (req, res) => {
     const companyId = req.params.companyId as string;
-    assertCompanyAccess(req, companyId);
+    // SEC-EXP-MED-008 fix (2026-05-09): vault export pulls the ENTIRE company
+    // knowledge corpus including agent prompts, decisions, runs, costs - same
+    // sensitivity as the v1 portability export at POST /:companyId/export.
+    // Previously this only checked membership (any viewer could pull). Now
+    // gated behind the same "exports" portability capability the v1 path uses.
+    await assertCanManagePortability(req, companyId, "exports");
 
     const company = await svc.getById(companyId);
     if (!company) {

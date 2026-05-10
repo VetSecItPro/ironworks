@@ -1,5 +1,8 @@
-# SEC-INFRA-002: Pin base image — update digest when upgrading Node
-FROM node:22-slim AS base
+# SEC-INFRA-002 + SEC-INFRA-AGENT13-003 (2026-05-09): digest-pin base image.
+# Tag-pinning alone is mutable - the same tag can point to a different image
+# at any time. Digest-pinning makes the build immutable; bump digest
+# intentionally when upgrading Node. Captured 2026-05-10 from registry-1.docker.io.
+FROM node:22-slim@sha256:9f6d5975c7dca860947d3915877f85607946403fc55349f39b4bc3688448bb6e AS base
 RUN apt-get update \
   && apt-get install -y --no-install-recommends ca-certificates curl git \
   && rm -rf /var/lib/apt/lists/*
