@@ -21,7 +21,7 @@ import {
 import { heartbeatService } from "../services/heartbeat.js";
 import { type AlertSeverity, getPendingAlerts, resolveAlert } from "../services/smart-alerts.js";
 import { contextWindowUtilization, tokenAnalyticsService } from "../services/token-analytics.js";
-import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
+import { assertBoard, assertCanWrite, assertCompanyAccess, getActorInfo } from "./authz.js";
 
 export function executiveRoutes(db: Db) {
   const router = Router();
@@ -88,7 +88,7 @@ export function executiveRoutes(db: Db) {
   // -- CFO Kill Switch: Emergency Pause All Agents --
   router.post("/companies/:companyId/agents/emergency-pause-all", async (req, res) => {
     const companyId = req.params.companyId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
     assertBoard(req);
 
     const now = new Date();
@@ -259,7 +259,7 @@ export function executiveRoutes(db: Db) {
   router.post("/companies/:companyId/alerts/:alertId/resolve", async (req, res) => {
     const companyId = req.params.companyId as string;
     const alertId = req.params.alertId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
     const actor = getActorInfo(req);
     await resolveAlert(db, companyId, alertId, actor.actorId);
     res.json({ ok: true });
@@ -284,7 +284,7 @@ export function executiveRoutes(db: Db) {
   // -- Risk Settings: update --
   router.patch("/companies/:companyId/risk-settings", async (req, res) => {
     const companyId = req.params.companyId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
     assertBoard(req);
     const actor = getActorInfo(req);
     const updated = await updateRiskSettings(db, companyId, req.body as Record<string, unknown>, actor.actorId);

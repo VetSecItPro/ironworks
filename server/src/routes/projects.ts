@@ -12,7 +12,7 @@ import { logger } from "../middleware/logger.js";
 import { validate } from "../middleware/validate.js";
 import { generateClientUpdate, logActivity, projectService } from "../services/index.js";
 import { ensureLibraryProjectFolderExternal } from "../services/playbook-execution.js";
-import { assertCompanyAccess, getActorInfo } from "./authz.js";
+import { assertCanWrite, assertCompanyAccess, getActorInfo } from "./authz.js";
 
 export function projectRoutes(db: Db) {
   const router = Router();
@@ -72,7 +72,7 @@ export function projectRoutes(db: Db) {
 
   router.post("/companies/:companyId/projects", validate(createProjectSchema), async (req, res) => {
     const companyId = req.params.companyId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
     type CreateProjectPayload = Parameters<typeof svc.create>[1] & {
       workspace?: Parameters<typeof svc.createWorkspace>[1];
     };
@@ -120,7 +120,7 @@ export function projectRoutes(db: Db) {
       res.status(404).json({ error: "Project not found" });
       return;
     }
-    assertCompanyAccess(req, existing.companyId);
+    await assertCanWrite(req, existing.companyId, db);
     const body = { ...req.body };
     if (typeof body.archivedAt === "string") {
       body.archivedAt = new Date(body.archivedAt);
@@ -165,7 +165,7 @@ export function projectRoutes(db: Db) {
       res.status(404).json({ error: "Project not found" });
       return;
     }
-    assertCompanyAccess(req, existing.companyId);
+    await assertCanWrite(req, existing.companyId, db);
     // SEC-TAINT-002: Reject shell commands from non-admin users
     const body = req.body as Record<string, unknown>;
     if (body.provisionCommand || body.teardownCommand) {
@@ -208,7 +208,7 @@ export function projectRoutes(db: Db) {
       res.status(404).json({ error: "Project not found" });
       return;
     }
-    assertCompanyAccess(req, existing.companyId);
+    await assertCanWrite(req, existing.companyId, db);
     const workspaceExists = (await svc.listWorkspaces(id)).some((workspace) => workspace.id === workspaceId);
     if (!workspaceExists) {
       res.status(404).json({ error: "Project workspace not found" });
@@ -246,7 +246,7 @@ export function projectRoutes(db: Db) {
       res.status(404).json({ error: "Project not found" });
       return;
     }
-    assertCompanyAccess(req, existing.companyId);
+    await assertCanWrite(req, existing.companyId, db);
     const workspace = await svc.removeWorkspace(id, workspaceId);
     if (!workspace) {
       res.status(404).json({ error: "Project workspace not found" });
@@ -278,7 +278,7 @@ export function projectRoutes(db: Db) {
       res.status(404).json({ error: "Project not found" });
       return;
     }
-    assertCompanyAccess(req, existing.companyId);
+    await assertCanWrite(req, existing.companyId, db);
     const project = await svc.remove(id);
     if (!project) {
       res.status(404).json({ error: "Project not found" });
@@ -303,7 +303,7 @@ export function projectRoutes(db: Db) {
   router.post("/companies/:companyId/projects/:projectId/client-update", async (req, res) => {
     const companyId = req.params.companyId as string;
     const projectId = req.params.projectId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
 
     const existing = await svc.getById(projectId);
     if (!existing || existing.companyId !== companyId) {

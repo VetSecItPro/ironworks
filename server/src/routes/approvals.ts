@@ -22,7 +22,7 @@ import {
   logActivity,
   secretService,
 } from "../services/index.js";
-import { assertBoard, assertCompanyAccess, getActorInfo } from "./authz.js";
+import { assertBoard, assertCanWrite, assertCompanyAccess, getActorInfo } from "./authz.js";
 
 function redactApprovalPayload<T extends { payload: Record<string, unknown> }>(approval: T): T {
   return {
@@ -44,7 +44,9 @@ export function approvalRoutes(db: Db) {
     if (!approval) {
       return null;
     }
-    assertCompanyAccess(req, approval.companyId);
+    // SEC-AUTH-HIGH-002: viewer-write protection — all 3 callers (approve / reject /
+    // request-revision) are mutating routes, so write gating is appropriate here.
+    await assertCanWrite(req, approval.companyId, db);
     return approval;
   }
 
@@ -69,7 +71,7 @@ export function approvalRoutes(db: Db) {
 
   router.post("/companies/:companyId/approvals", validate(createApprovalSchema), async (req, res) => {
     const companyId = req.params.companyId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
     const rawIssueIds = req.body.issueIds;
     const issueIds = Array.isArray(rawIssueIds)
       ? rawIssueIds.filter((value: unknown): value is string => typeof value === "string")
@@ -368,7 +370,7 @@ export function approvalRoutes(db: Db) {
       res.status(404).json({ error: "Approval not found" });
       return;
     }
-    assertCompanyAccess(req, existing.companyId);
+    await assertCanWrite(req, existing.companyId, db);
 
     if (req.actor.type === "agent" && req.actor.agentId !== existing.requestedByAgentId) {
       res.status(403).json({ error: "Only requesting agent can resubmit this approval" });
@@ -416,7 +418,7 @@ export function approvalRoutes(db: Db) {
       res.status(404).json({ error: "Approval not found" });
       return;
     }
-    assertCompanyAccess(req, approval.companyId);
+    await assertCanWrite(req, approval.companyId, db);
     const actor = getActorInfo(req);
     const comment = await svc.addComment(id, req.body.body, {
       agentId: actor.agentId ?? undefined,

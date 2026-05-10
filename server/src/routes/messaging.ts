@@ -18,7 +18,7 @@ import {
 import { logger } from "../middleware/logger.js";
 import { companyService, logActivity, secretService } from "../services/index.js";
 import { messagingBridgeService } from "../services/messaging-bridges.js";
-import { assertBoard, assertCompanyAccess } from "./authz.js";
+import { assertBoard, assertCanWrite, assertCompanyAccess } from "./authz.js";
 
 export function messagingRoutes(db: Db) {
   const router = Router();
@@ -70,7 +70,7 @@ export function messagingRoutes(db: Db) {
   router.post("/companies/:companyId/messaging/telegram", async (req, res) => {
     assertBoard(req);
     const companyId = req.params.companyId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
 
     const { token } = req.body as { token?: string };
     if (!token || typeof token !== "string" || token.trim().length < 10) {
@@ -139,7 +139,7 @@ export function messagingRoutes(db: Db) {
   router.delete("/companies/:companyId/messaging/telegram", async (req, res) => {
     assertBoard(req);
     const companyId = req.params.companyId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
 
     // Stop the bot
     await stopTelegramBridge(companyId);
@@ -174,7 +174,7 @@ export function messagingRoutes(db: Db) {
   router.post("/companies/:companyId/messaging/telegram/test", async (req, res) => {
     assertBoard(req);
     const companyId = req.params.companyId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
 
     const bridge = await bridgeSvc.getByPlatform(companyId, "telegram");
     if (!bridge?.secretId) {
@@ -217,7 +217,7 @@ export function messagingRoutes(db: Db) {
   router.post("/companies/:companyId/messaging/telegram/reset-owner", async (req, res) => {
     assertBoard(req);
     const companyId = req.params.companyId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
 
     const bridge = await bridgeSvc.getByPlatform(companyId, "telegram");
     if (!bridge) {
@@ -251,7 +251,7 @@ export function messagingRoutes(db: Db) {
   router.put("/companies/:companyId/messaging/telegram/allowed-chat-ids", async (req, res) => {
     assertBoard(req);
     const companyId = req.params.companyId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
 
     const body = req.body as { allowedChatIds?: unknown };
     const raw = body.allowedChatIds;

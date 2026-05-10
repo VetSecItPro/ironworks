@@ -144,7 +144,7 @@ export function mcpServerRoutes(db: Db) {
 
     const existing = await svc.getById(id);
     if (!existing) throw notFound("MCP server not found");
-    assertCompanyAccess(req, existing.companyId);
+    await assertCanWrite(req, existing.companyId, db);
 
     // Force-refresh bypasses the tool cache so the UI gets fresh data every time.
     const tools = await svc.discoverTools(existing, /* forceRefresh */ true);

@@ -11,7 +11,7 @@ import { type Request, Router } from "express";
 import { forbidden, unauthorized } from "../errors.js";
 import { validate } from "../middleware/validate.js";
 import { accessService, logActivity, routineService } from "../services/index.js";
-import { assertCompanyAccess, getActorInfo } from "./authz.js";
+import { assertCanWrite, assertCompanyAccess, getActorInfo } from "./authz.js";
 
 export function routineRoutes(db: Db) {
   const router = Router();
@@ -40,7 +40,8 @@ export function routineRoutes(db: Db) {
   async function assertCanManageExistingRoutine(req: Request, routineId: string) {
     const routine = await svc.get(routineId);
     if (!routine) return null;
-    assertCompanyAccess(req, routine.companyId);
+    // SEC-AUTH-HIGH-002: viewer-write protection — all callers are mutation paths.
+    await assertCanWrite(req, routine.companyId, db);
     if (req.actor.type === "board") return routine;
     if (req.actor.type !== "agent" || !req.actor.agentId) throw unauthorized();
     if (routine.assigneeAgentId !== req.actor.agentId) {
@@ -58,7 +59,7 @@ export function routineRoutes(db: Db) {
 
   router.post("/companies/:companyId/routines/seed", async (req, res) => {
     const companyId = req.params.companyId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
     const result = await svc.seedDefaults(companyId);
     res.json(result);
   });

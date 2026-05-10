@@ -3,7 +3,7 @@ import { Router } from "express";
 import { badRequest } from "../errors.js";
 import { logger } from "../middleware/logger.js";
 import { billingService, PLAN_DEFINITIONS, type PlanTier, verifyPolarWebhookSignature } from "../services/billing.js";
-import { assertCompanyAccess } from "./authz.js";
+import { assertCanWrite, assertCompanyAccess } from "./authz.js";
 
 const VALID_TIERS: PlanTier[] = ["starter", "growth", "business"];
 
@@ -34,7 +34,7 @@ export function billingRoutes(db: Db) {
   // POST /companies/:companyId/billing/checkout
   router.post("/companies/:companyId/billing/checkout", async (req, res) => {
     const companyId = req.params.companyId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
 
     const { planTier, successUrl, cancelUrl } = req.body as {
       planTier?: string;
@@ -63,7 +63,7 @@ export function billingRoutes(db: Db) {
   // POST /companies/:companyId/billing/portal
   router.post("/companies/:companyId/billing/portal", async (req, res) => {
     const companyId = req.params.companyId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
 
     const { returnUrl } = req.body as { returnUrl?: string };
     if (!returnUrl) {

@@ -7,7 +7,7 @@ import { redactCurrentUserValue } from "../log-redaction.js";
 import { redactEventPayload } from "../redaction.js";
 import { issueService, logActivity } from "../services/index.js";
 import { buildAgentRouteContext } from "./agent-route-helpers.js";
-import { assertBoard, assertCompanyAccess, assertInstanceAdmin } from "./authz.js";
+import { assertBoard, assertCanWrite, assertCompanyAccess, assertInstanceAdmin } from "./authz.js";
 
 export function agentRunsRoutes(db: Db): Router {
   const router = Router();
@@ -156,7 +156,7 @@ export function agentRunsRoutes(db: Db): Router {
     const runId = req.params.runId as string;
     const existing = await heartbeat.getRun(runId);
     if (existing) {
-      assertCompanyAccess(req, existing.companyId);
+      await assertCanWrite(req, existing.companyId, db);
     }
     const run = await heartbeat.cancelRun(runId);
 

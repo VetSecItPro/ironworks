@@ -30,7 +30,7 @@ import {
   workspaceOperationService,
 } from "../services/index.js";
 import { instanceSettingsService } from "../services/instance-settings.js";
-import { assertCompanyAccess } from "./authz.js";
+import { assertCanWrite, assertCompanyAccess } from "./authz.js";
 
 /**
  * Return a default monthly budget in cents for a new agent based on its role,
@@ -191,7 +191,9 @@ export function buildAgentRouteContext(db: Db) {
   }
 
   async function assertCanUpdateAgent(req: Request, targetAgent: { id: string; companyId: string }) {
-    assertCompanyAccess(req, targetAgent.companyId);
+    // SEC-AUTH-HIGH-002: viewer-write protection — this gate is used by mutation paths only
+    // (PATCH /agents/:id, POST /agents/:id/skills/sync, POST /agents/:id/config-revisions/.../rollback).
+    await assertCanWrite(req, targetAgent.companyId, db);
     if (req.actor.type === "board") return;
     if (!req.actor.agentId) throw forbidden("Agent authentication required");
 
@@ -415,7 +417,8 @@ export function buildAgentRouteContext(db: Db) {
   }
 
   async function assertCanManageInstructionsPath(req: Request, targetAgent: { id: string; companyId: string }) {
-    assertCompanyAccess(req, targetAgent.companyId);
+    // SEC-AUTH-HIGH-002: viewer-write protection — all callers are mutation paths.
+    await assertCanWrite(req, targetAgent.companyId, db);
     if (req.actor.type === "board") return;
     if (!req.actor.agentId) throw forbidden("Agent authentication required");
 

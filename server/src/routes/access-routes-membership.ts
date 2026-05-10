@@ -13,7 +13,7 @@ import { forbidden, notFound } from "../errors.js";
 import { validate } from "../middleware/validate.js";
 import { logActivity } from "../services/index.js";
 import { type AccessRouteContext } from "./access-route-helpers.js";
-import { assertCompanyAccess } from "./authz.js";
+import { assertCanWrite, assertCompanyAccess } from "./authz.js";
 
 export function accessMembershipRoutes(ctx: AccessRouteContext): Router {
   const router = Router();
@@ -94,7 +94,7 @@ export function accessMembershipRoutes(ctx: AccessRouteContext): Router {
   router.patch("/companies/:companyId/members/:memberId/role", validate(updateMemberRoleSchema), async (req, res) => {
     const companyId = req.params.companyId as string;
     const memberId = req.params.memberId as string;
-    assertCompanyAccess(req, companyId);
+    await assertCanWrite(req, companyId, db);
 
     // Only owners can change roles
     const actorMembership = req.actor.userId ? await access.getMembership(companyId, "user", req.actor.userId) : null;
