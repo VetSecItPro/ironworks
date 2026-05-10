@@ -1,4 +1,5 @@
 import { PROMPT_MAX_LENGTHS, redactSecrets, sanitizeForPrompt } from "../../lib/prompt-security.js";
+import { assertNoSsrf } from "../../lib/ssrf-guard.js";
 import type { AdapterExecutionContext, AdapterExecutionResult } from "../types.js";
 import { asNumber, asString, parseObject } from "../utils.js";
 
@@ -6,16 +7,12 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   const { config, runId, agent, context } = ctx;
   const url = asString(config.url, "");
   if (!url) throw new Error("HTTP adapter missing url");
-  // SEC-TAINT-003: Block SSRF — reject private/reserved IP targets
-  try {
-    const hostname = new URL(url).hostname;
-    if (/^(127\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.|0\.|169\.254\.|localhost|::1|\[::1\])/.test(hostname)) {
-      throw new Error("HTTP adapter URL resolves to a private or reserved address");
-    }
-  } catch (e) {
-    if ((e as Error).message.includes("private or reserved")) throw e;
-    throw new Error(`HTTP adapter URL is invalid: ${url}`);
-  }
+  // SEC-TAINT-003 + SEC-SSRF-HIGH-003 (2026-05-09): proper IP-after-DNS check.
+  // Replaces the prior regex-only block which had bypasses for decimal/hex/octal
+  // IPv4, IPv6-mapped IPv4, IPv6 unique-local + link-local, internal hostname
+  // suffixes (.svc.cluster.local, .internal), and cloud-metadata hostnames.
+  // See server/src/lib/ssrf-guard.ts for the full guard + ranges blocked.
+  await assertNoSsrf(url);
 
   const method = asString(config.method, "POST");
   const timeoutMs = asNumber(config.timeoutMs, 0);
