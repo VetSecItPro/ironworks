@@ -35,6 +35,16 @@ export function verifyHmacSha256(rawBody: Buffer, signature: string | null | und
 }
 
 /**
+ * Default replay window for SendGrid signed webhooks (5 minutes either side).
+ * Captured signatures replayed outside this window are refused. Tunable via
+ * `WEBHOOK_REPLAY_WINDOW_SEC` env if a clock-skew or buffering edge needs it.
+ *
+ * SEC-WEBHOOK-REPLAY-002 (2026-05-09): originally there was no timestamp
+ * freshness check, so a captured signature could be replayed indefinitely.
+ */
+const DEFAULT_REPLAY_WINDOW_SEC = 300;
+
+/**
  * Verify a SendGrid Event Webhook / Inbound Parse signature (Ed25519).
  *
  * SendGrid signs `timestamp + rawBody` with an Ed25519 private key; the public
@@ -44,14 +54,28 @@ export function verifyHmacSha256(rawBody: Buffer, signature: string | null | und
  *
  * `publicKeyPem` may be either a full PEM block or the base64 DER body that
  * SendGrid exposes in their UI; we wrap it in PEM headers if needed.
+ *
+ * Refuses any timestamp older than the replay window or further in the future
+ * than the same window (clock skew tolerance). Default window: 5 minutes.
  */
 export function verifySendgridSignature(
   rawBody: Buffer,
   timestamp: string | null | undefined,
   signature: string | null | undefined,
   publicKey: string,
+  options?: { replayWindowSec?: number; now?: () => number },
 ): boolean {
   if (!timestamp || !signature || !publicKey) return false;
+
+  // Reject stale or future-dated timestamps before doing crypto. Cheap gate.
+  const tsSec = Number(timestamp);
+  if (!Number.isFinite(tsSec)) return false;
+  const window =
+    options?.replayWindowSec ??
+    (process.env.WEBHOOK_REPLAY_WINDOW_SEC ? Number(process.env.WEBHOOK_REPLAY_WINDOW_SEC) : DEFAULT_REPLAY_WINDOW_SEC);
+  if (!Number.isFinite(window) || window <= 0) return false;
+  const nowSec = Math.floor((options?.now?.() ?? Date.now()) / 1000);
+  if (Math.abs(nowSec - tsSec) > window) return false;
 
   const pem = publicKey.includes("BEGIN PUBLIC KEY")
     ? publicKey

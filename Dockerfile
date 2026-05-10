@@ -97,5 +97,12 @@ ENV NODE_ENV=production \
 VOLUME ["/ironworks"]
 EXPOSE 3100
 
+# SEC-INFRA-HIGH-006 fix (2026-05-09): without HEALTHCHECK, crash-loops mask
+# as healthy outside compose (release-smoke harness, k8s, anything that
+# inspects container health rather than process state). Curl-based check
+# against /api/health gives both orchestrator + ops a real signal.
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD curl -fsS http://127.0.0.1:3100/api/health || exit 1
+
 USER node
 CMD ["node", "--import", "./server/node_modules/tsx/dist/loader.mjs", "server/dist/index.js"]
