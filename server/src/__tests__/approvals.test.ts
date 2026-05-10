@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
+import type { Db } from "@ironworksai/db";
 import express from "express";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { Db } from "@ironworksai/db";
 import { makeChainableDb } from "./helpers/drizzle-mock.js";
 
 // ── Mock data ───────────────────────────────────────────────────────────────
