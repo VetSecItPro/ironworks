@@ -66,17 +66,22 @@ jobs:
       - name: Set up SSH key + known_hosts
         env:
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
-          VPS_TAILSCALE_HOST: ${{ secrets.VPS_TAILSCALE_HOST }}
+          VPS_HOST_KEY: ${{ secrets.VPS_HOST_KEY }}
         run: |
           set -euo pipefail
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
           printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          # ssh-keyscan over the Tailscale IP. Generally faster than over WAN
-          # and Tailscale's WireGuard tunnel doesn't drop the way the public
-          # path was. -T 30 still defended against transient slowness.
-          ssh-keyscan -T 30 -t ed25519,rsa "$VPS_TAILSCALE_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          # SEC-DEPLOY-005 fix (2026-05-14): pin VPS host keys from a GH secret
+          # rather than TOFU-keyscanning on every run. ssh-keyscan + a one-shot
+          # trust window inside the same job was equivalent to disabling host
+          # verification — whatever responded on :22 would be accepted. Now the
+          # workflow only accepts the exact ed25519/rsa keys we captured from
+          # the VPS during sec-batch-E (2026-05-14). Rotation procedure: SSH to
+          # VPS, run `ssh-keyscan -t ed25519,rsa 100.x.y.z`, paste new value
+          # into the VPS_HOST_KEY repo secret, no code change needed.
+          printf '%s\n' "$VPS_HOST_KEY" > ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
       - name: Stage deploy script
@@ -178,7 +183,7 @@ jobs:
             -o ConnectTimeout=30
             -o ServerAliveInterval=15
             -o ServerAliveCountMax=20
-            -o StrictHostKeyChecking=no
+            -o StrictHostKeyChecking=yes
             -o UserKnownHostsFile="$HOME/.ssh/known_hosts"
             -o LogLevel=ERROR
           )
