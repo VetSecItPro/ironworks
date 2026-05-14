@@ -22,4 +22,4 @@ on demand. Don't reintroduce a hand-maintained spec - it drifted to
 emitter (e.g. tsoa, express-zod-api) or hand the consumer the route
 files directly.
 
-Closes SEC-API-HIGH-007 (see `docs/adr/2026-05-10-sec-audit-deferred-decisions.md`).
+Closes SEC-API-HIGH-007 (see `docs/adr/2026-05-10-sec-deferred-decisions.md`).
