@@ -102,6 +102,33 @@ export function sanitizeUserMessage(input: string): string {
   return input.replace(USER_TAG_INJECTION_RE, "[REDACTED-TAG]");
 }
 
+// SEC-PROMPT-INJECTION-RESID-006: builds the audit-log payload for a
+// CLOSE_ALL_FROM_CHAT invocation. Truncates user input + LLM output to keep
+// activity-log entries bounded - 500 chars of user input is enough for an
+// incident responder to reconstruct the persuasion attempt, 1000 chars of LLM
+// output captures the full tag emission with surrounding context.
+export const CLOSE_ALL_USER_MESSAGE_MAX = 500;
+export const CLOSE_ALL_LLM_OUTPUT_MAX = 1000;
+
+export function buildCloseAllInvokedDetails(opts: {
+  platform: "telegram";
+  chatId: string;
+  reason: string | null;
+  issueCount: number;
+  userMessage: string;
+  llmOutput: string;
+}) {
+  return {
+    platform: opts.platform,
+    chatId: opts.chatId,
+    reason: opts.reason,
+    issueCount: opts.issueCount,
+    userMessage: opts.userMessage.slice(0, CLOSE_ALL_USER_MESSAGE_MAX),
+    llmOutput: opts.llmOutput.slice(0, CLOSE_ALL_LLM_OUTPUT_MAX),
+    via: "telegram_bridge" as const,
+  };
+}
+
 // SEC-CHAOS-002 fix #1: parse the operator-controlled allowlist from the bridge
 // config. Empty/missing array preserves the legacy first-claimer ownership
 // model so back-compat is intact for existing single-operator deployments.
@@ -732,6 +759,30 @@ function startTelegramPollLoop(db: Db, bot: BotInstance): void {
         // CLOSE_ALL_FROM_CHAT
         if (turn.actions.closeAllFromChat) {
           const filed = chatFiledIssues.get(filedKey) ?? [];
+          // SEC-PROMPT-INJECTION-RESID-006: explicit audit event when the LLM
+          // emits a CLOSE_ALL_FROM_CHAT tag. parseActions already guards
+          // literal-tag injection by users, but a sophisticated prompt could
+          // persuade the LLM itself to emit the tag. Bounded blast radius
+          // (per-chat ledger only) is the primary mitigation; this is the
+          // detection layer - a future incident response can grep activity-log
+          // for `bridge.close_all_invoked` to see what user message + LLM
+          // output triggered each bulk cancellation.
+          void logActivity(db, {
+            companyId: bot.companyId,
+            actorType: "bridge",
+            actorId: bridgeActorIdValue,
+            action: "bridge.close_all_invoked",
+            entityType: "bridge",
+            entityId: bridgeActorIdValue,
+            details: buildCloseAllInvokedDetails({
+              platform: bridgeActor.platform,
+              chatId,
+              reason: turn.actions.closeAllFromChat.reason ?? null,
+              issueCount: filed.length,
+              userMessage: text,
+              llmOutput: turn.raw ?? "",
+            }),
+          }).catch(() => {});
           if (filed.length === 0) {
             actionLog.push("no tasks to close from this thread");
           } else {

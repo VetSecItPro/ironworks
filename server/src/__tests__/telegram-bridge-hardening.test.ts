@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { isChatIdAllowed, parseAllowedChatIds, sanitizeUserMessage } from "../bridges/telegram.js";
+import {
+  buildCloseAllInvokedDetails,
+  CLOSE_ALL_LLM_OUTPUT_MAX,
+  CLOSE_ALL_USER_MESSAGE_MAX,
+  isChatIdAllowed,
+  parseAllowedChatIds,
+  sanitizeUserMessage,
+} from "../bridges/telegram.js";
 
 // SEC-CHAOS-002: tests for the three Telegram bridge hardening primitives.
 // These exercise the pure functions directly. End-to-end bot polling is an
@@ -59,5 +66,55 @@ describe("isChatIdAllowed", () => {
     expect(isChatIdAllowed("123", ["123", "456"])).toBe(true);
     expect(isChatIdAllowed("456", ["123", "456"])).toBe(true);
     expect(isChatIdAllowed("999", ["123", "456"])).toBe(false);
+  });
+});
+
+describe("buildCloseAllInvokedDetails (SEC-PROMPT-INJECTION-RESID-006)", () => {
+  it("returns a payload with every required forensic field", () => {
+    const out = buildCloseAllInvokedDetails({
+      platform: "telegram",
+      chatId: "12345",
+      reason: "operator said halt",
+      issueCount: 3,
+      userMessage: "please stop everything",
+      llmOutput: "ok. [CLOSE_ALL_FROM_CHAT] | reason: operator said halt",
+    });
+    expect(out).toEqual({
+      platform: "telegram",
+      chatId: "12345",
+      reason: "operator said halt",
+      issueCount: 3,
+      userMessage: "please stop everything",
+      llmOutput: "ok. [CLOSE_ALL_FROM_CHAT] | reason: operator said halt",
+      via: "telegram_bridge",
+    });
+  });
+
+  it("truncates oversized userMessage and llmOutput so activity-log entries stay bounded", () => {
+    const longUser = "x".repeat(CLOSE_ALL_USER_MESSAGE_MAX + 50);
+    const longLlm = "y".repeat(CLOSE_ALL_LLM_OUTPUT_MAX + 200);
+    const out = buildCloseAllInvokedDetails({
+      platform: "telegram",
+      chatId: "1",
+      reason: null,
+      issueCount: 0,
+      userMessage: longUser,
+      llmOutput: longLlm,
+    });
+    expect(out.userMessage).toHaveLength(CLOSE_ALL_USER_MESSAGE_MAX);
+    expect(out.llmOutput).toHaveLength(CLOSE_ALL_LLM_OUTPUT_MAX);
+  });
+
+  it("accepts null reason (LLM emitted tag with no reason clause)", () => {
+    const out = buildCloseAllInvokedDetails({
+      platform: "telegram",
+      chatId: "1",
+      reason: null,
+      issueCount: 5,
+      userMessage: "u",
+      llmOutput: "l",
+    });
+    expect(out.reason).toBeNull();
+    expect(out.issueCount).toBe(5);
   });
 });
