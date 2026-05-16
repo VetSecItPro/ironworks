@@ -30,6 +30,9 @@ export {
 } from "./config-schema.js";
 export {
   AGENT_ADAPTER_TYPES,
+  LOCAL_PROCESS_ADAPTER_TYPES,
+  CLOUD_ADAPTER_TYPES,
+  isLocalProcessAdapterType,
   AGENT_ICON_NAMES,
   AGENT_LIFECYCLE_LABELS,
   AGENT_LIFECYCLE_STAGES,
