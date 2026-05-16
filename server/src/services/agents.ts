@@ -13,6 +13,7 @@ import {
 } from "@ironworksai/db";
 import { isUuidLike, normalizeAgentUrlKey } from "@ironworksai/shared";
 import { and, desc, eq, gte, inArray, lt, ne, sql } from "drizzle-orm";
+import { assertAdapterTypeAllowedForDeployment } from "../deployment-mode.js";
 import { conflict, notFound, unprocessable } from "../errors.js";
 import { REDACTED_EVENT_VALUE, sanitizeRecord } from "../redaction.js";
 import { normalizeAgentPermissions } from "./agent-permissions.js";
@@ -283,6 +284,12 @@ export function agentService(db: Db) {
   }
 
   async function updateAgent(id: string, data: Partial<typeof agents.$inferInsert>, options?: UpdateAgentOptions) {
+    // Tenant-isolation gate: block switching an agent onto a local-process
+    // adapter in a hosted deployment. Checked before the getById round-trip so
+    // it fails fast. See docs/adr/2026-05-16-hosted-adapter-policy.md.
+    if (typeof data.adapterType === "string" && data.adapterType.length > 0) {
+      assertAdapterTypeAllowedForDeployment(data.adapterType);
+    }
     const existing = await getById(id);
     if (!existing) return null;
 
@@ -377,6 +384,15 @@ export function agentService(db: Db) {
     getById,
 
     create: async (companyId: string, data: Omit<typeof agents.$inferInsert, "companyId">) => {
+      // Tenant-isolation gate: a hosted (authenticated) deployment must not
+      // persist an agent that runs as a local child process - it would share
+      // this container, and DATABASE_URL, with every other tenant. This is the
+      // single chokepoint for every create path (REST create, agent-hires,
+      // company onboard, YAML import). See
+      // docs/adr/2026-05-16-hosted-adapter-policy.md.
+      if (typeof data.adapterType === "string" && data.adapterType.length > 0) {
+        assertAdapterTypeAllowedForDeployment(data.adapterType);
+      }
       if (data.reportsTo) {
         await ensureManager(companyId, data.reportsTo);
       }

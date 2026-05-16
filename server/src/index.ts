@@ -28,6 +28,7 @@ import type { Request as ExpressRequest, RequestHandler } from "express";
 import { createApp } from "./app.js";
 import { getBoardClaimWarningUrl, initializeBoardClaimChallenge } from "./board-claim.js";
 import { loadConfig } from "./config.js";
+import { setDeploymentMode } from "./deployment-mode.js";
 import { installGlobalErrorHandlers } from "./lib/error-tracking.js";
 import { logger } from "./middleware/logger.js";
 import { installHeapMonitor } from "./observability/heap-monitor.js";
@@ -75,6 +76,10 @@ export interface StartedServer {
 
 export async function startServer(): Promise<StartedServer> {
   const config = loadConfig();
+  // Publish the resolved deployment mode process-wide so the agent-adapter
+  // tenant-isolation gate (deployment-mode.ts) sees it without re-reading
+  // config. Resolved here = env > config file > default.
+  setDeploymentMode(config.deploymentMode);
   if (process.env.IRONWORKS_SECRETS_PROVIDER === undefined) {
     process.env.IRONWORKS_SECRETS_PROVIDER = config.secretsProvider;
   }

@@ -4,6 +4,10 @@ All notable changes to IronWorks are documented in this file.
 
 ## [Unreleased]
 
+### Security
+
+- **Local-process adapters gated to self-host deployments.** In `authenticated` (hosted, multi-tenant) deployments, agents may no longer be created or updated onto a local-process adapter (`process`, `claude_local`, `codex_local`, `opencode_local`, `pi_local`, `cursor`, `hermes_local`). Those adapters spawn a CLI tool as a child process inside the shared server container, where it would inherit the filesystem, environment, and `DATABASE_URL` of every other tenant - `company_id` request scoping does not contain a spawned process. Hosted deployments now permit only network adapters (`anthropic_api`, `openai_api`, `openrouter_api`, `poe_api`, `http`, `openclaw_gateway`, `ollama_cloud`); the `http` adapter remains available as bring-your-own execution. Local-process adapters are unchanged in `local_trusted` (single-operator self-host) deployments, which are single-tenant. Enforced at the `agentService` create/update chokepoint (covers REST create, `agent-hires`, company onboard, YAML import) plus a defense-in-depth runtime guard in the heartbeat scheduler. New `@ironworksai/shared` exports: `LOCAL_PROCESS_ADAPTER_TYPES`, `CLOUD_ADAPTER_TYPES`, `isLocalProcessAdapterType`. See `docs/adr/2026-05-16-hosted-adapter-policy.md`.
+
 ### Added
 
 - **Scheduled R2 vault snapshot cron (P3.2).** Per-company opt-in via `instanceGeneralSettings.vaultSnapshot` section. Daily (03:00 CT) and weekly (Sunday 03:30 CT) crons iterate enabled companies, generate the vault zip via the P3.1 export pipeline, and PUT to a customer-configured Cloudflare R2 bucket (S3-compatible API, uses existing `@aws-sdk/client-s3`). Idempotent on object key (overwrite). New metric `ironworks_vault_snapshots_total{cadence,status}` for ops visibility. Per-company failures are isolated - one company's snapshot failure doesn't break the batch.

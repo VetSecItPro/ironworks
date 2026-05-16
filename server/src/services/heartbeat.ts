@@ -24,6 +24,7 @@ import type { AdapterExecutionResult, AdapterInvocationMeta } from "../adapters/
 import { getServerAdapter } from "../adapters/index.js";
 import { parseObject } from "../adapters/utils.js";
 import { createLocalAgentJwt } from "../agent-auth-jwt.js";
+import { assertAdapterTypeAllowedForDeployment, getDeploymentMode } from "../deployment-mode.js";
 import { notFound } from "../errors.js";
 import { resolveDefaultAgentWorkspaceDir } from "../home-paths.js";
 import { redactCurrentUserText, redactCurrentUserValue } from "../log-redaction.js";
@@ -2413,6 +2414,16 @@ export function heartbeatService(db: Db) {
         }
         const routedRuntimeConfig = routingApplied ? { ...runtimeConfig, model: routedModel } : runtimeConfig;
         // ─────────────────────────────────────────────────────────────────────
+
+        // Tenant-isolation gate (defense-in-depth): never spawn a local-process
+        // adapter in a hosted deployment. agentService create/update normally
+        // prevents such an agent from existing in `authenticated` mode; this
+        // also covers an agent created while the deployment was `local_trusted`
+        // and the deployment later converted to `authenticated`. Throwing here
+        // routes through the run-error handler (try @ ~2174), so the run is
+        // recorded as failed with this reason rather than executing.
+        // See docs/adr/2026-05-16-hosted-adapter-policy.md.
+        assertAdapterTypeAllowedForDeployment(agent.adapterType, getDeploymentMode());
 
         const adapter = getServerAdapter(agent.adapterType);
         const authToken = adapter.supportsLocalAgentJwt

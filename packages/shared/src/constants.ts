@@ -40,6 +40,61 @@ export const AGENT_ADAPTER_TYPES = [
 ] as const;
 export type AgentAdapterType = (typeof AGENT_ADAPTER_TYPES)[number];
 
+/**
+ * Adapter types that execute agent-controlled code as a local child process
+ * (`child_process.spawn`) inside the Ironworks server container.
+ *
+ * In a hosted, multi-tenant (`authenticated`) deployment these are forbidden:
+ * a spawned process inherits the container filesystem and environment -
+ * including `DATABASE_URL` and every tenant's resolved secrets - so one
+ * company's agent could read another company's data. `company_id` request
+ * scoping protects the API surface, not a spawned process. They remain
+ * available in single-operator self-host (`local_trusted`) deployments, which
+ * are single-tenant by definition.
+ *
+ * See docs/adr/2026-05-16-hosted-adapter-policy.md.
+ */
+export const LOCAL_PROCESS_ADAPTER_TYPES = [
+  "process",
+  "claude_local",
+  "codex_local",
+  "opencode_local",
+  "pi_local",
+  "cursor",
+  "hermes_local",
+] as const satisfies readonly AgentAdapterType[];
+
+/**
+ * Adapter types that reach their backend over the network and never spawn a
+ * local child process - safe to run in a shared, multi-tenant container.
+ * `http` posts task context to a customer-owned webhook (bring-your-own
+ * execution); the `*_api` adapters call hosted LLM provider APIs; the gateway
+ * and cloud adapters call remote services.
+ *
+ * Invariant: `LOCAL_PROCESS_ADAPTER_TYPES` and `CLOUD_ADAPTER_TYPES` partition
+ * `AGENT_ADAPTER_TYPES` exactly - enforced by adapter-classification.test.ts,
+ * so a newly added adapter type cannot ship unclassified.
+ */
+export const CLOUD_ADAPTER_TYPES = [
+  "http",
+  "openclaw_gateway",
+  "ollama_cloud",
+  "poe_api",
+  "anthropic_api",
+  "openai_api",
+  "openrouter_api",
+] as const satisfies readonly AgentAdapterType[];
+
+/**
+ * True when selecting this adapter causes the Ironworks server to spawn a
+ * local child process. Fails closed: an unknown / unrecognized type returns
+ * `true`, because `getServerAdapter()` falls back to the process adapter for
+ * unknown types - an unclassified adapter must never be treated as safe.
+ */
+export function isLocalProcessAdapterType(adapterType: string): boolean {
+  return !(CLOUD_ADAPTER_TYPES as readonly string[]).includes(adapterType);
+}
+
 export const AGENT_ROLES = [
   "ceo",
   "cto",
