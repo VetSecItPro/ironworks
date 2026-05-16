@@ -15,9 +15,7 @@ afterEach(() => {
 describe("assertAdapterTypeAllowedForDeployment", () => {
   it("rejects every local-process adapter in authenticated mode", () => {
     for (const adapterType of LOCAL_PROCESS_ADAPTER_TYPES) {
-      expect(() => assertAdapterTypeAllowedForDeployment(adapterType, "authenticated")).toThrow(
-        /local child process/i,
-      );
+      expect(() => assertAdapterTypeAllowedForDeployment(adapterType, "authenticated")).toThrow(/local child process/i);
     }
   });
 
@@ -88,8 +86,6 @@ describe("agentService gate wiring", () => {
 
   it("update rejects switching an agent onto a local-process adapter in authenticated mode", async () => {
     __setDeploymentModeForTest("authenticated");
-    await expect(svc.update("agent-1", { adapterType: "process" } as never)).rejects.toThrow(
-      /local child process/i,
-    );
+    await expect(svc.update("agent-1", { adapterType: "process" } as never)).rejects.toThrow(/local child process/i);
   });
 });
