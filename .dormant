@@ -1,0 +1,15 @@
+DORMANT - operator directive 2026-08-27.
+
+This repository is not under active development. Do not spend effort on baseline work,
+dependency sweeps, CI hardening or audits here unless it is explicitly revived.
+
+The SessionStart baseline check reads this file and stays quiet in repos that carry it.
+Delete this file to bring the repo back under the normal baseline.
+
+Standing findings, recorded 2026-08-27 so they are not rediscovered as new, and NOT acted on:
+  - Product DECOMMISSIONED 2026-08-09 (27 agents on a heartbeat for zero users).
+    The repo and the ghcr.io/vetsecitpro/ironworks package both still exist.
+  - 16 pins, all 16 unbounded. No Renovate or Dependabot.
+  - PLAYBOOK_STANDARD.md, which governed the IronWorks Knowledge Base, was archived
+    2026-08-27 to ~/.claude/standards/archive/ for the same reason.
+  - Deleting the GHCR package is safe and unblocked; it simply never happened.
